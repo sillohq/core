@@ -944,7 +944,7 @@ class NexiosResponse:
 
     def paginate(
         self,
-        items: List[Any],
+        objects: List[Any],
         strategy: Union[str, BasePaginationStrategy] = "page_number",
         data_handler: type[SyncListDataHandler] = SyncListDataHandler,
         **kwargs: Dict[str, Any],
@@ -953,7 +953,7 @@ class NexiosResponse:
         Paginate the response data.
 
         Args:
-            items: List of items to paginate
+            objects: List of items to paginate
             total_items: Total number of items (optional, defaults to len(items))
             strategy: Either a string ('page_number', 'limit_offset', 'cursor') or
                     a custom pagination strategy instance
@@ -969,7 +969,7 @@ class NexiosResponse:
             else:
                 raise ValueError(f"Unknown pagination strategy: {strategy}")
 
-        _data_handler = data_handler(items)
+        _data_handler = data_handler(objects)
         request = self._request  # You'll need to store the request in the response
 
         paginator = SyncPaginator(
@@ -984,7 +984,7 @@ class NexiosResponse:
 
     async def apaginate(
         self,
-        items: List[Any],
+        objects: List[Any],
         strategy: Union[str, BasePaginationStrategy] = "page_number",
         data_handler: type[AsyncListDataHandler] = AsyncListDataHandler,
         **kwargs: Dict[str, Any],
@@ -993,7 +993,7 @@ class NexiosResponse:
         Paginate the response data.
 
         Args:
-            items: List of items to paginate
+            objects: List of items to paginate
             total_items: Total number of items (optional, defaults to len(items))
             strategy: Either a string ('page_number', 'limit_offset', 'cursor') or
                     a custom pagination strategy instance
@@ -1009,7 +1009,7 @@ class NexiosResponse:
             else:
                 raise ValueError(f"Unknown pagination strategy: {strategy}")
 
-        _data_handler = data_handler(items)
+        _data_handler = data_handler(objects)
         request = self._request  # You'll need to store the request in the response
 
         paginator = AsyncPaginator(
