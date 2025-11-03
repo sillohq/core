@@ -46,7 +46,7 @@ class auth(RouteDecorator):
             for scope in self.scopes:
                 if scope not in self.scopes:
                     raise AuthenticationFailed
-            
+
             if inspect.iscoroutinefunction(handler):
                 return await handler(*args, **kwargs)
             return handler(*args, **kwargs)
