@@ -1,16 +1,16 @@
-## `NEXIOS` <sup>beta</sup>
+## `NEXIOS` 
 
 
-Breaking changes may occur in v3 until it reaches stable release. Use at your own risk!
 
 <div align="left">
 
 <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=4CAF50&center=true&width=435&lines=Nexios+ASGI+Framework;Fast%2C+Simple%2C+Flexible" alt="Typing SVG" /></a>
 
+
 <p align="center">
     <img alt=Support height="350" src="https://nexios-labs.github.io/nexios/logo.png">
     </p>
-    <h1 align="center">Nexios 3.0.0<sup>beta</sup><br></h1>
+    <h1 align="center">Nexios 3.x.x</h1>
 
    </a>
 </p>
@@ -33,7 +33,7 @@ Breaking changes may occur in v3 until it reaches stable release. Use at your ow
 
 <h2 align="center"> Star the repo if u like it🌟</h2>
 
-Nexios is a high-performance Python web framework. Designed for speed, flexibility, and simplicity, Nexios delivers exceptional performance  while maintaining the simplicity and elegance of Python. It supports RESTful APIs, authentication, and integrates easily with any ORM. Built for modern web development, Nexios allows developers to quickly spin up scalable, modular apps with minimal boilerplate—ideal for startups, rapid prototyping, and custom backend solutions. 
+Nexios is a community-driven, utility-first Python web framework designed for developers who need powerful tooling and extensibility. Built with a modular architecture, Nexios provides a comprehensive toolkit for building everything from simple APIs to complex distributed systems. The framework emphasizes developer productivity through its rich ecosystem of utilities, middleware, and community-contributed extensions. Whether you're building microservices, real-time applications, or enterprise-grade backends, Nexios gives you the tools and flexibility to craft solutions that scale with your needs. 
 
 ---
 
@@ -59,59 +59,70 @@ pip install nexios
 pip install nexios==3.0.0b1
 ```
 
-## Features ✨
+## Utility-First Features ✨
 
-- [x] **Powerful Routing**
-- [x] **Automatic OpenAPI Documentation**
-- [x] **Session Management**
-- [x] **File Router**
-- [x] **Authentication**
-- [x] **Event Listener for Signals**
-- [x] **Middleware Support**
-- [x] **Raw ASGI Middleware Support**
-- [x] **Express-like Functionality**
-- [x] **Pydantic Support**
-- [x] **Dependency Injection**
-- [x] **In-built Security (CORS, CSRF, SECURE HEADERS)**
-- [x] **WebSocket Support**
-- [x] **Custom Error Handling**
-- [x] **Pagination**
-- [x] **HTTP/2 Support**
-- [x] **High-Performance Async Processing**
+### Core Utilities & Tooling
+- [x] **Modular Architecture** - Mix and match components as needed
+- [x] **Rich CLI Tooling** - Project scaffolding, code generation, and development tools
+- [x] **Plugin System** - Extensible architecture for custom functionality
+- [x] **Developer Utilities** - Debug toolbar, profiling, and development helpers
+- [x] **Testing Framework** - Built-in testing utilities and fixtures
+
+### Web Framework Essentials
+- [x] **Powerful Routing** - Type-safe routing with parameter validation
+- [x] **Automatic OpenAPI Documentation** - Self-documenting APIs
+- [x] **Authentication Toolkit** - Multiple auth backends and strategies
+- [x] **Middleware Pipeline** - Composable request/response processing
+- [x] **WebSocket Support** - Real-time communication utilities
+- [x] **Session Management** - Flexible session handling
+
+### Community & Extensibility
+- [x] **Community Contrib Package** - nexios-contrib with community extensions
+- [x] **Custom Middleware Support** - Build and share your own middleware
+- [x] **Event System** - Hook into framework events and signals
+- [x] **Dependency Injection** - Clean, testable code architecture
+- [x] **Security Utilities** - CORS, CSRF, secure headers, and more
 
 
-### Basic Example
+### Quick Start - Utility-First Approach
 
 ```py
 from nexios import NexiosApp
 from nexios.http import Request, Response
 
-app = NexiosApp()
+# Create app with built-in utilities
+app = NexiosApp(
+    title="My Utility API",
+    debug=True,  # Enables debug toolbar and dev utilities
+    auto_reload=True  # Hot reload during development
+)
 
 @app.get("/")
 async def basic(request: Request, response: Response):
-    return {"message": "Hello, world!"}
-    # return response.json({"message":"Hello, world!"}) ## This will work for more control
-
-
+    return {"message": "Hello from Nexios utilities!"}
 ```
 
-### Another Basic Example
+### Using Community Extensions
 
 ```py
 from nexios import NexiosApp, Depend
+from nexios_contrib.middleware import ETagMiddleware, TrustedHostMiddleware
 from nexios.http import Request, Response
 
 app = NexiosApp()
 
-async def get_user():
-    return {"name": "John Doe"}
+# Add community-contributed middleware
+app.add_middleware(ETagMiddleware())
+app.add_middleware(TrustedHostMiddleware(allowed_hosts=["example.com"]))
 
+# Utility function with dependency injection
+async def get_database():
+    # Your database utility here
+    return {"connection": "active"}
 
-@app.get("/users")
-async def get_user(request: Request, response: Response, user: Depend(get_user)):
-
-    return {"user": user}
+@app.get("/health")
+async def health_check(request: Request, response: Response, db: Depend(get_database)):
+    return {"status": "healthy", "database": db}
 ```
 
 Visit http://localhost:8000/docs to view the Swagger API documentation.
@@ -120,7 +131,7 @@ Visit http://localhost:8000/docs to view the Swagger API documentation.
 
 ## See the full docs
 
-👉 <a href="https://nexios-docs.netlify.app">https://nexios-docs.netlify.app</a>
+👉 <a href="https://nexios-labs.github.io/nexios">https://nexios-labs.github.io/nexios</a>
 
 ## Contributors:
 
@@ -130,14 +141,24 @@ Visit http://localhost:8000/docs to view the Swagger API documentation.
 
 ---
 
-> Nexios is currently in active development. The current version is not yet considered stable.We're working towards a stable 3.x.x release. Please be aware that breaking changes may occur in versions before 3.x.
 
-## ☕ Donate to Support Nexios
+## 🌟 Community-Driven Development
 
-Nexios is a passion project built to make backend development in Python faster, cleaner, and more developer-friendly. It's fully open-source and maintained with love, late nights, and lots of coffee.
+Nexios thrives on community contributions and collaboration. We believe the best tools are built by developers, for developers.
 
-If Nexios has helped you build something awesome, saved you time, or inspired your next project, consider supporting its continued development. Your donation helps cover hosting, documentation tools, and fuels new features and updates.
+### Get Involved
+- **Contribute Code**: Submit PRs to the main framework or [nexios-contrib](https://github.com/nexios-labs/nexios-contrib)
+- **Share Utilities**: Create and share your own middleware, plugins, and tools
+- **Join Discussions**: Participate in [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
+- **Help Others**: Answer questions and help fellow developers
 
-Every little bit counts — whether it's the cost of a coffee or more. Thank you for believing in the project!
+### Community Resources
+- 📚 **Documentation**: [nexios-docs.netlify.app](https://nexios-docs.netlify.app)
+- 🛠️ **Community Extensions**: [nexios-contrib package](https://github.com/nexios-labs/nexios-contrib)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
+- 🐛 **Issues**: [Report bugs and request features](https://github.com/nexios-labs/nexios/issues)
 
-👉 [**Buy Me a Coffee**](https://www.buymeacoffee.com/techwithdul) and support the future of Nexios.
+### Support the Project
+If Nexios has helped you build something awesome, consider supporting its continued development:
+
+👉 [**Buy Me a Coffee**](https://www.buymeacoffee.com/techwithdul) and help fuel the community-driven future of Nexios.
