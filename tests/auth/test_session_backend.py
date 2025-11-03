@@ -145,8 +145,9 @@ async def test_session_auth_backend_logout(test_client):
         return res.json({"message": "logged out"})
 
     @app.get("/protected")
-    @auth("session")
+    @auth(["session"])
     async def protected(req: Request, res: Response):
+        print(req.session)
         return res.json({"user_id": req.user.identity})
 
     client = test_client(app)

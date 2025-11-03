@@ -40,11 +40,13 @@ class auth(RouteDecorator):
             if not request.scope.get("user"):
                 raise AuthenticationFailed
 
-            scope = request.scope.get("auth")  # type: ignore
-
-            if self.scopes and scope not in self.scopes:
+            scopes = request.scope.get("auth")  # type: ignore
+            if not scopes:  # pragma: no cover
                 raise AuthenticationFailed
-
+            for scope in self.scopes:
+                if scope not in self.scopes:
+                    raise AuthenticationFailed
+            
             if inspect.iscoroutinefunction(handler):
                 return await handler(*args, **kwargs)
             return handler(*args, **kwargs)
