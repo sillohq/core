@@ -51,7 +51,7 @@ from nexios.http import Request, Response
 @app.post("/process")
 async def start_processing(request: Request, response: Response) -> dict:
     """Start a background processing task."""
-    data = await request.json()
+    data = await request.json
     task = await create_task(
         request=request,
         func=process_data,
@@ -85,26 +85,9 @@ async def get_status(request: Request, response: Response, task_id: str) -> dict
 
 Nexios Tasks integrates seamlessly with Nexios's dependency injection system for a more elegant solution.
 
-### 1. Define Your Task with Dependencies
 
-```python
-from nexios_contrib.tasks import TaskDependency
 
-async def process_with_deps(
-    task_id: str,
-    data: dict,
-    db: Database = Depends(get_db),
-    cache: Cache = Depends(get_cache)
-) -> dict:
-    """A task that uses dependencies."""
-    # Use your dependencies
-    await cache.set(f"task:{task_id}", "processing")
-    result = await db.process(data)
-    await cache.set(f"task:{task_id}", "completed")
-    return result
-```
-
-### 2. Create a Task with Dependencies
+###  Create a Task with Dependencies
 
 ```python
 from nexios_contrib.tasks import TaskDependency
@@ -116,7 +99,7 @@ async def start_processing_with_deps(
     task_dep = TaskDependency()
 ) -> dict:
     """Start a task with dependencies."""
-    data = await request.json()
+    data = await request.json
     task = await task_dep.create(
         func=process_with_deps,
         data=data,
@@ -245,57 +228,7 @@ async def get_task_progress(request: Request, response: Response, task_id: str):
     }
 ```
 
-### Task Timeouts
 
-```python
-from nexios_contrib.tasks import create_task_with_timeout
-
-@app.post("/process-with-timeout")
-async def start_processing_with_timeout(request: Request, response: Response):
-    """Start a task with custom timeout."""
-    data = await request.json()
-    
-    task = await create_task_with_timeout(
-        request=request,
-        func=process_data,
-        timeout=60,  # 60 seconds timeout
-        data=data,
-        name="timed_processing"
-    )
-    
-    return {"task_id": task.id, "timeout": 60}
-```
-
-### Task Retry Logic
-
-```python
-from nexios_contrib.tasks import create_task_with_retry
-
-async def unreliable_task(data: dict) -> dict:
-    """A task that might fail and need retries."""
-    import random
-    
-    if random.random() < 0.3:  # 30% chance of failure
-        raise Exception("Random failure")
-    
-    return {"status": "success", "data": data}
-
-@app.post("/process-with-retry")
-async def start_processing_with_retry(request: Request, response: Response):
-    """Start a task with retry logic."""
-    data = await request.json()
-    
-    task = await create_task_with_retry(
-        request=request,
-        func=unreliable_task,
-        max_retries=3,
-        retry_delay=5,  # 5 seconds between retries
-        data=data,
-        name="retry_processing"
-    )
-    
-    return {"task_id": task.id, "max_retries": 3}
-```
 
 ## Error Handling
 

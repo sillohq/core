@@ -163,11 +163,7 @@ def custom_method(param: str) -> str:
 
 # Configure JSON-RPC plugin
 JsonRpcPlugin(app, {
-    "path_prefix": "/api/rpc",
-    "registry": custom_registry,
-    "enable_introspection": True,  # Enable method listing
-    "cors_enabled": True,          # Enable CORS
-    "max_request_size": 1024 * 1024  # 1MB max request
+    "path_prefix": "/api/rpc"
 })
 ```
 
@@ -208,24 +204,7 @@ async def context_manager_example():
 asyncio.run(example_client())
 ```
 
-### Batch Requests
 
-```python
-async def batch_example():
-    async with JsonRpcClient("http://localhost:3020/rpc") as client:
-        # Prepare batch requests
-        batch = [
-            client.prepare_call("add", a=1, b=2),
-            client.prepare_call("multiply", x=3, y=4),
-            client.prepare_call("echo", msg="batch test")
-        ]
-        
-        # Execute batch
-        results = await client.batch_call(batch)
-        
-        for i, result in enumerate(results):
-            print(f"Result {i}: {result}")
-```
 
 ### Error Handling in Client
 
@@ -245,85 +224,6 @@ async def error_handling_example():
             print(f"Client Error: {e}")
 ```
 
-## Advanced Features
-
-### Method Introspection
-
-```python
-# Enable introspection in server
-JsonRpcPlugin(app, {
-    "path_prefix": "/rpc",
-    "enable_introspection": True
-})
-
-# Client can list available methods
-async def introspection_example():
-    async with JsonRpcClient("http://localhost:3020/rpc") as client:
-        methods = await client.call("rpc.listMethods")
-        print("Available methods:", methods)
-        
-        # Get method signature
-        signature = await client.call("rpc.methodSignature", "add")
-        print("Method signature:", signature)
-        
-        # Get method help
-        help_text = await client.call("rpc.methodHelp", "add")
-        print("Method help:", help_text)
-```
-
-### Custom Serialization
-
-```python
-import json
-from datetime import datetime
-from nexios_contrib.jrpc.client import JsonRpcClient
-
-class CustomEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-# Client with custom serialization
-client = JsonRpcClient(
-    "http://localhost:3020/rpc",
-    json_encoder=CustomEncoder
-)
-```
-
-### Authentication
-
-```python
-# Server with authentication
-from nexios_contrib.jrpc.server import JsonRpcPlugin
-from nexios_contrib.jrpc.middleware import AuthenticationMiddleware
-
-class ApiKeyAuth(AuthenticationMiddleware):
-    def __init__(self, valid_keys):
-        self.valid_keys = valid_keys
-    
-    async def authenticate(self, request):
-        api_key = request.headers.get("X-API-Key")
-        if api_key not in self.valid_keys:
-            raise JsonRpcError(
-                code=-32001,
-                message="Invalid API key"
-            )
-        return {"api_key": api_key}
-
-# Add authentication to plugin
-JsonRpcPlugin(app, {
-    "path_prefix": "/rpc",
-    "middleware": [ApiKeyAuth(["secret-key-1", "secret-key-2"])]
-})
-
-# Client with authentication
-async def authenticated_client():
-    headers = {"X-API-Key": "secret-key-1"}
-    async with JsonRpcClient("http://localhost:3020/rpc", headers=headers) as client:
-        result = await client.call("protected_method")
-        print(result)
-```
 
 ## Integration with Nexios
 
@@ -358,12 +258,12 @@ from nexios_contrib.jrpc.server import JsonRpcPlugin
 app = NexiosApp()
 
 # Add Nexios middleware
-@app.middleware
 async def logging_middleware(request, response, call_next):
     print(f"JSON-RPC request: {request.method} {request.url}")
     response = await call_next()
     print(f"JSON-RPC response: {response.status_code}")
     return response
+app.add_middleware(logging_middleware)
 
 # JSON-RPC will use Nexios middleware
 JsonRpcPlugin(app, {"path_prefix": "/rpc"})
@@ -532,66 +432,5 @@ async def test_async_methods():
     assert result == 12
 ```
 
-### Integration Testing
-
-```python
-import pytest
-from nexios.testing import TestClient
-from nexios import NexiosApp
-from nexios_contrib.jrpc.server import JsonRpcPlugin
-from nexios_contrib.jrpc.registry import get_registry
-
-@pytest.fixture
-def app():
-    app = NexiosApp()
-    registry = get_registry()
-    
-    @registry.register("test_method")
-    def test_method(value: str) -> str:
-        return f"test_{value}"
-    
-    JsonRpcPlugin(app, {"path_prefix": "/rpc"})
-    return app
-
-def test_json_rpc_endpoint(app):
-    client = TestClient(app)
-    
-    response = client.post("/rpc", json={
-        "jsonrpc": "2.0",
-        "method": "test_method",
-        "params": {"value": "hello"},
-        "id": 1
-    })
-    
-    assert response.status_code == 200
-    data = response.json()
-    assert data["result"] == "test_hello"
-    assert data["id"] == 1
-```
-
-## Best Practices
-
-1. **Error Handling**: Always use proper JSON-RPC error codes and messages
-2. **Type Hints**: Use type hints for better documentation and validation
-3. **Documentation**: Document your methods with docstrings
-4. **Validation**: Validate input parameters in your methods
-5. **Testing**: Write comprehensive tests for your JSON-RPC methods
-6. **Security**: Implement authentication and authorization as needed
-
-## Troubleshooting
-
-### Common Issues
-
-**Method not found**
-- Ensure the method is registered with the correct name
-- Check that the registry is properly configured
-
-**Invalid parameters**
-- Verify parameter names and types match the method signature
-- Check for required vs optional parameters
-
-**Connection errors**
-- Verify the server is running and accessible
-- Check the JSON-RPC endpoint URL
 
 Built with ❤️ by the [@nexios-labs](https://github.com/nexios-labs) community.
