@@ -23,6 +23,8 @@ This contrib provides:
 
 ## Installation
 
+The JSON-RPC contrib is included with the main nexios_contrib package, making it easy to get started with remote procedure calls.
+
 Install the JSON-RPC contrib with Nexios:
 
 ```bash
@@ -41,7 +43,7 @@ This contrib intentionally uses only Python standard library modules for several
 
 ### Basic Server Setup
 
-Here's a minimal JSON-RPC server to get you started:
+Creating a JSON-RPC server with Nexios is straightforward. The server automatically handles request parsing, method dispatch, and response formatting.
 
 ```python
 # server.py
@@ -147,7 +149,7 @@ if __name__ == "__main__":
 
 ### Basic Client Usage
 
-Here's how to call your JSON-RPC methods from a client:
+The JSON-RPC client provides a simple async interface for calling remote methods. It handles connection management, request serialization, and error handling automatically.
 
 ```python
 # client.py

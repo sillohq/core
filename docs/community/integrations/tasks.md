@@ -2,7 +2,11 @@
 
 A robust background task management system for Nexios applications, providing a simple yet powerful way to run, monitor, and manage asynchronous tasks.
 
+This system allows you to execute time-consuming operations without blocking your API responses, making your application more responsive and scalable.
+
 ## Features
+
+Key capabilities that make background task management efficient and reliable:
 
 - 🚀 Simple task creation and management
 - 🔄 Built-in task status tracking
@@ -14,13 +18,19 @@ A robust background task management system for Nexios applications, providing a 
 
 ## Installation
 
+Install the nexios-contrib package to access background task functionality:
+
 ```bash
 pip install nexios-contrib
 ```
 
 ## Basic Usage
 
+Follow these steps to integrate background tasks into your Nexios application:
+
 ### 1. Set Up Your Application
+
+Initialize the task manager in your application to enable background task functionality:
 
 ```python
 from nexios import NexiosApp
@@ -34,6 +44,8 @@ task_manager = setup_tasks(app)
 
 ### 2. Define a Background Task
 
+Create async functions that will run as background tasks:
+
 ```python
 import asyncio
 
@@ -44,6 +56,8 @@ async def process_data(data: dict) -> dict:
 ```
 
 ### 3. Create and Run a Task
+
+Start background tasks from your API endpoints and return immediately:
 
 ```python
 from nexios.http import Request, Response
@@ -62,6 +76,8 @@ async def start_processing(request: Request, response: Response) -> dict:
 ```
 
 ### 4. Check Task Status
+
+Monitor task progress and retrieve results through status endpoints:
 
 ```python
 from nexios_contrib.tasks import TaskStatus
@@ -85,9 +101,11 @@ async def get_status(request: Request, response: Response, task_id: str) -> dict
 
 Nexios Tasks integrates seamlessly with Nexios's dependency injection system for a more elegant solution.
 
-
+Leverage dependency injection to simplify task creation and management in your endpoints.
 
 ###  Create a Task with Dependencies
+
+Use TaskDependency to inject task management capabilities directly into your handlers:
 
 ```python
 from nexios_contrib.tasks import TaskDependency
@@ -110,7 +128,11 @@ async def start_processing_with_deps(
 
 ## Task Management
 
+Administrative operations for monitoring and controlling background tasks.
+
 ### Listing All Tasks
+
+Retrieve information about all tasks in the system:
 
 ```python
 @app.get("/tasks")
@@ -130,6 +152,8 @@ async def list_tasks(request: Request, response: Response) -> list:
 
 ### Canceling a Task
 
+Stop running tasks when they're no longer needed:
+
 ```python
 @app.post("/tasks/{task_id}/cancel")
 async def cancel_task(request: Request, response: Response, task_id: str) -> dict:
@@ -139,6 +163,8 @@ async def cancel_task(request: Request, response: Response, task_id: str) -> dic
 ```
 
 ## Configuration
+
+Customize the task manager behavior to match your application's requirements:
 
 Customize the task manager with a configuration object:
 
@@ -158,7 +184,11 @@ task_manager = setup_tasks(app, config=config)
 
 ## Task Status and Lifecycle
 
+Understanding how tasks progress through different states and accessing their properties.
+
 ### Task Status Enum
+
+Available status values that indicate the current state of a task:
 
 ```python
 from nexios_contrib.tasks import TaskStatus
@@ -173,6 +203,8 @@ TaskStatus.TIMEOUT    # Task exceeded timeout limit
 ```
 
 ### Task Lifecycle
+
+Access detailed information about task execution and timing:
 
 ```python
 from nexios_contrib.tasks import Task
@@ -193,7 +225,11 @@ print(f"Progress: {task.progress}")
 
 ## Advanced Features
 
+Enhanced capabilities for complex task management scenarios.
+
 ### Progress Tracking
+
+Monitor and report progress for long-running tasks:
 
 ```python
 from nexios_contrib.tasks import update_task_progress
@@ -232,6 +268,8 @@ async def get_task_progress(request: Request, response: Response, task_id: str):
 
 ## Error Handling
 
+Properly handle and respond to task failures and exceptions.
+
 Handle task errors by checking the task's error attribute:
 
 ```python
@@ -253,6 +291,8 @@ async def get_task_result(request: Request, response: Response, task_id: str):
 ```
 
 ### Custom Error Handling
+
+Define and handle application-specific task errors:
 
 ```python
 from nexios_contrib.tasks import TaskError
@@ -280,7 +320,11 @@ async def handle_task_error(request, exc):
 
 ## Examples
 
+Real-world implementations demonstrating common background task patterns.
+
 ### File Processing Service
+
+Process files asynchronously with progress tracking:
 
 ```python
 from nexios import NexiosApp
@@ -343,6 +387,8 @@ async def start_file_processing(request: Request, response: Response):
 
 ### Email Sending Service
 
+Send bulk emails without blocking API responses:
+
 ```python
 from nexios_contrib.tasks import setup_tasks, create_task
 import smtplib
@@ -403,6 +449,8 @@ async def start_bulk_email_sending(request: Request, response: Response):
 ```
 
 ### Data Export Service
+
+Generate and export large datasets in various formats:
 
 ```python
 from nexios_contrib.tasks import setup_tasks, create_task
@@ -490,6 +538,8 @@ async def start_data_export(request: Request, response: Response):
 
 ## Best Practices
 
+Guidelines for building reliable and maintainable background task systems.
+
 1. **Task Granularity**: Keep tasks focused on a single responsibility
 2. **Error Handling**: Always implement proper error handling in your tasks
 3. **Timeouts**: Set appropriate timeouts for your tasks
@@ -499,6 +549,8 @@ async def start_data_export(request: Request, response: Response):
 7. **Testing**: Write comprehensive tests for your background tasks
 
 ### Production Configuration
+
+Optimize task manager settings for production environments:
 
 ```python
 from nexios_contrib.tasks import TaskConfig, setup_tasks
@@ -523,7 +575,11 @@ task_manager = setup_tasks(app, config=config)
 
 ## Testing
 
+Ensure your background tasks work correctly with comprehensive testing strategies.
+
 ### Unit Testing Tasks
+
+Test individual task functions in isolation:
 
 ```python
 import pytest
@@ -568,6 +624,8 @@ async def test_task_failure(task_manager):
 ```
 
 ### Integration Testing
+
+Test the complete task workflow including API endpoints:
 
 ```python
 import pytest
