@@ -44,6 +44,7 @@ from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, S
 
 from ._utils import get_route_path
 from .base import BaseRoute, BaseRouter
+from .grouping import Group
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
@@ -2386,6 +2387,7 @@ class Router(BaseRouter):
         self.sub_routers[path] = app
         self.root_path = self.root_path + path.strip("/")
 
+        
     def get_all_routes(self) -> List[Routes]:
         """Returns a flat list of all HTTP routes in this router and all nested sub-routers"""
         all_routes: List[Routes] = []
@@ -2421,4 +2423,9 @@ class Router(BaseRouter):
             prefix: The path prefix under which the app will be registered.
         """
 
-        self.sub_routers[prefix] = app
+        self.add_route(
+            Group(
+                app = app,
+                path = prefix
+            )
+        )
