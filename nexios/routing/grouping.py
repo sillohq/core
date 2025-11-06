@@ -33,6 +33,7 @@ class Group(BaseRoute):
             self._base_app = app
         else:
             from .http import Router
+
             self._base_app = Router(routes=routes)  # type:ignore
 
         self.app = self._base_app  # type:ignore

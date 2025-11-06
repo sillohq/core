@@ -2381,7 +2381,6 @@ class Router(BaseRouter):
             )
         )
 
-        
     def get_all_routes(self) -> List[Routes]:
         """Returns a flat list of all HTTP routes in this router and all nested sub-routers"""
         all_routes: List[Routes] = []
@@ -2417,9 +2416,4 @@ class Router(BaseRouter):
             prefix: The path prefix under which the app will be registered.
         """
 
-        self.add_route(
-            Group(
-                app = app,
-                path = prefix
-            )
-        )
+        self.add_route(Group(app=app, path=prefix))
