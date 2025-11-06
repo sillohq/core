@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from nexios import MakeConfig, NexiosApp
 from nexios.dependencies import Depend
-from nexios.routing import Routes
+from nexios.routing import Route
 from nexios.testclient import AsyncTestClient, TestClient
 from nexios.types import ExceptionHandlerType
 
@@ -18,7 +18,7 @@ def create_client(
     description: Optional[str] = None,
     server_error_handler: Optional[ExceptionHandlerType] = None,
     lifespan: Optional[Any] = None,
-    routes: Optional[List[Routes]] = None,
+    routes: Optional[List[Route]] = None,
     dependencies: Optional[List[Depend]] = None,
     client_config: Optional[Dict[str, Any]] = None,
 ) -> TestClient:
@@ -72,7 +72,7 @@ def create_async_client(
     description: Optional[str] = None,
     server_error_handler: Optional[ExceptionHandlerType] = None,
     lifespan: Optional[Any] = None,
-    routes: Optional[List[Routes]] = None,
+    routes: Optional[List[Route]] = None,
     dependencies: Optional[List[Depend]] = None,
     client_config: Optional[Dict[str, Any]] = None,
 ) -> AsyncTestClient:

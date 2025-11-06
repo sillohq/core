@@ -34,7 +34,7 @@ from nexios.openapi.models import HTTPBearer, Parameter
 from nexios.routing.base import BaseRoute
 from nexios.structs import URLPath
 
-from .routing import Router, Routes, WebsocketRoutes, WSRouter
+from .routing import Router, Route, WebsocketRoute, WSRouter
 from .types import (
     ASGIApp,
     HandlerType,
@@ -101,7 +101,7 @@ class NexiosApp(object):
             ),
         ] = None,
         lifespan: Optional[lifespan_manager] = None,
-        routes: Optional[List[Routes]] = None,
+        routes: Optional[List[Route]] = None,
         dependencies: Optional[list[Depend]] = None,
     ):
         self.config = config or DEFAULT_CONFIG
@@ -123,7 +123,7 @@ class NexiosApp(object):
             get_nexios_config(),
         )
         self.ws_router = WSRouter()
-        self.ws_routes: List[WebsocketRoutes] = []
+        self.ws_routes: List[WebsocketRoute] = []
         self.http_middleware: List[Middleware] = []
         self.ws_middleware: List[ASGIApp] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
@@ -377,8 +377,8 @@ class NexiosApp(object):
         self,
         route: Optional[
             Annotated[
-                WebsocketRoutes,
-                Doc("An instance of the Routes class representing a WebSocket route."),
+                WebsocketRoute,
+                Doc("An instance of the Route class representing a WebSocket route."),
             ]
         ] = None,
         path: Optional[str] = None,
@@ -391,14 +391,14 @@ class NexiosApp(object):
         This method registers a WebSocket route, allowing the application to handle WebSocket connections.
 
         Args:
-            route (Routes): The WebSocket route configuration.
+            route (Route): The WebSocket route configuration.
 
         Returns:
             None
 
         Example:
             ```python
-            route = Routes("/ws/chat", chat_handler)
+            route = Route("/ws/chat", chat_handler)
             app.add_ws_route(route)
             ```
         """
@@ -416,7 +416,7 @@ class NexiosApp(object):
             )
 
         self.ws_router.add_ws_route(
-            WebsocketRoutes(path, handler, middleware=middleware)
+            WebsocketRoute(path, handler, middleware=middleware)
         )
 
     def mount_router(self, router: Router, name: Optional[str] = None) -> None:
@@ -1996,8 +1996,8 @@ class NexiosApp(object):
     def add_route(
         self,
         route: Annotated[
-            Optional[Union[Routes, type[BaseRoute]]],
-            Doc("An instance of the Routes class representing an HTTP route."),
+            Optional[Union[Route, type[BaseRoute]]],
+            Doc("An instance of the Route class representing an HTTP route."),
         ] = None,
         path: Annotated[
             Optional[str],
@@ -2172,14 +2172,14 @@ class NexiosApp(object):
         This method registers an HTTP route, allowing the application to handle requests for a specific URL path.
 
         Args:
-            route (Routes): The HTTP route configuration.
+            route (Route): The HTTP route configuration.
 
         Returns:
             None
 
         Example:
             ```python
-            route = Routes("/home", home_handler, methods=["GET", "POST"])
+            route = Route("/home", home_handler, methods=["GET", "POST"])
             app.add_route(route)
             ```
         """
@@ -2188,7 +2188,7 @@ class NexiosApp(object):
                 raise ValueError(
                     "path and handler are required if route is not provided"
                 )
-            route = Routes(
+            route = Route(
                 path=path,
                 handler=handler,
                 methods=methods,
@@ -2261,14 +2261,14 @@ class NexiosApp(object):
         self.app = middleware_cls(self.app, **kwargs)
         return None
 
-    def get_all_routes(self) -> List[Routes]:
+    def get_all_routes(self) -> List[Route]:
         """
         Returns all routes registered in the application.
 
         This method retrieves a list of all HTTP and WebSocket routes defined in the application.
 
         Returns:
-            List[Routes]: A list of all registered routes.
+            List[Route]: A list of all registered routes.
 
         Example:
             ```python

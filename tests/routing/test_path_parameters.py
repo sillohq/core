@@ -8,7 +8,7 @@ import pytest
 
 from nexios import NexiosApp
 from nexios.http import Request, Response
-from nexios.routing import Router, Routes
+from nexios.routing import Router, Route
 from nexios.testclient import TestClient
 
 # ========== Basic Path Parameters Tests ==========

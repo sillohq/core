@@ -8,7 +8,7 @@ import pytest
 
 from nexios import NexiosApp
 from nexios.http import Request, Response
-from nexios.routing import Router, Routes
+from nexios.routing import Router, Route
 from nexios.testclient import TestClient
 
 # ========== GET Method Tests ==========
@@ -281,13 +281,13 @@ def test_route_with_multiple_methods(
 def test_routes_class_with_multiple_methods(
     test_client_factory: Callable[[NexiosApp], TestClient],
 ):
-    """Test Routes class with multiple methods"""
+    """Test Route class with multiple methods"""
     app = NexiosApp()
 
     async def handler(request: Request, response: Response):
         return response.json({"method": request.method})
 
-    route = Routes("/api/data", handler, methods=["GET", "POST", "DELETE"])
+    route = Route("/api/data", handler, methods=["GET", "POST", "DELETE"])
     app.add_route(route)
 
     with test_client_factory(app) as client:
@@ -381,7 +381,7 @@ def test_case_insensitive_methods(
         return response.text("ok")
 
     # Test with lowercase methods
-    route = Routes("/test", handler, methods=["get", "post"])
+    route = Route("/test", handler, methods=["get", "post"])
     app.add_route(route)
 
     with test_client_factory(app) as client:

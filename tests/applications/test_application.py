@@ -6,7 +6,7 @@ import pytest
 from nexios import NexiosApp
 from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
-from nexios.routing import Router, Routes, WSRouter
+from nexios.routing import Router, Route, WSRouter
 from nexios.testclient import TestClient
 from nexios.websockets import WebSocket
 
@@ -74,7 +74,7 @@ app.add_route(
 )
 
 app.add_route(
-    Routes(
+    Route(
         path="/add_route_with_route_object",
         handler=add_route_with_route_object,
         methods=["GET"],
@@ -238,8 +238,8 @@ def test_app_init():
         is_test=True,
     )
     routes = [
-        Routes(path="/", handler=index1, methods=["GET"]),
-        Routes(path="/index2", handler=index2, methods=["GET"]),
+        Route(path="/", handler=index1, methods=["GET"]),
+        Route(path="/index2", handler=index2, methods=["GET"]),
     ]
     app = NexiosApp(routes=routes, config=config)
     for route in routes:

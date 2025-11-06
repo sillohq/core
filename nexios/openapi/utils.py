@@ -1,16 +1,16 @@
 from typing import Any, List, Union
 
 from nexios.routing.grouping import Group
-from nexios.routing.http import Router, Routes
+from nexios.routing.http import Router, Route
 
 
-def get_openapi(route: Union[Routes, Router, Group, Any]) -> List[Routes]:
+def get_openapi(route: Union[Route, Router, Group, Any]) -> List[Route]:
     """
-    Recursively extract all Routes from a route structure, handling nested Groups and Routers.
+    Recursively extract all Route from a route structure, handling nested Groups and Routers.
     """
-    routes_list: List[Routes] = []
+    routes_list: List[Route] = []
 
-    if isinstance(route, Routes):
+    if isinstance(route, Route):
         return [route]
 
     if isinstance(route, Router):

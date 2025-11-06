@@ -8,7 +8,7 @@ import pytest
 
 from nexios import NexiosApp
 from nexios.http import Request, Response
-from nexios.routing import Group, Router, Routes
+from nexios.routing import Group, Router, Route
 from nexios.testclient import TestClient
 
 # ========== Basic Group Tests ==========
@@ -37,8 +37,8 @@ def test_group_with_routes():
     async def handler2(request: Request, response: Response):
         return response.text("route2")
 
-    route1 = Routes("/route1", handler1, methods=["GET"])
-    route2 = Routes("/route2", handler2, methods=["GET"])
+    route1 = Route("/route1", handler1, methods=["GET"])
+    route2 = Route("/route2", handler2, methods=["GET"])
 
     group = Group(path="/api", routes=[route1, route2])
 

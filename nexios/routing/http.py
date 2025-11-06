@@ -47,7 +47,7 @@ from .grouping import Group
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 
-class Routes(BaseRoute):
+class Route(BaseRoute):
     """
     Encapsulates all routing information for an API endpoint, including path handling,
     validation, OpenAPI documentation, and request processing.
@@ -305,7 +305,7 @@ class Router(BaseRouter):
     def __init__(
         self,
         prefix: Optional[str] = None,
-        routes: Optional[Sequence[Union[Routes, type[BaseRoute]]]] = None,
+        routes: Optional[Sequence[Union[Route, type[BaseRoute]]]] = None,
         tags: Optional[Sequence[str]] = None,
         exclude_from_schema: bool = False,
         name: Optional[str] = None,
@@ -316,7 +316,7 @@ class Router(BaseRouter):
         self.routes = list(routes or [])
         self.middleware: typing.List[Middleware] = []
         self.sub_routers: Dict[str, Union[Router, ASGIApp]] = {}
-        self.route_class = Routes
+        self.route_class = Route
         self.tags = tags or []
         self.exclude_from_schema = exclude_from_schema
         self.name = name
@@ -350,8 +350,8 @@ class Router(BaseRouter):
     def add_route(
         self,
         route: Annotated[
-            Optional[Union[Routes, type[BaseRoute]]],
-            Doc("An instance of the Routes class representing an HTTP route."),
+            Optional[Union[Route, type[BaseRoute]]],
+            Doc("An instance of the Route class representing an HTTP route."),
         ] = None,
         path: Annotated[
             Optional[str],
@@ -523,14 +523,14 @@ class Router(BaseRouter):
         This method registers an HTTP route, allowing the application to handle requests for a specific URL path.
 
         Args:
-            route (Routes): The HTTP route configuration.
+            route (Route): The HTTP route configuration.
 
         Returns:
             None
 
         Example:
             ```python
-            route = Routes("/home", home_handler, methods=["GET", "POST"])
+            route = Route("/home", home_handler, methods=["GET", "POST"])
             app.add_route(route)
             ```
         """
@@ -539,7 +539,7 @@ class Router(BaseRouter):
                 raise ValueError(
                     "path and handler are required if route is not provided"
                 )
-            route = Routes(
+            route = Route(
                 path=path,
                 handler=handler,
                 methods=methods,
@@ -559,7 +559,7 @@ class Router(BaseRouter):
                 **kwargs,
             )
 
-        if not isinstance(route, Routes):
+        if not isinstance(route, Route):
             self.routes.append(route)
             return
 
@@ -2404,9 +2404,9 @@ class Router(BaseRouter):
         path = app.prefix
         self.routes.append(Group(app=app, path=path, name=name))
 
-    def get_all_routes(self) -> List[Routes]:
+    def get_all_routes(self) -> List[Route]:
         """Returns a flat list of all HTTP routes in this router and all nested sub-routers"""
-        all_routes: List[Routes] = []
+        all_routes: List[Route] = []
         routers_to_process: List[Any] = [(self, "")]  # (router, current_prefix)
 
         while routers_to_process:
@@ -2440,3 +2440,5 @@ class Router(BaseRouter):
         """
 
         self.add_route(Group(app=app, path=prefix))
+
+Routes = Route #for backward compatibilty 

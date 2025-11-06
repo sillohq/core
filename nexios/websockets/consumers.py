@@ -31,7 +31,7 @@ class WebSocketConsumer:
 
     @classmethod
     def as_route(cls, path: str):
-        from nexios.routing import WebsocketRoutes
+        from nexios.routing import WebsocketRoute
 
         """
         Convert the WebSocketConsumer class into a Route that can be registered with the app or router.
@@ -43,7 +43,7 @@ class WebSocketConsumer:
             instance = cls()
             await instance(websocket, **kwargs)
 
-        return WebsocketRoutes(path, handler, middleware=cls.middleware)
+        return WebsocketRoute(path, handler, middleware=cls.middleware)
 
     async def __call__(self, ws: WebSocket) -> None:
         self.websocket = ws

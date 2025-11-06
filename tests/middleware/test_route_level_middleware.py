@@ -8,7 +8,7 @@ import pytest
 
 from nexios import NexiosApp
 from nexios.http import Request, Response
-from nexios.routing import Router, Routes
+from nexios.routing import Router, Route
 from nexios.testclient import TestClient
 
 # ========== Basic Route-Level Middleware Tests ==========
@@ -31,7 +31,7 @@ def test_route_level_middleware_basic(
         executed.append("handler")
         return response.json({"message": "ok"})
 
-    route = Routes("/test", handler, middleware=[route_middleware])
+    route = Route("/test", handler, middleware=[route_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -60,8 +60,8 @@ def test_route_level_middleware_isolated(
     async def handler2(request: Request, response: Response):
         return response.json({"route": "2"})
 
-    route1 = Routes("/route1", handler1, middleware=[route1_middleware])
-    route2 = Routes("/route2", handler2)
+    route1 = Route("/route1", handler1, middleware=[route1_middleware])
+    route2 = Route("/route2", handler2)
 
     app.router.add_route(route1)
     app.router.add_route(route2)
@@ -104,7 +104,7 @@ def test_route_level_middleware_multiple(
         execution_order.append("handler")
         return response.json({"message": "ok"})
 
-    route = Routes("/test", handler, middleware=[middleware_1, middleware_2])
+    route = Route("/test", handler, middleware=[middleware_1, middleware_2])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -157,7 +157,7 @@ def test_route_level_middleware_modifies_request(
         user = request.scope.get("user")
         return response.json(user)
 
-    route = Routes("/test", handler, middleware=[add_user_middleware])
+    route = Route("/test", handler, middleware=[add_user_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -181,7 +181,7 @@ def test_route_level_middleware_modifies_response(
     async def handler(request: Request, response: Response):
         return response.json({"message": "ok"})
 
-    route = Routes("/test", handler, middleware=[add_header_middleware])
+    route = Route("/test", handler, middleware=[add_header_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -218,7 +218,7 @@ def test_route_with_app_middleware(
         execution_order.append("handler")
         return response.json({"message": "ok"})
 
-    route = Routes("/test", handler, middleware=[route_middleware])
+    route = Route("/test", handler, middleware=[route_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -262,7 +262,7 @@ def test_route_with_router_and_app_middleware(
         execution_order.append("handler")
         return response.json({"message": "ok"})
 
-    route = Routes("/test", handler, middleware=[route_middleware])
+    route = Route("/test", handler, middleware=[route_middleware])
     router.add_route(route)
     app.mount_router(router)
 
@@ -297,7 +297,7 @@ def test_route_middleware_validation(
         page = request.query_params.get("page", "1")
         return response.json({"page": int(page)})
 
-    route = Routes("/items", handler, middleware=[validate_query_middleware])
+    route = Route("/items", handler, middleware=[validate_query_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -333,7 +333,7 @@ def test_route_middleware_rate_limiting(
     async def handler(request: Request, response: Response):
         return response.json({"message": "ok"})
 
-    route = Routes("/api/data", handler, middleware=[rate_limit_middleware])
+    route = Route("/api/data", handler, middleware=[rate_limit_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -370,7 +370,7 @@ def test_route_middleware_caching(
         call_count["count"] += 1
         return response.json({"cached": False, "count": call_count["count"]})
 
-    route = Routes("/data", handler, middleware=[cache_middleware])
+    route = Route("/data", handler, middleware=[cache_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -403,7 +403,7 @@ def test_route_middleware_logging(
     async def handler(request: Request, response: Response):
         return response.json({"message": "ok"})
 
-    route = Routes("/test", handler, middleware=[logging_middleware])
+    route = Route("/test", handler, middleware=[logging_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:
@@ -429,7 +429,7 @@ def test_route_middleware_different_methods(
     async def handler(request: Request, response: Response):
         return response.json({"method": request.method})
 
-    route = Routes(
+    route = Route(
         "/test",
         handler,
         methods=["GET", "POST", "PUT"],
@@ -463,7 +463,7 @@ def test_route_middleware_error_handling(
     async def handler(request: Request, response: Response):
         raise ValueError("Route-specific error")
 
-    route = Routes("/test", handler, middleware=[error_handler_middleware])
+    route = Route("/test", handler, middleware=[error_handler_middleware])
     app.router.add_route(route)
 
     with test_client_factory(app) as client:

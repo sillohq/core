@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from nexios.http import Request, Response
 from typing import List, Union, Any
-from nexios.routing.http import Routes, Router
+from nexios.routing.http import Route, Router
 from nexios.routing.grouping import Group
 
 
@@ -110,9 +110,9 @@ class APIDocumentation:
         </html>
         """
 
-    def get_openapi(self, route: Union[Routes, Router, Group, Any], current_prefix: str = "") -> Dict[str, Any]:
+    def get_openapi(self, route: Union[Route, Router, Group, Any], current_prefix: str = "") -> Dict[str, Any]:
         """
-        Recursively extract all Routes with their full paths, automatically add them to OpenAPI spec,
+        Recursively extract all Route with their full paths, automatically add them to OpenAPI spec,
         and return the complete OpenAPI specification as a dictionary.
         """
         # First, collect all routes with their full paths
@@ -120,19 +120,19 @@ class APIDocumentation:
         
         # Process each route and add to OpenAPI spec
         for full_path, route_obj in routes_with_paths:
-            if isinstance(route_obj, Routes) and not getattr(route_obj, 'exclude_from_schema', False):
+            if isinstance(route_obj, Route) and not getattr(route_obj, 'exclude_from_schema', False):
                 self._add_route_to_openapi_spec(full_path, route_obj)
         
         # Return the complete OpenAPI spec as dictionary
         return self.config.openapi_spec.model_dump(by_alias=True, exclude_none=True)
 
-    def _collect_routes_with_paths(self, route: Union[Routes, Router, Group, Any], current_prefix: str = "") -> List[Tuple[str, Routes]]:
+    def _collect_routes_with_paths(self, route: Union[Route, Router, Group, Any], current_prefix: str = "") -> List[Tuple[str, Route]]:
         """
-        Recursively collect all Routes with their full paths, tracking prefixes through nested structures.
+        Recursively collect all Route with their full paths, tracking prefixes through nested structures.
         """
-        routes_with_paths: List[Tuple[str, Routes]] = []
+        routes_with_paths: List[Tuple[str, Route]] = []
 
-        if isinstance(route, Routes):
+        if isinstance(route, Route):
             # Combine current prefix with route's raw_path
             full_path = self._normalize_path(current_prefix + route.raw_path)
             return [(full_path, route)]
@@ -196,7 +196,7 @@ class APIDocumentation:
         
         return path
 
-    def _add_route_to_openapi_spec(self, full_path: str, route: Routes) -> None:
+    def _add_route_to_openapi_spec(self, full_path: str, route: Route) -> None:
         """
         Add a route to the OpenAPI specification without using the decorator pattern.
         """
@@ -282,7 +282,7 @@ class APIDocumentation:
         import re
         return re.sub(r'\{(\w+):[^}]+\}', r'{\1}', path)
 
-    def _build_request_body_spec(self, route: Routes, method: str) -> Optional[RequestBody]:
+    def _build_request_body_spec(self, route: Route, method: str) -> Optional[RequestBody]:
         """
         Build request body specification for the route.
         """
@@ -308,7 +308,7 @@ class APIDocumentation:
             )
         return None
 
-    def _build_responses_spec(self, route: Routes) -> Dict[str, OpenAPIResponse]:
+    def _build_responses_spec(self, route: Route) -> Dict[str, OpenAPIResponse]:
         """
         Build response specifications for the route.
         """
@@ -386,7 +386,7 @@ class APIDocumentation:
             }
         )
 
-    def _build_parameters_spec(self, route: Routes) -> List[Parameter]:
+    def _build_parameters_spec(self, route: Route) -> List[Parameter]:
         """
         Build parameter specifications for the route.
         """
@@ -433,7 +433,7 @@ class APIDocumentation:
         import re
         return re.sub(r'\{(\w+):[^}]+\}', r'{\1}', path)
 
-    def _build_request_body_spec(self, route: Routes, method: str) -> Optional[RequestBody]:
+    def _build_request_body_spec(self, route: Route, method: str) -> Optional[RequestBody]:
         """
         Build request body specification for the route.
         """
@@ -459,7 +459,7 @@ class APIDocumentation:
             )
         return None
 
-    def _build_responses_spec(self, route: Routes) -> Dict[str, OpenAPIResponse]:
+    def _build_responses_spec(self, route: Route) -> Dict[str, OpenAPIResponse]:
         """
         Build response specifications for the route.
         """

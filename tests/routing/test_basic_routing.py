@@ -1,5 +1,5 @@
 """
-Tests for basic Router and Routes functionality
+Tests for basic Router and Route functionality
 """
 
 from typing import Callable
@@ -8,7 +8,7 @@ import pytest
 
 from nexios import NexiosApp
 from nexios.http import Request, Response
-from nexios.routing import Router, Routes
+from nexios.routing import Router, Route
 from nexios.testclient import TestClient
 
 # ========== Basic Router Tests ==========
@@ -34,7 +34,7 @@ def test_router_with_routes():
     async def handler(request: Request, response: Response):
         return response.text("test")
 
-    route = Routes("/test", handler, methods=["GET"])
+    route = Route("/test", handler, methods=["GET"])
     router = Router(routes=[route])
 
     assert len(router.routes) >= 1
@@ -54,7 +54,7 @@ def test_router_with_name():
     assert router.name == "main-router"
 
 
-# ========== Basic Routes Tests ==========
+# ========== Basic Route Tests ==========
 
 
 def test_route_initialization():
@@ -63,7 +63,7 @@ def test_route_initialization():
     async def handler(request: Request, response: Response):
         return response.text("test")
 
-    route = Routes("/test", handler, methods=["GET"])
+    route = Route("/test", handler, methods=["GET"])
 
     assert route.raw_path == "/test"
     assert route.handler is not None
@@ -76,7 +76,7 @@ def test_route_with_name():
     async def handler(request: Request, response: Response):
         return response.text("test")
 
-    route = Routes("/test", handler, methods=["GET"], name="test-route")
+    route = Route("/test", handler, methods=["GET"], name="test-route")
     assert route.name == "test-route"
 
 
@@ -86,7 +86,7 @@ def test_route_with_summary_and_description():
     async def handler(request: Request, response: Response):
         return response.text("test")
 
-    route = Routes(
+    route = Route(
         "/test",
         handler,
         methods=["GET"],
@@ -104,7 +104,7 @@ def test_route_with_tags():
     async def handler(request: Request, response: Response):
         return response.text("test")
 
-    route = Routes("/test", handler, methods=["GET"], tags=["test", "api"])
+    route = Route("/test", handler, methods=["GET"], tags=["test", "api"])
     assert "test" in route.tags
     assert "api" in route.tags
 
@@ -115,7 +115,7 @@ def test_route_deprecated_flag():
     async def handler(request: Request, response: Response):
         return response.text("test")
 
-    route = Routes("/test", handler, methods=["GET"], deprecated=True)
+    route = Route("/test", handler, methods=["GET"], deprecated=True)
     assert route.deprecated is True
 
 
@@ -125,7 +125,7 @@ def test_route_exclude_from_schema():
     async def handler(request: Request, response: Response):
         return response.text("test")
 
-    route = Routes("/test", handler, methods=["GET"], exclude_from_schema=True)
+    route = Route("/test", handler, methods=["GET"], exclude_from_schema=True)
     assert route.exclude_from_schema is True
 
 
@@ -133,13 +133,13 @@ def test_route_exclude_from_schema():
 
 
 def test_router_add_route_with_route_object():
-    """Test adding route using Routes object"""
+    """Test adding route using Route object"""
     router = Router()
 
     async def handler(request: Request, response: Response):
         return response.text("test")
 
-    route = Routes("/test", handler, methods=["GET"])
+    route = Route("/test", handler, methods=["GET"])
     router.add_route(route)
 
     assert route in router.routes
@@ -167,8 +167,8 @@ def test_router_add_multiple_routes():
     async def handler2(request: Request, response: Response):
         return response.text("test2")
 
-    route1 = Routes("/test1", handler1, methods=["GET"])
-    route2 = Routes("/test2", handler2, methods=["POST"])
+    route1 = Route("/test1", handler1, methods=["GET"])
+    route2 = Route("/test2", handler2, methods=["POST"])
 
     router.add_route(route1)
     router.add_route(route2)
@@ -218,14 +218,14 @@ def test_empty_path_converts_to_slash():
     async def handler(request: Request, response: Response):
         return response.text("root")
 
-    route = Routes("", handler, methods=["GET"])
+    route = Route("", handler, methods=["GET"])
     assert route.raw_path == "/"
 
 
 def test_route_handler_must_be_callable():
     """Test that route handler must be callable"""
     with pytest.raises(AssertionError):
-        Routes("/test", "not-callable", methods=["GET"])
+        Route("/test", "not-callable", methods=["GET"])
 
 
 def test_router_with_multiple_prefixes(

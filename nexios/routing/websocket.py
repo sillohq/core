@@ -21,7 +21,7 @@ from ._utils import get_route_path
 from .base import BaseRouter
 
 
-class WebsocketRoutes:
+class WebsocketRoute:
     def __init__(
         self,
         path: str,
@@ -75,15 +75,15 @@ class WebsocketRoutes:
         return f"<WSRoute {self.raw_path}>"
 
 
-class WSRouter(BaseRouter):
+class WebsocketRouter(BaseRouter):
     def __init__(
         self,
         prefix: Optional[str] = None,
         middleware: Optional[List[Any]] = [],
-        routes: Optional[List[WebsocketRoutes]] = [],
+        routes: Optional[List[WebsocketRoute]] = [],
     ):
         self.prefix = prefix
-        self.routes: List[WebsocketRoutes] = routes or []
+        self.routes: List[WebsocketRoute] = routes or []
         self.middleware: List[Callable[[ASGIApp], ASGIApp]] = []
         self.sub_routers: Dict[str, ASGIApp] = {}
         if self.prefix and not self.prefix.startswith("/"):
@@ -94,8 +94,8 @@ class WSRouter(BaseRouter):
         self,
         route: Optional[
             Annotated[
-                WebsocketRoutes,
-                Doc("An instance of the Routes class representing a WebSocket route."),
+                WebsocketRoute,
+                Doc("An instance of the Route class representing a WebSocket route."),
             ]
         ] = None,
         path: Optional[str] = None,
@@ -108,7 +108,7 @@ class WSRouter(BaseRouter):
         This method registers a WebSocket route, allowing the application to handle WebSocket connections.
 
         Args:
-            route: Either a pre-constructed WebsocketRoutes instance or None
+            route: Either a pre-constructed WebsocketRoute instance or None
             path: The URL path for the WebSocket route (required if route is None)
             handler: The WebSocket handler function (required if route is None)
             middleware: List of middleware for this route
@@ -119,7 +119,7 @@ class WSRouter(BaseRouter):
         Example:
             ```python
             # Using with a pre-constructed route
-            route = WebsocketRoutes("/ws/chat", chat_handler)
+            route = WebsocketRoute("/ws/chat", chat_handler)
             app.add_ws_route(route)
 
             # Or directly with path and handler
@@ -129,7 +129,7 @@ class WSRouter(BaseRouter):
         if route is not None:
             self.routes.append(route)
         elif path is not None and handler is not None:
-            self.routes.append(WebsocketRoutes(path, handler, middleware=middleware))
+            self.routes.append(WebsocketRoute(path, handler, middleware=middleware))
         else:
             raise ValueError("Either route or both path and handler must be provided")
 
@@ -174,11 +174,11 @@ class WSRouter(BaseRouter):
         """
         if handler:
             return self.add_ws_route(
-                WebsocketRoutes(path, handler, middleware=middleware)
+                WebsocketRoute(path, handler, middleware=middleware)
             )
 
         def decorator(handler: WsHandlerType) -> WsHandlerType:
-            self.add_ws_route(WebsocketRoutes(path, handler, middleware=middleware))
+            self.add_ws_route(WebsocketRoute(path, handler, middleware=middleware))
             return handler
 
         return decorator
@@ -262,3 +262,6 @@ class WSRouter(BaseRouter):
 
     def __repr__(self) -> str:
         return f"<WSRouter prefix='{self.prefix}' routes={len(self.routes)}>"
+
+WebsocketRoutes = WebsocketRoute #for backwards compatibility
+WSRouter = WebsocketRouter #for backwards compatibility
