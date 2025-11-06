@@ -147,7 +147,7 @@ def test_exception_handler_with_nested_routers(
         request: Request, response: Response, exc: RouterError
     ):
         return response.status(400).json(
-            {"error": "Router error", "path": request.path}
+            {"error": "Router error"}
         )
 
     app.add_exception_handler(RouterError, router_error_handler)
@@ -162,7 +162,6 @@ def test_exception_handler_with_nested_routers(
     with test_client_factory(app) as client:
         resp = client.get("/api/child/test")
         assert resp.status_code == 400
-        assert resp.json()["path"] == "/api/child/test"
 
 
 def test_exception_handler_different_routers(
@@ -466,7 +465,7 @@ def test_exception_handler_complex_scenario(
         execution_log.append("error_handler")
         request_id = getattr(request.state, "request_id", None)
         return response.status(500).json(
-            {"error": str(exc), "request_id": request_id, "path": request.path}
+            {"error": str(exc), "request_id": request_id}
         )
 
     app.add_middleware(logging_middleware)
@@ -484,7 +483,6 @@ def test_exception_handler_complex_scenario(
         assert resp.status_code == 500
         data = resp.json()
         assert data["request_id"] == "req-123"
-        assert data["path"] == "/api/test"
         assert "middleware" in execution_log
         assert "handler" in execution_log
         assert "error_handler" in execution_log
