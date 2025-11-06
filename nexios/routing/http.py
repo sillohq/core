@@ -2373,7 +2373,7 @@ class Router(BaseRouter):
         Args:
             app: The ASGI application (e.g., another Router) to mount.
         """
-        
+        path = app.prefix
         self.routes.append(
             Group(
                 app = app,
