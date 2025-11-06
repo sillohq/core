@@ -157,10 +157,13 @@ class APIDocumentation:
             group_path = route.path or ""
             new_prefix = self._normalize_path(current_prefix + group_path)
             
+            print(route._base_app)
+            
             if hasattr(route, '_base_app') and isinstance(route._base_app, Router):
                 # Don't add the router's prefix since it's already in the group path
                 for sub_route in route._base_app.routes:
                     routes_with_paths.extend(self._collect_routes_with_paths(sub_route, new_prefix))
+
             elif hasattr(route, 'routes'):
                 for sub_route in route.routes:
                     routes_with_paths.extend(self._collect_routes_with_paths(sub_route, new_prefix))

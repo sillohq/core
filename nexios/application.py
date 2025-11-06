@@ -168,8 +168,8 @@ class NexiosApp(object):
         
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)  # type:ignore
         async def serve_openapi(request: "Request", response: "Response"):
-            
-            return response.json(self.openapi.get_openapi(self.router))
+            root_path = request.scope.get("root_path", "")
+            return response.json(self.openapi.get_openapi(self.router,current_prefix=root_path))
 
         @self.get(self.openapi.swagger_url, exclude_from_schema=True)  # type:ignore
         async def swagger_ui(request: "Request", response: "Response"):
