@@ -146,9 +146,7 @@ def test_exception_handler_with_nested_routers(
     async def router_error_handler(
         request: Request, response: Response, exc: RouterError
     ):
-        return response.status(400).json(
-            {"error": "Router error"}
-        )
+        return response.status(400).json({"error": "Router error"})
 
     app.add_exception_handler(RouterError, router_error_handler)
 
@@ -464,9 +462,7 @@ def test_exception_handler_complex_scenario(
     ):
         execution_log.append("error_handler")
         request_id = getattr(request.state, "request_id", None)
-        return response.status(500).json(
-            {"error": str(exc), "request_id": request_id}
-        )
+        return response.status(500).json({"error": str(exc), "request_id": request_id})
 
     app.add_middleware(logging_middleware)
     app.add_exception_handler(ComplexError, complex_error_handler)

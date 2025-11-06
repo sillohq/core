@@ -17,7 +17,6 @@ from typing import (
     Sequence,
     Type,
     Union,
-    cast,
 )
 
 from pydantic import BaseModel
@@ -2289,7 +2288,7 @@ class Router(BaseRouter):
             URLPath: Complete path including all router prefixes
         """
         name_parts = _name.split(".")
-        
+
         # If it's a simple route name (no dots), search directly in current routes
         if len(name_parts) == 1:
             route_name = name_parts[0]
@@ -2298,29 +2297,35 @@ class Router(BaseRouter):
                     route_path = route.url_path_for(_name=route_name, **path_params)
                     return URLPath(path=str(route_path), protocol="http")
             raise ValueError(f"Route '{route_name}' not found in router")
-        
+
         # For nested routes, recursively search through Group objects
         return self._search_nested_route(_name, name_parts, [], **path_params)
-    
-    def _search_nested_route(self, full_name: str, name_parts: List[str], path_segments: List[str], **path_params: Any) -> URLPath:
+
+    def _search_nested_route(
+        self,
+        full_name: str,
+        name_parts: List[str],
+        path_segments: List[str],
+        **path_params: Any,
+    ) -> URLPath:
         """
         Recursively search for a route in nested Group objects.
-        
+
         Args:
             full_name: The original full route name for error messages
             name_parts: Remaining parts of the route name to resolve
             path_segments: Accumulated path segments from parent routers
             **path_params: Path parameters to substitute
-            
+
         Returns:
             URLPath: Complete path including all router prefixes
         """
         if not name_parts:
             raise ValueError(f"Invalid route name format: '{full_name}'")
-            
+
         current_part = name_parts[0]
         remaining_parts = name_parts[1:]
-        
+
         # If this is the last part, it's the route name
         if len(remaining_parts) == 0:
             for route in self.routes:
@@ -2330,17 +2335,20 @@ class Router(BaseRouter):
                     full_path = "/" + "/".join(filter(None, path_segments))
                     return URLPath(path=full_path, protocol="http")
             raise ValueError(f"Route '{current_part}' not found in router")
-        
+
         # Look for a Group with the current part as name
         for route in self.routes:
-            if isinstance(route, Group) and getattr(route, "name", None) == current_part:
+            if (
+                isinstance(route, Group)
+                and getattr(route, "name", None) == current_part
+            ):
                 # Add this Group's path to segments
                 group_path = route.path.strip("/")
                 if group_path:
                     new_path_segments = path_segments + [group_path]
                 else:
                     new_path_segments = path_segments
-                
+
                 # Get the underlying router from the Group
                 underlying_router = getattr(route, "_base_app", None)
                 if isinstance(underlying_router, Router):
@@ -2348,9 +2356,13 @@ class Router(BaseRouter):
                         full_name, remaining_parts, new_path_segments, **path_params
                     )
                 else:
-                    raise ValueError(f"Group '{current_part}' does not contain a Router")
-        
-        raise ValueError(f"Router '{current_part}' not found while building URL for '{full_name}'")
+                    raise ValueError(
+                        f"Group '{current_part}' does not contain a Router"
+                    )
+
+        raise ValueError(
+            f"Router '{current_part}' not found while building URL for '{full_name}'"
+        )
 
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
