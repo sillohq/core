@@ -342,7 +342,7 @@ session_backend = SessionAuthBackend(
 - `authenticate_func`: Function that loads user from session data
 - `user_key`: Session key containing user data
 
-## Protecting Routes with @auth Decorator
+## Protecting Route with @auth Decorator
 
 The `@auth` decorator controls access to route handlers based on authentication status and scopes.
 
@@ -447,7 +447,7 @@ user = SimpleUser(
 
 ### Advanced Permission Scenarios
 
-#### Public Routes with Optional Authentication
+#### Public Route with Optional Authentication
 
 ```python
 @app.get("/public-data")
@@ -613,7 +613,7 @@ app.add_middleware(
 )
 ```
 
-## Protecting Routes with @auth Decorator
+## Protecting Route with @auth Decorator
 
 The `@auth` decorator is used to protect routes by requiring specific authentication types. The authentication type corresponds to the second value returned by the backend's `authenticate` method.
 

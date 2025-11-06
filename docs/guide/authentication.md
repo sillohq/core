@@ -543,7 +543,7 @@ This code defines a custom authentication backend for Nexios, which uses an API 
 - `load_user` is an async method.
 :::
 
-## 🛡️ Protected Routes
+## 🛡️ Protected Route
 Nexios provides a simple way to protect routes with authentication.
 
 ```python

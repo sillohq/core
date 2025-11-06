@@ -11,7 +11,7 @@ head:
 ---
 # Routing
 
-Nexios provides a powerful and flexible routing system that supports using decorators to define routes or using the `Routes` class. The routing system is designed to be intuitive, performant, and extensible, making it easy to define routes and handle requests.
+Nexios provides a powerful and flexible routing system that supports using decorators to define routes or using the `Route` class. The routing system is designed to be intuitive, performant, and extensible, making it easy to define routes and handle requests.
 
 
 
@@ -19,7 +19,7 @@ Nexios provides a powerful and flexible routing system that supports using decor
 ## Using decorators
 Nexios provides a simple and intuitive way to define routes using decorators. You can use the `@app.get`, `@app.post`, `@app.put`, `@app.delete`, `@app.head`, and `@app.options` etc decorators to define routes.
 
-```python [Basic Routes]
+```python [Basic Route]
 from nexios import NexiosApp
 
 app = NexiosApp()
@@ -39,7 +39,7 @@ async def create_item(request, response):
 
 ::: code-group
 
-```python [Basic Routes]
+```python [Basic Route]
 from nexios import NexiosApp
 
 app = NexiosApp()
@@ -98,19 +98,19 @@ async def items_options(request, response):
 
 :::
 
-## Using `Routes` class and `add_route` method
-Nexios also provides a `Routes` class that allows you to define routes in a more structured way.\
+## Using `Route` class and `add_route` method
+Nexios also provides a `Route` class that allows you to define routes in a more structured way.\
 It's especially useful when you have a lot of routes and want to organize them in a logical manner.
 
 ```python
 from nexios import NexiosApp
-from nexios.routing import Routes
+from nexios.routing import Route
 
 app = NexiosApp()
 
 async def get_user_handler(request, response, user_id):
     return response.json({"user_id": user_id})
-route = Routes(
+route = Route(
     path="/users/{user_id:int}",
     handler=get_user_handler,
     methods=["GET"],
@@ -124,13 +124,13 @@ app.add_route(route)
 
 
 
-The `Routes` class is the fundamental building block of Nexios routing. It encapsulates all routing information for an API endpoint, including path handling, validation, OpenAPI documentation, and request processing.
+The `Route` class is the fundamental building block of Nexios routing. It encapsulates all routing information for an API endpoint, including path handling, validation, OpenAPI documentation, and request processing.
 
 ```python
-from nexios.routing import Routes
+from nexios.routing import Route
 
 # Basic route creation
-route = Routes(
+route = Route(
     path="/users/{user_id:int}",
     handler=get_user_handler,
     methods=["GET"],
@@ -140,9 +140,9 @@ route = Routes(
 )
 ```
 
-## `Routes` Class Constructor
+## `Route` Class Constructor
 
-The `Routes` constructor is used to define a route within the Nexios application. It takes several parameters:
+The `Route` constructor is used to define a route within the Nexios application. It takes several parameters:
 
 - **path**: A string that specifies the URL path pattern. It can include path parameters with type annotations, like `/users/{user_id:int}`.
 - **handler**: An optional request handler function that processes incoming requests matching the route.
@@ -162,7 +162,7 @@ The `Routes` constructor is used to define a route within the Nexios application
 - **kwargs**: Additional metadata for the route.
 
 ```python
-Routes(
+Route(
     path: str,                                    # URL path pattern
     handler: Optional[HandlerType] = None,        # Request handler function
     methods: Optional[List[str]] = None,          # HTTP methods (default: ["GET"])
@@ -311,7 +311,7 @@ app.mount_router(admin_router)
 ```python
 Router(
     prefix: Optional[str] = None,                 # URL prefix for all routes
-    routes: Optional[List[Routes]] = None,        # Initial routes to add
+    routes: Optional[List[Route]] = None,        # Initial routes to add
     tags: Optional[List[str]] = None,             # Default tags for all routes
     exclude_from_schema: bool = False,            # Hide all routes from docs
     name: Optional[str] = None                    # Router name
@@ -371,8 +371,8 @@ By default, parameters are strings, but converters allow you to enforce/convert 
 The syntax is:
 
 ```py
-    Routes("/users/{user_id:int}", handler)
-   Routes("/files/{full_path:path}", handler)
+    Route("/users/{user_id:int}", handler)
+   Route("/files/{full_path:path}", handler)
 ```
 **Examples**
 
@@ -916,7 +916,7 @@ def create_crud_routes(resource_name: str, model_class):
         items = await model_class.all()
         return response.json({f"{resource_name}": items})
 
-    routes.append(Routes(
+    routes.append(Route(
         path=f"/{resource_name}",
         handler=list_handler,
         methods=["GET"],
@@ -935,7 +935,7 @@ def create_crud_routes(resource_name: str, model_class):
         item = await model_class.create(**data)
         return response.json(item, status_code=201)
 
-    routes.append(Routes(
+    routes.append(Route(
         path=f"/{resource_name}",
         handler=create_handler,
         methods=["POST"],
@@ -955,7 +955,7 @@ def create_crud_routes(resource_name: str, model_class):
         item = await model_class.get(item_id)
         return response.json(item)
 
-    routes.append(Routes(
+    routes.append(Route(
         path=f"/{resource_name}/{{id:int}}",
         handler=get_handler,
         methods=["GET"],
@@ -1032,7 +1032,7 @@ for route_config in routes_config:
     module = __import__(module_name, fromlist=[handler_name])
     handler = getattr(module, handler_name)
 
-    route = Routes(
+    route = Route(
         path=route_config["path"],
         handler=handler,
         methods=route_config["methods"],
@@ -1046,7 +1046,7 @@ for route_config in routes_config:
 
 ## Route Testing and Debugging
 
-## Getting All Routes
+## Getting All Route
 
 You can inspect all registered routes:
 
@@ -1068,7 +1068,7 @@ You can test route matching:
 
 ```python
 # Test if a route matches a path
-route = Routes("/users/{user_id:int}", handler=None, methods=["GET"])
+route = Route("/users/{user_id:int}", handler=None, methods=["GET"])
 
 # Test matching
 match, params, allowed = route.match("/users/123", "GET")
@@ -1116,7 +1116,7 @@ The `Group` class in Nexios provides a powerful way to organize related routes a
 ### Basic Group Usage
 
 ```python
-from nexios.routing import Group, Routes
+from nexios.routing import Group, Route
 from nexios import NexiosApp
 
 app = NexiosApp()
@@ -1125,9 +1125,9 @@ app = NexiosApp()
 user_group = Group(
     path="/users",
     routes=[
-        Routes(path="/", methods=["GET"], handler=list_users),
-        Routes(path="/{user_id}", methods=["GET"], handler=get_user),
-        Routes(path="/", methods=["POST"], handler=create_user),
+        Route(path="/", methods=["GET"], handler=list_users),
+        Route(path="/{user_id}", methods=["GET"], handler=get_user),
+        Route(path="/", methods=["POST"], handler=create_user),
     ]
 )
 
@@ -1156,8 +1156,8 @@ api_group = Group(
     path="/api",
     middleware=[auth_middleware],
     routes=[
-        Routes(path="/dashboard", methods=["GET"], handler=get_dashboard),
-        Routes(path="/profile", methods=["GET"], handler=get_profile),
+        Route(path="/dashboard", methods=["GET"], handler=get_dashboard),
+        Route(path="/profile", methods=["GET"], handler=get_profile),
     ]
 )
 ```
@@ -1189,7 +1189,7 @@ Groups can be nested to create hierarchical route structures:
 api_v1 = Group(
     path="/v1",
     routes=[
-        Routes(path="/status", methods=["GET"], handler=get_status)
+        Route(path="/status", methods=["GET"], handler=get_status)
     ]
 )
 
@@ -1197,8 +1197,8 @@ auth_group = Group(
     path="/auth",
     middleware=[(auth_middleware, {}, {})],
     routes=[
-        Routes(path="/login", methods=["POST"], handler=login),
-        Routes(path="/register", methods=["POST"], handler=register),
+        Route(path="/login", methods=["POST"], handler=login),
+        Route(path="/register", methods=["POST"], handler=register),
     ]
 )
 

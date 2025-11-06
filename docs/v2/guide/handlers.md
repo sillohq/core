@@ -47,10 +47,10 @@ For more detailed information about request and response objects, see the Reques
 
 ## Alternative Handler Registration
 
-You can also register handlers using the `Routes` class for more control over route configuration:
+You can also register handlers using the `Route` class for more control over route configuration:
 
 ```python
-from nexios.routing import Routes
+from nexios.routing import Route
 from nexios import NexiosApp
 
 app = NexiosApp()
@@ -58,7 +58,7 @@ app = NexiosApp()
 async def dynamic_handler(req, res):
     return "Hello, world!"
 
-app.add_route(Routes("/dynamic", dynamic_handler))  # Handles All Methods by default
+app.add_route(Route("/dynamic", dynamic_handler))  # Handles All Methods by default
 ```
 
 ## Handlers with path params

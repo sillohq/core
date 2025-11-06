@@ -42,7 +42,7 @@ app.register(static_files, prefix="/static")
 ```python
 from nexios import NexiosApp
 from nexios.static import StaticFilesHandler
-from nexios.routing import Routes
+from nexios.routing import Route
 
 app = NexiosApp()
 
@@ -54,7 +54,7 @@ static_handler = StaticFilesHandler(
 
 # Add a route for static files
 app.add_route(
-    Routes(
+    Route(
         "/static/{path:path}",
         static_handler
     )

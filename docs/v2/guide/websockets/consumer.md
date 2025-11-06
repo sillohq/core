@@ -96,7 +96,7 @@ async def send_private_message(self, user_id, message):
 Convert consumers to routes easily:
 
 ```python
-from nexios.routing import WebsocketRoutes
+from nexios.routing import WebsocketRoute
 
 # Register consumer as route
 chat_route = ChatConsumer.as_route("/chat")

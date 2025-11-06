@@ -46,7 +46,7 @@ if __name__ == "__main__":
 3. Open your browser and visit `http://localhost:8000` 🌐
    You should see: `{"message": "Welcome to Nexios!"}`
 
-## 🛣️ Adding More Routes
+## 🛣️ Adding More Route
 
 ```python
 from nexios import Nexios

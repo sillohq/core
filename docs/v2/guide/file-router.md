@@ -106,7 +106,7 @@ Simply define functions named after the HTTP verb you want to handle:
 
 ## Working with Dynamic Parameters
 
-### Single Parameter Routes
+### Single Parameter Route
 ```
 routes/
 └── users/
@@ -206,7 +206,7 @@ configure_templates(
 )
 ```
 
-### Rendering Templates in Routes
+### Rendering Templates in Route
 ```python
 from nexios.file_router.html import render
 

@@ -152,7 +152,7 @@ Use `nexios run --reload` for automatic reloading during development. 🔄
 
 ::: code-group
 
-```python [Basic Routes]
+```python [Basic Route]
 from nexios import NexiosApp
 
 app = NexiosApp()

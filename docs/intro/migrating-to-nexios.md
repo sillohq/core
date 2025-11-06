@@ -25,14 +25,14 @@ async def hello(request, response):
 
 ```python [Nexios (without decorator)]
 from nexios import NexiosApp
-from nexios.routing import Routes
+from nexios.routing import Route
 
 app = NexiosApp()
 
 async def hello(request, response):
     return response.json({"message": "Hello from Nexios"})
 
-route = Routes("/hello", hello, methods=["GET"])
+route = Route("/hello", hello, methods=["GET"])
 app.add_route(route)
 ```
 

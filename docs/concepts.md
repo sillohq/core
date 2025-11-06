@@ -110,7 +110,7 @@ app.add_middleware(SecurityMiddleware())
 
 ### 3. Routing Layer
 
-Routes map HTTP requests to handler functions.
+Route map HTTP requests to handler functions.
 
 ```python
 @app.get("/users/{user_id:int}")

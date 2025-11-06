@@ -123,7 +123,7 @@ Sometimes you want to group routes or apps under a shared path or with middlewar
 
 ```py
 
-from nexios.routing import Router,Group,Routes
+from nexios.routing import Router,Group,Route
 from nexios import NexiosApp
 
 users = Router()
@@ -138,8 +138,8 @@ async def get_user(req, res, id):
 group = Group(
     path="/users",
     routes=[
-        Routes(path="/", methods=["GET"], handler=list_users),
-        Routes(path="/{id}", methods=["GET"], handler=get_user),
+        Route(path="/", methods=["GET"], handler=list_users),
+        Route(path="/{id}", methods=["GET"], handler=get_user),
     ],
 )
 
