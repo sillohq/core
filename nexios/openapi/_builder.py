@@ -28,12 +28,7 @@ if TYPE_CHECKING:
 
 
 class APIDocumentation:
-    _instance = None
-
-    def __new__(cls, *args: list[Any], **kwargs: dict[str, Any]):
-        if not cls._instance:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+  
 
     def __init__(  # type: ignore
         self,
@@ -341,7 +336,4 @@ class APIDocumentation:
         )
 
 
-def get_instance() -> APIDocumentation:
-    if APIDocumentation._instance is None:  # type: ignore
-        APIDocumentation._instance = APIDocumentation()  # type: ignore
-    return APIDocumentation._instance  # type: ignore
+

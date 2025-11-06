@@ -37,7 +37,6 @@ from nexios.events import AsyncEventEmitter
 from nexios.exceptions import NotFoundException
 from nexios.http import Request, Response
 from nexios.http.response import JSONResponse
-from nexios.openapi._builder import get_instance
 from nexios.openapi.models import Parameter, Path, Schema
 from nexios.structs import RouteParam, URLPath
 from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, Send
@@ -535,7 +534,6 @@ class Router(BaseRouter):
             app.add_route(route)
             ```
         """
-        docs = get_instance()
         if not route:
             if (not path) or (not handler):
                 raise ValueError(
@@ -604,22 +602,7 @@ class Router(BaseRouter):
                 + self.root_path
                 + re.sub(r"\{(\w+):\w+\}", r"{\1}", route.raw_path)
             )
-            docs.document_endpoint(
-                path=full_path,
-                method=method,
-                tags=route.tags,  #  type: ignore
-                security=route.security,
-                summary=route.summary or "",
-                description=route.description,
-                request_body=route.request_model,
-                request_content_type=getattr(
-                    route, "request_content_type", "application/json"
-                ),
-                parameters=parameters,  # type:ignore
-                deprecated=route.deprecated,
-                operation_id=route.operation_id,
-                responses=route.responses,
-            )(route.handler)
+            
 
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
