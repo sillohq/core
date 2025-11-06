@@ -173,11 +173,17 @@ class NexiosApp(object):
 
         @self.get(self.openapi.swagger_url, exclude_from_schema=True)  # type:ignore
         async def swagger_ui(request: "Request", response: "Response"):
-            return response.html(self.openapi._generate_swagger_ui())
+            # Get the current mount path from the request scope
+            root_path = request.scope.get("root_path", "")
+            openapi_url = root_path + self.openapi.openapi_url
+            return response.html(self.openapi._generate_swagger_ui(openapi_url))
 
         @self.get(self.openapi.redoc_url, exclude_from_schema=True)  # type:ignore
         async def redoc_ui(request: "Request", response: "Response"):
-            return response.html(self.openapi._generate_redoc_ui())
+            # Get the current mount path from the request scope
+            root_path = request.scope.get("root_path", "")
+            openapi_url = root_path + self.openapi.openapi_url
+            return response.html(self.openapi._generate_redoc_ui(openapi_url))
 
     def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """

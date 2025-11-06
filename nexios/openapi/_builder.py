@@ -50,8 +50,9 @@ class APIDocumentation:
 
     
 
-    def _generate_redoc_ui(self) -> str:
+    def _generate_redoc_ui(self, openapi_url: str = None) -> str:
         """Generate ReDoc UI HTML"""
+        url = openapi_url or self.openapi_url
         return f"""
         <!DOCTYPE html>
         <html>
@@ -71,7 +72,7 @@ class APIDocumentation:
             <div id="redoc"></div>
             <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
             <script>
-                Redoc.init('{self.openapi_url}', {{
+                Redoc.init('{url}', {{
                     scrollYOffset: 50
                 }}, document.getElementById('redoc'))
             </script>
@@ -79,8 +80,9 @@ class APIDocumentation:
         </html>
         """
 
-    def _generate_swagger_ui(self) -> str:
+    def _generate_swagger_ui(self, openapi_url: str = None) -> str:
         """Generate Swagger UI HTML"""
+        url = openapi_url or self.openapi_url
         return f"""
         <!DOCTYPE html>
         <html>
@@ -94,7 +96,7 @@ class APIDocumentation:
             <script>
                 window.onload = function() {{
                     SwaggerUIBundle({{
-                        url: '{self.openapi_url}',
+                        url: '{url}',
                         dom_id: '#swagger-ui',
                         presets: [
                             SwaggerUIBundle.presets.apis,
