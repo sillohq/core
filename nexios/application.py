@@ -396,7 +396,7 @@ class NexiosApp(object):
             WebsocketRoutes(path, handler, middleware=middleware)
         )
 
-    def mount_router(self, router: Router) -> None:
+    def mount_router(self, router: Router,name :Optional[str] = None) -> None:
         """
         Mounts a router and all its routes to the application using the router's prefix.
 
@@ -421,7 +421,7 @@ class NexiosApp(object):
             app.mount_router(user_router)  # Mounts the user routes into the main app
             ```
         """
-        self.router.mount_router(router)
+        self.router.mount_router(router,name = name)
 
     def mount_ws_router(
         self,

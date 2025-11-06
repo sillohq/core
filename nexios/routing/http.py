@@ -2366,7 +2366,7 @@ class Router(BaseRouter):
 
         raise NotFoundException
 
-    def mount_router(self, app: "Router"):
+    def mount_router(self, app: "Router",name :Optional[str]= None):
         """
         Mount an ASGI application (e.g., another Router) using its prefix.
 
@@ -2377,7 +2377,8 @@ class Router(BaseRouter):
         self.routes.append(
             Group(
                 app = app,
-                path = path
+                path = path,
+                name = name
             )
         )
 
