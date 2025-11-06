@@ -115,7 +115,12 @@ class URL:
         return self.scheme in ("https", "wss")
 
     def replace(self, **kwargs: Any) -> URL:
-        if "username" in kwargs or "password" in kwargs or "hostname" in kwargs or "port" in kwargs:
+        if (
+            "username" in kwargs
+            or "password" in kwargs
+            or "hostname" in kwargs
+            or "port" in kwargs
+        ):
             hostname = kwargs.pop("hostname", None)
             port = kwargs.pop("port", self.port)
             username = kwargs.pop("username", self.username)
@@ -172,6 +177,7 @@ class URL:
         if self.password:
             url = str(self.replace(password="********"))
         return f"{self.__class__.__name__}({repr(url)})"
+
 
 class URLPath(str):
     """
