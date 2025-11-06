@@ -2399,7 +2399,7 @@ class Router(BaseRouter):
 
         raise NotFoundException
 
-    def mount_router(self, app: "Router",name :Optional[str]= None):
+    def mount_router(self, app: "Router", name: Optional[str] = None):
         """
         Mount an ASGI application (e.g., another Router) using its prefix.
 
@@ -2407,13 +2407,7 @@ class Router(BaseRouter):
             app: The ASGI application (e.g., another Router) to mount.
         """
         path = app.prefix
-        self.routes.append(
-            Group(
-                app = app,
-                path = path,
-                name = name
-            )
-        )
+        self.routes.append(Group(app=app, path=path, name=name))
 
     def get_all_routes(self) -> List[Routes]:
         """Returns a flat list of all HTTP routes in this router and all nested sub-routers"""
