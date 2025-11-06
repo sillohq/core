@@ -2337,8 +2337,8 @@ class Router(BaseRouter):
 
         for mount_path, sub_app in self.sub_routers.items():
             if url.startswith(mount_path):
-                scope["path"] = url[len(mount_path) :]
-                scope["root_path"] = scope.get("root_path", "") + mount_path
+                # scope["path"] = url[len(mount_path) :]
+                # scope["root_path"] = scope.get("root_path", "") + mount_path
                 await sub_app(scope, receive, send)
 
                 return
@@ -2373,19 +2373,13 @@ class Router(BaseRouter):
         Args:
             app: The ASGI application (e.g., another Router) to mount.
         """
-        path = app.prefix
-
-        if path == "":
-            self.sub_routers[path] = app
-            return
-        if not path.startswith("/"):
-            path = f"/{path}"
-
-        if path in self.sub_routers.keys():
-            raise ValueError("Router with prefix exists !")
-
-        self.sub_routers[path] = app
-        self.root_path = self.root_path + path.strip("/")
+        
+        self.routes.append(
+            Group(
+                app = app,
+                path = path
+            )
+        )
 
         
     def get_all_routes(self) -> List[Routes]:
