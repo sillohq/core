@@ -9,6 +9,7 @@ from typing import (
     Optional,
     Type,
     Union,
+    TYPE_CHECKING
 )
 
 from pydantic import BaseModel
@@ -45,7 +46,8 @@ from .types import (
     WsHandlerType,
     WsMiddlewareType,
 )
-
+if TYPE_CHECKING:
+    from nexios.http import Request,Response
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 logger = create_logger("nexios")
@@ -151,8 +153,7 @@ class NexiosApp(object):
             "bearerAuth", HTTPBearer(type="http", scheme="bearer", bearerFormat="JWT")
         )
 
-        self.docs = APIDocumentation(
-            app=self,
+        self.openapi = APIDocumentation(
             config=self.openapi_config,
             swagger_url=openapi_config.get("swagger_url", "/docs"),
             redoc_url=openapi_config.get("redoc_url", "/redoc"),
@@ -161,6 +162,22 @@ class NexiosApp(object):
 
         self.events = AsyncEventEmitter()
         self.title = title or "Nexios API"
+        self.setup()
+
+    def setup(self):
+        
+        @self.get(self.openapi.openapi_url, exclude_from_schema=True)  # type:ignore
+        async def serve_openapi(request: "Request", response: "Response"):
+            
+            return response.json(self.openapi.get_openapi(self.router))
+
+        @self.get(self.openapi.swagger_url, exclude_from_schema=True)  # type:ignore
+        async def swagger_ui(request: "Request", response: "Response"):
+            return response.html(self.openapi._generate_swagger_ui())
+
+        @self.get(self.openapi.redoc_url, exclude_from_schema=True)  # type:ignore
+        async def redoc_ui(request: "Request", response: "Response"):
+            return response.html(self.openapi._generate_redoc_ui())
 
     def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
@@ -396,7 +413,7 @@ class NexiosApp(object):
             WebsocketRoutes(path, handler, middleware=middleware)
         )
 
-    def mount_router(self, router: Router) -> None:
+    def mount_router(self, router: Router, name: Optional[str] = None) -> None:
         """
         Mounts a router and all its routes to the application using the router's prefix.
 
@@ -421,7 +438,7 @@ class NexiosApp(object):
             app.mount_router(user_router)  # Mounts the user routes into the main app
             ```
         """
-        self.router.mount_router(router)
+        self.router.mount_router(router, name=name)
 
     def mount_ws_router(
         self,

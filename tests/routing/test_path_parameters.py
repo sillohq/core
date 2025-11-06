@@ -185,7 +185,7 @@ def test_url_for_on_router(test_client_factory: Callable[[NexiosApp], TestClient
     async def get_product(request: Request, response: Response, product_id: str):
         return response.json({"product_id": product_id})
 
-    app.mount_router(router)
+    app.mount_router(router, name="api")
 
     with test_client_factory(app) as client:
         url = app.url_for("api.get-product", product_id="abc")

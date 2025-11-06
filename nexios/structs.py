@@ -31,15 +31,15 @@ class URL:
     def __init__(
         self,
         url: str = "",
-        scope: typing.Optional[Scope] = None,
-        **components: typing.Any,
+        scope: Scope | None = None,
+        **components: Any,
     ) -> None:
         if scope is not None:
             assert not url, 'Cannot set both "url" and "scope".'
             assert not components, 'Cannot set both "scope" and "**components".'
             scheme = scope.get("scheme", "http")
             server = scope.get("server", None)
-            path = scope.get("root_path", "") + scope["path"]
+            path = scope["path"]
             query_string = scope.get("query_string", b"")
 
             host_header = None
@@ -86,16 +86,6 @@ class URL:
     def path(self) -> str:
         return self.components.path
 
-    @path.setter
-    def path(self, value: str) -> None:
-        self._url = URL(
-            scheme=self.scheme,
-            netloc=self.netloc,
-            path=value,
-            query=self.query,
-            fragment=self.fragment,
-        ).components.geturl()
-
     @property
     def query(self) -> str:
         return self.components.query
@@ -105,34 +95,26 @@ class URL:
         return self.components.fragment
 
     @property
-    def username(self) -> typing.Union[None, str]:
+    def username(self) -> None | str:
         return self.components.username
 
     @property
-    def password(self) -> typing.Union[None, str]:
+    def password(self) -> None | str:
         return self.components.password
 
     @property
-    def hostname(self) -> typing.Union[None, str]:
+    def hostname(self) -> None | str:
         return self.components.hostname
 
     @property
-    def port(self) -> typing.Optional[int]:
+    def port(self) -> int | None:
         return self.components.port
 
     @property
     def is_secure(self) -> bool:
         return self.scheme in ("https", "wss")
 
-    @property
-    def params(self):
-        return
-
-    @params.setter
-    def params(self, value: str):
-        return value
-
-    def replace(self, **kwargs: typing.Any) -> "URL":
+    def replace(self, **kwargs: Any) -> URL:
         if (
             "username" in kwargs
             or "password" in kwargs
@@ -165,19 +147,17 @@ class URL:
         components = self.components._replace(**kwargs)
         return self.__class__(components.geturl())
 
-    def include_query_params(self, **kwargs: typing.Any) -> "URL":
+    def include_query_params(self, **kwargs: Any) -> URL:
         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
         params.update({str(key): str(value) for key, value in kwargs.items()})
         query = urlencode(params.multi_items())
         return self.replace(query=query)
 
-    def replace_query_params(self, **kwargs: typing.Any) -> "URL":
+    def replace_query_params(self, **kwargs: Any) -> URL:
         query = urlencode([(str(key), str(value)) for key, value in kwargs.items()])
         return self.replace(query=query)
 
-    def remove_query_params(
-        self, keys: typing.Union[str, typing.Sequence[str]]
-    ) -> "URL":
+    def remove_query_params(self, keys: str | Sequence[str]) -> URL:
         if isinstance(keys, str):
             keys = [keys]
         params = MultiDict(parse_qsl(self.query, keep_blank_values=True))
@@ -186,7 +166,7 @@ class URL:
         query = urlencode(params.multi_items())
         return self.replace(query=query)
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return str(self) == str(other)
 
     def __str__(self) -> str:

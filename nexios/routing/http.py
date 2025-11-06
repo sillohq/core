@@ -17,7 +17,6 @@ from typing import (
     Sequence,
     Type,
     Union,
-    cast,
 )
 
 from pydantic import BaseModel
@@ -43,6 +42,7 @@ from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, S
 
 from ._utils import get_route_path
 from .base import BaseRoute, BaseRouter
+from .grouping import Group
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
@@ -2271,35 +2271,81 @@ class Router(BaseRouter):
             URLPath: Complete path including all router prefixes
         """
         name_parts = _name.split(".")
-        current_router = cast(Router, self)
-        path_segments: List[str] = []
 
-        # First collect all router prefixes
-        for part in name_parts[:-1]:
-            found = False
-            for mount_path, sub_router in current_router.sub_routers.items():
-                if mount_path.strip("/") == part:
-                    path_segments.append(mount_path.strip("/"))
-                    current_router = cast(Router, sub_router)
-                    found = True
-                    break
-            if not found:
-                raise ValueError(
-                    f"Router '{part}' not found while building URL for '{_name}'"
-                )
+        # If it's a simple route name (no dots), search directly in current routes
+        if len(name_parts) == 1:
+            route_name = name_parts[0]
+            for route in self.routes:
+                if getattr(route, "name", None) == route_name:
+                    route_path = route.url_path_for(_name=route_name, **path_params)
+                    return URLPath(path=str(route_path), protocol="http")
+            raise ValueError(f"Route '{route_name}' not found in router")
 
-        route_name = name_parts[-1]
-        for route in current_router.routes:
-            if getattr(route, "name", None) is None:
-                continue
-            if getattr(route, "name", None) == route_name:
-                route_path = route.url_path_for(_name=route_name, **path_params)
-                path_segments.append(route_path.strip("/"))
+        # For nested routes, recursively search through Group objects
+        return self._search_nested_route(_name, name_parts, [], **path_params)
 
-                full_path = "/" + "/".join(filter(None, path_segments))
-                return URLPath(path=full_path, protocol="http")
+    def _search_nested_route(
+        self,
+        full_name: str,
+        name_parts: List[str],
+        path_segments: List[str],
+        **path_params: Any,
+    ) -> URLPath:
+        """
+        Recursively search for a route in nested Group objects.
 
-        raise ValueError(f"Route '{route_name}' not found in router")
+        Args:
+            full_name: The original full route name for error messages
+            name_parts: Remaining parts of the route name to resolve
+            path_segments: Accumulated path segments from parent routers
+            **path_params: Path parameters to substitute
+
+        Returns:
+            URLPath: Complete path including all router prefixes
+        """
+        if not name_parts:
+            raise ValueError(f"Invalid route name format: '{full_name}'")
+
+        current_part = name_parts[0]
+        remaining_parts = name_parts[1:]
+
+        # If this is the last part, it's the route name
+        if len(remaining_parts) == 0:
+            for route in self.routes:
+                if getattr(route, "name", None) == current_part:
+                    route_path = route.url_path_for(_name=current_part, **path_params)
+                    path_segments.append(str(route_path).strip("/"))
+                    full_path = "/" + "/".join(filter(None, path_segments))
+                    return URLPath(path=full_path, protocol="http")
+            raise ValueError(f"Route '{current_part}' not found in router")
+
+        # Look for a Group with the current part as name
+        for route in self.routes:
+            if (
+                isinstance(route, Group)
+                and getattr(route, "name", None) == current_part
+            ):
+                # Add this Group's path to segments
+                group_path = route.path.strip("/")
+                if group_path:
+                    new_path_segments = path_segments + [group_path]
+                else:
+                    new_path_segments = path_segments
+
+                # Get the underlying router from the Group
+                underlying_router = getattr(route, "_base_app", None)
+                if isinstance(underlying_router, Router):
+                    return underlying_router._search_nested_route(
+                        full_name, remaining_parts, new_path_segments, **path_params
+                    )
+                else:
+                    raise ValueError(
+                        f"Group '{current_part}' does not contain a Router"
+                    )
+
+        raise ValueError(
+            f"Router '{current_part}' not found while building URL for '{full_name}'"
+        )
 
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
@@ -2319,8 +2365,8 @@ class Router(BaseRouter):
 
         for mount_path, sub_app in self.sub_routers.items():
             if url.startswith(mount_path):
-                scope["path"] = url[len(mount_path) :]
-                scope["root_path"] = scope.get("root_path", "") + mount_path
+                # scope["path"] = url[len(mount_path) :]
+                # scope["root_path"] = scope.get("root_path", "") + mount_path
                 await sub_app(scope, receive, send)
 
                 return
@@ -2348,7 +2394,7 @@ class Router(BaseRouter):
 
         raise NotFoundException
 
-    def mount_router(self, app: "Router"):
+    def mount_router(self, app: "Router", name: Optional[str] = None):
         """
         Mount an ASGI application (e.g., another Router) using its prefix.
 
@@ -2356,18 +2402,7 @@ class Router(BaseRouter):
             app: The ASGI application (e.g., another Router) to mount.
         """
         path = app.prefix
-
-        if path == "":
-            self.sub_routers[path] = app
-            return
-        if not path.startswith("/"):
-            path = f"/{path}"
-
-        if path in self.sub_routers.keys():
-            raise ValueError("Router with prefix exists !")
-
-        self.sub_routers[path] = app
-        self.root_path = self.root_path + path.strip("/")
+        self.routes.append(Group(app=app, path=path, name=name))
 
     def get_all_routes(self) -> List[Routes]:
         """Returns a flat list of all HTTP routes in this router and all nested sub-routers"""
@@ -2404,4 +2439,4 @@ class Router(BaseRouter):
             prefix: The path prefix under which the app will be registered.
         """
 
-        self.sub_routers[prefix] = app
+        self.add_route(Group(app=app, path=prefix))
