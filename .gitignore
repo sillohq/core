@@ -50,3 +50,6 @@ docs/site
 .DS_Store
 coverage.xml
 testapp/
+
+.pdm
+.pdm.toml
