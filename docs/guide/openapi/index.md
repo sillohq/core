@@ -233,28 +233,25 @@ async def update_user(request, response, user_id: int):
 Document path, query, and header parameters explicitly:
 
 ```python
-from nexios.openapi.models import Parameter
+from nexios.openapi.models import Query, Header
 
 @app.get(
     "/users",
     parameters=[
-        Parameter(
+        Query(
             name="limit",
-            in_="query",
             description="Maximum number of users to return",
             required=False,
             schema={"type": "integer", "minimum": 1, "maximum": 100, "default": 20}
         ),
-        Parameter(
+        Query(
             name="offset", 
-            in_="query",
             description="Number of users to skip for pagination",
             required=False,
             schema={"type": "integer", "minimum": 0, "default": 0}
         ),
-        Parameter(
+        Header(
             name="X-Request-ID",
-            in_="header", 
             description="Unique identifier for request tracking",
             required=False,
             schema={"type": "string", "format": "uuid"}

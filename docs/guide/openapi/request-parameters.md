@@ -2,14 +2,24 @@
 
 Request parameters make your API flexible, searchable, and powerful. Nexios supports comprehensive parameter documentation for path parameters, query parameters, headers, and cookies. This guide shows how to document each type effectively in your OpenAPI specification.
 
+> **Important**: Always use specific parameter types (`Path`, `Query`, `Header`, `Cookie`) instead of the generic `Parameter` type. This ensures proper OpenAPI specification generation and better type safety.
+
+## 📦 Imports
+
+Before using request parameters, import the specific parameter types you need:
+
+```python
+from nexios.openapi.models import Path, Query, Header, Cookie
+```
+
 ## 🎯 Types of Request Parameters
 
 Nexios supports four main parameter types:
 
-- **Path Parameters**: Part of the URL path (e.g., `/users/{user_id}`)
-- **Query Parameters**: URL query string parameters (e.g., `?limit=10&page=2`)
-- **Header Parameters**: HTTP headers (e.g., `Authorization`, `X-API-Key`)
-- **Cookie Parameters**: HTTP cookies (e.g., `session_id`)
+- **Path Parameters**: Part of the URL path (e.g., `/users/{user_id}`) - use `Path`
+- **Query Parameters**: URL query string parameters (e.g., `?limit=10&page=2`) - use `Query`
+- **Header Parameters**: HTTP headers (e.g., `Authorization`, `X-API-Key`) - use `Header`
+- **Cookie Parameters**: HTTP cookies (e.g., `session_id`) - use `Cookie`
 
 ## 🛣️ Path Parameters
 
@@ -17,6 +27,7 @@ Path parameters are automatically detected and documented by Nexios when you use
 
 ```python
 from nexios import NexiosApp
+from nexios.openapi.models import Path, Query, Header, Cookie
 from typing import Optional
 
 app = NexiosApp()
@@ -82,48 +93,31 @@ async def get_file_by_path(request, response, file_path: str):
 Query parameters provide filtering, sorting, pagination, and search capabilities. Document them explicitly using the `parameters` argument:
 
 ```python
-from nexios.openapi.models import Parameter
+from nexios.openapi.models import Query
 
 @app.get(
     "/users",
     parameters=[
-        Parameter(
+        Query(
             name="limit",
-            in_="query",
             description="Maximum number of users to return",
             required=False,
-            schema={
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 100,
-                "default": 20
-            }
+            schema={"type": "integer", "minimum": 1, "maximum": 100, "default": 20}
         ),
-        Parameter(
+        Query(
             name="offset",
-            in_="query", 
             description="Number of users to skip for pagination",
             required=False,
-            schema={
-                "type": "integer",
-                "minimum": 0,
-                "default": 0
-            }
+            schema={"type": "integer", "minimum": 0, "default": 0}
         ),
-        Parameter(
+        Query(
             name="search",
-            in_="query",
-            description="Search term for filtering users by name or email",
+            description="Search term to filter users by name or email",
             required=False,
-            schema={
-                "type": "string",
-                "minLength": 2,
-                "maxLength": 50
-            }
+            schema={"type": "string", "minLength": 2}
         ),
-        Parameter(
+        Query(
             name="status",
-            in_="query",
             description="Filter users by account status",
             required=False,
             schema={
@@ -132,21 +126,19 @@ from nexios.openapi.models import Parameter
                 "default": "active"
             }
         ),
-        Parameter(
+        Query(
             name="sort_by",
-            in_="query",
-            description="Field to sort by",
+            description="Field to sort users by",
             required=False,
             schema={
                 "type": "string",
-                "enum": ["created_at", "username", "email", "last_login"],
+                "enum": ["name", "email", "created_at", "last_login"],
                 "default": "created_at"
             }
         ),
-        Parameter(
+        Query(
             name="sort_order",
-            in_="query",
-            description="Sort order",
+            description="Sort order for results",
             required=False,
             schema={
                 "type": "string",
@@ -188,9 +180,8 @@ async def list_users(request, response):
 @app.get(
     "/products",
     parameters=[
-        Parameter(
+        Query(
             name="categories",
-            in_="query",
             description="Filter by multiple categories",
             required=False,
             schema={
@@ -202,9 +193,8 @@ async def list_users(request, response):
             style="form",
             explode=True  # ?categories=electronics&categories=books
         ),
-        Parameter(
+        Query(
             name="price_range",
-            in_="query",
             description="Price range filter (min,max)",
             required=False,
             schema={
@@ -234,9 +224,8 @@ async def list_products(request, response):
 @app.get(
     "/articles",
     parameters=[
-        Parameter(
+        Query(
             name="published",
-            in_="query",
             description="Filter by publication status",
             required=False,
             schema={
@@ -244,9 +233,8 @@ async def list_products(request, response):
                 "default": True
             }
         ),
-        Parameter(
+        Query(
             name="featured",
-            in_="query",
             description="Show only featured articles",
             required=False,
             schema={"type": "boolean"}
@@ -268,32 +256,25 @@ async def list_articles(request, response):
 Headers are used for authentication, content negotiation, client information, and custom metadata:
 
 ```python
+from nexios.openapi.models import Header
+
 @app.get(
     "/users/me",
     parameters=[
-        Parameter(
+        Header(
             name="Authorization",
-            in_="header",
             description="Bearer token for authentication",
             required=True,
-            schema={
-                "type": "string",
-                "pattern": "^Bearer .+$"
-            }
+            schema={"type": "string", "pattern": "^Bearer .+"}
         ),
-        Parameter(
+        Header(
             name="X-Request-ID",
-            in_="header",
-            description="Unique identifier for request tracking",
+            description="Unique identifier for request tracing",
             required=False,
-            schema={
-                "type": "string",
-                "format": "uuid"
-            }
+            schema={"type": "string", "format": "uuid"}
         ),
-        Parameter(
+        Header(
             name="Accept-Language",
-            in_="header",
             description="Preferred language for response",
             required=False,
             schema={
@@ -302,15 +283,11 @@ Headers are used for authentication, content negotiation, client information, an
                 "default": "en"
             }
         ),
-        Parameter(
+        Header(
             name="X-Client-Version",
-            in_="header",
             description="Client application version",
             required=False,
-            schema={
-                "type": "string",
-                "pattern": "^\\d+\\.\\d+\\.\\d+$"
-            }
+            schema={"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"}
         )
     ],
     summary="Get current user profile"
@@ -328,56 +305,26 @@ async def get_current_user(request, response):
         "language": language,
         "client_version": client_version
     })
-
-# Content negotiation headers
-@app.get(
-    "/data/export",
-    parameters=[
-        Parameter(
-            name="Accept",
-            in_="header",
-            description="Desired response format",
-            required=False,
-            schema={
-                "type": "string",
-                "enum": ["application/json", "application/xml", "text/csv"],
-                "default": "application/json"
-            }
-        )
-    ]
-)
-async def export_data(request, response):
-    accept_header = request.headers.get('Accept', 'application/json')
-    
-    if accept_header == 'text/csv':
-        response.headers['Content-Type'] = 'text/csv'
-        return response.text("id,name,email\n1,John,john@example.com")
-    
-    return response.json({"data": [{"id": 1, "name": "John", "email": "john@example.com"}]})
 ```
 
 ## 🍪 Cookie Parameters
 
-Document cookie-based parameters for session management and user preferences:
+Cookie parameters are used for session management, user preferences, and tracking:
 
 ```python
+from nexios.openapi.models import Cookie
+
 @app.get(
     "/dashboard",
     parameters=[
-        Parameter(
+        Cookie(
             name="session_id",
-            in_="cookie",
             description="User session identifier",
             required=True,
-            schema={
-                "type": "string",
-                "minLength": 32,
-                "maxLength": 128
-            }
+            schema={"type": "string", "format": "uuid"}
         ),
-        Parameter(
+        Cookie(
             name="theme",
-            in_="cookie",
             description="User interface theme preference",
             required=False,
             schema={
@@ -386,15 +333,11 @@ Document cookie-based parameters for session management and user preferences:
                 "default": "auto"
             }
         ),
-        Parameter(
+        Cookie(
             name="timezone",
-            in_="cookie",
-            description="User timezone for date formatting",
+            description="User timezone for date/time display",
             required=False,
-            schema={
-                "type": "string",
-                "default": "UTC"
-            }
+            schema={"type": "string", "default": "UTC"}
         )
     ],
     summary="Get user dashboard"
@@ -406,7 +349,9 @@ async def get_dashboard(request, response):
     timezone = request.cookies.get('timezone', 'UTC')
     
     if not session_id:
-        return response.json({"error": "Session required"}, status=401)
+        return response.json({
+            "error": "Session required"
+        }, status=401)
     
     return response.json({
         "dashboard": {"widgets": []},
@@ -417,7 +362,6 @@ async def get_dashboard(request, response):
     })
 ```
 
-## 🔧 Parameter Validation and Examples
 
 ### Complex Parameter Schemas
 
@@ -425,9 +369,8 @@ async def get_dashboard(request, response):
 @app.get(
     "/analytics/reports",
     parameters=[
-        Parameter(
+        Query(
             name="date_range",
-            in_="query",
             description="Date range for the report",
             required=True,
             schema={
@@ -436,9 +379,8 @@ async def get_dashboard(request, response):
                 "example": "2024-01-01:2024-01-31"
             }
         ),
-        Parameter(
+        Query(
             name="metrics",
-            in_="query",
             description="Metrics to include in the report",
             required=True,
             schema={
@@ -454,9 +396,8 @@ async def get_dashboard(request, response):
             style="form",
             explode=True
         ),
-        Parameter(
+        Query(
             name="granularity",
-            in_="query",
             description="Data granularity",
             required=False,
             schema={
@@ -499,16 +440,14 @@ Document parameters that depend on each other:
 @app.get(
     "/search",
     parameters=[
-        Parameter(
+        Query(
             name="q",
-            in_="query",
             description="Search query",
             required=False,
             schema={"type": "string", "minLength": 2}
         ),
-        Parameter(
+        Query(
             name="category",
-            in_="query",
             description="Search within specific category",
             required=False,
             schema={
@@ -516,9 +455,8 @@ Document parameters that depend on each other:
                 "enum": ["products", "articles", "users"]
             }
         ),
-        Parameter(
+        Query(
             name="advanced",
-            in_="query",
             description="Enable advanced search (requires 'q' parameter)",
             required=False,
             schema={"type": "boolean", "default": False}
@@ -560,20 +498,20 @@ async def search(request, response):
 ```python
 # Use consistent naming patterns
 @app.get("/users", parameters=[
-    Parameter(name="user_id", in_="query"),      # snake_case for multi-word
-    Parameter(name="limit", in_="query"),        # lowercase for single word
-    Parameter(name="sort_by", in_="query"),      # descriptive names
-    Parameter(name="X-API-Key", in_="header"),   # X- prefix for custom headers
+    Query(name="user_id"),                       # snake_case for multi-word
+    Query(name="limit"),                         # lowercase for single word
+    Query(name="sort_by"),                       # descriptive names
+    Header(name="X-API-Key"),                    # X- prefix for custom headers
 ])
 
 # Avoid ambiguous names
 # ❌ Bad
-Parameter(name="id", in_="query")              # Which ID?
-Parameter(name="type", in_="query")            # Type of what?
+Query(name="id")                               # Which ID?
+Query(name="type")                             # Type of what?
 
 # ✅ Good  
-Parameter(name="user_id", in_="query")         # Clear and specific
-Parameter(name="content_type", in_="query")    # Descriptive
+Query(name="user_id")                          # Clear and specific
+Query(name="content_type")                     # Descriptive
 ```
 
 ### Parameter Documentation
@@ -582,9 +520,8 @@ Parameter(name="content_type", in_="query")    # Descriptive
 @app.get(
     "/orders",
     parameters=[
-        Parameter(
+        Query(
             name="status",
-            in_="query",
             description="Filter orders by status. Use 'pending' for new orders, 'processing' for orders being fulfilled, 'shipped' for dispatched orders, and 'delivered' for completed orders.",
             required=False,
             schema={

@@ -123,7 +123,8 @@ export default defineConfig({
   },
  
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/./logo.png' }],
+    
+    ['link', { rel: 'icon', href: '/favicon.ico' }],
     ['meta', { name: 'theme-color', content: '#ff7e17' }],
     ['meta', { property: 'og:title', content: "Nexios - Python Web Framework" }],
     ['meta', { property: 'og:description', content: "Nexios is a modern, fast, and secure web framework for Python. It is designed to be easy to use and understand, while also being powerful and flexible." }],

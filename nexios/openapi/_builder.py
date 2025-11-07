@@ -22,6 +22,10 @@ from .models import (
     Parameter,
     PathItem,
     RequestBody,
+    Path,
+    Query,
+    Header,
+    Cookie
 )
 from .models import Response as OpenAPIResponse
 from .models import (
@@ -234,46 +238,9 @@ class APIDocumentation:
             
             setattr(self.config.openapi_spec.paths[openapi_path], method.lower(), operation)
             
-            # Add schemas to components if needed
-            if route.request_model:
-                self.add_schema(route.request_model)
+           
             
-            if route.responses:
-                self._add_response_schemas(route.responses)
             
-            # Prepare response specifications
-            responses_spec = self._build_responses_spec(route)
-            
-            # Prepare parameters (path, query, header)
-            parameters = self._build_parameters_spec(route)
-            
-            # Create the operation object
-            operation = Operation(
-                summary=route.summary or f"{method.upper()} {openapi_path}",
-                description=route.description,
-                responses=responses_spec,
-                tags=route.tags or [],
-                parameters=parameters,
-                requestBody=request_body_spec,
-                security=route.security,
-                operationId=route.operation_id or f"{method.lower()}_{openapi_path.replace('/', '_').replace('{', '').replace('}', '')}",
-                deprecated=route.deprecated,
-                externalDocs=getattr(route, 'external_docs', None),
-            )
-            
-            # Add operation to the OpenAPI specification
-            if openapi_path not in self.config.openapi_spec.paths:
-                self.config.openapi_spec.paths[openapi_path] = PathItem()
-            
-            setattr(self.config.openapi_spec.paths[openapi_path], method.lower(), operation)
-            
-            # Add schemas to components if needed
-            if route.request_model:
-                self.add_schema(route.request_model)
-            
-            if route.responses:
-                self._add_response_schemas(route.responses)
-
     def _convert_path_to_openapi_format(self, path: str) -> str:
         """
         Convert Nexios path format to OpenAPI format.
@@ -392,12 +359,11 @@ class APIDocumentation:
         """
         parameters = []
         
-        # Add path parameters
+        # Add path parameters using the specific Path type
         for param_name in route.param_names:
             parameters.append(
-                Parameter(
+                Path(
                     name=param_name,
-                    in_="path",
                     required=True,
                     schema=Schema(type="string")
                 )

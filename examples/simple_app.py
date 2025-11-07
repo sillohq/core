@@ -42,7 +42,7 @@ async def get_user(request: Request, response: Response):
 @app.post("/users")
 async def create_user(request: Request, response: Response):
     """Create a new user"""
-    user_data = request.json()
+    user_data = request.json
     return response.json(
         {"message": "User created successfully", "user": user_data}, status=201
     )
