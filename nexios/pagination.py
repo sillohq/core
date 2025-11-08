@@ -285,7 +285,6 @@ class CursorPagination(BasePaginationStrategy):
     def decode_cursor(self, cursor: str) -> Dict[str, Any]:
         try:
             decoded = base64.b64decode(cursor).decode("utf-8")
-            print(decoded)
             return json.loads(decoded)
         except (json.JSONDecodeError, UnicodeDecodeError):
             raise InvalidCursorError("Invalid cursor format")

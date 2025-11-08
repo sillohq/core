@@ -161,7 +161,6 @@ class APIDocumentation:
             group_path = route.path or ""
             new_prefix = self._normalize_path(current_prefix + group_path)
             
-            print(route._base_app)
             
             if hasattr(route, '_base_app') and isinstance(route._base_app, Router):
                 # Don't add the router's prefix since it's already in the group path
