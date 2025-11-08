@@ -56,7 +56,7 @@ python --version
 pip install nexios
 
 # Or install with specific version
-pip install nexios==3.0.0b1
+pip install nexios==3.2.0
 ```
 
 ## Utility-First Features ✨
@@ -153,7 +153,7 @@ Nexios thrives on community contributions and collaboration. We believe the best
 - **Help Others**: Answer questions and help fellow developers
 
 ### Community Resources
-- 📚 **Documentation**: [nexios-docs.netlify.app](https://nexios-docs.netlify.app)
+- 📚 **Documentation**: [https://nexios-labs.github.io/nexios](https://nexios-labs.github.io/nexios)
 - 🛠️ **Community Extensions**: [nexios-contrib package](https://github.com/nexios-labs/nexios-contrib)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
 - 🐛 **Issues**: [Report bugs and request features](https://github.com/nexios-labs/nexios/issues)
