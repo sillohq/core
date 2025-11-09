@@ -206,7 +206,6 @@ export default defineConfig({
             { text: 'Background Tasks', link: '/community/integrations/tasks' },
           ]
         },
-        { text: 'FAQ', link: '/community/faq' },
         { text: "Contribution Guide", link: "/community/contribution-guide" },
         { text: 'Discussions', link: 'https://github.com/orgs/nexios-labs/discussions' },
         { text: 'Team', link: '/team' },
