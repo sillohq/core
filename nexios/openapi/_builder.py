@@ -152,8 +152,9 @@ class APIDocumentation:
             # Build new prefix by adding group's path
             group_path = route.path or ""
             new_prefix = self._normalize_path(current_prefix + group_path)
-
-            if hasattr(route, "_base_app") and isinstance(route._base_app, Router):
+            
+            
+            if hasattr(route, '_base_app') and isinstance(route._base_app, Router):
                 # Don't add the router's prefix since it's already in the group path
                 for sub_route in route._base_app.routes:
                     routes_with_paths.extend(
