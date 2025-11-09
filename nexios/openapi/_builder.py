@@ -1,31 +1,20 @@
 from __future__ import annotations
 
-from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Union
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple,Optional, Union
 
 from pydantic import BaseModel
 
-from nexios.http import Request, Response
-from typing import List, Union, Any
-from nexios.routing.http import Route, Router
 from nexios.routing.grouping import Group
-
-
+from nexios.routing.http import Route, Router
 
 from .config import OpenAPIConfig
 from .models import (
-    Components,
-    ExternalDocumentation,
     MediaType,
     Operation,
     Parameter,
+    Path,
     PathItem,
     RequestBody,
-    Path,
-    Query,
-    Header,
-    Cookie
 )
 from .models import Response as OpenAPIResponse
 from .models import (
@@ -33,11 +22,10 @@ from .models import (
 )
 
 if TYPE_CHECKING:
-    from nexios import NexiosApp
+    pass
 
 
 class APIDocumentation:
-  
 
     def __init__(  # type: ignore
         self,
@@ -50,9 +38,6 @@ class APIDocumentation:
         self.swagger_url = swagger_url
         self.redoc_url = redoc_url
         self.openapi_url = openapi_url
-        
-
-    
 
     def _generate_redoc_ui(self, openapi_url: str = None) -> str:
         """Generate ReDoc UI HTML"""
@@ -114,23 +99,29 @@ class APIDocumentation:
         </html>
         """
 
-    def get_openapi(self, route: Union[Route, Router, Group, Any], current_prefix: str = "") -> Dict[str, Any]:
+    def get_openapi(
+        self, route: Union[Route, Router, Group, Any], current_prefix: str = ""
+    ) -> Dict[str, Any]:
         """
         Recursively extract all Route with their full paths, automatically add them to OpenAPI spec,
         and return the complete OpenAPI specification as a dictionary.
         """
         # First, collect all routes with their full paths
         routes_with_paths = self._collect_routes_with_paths(route, current_prefix)
-        
+
         # Process each route and add to OpenAPI spec
         for full_path, route_obj in routes_with_paths:
-            if isinstance(route_obj, Route) and not getattr(route_obj, 'exclude_from_schema', False):
+            if isinstance(route_obj, Route) and not getattr(
+                route_obj, "exclude_from_schema", False
+            ):
                 self._add_route_to_openapi_spec(full_path, route_obj)
-        
+
         # Return the complete OpenAPI spec as dictionary
         return self.config.openapi_spec.model_dump(by_alias=True, exclude_none=True)
 
-    def _collect_routes_with_paths(self, route: Union[Route, Router, Group, Any], current_prefix: str = "") -> List[Tuple[str, Route]]:
+    def _collect_routes_with_paths(
+        self, route: Union[Route, Router, Group, Any], current_prefix: str = ""
+    ) -> List[Tuple[str, Route]]:
         """
         Recursively collect all Route with their full paths, tracking prefixes through nested structures.
         """
@@ -145,37 +136,44 @@ class APIDocumentation:
             # For routers, only add prefix if it's not already included in current_prefix
             # This handles the case where router is mounted via mount_router (which creates a Group)
             router_prefix = route.prefix or ""
-            
+
             # Check if the router's prefix is already in the current prefix
             if router_prefix and current_prefix.endswith(router_prefix):
                 new_prefix = current_prefix  # Don't add prefix again
             else:
                 new_prefix = self._normalize_path(current_prefix + router_prefix)
-            
+
             for sub_route in route.routes:
-                routes_with_paths.extend(self._collect_routes_with_paths(sub_route, new_prefix))
+                routes_with_paths.extend(
+                    self._collect_routes_with_paths(sub_route, new_prefix)
+                )
             return routes_with_paths
 
         if isinstance(route, Group):
-            # Build new prefix by adding group's path  
+            # Build new prefix by adding group's path
             group_path = route.path or ""
             new_prefix = self._normalize_path(current_prefix + group_path)
-            
-            
-            if hasattr(route, '_base_app') and isinstance(route._base_app, Router):
+
+            if hasattr(route, "_base_app") and isinstance(route._base_app, Router):
                 # Don't add the router's prefix since it's already in the group path
                 for sub_route in route._base_app.routes:
-                    routes_with_paths.extend(self._collect_routes_with_paths(sub_route, new_prefix))
+                    routes_with_paths.extend(
+                        self._collect_routes_with_paths(sub_route, new_prefix)
+                    )
 
-            elif hasattr(route, 'routes'):
+            elif hasattr(route, "routes"):
                 for sub_route in route.routes:
-                    routes_with_paths.extend(self._collect_routes_with_paths(sub_route, new_prefix))
+                    routes_with_paths.extend(
+                        self._collect_routes_with_paths(sub_route, new_prefix)
+                    )
             return routes_with_paths
 
         # Handle other route containers
-        if hasattr(route, 'routes'):
+        if hasattr(route, "routes"):
             for sub_route in route.routes:
-                routes_with_paths.extend(self._collect_routes_with_paths(sub_route, current_prefix))
+                routes_with_paths.extend(
+                    self._collect_routes_with_paths(sub_route, current_prefix)
+                )
 
         return routes_with_paths
 
@@ -185,18 +183,19 @@ class APIDocumentation:
         """
         if not path:
             return "/"
-        
-        if not path.startswith('/'):
-            path = '/' + path
-        
+
+        if not path.startswith("/"):
+            path = "/" + path
+
         # Remove duplicate slashes but preserve parameter patterns like {id}
         import re
-        path = re.sub(r'/+', '/', path)
-        
+
+        path = re.sub(r"/+", "/", path)
+
         # Ensure we don't end with / unless it's the root
-        if len(path) > 1 and path.endswith('/'):
-            path = path.rstrip('/')
-        
+        if len(path) > 1 and path.endswith("/"):
+            path = path.rstrip("/")
+
         return path
 
     def _add_route_to_openapi_spec(self, full_path: str, route: Route) -> None:
@@ -205,18 +204,18 @@ class APIDocumentation:
         """
         # Convert path parameters to OpenAPI format
         openapi_path = self._convert_path_to_openapi_format(full_path)
-        
+
         # Process each HTTP method for this route
         for method in route.methods:
             # Prepare request body specification
             request_body_spec = self._build_request_body_spec(route, method)
-            
+
             # Prepare response specifications
             responses_spec = self._build_responses_spec(route)
-            
+
             # Prepare parameters (path, query, header)
             parameters = self._build_parameters_spec(route)
-            
+
             # Create the operation object
             operation = Operation(
                 summary=route.summary or f"{method.upper()} {openapi_path}",
@@ -226,36 +225,41 @@ class APIDocumentation:
                 parameters=parameters,
                 requestBody=request_body_spec,
                 security=route.security,
-                operationId=route.operation_id or f"{method.lower()}_{openapi_path.replace('/', '_').replace('{', '').replace('}', '')}",
+                operationId=route.operation_id
+                or f"{method.lower()}_{openapi_path.replace('/', '_').replace('{', '').replace('}', '')}",
                 deprecated=route.deprecated,
-                externalDocs=getattr(route, 'external_docs', None),
+                externalDocs=getattr(route, "external_docs", None),
             )
-            
+
             # Add operation to the OpenAPI specification
             if openapi_path not in self.config.openapi_spec.paths:
                 self.config.openapi_spec.paths[openapi_path] = PathItem()
-            
-            setattr(self.config.openapi_spec.paths[openapi_path], method.lower(), operation)
-            
-           
-            
-            
+
+            setattr(
+                self.config.openapi_spec.paths[openapi_path], method.lower(), operation
+            )
+
     def _convert_path_to_openapi_format(self, path: str) -> str:
         """
         Convert Nexios path format to OpenAPI format.
         Example: /users/{id:int} -> /users/{id}
         """
         import re
-        return re.sub(r'\{(\w+):[^}]+\}', r'{\1}', path)
 
-    def _build_request_body_spec(self, route: Route, method: str) -> Optional[RequestBody]:
+        return re.sub(r"\{(\w+):[^}]+\}", r"{\1}", path)
+
+    def _build_request_body_spec(
+        self, route: Route, method: str
+    ) -> Optional[RequestBody]:
         """
         Build request body specification for the route.
         """
         if route.request_model:
             return RequestBody(
                 content={
-                    getattr(route, 'request_content_type', 'application/json'): MediaType(
+                    getattr(
+                        route, "request_content_type", "application/json"
+                    ): MediaType(
                         schema=Schema(**route.request_model.model_json_schema())
                     )
                 }
@@ -267,7 +271,7 @@ class APIDocumentation:
                     "application/json": MediaType(
                         schema=Schema(
                             example={"example": "This is an example request body"},
-                            type="object"
+                            type="object",
                         )
                     )
                 }
@@ -279,11 +283,13 @@ class APIDocumentation:
         Build response specifications for the route.
         """
         responses_spec = {}
-        
+
         if route.responses:
             if isinstance(route.responses, dict):
                 for status_code, model in route.responses.items():
-                    responses_spec[str(status_code)] = self._create_response_spec(model, status_code)
+                    responses_spec[str(status_code)] = self._create_response_spec(
+                        model, status_code
+                    )
             else:
                 # Single response model
                 responses_spec["200"] = self._create_response_spec(route.responses, 200)
@@ -295,12 +301,12 @@ class APIDocumentation:
                     "application/json": MediaType(
                         schema=Schema(
                             example={"example": "This is an example response"},
-                            type="object"
+                            type="object",
                         )
                     )
-                }
+                },
             )
-        
+
         return responses_spec
 
     def _create_response_spec(self, model: Any, status_code: int) -> OpenAPIResponse:
@@ -314,7 +320,7 @@ class APIDocumentation:
                     "application/json": MediaType(
                         schema=Schema(**model.model_json_schema())
                     )
-                }
+                },
             )
         elif hasattr(model, "__origin__") and model.__origin__ is list:
             # Handle List[Model]
@@ -326,30 +332,24 @@ class APIDocumentation:
                         "application/json": MediaType(
                             schema=Schema(
                                 type="array",
-                                items=Schema(**item_model.model_json_schema())
+                                items=Schema(**item_model.model_json_schema()),
                             )
                         )
-                    }
+                    },
                 )
         elif isinstance(model, dict):
             # Handle dict response (like {"description": "Error message"})
             return OpenAPIResponse(
-                description=model.get("description", f"Response for status code {status_code}"),
-                content={
-                    "application/json": MediaType(
-                        schema=Schema(type="object")
-                    )
-                }
+                description=model.get(
+                    "description", f"Response for status code {status_code}"
+                ),
+                content={"application/json": MediaType(schema=Schema(type="object"))},
             )
-        
+
         # Fallback
         return OpenAPIResponse(
             description=f"Response for status code {status_code}",
-            content={
-                "application/json": MediaType(
-                    schema=Schema(type="object")
-                )
-            }
+            content={"application/json": MediaType(schema=Schema(type="object"))},
         )
 
     def _build_parameters_spec(self, route: Route) -> List[Parameter]:
@@ -357,21 +357,17 @@ class APIDocumentation:
         Build parameter specifications for the route.
         """
         parameters = []
-        
+
         # Add path parameters using the specific Path type
         for param_name in route.param_names:
             parameters.append(
-                Path(
-                    name=param_name,
-                    required=True,
-                    schema=Schema(type="string")
-                )
+                Path(name=param_name, required=True, schema=Schema(type="string"))
             )
-        
+
         # Add any additional parameters defined on the route
-        if hasattr(route, 'parameters') and route.parameters:
+        if hasattr(route, "parameters") and route.parameters:
             parameters.extend(route.parameters)
-        
+
         return parameters
 
     def _add_response_schemas(self, responses: Any) -> None:
@@ -389,23 +385,27 @@ class APIDocumentation:
         elif isinstance(responses, type) and issubclass(responses, BaseModel):
             self.add_schema(responses)
 
-
     def _convert_path_to_openapi_format(self, path: str) -> str:
         """
         Convert Nexios path format to OpenAPI format.
         Example: /users/{id:int} -> /users/{id}
         """
         import re
-        return re.sub(r'\{(\w+):[^}]+\}', r'{\1}', path)
 
-    def _build_request_body_spec(self, route: Route, method: str) -> Optional[RequestBody]:
+        return re.sub(r"\{(\w+):[^}]+\}", r"{\1}", path)
+
+    def _build_request_body_spec(
+        self, route: Route, method: str
+    ) -> Optional[RequestBody]:
         """
         Build request body specification for the route.
         """
         if route.request_model:
             return RequestBody(
                 content={
-                    getattr(route, 'request_content_type', 'application/json'): MediaType(
+                    getattr(
+                        route, "request_content_type", "application/json"
+                    ): MediaType(
                         schema=Schema(**route.request_model.model_json_schema())
                     )
                 }
@@ -417,7 +417,7 @@ class APIDocumentation:
                     "application/json": MediaType(
                         schema=Schema(
                             example={"example": "This is an example request body"},
-                            type="object"
+                            type="object",
                         )
                     )
                 }
@@ -429,11 +429,13 @@ class APIDocumentation:
         Build response specifications for the route.
         """
         responses_spec = {}
-        
+
         if route.responses:
             if isinstance(route.responses, dict):
                 for status_code, model in route.responses.items():
-                    responses_spec[str(status_code)] = self._create_response_spec(model, status_code)
+                    responses_spec[str(status_code)] = self._create_response_spec(
+                        model, status_code
+                    )
             else:
                 # Single response model
                 responses_spec["200"] = self._create_response_spec(route.responses, 200)
@@ -445,12 +447,12 @@ class APIDocumentation:
                     "application/json": MediaType(
                         schema=Schema(
                             example={"example": "This is an example response"},
-                            type="object"
+                            type="object",
                         )
                     )
-                }
+                },
             )
-        
+
         return responses_spec
 
     def _create_response_spec(self, model: Any, status_code: int) -> OpenAPIResponse:
@@ -464,7 +466,7 @@ class APIDocumentation:
                     "application/json": MediaType(
                         schema=Schema(**model.model_json_schema())
                     )
-                }
+                },
             )
         elif hasattr(model, "__origin__") and model.__origin__ is list:
             # Handle List[Model]
@@ -476,31 +478,22 @@ class APIDocumentation:
                         "application/json": MediaType(
                             schema=Schema(
                                 type="array",
-                                items=Schema(**item_model.model_json_schema())
+                                items=Schema(**item_model.model_json_schema()),
                             )
                         )
-                    }
+                    },
                 )
         elif isinstance(model, dict):
             # Handle dict response (like {"description": "Error message"})
             return OpenAPIResponse(
-                description=model.get("description", f"Response for status code {status_code}"),
-                content={
-                    "application/json": MediaType(
-                        schema=Schema(type="object")
-                    )
-                }
+                description=model.get(
+                    "description", f"Response for status code {status_code}"
+                ),
+                content={"application/json": MediaType(schema=Schema(type="object"))},
             )
-        
+
         # Fallback
         return OpenAPIResponse(
             description=f"Response for status code {status_code}",
-            content={
-                "application/json": MediaType(
-                    schema=Schema(type="object")
-                )
-            }
+            content={"application/json": MediaType(schema=Schema(type="object"))},
         )
-
-
-

@@ -263,5 +263,6 @@ class WebsocketRouter(BaseRouter):
     def __repr__(self) -> str:
         return f"<WSRouter prefix='{self.prefix}' routes={len(self.routes)}>"
 
-WebsocketRoutes = WebsocketRoute #for backwards compatibility
-WSRouter = WebsocketRouter #for backwards compatibility
+
+WebsocketRoutes = WebsocketRoute  # for backwards compatibility
+WSRouter = WebsocketRouter  # for backwards compatibility

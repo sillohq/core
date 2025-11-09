@@ -22,7 +22,9 @@ class CSRFMiddleware(BaseMiddleware):
             assert app_config.secret_key is not None, ""
         if not self.use_csrf:
             return
-        self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")  # type:ignore
+        self.serializer = URLSafeSerializer(
+            app_config.secret_key, "csrftoken"
+        )  # type:ignore
         self.required_urls: typing.List[str] = app_config.csrf_required_urls or ["*"]
         self.exempt_urls = app_config.csrf_exempt_urls
         self.sensitive_cookies = app_config.csrf_sensitive_cookies

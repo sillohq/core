@@ -1,7 +1,7 @@
 from typing import Any, List, Union
 
 from nexios.routing.grouping import Group
-from nexios.routing.http import Router, Route
+from nexios.routing.http import Route, Router
 
 
 def get_openapi(route: Union[Route, Router, Group, Any]) -> List[Route]:

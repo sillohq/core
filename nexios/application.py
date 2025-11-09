@@ -1,4 +1,5 @@
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncContextManager,
     Awaitable,
@@ -9,7 +10,6 @@ from typing import (
     Optional,
     Type,
     Union,
-    TYPE_CHECKING
 )
 
 from pydantic import BaseModel
@@ -34,7 +34,7 @@ from nexios.openapi.models import HTTPBearer, Parameter
 from nexios.routing.base import BaseRoute
 from nexios.structs import URLPath
 
-from .routing import Router, Route, WebsocketRoute, WSRouter
+from .routing import Route, Router, WebsocketRoute, WSRouter
 from .types import (
     ASGIApp,
     HandlerType,
@@ -46,8 +46,9 @@ from .types import (
     WsHandlerType,
     WsMiddlewareType,
 )
+
 if TYPE_CHECKING:
-    from nexios.http import Request,Response
+    from nexios.http import Request, Response
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 logger = create_logger("nexios")
@@ -138,7 +139,9 @@ class NexiosApp(object):
         self.lifespan_context: Optional[lifespan_manager] = lifespan
         self.state: Dict[str, Any] = {}
 
-        openapi_config: Dict[str, Any] = self.config.to_dict().get("openapi", {})  # type:ignore
+        openapi_config: Dict[str, Any] = self.config.to_dict().get(
+            "openapi", {}
+        )  # type:ignore
         self.openapi_config = OpenAPIConfig(
             title=openapi_config.get("title", title or "Nexios API"),
             version=openapi_config.get("version", version or "1.0.0"),
@@ -165,11 +168,13 @@ class NexiosApp(object):
         self.setup()
 
     def setup(self):
-        
+
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)  # type:ignore
         async def serve_openapi(request: "Request", response: "Response"):
             root_path = request.scope.get("root_path", "")
-            return response.json(self.openapi.get_openapi(self.router,current_prefix=root_path))
+            return response.json(
+                self.openapi.get_openapi(self.router, current_prefix=root_path)
+            )
 
         @self.get(self.openapi.swagger_url, exclude_from_schema=True)  # type:ignore
         async def swagger_ui(request: "Request", response: "Response"):
@@ -532,7 +537,9 @@ class NexiosApp(object):
             ]
             + self.http_middleware
             + [
-                Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)  # type:ignore
+                Middleware(
+                    ASGIRequestResponseBridge, dispatch=self.exceptions_handler
+                )  # type:ignore
             ]
         )
         for cls, args, kwargs in reversed(middleware):
