@@ -6,14 +6,14 @@ function generateDynamicOGImage(pageData) {
   const logo = 'https://nexios-labs.github.io/nexios/logo.png'
   const website = 'nexios-labs.github.io'
   const name = 'Nexios Labs'
-  
+
   // Extract title and description from page data
   let title = pageData?.title || pageData?.frontmatter?.title || 'Nexios'
   let sub = pageData?.description || pageData?.frontmatter?.description || 'Python Web Framework'
-  
+
   // Handle different page types and improve titles
   const relativePath = pageData?.relativePath || ''
-  
+
   // Extract title from first heading if no frontmatter title
   if (title === 'Nexios' && pageData?.content) {
     const headingMatch = pageData.content.match(/^#\s+(.+)$/m)
@@ -21,7 +21,7 @@ function generateDynamicOGImage(pageData) {
       title = headingMatch[1].replace(/[🚀🤔⚡🔄🎯🌐🛣️📖🔐🐍📡🔌🏭]/g, '').trim()
     }
   }
-  
+
   // Customize subtitle based on page location
   if (relativePath.includes('/guide/')) {
     if (sub === 'Python Web Framework') {
@@ -57,13 +57,13 @@ function generateDynamicOGImage(pageData) {
       sub = 'How-to - ' + sub
     }
   }
-  
+
   // Fallback for pages without proper titles
   if (title === 'Nexios' && relativePath) {
     const pathParts = relativePath.replace('.md', '').split('/')
     const lastPart = pathParts[pathParts.length - 1]
     if (lastPart && lastPart !== 'index') {
-      title = lastPart.split('-').map(word => 
+      title = lastPart.split('-').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1)
       ).join(' ')
     } else if (pathParts.length > 1) {
@@ -72,7 +72,7 @@ function generateDynamicOGImage(pageData) {
       title = parentDir.charAt(0).toUpperCase() + parentDir.slice(1)
     }
   }
-  
+
   // Ensure title and sub are not too long for the image
   if (title.length > 50) {
     title = title.substring(0, 47) + '...'
@@ -80,11 +80,11 @@ function generateDynamicOGImage(pageData) {
   if (sub.length > 80) {
     sub = sub.substring(0, 77) + '...'
   }
-  
+
   // Clean up for URL encoding
   title = encodeURIComponent(title)
   sub = encodeURIComponent(sub)
-  
+
   const params = new URLSearchParams({
     logo: logo,
     title: title,
@@ -93,17 +93,17 @@ function generateDynamicOGImage(pageData) {
     website: website,
     dark: 'false'
   })
-  
+
   return `${baseUrl}?${params.toString()}`
 }
 
 export default defineConfig({
-  
+
   transformHead: ({ pageData }) => {
     const ogImageUrl = generateDynamicOGImage(pageData)
     const pageTitle = pageData?.title ? `${pageData.title} | Nexios` : 'Nexios - Python Web Framework'
     const pageDescription = pageData?.description || 'Nexios is a modern, fast, and secure web framework for Python. It is designed to be easy to use and understand, while also being powerful and flexible.'
-    
+
     return [
       // Open Graph tags
       ['meta', { property: 'og:title', content: pageTitle }],
@@ -112,7 +112,7 @@ export default defineConfig({
       ['meta', { property: 'og:image:width', content: '1200' }],
       ['meta', { property: 'og:image:height', content: '630' }],
       ['meta', { property: 'og:image:alt', content: `${pageData?.title || 'Nexios'} - Python Web Framework` }],
-      
+
       // Twitter Card tags
       ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
       ['meta', { name: 'twitter:title', content: pageTitle }],
@@ -121,9 +121,9 @@ export default defineConfig({
       ['meta', { name: 'twitter:image:alt', content: `${pageData?.title || 'Nexios'} - Python Web Framework` }],
     ]
   },
- 
+
   head: [
-    
+
     ['link', { rel: 'icon', href: '/favicon.ico' }],
     ['meta', { name: 'theme-color', content: '#ff7e17' }],
     ['meta', { property: 'og:title', content: "Nexios - Python Web Framework" }],
@@ -131,8 +131,8 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'twitter:site', content: '@nexioslabs' }],
   ],
-  
-  
+
+
   title: 'Nexios',
   base: "/nexios/",
   description: 'Nexios is a modern, fast, and secure web framework for Python. It is designed to be easy to use and understand, while also being powerful and flexible.',
@@ -155,14 +155,15 @@ export default defineConfig({
     nav: [
       { text: 'Intro', link: '/intro' },
       { text: 'Guide', link: '/guide/getting-started' },
+      { text: "API Reference", link: "/api-reference" },
       { text: 'Examples', link: '/api-examples' },
-      { text : "Community", link:"/community"},
-      { text: "Discussions", link:"https://github.com/orgs/nexios-labs/discussions"},
+      { text: "Community", link: "/community" },
+      { text: "Discussions", link: "https://github.com/orgs/nexios-labs/discussions" },
       { text: 'Team', link: 'team' },
       {
-        text: 'v3.0.0-alpha.1  (Latest)',
+        text: 'v3  (Latest)',
         items: [
-          { text: 'v3.0.0-alpha.1', link: '/guide/getting-started' },
+          { text: 'v3', link: '/guide/getting-started' },
           { text: 'v2.11.1', link: '/v2/guide/getting-started' },
           { text: 'Changelog', link: 'https://github.com/nexios-labs/nexios/blob/CHANGELOG.md' },
           { text: 'Contributing', link: '/community/contribution-guide' },
@@ -176,9 +177,9 @@ export default defineConfig({
         { text: "What is Asgi?", link: '/intro/asgi' },
         { text: 'Nexios And FastAPI', link: '/intro/nexios-and-fastapi' },
         { text: "Quick Start", link: '/intro/quick-start' },
-        { text : "Core Concepts", link: '/intro/concepts' },
-        { text : "Async Python", link: '/intro/async-python' },
-        {text: 'Migrating To Nexios',link: '/intro/migrating-to-nexios'},
+        { text: "Core Concepts", link: '/intro/concepts' },
+        { text: "Async Python", link: '/intro/async-python' },
+        { text: 'Migrating To Nexios', link: '/intro/migrating-to-nexios' },
       ],
       '/community/': [
         { text: 'Overview', link: '/community' },
@@ -206,15 +207,34 @@ export default defineConfig({
           ]
         },
         { text: 'FAQ', link: '/community/faq' },
-        { text : "Contribution Guide", link:"/community/contribution-guide"},
+        { text: "Contribution Guide", link: "/community/contribution-guide" },
         { text: 'Discussions', link: 'https://github.com/orgs/nexios-labs/discussions' },
         { text: 'Team', link: '/team' },
       ],
+      "/api-reference/": [
+        { text: 'Overview', link: '/api-reference' },
+        { text: 'Nexios App', link: '/api-reference/nexios-app' },
+        { text: 'Request', link: '/api-reference/request' },
+        { text: 'Response', link: '/api-reference/response' },
+        { text: 'Route', link: '/api-reference/route' },
+        { text: 'Router', link: '/api-reference/router' },
+        { text: 'Group', link: '/api-reference/group' },
+        { text: 'Class Based Middleware', link: '/api-reference/middleware' },
+        { text: 'Depend', link: '/api-reference/dependencies/depend' },
+        { text: 'Builder', link: '/api-reference/openapi-builder' },
+        { text: 'TestClient', link: '/api-reference/testclient' },
+        { text: 'WebSocket', link: '/api-reference/websocket' },
+        { text: 'Channel', link: '/api-reference/channel' },
+        { text: 'ChannelBox', link: '/api-reference/channelbox' },
+
+
+
+      ],
       '/v2/guide/': [
-        
+
         { text: 'Getting Started', link: '/guide/getting-started' },
         { text: 'CLI', link: '/guide/cli' },
-        { text : "Why Nexios?", link: '/guide/why-nexios' },
+        { text: "Why Nexios?", link: '/guide/why-nexios' },
         {
           text: 'Core Concepts',
           collapsed: false,
@@ -227,7 +247,7 @@ export default defineConfig({
             { text: 'Sending Responses', link: '/v2/guide/sending-responses' },
             { text: 'Routers and Subapps', link: '/v2/guide/routers-and-subapps' },
             { text: 'Middleware', link: '/v2/guide/middleware' },
-          ] 
+          ]
         },
         {
           text: 'Request Lifecycle',
@@ -249,13 +269,13 @@ export default defineConfig({
             { text: "Handler Hooks", link: '/v2/guide/handler-hooks' },
             { text: 'Class Based Handlers', link: '/v2/guide/class-based-handlers' },
             { text: 'Events', link: '/v2/guide/events' },
-            { text: 'Streaming Response',  link: '/v2/guide/streaming-response' },
+            { text: 'Streaming Response', link: '/v2/guide/streaming-response' },
             { text: 'Dependency Injection', link: '/v2/guide/dependency-injection' },
-            { text : "Templating", link:"/v2/guide/templating/index"},
+            { text: "Templating", link: "/v2/guide/templating/index" },
             { text: 'Static Files', link: '/v2/guide/static-files' },
             { text: 'File Upload', link: '/v2/guide/file-upload' },
             { text: 'Cors', link: '/v2/guide/cors' },
-            { text: 'CSRF', link: '/v2/guide/csrf' },  
+            { text: 'CSRF', link: '/v2/guide/csrf' },
             { text: 'File Router', link: '/v2/guide/file-router' },
             { text: 'Concurrency Utilities', link: '/v2/guide/concurrency' },
             { text: 'Security', link: '/v2/guide/security' },
@@ -287,10 +307,10 @@ export default defineConfig({
         }
       ],
       '/guide/': [
-        
+
         { text: 'Getting Started', link: '/guide/getting-started' },
         { text: 'CLI', link: '/guide/cli' },
-        { text : "Why Nexios?", link: '/guide/why-nexios' },
+        { text: "Why Nexios?", link: '/guide/why-nexios' },
         {
           text: 'Core Concepts',
           collapsed: false,
@@ -303,7 +323,7 @@ export default defineConfig({
             { text: 'Sending Responses', link: '/guide/sending-responses' },
             { text: 'Routers and Subapps', link: '/guide/routers-and-subapps' },
             { text: 'Middleware', link: '/guide/middleware' },
-          ] 
+          ]
         },
         {
           text: 'Request Lifecycle',
@@ -325,9 +345,9 @@ export default defineConfig({
             { text: "Handler Hooks", link: '/guide/handler-hooks' },
             { text: 'Class Based Handlers', link: '/guide/class-based-handlers' },
             { text: 'Events', link: '/guide/events' },
-            { text: 'Streaming Response',  link: '/guide/streaming-response' },
+            { text: 'Streaming Response', link: '/guide/streaming-response' },
             { text: 'Dependency Injection', link: '/guide/dependency-injection' },
-            { text : "Templating", link:"/guide/templating/index"},
+            { text: "Templating", link: "/guide/templating/index" },
             { text: 'Static Files', link: '/guide/static-files' },
             { text: 'File Upload', link: '/guide/file-upload' },
             { text: 'Cors', link: '/guide/cors' },
@@ -361,7 +381,7 @@ export default defineConfig({
           ]
         }
       ]
-     
+
     }
   },
 
