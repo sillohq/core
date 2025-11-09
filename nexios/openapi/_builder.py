@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple,Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 
 
 class APIDocumentation:
-
     def __init__(  # type: ignore
         self,
         config: Optional[OpenAPIConfig] = None,

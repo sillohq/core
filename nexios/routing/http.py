@@ -590,7 +590,6 @@ class Router(BaseRouter):
         self.routes.append(route)
         if getattr(route, "exclude_from_schema", False):
             return
-        
 
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
@@ -2362,9 +2361,7 @@ class Router(BaseRouter):
         path_matched = False
         allowed_methods_: typing.List[str] = []
         for route in self.routes:
-            match, matched_params, is_allowed = route.match(
-                url, scope["method"]
-            )  # type:ignore
+            match, matched_params, is_allowed = route.match(url, scope["method"])  # type:ignore
             if match:
                 path_matched = True
                 if is_allowed:

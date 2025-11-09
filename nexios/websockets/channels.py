@@ -73,9 +73,9 @@ class Channel:
 
 
 class ChannelBox:
-    CHANNEL_GROUPS: typing.Dict[str, typing.Any] = (
-        {}
-    )  # groups of channels ~ key: group_name, val: dict of channels
+    CHANNEL_GROUPS: typing.Dict[
+        str, typing.Any
+    ] = {}  # groups of channels ~ key: group_name, val: dict of channels
     CHANNEL_GROUPS_HISTORY: typing.Dict[str, typing.Any] = {}  # history messages
     HISTORY_SIZE: int = int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", 1_048_576))
 

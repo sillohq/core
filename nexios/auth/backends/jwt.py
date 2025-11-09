@@ -63,9 +63,7 @@ class JWTAuthBackend(AuthenticationBackend):
     def __init__(self, identifier: str = "id"):  # type:ignore
         self.identifier = identifier
 
-    async def authenticate(
-        self, request: Request, response: Response
-    ) -> Any:  # type:ignore
+    async def authenticate(self, request: Request, response: Response) -> Any:  # type:ignore
         app_config = get_config()
         self.secret = app_config.secret_key
         self.algorithms = app_config.jwt_algorithms or ["HS256"]
