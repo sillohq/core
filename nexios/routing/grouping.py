@@ -5,7 +5,8 @@ from nexios._internals._middleware import DefineMiddleware as Middleware
 from nexios._internals._route_builder import RouteBuilder
 from nexios.exceptions import NotFoundException
 from nexios.structs import URLPath
-from nexios.types import ASGIApp, Receive, Scope, Send
+from nexios.types import ASGIApp, Receive, Scope, Send,Scope
+from ._utils import get_route_path
 
 from .base import BaseRoute
 
@@ -51,13 +52,11 @@ class Group(BaseRoute):
     def routes(self) -> list[BaseRoute]:
         return getattr(self._base_app, "routes", [])
 
-    def match(
-        self, path: str, method: str
-    ) -> typing.Tuple[typing.Any, typing.Any, typing.Any]:
+    def match(self, scope:Scope) -> typing.Tuple[typing.Any, typing.Any, typing.Any]:
         """
         Match a path against this mounted route's pattern.
         """
-        match = self.pattern.match(path)
+        match = self.pattern.match(get_route_path(scope))
         if match:
             matched_params = match.groupdict()
             path_remainder = matched_params.pop("path", "")

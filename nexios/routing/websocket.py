@@ -39,7 +39,7 @@ class WebsocketRoute:
         self.route_type = self.route_info.route_type
         self.router_middleware = None
 
-    def match(self, path: str) -> typing.Tuple[Any, Any]:
+    def match(self, scope:Scope) -> typing.Tuple[Any, Any]:
         """
         Match a path against this route's pattern and return captured parameters.
 
@@ -50,6 +50,7 @@ class WebsocketRoute:
             Optional[Dict[str, Any]]: A dictionary of captured parameters if the path matches,
             otherwise None.
         """
+        path = get_route_path(scope)
         match = self.pattern.match(path)
         if match:
             matched_params = match.groupdict()
@@ -208,7 +209,7 @@ class WebsocketRouter(BaseRouter):
                 await sub_app(scope, receive, send)
                 return
         for route in self.routes:
-            match, params = route.match(url)
+            match, params = route.match(scope)
             if match:
                 scope["route_params"] = params
                 await route.handle(scope, receive, send)
@@ -261,7 +262,7 @@ class WebsocketRouter(BaseRouter):
         self.sub_routers[path] = app
 
     def __repr__(self) -> str:
-        return f"<WSRouter prefix='{self.prefix}' routes={len(self.routes)}>"
+        return f"<WebsocketRouter prefix='{self.prefix}' routes={len(self.routes)}>"
 
 
 WebsocketRoutes = WebsocketRoute  # for backwards compatibility

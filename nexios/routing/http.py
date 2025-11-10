@@ -209,7 +209,7 @@ class Route(BaseRoute):
         self.parameters = parameters or []
         self.exclude_from_schema = exclude_from_schema
 
-    def match(self, path: str, method: str) -> typing.Tuple[Any, Any, Any]:
+    def match(self, scope:Scope) -> typing.Tuple[Any, Any, Any]:
         """
         Match a path against this route's pattern and return captured parameters.
 
@@ -220,6 +220,8 @@ class Route(BaseRoute):
             Optional[Dict[str, Any]]: A dictionary of captured parameters if the path matches,
             otherwise None.
         """
+        path = get_route_path(scope)
+        method = scope["method"]
         match = self.pattern.match(path)
         if match:
             matched_params = match.groupdict()
@@ -2353,7 +2355,7 @@ class Router(BaseRouter):
         path_matched = False
         allowed_methods_: typing.List[str] = []
         for route in self.routes:
-            match, matched_params, is_allowed = route.match(url, scope["method"])  # type:ignore
+            match, matched_params, is_allowed = route.match(scope)  # type:ignore
             if match:
                 path_matched = True
                 if is_allowed:
