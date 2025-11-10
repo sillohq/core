@@ -143,14 +143,14 @@ Visit http://localhost:8000/docs to view the Swagger API documentation.
 Nexios thrives on community contributions and collaboration. We believe the best tools are built by developers, for developers.
 
 ### Get Involved
-- **Contribute Code**: Submit PRs to the main framework or [nexios-contrib](https://github.com/nexios-labs/nexios-contrib)
+- **Contribute Code**: Submit PRs to the main framework or [nexios-contrib](https://github.com/nexios-labs/contrib)
 - **Share Utilities**: Create and share your own middleware, plugins, and tools
 - **Join Discussions**: Participate in [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
 - **Help Others**: Answer questions and help fellow developers
 
 ### Community Resources
 - 📚 **Documentation**: [https://nexios-labs.github.io/nexios](https://nexios-labs.github.io/nexios)
-- 🛠️ **Community Extensions**: [nexios-contrib package](https://github.com/nexios-labs/nexios-contrib)
+- 🛠️ **Community Extensions**: [nexios-contrib package](https://github.com/nexios-labs/contrib)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
 - 🐛 **Issues**: [Report bugs and request features](https://github.com/nexios-labs/nexios/issues)
 
