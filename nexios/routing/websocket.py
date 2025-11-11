@@ -143,7 +143,7 @@ class WebsocketRouter(BaseRouter):
         else:
             raise ValueError("Either route or both path and handler must be provided")
 
-    def add_ws_middleware(self, middleware: type[ASGIApp]) -> None:  # type: ignore[override]
+    def add_asgi_middleware(self, middleware: type[ASGIApp]) -> None:  # type: ignore[override]
         """Add middleware to the WebSocket router"""
         self.middleware.insert(0, middleware)  # type: ignore
 

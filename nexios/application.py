@@ -123,10 +123,7 @@ class NexiosApp(object):
         self.config.update(
             get_nexios_config(),
         )
-        self.ws_router = WSRouter()
-        self.ws_routes: List[WebsocketRoute] = []
         self.http_middleware: List[Middleware] = []
-        self.ws_middleware: List[ASGIApp] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
         self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
         self.server_error_handler = server_error_handler
@@ -489,7 +486,7 @@ class NexiosApp(object):
             app = mdw(app)  # type:ignore
         await app(scope, receive, send)
 
-    def add_ws_middleware(
+    def add_asgi_middleware(
         self,
         middleware: Annotated[
             ASGIApp,
@@ -518,12 +515,12 @@ class NexiosApp(object):
                     ...
                 return next_handler(ws)
 
-            app.add_ws_middleware(ws_auth_middleware)
+            app.add_asgi_middleware(ws_auth_middleware)
             ```
         """
         self.ws_middleware.append(middleware)
 
-    def handle_http_request(self, scope: Scope, receive: Receive, send: Send):
+    def handle_request(self, scope: Scope, receive: Receive, send: Send):
         app = self.app
         middleware = (
             [
@@ -549,12 +546,10 @@ class NexiosApp(object):
 
         if scope["type"] == "lifespan":
             await self.handle_lifespan(receive, send)
-        # print("scope ->>",scope)
         elif scope["type"] in ["http","websocket"]:
-            await self.handle_http_request(scope, receive, send)
+            await self.handle_request(scope, receive, send)
 
-        # else:
-        #     await self.handle_websocket(scope, receive, send)
+
 
     def get(
         self,
