@@ -137,14 +137,51 @@ class NexiosApp(object):
         self.state: Dict[str, Any] = {}
 
         openapi_config: Dict[str, Any] = self.config.to_dict().get("openapi", {})  # type:ignore
+        
+        # Handle license - ensure it's a License model instance
+        license_data = openapi_config.get("license")
+        license_instance = None
+        if license_data:
+            if isinstance(license_data, dict):
+                from nexios.openapi.models import License
+                license_instance = License(**license_data)
+            else:
+                license_instance = license_data
+        
+        # Handle contact - ensure it's a Contact model instance  
+        contact_data = openapi_config.get("contact")
+        contact_instance = None
+        if contact_data:
+            if isinstance(contact_data, dict):
+                from nexios.openapi.models import Contact
+                contact_instance = Contact(**contact_data)
+            else:
+                contact_instance = contact_data
+        
+        # Handle servers - ensure they are Server model instances
+        servers_data = openapi_config.get("servers")
+        servers_instances = None
+        if servers_data:
+            if isinstance(servers_data, list):
+                from nexios.openapi.models import Server
+                servers_instances = []
+                for server in servers_data:
+                    if isinstance(server, dict):
+                        servers_instances.append(Server(**server))
+                    else:
+                        servers_instances.append(server)
+            else:
+                servers_instances = servers_data
+        
         self.openapi_config = OpenAPIConfig(
             title=openapi_config.get("title", title or "Nexios API"),
             version=openapi_config.get("version", version or "1.0.0"),
             description=openapi_config.get(
                 "description", description or "Nexios API Documentation"
             ),
-            license=openapi_config.get("license"),
-            contact=openapi_config.get("contact"),
+            license=license_instance,
+            contact=contact_instance,
+            servers=servers_instances,
         )
 
         self.openapi_config.add_security_scheme(

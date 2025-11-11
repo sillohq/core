@@ -21,6 +21,10 @@ The APIDocumentation class handles the generation and serving of OpenAPI documen
 
 ## ⚙️ OpenAPIConfig Class
 
+::: tip Important
+Always use proper Pydantic model instances (`Contact`, `License`, `Server`) instead of dictionaries when configuring OpenAPI. This ensures type safety and proper validation.
+:::
+
 ### Configuration Options
 
 ```python
@@ -30,12 +34,10 @@ class OpenAPIConfig:
         title: str = "Nexios API",
         version: str = "1.0.0",
         description: Optional[str] = None,
-        terms_of_service: Optional[str] = None,
-        contact: Optional[Dict[str, str]] = None,
-        license: Optional[Dict[str, str]] = None,
-        servers: Optional[List[Dict[str, str]]] = None,
-        tags: Optional[List[Dict[str, Any]]] = None,
-        external_docs: Optional[Dict[str, str]] = None
+        servers: Optional[List[Server]] = None,
+        contact: Optional[Contact] = None,
+        license: Optional[License] = None,
+        openapi_version: str = "3.0.0"
     )
 ```
 
@@ -43,29 +45,55 @@ class OpenAPIConfig:
 
 ```python
 from nexios.openapi.config import OpenAPIConfig
+from nexios.openapi.models import Contact, License, Server
 
 config = OpenAPIConfig(
     title="My API",
     version="2.0.0",
     description="A comprehensive API for managing users and resources",
-    terms_of_service="https://example.com/terms",
-    contact={
-        "name": "API Support",
-        "url": "https://example.com/contact",
-        "email": "support@example.com"
-    },
-    license={
-        "name": "MIT",
-        "url": "https://opensource.org/licenses/MIT"
-    }
+    contact=Contact(
+        name="API Support",
+        url="https://example.com/contact",
+        email="support@example.com"
+    ),
+    license=License(
+        name="MIT",
+        url="https://opensource.org/licenses/MIT"
+    ),
+    servers=[
+        Server(url="https://api.example.com", description="Production server")
+    ]
 )
 
 app = NexiosApp(config=MakeConfig({"openapi": config}))
+
+# Alternative: Using MakeConfig with Pydantic models directly
+app = NexiosApp(config=MakeConfig({
+    "openapi": {
+        "title": "My API",
+        "version": "2.0.0", 
+        "description": "A comprehensive API for managing users and resources",
+        "contact": Contact(
+            name="API Support",
+            url="https://example.com/contact",
+            email="support@example.com"
+        ),
+        "license": License(
+            name="MIT",
+            url="https://opensource.org/licenses/MIT"
+        ),
+        "servers": [
+            Server(url="https://api.example.com", description="Production server")
+        ]
+    }
+}))
 ```
 
 ### Advanced Configuration
 
 ```python
+from nexios.openapi.models import Contact, License, Server, Tag, ExternalDocumentation
+
 config = OpenAPIConfig(
     title="E-commerce API",
     version="3.1.0",
@@ -88,34 +116,47 @@ config = OpenAPIConfig(
     Authorization: Bearer <your-jwt-token>
     ```
     """,
+    contact=Contact(
+        name="E-commerce Team",
+        url="https://example.com/support",
+        email="api-support@example.com"
+    ),
+    license=License(
+        name="Apache 2.0",
+        url="https://www.apache.org/licenses/LICENSE-2.0.html"
+    ),
     servers=[
-        {"url": "https://api.example.com/v3", "description": "Production server"},
-        {"url": "https://staging-api.example.com/v3", "description": "Staging server"},
-        {"url": "http://localhost:8000", "description": "Development server"}
-    ],
-    tags=[
-        {
-            "name": "Users",
-            "description": "User management operations",
-            "externalDocs": {
-                "description": "User guide",
-                "url": "https://docs.example.com/users"
-            }
-        },
-        {
-            "name": "Products",
-            "description": "Product catalog operations"
-        },
-        {
-            "name": "Orders",
-            "description": "Order management operations"
-        }
-    ],
-    external_docs={
-        "description": "Complete API Documentation",
-        "url": "https://docs.example.com"
-    }
+        Server(url="https://api.example.com/v3", description="Production server"),
+        Server(url="https://staging-api.example.com/v3", description="Staging server"),
+        Server(url="http://localhost:8000", description="Development server")
+    ]
 )
+
+# Add tags after creating the config
+config.add_tag(Tag(
+    name="Users",
+    description="User management operations",
+    externalDocs=ExternalDocumentation(
+        description="User guide",
+        url="https://docs.example.com/users"
+    )
+))
+
+config.add_tag(Tag(
+    name="Products",
+    description="Product catalog operations"
+))
+
+config.add_tag(Tag(
+    name="Orders", 
+    description="Order management operations"
+))
+
+# Set external documentation
+config.set_external_docs(ExternalDocumentation(
+    description="Complete API Documentation",
+    url="https://docs.example.com"
+))
 ```
 
 ## 🔒 Security Schemes
@@ -123,46 +164,41 @@ config = OpenAPIConfig(
 ### Adding Security Schemes
 
 ```python
-from nexios.openapi.models import HTTPBearer, APIKey, OAuth2
+from nexios.openapi.models import HTTPBearer, APIKey, OAuth2, OAuthFlows, OAuthFlowAuthorizationCode
 
 # JWT Bearer Authentication
 app.openapi_config.add_security_scheme(
     "BearerAuth",
     HTTPBearer(
-        type="http",
         scheme="bearer",
-        bearerFormat="JWT",
-        description="JWT token for authentication"
+        bearerFormat="JWT"
     )
 )
 
-# API Key Authentication
+# API Key Authentication  
 app.openapi_config.add_security_scheme(
     "ApiKeyAuth",
     APIKey(
-        type="apiKey",
-        in_="header",
         name="X-API-Key",
-        description="API key for authentication"
+        in_="header"
     )
 )
 
 # OAuth2 Authentication
+oauth_flow = OAuthFlowAuthorizationCode(
+    authorizationUrl="https://auth.example.com/oauth/authorize",
+    tokenUrl="https://auth.example.com/oauth/token",
+    scopes={
+        "read": "Read access",
+        "write": "Write access", 
+        "admin": "Admin access"
+    }
+)
+
 app.openapi_config.add_security_scheme(
     "OAuth2",
     OAuth2(
-        type="oauth2",
-        flows={
-            "authorizationCode": {
-                "authorizationUrl": "https://auth.example.com/oauth/authorize",
-                "tokenUrl": "https://auth.example.com/oauth/token",
-                "scopes": {
-                    "read": "Read access",
-                    "write": "Write access",
-                    "admin": "Admin access"
-                }
-            }
-        }
+        flows=OAuthFlows(authorizationCode=oauth_flow)
     )
 )
 ```
@@ -407,24 +443,20 @@ async def list_users(request: Request, response: Response):
 ### Path Parameters
 
 ```python
-from nexios.openapi.models import Parameter
+from nexios.openapi.models import Path, Schema
 
 @app.get(
     "/users/{user_id}/posts/{post_id}",
     summary="Get user post",
     parameters=[
-        Parameter(
+        Path(
             name="user_id",
-            in_="path",
-            required=True,
-            schema={"type": "integer", "minimum": 1},
+            schema=Schema(type="integer", minimum=1),
             description="Unique user identifier"
         ),
-        Parameter(
-            name="post_id",
-            in_="path",
-            required=True,
-            schema={"type": "integer", "minimum": 1},
+        Path(
+            name="post_id", 
+            schema=Schema(type="integer", minimum=1),
             description="Unique post identifier"
         )
     ]
@@ -440,22 +472,22 @@ async def get_user_post(request: Request, response: Response):
 ### Header Parameters
 
 ```python
+from nexios.openapi.models import Header, Schema
+
 @app.get(
     "/data",
     summary="Get data with custom headers",
     parameters=[
-        Parameter(
+        Header(
             name="X-Client-Version",
-            in_="header",
             required=False,
-            schema={"type": "string"},
+            schema=Schema(type="string"),
             description="Client application version"
         ),
-        Parameter(
+        Header(
             name="Accept-Language",
-            in_="header",
             required=False,
-            schema={"type": "string", "default": "en"},
+            schema=Schema(type="string", default="en"),
             description="Preferred language for response"
         )
     ]
@@ -473,17 +505,21 @@ async def get_data(request: Request, response: Response):
 ### Adding Custom Schemas
 
 ```python
-# Add custom schema to OpenAPI
-app.openapi_config.add_schema("PaginationInfo", {
-    "type": "object",
-    "properties": {
-        "page": {"type": "integer", "description": "Current page number"},
-        "limit": {"type": "integer", "description": "Items per page"},
-        "total": {"type": "integer", "description": "Total number of items"},
-        "pages": {"type": "integer", "description": "Total number of pages"}
+from nexios.openapi.models import Schema
+
+# Add custom schema to OpenAPI using Schema model
+pagination_schema = Schema(
+    type="object",
+    properties={
+        "page": Schema(type="integer", description="Current page number"),
+        "limit": Schema(type="integer", description="Items per page"),
+        "total": Schema(type="integer", description="Total number of items"),
+        "pages": Schema(type="integer", description="Total number of pages")
     },
-    "required": ["page", "limit", "total", "pages"]
-})
+    required=["page", "limit", "total", "pages"]
+)
+
+app.openapi_config.add_schema("PaginationInfo", pagination_schema)
 
 # Reference custom schema in responses
 @app.get(
