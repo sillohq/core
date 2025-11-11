@@ -53,7 +53,7 @@ The `WebsocketRouter` operate similar to the `Router` but for websockets
 from nexios.routing import WebsocketRouter
 router = WebsocketRouter()
 router.add_ws_route("/ws", ws_handler)
-app.mount_ws_router(router, "/ws")
+app.mount_router(router, "/ws")
 ```
 
 ::: tip 💡Tip
@@ -77,7 +77,7 @@ from nexios.routing import WebsocketRouter
 router = WebsocketRouter(prefix="/ws")
 router.add_ws_route("/ws", ws_handler)
 router.add_ws_route("/ws2", ws_handler2)
-app.mount_ws_router(router, "/ws-overide") #this will override /ws
+app.mount_router(router, "/ws-overide") #this will override /ws
 
 ```
 

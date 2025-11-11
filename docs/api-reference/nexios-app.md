@@ -321,13 +321,13 @@ async def get_user(request, response):
 app.mount_router(user_router, name="users")
 ```
 
-#### mount_ws_router()
+#### mount_router()
 Mount a WebSocket router to the application.
 
 ```python
-from nexios.routing import WSRouter
+from nexios.routing import Router
 
-ws_router = WSRouter(prefix="/ws")
+ws_router = Router(prefix="/ws")
 
 @ws_router.ws("/chat")
 async def chat_handler(websocket):
@@ -339,7 +339,7 @@ async def chat_handler(websocket):
     except Exception:
         await websocket.close()
 
-app.mount_ws_router(ws_router)
+app.mount_router(ws_router)
 ```
 
 ### WebSocket Routes
