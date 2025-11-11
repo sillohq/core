@@ -34,7 +34,7 @@ from nexios.openapi.models import HTTPBearer, Parameter
 from nexios.routing.base import BaseRoute
 from nexios.structs import URLPath
 
-from .routing import Route, Router, WebsocketRoute, WSRouter
+from .routing import Route, Router, WebsocketRoute
 from .types import (
     ASGIApp,
     HandlerType,
@@ -482,46 +482,7 @@ class NexiosApp(object):
         """
         self.router.mount_router(router, name=name)
 
-    def mount_ws_router(
-        self,
-        router: Annotated[
-            WSRouter,
-            Doc("An instance of Router containing multiple routes to be mounted."),
-        ],
-    ) -> None:
-        """
-        Mounts a websocket router and all its routes to the application using the router's prefix.
-
-        This method allows integrating another `WSRouter` instance, registering all its
-        defined routes into the current application. It is useful for modularizing routes
-        and organizing large applications.
-
-        Args:
-            router (WSRouter): The `WSRouter` instance whose routes will be added.
-
-        Returns:
-            None
-
-        Example:
-            ```python
-            chat_router = WSRouter(prefix="/chat")
-
-            @chat_router.ws("/room")
-            def get_users(ws):
-                ...
-
-            app.mount_ws_router(chat_router)  # Mounts the websocket routes into the main app
-            ```
-        """
-        self.router.mount_router(router)
-
-    async def handle_websocket(
-        self, scope: Scope, receive: Receive, send: Send
-    ) -> None:
-        app = self.router
-        for mdw in reversed(self.ws_middleware):
-            app = mdw(app)  # type:ignore
-        await app(scope, receive, send)
+  
 
     def add_asgi_middleware(
         self,

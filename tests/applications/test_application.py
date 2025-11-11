@@ -6,14 +6,14 @@ import pytest
 from nexios import NexiosApp
 from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
-from nexios.routing import Route, Router, WSRouter
+from nexios.routing import Route, Router
 from nexios.testclient import TestClient
 from nexios.websockets import WebSocket
 
 app = NexiosApp()
 nested_app = NexiosApp()
 mounted_router = Router(prefix="/mounted_router")
-ws_router = WSRouter(prefix="/ws_router")
+ws_router = Router(prefix="/ws_router")
 
 
 @app.get("/")
@@ -120,7 +120,7 @@ async def websocket_index2(websocket: WebSocket):
 
 
 app.mount_router(mounted_router)
-app.mount_ws_router(ws_router)
+app.mount_router(ws_router)
 app.register(nested_app, "/nested")
 
 
