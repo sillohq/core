@@ -156,10 +156,10 @@ export default defineConfig({
       { text: 'Intro', link: '/intro' },
       { text: 'Guide', link: '/guide/getting-started' },
       { text: "API Reference", link: "/api-reference" },
-      { text: 'Examples', link: '/api-examples' },
       { text: "Community", link: "/community" },
       { text: "Discussions", link: "https://github.com/orgs/nexios-labs/discussions" },
       { text: 'Team', link: 'team' },
+      { text: 'Blog', link: 'https://blog.nexioslabs.com' },
       {
         text: 'v3  (Latest)',
         items: [
