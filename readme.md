@@ -102,7 +102,8 @@ async def basic(request: Request, response: Response):
 
 ```py
 from nexios import NexiosApp, Depend
-from nexios_contrib.middleware import ETagMiddleware, TrustedHostMiddleware
+from nexios_contrib.etag import ETagMiddleware
+from nexios_contrib.trusted import TrustedHostMiddleware
 from nexios.http import Request, Response
 
 app = NexiosApp()
