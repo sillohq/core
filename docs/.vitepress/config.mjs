@@ -165,7 +165,7 @@ export default defineConfig({
         items: [
           { text: 'v3', link: '/guide/getting-started' },
           { text: 'v2.11.1', link: '/v2/guide/getting-started' },
-          { text: 'Changelog', link: 'https://github.com/nexios-labs/nexios/blob/CHANGELOG.md' },
+          { text: 'Changelog', link: '/changelog' },
           { text: 'Contributing', link: '/community/contribution-guide' },
         ]
       }
