@@ -1,4 +1,4 @@
-// node_modules/.pnpm/minisearch@7.1.2/node_modules/minisearch/dist/es/index.js
+// node_modules/.pnpm/minisearch@7.2.0/node_modules/minisearch/dist/es/index.js
 var ENTRIES = "ENTRIES";
 var KEYS = "KEYS";
 var VALUES = "VALUES";
@@ -570,7 +570,7 @@ var MiniSearch = class _MiniSearch {
    * @param document  The document to be indexed
    */
   add(document) {
-    const { extractField, tokenize, processTerm, fields, idField } = this._options;
+    const { extractField, stringifyField, tokenize, processTerm, fields, idField } = this._options;
     const id = extractField(document, idField);
     if (id == null) {
       throw new Error(`MiniSearch: document does not have ID field "${idField}"`);
@@ -584,7 +584,7 @@ var MiniSearch = class _MiniSearch {
       const fieldValue = extractField(document, field);
       if (fieldValue == null)
         continue;
-      const tokens = tokenize(fieldValue.toString(), field);
+      const tokens = tokenize(stringifyField(fieldValue, field), field);
       const fieldId = this._fieldIds[field];
       const uniqueTerms = new Set(tokens).size;
       this.addFieldLength(shortDocumentId, fieldId, this._documentCount - 1, uniqueTerms);
@@ -651,7 +651,7 @@ var MiniSearch = class _MiniSearch {
    * @param document  The document to be removed
    */
   remove(document) {
-    const { tokenize, processTerm, extractField, fields, idField } = this._options;
+    const { tokenize, processTerm, extractField, stringifyField, fields, idField } = this._options;
     const id = extractField(document, idField);
     if (id == null) {
       throw new Error(`MiniSearch: document does not have ID field "${idField}"`);
@@ -664,7 +664,7 @@ var MiniSearch = class _MiniSearch {
       const fieldValue = extractField(document, field);
       if (fieldValue == null)
         continue;
-      const tokens = tokenize(fieldValue.toString(), field);
+      const tokens = tokenize(stringifyField(fieldValue, field), field);
       const fieldId = this._fieldIds[field];
       const uniqueTerms = new Set(tokens).size;
       this.removeFieldLength(shortId, fieldId, this._documentCount, uniqueTerms);
@@ -1747,6 +1747,7 @@ var termToQuerySpec = (options) => (term, i, terms) => {
 var defaultOptions = {
   idField: "id",
   extractField: (document, fieldName) => document[fieldName],
+  stringifyField: (fieldValue, fieldName) => fieldValue.toString(),
   tokenize: (text) => text.split(SPACE_OR_PUNCTUATION),
   processTerm: (term) => term.toLowerCase(),
   fields: void 0,

@@ -45,6 +45,8 @@ import {
   extendRef,
   formatDate,
   formatTimeAgo,
+  formatTimeAgoIntl,
+  formatTimeAgoIntlParts,
   get,
   getLifeCycleTarget,
   getSSRHandler,
@@ -246,6 +248,7 @@ import {
   useThrottleFn,
   useThrottledRefHistory,
   useTimeAgo,
+  useTimeAgoIntl,
   useTimeout,
   useTimeoutFn,
   useTimeoutPoll,
@@ -281,8 +284,8 @@ import {
   watchTriggerable,
   watchWithFilter,
   whenever
-} from "./chunk-627NGWSC.js";
-import "./chunk-JN5NFW2R.js";
+} from "./chunk-OQUP5XLU.js";
+import "./chunk-PAZLUHC7.js";
 export {
   DefaultMagicKeysAliasMap,
   StorageSerializers,
@@ -337,6 +340,8 @@ export {
   extendRef,
   formatDate,
   formatTimeAgo,
+  formatTimeAgoIntl,
+  formatTimeAgoIntlParts,
   get,
   getLifeCycleTarget,
   getSSRHandler,
@@ -544,6 +549,7 @@ export {
   useThrottleFn,
   useThrottledRefHistory,
   useTimeAgo,
+  useTimeAgoIntl,
   useTimeout,
   useTimeoutFn,
   useTimeoutPoll,
