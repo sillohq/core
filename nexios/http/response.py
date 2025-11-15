@@ -11,9 +11,9 @@ from email.utils import format_datetime, formatdate
 from functools import partial
 from hashlib import sha1
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, AsyncIterator, Dict,Annotated, Generator, List, Optional, Tuple, Union
 from urllib.parse import quote
-
+from typing_extensions import Doc
 import anyio
 import anyio.to_thread
 from anyio import AsyncFile
@@ -638,6 +638,112 @@ class RedirectResponse(BaseResponse):
 
 
 class NexiosResponse:
+    """
+    Fluent HTTP response builder for Nexios framework.
+    
+    NexiosResponse provides a chainable, fluent interface for building HTTP responses
+    with support for various content types, headers, cookies, caching, and more.
+    It acts as a wrapper around the lower-level BaseResponse classes while providing
+    a more convenient and intuitive API.
+    
+    Key Features:
+    - Fluent/chainable API for building responses
+    - Support for JSON, HTML, plain text, and file responses
+    - Cookie management with security options
+    - HTTP caching controls
+    - Custom headers and status codes
+    - File downloads and streaming responses
+    - Pagination support for large datasets
+    - Redirect responses
+    
+    Examples:
+        1. JSON responses:
+        ```python
+        @app.get("/users")
+        async def get_users(request: Request, response: Response):
+            users = await get_all_users()
+            return response.json(users)
+        
+        @app.post("/users")
+        async def create_user(request: Request, response: Response):
+            data = await request.json
+            user = await create_user(data)
+            return response.json(user, status=201)
+        ```
+        
+        2. HTML responses:
+        ```python
+        @app.get("/")
+        async def home(request: Request, response: Response):
+            html_content = "<h1>Welcome to Nexios!</h1>"
+            return response.html(html_content)
+        ```
+        
+        3. File responses:
+        ```python
+        @app.get("/download/{filename}")
+        async def download_file(request: Request, response: Response):
+            filename = request.path_params['filename']
+            return response.download(f"files/{filename}")
+        
+        @app.get("/avatar/{user_id}")
+        async def get_avatar(request: Request, response: Response):
+            user_id = request.path_params['user_id']
+            return response.file(f"avatars/{user_id}.jpg")
+        ```
+        
+        4. Responses with headers and cookies:
+        ```python
+        @app.post("/login")
+        async def login(request: Request, response: Response):
+            data = await request.json
+            user = await authenticate(data['username'], data['password'])
+            
+            if user:
+                token = generate_jwt_token(user)
+                return (response
+                    .json({"message": "Login successful"})
+                    .set_cookie("auth_token", token, httponly=True, secure=True)
+                    .set_header("X-User-ID", str(user.id)))
+            else:
+                return response.json({"error": "Invalid credentials"}, status=401)
+        ```
+        
+        5. Cached responses:
+        ```python
+        @app.get("/static-data")
+        async def get_static_data(request: Request, response: Response):
+            data = await get_expensive_computation()
+            return (response
+                .json(data)
+                .cache(max_age=3600, private=False))  # Cache for 1 hour
+        ```
+        
+        6. Streaming responses:
+        ```python
+        @app.get("/stream")
+        async def stream_data(request: Request, response: Response):
+            async def generate_data():
+                for i in range(1000):
+                    yield f"data chunk {i}\n"
+                    await asyncio.sleep(0.1)
+            
+            return response.stream(generate_data(), content_type="text/plain")
+        ```
+        
+        7. Paginated responses:
+        ```python
+        @app.get("/users")
+        async def get_users(request: Request, response: Response):
+            users = await get_all_users()
+            return response.paginate(
+                users,
+                strategy="page_number",
+                page_size=20
+            )
+        ```
+    """
+    
     _instance = None
 
     def __new__(cls, *args, **kwargs):  # type:ignore
@@ -708,13 +814,107 @@ class NexiosResponse:
 
     def json(
         self,
-        data: Union[str, List[Any], Dict[str, Any]],
-        status_code: Optional[int] = None,
-        headers: Dict[str, Any] = {},
-        indent: Optional[int] = None,
-        ensure_ascii: bool = True,
+        data: Annotated[
+            Union[str, List[Any], Dict[str, Any]], 
+            Doc(
+                """
+                Data to serialize as JSON response.
+                
+                Can be any JSON-serializable Python object including:
+                - Dictionaries and lists
+                - Strings, numbers, booleans
+                - Pydantic models (automatically serialized)
+                - Custom objects with __dict__ or to_dict() methods
+                
+                Examples:
+                - {"message": "Hello, World!"}
+                - [{"id": 1, "name": "John"}, {"id": 2, "name": "Jane"}]
+                - user_model.dict() for Pydantic models
+                """
+            )
+        ],
+        status_code: Annotated[
+            Optional[int], 
+            Doc(
+                """
+                HTTP status code for the response.
+                
+                Common status codes:
+                - 200: OK (default)
+                - 201: Created (for successful POST requests)
+                - 400: Bad Request
+                - 404: Not Found
+                - 500: Internal Server Error
+                """
+            )
+        ] = None,
+        headers: Annotated[
+            Dict[str, Any], 
+            Doc(
+                """
+                Additional HTTP headers to include in the response.
+                
+                Example: {"X-Custom-Header": "value", "Cache-Control": "no-cache"}
+                """
+            )
+        ] = {},
+        indent: Annotated[
+            Optional[int], 
+            Doc(
+                """
+                Number of spaces to use for JSON indentation.
+                
+                - None: Compact JSON (default)
+                - 2 or 4: Pretty-printed JSON for debugging
+                """
+            )
+        ] = None,
+        ensure_ascii: Annotated[
+            bool, 
+            Doc(
+                """
+                Whether to escape non-ASCII characters in JSON output.
+                
+                - True: Escape non-ASCII characters (default)
+                - False: Allow Unicode characters in output
+                """
+            )
+        ] = True,
     ):
-        """Send JSON response."""
+        """
+        Send a JSON response with the provided data.
+        
+        This method serializes the provided data to JSON and sets the appropriate
+        Content-Type header. It supports pretty-printing for development and
+        handles various Python data types automatically.
+        
+        Returns:
+            NexiosResponse: Self for method chaining
+            
+        Examples:
+            1. Simple JSON response:
+            ```python
+            return response.json({"message": "Hello, World!"})
+            ```
+            
+            2. JSON with custom status:
+            ```python
+            return response.json({"error": "Not found"}, status=404)
+            ```
+            
+            3. Pretty-printed JSON for debugging:
+            ```python
+            return response.json(data, indent=2)
+            ```
+            
+            4. JSON with custom headers:
+            ```python
+            return response.json(
+                data, 
+                headers={"X-Total-Count": str(len(data))}
+            )
+            ```
+        """
         if status_code is None:
             status_code = self._status_code
         new_response = JSONResponse(
@@ -819,17 +1019,156 @@ class NexiosResponse:
 
     def set_cookie(
         self,
-        key: str,
-        value: str,
-        max_age: Optional[int] = None,
-        expires: Optional[Union[str, datetime, int]] = None,
-        path: str = "/",
-        domain: Optional[str] = None,
-        secure: bool = True,
-        httponly: bool = False,
-        samesite: typing.Optional[typing.Literal["lax", "strict", "none"]] = "lax",
+        key: Annotated[
+            str, 
+            Doc("Name of the cookie to set")
+        ],
+        value: Annotated[
+            str, 
+            Doc("Value to store in the cookie")
+        ],
+        max_age: Annotated[
+            Optional[int], 
+            Doc(
+                """
+                Maximum age of the cookie in seconds.
+                
+                If set, the cookie will expire after this many seconds.
+                Takes precedence over 'expires' if both are set.
+                
+                Examples:
+                - 3600: Cookie expires in 1 hour
+                - 86400: Cookie expires in 1 day
+                - 604800: Cookie expires in 1 week
+                """
+            )
+        ] = None,
+        expires: Annotated[
+            Optional[Union[str, datetime, int]], 
+            Doc(
+                """
+                Expiration date/time for the cookie.
+                
+                Can be:
+                - datetime object: Specific expiration time
+                - int: Unix timestamp
+                - str: HTTP date string
+                
+                Example: datetime.now() + timedelta(days=7)
+                """
+            )
+        ] = None,
+        path: Annotated[
+            str, 
+            Doc(
+                """
+                URL path where the cookie is valid.
+                
+                - "/" (default): Cookie valid for entire domain
+                - "/admin": Cookie only valid for admin section
+                """
+            )
+        ] = "/",
+        domain: Annotated[
+            Optional[str], 
+            Doc(
+                """
+                Domain where the cookie is valid.
+                
+                - None (default): Cookie valid for current domain only
+                - ".example.com": Cookie valid for all subdomains
+                """
+            )
+        ] = None,
+        secure: Annotated[
+            bool, 
+            Doc(
+                """
+                Whether cookie should only be sent over HTTPS.
+                
+                - True (default): Cookie only sent over secure connections
+                - False: Cookie sent over HTTP and HTTPS
+                
+                Recommended to keep True for production.
+                """
+            )
+        ] = True,
+        httponly: Annotated[
+            bool, 
+            Doc(
+                """
+                Whether cookie should be inaccessible to JavaScript.
+                
+                - True: Cookie cannot be accessed via document.cookie
+                - False (default): Cookie accessible to JavaScript
+                
+                Set to True for authentication cookies to prevent XSS attacks.
+                """
+            )
+        ] = False,
+        samesite: Annotated[
+            typing.Optional[typing.Literal["lax", "strict", "none"]], 
+            Doc(
+                """
+                SameSite attribute for CSRF protection.
+                
+                - "lax" (default): Cookie sent with same-site requests and top-level navigation
+                - "strict": Cookie only sent with same-site requests
+                - "none": Cookie sent with all requests (requires secure=True)
+                """
+            )
+        ] = "lax",
     ):
-        """Set a response cookie."""
+        """
+        Set an HTTP cookie in the response.
+        
+        Cookies are used to store small pieces of data in the client's browser
+        that are sent back with subsequent requests. This method provides full
+        control over cookie attributes for security and functionality.
+        
+        Returns:
+            NexiosResponse: Self for method chaining
+            
+        Examples:
+            1. Simple session cookie:
+            ```python
+            return response.set_cookie("session_id", session_token)
+            ```
+            
+            2. Secure authentication cookie:
+            ```python
+            return response.set_cookie(
+                "auth_token", 
+                jwt_token,
+                max_age=3600,  # 1 hour
+                httponly=True,  # Prevent XSS
+                secure=True,    # HTTPS only
+                samesite="strict"  # CSRF protection
+            )
+            ```
+            
+            3. Remember me cookie:
+            ```python
+            return response.set_cookie(
+                "remember_token",
+                token,
+                max_age=30*24*3600,  # 30 days
+                httponly=True,
+                secure=True
+            )
+            ```
+            
+            4. User preference cookie:
+            ```python
+            return response.set_cookie(
+                "theme",
+                "dark",
+                max_age=365*24*3600,  # 1 year
+                secure=False,  # Accessible to JavaScript
+                samesite="lax"
+            )
+            ```
+        """
         self._response.set_cookie(
             key=key,
             value=value,
