@@ -1,207 +1,350 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Home & Getting Started -->
+  <!-- Home & Core Pages -->
   <url>
-    <loc>https://nexios-labs.github.io/nexios/</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/</loc>
+    <lastmod>2025-02-16</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/getting-started</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/concepts.html</loc>
+    <lastmod>2025-02-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/installation</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/team.html</loc>
+    <lastmod>2025-02-16</lastmod>
     <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/quickstart</loc>
-    <lastmod>2025-10-05</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://nexioslabs.com/changelog.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 
-  <!-- Core Concepts -->
+  <!-- Introduction & Getting Started -->
   <url>
-    <loc>https://nexios-labs.github.io/nexios/concepts/overview</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/intro/</loc>
+    <lastmod>2025-02-16</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/concepts/asgi</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/intro/quick-start.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/concepts/dependency-injection</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/concepts/middleware</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-
-  <!-- Guides -->
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/guides/routing</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/intro/concepts.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/guides/request-handling</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/intro/asgi.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/guides/response-handling</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/intro/async-python.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/guides/websockets</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/intro/nexios-and-fastapi.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/guides/authentication</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/guides/authorization</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/guides/validation</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/guides/error-handling</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/intro/migrating-to-nexios.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 
-  <!-- Advanced Topics -->
+  <!-- Core Guides (High Priority) -->
   <url>
-    <loc>https://nexios-labs.github.io/nexios/advanced/middleware-custom</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/guide/getting-started.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/advanced/dependency-injection-advanced</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/guide/why-nexios.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/advanced/background-tasks</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/guide/routing.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/advanced/performance-optimization</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/guide/handlers.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/advanced/security-best-practices</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/guide/request-info.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/request-inputs.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/sending-responses.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Authentication & Security Guides -->
+  <url>
+    <loc>https://nexioslabs.com/guide/authentication.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/security.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/cors.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/csrf.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/sessions.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/cookies.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Advanced Framework Concepts -->
+  <url>
+    <loc>https://nexioslabs.com/guide/middleware.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/dependency-injection.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/error-handling.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/configuration.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/events.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/startups-and-shutdowns.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Application Architecture -->
+  <url>
+    <loc>https://nexioslabs.com/guide/class-based-handlers.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/routers-and-subapps.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/handler-hooks.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/concurrency.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Data Handling & Integration -->
+  <url>
+    <loc>https://nexioslabs.com/guide/pydantic-integration.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/file-upload.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/static-files.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/headers.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/streaming-response.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/guide/pagination.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- WebSockets -->
+  <url>
+    <loc>https://nexioslabs.com/guide/websockets/</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Templating -->
+  <url>
+    <loc>https://nexioslabs.com/guide/templating/</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- OpenAPI Documentation -->
+  <url>
+    <loc>https://nexioslabs.com/guide/openapi/</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- CLI Tools -->
+  <url>
+    <loc>https://nexioslabs.com/guide/cli.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- How-To Guides -->
+  <url>
+    <loc>https://nexioslabs.com/howtos/</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://nexioslabs.com/howtos/templating.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- API Examples -->
+  <url>
+    <loc>https://nexioslabs.com/api-examples.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 
   <!-- API Reference -->
   <url>
-    <loc>https://nexios-labs.github.io/nexios/api/reference</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/api-reference/</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/api/applications</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/api/requests</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/api/responses</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/api/routing</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/api/websockets</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/api/middleware</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
 
-  <!-- Examples -->
+  <!-- Community -->
   <url>
-    <loc>https://nexios-labs.github.io/nexios/examples/rest-api</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/examples/websocket-chat</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/examples/authentication</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/examples/file-uploads</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-
-  <!-- Community & Support -->
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/community/contributing</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/community/</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/community/code-of-conduct</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/community/contribution-guide.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/community/faq</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/community/installation.html</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/community/support</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-
-  <!-- Blog & News -->
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/blog</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/community/integrations/</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://nexios-labs.github.io/nexios/blog/announcements</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/blog/tutorials</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/blog/releases</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-
-  <!-- Additional Pages -->
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/showcase</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/benchmarks</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/roadmap</loc>
-    <lastmod>2025-10-05</lastmod>
-  </url>
-  <url>
-    <loc>https://nexios-labs.github.io/nexios/404</loc>
-    <lastmod>2025-10-05</lastmod>
+    <loc>https://nexioslabs.com/community/middleware/</loc>
+    <lastmod>2025-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>
