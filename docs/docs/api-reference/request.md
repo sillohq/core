@@ -549,56 +549,7 @@ async def handler(request: Request, response: Response):
         return response.json({"message": "Session not available"})
 ```
 
-## 🔑 Authentication Helpers
 
-### basic_auth: Tuple[str, str]
-Extract HTTP Basic Authentication credentials.
-
-```python
-async def handler(request: Request, response: Response):
-    username, password = request.basic_auth
-    if username and password:
-        if await verify_credentials(username, password):
-            return response.json({"message": "Authenticated"})
-    
-    return response.status(401).json({"error": "Invalid credentials"})
-```
-
-### bearer_token: str
-Extract Bearer token from Authorization header.
-
-```python
-async def handler(request: Request, response: Response):
-    token = request.bearer_token
-    if token:
-        user = await verify_jwt_token(token)
-        if user:
-            return response.json({"user": user})
-    
-    return response.status(401).json({"error": "Invalid token"})
-```
-
-## 🚀 Advanced Usage
-
-### Custom Form Parsing
-
-```python
-async def handler(request: Request, response: Response):
-    # Parse form with custom limits
-    form_data = await request.form_data(
-        max_files=10,      # Maximum number of files
-        max_fields=100     # Maximum number of form fields
-    )
-    
-    # Process form data
-    for field_name, field_value in form_data.items():
-        if hasattr(field_value, 'filename'):  # It's a file
-            # Handle file upload
-            pass
-        else:  # It's a regular field
-            # Handle form field
-            pass
-```
 
 ### Streaming Large Requests
 

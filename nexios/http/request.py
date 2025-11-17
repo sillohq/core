@@ -742,32 +742,5 @@ class Request(HTTPConnection):
             return {k: v[0] if isinstance(v, list) else v for k, v in params.items()}
         return params
 
-    @property
-    def basic_auth(self) -> typing.Tuple[str, str]:
-        """
-        Get HTTP Basic Authentication credentials.
-        Returns a tuple of (username, password) or ("", "").
-        """
-        auth = self.headers.get("authorization", "")
-        if not auth.startswith("Basic "):
-            return ("", "")
-
-        try:
-            import base64
-
-            credentials = base64.b64decode(auth[6:]).decode("utf-8")
-            username, password = credentials.split(":")
-            return (username, password)
-        except Exception:
-            return ("", "")
-
-    @property
-    def bearer_token(self) -> str:
-        """
-        Get the Bearer token from Authorization header.
-        Returns the token or empty string if not found.
-        """
-        auth = self.headers.get("authorization", "")
-        if not auth.startswith("Bearer "):
-            return ""
-        return auth[7:]
+    
+   
