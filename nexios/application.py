@@ -30,7 +30,7 @@ from nexios.middleware.errors.server_error_handler import (
 )
 from nexios.openapi._builder import APIDocumentation
 from nexios.openapi.config import OpenAPIConfig
-from nexios.openapi.models import HTTPBearer, Parameter
+from nexios.openapi.models import HTTPBearer, Parameter,Server
 from nexios.routing.base import BaseRoute
 from nexios.structs import URLPath
 
@@ -163,7 +163,6 @@ class NexiosApp(object):
         servers_instances = None
         if servers_data:
             if isinstance(servers_data, list):
-                from nexios.openapi.models import Server
                 servers_instances = []
                 for server in servers_data:
                     if isinstance(server, dict):
@@ -203,6 +202,7 @@ class NexiosApp(object):
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)  # type:ignore
         async def serve_openapi(request: "Request", response: "Response"):
             root_path = request.scope.get("root_path", "")
+            
             return response.json(
                 self.openapi.get_openapi(self.router, current_prefix=root_path)
             )

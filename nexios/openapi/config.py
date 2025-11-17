@@ -27,7 +27,7 @@ class OpenAPIConfig:
         title: str = "API Documentation",
         version: str = "1.0.0",
         description: str = "",
-        servers: Optional[List[Server]] = None,
+        servers: Optional[List[Server]] = [],
         contact: Optional[Contact] = None,
         license: Optional[License] = None,
         openapi_version: str = "3.0.0",
@@ -42,7 +42,7 @@ class OpenAPIConfig:
                 license=license,
             ),
             paths={},
-            servers=servers or [Server(url="/")],
+            servers=servers ,
             components=Components(),
         )
         self.security_schemes: Dict[str, SecurityScheme] = {}
