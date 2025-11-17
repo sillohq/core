@@ -419,14 +419,9 @@ class Request(HTTPConnection):
         return self._form  # type:ignore
 
     @property
-    def form_data(
-        self,
-        *,
-        max_files: typing.Optional[int] = 1000,
-        max_fields: typing.Optional[int] = 1000,
-    ) -> AwaitableOrContextManager[FormData]:
+    def form_data(self) -> AwaitableOrContextManager[FormData]:
         return AwaitableOrContextManagerWrapper(
-            self._get_form(max_files=max_files, max_fields=max_fields)
+            self._get_form()
         )
 
     async def close(self) -> None:
