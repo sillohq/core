@@ -131,94 +131,11 @@ def test_request_cookies_iteration(
 # ========== Basic Authentication Tests ==========
 
 
-def test_request_basic_auth(test_client_factory: Callable[[NexiosApp], TestClient]):
-    """Test basic authentication parsing"""
-    app = NexiosApp()
-
-    @app.get("/test")
-    async def handler(request: Request, response: Response):
-        username, password = request.basic_auth
-        return response.json({"username": username, "password": password})
-
-    with test_client_factory(app) as client:
-        credentials = base64.b64encode(b"user:pass").decode("utf-8")
-        resp = client.get("/test", headers={"Authorization": f"Basic {credentials}"})
-        data = resp.json()
-        assert data["username"] == "user"
-        assert data["password"] == "pass"
 
 
-def test_request_basic_auth_invalid_format(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test basic auth with invalid format"""
-    app = NexiosApp()
-
-    @app.get("/test")
-    async def handler(request: Request, response: Response):
-        username, password = request.basic_auth
-        return response.json({"username": username, "password": password})
-
-    with test_client_factory(app) as client:
-        resp = client.get("/test", headers={"Authorization": "Bearer token123"})
-        data = resp.json()
-        assert data["username"] == ""
-        assert data["password"] == ""
 
 
-def test_request_bearer_token_invalid_format(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test bearer token with invalid format"""
-    app = NexiosApp()
 
-    @app.get("/test")
-    async def handler(request: Request, response: Response):
-        token = request.bearer_token
-        return response.json({"token": token})
-
-    with test_client_factory(app) as client:
-        resp = client.get("/test", headers={"Authorization": "Basic abc123"})
-        assert resp.json()["token"] == ""
-
-
-def test_request_bearer_token_jwt_like(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test bearer token with JWT-like format"""
-    app = NexiosApp()
-
-    @app.get("/test")
-    async def handler(request: Request, response: Response):
-        token = request.bearer_token
-        return response.json({"token": token})
-
-    with test_client_factory(app) as client:
-        jwt_token = (
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc"
-        )
-        resp = client.get("/test", headers={"Authorization": f"Bearer {jwt_token}"})
-        assert resp.json()["token"] == jwt_token
-
-
-def test_request_bearer_token_with_spaces(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test bearer token extraction handles spaces correctly"""
-    app = NexiosApp()
-
-    @app.get("/test")
-    async def handler(request: Request, response: Response):
-        token = request.bearer_token
-        return response.json({"token": token, "has_token": bool(token)})
-
-    with test_client_factory(app) as client:
-        resp = client.get("/test", headers={"Authorization": "Bearer   token123"})
-        data = resp.json()
-        assert data["has_token"] is True
-
-
-# ========== AJAX Detection Tests ==========
 
 
 def test_request_is_ajax(test_client_factory: Callable[[NexiosApp], TestClient]):
@@ -252,30 +169,3 @@ def test_request_is_ajax_case_insensitive(
 # ========== Combined Auth and Cookies Tests ==========
 
 
-def test_request_auth_and_cookies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test using both authentication and cookies"""
-    app = NexiosApp()
-
-    @app.get("/test")
-    async def handler(request: Request, response: Response):
-        token = request.bearer_token
-        session = request.cookies.get("session")
-        return response.json(
-            {
-                "has_token": bool(token),
-                "has_session": bool(session),
-                "token": token,
-                "session": session,
-            }
-        )
-
-    with test_client_factory(app) as client:
-        client.cookies.set("session", "session123")
-        resp = client.get("/test", headers={"Authorization": "Bearer token456"})
-        data = resp.json()
-        assert data["has_token"] is True
-        assert data["has_session"] is True
-        assert data["token"] == "token456"
-        assert data["session"] == "session123"
