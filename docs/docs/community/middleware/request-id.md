@@ -323,7 +323,7 @@ import asyncio
 @app.post("/api/process")
 async def start_processing(request, response):
     request_id = get_request_id_from_request(request)
-    data = await request.json()
+    data = await request.json
     
     # Pass request ID to background task
     asyncio.create_task(process_data_async(data, request_id))

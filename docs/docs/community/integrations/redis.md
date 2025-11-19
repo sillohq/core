@@ -484,7 +484,7 @@ init_redis(app)
 
 @app.post("/login")
 async def login(request: Request, response: Response, redis: RedisClient = RedisDepend()):
-    user_data = await request.json()
+    user_data = await request.json
 
     # Create session
     session_id = str(uuid.uuid4())

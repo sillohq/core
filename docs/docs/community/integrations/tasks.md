@@ -369,7 +369,7 @@ async def process_file(file_path: str, task_id: str) -> dict:
 @app.post("/process-file")
 async def start_file_processing(request: Request, response: Response):
     """Start file processing task."""
-    data = await request.json()
+    data = await request.json
     file_path = data.get("file_path")
     
     if not file_path:
@@ -434,7 +434,7 @@ async def send_single_email(recipient: str, subject: str, body: str):
 @app.post("/send-bulk-emails")
 async def start_bulk_email_sending(request: Request, response: Response):
     """Start bulk email sending task."""
-    data = await request.json()
+    data = await request.json
     
     task = await create_task(
         request=request,
@@ -523,7 +523,7 @@ async def export_to_json(data: list, filename: str, task_id: str):
 @app.post("/export-data")
 async def start_data_export(request: Request, response: Response):
     """Start data export task."""
-    data = await request.json()
+    data = await request.json
     
     task = await create_task(
         request=request,

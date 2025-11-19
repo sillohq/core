@@ -137,7 +137,7 @@ Nexios provides convenient properties to quickly check the type and characterist
 async def handle_request(req: Request, res):
     # Check content type
     if req.is_json:
-        data = await req.json()
+        data = await req.json
         # Handle JSON data
     elif req.is_form:
         data = await req.form()

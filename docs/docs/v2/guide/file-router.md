@@ -90,7 +90,7 @@ def get(req, res):
 
 def post(req, res):
     """POST /users - Create new user"""
-    user_data = await req.json()
+    user_data = await req.json
     return res.json(create_user(user_data), status_code=201)
 ```
 
@@ -175,7 +175,7 @@ class UserCreate(BaseModel):
     status_code=201
 )
 async def create_user(req, res):
-    data = await req.json()
+    data = await req.json
     return res.json(create_new_user(data))
 ```
 

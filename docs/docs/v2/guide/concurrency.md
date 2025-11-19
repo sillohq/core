@@ -130,7 +130,7 @@ from nexios.utils.concurrency import create_background_task
 
 @app.post("/send-newsletter")
 async def send_newsletter(req, res):
-    newsletter_data = await req.json()
+    newsletter_data = await req.json
     
     async def process_newsletter():
         subscribers = await fetch_subscribers()

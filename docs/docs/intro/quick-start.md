@@ -64,7 +64,7 @@ async def greeting(request:Request,response:Response,name: str):
 
 @app.post("/data")
 async def create_data(request:Request,response:Response):
-    data = await request.json()
+    data = await request.json
     return response.json({"received": data, "status": "success"})
 ```
 
