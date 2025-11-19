@@ -28,9 +28,9 @@ app = NexiosApp()
 async def get_dashboard(req, res):
     async with TaskGroup() as group:
         # Fetch different data sources in parallel
-        user_task = group.create_task(fetch_user_data(req.query.get("user_id")))
-        posts_task = group.create_task(fetch_user_posts(req.query.get("user_id")))
-        stats_task = group.create_task(fetch_user_stats(req.query.get("user_id")))
+        user_task = group.create_task(fetch_user_data(req.query_params.get("user_id")))
+        posts_task = group.create_task(fetch_user_posts(req.query_params.get("user_id")))
+        stats_task = group.create_task(fetch_user_stats(req.query_params.get("user_id")))
         
         # All API calls run concurrently
         user = await user_task
@@ -92,7 +92,7 @@ import asyncio
 
 @app.get("/search")
 async def search(req, res):
-    query = req.query.get("q")
+    query = req.query_params.get("q")
     
     try:
         # Try multiple search services, use first response
@@ -121,42 +121,6 @@ async def search_fallback(query: str, timeout: float):
     return ["fallback"]
 ```
 
-## 🔄 Background Tasks - Async Processing
-
-Perfect for handling long-running tasks without blocking the response:
-
-```python
-from nexios.utils.concurrency import create_background_task
-
-@app.post("/send-newsletter")
-async def send_newsletter(req, res):
-    newsletter_data = await req.json()
-    
-    async def process_newsletter():
-        subscribers = await fetch_subscribers()
-        for subscriber in subscribers:
-            try:
-                await send_email(subscriber, newsletter_data)
-                await update_status(subscriber, "sent")
-            except Exception as e:
-                await log_error(subscriber, e)
-    
-    # Start processing in background
-    task = asyncio.create_task(process_newsletter())
-    app._background_tasks.add(task)
-    task.add_done_callback(app._background_tasks.discard)
-    
-    return {"status": "Newsletter sending started"}
-
-@app.get("/tasks/status")
-async def get_tasks_status(req, res):
-    if not hasattr(app, '_background_tasks'):
-        return {"active_tasks": 0}
-    
-    return {
-        "active_tasks": len([t for t in app._background_tasks if not t.done()])
-    }
-```
 
 ## 💾 AsyncLazy - Cached Computations
 
