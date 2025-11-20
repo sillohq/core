@@ -14,6 +14,7 @@ The contrib package provides independently versioned packages that you can insta
 - **Trusted Host Middleware** (`nexios_contrib.trusted`) - Validates Host headers for security
 - **ETag Middleware** (`nexios_contrib.etag`) - Automatic ETag generation and conditional requests
 - **JSON-RPC** (`nexios_contrib.jrpc`) - Complete JSON-RPC 2.0 implementation
+- **Tortoise ORM Integration** (`nexios_contrib.tortoise`) - Async ORM integration with lifecycle management
 
 ## Meta Package Installation
 
@@ -50,8 +51,24 @@ uv sync
 Some contrib packages may have additional requirements:
 
 - **Redis contrib**: Requires `redis-py`
+- **Tortoise ORM contrib**: Requires `tortoise-orm`
 - **JSON-RPC contrib**: No additional dependencies
 - **Middleware packages**: No additional dependencies
+
+### Optional Dependencies
+
+You can install contrib packages with their optional dependencies:
+
+```bash
+# Install with Redis support
+pip install nexios_contrib[redis]
+
+# Install with Tortoise ORM support
+pip install nexios_contrib[tortoise]
+
+# Install with all optional dependencies
+pip install nexios_contrib[all]
+```
 
 ## Verification
 
@@ -67,6 +84,7 @@ print(nexios_contrib.__version__)
 import nexios_contrib.etag
 import nexios_contrib.redis
 import nexios_contrib.trusted
+import nexios_contrib.tortoise
 ```
 
 ## Contributing to Nexios Contrib

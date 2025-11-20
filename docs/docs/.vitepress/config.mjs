@@ -204,6 +204,7 @@ export default defineConfig({
             { text: 'Redis', link: '/community/integrations/redis' },
             { text: 'JSON-RPC', link: '/community/integrations/jrpc' },
             { text: 'Background Tasks', link: '/community/integrations/tasks' },
+            { text: 'Tortoise ORM', link: '/community/integrations/tortoise' },
           ]
         },
         { text: "Contribution Guide", link: "/community/contribution-guide" },
