@@ -107,21 +107,11 @@ async def run_until_first_complete(
     return result
 
 
-@asynccontextmanager
-async def create_background_task(
+def create_background_task(
     coro: Coroutine[Any, Any, Any], *, name: Optional[str] = None
-) -> AsyncGenerator[asyncio.Task, None]:
-    """Create a background task that will be cancelled when the context exits."""
-    task = asyncio.create_task(coro, name=name)
-    try:
-        yield task
-    finally:
-        if not task.done():
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
+) -> asyncio.Task:
+    """Create a background task."""
+    return asyncio.create_task(coro, name=name)
 
 
 class AsyncLazy(Generic[T]):

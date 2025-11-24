@@ -87,26 +87,14 @@ async def test_create_background_task():
         await asyncio.sleep(0.1)
         counter += 1
 
-    async with create_background_task(increment()):
-        await asyncio.sleep(0.2)
+    task = create_background_task(increment())
+    await asyncio.sleep(0.2)
+    await task
 
     assert counter == 1
 
 
-async def test_background_task_cancellation():
-    running = True
 
-    async def infinite_loop():
-        nonlocal running
-        while running:
-            await asyncio.sleep(0.1)
-
-    async with create_background_task(infinite_loop()) as task:
-        assert not task.done()
-        await asyncio.sleep(0.2)
-
-    assert task.cancelled()
-    running = False
 
 
 # AsyncLazy Tests
