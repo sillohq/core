@@ -150,6 +150,7 @@ class NexiosApp(object):
         
         # Handle contact - ensure it's a Contact model instance  
         contact_data = openapi_config.get("contact")
+        terms_of_service = openapi_config.get("termsOfService")
         contact_instance = None
         if contact_data:
             if isinstance(contact_data, dict):
@@ -181,6 +182,7 @@ class NexiosApp(object):
             license=license_instance,
             contact=contact_instance,
             servers=servers_instances,
+            termsOfService=terms_of_service,
         )
 
         self.openapi_config.add_security_scheme(

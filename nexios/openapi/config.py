@@ -10,7 +10,7 @@ from .models import (
     Info,
     License,
     OpenAPI,
-    Parameter,
+    Parameter
 )
 from .models import Response as OpenAPIResponse
 from .models import (
@@ -30,6 +30,7 @@ class OpenAPIConfig:
         servers: Optional[List[Server]] = [],
         contact: Optional[Contact] = None,
         license: Optional[License] = None,
+        termsOfService:Optional[str] = None,
         openapi_version: str = "3.0.0",
     ):
         self.openapi_spec = OpenAPI(
@@ -40,6 +41,7 @@ class OpenAPIConfig:
                 description=description,
                 contact=contact,
                 license=license,
+                termsOfService=termsOfService,
             ),
             paths={},
             servers=servers ,
