@@ -155,6 +155,58 @@ async def search_fallback(query: str, timeout: float):
 ```
 
 
+## 🔄 Background Tasks
+
+`create_background_task` creates and returns an asyncio task that runs independently. This is useful for fire-and-forget operations or when you need to start a task but don't want to wait for it immediately.
+
+**Use Cases:**
+- Sending notifications after a response
+- Logging analytics data
+- Background cleanup operations
+- Periodic maintenance tasks
+
+```python
+from nexios.utils.concurrency import create_background_task
+import asyncio
+
+@app.post("/send-notification")
+async def send_notification(req, res):
+    data = await req.json()
+    
+    # Send immediate response
+    response = {"status": "notification_queued", "recipient": data["recipient"]}
+    
+    # Start background task (don't await)
+    task = create_background_task(send_email_notification(data))
+    
+    return response
+
+async def send_email_notification(data: dict):
+    """Background task for sending email"""
+    try:
+        await asyncio.sleep(2)  # Simulate email sending delay
+        # Actual email sending logic here
+        await log_notification_sent(data["recipient"])
+    except Exception as e:
+        await log_notification_error(data["recipient"], str(e))
+```
+
+**Task Management:**
+```python
+# Create and manage tasks manually
+task = create_background_task(long_running_operation())
+
+# Check if task is done
+if task.done():
+    result = task.result()
+
+# Cancel if needed
+task.cancel()
+
+# Wait for completion when ready
+await task
+```
+
 ## 💾 AsyncLazy - Cached Computations
 
 `AsyncLazy` provides lazy evaluation with caching for expensive async operations. The computation runs only once when first accessed, and subsequent calls return the cached result.
@@ -423,6 +475,7 @@ async def protected_api_call(req, res):
 - **TaskGroup**: Multiple independent async operations
 - **run_in_threadpool**: CPU-bound or blocking I/O operations  
 - **run_until_first_complete**: Redundancy and failover scenarios
+- **create_background_task**: Fire-and-forget operations
 - **AsyncLazy**: Expensive computations that can be cached
 
 ### 2. Resource Management
@@ -505,7 +558,8 @@ Nexios concurrency utilities provide a robust foundation for building high-perfo
 - Use **TaskGroup** for parallel operations that must all complete
 - Use **run_in_threadpool** for CPU-intensive or blocking operations
 - Use **run_until_first_complete** for redundancy and failover
+- Use **create_background_task** for fire-and-forget operations
 - Use **AsyncLazy** for expensive operations that can be cached
 - Always implement proper error handling and timeouts
 - Monitor performance and resource usage
-- Consider memory implications for large-scale operations 
+- Consider memory implications for large-scale operations
