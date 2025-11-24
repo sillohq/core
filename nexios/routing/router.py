@@ -2451,11 +2451,9 @@ class Router(BaseRouter):
 
     async def app(self, scope: Scope, receive: Receive, send: Send):
         scope["app"] = self
-        url = get_route_path(scope)
 
         path_match = None
-        partial_params = None
-        allowed_methods_: typing.List[str] = []
+        
         for route in self.routes:
             match, matched_params = route.match(scope)  # type:ignore
             if match == MatchStatus.FULL:
@@ -2463,12 +2461,11 @@ class Router(BaseRouter):
                 await route.handle(scope, receive, send)  # type:ignore
                 return
             elif match == MatchStatus.PARTIAL and path_match is None :
-                partial_params = matched_params
                 path_match = route
 
         if path_match is not None:
             scope["route_params"] = RouteParam(matched_params)
-            await partial.handle(scope, receive, send)
+            await path_match.handle(scope, receive, send)
             return
         if scope.get("type") == "http":
             raise NotFoundException
