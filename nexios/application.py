@@ -101,9 +101,44 @@ class NexiosApp(object):
                         A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures."""
             ),
         ] = None,
-        lifespan: Optional[lifespan_manager] = None,
-        routes: Optional[List[Route]] = None,
-        dependencies: Optional[list[Depend]] = None,
+        lifespan: Annotated[
+            Optional[lifespan_manager],
+            Doc(
+                """
+                    A function in Nexios responsible for handling ASGI lifespan protocol events. It handles the startup and shutdown events emitted by the ASGI server. It allows you to perform actions such as initializing resources, opening connections, and tearing down resources during application startup and shutdown.
+
+                    This function is called when the application starts and when it shuts down. It receives a `Receive` function to receive lifespan events and a `Send` function to send lifespan events.
+
+                    The `lifespan_manager` function takes two arguments: `self` and `receive` and `send`. It returns an `AsyncContextManager` that can be used to manage the lifespan of the application.
+
+                    You can use this function to perform actions such as connecting to a database, initializing a cache, or registering a signal handler.
+                """
+            ),
+        ] = None,
+        routes: Annotated[
+            Optional[List[Route]],
+            Doc(
+                """
+                    A list of routes for the application. These routes define the URLs that the application will handle and the handlers that will be called when those URLs are accessed.
+
+                    Each route is an instance of the `Route` class and defines the URL path, the handler function, and any additional middleware or dependencies that should be applied to that route.
+
+                    You can add routes to the application using the `add_route` method of the `Router` class.
+                """
+            ),
+        ] = None,
+        dependencies: Annotated[
+            Optional[list[Depend]],
+            Doc(
+                """
+                    A list of dependencies for the application. These dependencies are used to resolve dependencies within the application.
+
+                    A dependency is a function that takes a `Request` object and returns the value that should be injected into the dependency.
+
+                    You can add dependencies to the application using the `add_dependency` method of the `Router` class.
+                """
+            ),
+        ] = None,
     ):
         self.config = config or DEFAULT_CONFIG
         self.dependencies = dependencies or []
