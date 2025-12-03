@@ -203,6 +203,7 @@ export default defineConfig({
           items: [
             { text: 'Redis', link: '/community/integrations/redis' },
             { text: 'JSON-RPC', link: '/community/integrations/jrpc' },
+            { text: 'GraphQL', link: '/community/integrations/graphql' },
             { text: 'Background Tasks', link: '/community/integrations/tasks' },
             { text: 'Tortoise ORM', link: '/community/integrations/tortoise' },
           ]
