@@ -742,15 +742,37 @@ class NexiosResponse:
             )
         ```
     """
-    
-    
+
+    def __new__(cls, request: Request):  # type:ignore
+        """
+        Create or retrieve request-scoped response instance.
+        Each request gets its own instance stored in request.state.
+        """
+        # Check if response already exists for this request
+        # Use _state dict directly to avoid State.__getattr__ returning None
+        existing = request.state._state.get('_response_instance')
+        if existing is not None:
+            return existing
+        
+        # Create new instance and store in request state
+        instance = super(NexiosResponse, cls).__new__(cls)
+        request.state._response_instance = instance
+        instance._initialized = False  # type:ignore
+        return instance
 
     def __init__(self, request: Request):
+        """
+        Initialize response instance. Only runs once per request.
+        """
+        # Only initialize once per request
+        if hasattr(self, '_initialized') and self._initialized:  # type:ignore
+            return
+            
         self._response: BaseResponse = BaseResponse()
         self._cookies: List[Dict[str, Any]] = []
         self._status_code = self._response.status_code
         self._request = request
-        self._request.state._response_instance = self
+        self._initialized = True  # type:ignore
 
     @property
     def headers(self):

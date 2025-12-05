@@ -43,12 +43,10 @@ async def request_response(
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
         request = Request(scope, receive, send)
-        response_manager = request.state._response_instance
-        if not response_manager:
-            response_manager = Response(request)
-            request.state._response_instance = response_manager
-        else:
-            request = response_manager._request
+        
+        # Get or create response manager for this request
+        # __new__ automatically returns existing instance if available
+        response_manager = Response(request)
 
         ctx = Context(
             request=request,
