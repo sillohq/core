@@ -252,8 +252,7 @@ class BaseResponse:
         """Set multiple headers at once."""
         for key, value in headers.items():
             self.set_header(key, value)
-        return self
-
+   
 
 class PlainTextResponse(BaseResponse):
     def __init__(
@@ -967,13 +966,14 @@ class NexiosResponse:
         path: str,
         filename: Optional[str] = None,
         content_disposition_type: str = "inline",
+        headers: Dict[str, Any] = {},
     ):
         """Send file response."""
         new_response = FileResponse(
             path=path,
             filename=filename,
             status_code=self._status_code,
-            headers=self._response.headers,
+            headers=headers,
             content_disposition_type=content_disposition_type,
         )
         self._response = self._preserve_headers_and_cookies(new_response)
@@ -985,6 +985,7 @@ class NexiosResponse:
         iterator: Generator[Union[str, bytes], Any, Any],
         content_type: str = "text/plain",
         status_code: Optional[int] = None,
+        headers: Dict[str, Any] = {},
     ):
         """Send streaming response."""
         if status_code is None:
@@ -992,16 +993,16 @@ class NexiosResponse:
         new_response = StreamingResponse(
             content=iterator,  # type: ignore
             status_code=status_code or self._status_code,
-            headers=self._response.headers,
+            headers=headers,
             content_type=content_type,
         )
         self._response = self._preserve_headers_and_cookies(new_response)
         return self
 
-    def redirect(self, url: str, status_code: int = 302):
+    def redirect(self, url: str, status_code: int = 302, headers: Dict[str, Any] = {}):
         """Send redirect response."""
         new_response = RedirectResponse(
-            url=url, status_code=status_code, headers=self._response.headers
+            url=url, status_code=status_code, headers=headers
         )
         self._response = self._preserve_headers_and_cookies(new_response)
         return self
@@ -1360,6 +1361,9 @@ class NexiosResponse:
 
         result = await paginator.paginate()
         return self.json(result)
+
+    async def __call__(self, *args: Any, **kwargs: Any) -> "NexiosResponse":
+        return await self._response(*args, **kwargs)
 
     def __str__(self):
         return f"Response [{self._status_code} {self.body}]"

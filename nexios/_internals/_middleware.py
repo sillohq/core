@@ -214,12 +214,12 @@ class ASGIRequestResponseBridge:
                 if app_exc is not None:
                     raise app_exc
 
-            response_ = response.stream(
+            response_object = response.stream(
                 iterator=body_stream(),
                 status_code=message["status"],  # type: ignore
             )  # type: ignore
-            response_._response._headers = message["headers"]  # type: ignore
-            return response_._response  # type:ignore
+            response_object._response._headers = message["headers"]  # type: ignore
+            return response_object._response  # type:ignore
 
         streams: anyio.create_memory_object_stream[Message] = (  # type: ignore
             anyio.create_memory_object_stream()
