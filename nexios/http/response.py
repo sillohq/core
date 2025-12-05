@@ -743,19 +743,14 @@ class NexiosResponse:
         ```
     """
     
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):  # type:ignore
-        if cls._instance is None:
-            cls._instance = super(NexiosResponse, cls).__new__(cls)
-            cls._instance._initialized = False  # type:ignore
-        return cls._instance
+    
 
     def __init__(self, request: Request):
         self._response: BaseResponse = BaseResponse()
         self._cookies: List[Dict[str, Any]] = []
         self._status_code = self._response.status_code
         self._request = request
+        self._request.state._response_instance = self
 
     @property
     def headers(self):
