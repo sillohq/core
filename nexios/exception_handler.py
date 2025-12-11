@@ -64,9 +64,12 @@ async def wrap_http_exceptions(
 
 class ExceptionMiddleware:
     def __init__(self) -> None:
-        self.debug = (
-            get_config().debug or False
+        try:
+            self.debug = (
+                get_config().debug or False
         )  # TODO: We ought to handle 404 cases if debug is set.
+        except:
+            self.debug = True
         self._status_handlers: typing.Dict[int, ExceptionHandlerType] = {}
         self._exception_handlers: dict[
             typing.Type[Exception], typing.Callable[..., typing.Awaitable[None]]

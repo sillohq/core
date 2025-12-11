@@ -19,7 +19,7 @@ from nexios._internals._middleware import (
     ASGIRequestResponseBridge,
 )
 from nexios._internals._middleware import DefineMiddleware as Middleware
-from nexios.config import DEFAULT_CONFIG, MakeConfig
+from nexios.config import MakeConfig
 from nexios.dependencies import Depend
 from nexios.events import AsyncEventEmitter
 from nexios.exception_handler import ExceptionHandlerType, ExceptionMiddleware
@@ -46,6 +46,7 @@ from .types import (
     WsHandlerType,
     WsMiddlewareType,
 )
+from nexios.config import get_config, set_config
 
 if TYPE_CHECKING:
     from nexios.http import Request, Response
@@ -69,7 +70,7 @@ class NexiosApp(object):
                     Additionally, this design allows for merging and overriding configurations, making it adaptable for various use cases. Whether used for small projects or large-scale applications, this subclass ensures that configuration management remains efficient and scalable. By extending MakeConfig, it leverages existing functionality while adding new capabilities tailored to Nexios. This makes it an essential component for maintaining structured and well-organized application settings.
                     """
             ),
-        ] = DEFAULT_CONFIG,
+        ] = MakeConfig() ,
         title: Annotated[
             Optional[str],
             Doc(
@@ -140,7 +141,7 @@ class NexiosApp(object):
             ),
         ] = None,
     ):
-        self.config = config or DEFAULT_CONFIG
+        self.config = config 
         self.dependencies = dependencies or []
         try:
             from nexios.cli.utils import get_config as get_nexios_config
@@ -149,15 +150,15 @@ class NexiosApp(object):
             def get_nexios_config() -> Dict[str, Any]:
                 return {}
 
-        from nexios.config import get_config, set_config
 
         try:
             get_config()
         except RuntimeError:
             set_config(self.config)
-        self.config.update(
-            get_nexios_config(),
-        )
+        if self.config:
+            self.config.update(
+                get_nexios_config(),
+            )
         self.http_middleware: List[Middleware] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
         self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
@@ -170,7 +171,8 @@ class NexiosApp(object):
         self.route = self.router.route
         self.lifespan_context: Optional[lifespan_manager] = lifespan
         self.state: Dict[str, Any] = {}
-
+        if not self.config:
+            return 
         openapi_config: Dict[str, Any] = self.config.to_dict().get("openapi", {})  # type:ignore
         
         # Handle license - ensure it's a License model instance

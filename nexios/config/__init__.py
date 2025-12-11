@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from .base import DEFAULT_SERVER_CONFIG, MakeConfig
+from .base import  MakeConfig
 
 _global_config: Optional[MakeConfig] = None
 
@@ -21,6 +21,3 @@ def get_config() -> MakeConfig:
     return _global_config
 
 
-DEFAULT_CONFIG = MakeConfig(
-    {"debug": True, "server": DEFAULT_SERVER_CONFIG},
-)

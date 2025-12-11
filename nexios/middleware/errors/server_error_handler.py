@@ -868,7 +868,10 @@ class ServerErrorMiddleware(BaseMiddleware):
         # Store the current request for error context
         self.current_request = request
         # Get debug mode from config
-        self.debug = get_config().debug or True
+        try:
+            self.debug = get_config().debug or True
+        except Exception:  # pragma: no cover
+            self.debug = True
         try:
             return await next_middleware()
         except Exception as exc:

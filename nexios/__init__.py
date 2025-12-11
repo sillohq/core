@@ -88,7 +88,7 @@ from typing import AsyncContextManager, Callable, Optional
 from typing_extensions import Annotated, Doc
 
 from .application import NexiosApp
-from .config import DEFAULT_CONFIG, set_config
+from .config import  set_config
 from .config.base import MakeConfig
 from .dependencies import Depend
 from .middleware.cors import CORSMiddleware
@@ -124,7 +124,7 @@ def get_application(
             maintaining structured and well-organized application settings.
             """
         ),
-    ] = DEFAULT_CONFIG,
+    ] = None,
     title: Annotated[
         Optional[str],
         Doc(
