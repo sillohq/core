@@ -4,7 +4,7 @@ from typing import Any
 
 from typing_extensions import Annotated, Doc
 
-from nexios.auth.base import AuthenticationBackend
+from nexios.auth.backends.base import AuthenticationBackend
 from nexios.auth.model import AuthResult
 from nexios.http import Request, Response
 

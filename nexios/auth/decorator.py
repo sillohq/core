@@ -9,15 +9,22 @@ from .exceptions import AuthenticationFailed, PermissionDenied
 
 
 class auth(RouteDecorator):
-    def __init__(self, scopes: typing.Union[str, typing.List[str], None] = None):
+    def __init__(self, 
+                scopes: typing.Union[str, typing.List[str], None] = None,
+                handle_401: typing.Callable[[Request, Response], typing.Any] = None,
+):
         super().__init__()
+        self.handle_401 = handle_401
         if isinstance(scopes, str):
             self.scopes = [scopes]
         elif scopes is None:
             self.scopes = []  # Allow authentication with any scope
         else:
             self.scopes = scopes
-
+    def _handle_401(self, request: Request, response: Response):
+        if self.handle_401:
+            return self.handle_401(request, response)
+        raise AuthenticationFailed
     def __call__(
         self,
         handler: typing.Union[
@@ -38,14 +45,14 @@ class auth(RouteDecorator):
                 raise TypeError("Expected request and response as the fist arguments")
 
             if not request.scope.get("user"):
-                raise AuthenticationFailed
+                return self._handle_401(request, response)
 
             scopes = request.scope.get("auth")  # type: ignore
             if not scopes:  # pragma: no cover
-                raise AuthenticationFailed
+                return self._handle_401(request, response)
             for scope in self.scopes:
                 if scope not in self.scopes:
-                    raise AuthenticationFailed
+                    return self._handle_401(request, response)
 
             if inspect.iscoroutinefunction(handler):
                 return await handler(*args, **kwargs)

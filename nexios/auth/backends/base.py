@@ -4,7 +4,9 @@ from typing_extensions import Annotated, Doc
 
 from nexios.auth.model import AuthResult
 from nexios.http import Request, Response
+from nexios import logging
 
+logger = logging.getLogger(__name__)
 
 class AuthenticationBackend:
     """
@@ -46,3 +48,7 @@ class AuthenticationBackend:
             AuthenticationError: If authentication fails.
         """
         raise NotImplementedError()
+    def handle_exception(self, response :Response,exc: Exception) -> Any:
+        logger.error(f"Authentication failed: {exc}")
+
+

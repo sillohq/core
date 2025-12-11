@@ -1,6 +1,6 @@
 from typing import Any
 
-from nexios.auth.base import AuthenticationBackend
+from nexios.auth.backends.base import AuthenticationBackend
 from nexios.auth.model import AuthResult
 from nexios.auth.users.base import BaseUser
 from nexios.http import Request, Response
