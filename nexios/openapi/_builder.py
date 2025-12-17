@@ -254,12 +254,14 @@ class APIDocumentation:
         Build request body specification for the route.
         """
         if route.request_model:
+            schema_dict = route.request_model.model_json_schema()
+            processed_schema = self._extract_and_add_nested_schemas(schema_dict)
             return RequestBody(
                 content={
                     getattr(
                         route, "request_content_type", "application/json"
                     ): MediaType(
-                        schema=Schema(**route.request_model.model_json_schema())
+                        schema=Schema(**processed_schema)
                     )
                 }
             )
@@ -308,16 +310,55 @@ class APIDocumentation:
 
         return responses_spec
 
+    def _extract_and_add_nested_schemas(self, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Extract nested schemas from Pydantic's $defs and add them to components.schemas.
+        Returns the cleaned schema with updated references.
+        """
+        if '$defs' not in schema:
+            return schema
+        
+        # Extract all nested schemas and add them to components
+        for def_name, def_schema in schema['$defs'].items():
+            # Recursively process nested schemas
+            processed_schema = self._extract_and_add_nested_schemas(def_schema)
+            self.config.add_schema(def_name, Schema(**processed_schema))
+        
+        # Remove $defs from the schema
+        cleaned_schema = schema.copy()
+        del cleaned_schema['$defs']
+        
+        # Update all references to use OpenAPI format
+        self._update_schema_references(cleaned_schema)
+        
+        return cleaned_schema
+    
+    def _update_schema_references(self, schema: Any) -> None:
+        """
+        Recursively update #/$defs/ references to #/components/schemas/ format.
+        """
+        if isinstance(schema, dict):
+            for key, value in schema.items():
+                if key == '$ref' and isinstance(value, str) and value.startswith('#/$defs/'):
+                    schema[key] = value.replace('#/$defs/', '#/components/schemas/')
+                else:
+                    self._update_schema_references(value)
+        elif isinstance(schema, list):
+            for item in schema:
+                self._update_schema_references(item)
+
     def _create_response_spec(self, model: Any, status_code: int) -> OpenAPIResponse:
         """
         Create a response specification from a model.
         """
         if isinstance(model, type) and issubclass(model, BaseModel):
+            schema_dict = model.model_json_schema()
+            processed_schema = self._extract_and_add_nested_schemas(schema_dict)
             return OpenAPIResponse(
                 description=f"Response for status code {status_code}",
                 content={
                     "application/json": MediaType(
-                        schema=Schema(**model.model_json_schema())
+                        schema=Schema(**processed_schema)
                     )
                 },
             )
@@ -325,13 +366,15 @@ class APIDocumentation:
             # Handle List[Model]
             item_model = model.__args__[0]
             if issubclass(item_model, BaseModel):
+                schema_dict = item_model.model_json_schema()
+                processed_schema = self._extract_and_add_nested_schemas(schema_dict)
                 return OpenAPIResponse(
                     description=f"Response for status code {status_code}",
                     content={
                         "application/json": MediaType(
                             schema=Schema(
                                 type="array",
-                                items=Schema(**item_model.model_json_schema()),
+                                items=Schema(**processed_schema),
                             )
                         )
                     },
@@ -383,116 +426,3 @@ class APIDocumentation:
                         self.add_schema(item_model)
         elif isinstance(responses, type) and issubclass(responses, BaseModel):
             self.add_schema(responses)
-
-    def _convert_path_to_openapi_format(self, path: str) -> str:
-        """
-        Convert Nexios path format to OpenAPI format.
-        Example: /users/{id:int} -> /users/{id}
-        """
-        import re
-
-        return re.sub(r"\{(\w+):[^}]+\}", r"{\1}", path)
-
-    def _build_request_body_spec(
-        self, route: Route, method: str
-    ) -> Optional[RequestBody]:
-        """
-        Build request body specification for the route.
-        """
-        if route.request_model:
-            return RequestBody(
-                content={
-                    getattr(
-                        route, "request_content_type", "application/json"
-                    ): MediaType(
-                        schema=Schema(**route.request_model.model_json_schema())
-                    )
-                }
-            )
-        elif method.upper() not in ["GET", "DELETE", "HEAD", "OPTIONS"]:
-            # Default request body for methods that typically have bodies
-            return RequestBody(
-                content={
-                    "application/json": MediaType(
-                        schema=Schema(
-                            example={"example": "This is an example request body"},
-                            type="object",
-                        )
-                    )
-                }
-            )
-        return None
-
-    def _build_responses_spec(self, route: Route) -> Dict[str, OpenAPIResponse]:
-        """
-        Build response specifications for the route.
-        """
-        responses_spec = {}
-
-        if route.responses:
-            if isinstance(route.responses, dict):
-                for status_code, model in route.responses.items():
-                    responses_spec[str(status_code)] = self._create_response_spec(
-                        model, status_code
-                    )
-            else:
-                # Single response model
-                responses_spec["200"] = self._create_response_spec(route.responses, 200)
-        else:
-            # Default response
-            responses_spec["200"] = OpenAPIResponse(
-                description="Successful Response",
-                content={
-                    "application/json": MediaType(
-                        schema=Schema(
-                            example={"example": "This is an example response"},
-                            type="object",
-                        )
-                    )
-                },
-            )
-
-        return responses_spec
-
-    def _create_response_spec(self, model: Any, status_code: int) -> OpenAPIResponse:
-        """
-        Create a response specification from a model.
-        """
-        if isinstance(model, type) and issubclass(model, BaseModel):
-            return OpenAPIResponse(
-                description=f"Response for status code {status_code}",
-                content={
-                    "application/json": MediaType(
-                        schema=Schema(**model.model_json_schema())
-                    )
-                },
-            )
-        elif hasattr(model, "__origin__") and model.__origin__ is list:
-            # Handle List[Model]
-            item_model = model.__args__[0]
-            if issubclass(item_model, BaseModel):
-                return OpenAPIResponse(
-                    description=f"Response for status code {status_code}",
-                    content={
-                        "application/json": MediaType(
-                            schema=Schema(
-                                type="array",
-                                items=Schema(**item_model.model_json_schema()),
-                            )
-                        )
-                    },
-                )
-        elif isinstance(model, dict):
-            # Handle dict response (like {"description": "Error message"})
-            return OpenAPIResponse(
-                description=model.get(
-                    "description", f"Response for status code {status_code}"
-                ),
-                content={"application/json": MediaType(schema=Schema(type="object"))},
-            )
-
-        # Fallback
-        return OpenAPIResponse(
-            description=f"Response for status code {status_code}",
-            content={"application/json": MediaType(schema=Schema(type="object"))},
-        )
