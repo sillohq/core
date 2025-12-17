@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Mapping, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.networks import AnyUrl
 
 try:
@@ -102,7 +102,7 @@ class Schema(BaseModel):
     minProperties: Annotated[Optional[int], Field(ge=0)] = None
     required: Optional[List[str]] = None
     enum: Optional[List[Any]] = None
-    type: Optional[str] = "object"
+    type: Optional[str] = None
     allOf: Optional[List[Schema]] = None
     oneOf: Optional[List[Schema]] = None
     anyOf: Optional[List[Schema]] = None
@@ -122,6 +122,25 @@ class Schema(BaseModel):
     deprecated: Optional[bool] = None
     example: Optional[Any] = None
     examples: Optional[Examples] = None
+
+    @field_validator('type', mode='before')
+    @classmethod
+    def validate_type(cls, v, info):
+        """Validate type field - if anyOf/oneOf/allOf is present, type should not be set"""
+        if v is not None:
+            return v
+        
+        # Only set default type "object" if no composition keywords are present
+        data = info.data if hasattr(info, 'data') else {}
+        has_composition = any(
+            data.get(key) is not None 
+            for key in ['anyOf', 'oneOf', 'allOf']
+        )
+        
+        if not has_composition:
+            return "object"
+        
+        return None
 
 
 class Example(BaseModel):
