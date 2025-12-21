@@ -622,8 +622,6 @@ async def list_users(request: Request, response: Response, service=Depend(get_us
 
 ## 🔍 See Also
 
-- [Context](./context.md) - Request context management
-- [Resolution](./resolution.md) - Dependency resolution process
-- [Middleware](../middleware/base.md) - Middleware system
-- [Testing](../testing/client.md) - Testing with dependencies
-- [Application](../application/nexios-app.md) - Application-level dependencies
+- [Middleware](./middleware.md) - Middleware system
+- [Testing](./testclient.md) - Testing with dependencies
+- [Application](./nexios-app.md) - Application-level dependencies

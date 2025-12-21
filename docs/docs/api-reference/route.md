@@ -573,8 +573,7 @@ router.add_route(route)
 ## 🔍 See Also
 
 - [Router](./router.md) - Route organization and management
-- [Groups](./groups.md) - Route grouping strategies
-- [URL Generation](./url-generation.md) - Generating URLs from routes
-- [Middleware](../middleware/base.md) - Route middleware
-- [Dependencies](../dependencies/depend.md) - Route dependencies
-- [OpenAPI](../openapi/builder.md) - Route documentation
+- [Groups](./group.md) - Route grouping strategies
+- [Middleware](./middleware.md) - Route middleware
+- [Dependencies](./depend.md) - Route dependencies
+- [OpenAPI](./openapi-builder.md) - Route documentation

@@ -365,7 +365,7 @@ print(f"Group name: {named_group.name}")  # "main_api"
 
 ## 🔍 See Also
 
-- [Router](./router.md) - Route organization and management
-- [Route](./route.md) - Individual route definitions
-- [Middleware](./middleware.md) - Request/response processing
-- [NexiosApp](./nexios-app.md) - Main application class
+- [Router](router.md) - Route organization and management
+- [Route](route.md) - Individual route definitions
+- [Middleware](middleware.md) - Request/response processing
+- [NexiosApp](nexios-app.md) - Main application class

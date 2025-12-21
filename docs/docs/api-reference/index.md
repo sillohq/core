@@ -5,68 +5,44 @@ Welcome to the comprehensive Nexios API reference documentation. This section pr
 ## Core Components
 
 ### Application
-- [NexiosApp](./application/nexios-app.md) - Main application class
-- [Configuration](./application/configuration.md) - Application configuration system
-- [Lifecycle Management](./application/lifecycle.md) - Startup and shutdown handlers
+- [NexiosApp](./nexios-app.md) - Main application class
 
 ### HTTP Handling
-- [Request](./http/request.md) - HTTP request object and methods
-- [Response](./http/response.md) - HTTP response classes and utilities
-- [Cookies](./http/cookies.md) - Cookie handling and management
+- [Request](./request.md) - HTTP request object and methods
+- [Response](./response.md) - HTTP response classes and utilities
 
 ### Routing System
-- [Router](./routing/router.md) - Main routing class
-- [Route](./routing/route.md) - Individual route definitions
-- [Groups](./routing/groups.md) - Route grouping and organization
-- [URL Generation](./routing/url-generation.md) - URL building utilities
+- [Router](./router.md) - Main routing class
+- [Route](./route.md) - Individual route definitions
+- [Groups](./group.md) - Route grouping and organization
 
 ### Middleware
-- [Base Middleware](./middleware/base.md) - Middleware foundation
-- [CORS Middleware](./middleware/cors.md) - Cross-origin resource sharing
-- [CSRF Middleware](./middleware/csrf.md) - Cross-site request forgery protection
-- [Session Middleware](./middleware/session.md) - Session management
-- [Security Middleware](./middleware/security.md) - Security headers and protection
+- [Middleware](./middleware.md) - Middleware system and implementation
 
 ### Dependency Injection
-- [Depend](./dependencies/depend.md) - Dependency injection system
-- [Context](./dependencies/context.md) - Request context management
-- [Resolution](./dependencies/resolution.md) - Dependency resolution process
+- [Depend](./depend.md) - Dependency injection system
 
 ### WebSocket Support
-- [WebSocket](./websockets/websocket.md) - WebSocket connection handling
-- [WebSocket Router](./websockets/router.md) - WebSocket routing
-- [Channels](./websockets/channels.md) - WebSocket channel management
-
-### Authentication & Authorization
-- [Auth Base](./auth/base.md) - Authentication foundation
-- [User Models](./auth/users.md) - User management
-- [Auth Middleware](./auth/middleware.md) - Authentication middleware
-- [Backends](./auth/backends.md) - Authentication backends
+- [WebSocket](./websocket.md) - WebSocket connection handling
+- [Channel](./channel.md) - WebSocket channel management
+- [ChannelBox](./channelbox.md) - Channel boxing utilities
 
 ### OpenAPI Integration
-- [OpenAPI Builder](./openapi/builder.md) - OpenAPI documentation generation
-- [Models](./openapi/models.md) - OpenAPI model definitions
-- [Configuration](./openapi/config.md) - OpenAPI configuration options
+- [OpenAPI Builder](./openapi-builder.md) - OpenAPI documentation generation
 
 ### Testing
-- [Test Client](./testing/client.md) - Testing utilities
-- [Async Client](./testing/async-client.md) - Asynchronous testing
-- [Helpers](./testing/helpers.md) - Testing helper functions
-
-### Utilities
-- [Async Helpers](./utils/async-helpers.md) - Asynchronous utility functions
-- [Concurrency](./utils/concurrency.md) - Concurrency management
-- [Pydantic Integration](./utils/pydantic.md) - Pydantic model utilities
+- [Test Client](./testclient.md) - Testing utilities
 
 ## Quick Navigation
 
-- **Getting Started**: [Application Setup](./application/nexios-app.md)
-- **Request Handling**: [Request Object](./http/request.md) | [Response Object](./http/response.md)
-- **Routing**: [Router](./routing/router.md) | [Route Definitions](./routing/route.md)
-- **Middleware**: [Creating Middleware](./middleware/base.md)
-- **Dependencies**: [Dependency Injection](./dependencies/depend.md)
-- **WebSockets**: [WebSocket Handling](./websockets/websocket.md)
-- **Testing**: [Test Client](./testing/client.md)
+- **Getting Started**: [Application Setup](./nexios-app.md)
+- **Request Handling**: [Request Object](./request.md) | [Response Object](./response.md)
+- **Routing**: [Router](./router.md) | [Route Definitions](./route.md) | [Route Groups](./group.md)
+- **Middleware**: [Middleware System](./middleware.md)
+- **Dependencies**: [Dependency Injection](./depend.md)
+- **WebSockets**: [WebSocket Handling](./websocket.md) | [Channels](./channel.md) | [ChannelBox](./channelbox.md)
+- **Testing**: [Test Client](./testclient.md)
+- **OpenAPI**: [Documentation Builder](./openapi-builder.md)
 
 ## API Conventions
 

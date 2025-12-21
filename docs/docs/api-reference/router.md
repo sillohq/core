@@ -727,8 +727,7 @@ print(len(router.middleware))  # 1
 ## 🔍 See Also
 
 - [Route](./route.md) - Individual route definitions
-- [Groups](./groups.md) - Route grouping and organization
-- [URL Generation](./url-generation.md) - URL building utilities
-- [Middleware](../middleware/base.md) - Middleware system
-- [Dependencies](../dependencies/depend.md) - Dependency injection
-- [OpenAPI](../openapi/builder.md) - API documentation
+- [Groups](./group.md) - Route grouping and organization
+- [Middleware](./middleware.md) - Middleware system
+- [Dependencies](./depend.md) - Dependency injection
+- [OpenAPI](./openapi-builder.md) - API documentation

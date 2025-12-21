@@ -845,8 +845,5 @@ app.openapi_config.add_webhook("user_created", {
 
 ## 🔍 See Also
 
-- [OpenAPI Models](./models.md) - OpenAPI model definitions
-- [OpenAPI Configuration](./config.md) - Configuration options
-- [Application](../application/nexios-app.md) - Application setup
-- [Router](../routing/router.md) - Route documentation
-- [Authentication](../auth/base.md) - Security documentation
+- [Application](./nexios-app.md) - Application setup
+- [Router](./router.md) - Route documentation

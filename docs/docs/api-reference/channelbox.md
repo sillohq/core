@@ -517,6 +517,6 @@ export CHANNEL_BOX_HISTORY_SIZE=524288
 
 ## 🔍 See Also
 
-- [Channel](./channel.md) - Individual WebSocket channel management
-- [WebSocket](./websocket.md) - WebSocket connection handling
-- [Consumer](./consumer.md) - WebSocket message consumers
+- [Channel](channel.md) - Individual WebSocket channel management
+- [WebSocket](websocket.md) - WebSocket connection handling
+- [Consumer](consumer.md) - WebSocket message consumers

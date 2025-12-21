@@ -674,7 +674,4 @@ async def handler(request: Request, response: Response):
 ## 🔍 See Also
 
 - [Response](./response.md) - HTTP response handling
-- [Cookies](./cookies.md) - Cookie management
-- [Middleware](../middleware/base.md) - Request/response middleware
-- [Authentication](../auth/base.md) - Authentication system
-- [Session](../middleware/session.md) - Session management
+- [Middleware](./middleware.md) - Request/response middleware

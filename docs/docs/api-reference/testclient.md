@@ -575,7 +575,6 @@ assert str(client.base_url) == "http://localhost:8000"
 
 ## 🔍 See Also
 
-- [NexiosApp](./nexios-app.md) - Main application class
 - [Request](./request.md) - HTTP request handling
 - [Response](./response.md) - HTTP response creation
 - [WebSocket](./websocket.md) - WebSocket connections

@@ -700,7 +700,5 @@ async def serve_file(request: Request, response: Response):
 ## 🔍 See Also
 
 - [Request](./request.md) - HTTP request handling
-- [Cookies](./cookies.md) - Cookie management details
-- [Middleware](../middleware/base.md) - Response middleware
-- [Caching](../middleware/security.md) - Caching strategies
-- [File Handling](../utils/async-helpers.md) - File utilities
+- [Middleware](./middleware.md) - Response middleware
+- [Testing](./testclient.md) - Testing utilities

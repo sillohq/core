@@ -613,9 +613,5 @@ class CompressionMiddleware(BaseMiddleware):
 
 ## 🔍 See Also
 
-- [CORS Middleware](./cors.md) - Cross-origin resource sharing
-- [CSRF Middleware](./csrf.md) - Cross-site request forgery protection
-- [Session Middleware](./session.md) - Session management
-- [Security Middleware](./security.md) - Security headers and protection
-- [Application](../application/nexios-app.md) - Application middleware setup
-- [Router](../routing/router.md) - Router-level middleware
+- [Application](./nexios-app.md) - Application middleware setup
+- [Router](./router.md) - Router-level middleware

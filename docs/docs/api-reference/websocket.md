@@ -793,8 +793,8 @@ async def queued_websocket_handler(websocket):
 
 ## 🔍 See Also
 
-- [WebSocket Router](./router.md) - WebSocket routing system
-- [Channels](./channels.md) - WebSocket channel management
-- [Middleware](../middleware/base.md) - WebSocket middleware
-- [Testing](../testing/client.md) - WebSocket testing utilities
+- [Router](./router.md) - WebSocket routing system
+- [Channel](./channel.md) - WebSocket channel management
+- [Middleware](./middleware.md) - WebSocket middleware
+- [Testing](./testclient.md) - WebSocket testing utilities
 - [Real-time Examples](../../examples/websockets.md) - WebSocket usage examples

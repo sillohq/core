@@ -366,6 +366,6 @@ print(repr(channel))
 
 ## 🔍 See Also
 
-- [WebSocket](./websocket.md) - WebSocket connection handling
-- [ChannelBox](./channelbox.md) - Channel group management  
-- [Consumer](./consumer.md) - WebSocket message consumers
+- [WebSocket](websocket.md) - WebSocket connection handling
+- [ChannelBox](channelbox.md) - Channel group management
+- [Consumer](consumer.md) - WebSocket message consumers

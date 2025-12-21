@@ -567,8 +567,7 @@ async def handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> 
 
 ## 🔍 See Also
 
-- [Configuration](./configuration.md) - Application configuration system
-- [Router](../routing/router.md) - HTTP routing system
-- [Middleware](../middleware/base.md) - Middleware development
-- [Dependencies](../dependencies/depend.md) - Dependency injection system
-- [WebSocket](../websockets/websocket.md) - WebSocket handling
+- [Router](./router.md) - HTTP routing system
+- [Middleware](./middleware.md) - Middleware development
+- [Dependencies](./depend.md) - Dependency injection system
+- [WebSocket](./websocket.md) - WebSocket handling
