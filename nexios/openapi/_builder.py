@@ -351,6 +351,7 @@ class APIDocumentation:
         """
         Create a response specification from a model.
         """
+        
         if isinstance(model, type) and issubclass(model, BaseModel):
             schema_dict = model.model_json_schema()
             processed_schema = self._extract_and_add_nested_schemas(schema_dict)
@@ -385,7 +386,7 @@ class APIDocumentation:
                 description=model.get(
                     "description", f"Response for status code {status_code}"
                 ),
-                content={"application/json": MediaType(schema=Schema(type="object"))},
+                content={"application/json": MediaType(schema=Schema(type="object",example=model))},
             )
 
         # Fallback
