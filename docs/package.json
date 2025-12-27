@@ -15,6 +15,7 @@
     "export-pdf": "press-export-pdf export docs"
   },
   "dependencies": {
+    "vitepress-plugin-comment-with-giscus": "^1.1.15",
     "vitepress-plugin-group-icons": "^1.5.2"
   }
 }

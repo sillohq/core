@@ -9,6 +9,7 @@ head:
   - - meta
     - property: og:description
       content: Welcome to Nexios! This comprehensive guide will walk you through everything you need to know to get started with Nexios, a modern, async-first Python web framework designed for high-performance applications.
+comment: true
 ---
 # 🚀 What is Nexios?
 
