@@ -46,6 +46,8 @@ class APIDocumentation:
             <meta charset="utf-8"/>
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+            <link rel="icon" href="https://nexioslabs.com/logo.png" type="image/png">
+
             <style>
                 body {{
                     margin: 0;
@@ -56,6 +58,7 @@ class APIDocumentation:
         <body>
             <div id="redoc"></div>
             <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+
             <script>
                 Redoc.init('{url}', {{
                     scrollYOffset: 50
@@ -74,6 +77,8 @@ class APIDocumentation:
         <head>
             <title>{self.config.openapi_spec.info.title} - Docs</title>
             <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4.18.3/swagger-ui.css">
+            <link rel="icon" href="https://nexioslabs.com/logo.png" type="image/png">
+
         </head>
         <body>
             <div id="swagger-ui"></div>
