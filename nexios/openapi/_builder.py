@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import      Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
@@ -20,9 +20,6 @@ from .models import Response as OpenAPIResponse
 from .models import (
     Schema,
 )
-
-if TYPE_CHECKING:
-    pass
 
 
 class APIDocumentation:
