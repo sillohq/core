@@ -5,7 +5,7 @@ Integration tests for CORS middleware with realistic scenarios
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
+from nexios.config import MakeConfig, set_config, CorsConfig
 from nexios.http import Request, Response
 from nexios.middleware.cors import CORSMiddleware
 from nexios.testclient import TestClient
@@ -17,27 +17,25 @@ class TestCORSIntegration:
     def test_real_world_web_app_scenario(self):
         """Test CORS in a realistic web application scenario"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": [
-                        "https://myapp.com",
-                        "https://admin.myapp.com",
-                        "http://localhost:3000",
-                        "http://localhost:8080",
-                    ],
-                    "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                    "allow_headers": [
-                        "Content-Type",
-                        "Authorization",
-                        "X-Requested-With",
-                        "X-CSRF-Token",
-                        "X-Custom-App-Header",
-                    ],
-                    "allow_credentials": True,
-                    "expose_headers": ["X-Request-ID", "X-Response-Time"],
-                    "max_age": 86400,  # 24 hours
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=[
+                    "https://myapp.com",
+                    "https://admin.myapp.com",
+                    "http://localhost:3000",
+                    "http://localhost:8080",
+                ],
+                allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                allow_headers=[
+                    "Content-Type",
+                    "Authorization",
+                    "X-Requested-With",
+                    "X-CSRF-Token",
+                    "X-Custom-App-Header",
+                ],
+                allow_credentials=True,
+                expose_headers=["X-Request-ID", "X-Response-Time"],
+                max_age=86400,  # 24 hours
+            )
         )
         set_config(config)
 
@@ -104,13 +102,11 @@ class TestCORSIntegration:
     def test_cors_with_multiple_middleware_layers(self):
         """Test CORS with other middleware layers"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET", "POST"],
-                    "allow_credentials": True,
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=["http://example.com"],
+                allow_methods=["GET", "POST"],
+                allow_credentials=True,
+            )
         )
         set_config(config)
 
@@ -170,20 +166,18 @@ class TestCORSIntegration:
     def test_cors_with_file_uploads(self):
         """Test CORS with file upload scenarios"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["https://files.myapp.com"],
-                    "allow_methods": ["POST", "OPTIONS"],
-                    "allow_headers": [
-                        "Content-Type",
-                        "Authorization",
-                        "X-File-Name",
-                        "X-File-Size",
-                    ],
-                    "allow_credentials": True,
-                    "max_age": 3600,
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=["https://files.myapp.com"],
+                allow_methods=["POST", "OPTIONS"],
+                allow_headers=[
+                    "Content-Type",
+                    "Authorization",
+                    "X-File-Name",
+                    "X-File-Size",
+                ],
+                allow_credentials=True,
+                max_age=3600,
+            )
         )
         set_config(config)
 
@@ -232,14 +226,12 @@ class TestCORSIntegration:
     def test_cors_with_pagination_api(self):
         """Test CORS with paginated API endpoints"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["https://api-client.com"],
-                    "allow_methods": ["GET"],
-                    "allow_credentials": True,
-                    "expose_headers": ["X-Total-Count", "X-Page-Count", "X-Per-Page"],
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=["https://api-client.com"],
+                allow_methods=["GET"],
+                allow_credentials=True,
+                expose_headers=["X-Total-Count", "X-Page-Count", "X-Per-Page"],
+            )
         )
         set_config(config)
 
@@ -291,14 +283,12 @@ class TestCORSIntegration:
     def test_cors_with_authentication_flow(self):
         """Test CORS with authentication-protected endpoints"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["https://dashboard.myapp.com"],
-                    "allow_methods": ["GET", "POST", "DELETE"],
-                    "allow_headers": ["Authorization", "Content-Type"],
-                    "allow_credentials": True,
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=["https://dashboard.myapp.com"],
+                allow_methods=["GET", "POST", "DELETE"],
+                allow_headers=["Authorization", "Content-Type"],
+                allow_credentials=True,
+            )
         )
         set_config(config)
 
@@ -369,14 +359,12 @@ class TestCORSIntegration:
     def test_cors_with_different_content_types(self):
         """Test CORS with various content types"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["https://api-client.com"],
-                    "allow_methods": ["POST", "PUT"],
-                    "allow_headers": ["Content-Type", "Authorization"],
-                    "allow_credentials": True,
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=["https://api-client.com"],
+                allow_methods=["POST", "PUT"],
+                allow_headers=["Content-Type", "Authorization"],
+                allow_credentials=True,
+            )
         )
         set_config(config)
 
@@ -422,19 +410,17 @@ class TestCORSIntegration:
     def test_cors_with_websocket_upgrade_requests(self):
         """Test CORS handling during WebSocket upgrade requests"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["https://chat.myapp.com"],
-                    "allow_methods": ["GET"],  # WebSocket upgrade uses GET
-                    "allow_headers": [
-                        "Upgrade",
-                        "Connection",
-                        "Sec-WebSocket-Key",
-                        "Sec-WebSocket-Version",
-                    ],
-                    "allow_credentials": True,
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=["https://chat.myapp.com"],
+                allow_methods=["GET"],  # WebSocket upgrade uses GET
+                allow_headers=[
+                    "Upgrade",
+                    "Connection",
+                    "Sec-WebSocket-Key",
+                    "Sec-WebSocket-Version",
+                ],
+                allow_credentials=True,
+            )
         )
         set_config(config)
 
@@ -473,14 +459,12 @@ class TestCORSIntegration:
     def test_cors_with_subdomain_wildcard(self):
         """Test CORS with subdomain wildcard patterns"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origin_regex": r"https://.*\.myapp\.com",
-                    "allow_methods": ["GET", "POST"],
-                    "allow_credentials": True,
-                    "expose_headers": ["X-Subdomain"],
-                }
-            }
+            cors=CorsConfig(
+                allow_origin_regex=r"https://.*\.myapp\.com",
+                allow_methods=["GET", "POST"],
+                allow_credentials=True,
+                expose_headers=["X-Subdomain"],
+            )
         )
         set_config(config)
 
@@ -516,13 +500,11 @@ class TestCORSIntegration:
         many_origins.extend([f"http://localhost:{port}" for port in range(3000, 3100)])
 
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": many_origins,
-                    "allow_methods": ["GET"],
-                    "allow_credentials": False,
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=many_origins,
+                allow_methods=["GET"],
+                allow_credentials=False,
+            )
         )
         set_config(config)
 
@@ -546,14 +528,12 @@ class TestCORSIntegration:
     def test_cors_with_request_id_tracking(self):
         """Test CORS with request ID tracking middleware"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["https://tracking.myapp.com"],
-                    "allow_methods": ["GET", "POST"],
-                    "allow_credentials": True,
-                    "expose_headers": ["X-Request-ID", "X-Trace-ID"],
-                }
-            }
+            cors=CorsConfig(
+                allow_origins=["https://tracking.myapp.com"],
+                allow_methods=["GET", "POST"],
+                allow_credentials=True,
+                expose_headers=["X-Request-ID", "X-Trace-ID"],
+            )
         )
         set_config(config)
 

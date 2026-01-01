@@ -9,7 +9,7 @@ import time
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
+from nexios.config import MakeConfig, set_config, SessionConfig
 from nexios.http import Request, Response
 from nexios.session.file import FileSessionManager
 from nexios.session.middleware import SessionMiddleware
@@ -23,15 +23,13 @@ class TestSessionIntegration:
     def setup_method(self):
         """Set up test configuration"""
         config = MakeConfig(
-            {
-                "secret_key": "test-secret-key-integration",
-                "session": {
-                    "session_cookie_name": "integration_session",
-                    "session_expiration_time": 3600,
-                    "session_permanent": False,
-                    "session_refresh_each_request": False,
-                },
-            }
+            secret_key="test-secret-key-integration",
+            session=SessionConfig(
+                session_cookie_name="integration_session",
+                session_expiration_time=3600,
+                session_permanent=False,
+                session_refresh_each_request=False,
+            ),
         )
         set_config(config)
 

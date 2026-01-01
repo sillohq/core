@@ -5,7 +5,7 @@ Tests for session middleware integration
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
+from nexios.config import MakeConfig, set_config, SessionConfig
 from nexios.http import Request, Response
 from nexios.session.file import FileSessionManager
 from nexios.session.middleware import SessionMiddleware
@@ -19,18 +19,17 @@ class TestSessionMiddleware:
     def setup_method(self):
         """Set up test configuration"""
         config = MakeConfig(
-            {
-                "secret_key": "test-secret-key-for-middleware",
-                "session": {
-                    "session_cookie_name": "test_session",
-                    "session_expiration_time": 3600,
-                    "session_permanent": False,
-                    "session_refresh_each_request": False,
-                    "session_cookie_secure": False,
-                    "session_cookie_httponly": True,
-                    "session_cookie_samesite": "lax",
-                },
-            }
+            secret_key="test-secret-key-for-middleware",
+            session=SessionConfig(
+                session_cookie_name="test_session",
+                # The following are still supported via kwargs or if we added them to SessionConfig
+                session_expiration_time=3600,
+                session_permanent=False,
+                session_refresh_each_request=False,
+                session_cookie_secure=False,
+                session_cookie_httponly=True,
+                session_cookie_samesite="lax",
+            ),
         )
         set_config(config)
 
@@ -80,14 +79,12 @@ class TestSessionMiddleware:
 
         try:
             config = MakeConfig(
-                {
-                    "secret_key": "test-secret-key-for-file-middleware",
-                    "session": {
-                        "session_cookie_name": "file_session",
-                        "session_file_storage_path": temp_dir,
-                        "manager": FileSessionManager,
-                    },
-                }
+                secret_key="test-secret-key-for-file-middleware",
+                session=SessionConfig(
+                    session_cookie_name="file_session",
+                    session_file_storage_path=temp_dir,
+                    manager=FileSessionManager,
+                ),
             )
             set_config(config)
 
@@ -124,7 +121,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_without_secret_key(self):
         """Test middleware behavior without secret key"""
-        config = MakeConfig({"secret_key": None, "session": {}})  # No secret key
+        config = MakeConfig(secret_key=None, session=SessionConfig())  # No secret key
         set_config(config)
 
         app = NexiosApp()
@@ -202,17 +199,15 @@ class TestSessionMiddleware:
     def test_session_middleware_configuration_options(self):
         """Test session middleware with various configuration options"""
         config = MakeConfig(
-            {
-                "secret_key": "test-secret-key-config",
-                "session": {
-                    "session_cookie_name": "custom_session",
-                    "session_cookie_path": "/api",
-                    "session_cookie_domain": "example.com",
-                    "session_cookie_secure": True,
-                    "session_cookie_httponly": True,
-                    "session_cookie_samesite": "strict",
-                },
-            }
+            secret_key="test-secret-key-config",
+            session=SessionConfig(
+                session_cookie_name="custom_session",
+                session_cookie_path="/api",
+                session_cookie_domain="example.com",
+                session_cookie_secure=True,
+                session_cookie_httponly=True,
+                session_cookie_samesite="strict",
+            ),
         )
         set_config(config)
 

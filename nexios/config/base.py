@@ -58,15 +58,20 @@ class MakeConfig:
         merged_config = {**(defaults or {}), **config, **kwargs}
 
         for key, value in merged_config.items():
-            self._set_config(key, value)
+            if isinstance(value, MakeConfig):
+                self._set_config(key, value.to_dict())
+            else:
+                self._set_config(key, value)
 
     def _set_config(self, key: str, value: Optional[Any]):
         """Validates and sets a configuration key."""
         if key in self._validate:
             if not self._validate[key](value):
                 raise ValueError(f"Invalid value for '{key}': {value}")
+        
         if isinstance(value, dict):
             value = MakeConfig(value, immutable=self._immutable)  # type: ignore
+        
         self._config[key] = value
 
     def __setattr__(self, name: str, value: Any):
@@ -122,7 +127,7 @@ class MakeConfig:
         return f"MakeConfig({self.to_dict()})"
 
     def __str__(self) -> str:
-        return self.to_json()
+        return str(self.to_dict())
 
     def update(self, data: Dict[str, Any], *, recursive: bool = True) -> None:
         """

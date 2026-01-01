@@ -5,7 +5,7 @@ Tests for CORS middleware error handling and edge cases
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
+from nexios.config import MakeConfig, set_config, CorsConfig
 from nexios.http import Request, Response
 from nexios.middleware.cors import CORSMiddleware
 from nexios.testclient import TestClient
@@ -86,7 +86,7 @@ class TestCORSErrorHandling:
 
     def test_empty_configuration_handling(self):
         """Test CORS middleware with empty configuration"""
-        config = MakeConfig({"cors": {}})
+        config = MakeConfig(cors=CorsConfig())
         set_config(config)
 
         app = NexiosApp(config)
@@ -106,7 +106,7 @@ class TestCORSErrorHandling:
 
     def test_none_configuration_handling(self):
         """Test CORS middleware with None configuration"""
-        config = MakeConfig({"cors": None})
+        config = MakeConfig(cors=None)
         set_config(config)
 
         app = NexiosApp(config)
@@ -154,12 +154,10 @@ class TestCORSErrorHandling:
     def test_non_callable_dynamic_validator(self):
         """Test CORS with non-callable dynamic validator"""
         config = MakeConfig(
-            {
-                "cors": {
-                    "dynamic_origin_validator": "not-a-function",
-                    "allow_methods": ["GET"],
-                }
-            }
+            cors=CorsConfig(
+                dynamic_origin_validator="not-a-function",  # type: ignore
+                allow_methods=["GET"],
+            )
         )
         set_config(config)
 
@@ -179,6 +177,7 @@ class TestCORSErrorHandling:
         )
         assert response.status_code == 200
         # Should not add CORS headers when validator is not callable
+        print(response.headers)
         assert "Access-Control-Allow-Origin" not in response.headers
 
     def test_request_with_multiple_origin_headers(self):

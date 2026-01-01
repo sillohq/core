@@ -9,7 +9,7 @@ import tempfile
 
 import pytest
 
-from nexios.config import MakeConfig, set_config
+from nexios.config import MakeConfig, set_config, SessionConfig
 from nexios.session.file import FileSessionManager
 
 
@@ -20,17 +20,15 @@ class TestFileSessionManager:
         """Set up test configuration with temporary directory"""
         self.temp_dir = tempfile.mkdtemp()
         config = MakeConfig(
-            {
-                "secret_key": "test-secret-key-for-file-sessions",
-                "session": {
-                    "session_cookie_name": "test_session",
-                    "session_expiration_time": 3600,
-                    "session_permanent": False,
-                    "session_refresh_each_request": False,
-                    "session_file_storage_path": self.temp_dir,
-                    "session_file_name": "test_sessions",
-                },
-            }
+            secret_key="test-secret-key-for-file-sessions",
+            session=SessionConfig(
+                session_cookie_name="test_session",
+                session_expiration_time=3600,
+                session_permanent=False,
+                session_refresh_each_request=False,
+                session_file_storage_path=self.temp_dir,
+                session_file_name="test_sessions",
+            ),
         )
         set_config(config)
 
