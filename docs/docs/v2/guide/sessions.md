@@ -12,8 +12,6 @@ head:
 
 Session management is a critical component of web applications, allowing you to store and retrieve user data across multiple requests. Nexios provides a robust, flexible session management system that's easy to configure yet powerful enough for complex applications.
 
-
-
 ## Basic Session Setup
 
 Setting up sessions in your Nexios application is straightforward:
@@ -49,43 +47,32 @@ async def index(req, res):
 Nexios offers various configuration options for customizing session behavior:
 
 ```python
-from nexios import NexiosApp
+from nexios import NexiosApp, MakeConfig
+from nexios.config import SessionConfig
 from nexios.session.middleware import SessionMiddleware
 from nexios.session.file import FileSessionInterface
 
-app = NexiosApp()
+config = MakeConfig(
+    secret_key="your-secure-secret-key",
+    session=SessionConfig(
+        session_cookie_name="nexios_session",
+        cookie_path="/",
+        cookie_domain=None,
+        cookie_secure=True,
+        cookie_httponly=True,
+        cookie_samesite="lax",
+        session_expiration_time=86400,  # 24 hours
+        manager=FileSessionInterface,
+        session_file_storage_path="sessions",
+        session_file_name="session_"
+    )
+)
 
-# Required secret key for secure cookies
-app.config.secret_key = "your-secure-secret-key"
-
-# Session configuration
-app.config.session = {
-    # Session cookie name
-    "session_cookie_name": "nexios_session",
-    
-    # Cookie settings
-    "cookie_path": "/",
-    "cookie_domain": None,
-    "cookie_secure": True,
-    "cookie_httponly": True,
-    "cookie_samesite": "lax",
-    
-    # Session expiration (in seconds)
-    "expiry": 86400,  # 24 hours
-    
-    # Session backend
-    "manager": FileSessionInterface,
-    
-    # Backend-specific settings
-    "directory": "sessions",
-    "prefix": "session_"
-}
-
-# Add the session middleware
+app = NexiosApp(config=config)
 app.add_middleware(SessionMiddleware())
 ```
 
-##  Configuration Options Reference
+## Configuration Options Reference
 
 | Option                | Description                                           | Default                |
 | --------------------- | ----------------------------------------------------- | ---------------------- |
@@ -97,8 +84,6 @@ app.add_middleware(SessionMiddleware())
 | `cookie_samesite`     | SameSite attribute (`"lax"`, `"strict"`, or `"none"`) | `"lax"`                |
 | `expiry`              | Session lifetime in seconds                           | `86400` (24 hours)     |
 | `manager`             | Session backend class                                 | `SignedSessionManager` |
-
-
 
 ## Basic Session Operations
 
@@ -150,10 +135,15 @@ Sessions in Nexios behave similar to dictionaries but with additional methods:
 By default, sessions expire after 24 hours (86400 seconds). You can customize this:
 
 ```python
+from nexios import MakeConfig
+from nexios.config import SessionConfig
+
 # Set global session expiration time
-app.config.session = {
-    "expiry": 3600  # 1 hour
-}
+config = MakeConfig(
+    session=SessionConfig(
+        session_expiration_time=3600  # 1 hour
+    )
+)
 
 # Or set per-session expiration time
 @app.post("/login")
@@ -176,11 +166,15 @@ Nexios supports multiple session backends to store session data. Each backend ha
 The simplest session backend, storing the session data directly in a signed cookie:
 
 ```python
+from nexios import MakeConfig
+from nexios.config import SessionConfig
 from nexios.session.signed_cookies import SignedSessionManager
 
-app.config.session = {
-    "manager": SignedSessionManager
-}
+config = MakeConfig(
+    session=SessionConfig(
+        manager=SignedSessionManager
+    )
+)
 ```
 
 **Pros**:
@@ -200,13 +194,17 @@ app.config.session = {
 Stores session data in files on the server filesystem:
 
 ```python
+from nexios import MakeConfig
+from nexios.config import SessionConfig
 from nexios.session.file import FileSessionInterface
 
-app.config.session = {
-    "manager": FileSessionInterface,
-    "directory": "sessions",  # Directory to store session files
-    "prefix": "session_"      # Prefix for session files
-}
+config = MakeConfig(
+    session=SessionConfig(
+        manager=FileSessionInterface,
+        session_file_storage_path="sessions",  # Directory to store session files
+        session_file_name="session_"           # Prefix for session files
+    )
+)
 ```
 
 **Pros**:
@@ -281,14 +279,19 @@ app.config.secret_key = os.environ.get("SECRET_KEY")
 #### Enable Secure Cookies
 
 ```python
-app.config.session = {
-    "cookie_secure": True,      # Only send cookies over HTTPS
-    "cookie_httponly": True,    # Prevent JavaScript access
-    "cookie_samesite": "lax"    # Mitigate CSRF attacks
-}
+from nexios import MakeConfig
+from nexios.config import SessionConfig
+
+config = MakeConfig(
+    session=SessionConfig(
+        cookie_secure=True,      # Only send cookies over HTTPS
+        cookie_httponly=True,    # Prevent JavaScript access
+        cookie_samesite="lax"    # Mitigate CSRF attacks
+    )
+)
 ```
 
-####  Use Appropriate Session Expiration
+#### Use Appropriate Session Expiration
 
 ```python
 # Short expiration for sensitive operations
@@ -301,8 +304,6 @@ async def transfer(req, res):
     
     # Process transfer...
 ```
-
-
 
 #### Implement Session Invalidation
 
@@ -454,5 +455,3 @@ async def wizard_complete(req, res):
     
     return res.redirect(f"/wizard/success?id={result.id}")
 ```
-
-

@@ -51,25 +51,25 @@ For complete control, use `MakeConfig` and provide a full OpenAPI configuration 
 ```python
 from nexios.openapi.models import Contact, License
 from nexios import MakeConfig, NexiosApp
+from nexios.config import OpenAPIConfig
 
-config = MakeConfig({
-    "openapi": {
-        "title": "Enterprise API",
-        "version": "2.1.0",
-        "description": "Comprehensive API for business operations.",
-        "termsOfService": "https://example.com/terms",
-        "contact": Contact(
+config = MakeConfig(
+    openapi=OpenAPIConfig(
+        title="Enterprise API",
+        version="2.1.0",
+        description="Comprehensive API for business operations.",
+        termsOfService="https://example.com/terms",
+        contact=Contact(
             name="API Team",
             url="https://example.com/support",
             email="support@example.com"
         ),
-        "license": License(
+        license=License(
             name="Apache 2.0",
             url="https://www.apache.org/licenses/LICENSE-2.0.html"
-        ),
-        # Add custom fields as needed
-    }
-})
+        )
+    )
+)
 
 app = NexiosApp(config=config)
 ```
