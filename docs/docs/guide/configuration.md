@@ -99,6 +99,10 @@ def get_database_connection():
 You get access to the global configuration through the `get_config()` function from any module in your application. However, if you try to call `get_config()` before it has been set, it will raise a `RuntimeError`.
 :::
 
+::: warning Configuration in Tests
+When writing tests, be aware that `get_config()` relies on a global variable. If you modify the configuration in one test without resetting it, other tests running in parallel or subsequent tests might fail unexpectedly. Always reset the configuration in your test teardown or use fixtures to ensure a clean state for each test.
+:::
+
 
 
 ## 🌐 Environment-Based Configuration
