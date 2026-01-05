@@ -119,7 +119,7 @@ export default defineConfig({
       ['meta', { name: 'twitter:description', content: pageDescription }],
       ['meta', { name: 'twitter:image', content: ogImageUrl }],
       ['meta', { name: 'twitter:image:alt', content: `${pageData?.title || 'Nexios'} - Python Web Framework` }],
-      ['meta',{name: 'msvalidate.01',content: 'FB0815BA0CFEC5A40B567076CD30A364'}]
+      ['meta', { name: 'msvalidate.01', content: 'FB0815BA0CFEC5A40B567076CD30A364' }]
     ]
   },
 
@@ -237,6 +237,7 @@ export default defineConfig({
         { text: 'Getting Started', link: '/guide/getting-started' },
         { text: 'CLI', link: '/guide/cli' },
         { text: "Why Nexios?", link: '/guide/why-nexios' },
+        { text: "Comprehensive Guide", link: '/summary' },
         {
           text: 'Core Concepts',
           collapsed: false,
