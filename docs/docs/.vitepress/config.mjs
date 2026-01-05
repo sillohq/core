@@ -115,7 +115,6 @@ export default defineConfig({
 
       // Twitter Card tags
       ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-      ['meta', { name: 'twitter:title', content: pageTitle }],
       ['meta', { name: 'twitter:description', content: pageDescription }],
       ['meta', { name: 'twitter:image', content: ogImageUrl }],
       ['meta', { name: 'twitter:image:alt', content: `${pageData?.title || 'Nexios'} - Python Web Framework` }],
@@ -237,7 +236,6 @@ export default defineConfig({
         { text: 'Getting Started', link: '/guide/getting-started' },
         { text: 'CLI', link: '/guide/cli' },
         { text: "Why Nexios?", link: '/guide/why-nexios' },
-        { text: "Comprehensive Guide", link: '/summary' },
         {
           text: 'Core Concepts',
           collapsed: false,

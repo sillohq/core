@@ -2,7 +2,6 @@
   "devDependencies": {
     "gh-pages": "^6.3.0",
     "release-it": "^19.0.1",
-    "vite-plugin-banner": "^0.8.1",
     "vitepress": "2.0.0-alpha.5",
     "vitepress-export-pdf": "^1.0.0"
   },

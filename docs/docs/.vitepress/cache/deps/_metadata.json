@@ -1,49 +1,49 @@
 {
-  "hash": "0ce3edd6",
+  "hash": "463c394a",
   "configHash": "f2706fef",
-  "lockfileHash": "e4ca8df3",
-  "browserHash": "bbe075f2",
+  "lockfileHash": "835cde2f",
+  "browserHash": "20d6500b",
   "optimized": {
     "vue": {
       "src": "../../../../node_modules/.pnpm/vue@3.5.24/node_modules/vue/dist/vue.runtime.esm-bundler.js",
       "file": "vue.js",
-      "fileHash": "03774a0a",
+      "fileHash": "f8ca081d",
       "needsInterop": false
     },
     "vitepress > @vue/devtools-api": {
       "src": "../../../../node_modules/.pnpm/@vue+devtools-api@7.7.8/node_modules/@vue/devtools-api/dist/index.js",
       "file": "vitepress___@vue_devtools-api.js",
-      "fileHash": "ebe557d0",
+      "fileHash": "bab40459",
       "needsInterop": false
     },
     "vitepress > @vueuse/core": {
       "src": "../../../../node_modules/.pnpm/@vueuse+core@13.9.0_vue@3.5.24/node_modules/@vueuse/core/index.mjs",
       "file": "vitepress___@vueuse_core.js",
-      "fileHash": "7a186866",
+      "fileHash": "1c6df0f3",
       "needsInterop": false
     },
     "vitepress > @vueuse/integrations/useFocusTrap": {
       "src": "../../../../node_modules/.pnpm/@vueuse+integrations@13.9.0_focus-trap@7.6.6_vue@3.5.24/node_modules/@vueuse/integrations/useFocusTrap.mjs",
       "file": "vitepress___@vueuse_integrations_useFocusTrap.js",
-      "fileHash": "0807a47c",
+      "fileHash": "fcd3611c",
       "needsInterop": false
     },
     "vitepress > mark.js/src/vanilla.js": {
       "src": "../../../../node_modules/.pnpm/mark.js@8.11.1/node_modules/mark.js/src/vanilla.js",
       "file": "vitepress___mark__js_src_vanilla__js.js",
-      "fileHash": "75ba1267",
+      "fileHash": "827be922",
       "needsInterop": false
     },
     "vitepress > minisearch": {
       "src": "../../../../node_modules/.pnpm/minisearch@7.2.0/node_modules/minisearch/dist/es/index.js",
       "file": "vitepress___minisearch.js",
-      "fileHash": "7671a0d1",
+      "fileHash": "413a2b7b",
       "needsInterop": false
     },
     "vitepress-plugin-comment-with-giscus": {
       "src": "../../../../node_modules/.pnpm/vitepress-plugin-comment-with-giscus@1.1.15_vue@3.5.24/node_modules/vitepress-plugin-comment-with-giscus/lib/giscus.js",
       "file": "vitepress-plugin-comment-with-giscus.js",
-      "fileHash": "9d731644",
+      "fileHash": "160cb808",
       "needsInterop": false
     }
   },
