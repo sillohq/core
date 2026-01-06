@@ -13,10 +13,8 @@ head:
 
 Nexios provides a powerful and flexible routing system that supports using decorators to define routes or using the `Route` class. The routing system is designed to be intuitive, performant, and extensible, making it easy to define routes and handle requests.
 
-
-
-
 ## 🏗️ Using decorators
+
 Nexios provides a simple and intuitive way to define routes using decorators. You can use the `@app.get`, `@app.post`, `@app.put`, `@app.delete`, `@app.head`, and `@app.options` etc decorators to define routes.
 
 ```python [Basic Route]
@@ -99,6 +97,7 @@ async def items_options(request, response):
 :::
 
 ## 📋 Using `Route` class and `add_route` method
+
 Nexios also provides a `Route` class that allows you to define routes in a more structured way.\
 It's especially useful when you have a lot of routes and want to organize them in a logical manner.
 
@@ -121,8 +120,6 @@ route = Route(
 
 app.add_route(route)
 ```
-
-
 
 The `Route` class is the fundamental building block of Nexios routing. It encapsulates all routing information for an API endpoint, including path handling, validation, OpenAPI documentation, and request processing.
 
@@ -329,9 +326,8 @@ Router(
 - **OPTIONS**: For CORS preflight requests
   :::
 
+## Dynamic Route
 
-
-## Dynamic Route 
 A dynamic route in Nexios is a route pattern that can capture parts of the URL as variables, similar to how Express.js or FastAPI handle route parameters.
 
 **Basic Concept**
@@ -346,7 +342,9 @@ app = NexiosApp()
 async def get_user(request, response, user_id):
     return {"id": user_id}
 ```
+
 This route will match URLs like:
+
 - `/users/12`
 - `/users/abc123`
 
@@ -355,6 +353,7 @@ and automatically pass the part inside {} (user_id here) as an argument to your 
 Nexios provides several built-in path converters for validating and converting URL parameters:
 
 you can also get the dynamic params from `request.path_params.<dynamic value>`
+
 ```py
 from nexios import NexiosApp
 
@@ -365,6 +364,7 @@ async def get_user(request, response):
     user_id = request.path_params.user_id
     return {"id": user_id}
 ```
+
 ## 🔄 Route Converters in Nexios
 
 By default, parameters are strings, but converters allow you to enforce/convert the parameter to a type, or alter what the pattern matches.
@@ -374,6 +374,7 @@ The syntax is:
     Route("/users/{user_id:int}", handler)
    Route("/files/{full_path:path}", handler)
 ```
+
 **Examples**
 
 ::: code-group
@@ -484,12 +485,12 @@ class MyConvertor(Convertor[YourType]):
     regex = "your-regex-pattern"
 ```
 
-2. Implement the required methods:
+1. Implement the required methods:
 
    - `convert(self, value: str) -> YourType`: Converts string to your type
    - `to_string(self, value: YourType) -> str`: Converts your type to string
 
-3. Register the converter:
+2. Register the converter:
 
 ```python
 register_url_convertor("converter_name", MyConvertor())
@@ -532,8 +533,6 @@ When creating custom converters:
 4. Consider performance implications
 5. Test thoroughly with edge cases
    :::
-
-
 
 ## 📚 Route Metadata and Documentation
 
@@ -819,8 +818,6 @@ async def get_user(request, response):
     return response.json({"id": user_id, "name": "John Doe", "email": "john@example.com"})
 ```
 
-
-
 ## 🛡️ Security Requirements
 
 You can specify security requirements for routes:
@@ -882,7 +879,7 @@ print(post_url)  # /posts/456
 ## URL Generation with Query Parameters
 
 ```python
-from nexios.structs import URLPath
+from nexios.objects import URLPath
 
 @app.get("/search", name="search")
 async def search(request, response):
@@ -1001,8 +998,6 @@ post_routes = create_crud_routes("posts", PostModel)
 for route in user_routes + post_routes:
     app.add_route(route)
 ```
-
-
 
 ## Dynamic Route Registration
 
@@ -1248,5 +1243,3 @@ While both `Group` and `Router` can be used to organize routes, they serve diffe
 4. **Middleware**:
    - Apply middleware at the most specific level possible
    - Document any middleware applied to a group
-
-

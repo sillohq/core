@@ -13,7 +13,7 @@ from nexios._internals._formparsers import (
     UploadedFile,
 )
 from nexios.session.base import BaseSessionInterface
-from nexios.structs import URL, Address, FormData, Headers, QueryParams, State
+from nexios.objects import URL, Address, FormData, Headers, QueryParams, State
 from nexios.utils.async_helpers import (
     AwaitableOrContextManager,
     AwaitableOrContextManagerWrapper,

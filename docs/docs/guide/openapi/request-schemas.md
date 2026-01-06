@@ -204,7 +204,7 @@ async def handle_contact_form(request, response):
 ### File Upload with Multipart
 
 ```python
-from nexios.structs import UploadedFile
+from nexios.objects import UploadedFile
 
 class FileUploadRequest(BaseModel):
     title: str = Field(..., description="File title")

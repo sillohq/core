@@ -29,7 +29,7 @@ from nexios.pagination import (
     SyncListDataHandler,
     SyncPaginator,
 )
-from nexios.structs import MutableHeaders
+from nexios.objects import MutableHeaders
 
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]

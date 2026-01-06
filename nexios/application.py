@@ -32,7 +32,7 @@ from nexios.openapi._builder import APIDocumentation
 from nexios.openapi.config import OpenAPIConfig
 from nexios.openapi.models import HTTPBearer, Parameter,Server
 from nexios.routing.base import BaseRoute
-from nexios.structs import URLPath
+from nexios.objects import URLPath
 
 from .routing import Route, Router, WebsocketRoute
 from .types import (

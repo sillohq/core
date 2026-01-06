@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
-from nexios.structs import URLPath
+from nexios.objects import URLPath
 from nexios.types import ASGIApp, Receive, Scope, Send
 
 

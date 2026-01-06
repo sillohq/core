@@ -37,7 +37,7 @@ from nexios.exceptions import NotFoundException
 from nexios.http import Request, Response
 from nexios.http.response import JSONResponse
 from nexios.openapi.models import Parameter
-from nexios.structs import RouteParam, URLPath
+from nexios.objects import RouteParam, URLPath
 from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, Send
 
 from ._utils import get_route_path,MatchStatus

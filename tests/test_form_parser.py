@@ -5,7 +5,7 @@ import pytest
 from nexios import NexiosApp
 from nexios.http import Request, Response
 from nexios.http.formparsers import FormParser, MultiPartException, MultiPartParser
-from nexios.structs import FormData, Headers, UploadedFile
+from nexios.objects import FormData, Headers, UploadedFile
 from nexios.testing import Client
 
 # Set default limits for MultiPartParser if they don't exist

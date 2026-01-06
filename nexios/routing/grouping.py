@@ -4,7 +4,7 @@ import typing
 from nexios._internals._middleware import DefineMiddleware as Middleware
 from nexios._internals._route_builder import RouteBuilder
 from nexios.exceptions import NotFoundException
-from nexios.structs import URLPath
+from nexios.objects import URLPath
 from nexios.types import ASGIApp, Receive, Scope, Send,Scope
 from ._utils import get_route_path,MatchStatus
 

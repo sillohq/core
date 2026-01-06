@@ -6,7 +6,7 @@ import gzip
 import io
 import typing
 
-from nexios.structs import Headers, MutableHeaders
+from nexios.objects import Headers, MutableHeaders
 from nexios.types import ASGIApp, Message, Receive, Scope, Send
 
 
