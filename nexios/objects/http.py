@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import shutil
 import typing
 from typing import Any, Dict, Sequence
 from urllib.parse import parse_qsl, urlencode
@@ -295,6 +297,20 @@ class UploadedFile:
             self.file.close()
         else:
             await run_in_threadpool(self.file.close)
+
+    async def save(self, destination: typing.Union[str, os.PathLike[str]]) -> None:
+        """
+        Save the uploaded file to a destination.
+        """
+        if self._in_memory:
+            with open(destination, "wb") as f:
+                shutil.copyfileobj(self.file, f)
+        else:
+            await run_in_threadpool(self._save_to_disk, destination)
+
+    def _save_to_disk(self, destination: typing.Union[str, os.PathLike[str]]) -> None:
+        with open(destination, "wb") as f:
+            shutil.copyfileobj(self.file, f)
 
     def __repr__(self) -> str:
         return (
