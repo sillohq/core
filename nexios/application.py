@@ -522,40 +522,7 @@ class NexiosApp(object):
         self.router.mount_router(router, name=name)
 
   
-
-    def add_asgi_middleware(
-        self,
-        middleware: Annotated[
-            ASGIApp,
-            Doc(
-                "A callable function that intercepts and processes WebSocket connections."
-            ),
-        ],
-    ) -> None:
-        """
-        Adds a WebSocket middleware to the application.
-
-        WebSocket middleware functions allow pre-processing of WebSocket requests before they
-        reach their final handler. Middleware can be used for authentication, logging, or
-        modifying the WebSocket request/response.
-
-        Args:
-            middleware (Callable): A callable function that handles WebSocket connections.
-
-        Returns:
-            None
-
-        Example:
-            ```python
-            def ws_auth_middleware(ws, next_handler):
-                if not ws.headers.get("Authorization"):
-                    ...
-                return next_handler(ws)
-
-            app.add_asgi_middleware(ws_auth_middleware)
-            ```
-        """
-        self.ws_middleware.append(middleware)
+    
 
     def handle_request(self, scope: Scope, receive: Receive, send: Send):
         app = self.app
@@ -2294,7 +2261,7 @@ class NexiosApp(object):
 
         """
         self.app = middleware_cls(self.app, **kwargs)
-        return None
+        return 
 
     def get_all_routes(self) -> List[Route]:
         """

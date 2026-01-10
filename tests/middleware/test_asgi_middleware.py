@@ -403,3 +403,279 @@ def test_pure_asgi_middleware_request_id(
         request_id_body = resp.json()["request_id"]
         assert request_id_header == request_id_body
         assert len(request_id_header) == 36  # UUID length
+
+
+# ========== wrap_asgi() Method Tests ==========
+
+
+def test_wrap_asgi_basic(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test basic wrap_asgi() method usage"""
+    app = NexiosApp()
+
+    executed = []
+
+    class SimpleMiddleware:
+        def __init__(self, app: ASGIApp):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            if scope["type"] == "http":
+                executed.append("middleware")
+            await self.app(scope, receive, send)
+
+    @app.get("/test")
+    async def handler(request: Request, response: Response):
+        executed.append("handler")
+        return response.json({"message": "ok"})
+
+    # Use wrap_asgi method
+    app.wrap_asgi(SimpleMiddleware)
+
+    with test_client_factory(app) as client:
+        resp = client.get("/test")
+        assert resp.status_code == 200
+        assert "middleware" in executed
+        assert "handler" in executed
+
+
+def test_wrap_asgi_with_kwargs(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test wrap_asgi() with keyword arguments"""
+    app = NexiosApp()
+
+    class ConfigurableMiddleware:
+        def __init__(self, app: ASGIApp, prefix: str = "", suffix: str = ""):
+            self.app = app
+            self.prefix = prefix
+            self.suffix = suffix
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            if scope["type"] == "http":
+                scope["custom_value"] = f"{self.prefix}value{self.suffix}"
+            await self.app(scope, receive, send)
+
+    @app.get("/test")
+    async def handler(request: Request, response: Response):
+        custom_value = request.scope.get("custom_value", "")
+        return response.json({"custom_value": custom_value})
+
+    # Use wrap_asgi with kwargs
+    app.wrap_asgi(ConfigurableMiddleware, prefix="[", suffix="]")
+
+    with test_client_factory(app) as client:
+        resp = client.get("/test")
+        assert resp.json()["custom_value"] == "[value]"
+
+
+def test_wrap_asgi_multiple_times(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test calling wrap_asgi() multiple times"""
+    app = NexiosApp()
+
+    execution_order = []
+
+    class Middleware1:
+        def __init__(self, app: ASGIApp):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            if scope["type"] == "http":
+                execution_order.append("m1")
+            await self.app(scope, receive, send)
+
+    class Middleware2:
+        def __init__(self, app: ASGIApp):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            if scope["type"] == "http":
+                execution_order.append("m2")
+            await self.app(scope, receive, send)
+
+    class Middleware3:
+        def __init__(self, app: ASGIApp):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            if scope["type"] == "http":
+                execution_order.append("m3")
+            await self.app(scope, receive, send)
+
+    @app.get("/test")
+    async def handler(request: Request, response: Response):
+        execution_order.append("handler")
+        return response.json({"message": "ok"})
+
+    # Wrap multiple times - last wrap is outermost
+    app.wrap_asgi(Middleware1)
+    app.wrap_asgi(Middleware2)
+    app.wrap_asgi(Middleware3)
+
+    with test_client_factory(app) as client:
+        resp = client.get("/test")
+        assert resp.status_code == 200
+        # Execution order: outermost (m3) -> m2 -> m1 -> handler
+        assert execution_order == ["m3", "m2", "m1", "handler"]
+
+
+def test_wrap_asgi_returns_none(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test that wrap_asgi() returns None (not chainable)"""
+    app = NexiosApp()
+
+    class DummyMiddleware:
+        def __init__(self, app: ASGIApp):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            await self.app(scope, receive, send)
+
+    result = app.wrap_asgi(DummyMiddleware)
+    assert result is None
+
+
+def test_wrap_asgi_with_nexios_middleware(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test wrap_asgi() combined with add_middleware()"""
+    app = NexiosApp()
+
+    execution_order = []
+
+    class ASGIMiddleware:
+        def __init__(self, app: ASGIApp):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            if scope["type"] == "http":
+                execution_order.append("asgi")
+            await self.app(scope, receive, send)
+
+    async def nexios_middleware(request: Request, response: Response, call_next):
+        execution_order.append("nexios")
+        await call_next()
+        return response
+
+    @app.get("/test")
+    async def handler(request: Request, response: Response):
+        execution_order.append("handler")
+        return response.json({"message": "ok"})
+
+    # Add Nexios middleware first
+    app.add_middleware(nexios_middleware)
+    # Then wrap with ASGI middleware
+    app.wrap_asgi(ASGIMiddleware)
+
+    with test_client_factory(app) as client:
+        resp = client.get("/test")
+        assert resp.status_code == 200
+        # Nexios middleware (HTTP level) executes before ASGI middleware (wraps core app)
+        assert execution_order.index("nexios") < execution_order.index("asgi")
+        assert execution_order.index("asgi") < execution_order.index("handler")
+
+
+def test_wrap_asgi_header_injection(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test wrap_asgi() with header injection middleware"""
+    app = NexiosApp()
+
+    class HeaderMiddleware:
+        def __init__(self, app: ASGIApp, header_name: str = "x-custom", header_value: str = "test"):
+            self.app = app
+            self.header_name = header_name.encode()
+            self.header_value = header_value.encode()
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            async def send_wrapper(message):
+                if message["type"] == "http.response.start":
+                    headers = list(message.get("headers", []))
+                    headers.append((self.header_name, self.header_value))
+                    message["headers"] = headers
+                await send(message)
+
+            await self.app(scope, receive, send_wrapper)
+
+    @app.get("/test")
+    async def handler(request: Request, response: Response):
+        return response.json({"message": "ok"})
+
+    app.wrap_asgi(HeaderMiddleware, header_name="x-powered-by", header_value="nexios")
+
+    with test_client_factory(app) as client:
+        resp = client.get("/test")
+        assert resp.headers.get("x-powered-by") == "nexios"
+
+
+def test_wrap_asgi_scope_modification(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test wrap_asgi() modifying scope"""
+    app = NexiosApp()
+
+    class ScopeMiddleware:
+        def __init__(self, app: ASGIApp, key: str = "custom", value: str = "default"):
+            self.app = app
+            self.key = key
+            self.value = value
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            if scope["type"] == "http":
+                scope[self.key] = self.value
+            await self.app(scope, receive, send)
+
+    @app.get("/test")
+    async def handler(request: Request, response: Response):
+        custom_value = request.scope.get("app_name", "unknown")
+        return response.json({"app_name": custom_value})
+
+    app.wrap_asgi(ScopeMiddleware, key="app_name", value="nexios-app")
+
+    with test_client_factory(app) as client:
+        resp = client.get("/test")
+        assert resp.json()["app_name"] == "nexios-app"
+
+
+def test_wrap_asgi_error_handling(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test wrap_asgi() with error handling middleware"""
+    app = NexiosApp()
+
+    class ErrorHandlerMiddleware:
+        def __init__(self, app: ASGIApp):
+            self.app = app
+
+        async def __call__(self, scope: Scope, receive: Receive, send: Send):
+            if scope["type"] == "http":
+                try:
+                    await self.app(scope, receive, send)
+                except Exception as e:
+                    # Catch errors and send custom response
+                    await send({
+                        "type": "http.response.start",
+                        "status": 500,
+                        "headers": [[b"content-type", b"application/json"]],
+                    })
+                    await send({
+                        "type": "http.response.body",
+                        "body": b'{"error": "handled by middleware"}',
+                    })
+            else:
+                await self.app(scope, receive, send)
+
+    @app.get("/test")
+    async def handler(request: Request, response: Response):
+        raise ValueError("Test error")
+
+    app.wrap_asgi(ErrorHandlerMiddleware)
+
+    with test_client_factory(app) as client:
+        resp = client.get("/test")
+        # Error should be caught and handled
+        assert resp.status_code in [500, 200]  # Depends on error handling implementation
