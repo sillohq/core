@@ -221,7 +221,7 @@ export default defineConfig({
         { text: 'Router', link: '/api-reference/router' },
         { text: 'Group', link: '/api-reference/group' },
         { text: 'Class Based Middleware', link: '/api-reference/middleware' },
-        { text: 'Depend', link: '/api-reference/dependencies/depend' },
+        { text: 'Depend', link: '/api-reference/depend' },
         { text: 'Builder', link: '/api-reference/openapi-builder' },
         { text: 'TestClient', link: '/api-reference/testclient' },
         { text: 'WebSocket', link: '/api-reference/websocket' },
