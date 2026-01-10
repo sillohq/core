@@ -9,7 +9,7 @@ head:
     - property: og:description
       content: The Nexios event system provides a powerful way to implement loosely coupled, event-driven architectures in your applications. It allows components to communicate without direct dependencies, making your code more maintainable and flexible.
 ---
-# 📢 Introduction to the Event System
+# Introduction to the Event System
 
 The Nexios event system provides a powerful way to implement loosely coupled, event-driven architectures in your applications. It allows components to communicate without direct dependencies, making your code more maintainable and flexible.
 
@@ -27,7 +27,12 @@ async def handle_user_created(user):
 # Trigger the event
 app.events.emit("user.created", {"name": "Bob"})
 ```
-At its core, Nexios events implement the publish-subscribe (pub-sub) pattern .
+
+At its core, Nexios events implement the [publish-subscribe (pub-sub) pattern](https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern).
+
+::: warning Events are for Side Effects ONLY
+Events should be used primarily for side effects (e.g., sending emails, tracking analytics, logging) that do not block the main request flow. Avoid using events to modify data that the main request cycle depends on.
+:::
 
 ## 📡 Subscribing to Events
 
@@ -53,15 +58,14 @@ async def create_user(req, res):
     await app.events.emit("user.created", {"name": "Bob"})
     ...
 ```
-This Endpoint will emit the "user.created" event when a new user is created
-And the `handle_user_created` function will be called with the user data
+
+This endpoint will emit the "user.created" event when a new user is created. The `handle_user_created` function will then be called with the user data.
 
 ## ⚙️ Managing Event Instances
 
-Each event is associated with a specific event emitter instance. This means that you can create multiple event emitters and manage their events independently
+Each event is associated with a specific event emitter instance. This means that you can create multiple event emitters and manage their events independently.
 
-the `NexiosApp` and `Router` class provides a default event emitter instance called `events` but you can also create your own event emitters
-
+The `NexiosApp` and `Router` classes provide a default event emitter instance called `events`, but you can also create your own event emitters.
 
 ```python{3}
 from nexios import NexiosApp
@@ -77,6 +81,7 @@ async def handle_user_created(user):
 
 emitter.emit("user.created", {"name": "Bob"})
 ```
+
 ## 🗑️ Removing Event Listeners
 
 You can remove event listeners when they're no longer needed:
@@ -98,7 +103,7 @@ app.events.off("data.received")
 
 ## ⭐ Priority Listeners
 
-You can set a priority for event listeners. The higher the priority, the earlier the listener is called. By default, listeners are called in the order they are added
+You can set a priority for event listeners. The higher the priority, the earlier the listener is called. By default, listeners are called in the order they are added.
 
 ```python
 from nexios.events import EventPriority
@@ -137,8 +142,9 @@ app.emit('ui:button.click', 'submit')  # Same as above
 
 ```
 
-## 🔄 sync Events
-Nexios Supports Async Events
+## 🔄 Asynchronous Events
+
+Nexios fully supports async event handlers.
 
 ```python
 from nexios.events import AsyncEventEmitter
@@ -148,3 +154,7 @@ events = AsyncEventEmitter()
 async def handle_user_created(user):
     print(f"User created: {user['name']}")
 ```
+
+::: tip Always Use Async Handlers
+To avoid blocking the main application loop, always use `async def` for your event listeners. Synchronous listeners will block the entire event loop while they execute, degrading performance.
+:::
