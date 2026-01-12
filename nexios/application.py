@@ -21,7 +21,7 @@ from nexios._internals._middleware import (
 from nexios._internals._middleware import DefineMiddleware as Middleware
 from nexios.config import MakeConfig
 from nexios.dependencies import Depend
-from nexios.events import AsyncEventEmitter
+from nexios.events import EventEmitter
 from nexios.exception_handler import ExceptionHandlerType, ExceptionMiddleware
 from nexios.logging import create_logger
 from nexios.middleware.errors.server_error_handler import (
@@ -233,7 +233,7 @@ class NexiosApp(object):
             openapi_url=openapi_config.get("openapi_url", "/openapi.json"),
         )
 
-        self.events = AsyncEventEmitter()
+        self.events = EventEmitter()
         self.title = title or "Nexios API"
         self.setup()
 
