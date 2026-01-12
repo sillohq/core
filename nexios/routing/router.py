@@ -32,7 +32,7 @@ from nexios._internals._middleware import (
 from nexios._internals._response_transformer import request_response
 from nexios._internals._route_builder import RouteBuilder
 from nexios.dependencies import Depend, inject_dependencies
-from nexios.events import AsyncEventEmitter
+from nexios.events import EventEmitter
 from nexios.exceptions import NotFoundException
 from nexios.http import Request, Response
 from nexios.http.response import JSONResponse
@@ -334,7 +334,7 @@ class Router(BaseRouter):
         self.tags = tags or []
         self.exclude_from_schema = exclude_from_schema
         self.name = name
-        self.event = AsyncEventEmitter()
+        self.event = EventEmitter()
         self.dependencies = dependencies or []
         self.root_path = ""
 
