@@ -57,15 +57,37 @@ async def process_data(data: dict) -> dict:
 
 ### 3. Create and Run a Task
 
+> [!WARNING]
+> Passing `request` to `create_task` is deprecated and will be removed in a future version. The current context is now automatically resolved. Use `create_task(func, *args, **kwargs)` instead.
+
 Start background tasks from your API endpoints and return immediately:
 
-```python
+::: code-group
+
+```python [New (Recommended)]
 from nexios.http import Request, Response
 
 @app.post("/process")
 async def start_processing(request: Request, response: Response) -> dict:
     """Start a background processing task."""
     data = await request.json
+    # The context is automatically resolved
+    task = await create_task(
+        func=process_data,
+        data=data,
+        name="data_processing"
+    )
+    return {"task_id": task.id}
+```
+
+```python [Legacy (Deprecated)]
+from nexios.http import Request, Response
+
+@app.post("/process")
+async def start_processing(request: Request, response: Response) -> dict:
+    """Start a background processing task."""
+    data = await request.json
+    # Explicitly passing request is deprecated
     task = await create_task(
         request=request,
         func=process_data,
@@ -74,6 +96,27 @@ async def start_processing(request: Request, response: Response) -> dict:
     )
     return {"task_id": task.id}
 ```
+
+```python [Dependency Injection (Best Practice)]
+from nexios_contrib.tasks import TaskDependency
+
+@app.post("/process")
+async def start_processing(
+    request: Request, 
+    # Inject the task manager directly
+    task_dep: TaskDependency = TaskDependency() 
+) -> dict:
+    """Start a background processing task using DI."""
+    data = await request.json
+    task = await task_dep.create(
+        func=process_data,
+        data=data,
+        name="data_processing"
+    )
+    return {"task_id": task.id}
+```
+
+:::
 
 ### 4. Check Task Status
 
@@ -103,7 +146,7 @@ Nexios Tasks integrates seamlessly with Nexios's dependency injection system for
 
 Leverage dependency injection to simplify task creation and management in your endpoints.
 
-###  Create a Task with Dependencies
+### Create a Task with Dependencies
 
 Use TaskDependency to inject task management capabilities directly into your handlers:
 
@@ -264,8 +307,6 @@ async def get_task_progress(request: Request, response: Response, task_id: str):
     }
 ```
 
-
-
 ## Error Handling
 
 Properly handle and respond to task failures and exceptions.
@@ -376,7 +417,6 @@ async def start_file_processing(request: Request, response: Response):
         return {"error": "file_path is required"}, 400
     
     task = await create_task(
-        request=request,
         func=process_file,
         file_path=file_path,
         name=f"process_file_{os.path.basename(file_path)}"
@@ -437,7 +477,6 @@ async def start_bulk_email_sending(request: Request, response: Response):
     data = await request.json
     
     task = await create_task(
-        request=request,
         func=send_bulk_emails,
         recipients=data["recipients"],
         subject=data["subject"],
@@ -526,7 +565,6 @@ async def start_data_export(request: Request, response: Response):
     data = await request.json
     
     task = await create_task(
-        request=request,
         func=export_data,
         format=data.get("format", "csv"),
         filters=data.get("filters", {}),
@@ -646,7 +684,6 @@ def app():
             return f"processed_{value}"
         
         task = await create_task(
-            request=request,
             func=test_task,
             value="test",
             name="integration_test"
