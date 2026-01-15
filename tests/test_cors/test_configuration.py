@@ -5,7 +5,7 @@ Tests for CORS middleware configuration and advanced features
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config, CorsConfig
+from nexios.config import CorsConfig, MakeConfig, set_config
 from nexios.http import Request, Response
 from nexios.middleware.cors import CORSMiddleware
 from nexios.testclient import TestClient
@@ -180,7 +180,7 @@ class TestCORSConfiguration:
             )
         )
         set_config(config)
-        app = NexiosApp(config = config)
+        app = NexiosApp(config=config)
 
         @app.get("/dynamic-test")
         async def dynamic_route(request: Request, response: Response):

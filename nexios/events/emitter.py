@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, List, Optional
 from .core import Event
 from .enums import EventPriority
 
+
 class EventEmitter:
     """
     Advanced event emitter that manages multiple events and provides
@@ -196,7 +197,9 @@ class EventNamespace:
         Returns:
             Event instance
         """
-        full_name = f"{self._namespace}{self._emitter._namespace_separator}{event_name}"  # type:ignore
+        full_name = (
+            f"{self._namespace}{self._emitter._namespace_separator}{event_name}"
+        )  # type:ignore
         return self._emitter.event(full_name)
 
     def namespace(self, sub_namespace: str) -> "EventNamespace":

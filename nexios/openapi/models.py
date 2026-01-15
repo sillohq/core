@@ -123,23 +123,22 @@ class Schema(BaseModel):
     example: Optional[Any] = None
     examples: Optional[Examples] = None
 
-    @field_validator('type', mode='before')
+    @field_validator("type", mode="before")
     @classmethod
     def validate_type(cls, v, info):
         """Validate type field - if anyOf/oneOf/allOf is present, type should not be set"""
         if v is not None:
             return v
-        
+
         # Only set default type "object" if no composition keywords are present
-        data = info.data if hasattr(info, 'data') else {}
+        data = info.data if hasattr(info, "data") else {}
         has_composition = any(
-            data.get(key) is not None 
-            for key in ['anyOf', 'oneOf', 'allOf']
+            data.get(key) is not None for key in ["anyOf", "oneOf", "allOf"]
         )
-        
+
         if not has_composition:
             return "object"
-        
+
         return None
 
 

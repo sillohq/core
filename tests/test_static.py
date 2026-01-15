@@ -60,8 +60,6 @@ def test_static_file_subdirectories():
         assert resp.status_code == 404
 
 
-
-
 def test_static_file_http_methods():
     app = NexiosApp()
     static_dir = Path(__file__).parent / "static"

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import      Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
-from nexios.routing.grouping import Group
 from nexios.routing import Route, Router
+from nexios.routing.grouping import Group
 
 from .config import OpenAPIConfig
 from .models import (
@@ -262,9 +262,7 @@ class APIDocumentation:
                 content={
                     getattr(
                         route, "request_content_type", "application/json"
-                    ): MediaType(
-                        schema=Schema(**processed_schema)
-                    )
+                    ): MediaType(schema=Schema(**processed_schema))
                 }
             )
         elif method.upper() not in ["GET", "DELETE", "HEAD", "OPTIONS"]:
@@ -317,32 +315,36 @@ class APIDocumentation:
         Extract nested schemas from Pydantic's $defs and add them to components.schemas.
         Returns the cleaned schema with updated references.
         """
-        if '$defs' not in schema:
+        if "$defs" not in schema:
             return schema
-        
+
         # Extract all nested schemas and add them to components
-        for def_name, def_schema in schema['$defs'].items():
+        for def_name, def_schema in schema["$defs"].items():
             # Recursively process nested schemas
             processed_schema = self._extract_and_add_nested_schemas(def_schema)
             self.config.add_schema(def_name, Schema(**processed_schema))
-        
+
         # Remove $defs from the schema
         cleaned_schema = schema.copy()
-        del cleaned_schema['$defs']
-        
+        del cleaned_schema["$defs"]
+
         # Update all references to use OpenAPI format
         self._update_schema_references(cleaned_schema)
-        
+
         return cleaned_schema
-    
+
     def _update_schema_references(self, schema: Any) -> None:
         """
         Recursively update #/$defs/ references to #/components/schemas/ format.
         """
         if isinstance(schema, dict):
             for key, value in schema.items():
-                if key == '$ref' and isinstance(value, str) and value.startswith('#/$defs/'):
-                    schema[key] = value.replace('#/$defs/', '#/components/schemas/')
+                if (
+                    key == "$ref"
+                    and isinstance(value, str)
+                    and value.startswith("#/$defs/")
+                ):
+                    schema[key] = value.replace("#/$defs/", "#/components/schemas/")
                 else:
                     self._update_schema_references(value)
         elif isinstance(schema, list):
@@ -353,16 +355,14 @@ class APIDocumentation:
         """
         Create a response specification from a model.
         """
-        
+
         if isinstance(model, type) and issubclass(model, BaseModel):
             schema_dict = model.model_json_schema()
             processed_schema = self._extract_and_add_nested_schemas(schema_dict)
             return OpenAPIResponse(
                 description=f"Response for status code {status_code}",
                 content={
-                    "application/json": MediaType(
-                        schema=Schema(**processed_schema)
-                    )
+                    "application/json": MediaType(schema=Schema(**processed_schema))
                 },
             )
         elif hasattr(model, "__origin__") and model.__origin__ is list:
@@ -388,7 +388,11 @@ class APIDocumentation:
                 description=model.get(
                     "description", f"Response for status code {status_code}"
                 ),
-                content={"application/json": MediaType(schema=Schema(type="object",example=model))},
+                content={
+                    "application/json": MediaType(
+                        schema=Schema(type="object", example=model)
+                    )
+                },
             )
 
         # Fallback

@@ -92,7 +92,7 @@ class AuthenticationMiddleware(BaseMiddleware):
 
             except Exception as e:
                 # Log the error but continue to the next backend
-                backend.handle_exception(response,e)
+                backend.handle_exception(response, e)
                 continue
         else:
             # No backend authenticated the user

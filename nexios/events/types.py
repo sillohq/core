@@ -6,9 +6,11 @@ from .enums import EventPhase
 
 _T = TypeVar("_T", bound="EventProtocol")
 
+
 @dataclass
 class EventContext:
     """Context information about the event"""
+
     timestamp: float
     event_id: str
     source: Any
@@ -29,7 +31,7 @@ class EventProtocol(Protocol):
     listener_count: int
     max_listeners: int
     enabled: bool
-    
+
     def get_metrics(self) -> dict[str, Any]: ...
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any: ...

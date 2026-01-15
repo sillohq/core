@@ -131,13 +131,6 @@ def test_request_cookies_iteration(
 # ========== Basic Authentication Tests ==========
 
 
-
-
-
-
-
-
-
 def test_request_is_ajax(test_client_factory: Callable[[NexiosApp], TestClient]):
     """Test AJAX request detection"""
     app = NexiosApp()
@@ -167,5 +160,3 @@ def test_request_is_ajax_case_insensitive(
 
 
 # ========== Combined Auth and Cookies Tests ==========
-
-

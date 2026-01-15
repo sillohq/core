@@ -6,8 +6,8 @@ import time
 import uuid
 import weakref
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, cast
-from weakref import ref, WeakMethod
+from typing import Any, Callable, Dict, List, Optional, Tuple
+from weakref import WeakMethod, ref
 
 from .enums import EventPhase, EventPriority
 from .exceptions import (
@@ -16,10 +16,11 @@ from .exceptions import (
     MaxListenersExceededError,
 )
 from .mixins import EventSerializationMixin
-from .types import EventContext, ListenerType, EventProtocol
+from .types import EventContext, ListenerType
 
 # Setup logging
 logger = logging.getLogger(__name__)
+
 
 class Event(EventSerializationMixin):
     """

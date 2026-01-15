@@ -1,10 +1,13 @@
 from typing import Any, List, Optional
+
 from nexios.config.base import MakeConfig
+
 
 class OpenAPIConfig(MakeConfig):
     """
     Typed configuration for OpenAPI documentation.
     """
+
     def __init__(
         self,
         title: Optional[str] = None,
@@ -17,7 +20,7 @@ class OpenAPIConfig(MakeConfig):
         contact: Optional[Any] = None,
         servers: Optional[List[Any]] = None,
         termsOfService: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         config = {
             "title": title,

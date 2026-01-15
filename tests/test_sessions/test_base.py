@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from nexios.config import MakeConfig, set_config, SessionConfig
+from nexios.config import MakeConfig, SessionConfig, set_config
 from nexios.session.base import BaseSessionInterface
 
 

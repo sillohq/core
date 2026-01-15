@@ -1,13 +1,11 @@
 import asyncio
 import typing
-import warnings
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from typing_extensions import Annotated, Doc
 
 from nexios._internals._route_builder import RouteBuilder
 from nexios.types import (
-    ASGIApp,
     Receive,
     Scope,
     Send,
@@ -17,27 +15,25 @@ from nexios.types import (
 from nexios.websockets import WebSocket
 from nexios.websockets.errors import WebSocketErrorMiddleware
 
-from ._utils import get_route_path,MatchStatus
-from .base import BaseRouter
-from .grouping import Group
+from ._utils import MatchStatus, get_route_path
 
 
 class WebsocketRoute:
     """
     WebSocket route configuration for handling real-time bidirectional communication.
-    
+
     WebsocketRoute defines a WebSocket endpoint that can handle persistent connections
     between clients and the server. Unlike HTTP routes, WebSocket routes maintain
     an open connection that allows both the client and server to send messages
     at any time.
-    
+
     Features:
     - Path parameter extraction (same as HTTP routes)
     - Middleware support for WebSocket connections
     - Automatic connection lifecycle management
     - Error handling and connection cleanup
     - Support for binary and text messages
-    
+
     Examples:
         1. Basic WebSocket echo server:
         ```python
@@ -49,20 +45,20 @@ class WebsocketRoute:
                     await websocket.send_text(f"Echo: {message}")
             except WebSocketDisconnect:
                 pass
-        
+
         ws_route = WebsocketRoute("/ws/echo", echo_handler)
         app.add_ws_route(ws_route)
         ```
-        
+
         2. Chat room with path parameters:
         ```python
         async def chat_handler(websocket: WebSocket):
             room_id = websocket.path_params['room_id']
             await websocket.accept()
-            
+
             # Add user to chat room
             await chat_manager.add_user(room_id, websocket)
-            
+
             try:
                 while True:
                     message = await websocket.receive_text()
@@ -70,11 +66,11 @@ class WebsocketRoute:
                     await chat_manager.broadcast(room_id, message)
             except WebSocketDisconnect:
                 await chat_manager.remove_user(room_id, websocket)
-        
+
         ws_route = WebsocketRoute("/ws/chat/{room_id}", chat_handler)
         app.add_ws_route(ws_route)
         ```
-        
+
         3. WebSocket with authentication middleware:
         ```python
         async def auth_middleware(websocket: WebSocket, call_next):
@@ -83,16 +79,16 @@ class WebsocketRoute:
             if not token or not verify_token(token):
                 await websocket.close(code=4001, reason="Unauthorized")
                 return
-            
+
             # Add user info to websocket
             websocket.state.user = get_user_from_token(token)
             await call_next()
-        
+
         async def protected_handler(websocket: WebSocket):
             await websocket.accept()
             user = websocket.state.user
             await websocket.send_text(f"Welcome, {user.name}!")
-            
+
             try:
                 while True:
                     message = await websocket.receive_text()
@@ -100,28 +96,28 @@ class WebsocketRoute:
                     await process_user_message(user, message)
             except WebSocketDisconnect:
                 pass
-        
+
         ws_route = WebsocketRoute(
-            "/ws/protected", 
+            "/ws/protected",
             protected_handler,
             middleware=[auth_middleware]
         )
         app.add_ws_route(ws_route)
         ```
-        
+
         4. Binary data handling:
         ```python
         async def file_upload_handler(websocket: WebSocket):
             await websocket.accept()
-            
+
             try:
                 while True:
                     # Receive binary data
                     data = await websocket.receive_bytes()
-                    
+
                     # Process file chunk
                     file_id = await process_file_chunk(data)
-                    
+
                     # Send confirmation
                     await websocket.send_json({
                         "status": "chunk_received",
@@ -129,16 +125,16 @@ class WebsocketRoute:
                     })
             except WebSocketDisconnect:
                 pass
-        
+
         ws_route = WebsocketRoute("/ws/upload", file_upload_handler)
         app.add_ws_route(ws_route)
         ```
     """
-    
+
     def __init__(
         self,
         path: Annotated[
-            str, 
+            str,
             Doc(
                 """
                 URL path pattern for the WebSocket endpoint.
@@ -153,10 +149,10 @@ class WebsocketRoute:
                 - "/ws/chat/{room_id}" - Chat room with room ID parameter
                 - "/ws/user/{user_id}/notifications" - User-specific notifications
                 """
-            )
+            ),
         ],
         handler: Annotated[
-            WsHandlerType, 
+            WsHandlerType,
             Doc(
                 """
                 Async function to handle WebSocket connections.
@@ -179,10 +175,10 @@ class WebsocketRoute:
                 - websocket.send_json(): Send JSON messages
                 - websocket.close(): Close the connection
                 """
-            )
+            ),
         ],
         middleware: Annotated[
-            typing.List[WsMiddlewareType], 
+            typing.List[WsMiddlewareType],
             Doc(
                 """
                 List of middleware functions to apply to this WebSocket route.
@@ -207,7 +203,7 @@ class WebsocketRoute:
                     await call_next()
                 ```
                 """
-            )
+            ),
         ] = [],
     ):
         assert callable(handler), "Route handler must be callable"
@@ -221,7 +217,7 @@ class WebsocketRoute:
         self.route_type = self.route_info.route_type
         self.router_middleware = None
 
-    def match(self, scope:Scope) -> typing.Tuple[Any, Any]:
+    def match(self, scope: Scope) -> typing.Tuple[Any, Any]:
         """
         Match a path against this route's pattern and return captured parameters.
 
@@ -247,24 +243,23 @@ class WebsocketRoute:
         """
         Handles the WebSocket connection by calling the route's handler with middleware.
         """
+
         # Create the base handler
         async def handler_app(scope: Scope, receive: Receive, send: Send) -> None:
             websocket_session = WebSocket(scope, receive=receive, send=send)
             await self.handler(websocket_session)
-        
+
         app = handler_app
-        
+
         for middleware_cls in reversed(self.middleware):
             app = middleware_cls(app)
-        
-        app = WebSocketErrorMiddleware(app)
-        
-        await app(scope, receive, send)
 
+        app = WebSocketErrorMiddleware(app)
+
+        await app(scope, receive, send)
 
     def __repr__(self) -> str:
         return f"<WSRoute {self.raw_path}>"
-
 
 
 WebsocketRoutes = WebsocketRoute  # for backwards compatibility

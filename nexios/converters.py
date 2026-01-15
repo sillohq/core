@@ -9,8 +9,6 @@ import re
 import typing
 import uuid
 
-from nexios.types import Scope
-
 T = typing.TypeVar("T")
 
 
@@ -111,5 +109,3 @@ CONVERTOR_TYPES: dict[str, Convertor[typing.Any]] = {
 
 def register_url_convertor(key: str, convertor: Convertor[typing.Any]) -> None:
     CONVERTOR_TYPES[key] = convertor
-
-

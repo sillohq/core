@@ -53,6 +53,7 @@ class TaskGroup:
         await self.cancel_all()
 
 
+@asynccontextmanager
 async def create_task_group() -> AsyncGenerator[TaskGroup, None]:
     """Create a task group context manager."""
     async with TaskGroup() as group:

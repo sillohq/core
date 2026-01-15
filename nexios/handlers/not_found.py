@@ -58,11 +58,11 @@ async def handle_404_error(
     """
     try:
         settings = get_config()
-    except:
+    except Exception:
         settings = None
 
     if settings:
-        debug = settings.debug 
+        debug = settings.debug
         not_found_config = settings.not_found
 
     else:

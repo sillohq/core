@@ -36,11 +36,11 @@ from nexios.events import EventEmitter
 from nexios.exceptions import NotFoundException
 from nexios.http import Request, Response
 from nexios.http.response import JSONResponse
-from nexios.openapi.models import Parameter
 from nexios.objects import RouteParam, URLPath
+from nexios.openapi.models import Parameter
 from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, Send
 
-from ._utils import get_route_path,MatchStatus
+from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
 from .grouping import Group
 from .websocket import WebsocketRoute
@@ -211,7 +211,8 @@ class Route(BaseRoute):
         self.methods = {method.upper() for method in methods}
         if "GET" in self.methods:
             self.methods.add("HEAD")
-    def match(self, scope:Scope) -> typing.Tuple[MatchStatus, Any]:
+
+    def match(self, scope: Scope) -> typing.Tuple[MatchStatus, Any]:
         """
         Match a path against this route's pattern and return captured parameters.
 
@@ -223,7 +224,7 @@ class Route(BaseRoute):
             otherwise None.
         """
         if scope.get("type") != "http":
-           return MatchStatus.NONE, {}
+            return MatchStatus.NONE, {}
         path = get_route_path(scope)
         method = scope["method"]
         match = self.pattern.match(path)
@@ -235,7 +236,7 @@ class Route(BaseRoute):
                 ].convert(value)
             is_method_allowed = method.lower() in (m.lower() for m in self.methods)
             if not is_method_allowed:
-                return MatchStatus.PARTIAL,matched_params
+                return MatchStatus.PARTIAL, matched_params
 
             return MatchStatus.FULL, matched_params
         return MatchStatus.NONE, {}
@@ -295,11 +296,13 @@ class Route(BaseRoute):
             for cls, args, kwargs in reversed(middleware):
                 app = cls(app, *args, **kwargs)
             return app
-        if self.methods and  scope["method"] not in self.methods:
-            app = JSONResponse({"Method Not Allowed"},
-                                status_code = 405,
-                                headers = {"Allow": ", ".join(self.methods)}
-                                )
+
+        if self.methods and scope["method"] not in self.methods:
+            app = JSONResponse(
+                {"Method Not Allowed"},
+                status_code=405,
+                headers={"Allow": ", ".join(self.methods)},
+            )
         else:
             app = await apply_middleware(await request_response(self.handler))
 
@@ -2259,6 +2262,7 @@ class Router(BaseRouter):
         if handler is None:
             return decorator
         return decorator(handler)
+
     def add_ws_route(
         self,
         route: Optional[
@@ -2301,7 +2305,6 @@ class Router(BaseRouter):
             self.routes.append(WebsocketRoute(path, handler, middleware=middleware))
         else:
             raise ValueError("Either route or both path and handler must be provided")
-
 
     def ws_route(
         self,
@@ -2453,14 +2456,14 @@ class Router(BaseRouter):
         scope["app"] = self
 
         path_match = None
-        
+
         for route in self.routes:
             match, matched_params = route.match(scope)  # type:ignore
             if match == MatchStatus.FULL:
                 scope["route_params"] = RouteParam(matched_params)
                 await route.handle(scope, receive, send)  # type:ignore
                 return
-            elif match == MatchStatus.PARTIAL and path_match is None :
+            elif match == MatchStatus.PARTIAL and path_match is None:
                 path_match = route
 
         if path_match is not None:
@@ -2471,8 +2474,6 @@ class Router(BaseRouter):
             raise NotFoundException
         else:
             await send({"type": "websocket.close", "code": 4404})
-            
-
 
     def mount_router(self, app: "Router", name: Optional[str] = None):
         """

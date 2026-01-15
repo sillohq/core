@@ -586,7 +586,12 @@ def test_wrap_asgi_header_injection(
     app = NexiosApp()
 
     class HeaderMiddleware:
-        def __init__(self, app: ASGIApp, header_name: str = "x-custom", header_value: str = "test"):
+        def __init__(
+            self,
+            app: ASGIApp,
+            header_name: str = "x-custom",
+            header_value: str = "test",
+        ):
             self.app = app
             self.header_name = header_name.encode()
             self.header_value = header_value.encode()
@@ -657,15 +662,19 @@ def test_wrap_asgi_error_handling(
                     await self.app(scope, receive, send)
                 except Exception as e:
                     # Catch errors and send custom response
-                    await send({
-                        "type": "http.response.start",
-                        "status": 500,
-                        "headers": [[b"content-type", b"application/json"]],
-                    })
-                    await send({
-                        "type": "http.response.body",
-                        "body": b'{"error": "handled by middleware"}',
-                    })
+                    await send(
+                        {
+                            "type": "http.response.start",
+                            "status": 500,
+                            "headers": [[b"content-type", b"application/json"]],
+                        }
+                    )
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": b'{"error": "handled by middleware"}',
+                        }
+                    )
             else:
                 await self.app(scope, receive, send)
 
@@ -678,4 +687,7 @@ def test_wrap_asgi_error_handling(
     with test_client_factory(app) as client:
         resp = client.get("/test")
         # Error should be caught and handled
-        assert resp.status_code in [500, 200]  # Depends on error handling implementation
+        assert resp.status_code in [
+            500,
+            200,
+        ]  # Depends on error handling implementation

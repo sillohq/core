@@ -19,7 +19,7 @@ from nexios._internals._middleware import (
     ASGIRequestResponseBridge,
 )
 from nexios._internals._middleware import DefineMiddleware as Middleware
-from nexios.config import MakeConfig
+from nexios.config import MakeConfig, get_config, set_config
 from nexios.dependencies import Depend
 from nexios.events import EventEmitter
 from nexios.exception_handler import ExceptionHandlerType, ExceptionMiddleware
@@ -28,11 +28,11 @@ from nexios.middleware.errors.server_error_handler import (
     ServerErrHandlerType,
     ServerErrorMiddleware,
 )
+from nexios.objects import URLPath
 from nexios.openapi._builder import APIDocumentation
 from nexios.openapi.config import OpenAPIConfig
-from nexios.openapi.models import HTTPBearer, Parameter,Server
+from nexios.openapi.models import HTTPBearer, Parameter, Server
 from nexios.routing.base import BaseRoute
-from nexios.objects import URLPath
 
 from .routing import Route, Router, WebsocketRoute
 from .types import (
@@ -46,7 +46,6 @@ from .types import (
     WsHandlerType,
     WsMiddlewareType,
 )
-from nexios.config import get_config, set_config
 
 if TYPE_CHECKING:
     from nexios.http import Request, Response
@@ -70,7 +69,7 @@ class NexiosApp(object):
                     Additionally, this design allows for merging and overriding configurations, making it adaptable for various use cases. Whether used for small projects or large-scale applications, this subclass ensures that configuration management remains efficient and scalable. By extending MakeConfig, it leverages existing functionality while adding new capabilities tailored to Nexios. This makes it an essential component for maintaining structured and well-organized application settings.
                     """
             ),
-        ] = MakeConfig() ,
+        ] = MakeConfig(),
         title: Annotated[
             Optional[str],
             Doc(
@@ -141,7 +140,7 @@ class NexiosApp(object):
             ),
         ] = None,
     ):
-        self.config = config 
+        self.config = config
         self.dependencies = dependencies or []
         try:
             from nexios.cli.utils import get_config as get_nexios_config
@@ -149,7 +148,6 @@ class NexiosApp(object):
 
             def get_nexios_config() -> Dict[str, Any]:
                 return {}
-
 
         try:
             get_config()
@@ -172,30 +170,34 @@ class NexiosApp(object):
         self.lifespan_context: Optional[lifespan_manager] = lifespan
         self.state: Dict[str, Any] = {}
         if not self.config:
-            return 
-        openapi_config: Dict[str, Any] = self.config.to_dict().get("openapi", {})  # type:ignore
-        
+            return
+        openapi_config: Dict[str, Any] = self.config.to_dict().get(
+            "openapi", {}
+        )  # type:ignore
+
         # Handle license - ensure it's a License model instance
         license_data = openapi_config.get("license")
         license_instance = None
         if license_data:
             if isinstance(license_data, dict):
                 from nexios.openapi.models import License
+
                 license_instance = License(**license_data)
             else:
                 license_instance = license_data
-        
-        # Handle contact - ensure it's a Contact model instance  
+
+        # Handle contact - ensure it's a Contact model instance
         contact_data = openapi_config.get("contact")
         terms_of_service = openapi_config.get("termsOfService")
         contact_instance = None
         if contact_data:
             if isinstance(contact_data, dict):
                 from nexios.openapi.models import Contact
+
                 contact_instance = Contact(**contact_data)
             else:
                 contact_instance = contact_data
-        
+
         # Handle servers - ensure they are Server model instances
         servers_data = openapi_config.get("servers")
         servers_instances = None
@@ -209,7 +211,7 @@ class NexiosApp(object):
                         servers_instances.append(server)
             else:
                 servers_instances = servers_data
-        
+
         self.openapi_config = OpenAPIConfig(
             title=openapi_config.get("title", title or "Nexios API"),
             version=openapi_config.get("version", version or "1.0.0"),
@@ -241,7 +243,7 @@ class NexiosApp(object):
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)  # type:ignore
         async def serve_openapi(request: "Request", response: "Response"):
             root_path = request.scope.get("root_path", "")
-            
+
             return response.json(
                 self.openapi.get_openapi(self.router, current_prefix=root_path)
             )
@@ -521,9 +523,6 @@ class NexiosApp(object):
         """
         self.router.mount_router(router, name=name)
 
-  
-    
-
     def handle_request(self, scope: Scope, receive: Receive, send: Send):
         app = self.app
         middleware = (
@@ -535,7 +534,9 @@ class NexiosApp(object):
             ]
             + self.http_middleware
             + [
-                Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)  # type:ignore
+                Middleware(
+                    ASGIRequestResponseBridge, dispatch=self.exceptions_handler
+                )  # type:ignore
             ]
         )
         for cls, args, kwargs in reversed(middleware):
@@ -550,10 +551,8 @@ class NexiosApp(object):
 
         if scope["type"] == "lifespan":
             await self.handle_lifespan(receive, send)
-        elif scope["type"] in ["http","websocket"]:
+        elif scope["type"] in ["http", "websocket"]:
             await self.handle_request(scope, receive, send)
-
-
 
     def get(
         self,
@@ -2261,7 +2260,7 @@ class NexiosApp(object):
 
         """
         self.app = middleware_cls(self.app, **kwargs)
-        return 
+        return
 
     def get_all_routes(self) -> List[Route]:
         """

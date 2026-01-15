@@ -1,11 +1,18 @@
 from typing import Any, Optional
 
-from .base import  MakeConfig
+from .base import MakeConfig
 from .cors import CorsConfig
-from .session import SessionConfig
 from .openapi import OpenAPIConfig
+from .session import SessionConfig
 
-__all__ = ["MakeConfig", "CorsConfig", "SessionConfig", "OpenAPIConfig", "get_config", "set_config"]
+__all__ = [
+    "MakeConfig",
+    "CorsConfig",
+    "SessionConfig",
+    "OpenAPIConfig",
+    "get_config",
+    "set_config",
+]
 
 _global_config: Optional[MakeConfig] = None
 
@@ -24,5 +31,3 @@ def get_config() -> MakeConfig:
     if _global_config is None:
         raise RuntimeError("Nexios config is not initialized")
     return _global_config
-
-

@@ -94,9 +94,6 @@ async def test_create_background_task():
     assert counter == 1
 
 
-
-
-
 # AsyncLazy Tests
 async def test_async_lazy_computation():
     counter = 0

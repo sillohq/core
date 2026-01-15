@@ -1,10 +1,13 @@
 from typing import Any, Callable, Dict, List, Optional
+
 from nexios.config.base import MakeConfig
+
 
 class CorsConfig(MakeConfig):
     """
     Typed configuration for CORS middleware.
     """
+
     def __init__(
         self,
         allow_origins: Optional[List[str]] = None,
@@ -21,12 +24,13 @@ class CorsConfig(MakeConfig):
         debug: bool = False,
         custom_error_status: int = 400,
         custom_error_messages: Optional[Dict[str, str]] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         config = {
             "allow_origins": allow_origins or [],
             "blacklist_origins": blacklist_origins or [],
-            "allow_methods": allow_methods or ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+            "allow_methods": allow_methods
+            or ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
             "blacklist_headers": blacklist_headers or [],
             "allow_headers": allow_headers or [],
             "allow_credentials": allow_credentials,

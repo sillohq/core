@@ -128,7 +128,7 @@ class CORSMiddleware(BaseMiddleware):
             )
 
     def is_allowed_origin(self, origin: Optional[str]) -> bool:
-        
+
         if origin in self.blacklist_origins:
             if self.debug:
                 logger.error(f"Request denied: Origin '{origin}' is blacklisted.")

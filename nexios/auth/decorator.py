@@ -9,10 +9,11 @@ from .exceptions import AuthenticationFailed, PermissionDenied
 
 
 class auth(RouteDecorator):
-    def __init__(self, 
-                scopes: typing.Union[str, typing.List[str], None] = None,
-                handle_401: typing.Callable[[Request, Response], typing.Any] = None,
-):
+    def __init__(
+        self,
+        scopes: typing.Union[str, typing.List[str], None] = None,
+        handle_401: typing.Callable[[Request, Response], typing.Any] = None,
+    ):
         super().__init__()
         self.handle_401 = handle_401
         if isinstance(scopes, str):
@@ -21,10 +22,12 @@ class auth(RouteDecorator):
             self.scopes = []  # Allow authentication with any scope
         else:
             self.scopes = scopes
+
     def _handle_401(self, request: Request, response: Response):
         if self.handle_401:
             return self.handle_401(request, response)
         raise AuthenticationFailed
+
     def __call__(
         self,
         handler: typing.Union[

@@ -67,8 +67,8 @@ class ExceptionMiddleware:
         try:
             self.debug = (
                 get_config().debug or False
-        )  # TODO: We ought to handle 404 cases if debug is set.
-        except:
+            )  # TODO: We ought to handle 404 cases if debug is set.
+        except Exception:
             self.debug = True
         self._status_handlers: typing.Dict[int, ExceptionHandlerType] = {}
         self._exception_handlers: dict[

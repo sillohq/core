@@ -5,9 +5,9 @@ from nexios._internals._middleware import DefineMiddleware as Middleware
 from nexios._internals._route_builder import RouteBuilder
 from nexios.exceptions import NotFoundException
 from nexios.objects import URLPath
-from nexios.types import ASGIApp, Receive, Scope, Send,Scope
-from ._utils import get_route_path,MatchStatus
+from nexios.types import ASGIApp, Receive, Scope, Send
 
+from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute
 
 
@@ -22,9 +22,9 @@ class Group(BaseRoute):
         middleware: typing.List[Middleware] = [],
     ) -> None:
         assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
-        assert app is not None or routes is not None, (
-            "Either 'app=...', or 'routes=' must be specified"
-        )
+        assert (
+            app is not None or routes is not None
+        ), "Either 'app=...', or 'routes=' must be specified"
 
         self.path = path.rstrip("/")
         self.name = name
@@ -52,7 +52,7 @@ class Group(BaseRoute):
     def routes(self) -> list[BaseRoute]:
         return getattr(self._base_app, "routes", [])
 
-    def match(self, scope:Scope) -> typing.Tuple[typing.Any, typing.Any, typing.Any]:
+    def match(self, scope: Scope) -> typing.Tuple[typing.Any, typing.Any, typing.Any]:
         """
         Match a path against this mounted route's pattern.
         """

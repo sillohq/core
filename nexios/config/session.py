@@ -1,15 +1,18 @@
-from typing import Any, Optional, Type
+from typing import Any, Optional
+
 from nexios.config.base import MakeConfig
+
 
 class SessionConfig(MakeConfig):
     """
     Typed configuration for Session middleware.
     """
+
     def __init__(
         self,
         session_cookie_name: str = "session_id",
         manager: Optional[Any] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         config = {
             "session_cookie_name": session_cookie_name,
