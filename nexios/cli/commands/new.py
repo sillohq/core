@@ -140,25 +140,6 @@ def new(
         ]
         env_path.write_text("\n".join(env_content) + "\n", encoding="utf-8")
 
-        TEMPLATE_CONFIG = """\
-from nexios import NexiosApp
-
-app = NexiosApp()
-
-cli_options = {
-    "host": "127.0.0.1",
-    "port": 4000,
-    "reload": True,
-    "server": "uvicorn",
-}
-
-# Optionally, you can set a custom_command to start your app
-# custom_command = "gunicorn -w 4 -b 0.0.0.0:4000 nexios.config:app"
-"""
-
-        config_path = project_path / "nexios.config.py"
-        config_path.write_text(TEMPLATE_CONFIG, encoding="utf-8")
-
         _echo_success(f"Project {project_name} created successfully at {project_path}")
         _echo_info("Next steps:")
         _echo_info(f"  1. cd {project_name}")

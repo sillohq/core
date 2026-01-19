@@ -3,6 +3,7 @@
 Nexios CLI - Shared utilities and helper functions.
 """
 
+import importlib
 import importlib.util
 import os
 import re
@@ -124,43 +125,22 @@ def _validate_server(ctx, param, value):
     return value
 
 
-# App loading functions
-def _find_app_module(project_dir: Path) -> Optional[str]:
-    """Try to find the app module in the project directory."""
-    # Check for main.py with app variable
-    main_py = project_dir / "main.py"
-    if main_py.exists():
-        return "main:app"
-
-    # Check for app/main.py
-    app_main = project_dir / "app" / "main.py"
-    if app_main.exists():
-        return "app.main:app"
-
-    # Check for src/main.py
-    src_main = project_dir / "src" / "main.py"
-    if src_main.exists():
-        return "src.main:app"
-
-    return None
-
-
-def _find_cli_config_file() -> str | None:
-    """Search for nexios.cli.py in the current directory only."""
-    cwd = Path.cwd()
-    candidate = cwd / "nexios.cli.py"
-    if candidate.exists():
-        return str(candidate)
-    return None
-
-
 def _load_app_from_string(app_path: str) -> "NexiosApp":
     """Load app from module:app format string."""
     if ":" not in app_path:
         raise RuntimeError("App path must be in format 'module:app'")
 
+    # Ensure current directory is in sys.path to allow importing local modules
+    cwd = os.getcwd()
+    if cwd not in sys.path:
+        sys.path.insert(0, cwd)
+
     module_name, app_var = app_path.split(":", 1)
-    mod = importlib.import_module(module_name)
+    try:
+        mod = importlib.import_module(module_name)
+    except ImportError as e:
+        raise ImportError(f"Could not import module '{module_name}': {e}") from e
+
     app = getattr(mod, app_var, None)
     if app is None:
         raise RuntimeError(f"No '{app_var}' found in module '{module_name}'")
@@ -169,107 +149,41 @@ def _load_app_from_string(app_path: str) -> "NexiosApp":
 
 
 def _load_app_from_path(
-    app_path: Optional[str] = None, config_path: Optional[str] = None
-) -> Optional["NexiosApp"]:
+    app_path: str
+) -> "NexiosApp":
     """
-    Load the Nexios app instance from the given app_path (module:app) or config file.
-    If not provided, auto-detect using the same logic as _find_app_module.
-    Now also auto-searches for nexios.cli.py in the current directory.
+    Load the Nexios app instance from the given app_path (module:app).
     """
-    # Prefer explicit config_path
-    if config_path:
-        spec = importlib.util.spec_from_file_location("nexios_config", config_path)
-        config_mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(config_mod)  # type: ignore
-        if hasattr(config_mod, "app"):
-            app_value = config_mod.app
-            # Handle case where app is a string (module:app format)
-            if isinstance(app_value, str):
-                return _load_app_from_string(app_value)
-            return app_value
-        raise RuntimeError(f"No 'app' found in config file: {config_path}")
-
-    # Auto-search for config file
-    auto_config = _find_cli_config_file()
-    if auto_config:
-        spec = importlib.util.spec_from_file_location("nexios_config", auto_config)
-        config_mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(config_mod)  # type: ignore
-        if hasattr(config_mod, "app"):
-            app_value = config_mod.app
-            # Handle case where app is a string (module:app format)
-            if isinstance(app_value, str):
-                return _load_app_from_string(app_value)
-            return app_value
-        raise RuntimeError(f"No 'app' found in config file: {auto_config}")
-
-    # Use provided app_path or auto-detect
     if not app_path:
-        app_path = _find_app_module(Path.cwd())
-        if not app_path:
-            raise RuntimeError(
-                "Could not find app instance. Please specify --app or --config, or provide a nexios.cli.py file."
-            )
+        raise RuntimeError(
+            "App path is required. Please specify it with --app."
+        )
 
     return _load_app_from_string(app_path)
 
 
-def load_config_module(config_path: Optional[str] = None) -> Tuple[Any, Dict[str, Any]]:
+def _parse_cli_args_kwargs(args: Tuple[str, ...]) -> Tuple[list[str], dict[str, Any]]:
     """
-    Load the Nexios config file (nexios.config.py) and return (app, config_dict).
-    If config file doesn't exist, return (None, {}).
+    Parse CLI arguments into a list of positional arguments and a dictionary of keyword arguments.
+    Example: ('pos1', 'key=value', 'pos2') -> (['pos1', 'pos2'], {'key': 'value'})
     """
-    config_file = config_path or os.path.join(os.getcwd(), "nexios.config.py")
-    if not os.path.exists(config_file):
-        return None, {}
-
-    spec = importlib.util.spec_from_file_location("nexios_config", config_file)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Could not load config file: {config_file}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["nexios_config"] = module
-    spec.loader.exec_module(module)
-
-    app_path = getattr(module, "app_path", None)
-    app = get_app_instance(app_path) if app_path else None
-
-    # Collect all top-level variables except built-ins and 'app'
-    config = {
-        k: v
-        for k, v in vars(module).items()
-        if not k.startswith("__") and k != "app" and not isinstance(v, ModuleType)
-    }
-    return app, config
-
-
-def load_config_only(config_path: Optional[str] = None) -> Dict[str, Any]:
-    """
-    Load the Nexios config file (nexios.config.py) and return only the config dict,
-    without loading or importing the app instance. This avoids circular imports.
-    """
-    config_file = config_path or os.path.join(os.getcwd(), "nexios.config.py")
-    if not os.path.exists(config_file):
-        return {}
-
-    spec = importlib.util.spec_from_file_location("nexios_config", config_file)
-    if spec is None or spec.loader is None:
-        raise ImportError(f"Could not load config file: {config_file}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["nexios_config"] = module
-    spec.loader.exec_module(module)
-
-    # Collect all top-level variables except built-ins and 'app'
-    config = {
-        k: v
-        for k, v in vars(module).items()
-        if not k.startswith("__") and k != "app" and not isinstance(v, ModuleType)
-    }
-    return config
-
-
-def get_config() -> Dict[str, Any]:
-    """
-    Return the loaded config (all variables except 'app') from nexios.config.py.
-    """
-    config = load_config_only()
-    return config
+    positional = []
+    keyword = {}
+    for arg in args:
+        if "=" in arg:
+            key, value = arg.split("=", 1)
+            # Try to convert to int, float, or bool if possible
+            if value.lower() == "true":
+                keyword[key] = True
+            elif value.lower() == "false":
+                keyword[key] = False
+            elif value.isdigit():
+                keyword[key] = int(value)
+            else:
+                try:
+                    keyword[key] = float(value)
+                except ValueError:
+                    keyword[key] = value
+        else:
+            positional.append(arg)
+    return positional, keyword

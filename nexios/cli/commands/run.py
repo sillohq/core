@@ -7,23 +7,19 @@ import os
 import subprocess
 import sys
 import traceback
-from pathlib import Path
-from typing import Optional
+from ..utils import (
+    _echo_error,
+    _echo_info,
+    _parse_cli_args_kwargs,
+    _validate_app_path,
+    _validate_host,
+    _validate_port,
+    _validate_server,
+)
+from typing import Tuple
 
 import click
-
-from nexios.cli.utils import load_config_module
-
-from ..utils import _echo_error  # type: ignore
-from ..utils import _echo_info  # type: ignore
-from ..utils import _find_app_module  # type: ignore
-from ..utils import _validate_app_path  # type: ignore
-from ..utils import _validate_host  # type: ignore
-from ..utils import _validate_port  # type: ignore
-from ..utils import _validate_server  # type: ignore; type: ignore
-
-
-@click.command()
+@click.command(context_settings={"ignore_unknown_options": True})
 @click.option(
     "--host",
     "-h",
@@ -50,8 +46,9 @@ from ..utils import _validate_server  # type: ignore; type: ignore
     "--app",
     "-a",
     "app_path",
+    required=True,
     callback=_validate_app_path,
-    help="App module path in format 'module:app_variable'. Auto-detected if not specified.",
+    help="App module path in format 'module:app_variable'.",
 )
 @click.option(
     "--server",
@@ -70,52 +67,44 @@ from ..utils import _validate_server  # type: ignore; type: ignore
     help="Number of worker processes (granian only).",
     show_default=True,
 )
+@click.argument("cli_options", nargs=-1, type=click.UNPROCESSED)
 def run(
     host: str,
     port: int,
     reload: bool,
-    app_path: Optional[str],
+    app_path: str,
     server: str,
     workers: int,
+    cli_options: Tuple[str, ...],
 ):
     """
     Run the Nexios application using the specified server.
 
-    Automatically detects the app module if not specified, looking for:
-    - main.py with 'app' variable
-    - app/main.py with 'app' variable
-    - src/main.py with 'app' variable
-
     Supports both Uvicorn (development) and Granian (production) servers.
+    You can also pass additional options as key=value arguments.
     """
     try:
-        project_dir = Path.cwd()
+        # Parse CLI options (key=value)
+        _, extra_options = _parse_cli_args_kwargs(cli_options)
 
-        # Load config
-        _, config = load_config_module(None)
+        # Merge defaults with CLI options (CLI args take precedence)
+        options = {
+            "host": host,
+            "port": port,
+            "reload": reload,
+            "server": server,
+            "workers": workers,
+            "app_path": app_path,
+        }
+        
+        # Override defaults if explicitly provided via key=value
+        options.update(extra_options)
 
-        # Merge CLI args with config (CLI args take precedence)
-        options = dict(config)
-        for k, v in locals().items():
-            if v is not None and k != "config" and k != "app":
-                options[k] = v
-
-        # Use app_path from CLI or config, or auto-detect
-        app_path = options.get("app_path")
+        # Use app_path from options
+        app_path = options.get("app_path", app_path)
         if not app_path:
-            app_path = _find_app_module(project_dir)
-            if not app_path:
-                _echo_error(
-                    "Could not automatically find the app module. "
-                    "Please specify it with --app option.\n"
-                    "Looking for one of:\n"
-                    "  - main.py with 'app' variable\n"
-                    "  - app/main.py with 'app' variable\n"
-                    "  - src/main.py with 'app' variable"
-                )
-                sys.exit(1)
-            _echo_info(f"Auto-detected app module: {app_path}")
-        options["app_path"] = app_path
+             _echo_error("App path is required. Please specify it with --app option.")
+             sys.exit(1)
 
         # Support custom_command as either a string or a list (array)
         if "custom_command" in options and options["custom_command"]:
@@ -127,12 +116,19 @@ def run(
                 os.system(custom_cmd)
             return
 
+        # Extract merged values
+        host = options.get("host", host)
+        port = options.get("port", port)
+        reload = options.get("reload", reload)
+        server = options.get("server", server)
+        workers = options.get("workers", workers)
+
         # Use gunicorn if server is gunicorn
-        if options.get("server") == "gunicorn":
+        if server == "gunicorn":
             workers = options.get("workers", 4)
             host = options.get("host", "0.0.0.0")
             port = options.get("port", 8000)
-            app_path = options.get("app_path", "nexios.config:app")
+            app_path = options.get("app_path", "main:app")
             cmd = f"gunicorn -w {workers} -b {host}:{port} {app_path}"
             os.system(cmd)
             return
@@ -143,7 +139,7 @@ def run(
                 "uvicorn",
                 app_path,
                 "--host",
-                host,
+                str(host),
                 "--port",
                 str(port),
             ]
@@ -154,7 +150,7 @@ def run(
             cmd = [
                 "granian",
                 "--host",
-                host,
+                str(host),
                 "--port",
                 str(port),
                 "--workers",
