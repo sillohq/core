@@ -10,6 +10,17 @@ head:
     - property: og:description
       content: Welcome to Nexios! This comprehensive guide will walk you through everything you need to know to get started with Nexios, a modern, async-first Python web framework designed for high-performance applications.
 ---
+
+::: danger ⚠️ You're viewing deprecated documentation
+**This is Nexios v2 documentation, which is no longer maintained.** 
+
+Please upgrade to the [latest version](../../) for continued support and updates.
+
+- **Current Version**: [v3.x Documentation](../../)
+- **Migration Guide**: [Upgrade to v3](../../guide/migration-v2-to-v3)
+- **Why Upgrade**: [Deprecation Notice](./deprecation-notice)
+
+:::
 ## What is Nexios?
 
 Nexios is a cutting-edge Python web framework that combines the best of modern web development practices with exceptional performance. Built on ASGI (Asynchronous Server Gateway Interface), Nexios provides a clean, intuitive API that makes building scalable web applications straightforward and enjoyable.
