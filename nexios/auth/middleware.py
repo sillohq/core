@@ -6,7 +6,7 @@ from typing_extensions import Annotated, Doc
 
 from nexios import logging
 from nexios.auth.backends.base import AuthenticationBackend
-from nexios.auth.users.simple import BaseUser, UnauthenticatedUser
+from nexios.auth.users.simple import BaseUser, UnauthenticatedUser,SimpleUser
 from nexios.http import Request, Response
 from nexios.middleware.base import BaseMiddleware
 
@@ -27,14 +27,14 @@ class AuthenticationMiddleware(BaseMiddleware):
 
     def __init__(
         self,
-        user_model: Annotated[
+        user_model: Annotated[  
             type[BaseUser],
             Doc("The user model to use for authentication."),
-        ],
+        ] = SimpleUser, 
         backend: Annotated[
             typing.Union[AuthenticationBackend, typing.List[AuthenticationBackend]],
             Doc("Single backend or list of backends to use for authentication."),
-        ],
+        ] = None,
     ) -> None:
         """
         Initialize the authentication middleware with one or more backends.
