@@ -1,11 +1,8 @@
-## `NEXIOS` 
-
-
+## `NEXIOS`
 
 <div align="left">
 
 <a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=4CAF50&center=true&width=435&lines=Nexios+ASGI+Framework;Fast%2C+Simple%2C+Flexible" alt="Typing SVG" /></a>
-
 
 <p align="center">
     <img alt=Support height="350" src="https://nexioslabs.com/logo.png">
@@ -33,7 +30,7 @@
 
 <h2 align="center"> Star the repo if u like it🌟</h2>
 
-Nexios is a utility-first Python web framework designed for developers who need powerful tooling and extensibility. Built with a modular architecture, Nexios provides a comprehensive toolkit for building everything from simple APIs to complex distributed systems. The framework emphasizes developer productivity through its rich ecosystem of utilities, middleware, and community-contributed extensions. Whether you're building microservices, real-time applications, or enterprise-grade backends, Nexios gives you the tools and flexibility to craft solutions that scale with your needs. 
+Nexios is a utility-first Python web framework designed for developers who need powerful tooling and extensibility. Built with a modular architecture, Nexios provides a comprehensive toolkit for building everything from simple APIs to complex distributed systems. The framework emphasizes developer productivity through its rich ecosystem of utilities, middleware, and community-contributed extensions. Whether you're building microservices, real-time applications, or enterprise-grade backends, Nexios gives you the tools and flexibility to craft solutions that scale with your needs.
 
 ---
 
@@ -56,12 +53,13 @@ python --version
 pip install nexios
 
 # Or install with specific version
-pip install nexios==3.2.0
+pip install nexios == 3.4.0
 ```
 
 ## Utility-First Features ✨
 
 ### Core Utilities & Tooling
+
 - [x] **Modular Architecture** - Mix and match components as needed
 - [x] **Rich CLI Tooling** - Project scaffolding, code generation, and development tools
 - [x] **Plugin System** - Extensible architecture for custom functionality
@@ -69,6 +67,7 @@ pip install nexios==3.2.0
 - [x] **Testing Framework** - Built-in testing utilities and fixtures
 
 ### Web Framework Essentials
+
 - [x] **Powerful Routing** - Type-safe routing with parameter validation
 - [x] **Automatic OpenAPI Documentation** - Self-documenting APIs
 - [x] **Authentication Toolkit** - Multiple auth backends and strategies
@@ -77,12 +76,12 @@ pip install nexios==3.2.0
 - [x] **Session Management** - Flexible session handling
 
 ### Community & Extensibility
+
 - [x] **Community Contrib Package** - nexios-contrib with community extensions
 - [x] **Custom Middleware Support** - Build and share your own middleware
 - [x] **Event System** - Hook into framework events and signals
 - [x] **Dependency Injection** - Clean, testable code architecture
 - [x] **Security Utilities** - CORS, CSRF, secure headers, and more
-
 
 ### Quick Start - Utility-First Approach
 
@@ -122,15 +121,13 @@ async def health_check(request: Request, response: Response, db: Depend(get_data
     return {"status": "healthy", "database": db}
 ```
 
-Visit http://localhost:8000/docs to view the Swagger API documentation.
-
-
+Visit <http://localhost:8000/docs> to view the Swagger API documentation.
 
 ## See the full docs
 
 👉 <a href="https://nexioslabs.com">https://nexioslabs.com</a>
 
-## Contributors:
+## Contributors
 
 <a href="https://github.com/nexios-labs/nexios/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=nexios-labs/nexios" />
@@ -138,24 +135,26 @@ Visit http://localhost:8000/docs to view the Swagger API documentation.
 
 ---
 
-
 ## 🌟 Community-Driven Development
 
 Nexios thrives on community contributions and collaboration. We believe the best tools are built by developers, for developers.
 
 ### Get Involved
+
 - **Contribute Code**: Submit PRs to the main framework or [nexios-contrib](https://github.com/nexios-labs/contrib)
 - **Share Utilities**: Create and share your own middleware, plugins, and tools
 - **Join Discussions**: Participate in [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
 - **Help Others**: Answer questions and help fellow developers
 
 ### Community Resources
+
 - 📚 **Documentation**: [https://nexioslabs.com](https://nexioslabs.com)
 - 🛠️ **Community Extensions**: [nexios-contrib package](https://github.com/nexios-labs/contrib)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
 - 🐛 **Issues**: [Report bugs and request features](https://github.com/nexios-labs/nexios/issues)
 
 ### Support the Project
+
 If Nexios has helped you build something awesome, consider supporting its continued development:
 
 👉 [**Buy Me a Coffee**](https://www.buymeacoffee.com/techwithdul) and help fuel the community-driven future of Nexios.
