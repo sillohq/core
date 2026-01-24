@@ -5,7 +5,8 @@ Tests for simple CORS requests (GET, POST, PUT, DELETE)
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import CorsConfig, MakeConfig, set_config
+from nexios.config import MakeConfig, set_config
+from nexios.middleware.cors import CorsConfig
 from nexios.http import Request, Response
 from nexios.middleware.cors import CORSMiddleware
 from nexios.testclient import TestClient

@@ -6,9 +6,9 @@ import json
 
 import pytest
 
-from nexios.config import MakeConfig, SessionConfig, set_config
+from nexios.config import MakeConfig,  set_config
 from nexios.session.signed_cookies import SignedSessionManager
-
+from nexios.session import SessionConfig
 
 class TestSignedSessionManager:
     """Test signed cookie session manager functionality"""

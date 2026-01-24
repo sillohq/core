@@ -9,7 +9,8 @@ import tempfile
 
 import pytest
 
-from nexios.config import MakeConfig, SessionConfig, set_config
+from nexios.config import MakeConfig, set_config
+from nexios.session import SessionConfig
 from nexios.session.file import FileSessionManager
 
 

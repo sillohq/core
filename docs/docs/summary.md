@@ -268,7 +268,8 @@ app.add_middleware(SecurityMiddleware(
 Manage Cross-Origin Resource Sharing effortlessly.
 
 ```python
-from nexios.config import MakeConfig, CorsConfig
+from nexios.config import MakeConfig
+from nexios.middleware.cors import CorsConfig
 
 config = MakeConfig(
     cors=CorsConfig(

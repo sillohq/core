@@ -48,7 +48,7 @@ Nexios offers various configuration options for customizing session behavior:
 
 ```python
 from nexios import NexiosApp, MakeConfig
-from nexios.config import SessionConfig
+from nexios.session import SessionConfig
 from nexios.session.middleware import SessionMiddleware
 from nexios.session.file import FileSessionInterface
 
@@ -136,7 +136,7 @@ By default, sessions expire after 24 hours (86400 seconds). You can customize th
 
 ```python
 from nexios import MakeConfig
-from nexios.config import SessionConfig
+from nexios.session import SessionConfig
 
 # Set global session expiration time
 config = MakeConfig(
@@ -167,7 +167,7 @@ The simplest session backend, storing the session data directly in a signed cook
 
 ```python
 from nexios import MakeConfig
-from nexios.config import SessionConfig
+from nexios.session import SessionConfig
 from nexios.session.signed_cookies import SignedSessionManager
 
 config = MakeConfig(
@@ -195,7 +195,7 @@ Stores session data in files on the server filesystem:
 
 ```python
 from nexios import MakeConfig
-from nexios.config import SessionConfig
+from nexios.session import SessionConfig
 from nexios.session.file import FileSessionInterface
 
 config = MakeConfig(
@@ -280,7 +280,7 @@ app.config.secret_key = os.environ.get("SECRET_KEY")
 
 ```python
 from nexios import MakeConfig
-from nexios.config import SessionConfig
+from nexios.session import SessionConfig
 
 config = MakeConfig(
     session=SessionConfig(

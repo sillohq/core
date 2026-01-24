@@ -5,7 +5,8 @@ Tests for session middleware integration
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, SessionConfig, set_config
+from nexios.config import MakeConfig, set_config
+from nexios.session import SessionConfig
 from nexios.http import Request, Response
 from nexios.session.file import FileSessionManager
 from nexios.session.middleware import SessionMiddleware

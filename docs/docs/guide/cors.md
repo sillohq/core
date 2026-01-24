@@ -21,7 +21,7 @@ Before diving into individual settings, here's a simple CORS setup using `CorsCo
 
 ```python
 from nexios import NexiosApp, MakeConfig
-from nexios.config import CorsConfig
+from nexios.middleware.cors import CorsConfig
 from nexios.middleware.cors import CORSMiddleware
 
 config = MakeConfig(

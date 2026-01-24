@@ -51,7 +51,7 @@ For complete control, use `MakeConfig` and provide a full OpenAPI configuration 
 ```python
 from nexios.openapi.models import Contact, License
 from nexios import MakeConfig, NexiosApp
-from nexios.config import OpenAPIConfig
+from nexios.openapi import OpenAPIConfig
 
 config = MakeConfig(
     openapi=OpenAPIConfig(
