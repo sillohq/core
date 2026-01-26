@@ -35,7 +35,8 @@ class Channel:
             created (tim): channel creation time
         """
         assert isinstance(websocket, WebSocket)
-        assert isinstance(expires, int)
+        if expires:
+            assert isinstance(expires,int)
         assert isinstance(payload_type, str) and payload_type in [
             PayloadTypeEnum.JSON.value,
             PayloadTypeEnum.TEXT.value,
