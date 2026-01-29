@@ -3,6 +3,7 @@ import typing
 from .base import WebSocket, WebSocketDisconnect  # type:ignore
 from .channels import Channel, ChannelBox
 from .consumers import WebSocketConsumer
+from .history import BaseHistoryManager, InMemoryHistoryManager, NoOpHistoryManager
 
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
@@ -17,4 +18,7 @@ __all__ = [
     "ChannelBox",
     "WebSocketConsumer",
     "WebSocketDisconnect",
+    "BaseHistoryManager",
+    "InMemoryHistoryManager",
+    "NoOpHistoryManager",
 ]

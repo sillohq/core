@@ -7,6 +7,7 @@ import uuid
 from nexios import logging as nexios_logger
 from nexios.websockets import WebSocket
 
+from .history import BaseHistoryManager, InMemoryHistoryManager
 from .utils import (
     ChannelAddStatusEnum,
     ChannelMessageDC,
@@ -77,8 +78,10 @@ class ChannelBox:
     CHANNEL_GROUPS: typing.Dict[str, typing.Any] = (
         {}
     )  # groups of channels ~ key: group_name, val: dict of channels
-    CHANNEL_GROUPS_HISTORY: typing.Dict[str, typing.Any] = {}  # history messages
     HISTORY_SIZE: int = int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", 1_048_576))
+    HISTORY_MANAGER: BaseHistoryManager = InMemoryHistoryManager(
+        history_size=int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", 1_048_576))
+    )
 
     @classmethod
     async def add_channel_to_group(
@@ -135,6 +138,19 @@ class ChannelBox:
         return channel_remove_status
 
     @classmethod
+    def set_history_manager(cls, manager: BaseHistoryManager) -> None:
+        """Set a custom history manager.
+        
+        Args:
+            manager: Instance of a class that implements BaseHistoryManager
+        
+        Example:
+            >>> from nexios.websockets import ChannelBox, NoOpHistoryManager
+            >>> ChannelBox.set_history_manager(NoOpHistoryManager())
+        """
+        cls.HISTORY_MANAGER = manager
+
+    @classmethod
     async def group_send(
         cls,
         group_name: str = "default",
@@ -152,14 +168,10 @@ class ChannelBox:
         assert group_name, "Group name must to be set."
 
         if save_history:
-            cls.CHANNEL_GROUPS_HISTORY.setdefault(group_name, [])
-            cls.CHANNEL_GROUPS_HISTORY[group_name].append(
-                ChannelMessageDC(
-                    payload=payload,  # type:ignore
-                )
+            message = ChannelMessageDC(
+                payload=payload,  # type:ignore
             )
-            if sys.getsizeof(cls.CHANNEL_GROUPS_HISTORY[group_name]) > cls.HISTORY_SIZE:
-                cls.CHANNEL_GROUPS_HISTORY[group_name] = []
+            await cls.HISTORY_MANAGER.save_message(group_name, message)
 
         group_send_status = GroupSendStatusEnum.NO_SUCH_GROUP
         for channel in cls.CHANNEL_GROUPS.get(group_name, {}):
@@ -180,16 +192,26 @@ class ChannelBox:
     async def show_history(
         cls,
         group_name: str = "",
-    ) -> typing.Dict[str, typing.Any]:
-        return (
-            cls.CHANNEL_GROUPS_HISTORY.get(group_name, {})
-            if group_name
-            else cls.CHANNEL_GROUPS_HISTORY
-        )
+    ) -> typing.Union[typing.List[ChannelMessageDC], typing.Dict[str, typing.List[ChannelMessageDC]]]:
+        """Get message history for a group or all groups.
+        
+        Args:
+            group_name: Optional group name. If empty, returns all history.
+        
+        Returns:
+            List of messages if group_name is provided, otherwise dict of all histories
+        """
+        return await cls.HISTORY_MANAGER.get_history(group_name if group_name else None)
 
     @classmethod
-    async def flush_history(cls) -> None:
-        cls.CHANNEL_GROUPS_HISTORY = {}
+    async def flush_history(cls, group_name: typing.Optional[str] = None) -> None:
+        """Flush message history.
+        
+        Args:
+            group_name: Optional group name. If provided, only flushes that group's history.
+                       If None, flushes all history.
+        """
+        await cls.HISTORY_MANAGER.flush_history(group_name)
 
     @classmethod
     async def _clean_expired(cls) -> None:
