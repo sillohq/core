@@ -16,6 +16,7 @@ The WebSocket class handles individual WebSocket connections and provides method
 ## 🔌 Connection Management
 
 ### accept()
+
 Accept the WebSocket connection.
 
 ```python
@@ -32,6 +33,7 @@ async def websocket_handler(websocket):
 ```
 
 **Parameters**:
+
 - `subprotocol` (Optional[str]): WebSocket subprotocol to use
 - `headers` (Optional[Dict[str, str]]): Additional headers to send
 
@@ -45,6 +47,7 @@ async def websocket_handler(websocket):
 ```
 
 ### close()
+
 Close the WebSocket connection.
 
 ```python
@@ -61,6 +64,7 @@ async def websocket_handler(websocket):
 ```
 
 **Parameters**:
+
 - `code` (int): WebSocket close code (default: 1000)
 - `reason` (Optional[str]): Reason for closing
 
@@ -69,6 +73,7 @@ async def websocket_handler(websocket):
 ### Receiving Messages
 
 #### receive_text()
+
 Receive text message from client.
 
 ```python
@@ -88,6 +93,7 @@ async def chat_handler(websocket):
 ```
 
 #### receive_bytes()
+
 Receive binary message from client.
 
 ```python
@@ -108,6 +114,7 @@ async def binary_handler(websocket):
 ```
 
 #### receive_json()
+
 Receive and parse JSON message from client.
 
 ```python
@@ -133,6 +140,7 @@ async def api_handler(websocket):
 ### Sending Messages
 
 #### send_text()
+
 Send text message to client.
 
 ```python
@@ -151,6 +159,7 @@ async def notification_handler(websocket):
 ```
 
 #### send_bytes()
+
 Send binary message to client.
 
 ```python
@@ -170,6 +179,7 @@ async def file_stream_handler(websocket):
 ```
 
 #### send_json()
+
 Send JSON message to client.
 
 ```python
@@ -192,6 +202,7 @@ async def data_handler(websocket):
 ## 📊 WebSocket Properties
 
 ### client: Optional[Address]
+
 Client connection information.
 
 ```python
@@ -206,6 +217,7 @@ async def websocket_handler(websocket):
 ```
 
 ### headers: Headers
+
 Request headers from the WebSocket handshake.
 
 ```python
@@ -221,6 +233,7 @@ async def websocket_handler(websocket):
 ```
 
 ### query_params: QueryParams
+
 Query parameters from the WebSocket URL.
 
 ```python
@@ -239,6 +252,7 @@ async def websocket_handler(websocket):
 ```
 
 ### path_params: Dict[str, Any]
+
 Path parameters from the WebSocket route.
 
 ```python
@@ -255,6 +269,7 @@ async def chat_room_handler(websocket):
 ```
 
 ### state: State
+
 WebSocket-scoped state for storing connection-specific data.
 
 ```python
@@ -777,6 +792,338 @@ async def queued_websocket_handler(websocket):
     except WebSocketDisconnect:
         processor_task.cancel()
 ```
+
+## 📚 Channel History Management
+
+Nexios provides a pluggable history management system for WebSocket channels, allowing you to customize how message history is stored and retrieved. By default, messages are stored in memory, but you can implement custom backends like Redis, databases, or file systems.
+
+### Default In-Memory History
+
+By default, `ChannelBox` uses an in-memory history manager with a 1MB size limit per group:
+
+```python
+from nexios.websockets import ChannelBox
+
+# Send message with history
+await ChannelBox.group_send(
+    group_name="chat_room",
+    payload={"message": "Hello, world!"},
+    save_history=True  # Enable history saving
+)
+
+# Retrieve history for a specific group
+history = await ChannelBox.show_history(group_name="chat_room")
+
+# Retrieve all history
+all_history = await ChannelBox.show_history()
+
+# Clear history for a specific group
+await ChannelBox.flush_history(group_name="chat_room")
+
+# Clear all history
+await ChannelBox.flush_history()
+```
+
+### Custom History Managers
+
+Create custom history managers by extending `BaseHistoryManager`:
+
+```python
+from nexios.websockets import BaseHistoryManager, ChannelBox
+from nexios.websockets.utils import ChannelMessageDC
+import typing
+
+class MyCustomHistoryManager(BaseHistoryManager):
+    """Custom history manager implementation."""
+    
+    async def save_message(
+        self,
+        group_name: str,
+        message: ChannelMessageDC,
+    ) -> None:
+        """Save a message to your custom storage."""
+        # Your implementation here
+        pass
+    
+    async def get_history(
+        self,
+        group_name: typing.Optional[str] = None,
+    ) -> typing.Union[typing.List[ChannelMessageDC], typing.Dict[str, typing.List[ChannelMessageDC]]]:
+        """Retrieve message history from your storage."""
+        # Your implementation here
+        pass
+    
+    async def flush_history(self, group_name: typing.Optional[str] = None) -> None:
+        """Clear message history from your storage."""
+        # Your implementation here
+        pass
+
+# Set your custom manager
+ChannelBox.set_history_manager(MyCustomHistoryManager())
+```
+
+### File-Based History Manager
+
+Store message history in JSON files for persistence:
+
+```python
+import json
+from pathlib import Path
+from nexios.websockets import BaseHistoryManager, ChannelBox
+
+class FileHistoryManager(BaseHistoryManager):
+    """Store message history in JSON files."""
+    
+    def __init__(self, storage_dir: str = "./channel_history", max_messages: int = 1000):
+        self.storage_dir = Path(storage_dir)
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.max_messages = max_messages
+    
+    def _get_file_path(self, group_name: str) -> Path:
+        safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in group_name)
+        return self.storage_dir / f"{safe_name}.json"
+    
+    async def save_message(self, group_name: str, message):
+        file_path = self._get_file_path(group_name)
+        
+        # Load existing history
+        history = []
+        if file_path.exists():
+            with open(file_path, "r") as f:
+                history = json.load(f)
+        
+        # Add new message
+        history.append({
+            "payload": message.payload,
+            "uuid": str(message.uuid),
+            "created": message.created.isoformat(),
+        })
+        
+        # Trim if exceeds max
+        if len(history) > self.max_messages:
+            history = history[-self.max_messages:]
+        
+        # Save to file
+        with open(file_path, "w") as f:
+            json.dump(history, f, indent=2)
+    
+    async def get_history(self, group_name=None):
+        if group_name:
+            file_path = self._get_file_path(group_name)
+            if file_path.exists():
+                with open(file_path, "r") as f:
+                    return json.load(f)
+            return []
+        
+        # Get all history
+        all_history = {}
+        for file_path in self.storage_dir.glob("*.json"):
+            group = file_path.stem
+            with open(file_path, "r") as f:
+                all_history[group] = json.load(f)
+        return all_history
+    
+    async def flush_history(self, group_name=None):
+        if group_name:
+            file_path = self._get_file_path(group_name)
+            if file_path.exists():
+                file_path.unlink()
+        else:
+            for file_path in self.storage_dir.glob("*.json"):
+                file_path.unlink()
+
+# Use file-based history
+ChannelBox.set_history_manager(FileHistoryManager(storage_dir="./my_history"))
+```
+
+### Redis History Manager
+
+For distributed systems and high-performance scenarios:
+
+```python
+import redis.asyncio as redis
+import json
+from nexios.websockets import BaseHistoryManager, ChannelBox
+
+class RedisHistoryManager(BaseHistoryManager):
+    """Store message history in Redis."""
+    
+    def __init__(
+        self,
+        redis_url: str = "redis://localhost:6379",
+        key_prefix: str = "channel_history:",
+        max_messages: int = 1000,
+        ttl: int = 3600,
+    ):
+        self.redis_url = redis_url
+        self.key_prefix = key_prefix
+        self.max_messages = max_messages
+        self.ttl = ttl
+        self._client = None
+    
+    async def _get_client(self):
+        if self._client is None:
+            self._client = await redis.from_url(self.redis_url)
+        return self._client
+    
+    def _get_key(self, group_name: str) -> str:
+        return f"{self.key_prefix}{group_name}"
+    
+    async def save_message(self, group_name: str, message):
+        client = await self._get_client()
+        key = self._get_key(group_name)
+        
+        msg_data = json.dumps({
+            "payload": message.payload,
+            "uuid": str(message.uuid),
+            "created": message.created.isoformat(),
+        })
+        
+        # Add to list, trim, and set expiration
+        async with client.pipeline() as pipe:
+            await pipe.rpush(key, msg_data)
+            await pipe.ltrim(key, -self.max_messages, -1)
+            await pipe.expire(key, self.ttl)
+            await pipe.execute()
+    
+    async def get_history(self, group_name=None):
+        client = await self._get_client()
+        
+        if group_name:
+            key = self._get_key(group_name)
+            messages = await client.lrange(key, 0, -1)
+            return [json.loads(msg) for msg in messages]
+        
+        # Get all history
+        pattern = f"{self.key_prefix}*"
+        all_history = {}
+        async for key in client.scan_iter(match=pattern):
+            group = key.decode().replace(self.key_prefix, "")
+            messages = await client.lrange(key, 0, -1)
+            all_history[group] = [json.loads(msg) for msg in messages]
+        return all_history
+    
+    async def flush_history(self, group_name=None):
+        client = await self._get_client()
+        
+        if group_name:
+            await client.delete(self._get_key(group_name))
+        else:
+            pattern = f"{self.key_prefix}*"
+            async for key in client.scan_iter(match=pattern):
+                await client.delete(key)
+
+# Use Redis history
+ChannelBox.set_history_manager(RedisHistoryManager(redis_url="redis://localhost:6379"))
+```
+
+### Disable History (No-Op Manager)
+
+To completely disable history and save memory:
+
+```python
+from nexios.websockets import NoOpHistoryManager, ChannelBox
+
+# Disable history completely
+ChannelBox.set_history_manager(NoOpHistoryManager())
+
+# Messages sent with save_history=True will be ignored
+await ChannelBox.group_send(
+    group_name="chat",
+    payload={"msg": "Hello"},
+    save_history=True  # Will not be saved
+)
+```
+
+### Custom In-Memory Size Limit
+
+Adjust the memory limit for the default in-memory manager:
+
+```python
+from nexios.websockets import InMemoryHistoryManager, ChannelBox
+
+# Set 5MB limit instead of default 1MB
+custom_manager = InMemoryHistoryManager(history_size=5_242_880)
+ChannelBox.set_history_manager(custom_manager)
+```
+
+### Environment Variable Configuration
+
+The default history size can be configured via environment variable:
+
+```bash
+# Set to 10MB (value in bytes)
+export CHANNEL_BOX_HISTORY_SIZE=10485760
+```
+
+```python
+# This will use the environment variable if set
+from nexios.websockets import ChannelBox
+
+# Default manager reads CHANNEL_BOX_HISTORY_SIZE env var
+await ChannelBox.group_send(group_name="chat", payload={"msg": "Hello"}, save_history=True)
+```
+
+### Complete Chat Example with History
+
+```python
+from nexios import NexiosApp
+from nexios.websockets import Channel, ChannelBox, FileHistoryManager
+
+app = NexiosApp()
+
+# Set up file-based history for persistence
+ChannelBox.set_history_manager(
+    FileHistoryManager(storage_dir="./chat_history", max_messages=500)
+)
+
+@app.ws_route("/chat/{room_id}")
+async def chat_handler(websocket):
+    room_id = websocket.path_params["room_id"]
+    
+    await websocket.accept()
+    
+    # Create channel and add to room
+    channel = Channel(websocket, payload_type="json")
+    await ChannelBox.add_channel_to_group(channel, group_name=room_id)
+    
+    try:
+        # Send history to new user
+        history = await ChannelBox.show_history(group_name=room_id)
+        await websocket.send_json({
+            "type": "history",
+            "messages": history[-50:]  # Last 50 messages
+        })
+        
+        # Handle incoming messages
+        while True:
+            data = await websocket.receive_json()
+            
+            # Broadcast to all in room and save to history
+            await ChannelBox.group_send(
+                group_name=room_id,
+                payload={
+                    "type": "message",
+                    "user": data.get("user"),
+                    "content": data.get("content"),
+                    "timestamp": datetime.now().isoformat()
+                },
+                save_history=True  # Persist message
+            )
+    
+    except WebSocketDisconnect:
+        await ChannelBox.remove_channel_from_group(channel, room_id)
+```
+
+### History Manager Best Practices
+
+1. **Choose the right storage backend**: Use in-memory for simple apps, Redis for distributed systems, or files for persistence
+2. **Set appropriate limits**: Configure `max_messages` or `history_size` based on your needs
+3. **Handle errors gracefully**: Implement error handling in custom managers
+4. **Clean up old data**: Use TTL or scheduled cleanup for long-running applications
+5. **Consider performance**: Balance history depth with query performance
+6. **Test thoroughly**: Verify history persists and retrieves correctly
+7. **Document your implementation**: Make it clear to other developers how history is managed
 
 ## ✨ Best Practices
 
