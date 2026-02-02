@@ -47,7 +47,7 @@ from .grouping import Group
 from .websocket import WebsocketRoute
 
 if TYPE_CHECKING:
-    from nexios.typing import WsHandlerType, WsMiddlewareType
+    from nexios.typing import WsHandlerType
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
@@ -1999,7 +1999,6 @@ class Router(BaseRouter):
         ] = None,
         path: Optional[str] = None,
         handler: Optional[WsHandlerType] = None,
-        middleware: List[WsMiddlewareType] = [],
     ) -> None:
         """
         Adds a WebSocket route to the application.
@@ -2028,7 +2027,7 @@ class Router(BaseRouter):
         if route is not None:
             self.routes.append(route)
         elif path is not None and handler is not None:
-            self.routes.append(WebsocketRoute(path, handler, middleware=middleware))
+            self.routes.append(WebsocketRoute(path, handler))
         else:
             raise ValueError("Either route or both path and handler must be provided")
 
@@ -2041,10 +2040,6 @@ class Router(BaseRouter):
             Optional[WsHandlerType],
             Doc("The WebSocket handler function. Must be an async function."),
         ] = None,
-        middleware: Annotated[
-            List[WsMiddlewareType],
-            Doc("List of middleware to be executes before the router handler"),
-        ] = [],
     ) -> Any:
         """
         Registers a WebSocket route.
@@ -2068,12 +2063,10 @@ class Router(BaseRouter):
             ```
         """
         if handler:
-            return self.add_ws_route(
-                WebsocketRoute(path, handler, middleware=middleware)
-            )
+            return self.add_ws_route(WebsocketRoute(path, handler))
 
         def decorator(handler: WsHandlerType) -> WsHandlerType:
-            self.add_ws_route(WebsocketRoute(path, handler, middleware=middleware))
+            self.add_ws_route(WebsocketRoute(path, handler))
             return handler
 
         return decorator
@@ -2247,6 +2240,28 @@ class Router(BaseRouter):
         """
 
         self.add_route(Group(app=app, path=prefix))
+
+    def wrap_asgi(
+        self,
+        middleware_cls: Annotated[
+            Callable[[ASGIApp], Any],
+            Doc(
+                "An ASGI middleware class or callable that takes an app as its first argument and returns an ASGI app"
+            ),
+        ],
+        **kwargs: Dict[str, Any],
+    ) -> None:
+        """
+        Wraps the entire router with an ASGI middleware.
+
+        This method allows adding middleware at the ASGI level, which intercepts all requests
+        (HTTP and WebSocket) before they reach the router.
+
+        Args:
+            middleware_cls: An ASGI middleware class or callable that follows the ASGI interface
+            **kwargs: Additional keyword arguments to pass to the middleware
+        """
+        self.app = middleware_cls(self.app, **kwargs)
 
 
 Routes = Route  # for backward compatibilty

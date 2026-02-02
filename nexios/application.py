@@ -44,7 +44,6 @@ from .types import (
     Scope,
     Send,
     WsHandlerType,
-    WsMiddlewareType,
 )
 
 if TYPE_CHECKING:
@@ -434,7 +433,6 @@ class NexiosApp(object):
         ] = None,
         path: Optional[str] = None,
         handler: Optional[WsHandlerType] = None,
-        middleware: List[WsMiddlewareType] = [],
     ) -> None:
         """
         Adds a WebSocket route to the application.
@@ -466,8 +464,8 @@ class NexiosApp(object):
                 "path and handler are required when 'route' is not provided."
             )
 
-        self.ws_router.add_ws_route(
-            WebsocketRoute(path, handler, middleware=middleware)
+        self.router.add_ws_route(
+            WebsocketRoute(path, handler)
         )
 
     def mount_router(self, router: Router, name: Optional[str] = None) -> None:

@@ -43,7 +43,7 @@ class WebSocketConsumer:
             instance = cls()
             await instance(websocket, **kwargs)
 
-        return WebsocketRoute(path, handler, middleware=cls.middleware)
+        return WebsocketRoute(path, handler)
 
     async def __call__(self, ws: WebSocket) -> None:
         self.websocket = ws

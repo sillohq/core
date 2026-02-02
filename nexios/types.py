@@ -19,9 +19,6 @@ RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 MiddlewareType = typing.Callable[
     [Request, Response, RequestResponseEndpoint], typing.Awaitable[Response]
 ]
-WsMiddlewareType = Callable[
-    [Type[WebSocket], Type[Callable[..., Awaitable[Message]]]], Type[Send]
-]
 
 WsHandlerType = typing.Callable[[WebSocket], typing.Awaitable[None]]
 HandlerType = Callable[..., Any]

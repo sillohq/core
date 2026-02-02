@@ -10,7 +10,6 @@ from nexios.types import (
     Scope,
     Send,
     WsHandlerType,
-    WsMiddlewareType,
 )
 from nexios.websockets import WebSocket
 from nexios.websockets.errors import WebSocketErrorMiddleware
@@ -29,7 +28,6 @@ class WebsocketRoute:
 
     Features:
     - Path parameter extraction (same as HTTP routes)
-    - Middleware support for WebSocket connections
     - Automatic connection lifecycle management
     - Error handling and connection cleanup
     - Support for binary and text messages
@@ -71,41 +69,7 @@ class WebsocketRoute:
         app.add_ws_route(ws_route)
         ```
 
-        3. WebSocket with authentication middleware:
-        ```python
-        async def auth_middleware(websocket: WebSocket, call_next):
-            # Check authentication token
-            token = websocket.query_params.get('token')
-            if not token or not verify_token(token):
-                await websocket.close(code=4001, reason="Unauthorized")
-                return
-
-            # Add user info to websocket
-            websocket.state.user = get_user_from_token(token)
-            await call_next()
-
-        async def protected_handler(websocket: WebSocket):
-            await websocket.accept()
-            user = websocket.state.user
-            await websocket.send_text(f"Welcome, {user.name}!")
-
-            try:
-                while True:
-                    message = await websocket.receive_text()
-                    # Handle authenticated user messages
-                    await process_user_message(user, message)
-            except WebSocketDisconnect:
-                pass
-
-        ws_route = WebsocketRoute(
-            "/ws/protected",
-            protected_handler,
-            middleware=[auth_middleware]
-        )
-        app.add_ws_route(ws_route)
-        ```
-
-        4. Binary data handling:
+        3. Binary data handling:
         ```python
         async def file_upload_handler(websocket: WebSocket):
             await websocket.accept()
@@ -173,38 +137,11 @@ class WebsocketRoute:
                 - websocket.close(): Close the connection
                 """),
         ],
-        middleware: Annotated[
-            typing.List[WsMiddlewareType],
-            Doc("""
-                List of middleware functions to apply to this WebSocket route.
-                
-                WebSocket middleware can:
-                - Authenticate connections before accepting
-                - Log connection events
-                - Rate limit connections
-                - Transform messages
-                - Handle errors
-                
-                Middleware functions should have the signature:
-                async def middleware(websocket: WebSocket, call_next: Callable) -> None
-                
-                Example middleware:
-                ```python
-                async def auth_middleware(websocket: WebSocket, call_next):
-                    token = websocket.query_params.get('token')
-                    if not verify_token(token):
-                        await websocket.close(code=4001)
-                        return
-                    await call_next()
-                ```
-                """),
-        ] = [],
     ):
         assert callable(handler), "Route handler must be callable"
         assert asyncio.iscoroutinefunction(handler), "Route handler must be async"
         self.raw_path = path
         self.handler: WsHandlerType = handler
-        self.middleware = middleware
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern = self.route_info.pattern
         self.param_names = self.route_info.param_names
@@ -235,7 +172,7 @@ class WebsocketRoute:
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
-        Handles the WebSocket connection by calling the route's handler with middleware.
+        Handles the WebSocket connection by calling the route's handler.
         """
 
         # Create the base handler
@@ -243,12 +180,7 @@ class WebsocketRoute:
             websocket_session = WebSocket(scope, receive=receive, send=send)
             await self.handler(websocket_session)
 
-        app = handler_app
-
-        for middleware_cls in reversed(self.middleware):
-            app = middleware_cls(app)
-
-        app = WebSocketErrorMiddleware(app)
+        app = WebSocketErrorMiddleware(handler_app)
 
         await app(scope, receive, send)
 
