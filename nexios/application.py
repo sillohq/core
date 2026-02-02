@@ -464,9 +464,7 @@ class NexiosApp(object):
                 "path and handler are required when 'route' is not provided."
             )
 
-        self.router.add_ws_route(
-            WebsocketRoute(path, handler)
-        )
+        self.router.add_ws_route(WebsocketRoute(path, handler))
 
     def mount_router(self, router: Router, name: Optional[str] = None) -> None:
         """

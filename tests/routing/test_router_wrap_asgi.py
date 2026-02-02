@@ -1,14 +1,16 @@
 import pytest
+
 from nexios import NexiosApp
-from nexios.routing import Router
 from nexios.http import Request, Response
-from nexios.types import ASGIApp, Receive, Scope, Send
+from nexios.routing import Router
 from nexios.testclient import TestClient
+from nexios.types import ASGIApp, Receive, Scope, Send
+
 
 def test_router_wrap_asgi_basic(test_client_factory):
     app = NexiosApp()
     router = Router(prefix="/api")
-    
+
     executed = []
 
     class SimpleMiddleware:
@@ -35,10 +37,11 @@ def test_router_wrap_asgi_basic(test_client_factory):
         assert "middleware" in executed
         assert "handler" in executed
 
+
 def test_router_wrap_asgi_websocket(test_client_factory):
     app = NexiosApp()
     router = Router(prefix="/ws")
-    
+
     executed = []
 
     class WSMiddleware:
@@ -62,6 +65,6 @@ def test_router_wrap_asgi_websocket(test_client_factory):
     with test_client_factory(app) as client:
         with client.websocket_connect("/ws/echo"):
             pass
-        
+
         assert "ws_middleware" in executed
         assert "handler" in executed

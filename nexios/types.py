@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Awaitable, Callable, Type
+from typing import Any, Callable
 
 from .http.request import Request
 from .http.response import NexiosResponse as Response
