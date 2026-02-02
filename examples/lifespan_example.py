@@ -194,8 +194,7 @@ async def trigger_error(request: Request, response: Response):
 
 if __name__ == "__main__":
     # Instructions for running with different servers
-    print(
-        """
+    print("""
 Nexios Lifespan Demo Application
 --------------------------------
 
@@ -207,8 +206,7 @@ Run with Uvicorn:
 
 Run with Hypercorn:
     hypercorn lifespan_example:app
-    """
-    )
+    """)
 
     # Default to uvicorn if run directly
     import uvicorn

@@ -101,8 +101,7 @@ from .types import ExceptionHandlerType
 def get_application(
     config: Annotated[
         MakeConfig,
-        Doc(
-            """
+        Doc("""
             This subclass is derived from the MakeConfig class and is responsible for managing 
             configurations within the Nexios framework. It takes arguments in the form of 
             dictionaries, allowing for structured and flexible configuration handling. By using 
@@ -122,37 +121,29 @@ def get_application(
             and scalable. By extending MakeConfig, it leverages existing functionality while 
             adding new capabilities tailored to Nexios. This makes it an essential component for 
             maintaining structured and well-organized application settings.
-            """
-        ),
+            """),
     ] = None,
     title: Annotated[
         Optional[str],
-        Doc(
-            """
+        Doc("""
             The title of the API, used in the OpenAPI documentation.
-            """
-        ),
+            """),
     ] = None,
     version: Annotated[
         Optional[str],
-        Doc(
-            """
+        Doc("""
             The version of the API, used in the OpenAPI documentation.
-            """
-        ),
+            """),
     ] = None,
     description: Annotated[
         Optional[str],
-        Doc(
-            """
+        Doc("""
             A brief description of the API, used in the OpenAPI documentation.
-            """
-        ),
+            """),
     ] = None,
     server_error_handler: Annotated[
         Optional[ExceptionHandlerType],
-        Doc(
-            """
+        Doc("""
             A function in Nexios responsible for handling server-side exceptions by logging errors, 
             reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting 
             unexpected failures, ensuring the application remains stable and operational. This 
@@ -162,8 +153,7 @@ def get_application(
             maintainability and observability, making debugging and monitoring more efficient. 
             Additionally, it ensures that critical failures do not disrupt the entire system, 
             allowing services to continue running while appropriately managing faults and failures.
-            """
-        ),
+            """),
     ] = None,
     lifespan: Optional[Callable[["NexiosApp"], AsyncContextManager[bool]]] = None,
     routes: Optional[list[Router]] = None,

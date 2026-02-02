@@ -1,6 +1,6 @@
 import typing
 
-from itsdangerous import BadSignature, URLSafeTimedSerializer  # type:ignore
+from itsdangerous import BadSignature, URLSafeTimedSerializer  # type: ignore
 
 from nexios.config import get_config
 
@@ -13,7 +13,7 @@ class SignedSessionManager(BaseSessionInterface):
         config = get_config()
         self.secret_key = config.secret_key
         self.serializer = URLSafeTimedSerializer(
-            secret_key=config.secret_key,  # type:ignore
+            secret_key=config.secret_key,  # type: ignore
             salt="nexio.session.signed_cookie",
         )
 
@@ -21,7 +21,7 @@ class SignedSessionManager(BaseSessionInterface):
         """
         Sign the session data and return a signed token (cookie value).
         """
-        return self.serializer.dumps(session_data)  # type:ignore
+        return self.serializer.dumps(session_data)  # type: ignore
 
     def verify_session_data(
         self, token: str
@@ -33,9 +33,9 @@ class SignedSessionManager(BaseSessionInterface):
         if not token:
             return {}
         try:
-            session_data = self.serializer.loads(token)  # type:ignore
+            session_data = self.serializer.loads(token)  # type: ignore
 
-            return session_data  # type:ignore
+            return session_data  # type: ignore
         except BadSignature:
             return {}
 
@@ -55,7 +55,7 @@ class SignedSessionManager(BaseSessionInterface):
         """
         return self.verify_session_data(cookie)
 
-    async def save(self):  # type:ignore
+    async def save(self):  # type: ignore
         """
         Save the current session state as a signed cookie.
         """

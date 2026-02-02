@@ -88,7 +88,7 @@ class ExceptionMiddleware:
             self._status_handlers[exc_class_or_status_code] = handler
         else:
             assert issubclass(exc_class_or_status_code, Exception)
-            self._exception_handlers[exc_class_or_status_code] = handler  # type:ignore
+            self._exception_handlers[exc_class_or_status_code] = handler  # type: ignore
 
     async def __call__(
         self,
@@ -110,7 +110,7 @@ class ExceptionMiddleware:
         self, request: Request, response: Response, exc: HTTPException
     ) -> typing.Any:
         assert isinstance(exc, HTTPException)
-        if exc.status_code in {204, 304}:  # type:ignore
+        if exc.status_code in {204, 304}:  # type: ignore
             return response.empty(status_code=exc.status_code, headers=exc.headers)
         return response.json(
             exc.detail, status_code=exc.status_code, headers=exc.headers

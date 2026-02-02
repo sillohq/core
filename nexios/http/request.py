@@ -25,7 +25,7 @@ if typing.TYPE_CHECKING:
 
 
 try:
-    from python_multipart.multipart import parse_options_header  # type:ignore
+    from python_multipart.multipart import parse_options_header  # type: ignore
 
 except ImportError:
     parse_options_header = None
@@ -70,7 +70,7 @@ def cookie_parser(cookie_string: str) -> dict[str, str]:
         key, val = key.strip(), val.strip()
         if key or val:
             # unquote using Python's algorithm.
-            cookie_dict[key] = http_cookies._unquote(val)  # type:ignore
+            cookie_dict[key] = http_cookies._unquote(val)  # type: ignore
     return cookie_dict
 
 
@@ -324,7 +324,7 @@ class Request(HTTPConnection):
     def content_type(self) -> typing.Optional[str]:
         content_type_header = self.headers.get("Content-Type")
         content_type: str
-        content_type, _ = parse_options_header(content_type_header)  # type:ignore
+        content_type, _ = parse_options_header(content_type_header)  # type: ignore
         return content_type.decode("utf-8") if content_type else None  # type: ignore
 
     async def stream(self) -> typing.AsyncGenerator[bytes, None]:
@@ -392,13 +392,13 @@ class Request(HTTPConnection):
         max_files: typing.Optional[int] = 1000,
         max_fields: typing.Optional[int] = 1000,
     ) -> FormData:
-        if self._form is None:  # type:ignore
-            assert (
-                parse_options_header is not None
-            ), "The `python-multipart` library must be installed to use form parsing."
+        if self._form is None:  # type: ignore
+            assert parse_options_header is not None, (
+                "The `python-multipart` library must be installed to use form parsing."
+            )
             content_type_header = self.headers.get("Content-Type")
             content_type: bytes
-            content_type, _ = parse_options_header(content_type_header)  # type:ignore
+            content_type, _ = parse_options_header(content_type_header)  # type: ignore
             if content_type == b"multipart/form-data":
                 try:
                     multipart_parser = MultiPartParser(
@@ -416,7 +416,7 @@ class Request(HTTPConnection):
                 self._form = await form_parser.parse()
             else:
                 self._form: FormData = FormData()
-        return self._form  # type:ignore
+        return self._form  # type: ignore
 
     @property
     def form_data(self) -> AwaitableOrContextManager[FormData]:
@@ -433,7 +433,7 @@ class Request(HTTPConnection):
             # If message isn't immediately available, move on
             with anyio.CancelScope() as cs:  # type: ignore
                 cs.cancel()  # type: ignore
-                message = await self._receive()  # type:ignore
+                message = await self._receive()  # type: ignore
 
             if message.get("type") == "http.disconnect":
                 self._is_disconnected = True

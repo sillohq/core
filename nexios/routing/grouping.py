@@ -22,9 +22,9 @@ class Group(BaseRoute):
         middleware: typing.List[Middleware] = [],
     ) -> None:
         assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
-        assert (
-            app is not None or routes is not None
-        ), "Either 'app=...', or 'routes=' must be specified"
+        assert app is not None or routes is not None, (
+            "Either 'app=...', or 'routes=' must be specified"
+        )
 
         self.path = path.rstrip("/")
         self.name = name
@@ -35,9 +35,9 @@ class Group(BaseRoute):
         else:
             from .router import Router
 
-            self._base_app = Router(routes=routes)  # type:ignore
+            self._base_app = Router(routes=routes)  # type: ignore
 
-        self.app = self._base_app  # type:ignore
+        self.app = self._base_app  # type: ignore
         for cls, args, kwargs in reversed(middleware):
             self.app = cls(self.app, *args, **kwargs)
 

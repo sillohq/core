@@ -9,8 +9,8 @@ from tempfile import SpooledTemporaryFile
 from nexios.objects import FormData, Headers, UploadedFile
 
 if typing.TYPE_CHECKING:
-    import multipart  # type:ignore
-    from multipart.multipart import (  # type:ignore
+    import multipart  # type: ignore
+    from multipart.multipart import (  # type: ignore
         parse_options_header,
     )
 else:
@@ -59,9 +59,9 @@ class FormParser:
     def __init__(
         self, headers: Headers, stream: typing.AsyncGenerator[bytes, None]
     ) -> None:
-        assert (
-            multipart is not None
-        ), "The `python-multipart` library must be installed to use form parsing."
+        assert multipart is not None, (
+            "The `python-multipart` library must be installed to use form parsing."
+        )
         self.headers = headers
         self.stream = stream
         self.messages: list[tuple[FormMessage, bytes]] = []
@@ -149,9 +149,9 @@ class MultiPartParser:
         max_fields: typing.Optional[int] = None,
         max_files: typing.Optional[int] = None,
     ) -> None:
-        assert (
-            multipart is not None
-        ), "The `python-multipart` library must be installed to use form parsing."
+        assert multipart is not None, (
+            "The `python-multipart` library must be installed to use form parsing."
+        )
         self.headers = headers
         self.stream = stream
         self.max_files = max_files if max_files is not None else self.max_files
@@ -242,7 +242,7 @@ class MultiPartParser:
             filename = _user_safe_decode(
                 options[b"filename"],
                 self._charset,  # type: ignore
-            )  # type:ignore
+            )  # type: ignore
             tempfile = SpooledTemporaryFile(max_size=self.max_file_size)
             self._files_to_close_on_error.append(tempfile)
             self._current_part.file = UploadedFile(
@@ -288,11 +288,11 @@ class MultiPartParser:
             "on_end": self.on_end,
         }
 
-        parser = multipart.MultipartParser(boundary, callbacks)  # type:ignore
+        parser = multipart.MultipartParser(boundary, callbacks)  # type: ignore
         try:
             # Feed the parser with data from the request.
             async for chunk in self.stream:
-                parser.write(chunk)  # type:ignore
+                parser.write(chunk)  # type: ignore
                 # Write file data, it needs to use await with the UploadedFile methods
                 # that call the corresponding file methods *in a threadpool*,
                 # otherwise, if they were called directly in the callback methods above
@@ -300,7 +300,7 @@ class MultiPartParser:
                 # the main thread.
                 for part, data in self._file_parts_to_write:
                     # assert part.file  # for type checkers
-                    await part.file.write(data)  # type:ignore
+                    await part.file.write(data)  # type: ignore
                 for part in self._file_parts_to_finish:
                     assert part.file  # for type checkers
                     await part.file.seek(0)
@@ -312,5 +312,5 @@ class MultiPartParser:
                 file.close()
             raise exc
 
-        parser.finalize()  # type:ignore
+        parser.finalize()  # type: ignore
         return FormData(self.items)

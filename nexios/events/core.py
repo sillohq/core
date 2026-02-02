@@ -121,7 +121,7 @@ class Event(EventSerializationMixin):
                 self._parent._children.remove(self)
             self._parent = value
             if value is not None:
-                value._children.append(weakref.proxy(self))  # type:ignore
+                value._children.append(weakref.proxy(self))  # type: ignore
 
     @property
     def children(self) -> List["Event"]:
@@ -426,7 +426,7 @@ class Event(EventSerializationMixin):
                 # Resolve weak references
                 actual_listener: Optional[Callable[..., Any]] = None
                 if isinstance(listener, (ref, WeakMethod)):
-                    actual_listener = listener()  # type:ignore
+                    actual_listener = listener()  # type: ignore
                     if actual_listener is None:
                         continue
                 else:

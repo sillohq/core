@@ -2,7 +2,7 @@ import re
 import secrets
 import typing
 
-from itsdangerous import BadSignature, URLSafeSerializer  # type:ignore
+from itsdangerous import BadSignature, URLSafeSerializer  # type: ignore
 
 from nexios.config import get_config
 from nexios.http import Request, Response
@@ -22,9 +22,7 @@ class CSRFMiddleware(BaseMiddleware):
             assert app_config.secret_key is not None, ""
         if not self.use_csrf:
             return
-        self.serializer = URLSafeSerializer(
-            app_config.secret_key, "csrftoken"
-        )  # type:ignore
+        self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")  # type: ignore
         self.required_urls: typing.List[str] = app_config.csrf_required_urls or ["*"]
         self.exempt_urls = app_config.csrf_exempt_urls
         self.sensitive_cookies = app_config.csrf_sensitive_cookies
@@ -143,15 +141,15 @@ class CSRFMiddleware(BaseMiddleware):
                 return True
         return False
 
-    def _generate_csrf_token(self) -> str:  # type:ignore
+    def _generate_csrf_token(self) -> str:  # type: ignore
         """Generate a secure CSRF token."""
-        return self.serializer.dumps(secrets.token_urlsafe(32))  # type:ignore
+        return self.serializer.dumps(secrets.token_urlsafe(32))  # type: ignore
 
     def _csrf_tokens_match(self, token1: str, token2: str) -> bool:
         """Compare two CSRF tokens securely."""
         try:
-            decoded1 = self.serializer.loads(token1)  # type:ignore
-            decoded2 = self.serializer.loads(token2)  # type:ignore
-            return secrets.compare_digest(decoded1, decoded2)  # type:ignore
+            decoded1 = self.serializer.loads(token1)  # type: ignore
+            decoded2 = self.serializer.loads(token2)  # type: ignore
+            return secrets.compare_digest(decoded1, decoded2)  # type: ignore
         except BadSignature:
             return False

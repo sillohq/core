@@ -22,7 +22,7 @@ class EventSerializationMixin(EventProtocol):
         )
 
     @classmethod
-    def from_json(cls: Type[_T], json_str: str) -> _T:  # type:ignore
+    def from_json(cls: Type[_T], json_str: str) -> _T:  # type: ignore
         """Deserialize event configuration from JSON"""
 
         # Note: cls needs to be the concrete class (Event)

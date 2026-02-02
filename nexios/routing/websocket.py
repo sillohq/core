@@ -135,8 +135,7 @@ class WebsocketRoute:
         self,
         path: Annotated[
             str,
-            Doc(
-                """
+            Doc("""
                 URL path pattern for the WebSocket endpoint.
                 
                 Supports the same path parameter syntax as HTTP routes:
@@ -148,13 +147,11 @@ class WebsocketRoute:
                 - "/ws" - Simple WebSocket endpoint
                 - "/ws/chat/{room_id}" - Chat room with room ID parameter
                 - "/ws/user/{user_id}/notifications" - User-specific notifications
-                """
-            ),
+                """),
         ],
         handler: Annotated[
             WsHandlerType,
-            Doc(
-                """
+            Doc("""
                 Async function to handle WebSocket connections.
                 
                 The handler function receives a WebSocket object and should:
@@ -174,13 +171,11 @@ class WebsocketRoute:
                 - websocket.send_bytes(): Send binary messages
                 - websocket.send_json(): Send JSON messages
                 - websocket.close(): Close the connection
-                """
-            ),
+                """),
         ],
         middleware: Annotated[
             typing.List[WsMiddlewareType],
-            Doc(
-                """
+            Doc("""
                 List of middleware functions to apply to this WebSocket route.
                 
                 WebSocket middleware can:
@@ -202,8 +197,7 @@ class WebsocketRoute:
                         return
                     await call_next()
                 ```
-                """
-            ),
+                """),
         ] = [],
     ):
         assert callable(handler), "Route handler must be callable"
@@ -233,7 +227,7 @@ class WebsocketRoute:
         if match:
             matched_params = match.groupdict()
             for key, value in matched_params.items():
-                matched_params[key] = self.route_info.convertor[  # type:ignore
+                matched_params[key] = self.route_info.convertor[  # type: ignore
                     key
                 ].convert(value)
             return MatchStatus.FULL, matched_params

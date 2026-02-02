@@ -95,8 +95,7 @@ class APIView:
 
     middleware: Annotated[
         List[MiddlewareType],
-        Doc(
-            """
+        Doc("""
             List of middleware functions to apply to all methods in this view.
             
             Middleware will be executed in the order specified for each request
@@ -111,8 +110,7 @@ class APIView:
                     log_requests
                 ]
             ```
-            """
-        ),
+            """),
     ] = []
 
     error_handlers: Annotated[
@@ -120,8 +118,7 @@ class APIView:
             Type[Exception],
             Callable[[Request, Response, Exception], Coroutine[Any, Any, Response]],
         ],
-        Doc(
-            """
+        Doc("""
             Dictionary mapping exception types to handler functions.
             
             When an exception occurs during request processing, the framework
@@ -145,8 +142,7 @@ class APIView:
                     PermissionError: handle_permission_error,
                 }
             ```
-            """
-        ),
+            """),
     ] = {}
 
     @classmethod
@@ -154,8 +150,7 @@ class APIView:
         cls,
         path: Annotated[
             str,
-            Doc(
-                """
+            Doc("""
                 URL path pattern for this view's endpoints.
                 
                 Supports path parameters using {param} syntax.
@@ -165,26 +160,22 @@ class APIView:
                 - "/users" - static path
                 - "/users/{id}" - path with parameter
                 - "/files/{path:.*}" - path with regex parameter
-                """
-            ),
+                """),
         ],
         methods: Annotated[
             Optional[List[str]],
-            Doc(
-                """
+            Doc("""
                 List of HTTP methods to enable for this view.
                 
                 If not specified, automatically detects methods based on
                 implemented methods in the view class (get, post, put, delete, patch).
                 
                 Example: ["GET", "POST"] to only allow GET and POST requests
-                """
-            ),
+                """),
         ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
-            Doc(
-                """
+            Doc("""
                 Additional route configuration options.
                 
                 These are passed directly to the Route constructor and can include:
@@ -194,8 +185,7 @@ class APIView:
                 - tags: OpenAPI tags
                 - responses: Response schemas
                 - etc.
-                """
-            ),
+                """),
         ],
     ) -> Route:
         """
@@ -254,7 +244,7 @@ class APIView:
             handler,
             methods=methods,
             middleware=cls.middleware,
-            **kwargs,  #  type: ignore
+            **kwargs,  # type: ignore
         )
 
     async def dispatch(

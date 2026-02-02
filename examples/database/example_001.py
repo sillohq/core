@@ -11,16 +11,14 @@ DB_PATH = "example.db"
 
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            """
+        conn.execute("""
         CREATE TABLE IF NOT EXISTS todos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             completed BOOLEAN NOT NULL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        """
-        )
+        """)
 
 
 class Database:

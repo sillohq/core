@@ -68,13 +68,11 @@ app.add_middleware(
 
 @app.get("/")
 async def home(req: Request, res: Response):
-    return res.html(
-        """
+    return res.html("""
     <h1>Custom Authentication Example</h1>
     <p>Try adding the header: <code>X-Custom-Token: valid-token-123</code></p>
     <a href="/secure">Go to secure endpoint</a>
-    """
-    )
+    """)
 
 
 @app.get("/secure")
@@ -95,15 +93,13 @@ async def secure_endpoint(req: Request, res: Response):
 
 @app.get("/login")
 async def login_form(req: Request, res: Response):
-    return res.html(
-        """
+    return res.html("""
     <h1>Login</h1>
     <form action="/login" method="post">
         <label>Token: <input type="text" name="token" placeholder="valid-token-123"></label>
         <input type="submit" value="Login">
     </form>
-    """
-    )
+    """)
 
 
 @app.post("/login")
@@ -114,12 +110,10 @@ async def login_post(req: Request, res: Response):
     if token == "valid-token-123":
         # In a real app, you'd set the token in a cookie or redirect to a page
         # that sets the X-Custom-Token header
-        return res.html(
-            f"""
+        return res.html(f"""
         <h1>Login Successful!</h1>
         <p>Add this header to your requests: <code>X-Custom-Token: {token}</code></p>
         <a href="/secure">Go to secure endpoint</a>
-        """
-        )
+        """)
 
     return res.html("Invalid token", status_code=401)

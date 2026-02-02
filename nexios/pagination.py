@@ -293,9 +293,9 @@ class CursorPagination(BasePaginationStrategy):
         cursor_data = {self.sort_field: value}
         return base64.b64encode(json.dumps(cursor_data).encode("utf-8")).decode("utf-8")
 
-    def calculate_offset_limit(  # type:ignore
+    def calculate_offset_limit(  # type: ignore
         self, cursor: Optional[str], page_size: int
-    ) -> Tuple[int, int]:  # type:ignore
+    ) -> Tuple[int, int]:  # type: ignore
         decoded_cursor = urllib.parse.unquote(cursor) if cursor else None
         if decoded_cursor:
             try:

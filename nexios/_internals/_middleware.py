@@ -219,7 +219,7 @@ class ASGIRequestResponseBridge:
                 status_code=message["status"],  # type: ignore
             )  # type: ignore
             response_object._response._headers = message["headers"]  # type: ignore
-            return response_object._response  # type:ignore
+            return response_object._response  # type: ignore
 
         streams: anyio.create_memory_object_stream[Message] = (  # type: ignore
             anyio.create_memory_object_stream()

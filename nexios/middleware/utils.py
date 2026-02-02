@@ -21,7 +21,7 @@ def use_for_route(route: str) -> None:
             call_next: Callable[..., Awaitable[Response]],
         ) -> Any:
             if re.match(route, request.url.path):
-                return await func(request, response, call_next)  # type:ignore
+                return await func(request, response, call_next)  # type: ignore
             else:
                 return await call_next()
 
@@ -33,7 +33,7 @@ def use_for_route(route: str) -> None:
             call_next: Callable[..., Awaitable[Response]],
         ) -> Any:
             if re.match(route, request.url.path):
-                return await func(self, request, response, call_next)  # type:ignore
+                return await func(self, request, response, call_next)  # type: ignore
             else:
                 return await call_next()
 
@@ -42,4 +42,4 @@ def use_for_route(route: str) -> None:
         else:
             return wrapper_func
 
-    return decorator  # type:ignore
+    return decorator  # type: ignore

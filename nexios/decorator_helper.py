@@ -18,4 +18,4 @@ class RouteDecorator:
     def __get__(self, obj: typing.Any, objtype: typing.Any = None):
         if obj is None:
             return self
-        return self.__class__(obj)  # type:ignore
+        return self.__class__(obj)  # type: ignore

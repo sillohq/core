@@ -99,8 +99,7 @@ class Depend:
         self,
         dependency: Annotated[
             Optional[Callable[..., Any]],
-            Doc(
-                """
+            Doc("""
                 The dependency provider function that will be called to resolve this dependency.
                 
                 This can be:
@@ -119,8 +118,7 @@ class Depend:
                 # Usage
                 db_dep = Depend(database_dependency)
                 ```
-                """
-            ),
+                """),
         ] = None,
     ):
         self.dependency = dependency

@@ -197,9 +197,7 @@ class EventNamespace:
         Returns:
             Event instance
         """
-        full_name = (
-            f"{self._namespace}{self._emitter._namespace_separator}{event_name}"
-        )  # type:ignore
+        full_name = f"{self._namespace}{self._emitter._namespace_separator}{event_name}"  # type: ignore
         return self._emitter.event(full_name)
 
     def namespace(self, sub_namespace: str) -> "EventNamespace":

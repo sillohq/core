@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any, Tuple
 
 import click
 
-
 if TYPE_CHECKING:
     from nexios.application import NexiosApp
 
