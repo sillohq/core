@@ -6,8 +6,8 @@ import pytest
 
 from nexios import NexiosApp
 from nexios.config import MakeConfig, set_config
-from nexios.session import SessionConfig
 from nexios.http import Request, Response
+from nexios.session import SessionConfig
 from nexios.session.file import FileSessionManager
 from nexios.session.middleware import SessionMiddleware
 from nexios.session.signed_cookies import SignedSessionManager

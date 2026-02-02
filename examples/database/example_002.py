@@ -2,7 +2,7 @@ import datetime
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, List, Optional
 
-from tortoise import fields, models, Tortoise
+from tortoise import Tortoise, fields, models
 
 from nexios import NexiosApp
 from nexios.types import Request, Response, State

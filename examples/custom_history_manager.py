@@ -13,17 +13,17 @@ from pathlib import Path
 from nexios.websockets import BaseHistoryManager, ChannelBox
 from nexios.websockets.utils import ChannelMessageDC
 
-
 # =============================================================================
 # Example 1: File-Based History Manager
 # =============================================================================
 
+
 class FileHistoryManager(BaseHistoryManager):
     """Store message history in JSON files on disk.
-    
+
     Each group gets its own JSON file in the specified directory.
     Useful for persistence across restarts or debugging.
-    
+
     Args:
         storage_dir: Directory to store history files (default: ./channel_history)
         max_messages: Maximum number of messages to keep per group (default: 1000)
@@ -51,24 +51,26 @@ class FileHistoryManager(BaseHistoryManager):
     ) -> None:
         """Save a message to the group's JSON file."""
         file_path = self._get_file_path(group_name)
-        
+
         # Load existing history
         history = []
         if file_path.exists():
             with open(file_path, "r") as f:
                 history = json.load(f)
-        
+
         # Add new message (convert dataclass to dict)
-        history.append({
-            "payload": message.payload,
-            "uuid": str(message.uuid),
-            "created": message.created.isoformat(),
-        })
-        
+        history.append(
+            {
+                "payload": message.payload,
+                "uuid": str(message.uuid),
+                "created": message.created.isoformat(),
+            }
+        )
+
         # Trim if exceeds max
         if len(history) > self.max_messages:
-            history = history[-self.max_messages:]
-        
+            history = history[-self.max_messages :]
+
         # Save back to file
         with open(file_path, "w") as f:
             json.dump(history, f, indent=2)
@@ -76,7 +78,9 @@ class FileHistoryManager(BaseHistoryManager):
     async def get_history(
         self,
         group_name: typing.Optional[str] = None,
-    ) -> typing.Union[typing.List[typing.Dict], typing.Dict[str, typing.List[typing.Dict]]]:
+    ) -> typing.Union[
+        typing.List[typing.Dict], typing.Dict[str, typing.List[typing.Dict]]
+    ]:
         """Retrieve message history from files."""
         if group_name:
             file_path = self._get_file_path(group_name)
@@ -84,14 +88,14 @@ class FileHistoryManager(BaseHistoryManager):
                 with open(file_path, "r") as f:
                     return json.load(f)
             return []
-        
+
         # Get all history files
         all_history = {}
         for file_path in self.storage_dir.glob("*.json"):
             group_name = file_path.stem
             with open(file_path, "r") as f:
                 all_history[group_name] = json.load(f)
-        
+
         return all_history
 
     async def flush_history(self, group_name: typing.Optional[str] = None) -> None:
@@ -222,17 +226,18 @@ class RedisHistoryManager(BaseHistoryManager):
 # Usage Examples
 # =============================================================================
 
+
 def example_file_based_history():
     """Example: Using file-based history manager."""
     from nexios.websockets import ChannelBox
-    
+
     # Set up file-based history
     file_manager = FileHistoryManager(
         storage_dir="./my_channel_history",
         max_messages=500,
     )
     ChannelBox.set_history_manager(file_manager)
-    
+
     print("✓ File-based history manager configured!")
     print(f"  History will be stored in: ./my_channel_history/")
 
@@ -240,37 +245,37 @@ def example_file_based_history():
 def example_no_history():
     """Example: Disable history to save memory."""
     from nexios.websockets import ChannelBox, NoOpHistoryManager
-    
+
     # Disable history completely
     ChannelBox.set_history_manager(NoOpHistoryManager())
-    
+
     print("✓ History disabled - messages will not be saved")
 
 
 def example_custom_inmemory_size():
     """Example: Custom in-memory history with different size limit."""
     from nexios.websockets import ChannelBox, InMemoryHistoryManager
-    
+
     # Use in-memory with 5MB limit
     memory_manager = InMemoryHistoryManager(history_size=5_242_880)  # 5MB
     ChannelBox.set_history_manager(memory_manager)
-    
+
     print("✓ In-memory history with 5MB limit configured!")
 
 
 if __name__ == "__main__":
     print("Nexios Custom History Manager Examples\n")
     print("=" * 60)
-    
+
     print("\n1. File-Based History Manager:")
     example_file_based_history()
-    
+
     print("\n2. Disable History:")
     example_no_history()
-    
+
     print("\n3. Custom In-Memory Size:")
     example_custom_inmemory_size()
-    
+
     print("\n" + "=" * 60)
     print("\nTo use in your app:")
     print("  1. Import: from nexios.websockets import ChannelBox")

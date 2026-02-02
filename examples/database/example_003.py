@@ -1,4 +1,4 @@
-from tortoise import Model, fields, Tortoise
+from tortoise import Model, Tortoise, fields
 from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise.expressions import Q
 from tortoise.functions import Count

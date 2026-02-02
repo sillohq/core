@@ -17,6 +17,7 @@ from typing import (
     Sequence,
     Type,
     Union,
+    TYPE_CHECKING
 )
 
 from pydantic import BaseModel
@@ -44,6 +45,8 @@ from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
 from .grouping import Group
 from .websocket import WebsocketRoute
+if TYPE_CHECKING:
+    from nexios.typing import WsHandlerType,WsMiddlewareType
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 

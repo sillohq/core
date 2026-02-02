@@ -4,7 +4,7 @@ Nexios CLI - Interactive shell command.
 """
 
 import sys
-from typing import Any, Optional
+from typing import Any
 
 import click
 
@@ -46,9 +46,7 @@ def shell(app_path: str, ipython: bool = False):
         # Load app instance
         app = _load_app_from_path(app_path)
         if app is None:
-            _echo_error(
-                "Could not load the app instance. Please check your app_path."
-            )
+            _echo_error("Could not load the app instance. Please check your app_path.")
             sys.exit(1)
 
         _echo_info(f"Loaded app: {app}")

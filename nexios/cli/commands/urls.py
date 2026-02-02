@@ -4,11 +4,10 @@ Nexios CLI - URLs listing command.
 """
 
 import sys
-from pathlib import Path
 
 import click
 
-from ..utils import _echo_error, _echo_info, _load_app_from_path
+from ..utils import _echo_error, _load_app_from_path
 
 
 @click.command()
@@ -26,9 +25,7 @@ def urls(app_path: str):
         # Load app instance
         app = _load_app_from_path(app_path)
         if app is None:
-            _echo_error(
-                "Could not load the app instance. Please check your app_path."
-            )
+            _echo_error("Could not load the app instance. Please check your app_path.")
             sys.exit(1)
 
         routes = app.get_all_routes()

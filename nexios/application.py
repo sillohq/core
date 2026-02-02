@@ -146,7 +146,7 @@ class NexiosApp(object):
             get_config()
         except RuntimeError:
             set_config(self.config)
-        
+
         self.http_middleware: List[Middleware] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
         self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []

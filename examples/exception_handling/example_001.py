@@ -11,7 +11,9 @@ async def error_handler(req: Request, res: Response) -> Response:
 
 
 @app.add_exception_handler(HTTPException)
-async def http_error_handler(req: Request, res: Response, exc: HTTPException) -> Response:
+async def http_error_handler(
+    req: Request, res: Response, exc: HTTPException
+) -> Response:
     return await res.json({"error": exc.detail}, status_code=exc.status_code)
 
 

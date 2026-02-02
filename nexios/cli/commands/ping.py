@@ -5,18 +5,15 @@ Nexios CLI - Ping route command.
 
 import asyncio
 import sys
-from typing import Optional
 
 import click
 
 from nexios.cli.utils import (
     _echo_error,
-    _echo_info,
     _echo_success,
     _echo_warning,
     _load_app_from_path,
 )
-
 
 try:
     from nexios.testing.client import Client
@@ -50,14 +47,14 @@ def ping(
             # Load app instance
             app = _load_app_from_path(cli_app_path)
             if app is None:
-                _echo_error(f"Could not load app instance.")
+                _echo_error("Could not load app instance.")
                 sys.exit(1)
-            
+
             if not Client:
                 _echo_error("httpx is not installed. Install with: pip install httpx")
                 sys.exit(1)
                 return
-            
+
             async with Client(app) as client:
                 resp = await client.request(method.upper(), route_path)
                 click.echo(f"{route_path} [{method.upper()}] -> {resp.status_code}")

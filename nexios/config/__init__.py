@@ -2,7 +2,6 @@ from typing import Any, Optional
 
 from .base import MakeConfig
 
-
 __all__ = [
     "MakeConfig",
     "get_config",

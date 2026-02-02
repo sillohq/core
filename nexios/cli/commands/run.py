@@ -7,6 +7,10 @@ import os
 import subprocess
 import sys
 import traceback
+from typing import Tuple
+
+import click
+
 from ..utils import (
     _echo_error,
     _echo_info,
@@ -16,9 +20,8 @@ from ..utils import (
     _validate_port,
     _validate_server,
 )
-from typing import Tuple
 
-import click
+
 @click.command(context_settings={"ignore_unknown_options": True})
 @click.option(
     "--host",
@@ -96,15 +99,15 @@ def run(
             "workers": workers,
             "app_path": app_path,
         }
-        
+
         # Override defaults if explicitly provided via key=value
         options.update(extra_options)
 
         # Use app_path from options
         app_path = options.get("app_path", app_path)
         if not app_path:
-             _echo_error("App path is required. Please specify it with --app option.")
-             sys.exit(1)
+            _echo_error("App path is required. Please specify it with --app option.")
+            sys.exit(1)
 
         # Support custom_command as either a string or a list (array)
         if "custom_command" in options and options["custom_command"]:

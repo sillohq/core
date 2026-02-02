@@ -16,7 +16,9 @@ async def test_route(req: Request, res: Response) -> Response:
     raise CustomException()
 
 
-async def handle_custom_exception(req: Request, res: Response, exc: CustomException) -> Response:
+async def handle_custom_exception(
+    req: Request, res: Response, exc: CustomException
+) -> Response:
     return res.json({"error": str(exc)})
 
 

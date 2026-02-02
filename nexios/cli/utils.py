@@ -11,12 +11,10 @@ import socket
 import subprocess
 import sys
 from pathlib import Path
-from types import ModuleType
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Tuple
 
 import click
 
-from nexios.utils.app import get_app_instance
 
 if TYPE_CHECKING:
     from nexios.application import NexiosApp
@@ -148,16 +146,12 @@ def _load_app_from_string(app_path: str) -> "NexiosApp":
     return app
 
 
-def _load_app_from_path(
-    app_path: str
-) -> "NexiosApp":
+def _load_app_from_path(app_path: str) -> "NexiosApp":
     """
     Load the Nexios app instance from the given app_path (module:app).
     """
     if not app_path:
-        raise RuntimeError(
-            "App path is required. Please specify it with --app."
-        )
+        raise RuntimeError("App path is required. Please specify it with --app.")
 
     return _load_app_from_string(app_path)
 
