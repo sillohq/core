@@ -1,119 +1,62 @@
 import datetime
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, List, Optional
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_scoped_session,
-    create_async_engine,
-)
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from tortoise import fields, models, Tortoise
 
-from nexios import Depends, NexiosApp
+from nexios import NexiosApp
 from nexios.types import Request, Response, State
 
 # Database configuration
-DATABASE_URL = "sqlite+aiosqlite:///./example_async.db"
-
-# Declarative base class
-Base = declarative_base()
-
-
-# SQLAlchemy setup
-class Database:
-    def __init__(self, db_url: str):
-        self.engine: Optional[AsyncEngine] = None
-        self.async_session: Optional[async_scoped_session] = None
-        self.db_url = db_url
-
-    async def connect(self):
-        if self.engine is None:
-            self.engine = create_async_engine(self.db_url, echo=True)
-            self.async_session = async_scoped_session(
-                sessionmaker(
-                    self.engine,
-                    class_=AsyncSession,
-                    expire_on_commit=False,
-                ),
-                scopefunc=lambda: None,  # This is a simple implementation
-            )
-
-            # Create tables
-            async with self.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-
-    async def get_session(self) -> AsyncSession:
-        if self.async_session is None:
-            raise RuntimeError("Database is not connected")
-        return self.async_session()
-
-    async def close(self):
-        if self.engine:
-            await self.engine.dispose()
-            self.engine = None
-            self.async_session = None
+DATABASE_URL = "sqlite://./example_tortoise.db"
 
 
 # Define models
-class Note(Base):
-    __tablename__ = "notes"
+class Note(models.Model):
+    id = fields.IntField(pk=True)
+    title = fields.CharField(max_length=255, index=True)
+    content = fields.TextField()
+    is_public = fields.BooleanField(default=False)
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    content = Column(String)
-    is_public = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    updated_at = Column(
-        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
-    )
+    class Meta:
+        table = "notes"
 
 
 # Application lifespan
 @asynccontextmanager
 async def lifespan(app: NexiosApp) -> AsyncGenerator[State, None]:
     # Startup: Initialize database connection
-    db = Database(DATABASE_URL)
-    await db.connect()
+    await Tortoise.init(
+        db_url=DATABASE_URL,
+        modules={"models": ["__main__"]},
+    )
+    # Generate schemas (equivalent to Base.metadata.create_all)
+    await Tortoise.generate_schemas()
 
-    # Make database available to routes
-    state = State()
-    state.db = db
+    yield State()  # Application runs here
 
-    yield state  # Application runs here
-
-    # Cleanup: Close database connection
-    await db.close()
+    # Cleanup: Close database connections
+    await Tortoise.close_connections()
 
 
 # Initialize app with lifespan
 app = NexiosApp(lifespan=lifespan)
 
 
-# Dependency to get database session
-async def get_db_session(state: State) -> AsyncSession:
-    db: Database = state.db
-    return await db.get_session()
-
-
 @app.post("/notes")
 async def create_note(
     request: Request,
     response: Response,
-    session: AsyncSession = Depends(get_db_session),
 ):
-    data = await request.json()
+    data = await request.json
 
-    note = Note(
+    note = await Note.create(
         title=data["title"],
         content=data["content"],
         is_public=data.get("is_public", False),
     )
-    session.add(note)
-    await session.commit()
-    await session.refresh(note)
 
     return response.json(
         {
@@ -132,15 +75,13 @@ async def create_note(
 async def list_notes(
     request: Request,
     response: Response,
-    session: AsyncSession = Depends(get_db_session),
 ):
     show_private = request.query_params.get("show_private", "false").lower() == "true"
 
-    query = session.query(Note)
-    if not show_private:
-        query = query.filter(Note.is_public)
-
-    notes = await query.order_by(Note.created_at.desc()).all()
+    if show_private:
+        notes = await Note.all().order_by("-created_at")
+    else:
+        notes = await Note.filter(is_public=True).order_by("-created_at")
 
     return response.json(
         [
@@ -162,9 +103,8 @@ async def get_note(
     request: Request,
     response: Response,
     note_id: int,
-    session: AsyncSession = Depends(get_db_session),
 ):
-    note = await session.get(Note, note_id)
+    note = await Note.get_or_none(id=note_id)
 
     if not note:
         return response.json({"error": "Note not found"}, status_code=404)
@@ -189,10 +129,9 @@ async def update_note(
     request: Request,
     response: Response,
     note_id: int,
-    session: AsyncSession = Depends(get_db_session),
 ):
-    data = await request.json()
-    note = await session.get(Note, note_id)
+    data = await request.json
+    note = await Note.get_or_none(id=note_id)
 
     if not note:
         return response.json({"error": "Note not found"}, status_code=404)
@@ -205,8 +144,7 @@ async def update_note(
     if "is_public" in data:
         note.is_public = data["is_public"]
 
-    await session.commit()
-    await session.refresh(note)
+    await note.save()
 
     return response.json(
         {
@@ -225,14 +163,12 @@ async def delete_note(
     request: Request,
     response: Response,
     note_id: int,
-    session: AsyncSession = Depends(get_db_session),
 ):
-    note = await session.get(Note, note_id)
+    note = await Note.get_or_none(id=note_id)
 
     if not note:
         return response.json({"error": "Note not found"}, status_code=404)
 
-    await session.delete(note)
-    await session.commit()
+    await note.delete()
 
     return response.json({"message": "Note deleted successfully", "id": note_id})
