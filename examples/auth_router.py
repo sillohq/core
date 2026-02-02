@@ -3,6 +3,7 @@ from nexios.auth import BaseUser
 from nexios.auth.backends.jwt import JWTAuthBackend, create_jwt
 from nexios.auth.decorator import auth
 from nexios.auth.middleware import AuthenticationMiddleware
+from nexios.http import Request, Response
 from nexios.routing import Router
 
 
@@ -48,7 +49,7 @@ auth_router = Router()
 
 
 @auth_router.post("/login")
-async def login(req, res):
+async def login(req: Request, res: Response) -> Response:
     credentials = await req.json
     # Validate credentials (replace with your logic)
     if (
@@ -65,7 +66,7 @@ async def login(req, res):
 
 @auth_router.get("/profile")
 @auth()  # Requires authentication
-async def profile(req, res):
+async def profile(req: Request, res: Response) -> Response:
     return res.json(
         {
             "message": f"Welcome, {req.user.display_name}!",
@@ -77,7 +78,7 @@ async def profile(req, res):
 
 @auth_router.get("/admin")
 @auth()  # Requires authentication
-async def admin(req, res):
+async def admin(req: Request, res: Response) -> Response:
     return res.json({"message": "Admin access granted", "user": req.user.display_name})
 
 

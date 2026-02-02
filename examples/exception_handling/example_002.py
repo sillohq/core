@@ -1,5 +1,6 @@
 from nexios import NexiosApp
 from nexios.exceptions import HTTPException
+from nexios.http import Request, Response
 
 
 class CustomException(HTTPException):
@@ -11,11 +12,11 @@ app = NexiosApp()
 
 
 @app.get("/test-custom-exception")
-async def test_route(req, res):
+async def test_route(req: Request, res: Response) -> Response:
     raise CustomException()
 
 
-async def handle_custom_exception(req, res, exc):
+async def handle_custom_exception(req: Request, res: Response, exc: CustomException) -> Response:
     return res.json({"error": str(exc)})
 
 

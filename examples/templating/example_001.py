@@ -16,7 +16,7 @@ app.config.templating = template_config
 
 
 # Add template context middleware
-async def user_context(request):
+async def user_context(request: Request) -> dict:
     return {"user": {"name": "Test User", "id": 123}, "app_version": "1.0.0"}
 
 
@@ -28,7 +28,7 @@ app.add_middleware(
 
 
 @app.get("/")
-async def index(request, response):
+async def index(request: Request, response: Response) -> Response:
     # Simple template rendering with context
     return await render(
         "index.html",
@@ -38,7 +38,7 @@ async def index(request, response):
 
 
 @app.get("/user/{username}")
-async def user_profile(request, response, username: str):
+async def user_profile(request: Request, response: Response, username: str) -> Response:
     # Template rendering with URL parameters
     return await render(
         "user_profile.html",

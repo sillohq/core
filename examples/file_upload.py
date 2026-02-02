@@ -1,10 +1,11 @@
 from nexios import NexiosApp
+from nexios.http import Request, Response
 
 app = NexiosApp()
 
 
 @app.post("/upload")
-async def upload_files(req, res):
+async def upload_files(req: Request, res: Response) -> Response:
     files = await req.files
     uploaded = []
 

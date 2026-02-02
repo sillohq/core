@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, ValidationError
 
 from nexios import NexiosApp
+from nexios.http import Request, Response
 
 app = NexiosApp()
 
@@ -12,7 +13,7 @@ class UserRegistration(BaseModel):
 
 
 @app.post("/register")
-async def register_user(req, res):
+async def register_user(req: Request, res: Response) -> Response:
     try:
         data = await req.json
         user = UserRegistration(**data)

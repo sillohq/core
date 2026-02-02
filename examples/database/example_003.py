@@ -1,8 +1,10 @@
-from tortoise import Model, fields
+from tortoise import Model, fields, Tortoise
 from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise.expressions import Q
+from tortoise.functions import Count
 
 from nexios import NexiosApp
+from nexios.http import Request, Response
 
 app = NexiosApp()
 
@@ -80,14 +82,14 @@ async def close_db():
 
 # API Routes
 @app.post("/users")
-async def create_user(request, response):
+async def create_user(request: Request, response: Response) -> Response:
     data = await request.json
     user = await User.create(**data)
     return response.json(await User_Pydantic.from_tortoise_orm(user))
 
 
 @app.get("/users/{user_id}/posts")
-async def get_user_posts(request, response):
+async def get_user_posts(request: Request, response: Response) -> Response:
     user_id = request.path_params["user_id"]
     user = await User.get_or_none(id=user_id)
 
@@ -112,7 +114,7 @@ async def get_user_posts(request, response):
 
 
 @app.post("/posts")
-async def create_post(request, response):
+async def create_post(request: Request, response: Response) -> Response:
     data = await request.json
     user = await User.get_or_none(id=data["author_id"])
 
@@ -151,7 +153,7 @@ async def create_post(request, response):
 
 
 @app.get("/posts/search")
-async def search_posts(request, response):
+async def search_posts(request: Request, response: Response) -> Response:
     query = request.query_params.get("q", "")
     tag = request.query_params.get("tag")
     published_only = request.query_params.get("published", "true").lower() == "true"
@@ -186,7 +188,7 @@ async def search_posts(request, response):
 
 
 @app.get("/tags/popular")
-async def get_popular_tags(request, response):
+async def get_popular_tags(request: Request, response: Response) -> Response:
     # Get tags with post count, ordered by popularity
     tags = await Tag.all().annotate(post_count=Count("posts")).order_by("-post_count")
 

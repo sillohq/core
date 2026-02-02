@@ -1,6 +1,7 @@
 from typing import Dict, Set
 
 from nexios import NexiosApp
+from nexios.http import Request, Response
 from nexios.websockets import WebSocket
 
 app = NexiosApp()

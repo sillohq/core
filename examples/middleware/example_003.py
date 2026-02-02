@@ -35,5 +35,5 @@ app.wrap_asgi(another_asgi_middleware)
 
 # Define a simple route
 @app.route("/")
-async def homepage(req, res):
+async def homepage(req: Request, res: Response) -> Response:
     return res.text("Hello from Nexios!")

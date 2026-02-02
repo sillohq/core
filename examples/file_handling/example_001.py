@@ -6,6 +6,7 @@ from pathlib import Path
 import aiofiles
 
 from nexios import NexiosApp
+from nexios.http import Request, Response
 from nexios.responses import FileResponse, StreamingResponse
 
 app = NexiosApp()
@@ -31,7 +32,7 @@ async def save_upload_file(file, filename: str) -> Path:
 
 
 @app.post("/upload")
-async def upload_file(request, response):
+async def upload_file(request: Request, response: Response) -> Response:
     # Get uploaded files
     files = await request.files
 
@@ -64,7 +65,7 @@ async def upload_file(request, response):
 
 
 @app.get("/files")
-async def list_files(request, response):
+async def list_files(request: Request, response: Response) -> Response:
     files = []
     for filepath in UPLOAD_DIR.glob("*"):
         if filepath.is_file():
@@ -83,7 +84,7 @@ async def list_files(request, response):
 
 
 @app.get("/files/{filename}")
-async def download_file(request, response):
+async def download_file(request: Request, response: Response) -> FileResponse:
     filename = request.path_params["filename"]
     filepath = UPLOAD_DIR / filename
 
@@ -96,7 +97,7 @@ async def download_file(request, response):
 
 
 @app.get("/stream/{filename}")
-async def stream_file(request, response):
+async def stream_file(request: Request, response: Response) -> StreamingResponse:
     filename = request.path_params["filename"]
     filepath = UPLOAD_DIR / filename
 
@@ -114,7 +115,7 @@ async def stream_file(request, response):
 
 
 @app.delete("/files/{filename}")
-async def delete_file(request, response):
+async def delete_file(request: Request, response: Response) -> Response:
     filename = request.path_params["filename"]
     filepath = UPLOAD_DIR / filename
 
@@ -132,7 +133,7 @@ async def delete_file(request, response):
 
 # Serve a simple upload form
 @app.get("/")
-async def upload_form(request, response):
+async def upload_form(request: Request, response: Response) -> Response:
     html = """
     <!DOCTYPE html>
     <html>

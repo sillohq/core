@@ -73,7 +73,7 @@ async def get_db(state: State) -> Database:
 @app.get("/todos")
 async def list_todos(
     request: Request, response: Response, db: Database = Depends(get_db)
-):
+) -> Response:
     conn = db.get_connection()
     todos = conn.execute("SELECT * FROM todos ORDER BY created_at DESC").fetchall()
     return response.json(
@@ -92,7 +92,7 @@ async def list_todos(
 @app.post("/todos")
 async def create_todo(
     request: Request, response: Response, db: Database = Depends(get_db)
-):
+) -> Response:
     data = await request.json
     title = data.get("title")
 
@@ -122,7 +122,7 @@ async def create_todo(
 @app.put("/todos/{todo_id}")
 async def update_todo(
     request: Request, response: Response, todo_id: str, db: Database = Depends(get_db)
-):
+) -> Response:
     data = await request.json
     conn = db.get_connection()
 
@@ -163,7 +163,7 @@ async def update_todo(
 @app.delete("/todos/{todo_id}")
 async def delete_todo(
     request: Request, response: Response, todo_id: str, db: Database = Depends(get_db)
-):
+) -> Response:
     conn = db.get_connection()
 
     # Check if todo exists

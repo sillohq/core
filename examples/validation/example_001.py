@@ -5,6 +5,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, ValidationError, constr
 
 from nexios import NexiosApp
+from nexios.http import Request, Response
 
 app = NexiosApp()
 
@@ -93,7 +94,7 @@ class ValidationMiddleware:
 # Example routes with validation
 @app.post("/users")
 @ValidationMiddleware(request_model=UserCreate, response_model=UserResponse)
-async def create_user(request, response):
+async def create_user(request: Request, response: Response) -> dict:
     data = request.validated_data
 
     # Simulate user creation
@@ -104,7 +105,7 @@ async def create_user(request, response):
 
 @app.put("/users/{user_id}")
 @ValidationMiddleware(request_model=UserUpdate, response_model=UserResponse)
-async def update_user(request, response):
+async def update_user(request: Request, response: Response) -> dict:
     user_id = request.path_params["user_id"]
     data = request.validated_data
 
@@ -136,7 +137,7 @@ class PaginationParams(BaseModel):
 
 
 @app.get("/users")
-async def list_users(request, response):
+async def list_users(request: Request, response: Response) -> Response:
     try:
         # Validate query parameters
         params = PaginationParams(
