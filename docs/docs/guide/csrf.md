@@ -179,7 +179,7 @@ async def login_get(request, response):
 
 @app.post("/login")
 async def login_post(request, response):
-    form = await request.form()
+    form = await request.form
     # CSRF validation happens automatically via the middleware
 
     # Your login logic here

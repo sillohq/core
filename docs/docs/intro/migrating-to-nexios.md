@@ -140,8 +140,8 @@ Every web framework exposes a `Request` object that allows you to inspect the in
 | Feature              | Nexios Example               | Flask Example                  | FastAPI Example                     | Starlette Example                 |
 | -------------------- | ---------------------------- | ------------------------------ | ----------------------------------- | --------------------------------- |
 | Query Params         | `request.query_params["id"]` | `request.args.get("id")`       | `id: int` as function param         | `request.query_params["id"]`      |
-| JSON Body            | `await request.json`         | `request.get_json()`           | Pydantic model / `await req.json()` | `await request.json()`            |
-| Form Data            | `await request.form`         | `request.form["field"]`        | `Form(...)` dependency              | `await request.form()`            |
+| JSON Body            | `await request.json`         | `request.get_json()`           | Pydantic model / `await req.json()` | `await request.json`            |
+| Form Data            | `await request.form`         | `request.form["field"]`        | `Form(...)` dependency              | `await request.form`            |
 | Path Params          | `request.path_params["id"]`  | `<id>` in route & function arg | Defined in route + function arg     | `request.path_params["id"]`       |
 | Headers              | `request.headers["auth"]`    | `request.headers.get("auth")`  | `headers: dict = request.headers`   | `request.headers["auth"]`         |
 | Cookies              | `request.cookies["token"]`   | `request.cookies.get("token")` | `cookie: str = Cookie(...)`         | `request.cookies["token"]`        |
@@ -149,8 +149,8 @@ Every web framework exposes a `Request` object that allows you to inspect the in
 | Method               | `request.method`             | `request.method`               | `request.method`                    | `request.method`                  |
 | URL                  | `request.url`                | `request.url`                  | `request.url`                       | `request.url`                     |
 | Session (if enabled) | `request.session["user"]`    | `session["user"]`              | Middleware extension                | Middleware/session extension      |
-| Files (multipart)    | `await request.files`        | `request.files["file"]`        | `UploadFile` in params              | `await request.form()` → file obj |
-| Raw Body             | `await request.body`         | `request.data`                 | `await request.body()`              | `await request.body()`            |
+| Files (multipart)    | `await request.files`        | `request.files["file"]`        | `UploadFile` in params              | `await request.form` → file obj |
+| Raw Body             | `await request.body`         | `request.data`                 | `await request.body`              | `await request.body`            |
 
 ---
 

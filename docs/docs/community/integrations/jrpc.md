@@ -1059,7 +1059,7 @@ async def comprehensive_logging_middleware(request, response, call_next):
     # For JSON-RPC, log the method being called
     if request.method == "POST" and "/rpc" in str(request.url):
         try:
-            body = await request.body()
+            body = await request.body
             if body:
                 rpc_data = json.loads(body)
                 method_name = rpc_data.get("method", "unknown")

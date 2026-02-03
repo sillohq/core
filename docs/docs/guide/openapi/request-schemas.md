@@ -196,7 +196,7 @@ class ContactForm(BaseModel):
     request_content_type="application/x-www-form-urlencoded"
 )
 async def handle_contact_form(request, response):
-    form_data = await request.form()
+    form_data = await request.form
     # Process form submission (manual validation if needed)
     return response.json({"submitted": True})
 ```
@@ -219,7 +219,7 @@ class FileUploadRequest(BaseModel):
 )
 async def upload_file(request, response):
     # Get form data and files
-    form_data = await request.form()
+    form_data = await request.form
     files = request.files
     
     # Access file and metadata manually

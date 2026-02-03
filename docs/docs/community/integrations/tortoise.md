@@ -99,7 +99,7 @@ async def get_user(request, response):
 
 @app.post("/users")
 async def create_user(request, response):
-    data = await request.json()
+    data = await request.json
     try:
         user = await User.create(
             name=data["name"],
@@ -187,7 +187,7 @@ from tortoise.transactions import in_transaction
 
 @app.post("/transfer")
 async def transfer_funds(request, response):
-    data = await request.json()
+    data = await request.json
     
     async with in_transaction():
         # All operations in this block are transactional
