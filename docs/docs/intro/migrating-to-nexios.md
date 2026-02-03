@@ -140,7 +140,7 @@ Every web framework exposes a `Request` object that allows you to inspect the in
 | Feature              | Nexios Example               | Flask Example                  | FastAPI Example                     | Starlette Example                 |
 | -------------------- | ---------------------------- | ------------------------------ | ----------------------------------- | --------------------------------- |
 | Query Params         | `request.query_params["id"]` | `request.args.get("id")`       | `id: int` as function param         | `request.query_params["id"]`      |
-| JSON Body            | `await request.json`         | `request.get_json()`           | Pydantic model / `await req.json()` | `await request.json`            |
+| JSON Body            | `await request.json`         | `request.get_json()`           | Pydantic model / `await req.json` | `await request.json`            |
 | Form Data            | `await request.form`         | `request.form["field"]`        | `Form(...)` dependency              | `await request.form`            |
 | Path Params          | `request.path_params["id"]`  | `<id>` in route & function arg | Defined in route + function arg     | `request.path_params["id"]`       |
 | Headers              | `request.headers["auth"]`    | `request.headers.get("auth")`  | `headers: dict = request.headers`   | `request.headers["auth"]`         |
@@ -295,8 +295,8 @@ from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
-@app.exception_handler(404)
-async def not_found(request: Request, exc):
+@app.add_exception_handler(404)
+async def not_found(request: Request, response, exc):
     return JSONResponse({"error": "Not Found"}, status_code=404)
 ```
 
@@ -306,8 +306,8 @@ from starlette.responses import JSONResponse
 
 app = Starlette()
 
-@app.exception_handler(404)
-async def not_found(request, exc):
+@app.add_exception_handler(404)
+async def not_found(request, response, exc):
     return JSONResponse({"error": "Not Found"}, status_code=404)
 ```
 

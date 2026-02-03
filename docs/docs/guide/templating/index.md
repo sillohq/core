@@ -101,7 +101,7 @@ engine.env.globals.update({
 })
 
 engine.config.template_dir = Path("new_templates")
-engine._setup_environment()
+engine.setup_environment(engine.config)
 ```
 
 ## 📊 Configuration Options
@@ -342,7 +342,7 @@ Advanced context processor patterns:
 ```python
 from typing import Dict, Any
 from nexios.templating.middleware import template_context
-from nexios.cache import cached
+# Use your preferred caching library for memoization
 
 class ContextBuilder:
     def __init__(self):
@@ -358,7 +358,7 @@ class ContextBuilder:
             context.update(await proc(request))
         return context
 
-@cached(ttl=300)  # Cache for 5 minutes
+# Optional: add caching with your preferred library
 async def get_site_stats(request):
     return {
         "total_users": await db.count("users"),
@@ -385,26 +385,35 @@ app.add_middleware(template_context(
 ))
 ```
 
-## 💾 Template Caching
+## Template Caching
 
-Implement template fragment caching:
+::: warning
+Nexios does not ship a cache module. Use your preferred cache library, or a simple in-memory cache as shown below.
+:::
 
 ```python
-from nexios.cache import Cache
+from datetime import datetime, timedelta
 from nexios.templating import TemplateConfig
 
-cache = Cache()
+_cache = {}
 
-async def cached_fragment(key: str, ttl: int = 300):
-    """Template fragment cache."""
-    if content := await cache.get(key):
-        return content
-    return None
+def cache_get(key: str):
+    item = _cache.get(key)
+    if not item:
+        return None
+    value, expires_at = item
+    if datetime.utcnow() > expires_at:
+        _cache.pop(key, None)
+        return None
+    return value
+
+def cache_set(key: str, value, ttl: int = 300):
+    _cache[key] = (value, datetime.utcnow() + timedelta(seconds=ttl))
 
 config = TemplateConfig(
     custom_globals={
-        "cached_fragment": cached_fragment,
-        "cache": cache
+        "cache_get": cache_get,
+        "cache_set": cache_set,
     }
 )
 ```
@@ -412,13 +421,19 @@ config = TemplateConfig(
 Usage in templates:
 
 ```html
-{% set cache_key = 'sidebar_' + user.id %} {% set cached = await
-cached_fragment(cache_key) %} {% if cached %} {{ cached }} {% else %} {% set
-content %} {# Expensive sidebar rendering #}
-<aside>...</aside>
-{% endset %} {{ cache.set(cache_key, content, ttl=300) }} {{ content }} {% endif
-%}
+{% set cache_key = 'sidebar_' + user.id %}
+{% set cached = cache_get(cache_key) %}
+{% if cached %}
+    {{ cached }}
+{% else %}
+    {% set content %}
+        <aside>...</aside>
+    {% endset %}
+    {{ cache_set(cache_key, content, ttl=300) }}
+    {{ content }}
+{% endif %}
 ```
+
 
 ## ⚠️ Error Handling
 
@@ -426,18 +441,18 @@ Custom error templates and handling:
 
 ```python
 from nexios.templating import render
-from nexios.exceptions import TemplateError
+from jinja2 import TemplateError
 
-@app.exception_handler(404)
-async def not_found(request, exc):
+@app.add_exception_handler(404)
+async def not_found(request, response, exc):
     return await render(
         "errors/404.html",
         {"path": request.url.path},
         status_code=404
     )
 
-@app.exception_handler(TemplateError)
-async def template_error(request, exc):
+@app.add_exception_handler(TemplateError)
+async def template_error(request, response, exc):
     return await render(
         "errors/template.html",
         {
@@ -456,12 +471,14 @@ Write tests for your templates:
 ```python
 import pytest
 from nexios.templating import TemplateEngine, TemplateConfig
-from nexios.testing import TestClient
+from nexios.testclient import TestClient
 
 @pytest.fixture
 def template_engine():
     config = TemplateConfig(template_dir="tests/templates")
-    return TemplateEngine(config)
+    engine = TemplateEngine()
+    engine.setup_environment(config)
+    return engine
 
 async def test_template_rendering(template_engine):
     content = await template_engine.render(

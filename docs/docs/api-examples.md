@@ -82,8 +82,8 @@ async def smart_handler(req: Request, res: Response):
     elif req.is_form:
         if req.is_multipart:
             # Handle file uploads
-            files = await req.files()
-            form_data = await req.form()
+            files = await req.files
+            form_data = await req.form
             return res.json({
                 "type": "multipart",
                 "files": list(files.keys()),
@@ -92,7 +92,7 @@ async def smart_handler(req: Request, res: Response):
             })
         else:
             # Handle URL-encoded form
-            form_data = await req.form()
+            form_data = await req.form
             return res.json({
                 "type": "urlencoded",
                 "data": dict(form_data),
@@ -101,7 +101,7 @@ async def smart_handler(req: Request, res: Response):
 
     elif req.has_body:
         # Handle other content types
-        body_text = await req.text()
+        body_text = await req.text
         return res.json({
             "type": "raw",
             "content_type": req.content_type,
@@ -166,7 +166,7 @@ async def validate_input(req: Request, res: Response):
 
     # Content type specific processing
     if req.is_json:
-        data = await req.json(
+        data = await req.json
         return res.json({
             "processed": True,
             "input_type": "json",
@@ -175,7 +175,7 @@ async def validate_input(req: Request, res: Response):
         })
 
     elif req.is_multipart and req.has_files:
-        files = await req.files()
+        files = await req.files
         return res.json({
             "processed": True,
             "input_type": "multipart",

@@ -166,8 +166,8 @@ from nexios.exceptions import BadRequest
 
 app = NexiosApp()
 
-@app.exception_handler(BadRequest)
-async def handle_bad_request(request, exc):
+@app.add_exception_handler(BadRequest)
+async def handle_bad_request(request, response, exc):
     if "Untrusted host" in str(exc):
         # Custom response for untrusted hosts
         return {

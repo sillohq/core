@@ -140,13 +140,13 @@ async def handle_request(req: Request, res):
         data = await req.json
         # Handle JSON data
     elif req.is_form:
-        data = await req.form()
+        data = await req.form
         # Handle form data
     elif req.is_multipart:
-        files = await req.files()
+        files = await req.files
         # Handle file uploads
     elif req.is_urlencoded:
-        data = await req.form()
+        data = await req.form
         # Handle URL-encoded form data
 ```
 
@@ -160,7 +160,7 @@ async def process_request(req: Request, res):
         session_id = req.cookies.get("session")
 
     if req.has_files:
-        files = await req.files()
+        files = await req.files
         # Process uploaded files
 
     if req.has_body:

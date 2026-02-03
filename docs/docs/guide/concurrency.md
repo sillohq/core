@@ -171,7 +171,7 @@ import asyncio
 
 @app.post("/send-notification")
 async def send_notification(req, res):
-    data = await req.json()
+    data = await req.json
     
     # Send immediate response
     response = {"status": "notification_queued", "recipient": data["recipient"]}

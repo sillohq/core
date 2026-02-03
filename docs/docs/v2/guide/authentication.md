@@ -480,15 +480,15 @@ The `has_permission` decorator raises specific exceptions that you can handle gl
 ```python
 from nexios.auth.exceptions import AuthenticationFailed, PermissionDenied
 
-@app.exception_handler(AuthenticationFailed)
-async def handle_auth_failed(request, exc):
+@app.add_exception_handler(AuthenticationFailed)
+async def handle_auth_failed(request, response, exc):
     return JSONResponse(
         status_code=401,
         content={"error": "Authentication required"}
     )
 
-@app.exception_handler(PermissionDenied)
-async def handle_permission_denied(request, exc):
+@app.add_exception_handler(PermissionDenied)
+async def handle_permission_denied(request, response, exc):
     return JSONResponse(
         status_code=403,
         content={"error": "Insufficient permissions"}

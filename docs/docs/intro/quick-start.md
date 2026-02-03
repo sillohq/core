@@ -24,10 +24,10 @@ Get up and running with Nexios in minutes ⏱️. This guide will walk you throu
 A simple Nexios one file application will look like this:
 
 ```python
-from nexios import Nexios
+from nexios import NexiosApp
 from nexios.http import Response,Request
 
-app = Nexios()
+app = NexiosApp()
 
 @app.get("/")
 async def home(request:Request,response:Response):
@@ -49,10 +49,10 @@ if __name__ == "__main__":
 ## 🛣️ Adding More Route
 
 ```python
-from nexios import Nexios
+from nexios import NexiosApp
 from nexios.http import Response,Request
 
-app = Nexios()
+app = NexiosApp()
 
 @app.get("/")
 async def home(request:Request,response:Response):

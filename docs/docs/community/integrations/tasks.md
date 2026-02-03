@@ -349,8 +349,8 @@ async def task_with_custom_error(data: dict) -> dict:
     
     return {"processed": data}
 
-@app.exception_handler(TaskError)
-async def handle_task_error(request, exc):
+@app.add_exception_handler(TaskError)
+async def handle_task_error(request, response, exc):
     """Handle custom task errors."""
     return {
         "error": exc.code,
@@ -667,7 +667,7 @@ Test the complete task workflow including API endpoints:
 
 ```python
 import pytest
-from nexios.testing import TestClient
+from nexios.testclient import TestClient
 from nexios import NexiosApp
 from nexios_contrib.tasks import setup_tasks
 

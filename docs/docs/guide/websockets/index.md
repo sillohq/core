@@ -14,6 +14,7 @@ head:
 
 ```python
 from nexios import NexiosApp
+from nexios.routing import WebsocketRoute
 app = NexiosApp()
 @app.ws_route("/ws")
 async def ws_handler(ws):
@@ -38,6 +39,7 @@ You can use it like this
 
 ```python
 from nexios import NexiosApp
+from nexios.routing import WebsocketRoute
 app = NexiosApp()
 async def ws_handler(ws):
     await ws.accept()
@@ -45,43 +47,27 @@ async def ws_handler(ws):
 app.add_ws_route(WebsocketRoute("/ws", ws_handler))
 ```
 
-## 🛣️ Websocket Router
+## WebSocket Router
 
-The `WebsocketRouter` operate similar to the `Router` but for websockets
-
-```python
-from nexios.routing import WebsocketRouter
-router = WebsocketRouter()
-router.add_ws_route("/ws", ws_handler)
-app.mount_router(router, "/ws")
-```
-
-::: tip 💡Tip
-You can also pass a list of `WebsocketRoute` to the `WebsocketRouter` constructor similar to `Router`
+Use a `Router` to group WebSocket routes:
 
 ```python
-from nexios.routing import WebsocketRouter
-router = WebsocketRouter([
-    WebsocketRoute("/ws", ws_handler),
-    WebsocketRoute("/ws2", ws_handler2),
-])
+from nexios.routing import Router
+
+router = Router(prefix="/ws")
+router.add_ws_route(path="/chat", handler=ws_handler)
+
+app.mount_router(router)
 ```
 
+::: tip
+`app.mount_router` does not take a prefix. Use `Router(prefix="/...")` instead.
 :::
 
-::: tip 💡Tip
-You can also add prefix to the `WebsocketRouter` similar to `Router`
-
-```python
-from nexios.routing import WebsocketRouter
-router = WebsocketRouter(prefix="/ws")
-router.add_ws_route("/ws", ws_handler)
-router.add_ws_route("/ws2", ws_handler2)
-app.mount_router(router, "/ws-overide") #this will override /ws
-
-```
-
+::: warning
+`Router.add_ws_route` expects either a `WebsocketRoute` instance or keyword args (`path=...`, `handler=...`).
 :::
+
 
 ## 📤 Sending Messages
 

@@ -45,42 +45,27 @@ async def ws_handler(ws):
 app.add_ws_route(WebsocketRoute("/ws", ws_handler))
 ```
 
-## Websocket Router
+## WebSocket Router
 
-Websocket also support the `Router` class
-
-```python
-from nexios.routing import Router
-router = Router()
-router.add_ws_route("/ws", ws_handler)
-app.mount_router(router, "/ws")
-```
-
-::: tip 💡Tip
-You can also pass a list of `WebsocketRoute` to the `Router` constructor 
-```python
-from nexios.routing import Router
-router = Router([
-    WebsocketRoute("/ws", ws_handler),
-    WebsocketRoute("/ws2", ws_handler2),
-])
-```
-
-:::
-
-::: tip 💡Tip
-You can also add prefix to the `Router` similar to using regular `Router`
+Use a `Router` to group WebSocket routes:
 
 ```python
 from nexios.routing import Router
+
 router = Router(prefix="/ws")
-router.add_ws_route("/ws", ws_handler)
-router.add_ws_route("/ws2", ws_handler2)
-app.mount_router(router, "/ws-overide") #this will override /ws
+router.add_ws_route(path="/chat", handler=ws_handler)
 
+app.mount_router(router)
 ```
 
+::: tip
+`app.mount_router` does not take a prefix. Use `Router(prefix="/...")` instead.
 :::
+
+::: warning
+`Router.add_ws_route` expects either a `WebsocketRoute` instance or keyword args (`path=...`, `handler=...`).
+:::
+
 
 ## Sending Messages
 

@@ -447,7 +447,7 @@ async def route_error_middleware(request, response, call_next):
 ### Unit Testing Individual Routes
 ```python
 import pytest
-from nexios.testing import TestClient
+from nexios.testclient import TestClient
 
 @pytest.mark.asyncio
 async def test_get_user_route():

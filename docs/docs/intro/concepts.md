@@ -562,7 +562,7 @@ Nexios includes several built-in security features:
 
 ```python
 import pytest
-from nexios.testing import TestClient
+from nexios.testclient import TestClient
 
 @pytest.fixture
 def client():

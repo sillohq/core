@@ -313,7 +313,7 @@ Router-specific middleware applies to all routes under a specific router. This i
 ### **Example: Router-Specific Middleware**
 
 ```python
-admin_router = Router()
+admin_router = Router(prefix="/admin")
 
 async def admin_auth(req, res, cnext):
     if not req.headers.get("Admin-Token"):
@@ -327,7 +327,7 @@ admin_router.add_middleware(admin_auth)  # Applies to all routes inside admin_ro
 async def dashboard(req, res):
     return res.json({"message": "Welcome to the admin dashboard!"})
 
-app.mount_router("/admin", admin_router)  # Mount router at "/admin"
+app.mount_router(admin_router)  # Mount router at "/admin"
 ```
 
 **Execution Order:**\
@@ -352,7 +352,8 @@ The `app.add_middleware()` method is designed for middleware that is tightly int
 **Example:**
 
 ```python
-from nexios import NexiosApp, Request, Response
+from nexios import NexiosApp
+from nexios.http import Request, Response
 
 app = NexiosApp()
 

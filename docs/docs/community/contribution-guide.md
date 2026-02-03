@@ -117,14 +117,15 @@ Include clear, concise code examples that demonstrate the feature or fix. For ex
 
 ```python
 # Example: Initializing the Nexios client
-from nexios import Nexios
+from nexios import NexiosApp
 
 # Create a new client instance
-client = Nexios(api_key="your-api-key")
+app = NexiosApp()
 
 # Make API requests
-response = client.get("/users")
-print(response.json())
+@app.get("/users")
+async def list_users(request, response):
+    return response.json({"users": []})
 ```
    
 ## Submitting Code
@@ -475,7 +476,7 @@ We follow the Google Python Style Guide for docstrings. Here's a comprehensive g
    including request handling, routing, and response generation.
    
    Example:
-       >>> from nexios import NexiosApp
+       >>> from nexios import NexiosAppApp
        >>> app = NexiosApp()
        >>> @app.route("/")
        ... def home(req,res):

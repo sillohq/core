@@ -586,7 +586,7 @@ async def get_user(request: Request, response: Response):
 
 ```python
 import pytest
-from nexios.testing import TestClient
+from nexios.testclient import TestClient
 
 @pytest.fixture
 def client():

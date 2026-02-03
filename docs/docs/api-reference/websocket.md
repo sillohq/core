@@ -647,7 +647,7 @@ async def websocket_handler(websocket):
 
 ```python
 import pytest
-from nexios.testing import TestClient
+from nexios.testclient import TestClient
 
 @pytest.mark.asyncio
 async def test_websocket_echo():

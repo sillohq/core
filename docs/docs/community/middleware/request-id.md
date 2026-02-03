@@ -347,8 +347,8 @@ async def process_data_async(data, request_id):
 from nexios.exceptions import HTTPException
 from nexios_contrib.request_id import get_request_id_from_request
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request, exc):
+@app.add_exception_handler(HTTPException)
+async def http_exception_handler(request, response, exc):
     request_id = get_request_id_from_request(request)
     
     return {
@@ -358,8 +358,8 @@ async def http_exception_handler(request, exc):
         "timestamp": datetime.utcnow().isoformat()
     }, exc.status_code
 
-@app.exception_handler(Exception)
-async def general_exception_handler(request, exc):
+@app.add_exception_handler(Exception)
+async def general_exception_handler(request, response, exc):
     request_id = get_request_id_from_request(request)
     
     # Log the error with request ID

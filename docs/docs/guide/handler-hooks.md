@@ -9,73 +9,47 @@ head:
     - property: og:description
       content: Nexios provides a set of hooks that allow you to execute code at specific points in the request-response cycle. These hooks can be used to perform tasks such as authentication, logging, and error handling.
 ---
-# 🎣 Handler Hooks `deprecated`
+# Handler Hooks `deprecated`
 
-::: danger 🚨Warning
-Handler hooks are deprecated and will be removed in a future release. Use middleware instead.
+::: danger
+`nexios.hooks` is not available in the current codebase. Use middleware instead.
 :::
 
-## 🔄 before_request
+## Before and After Request (Middleware)
 
-The `before_request` hook is executed before the request is processed. It can be used to perform authentication, log the request, or modify the request object.
-
-Example:
+You can perform work before and after the handler by using middleware:
 
 ```python
 from nexios import NexiosApp
-from nexios.hooks import before_request
+from nexios.http import Request, Response
 
 app = NexiosApp()
 
-async def handle_before_request(request, response):
+async def logging_middleware(request: Request, response: Response, next_call):
     print(f"Before request: {request.method} {request.url}")
-@app.get("/")
-@before_request(handle_before_request)
-async def index(request, response):
-    return {"message": "Hello, world!"}
-```
-
-::: info 💡Tip
-
-The befpre request handler must take the requets and response arguments
-
-:::
-
-## 🔄 after_request
-
-The `after_request` hook is executed after the request is processed. It can be used to perform logging, error handling, or modify the response object.
-
-Note : the after request handler can not modify the outgoing response.
-
-Example:
-
-```python
-from nexios import NexiosApp
-from nexios.hooks import after_request
-
-app = NexiosApp()
-
-async def handle_after_request(request, response):
+    result = await next_call()
     print(f"After request: {response.status_code}")
+    return result
+
+app.add_middleware(logging_middleware)
 
 @app.get("/")
-@after_request(handle_after_request)
 async def index(request, response):
-    return {"message": "Hello, world!"}
+    return response.json({"message": "Hello, world!"})
 ```
 
-## 🛠️ Custom Hooks using python decorators
+## Custom Decorators
 
-Nexios also allows you to create custom hooks using python decorators.
+You can still use Python decorators to wrap handlers:
 
-Example:
-from functools import wraps
 ```python
+from functools import wraps
+
 def custom_hook_decorator(hook_func):
     def decorator(handler_func):
         @wraps(handler_func)
         async def wrapper(request, response, *args, **kwargs):
-            await hook_func(request, response)  # Execute custom hook
+            await hook_func(request, response)
             return await handler_func(request, response, *args, **kwargs)
         return wrapper
     return decorator
@@ -87,7 +61,5 @@ async def custom_hook(request, response):
 @app.get("/example")
 @custom_hook_decorator(custom_hook)
 async def example_handler(request, response):
-    return {"message": "Custom hook in action"}
-
+    return response.json({"message": "Custom hook in action"})
 ```
-

@@ -428,7 +428,7 @@ async def test_logging_middleware():
 ### Integration Testing
 
 ```python
-from nexios.testing import TestClient
+from nexios.testclient import TestClient
 
 def test_middleware_integration():
     app = NexiosApp()

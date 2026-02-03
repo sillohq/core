@@ -44,7 +44,8 @@ async def slow_endpoint():
 ### Per-Request Timeout
 
 ```python
-from nexios import NexiosApp, Request
+from nexios import NexiosApp
+from nexios.http import Request
 from nexios_contrib.timeout import Timeout, get_timeout_from_request
 
 app = NexiosApp()
@@ -137,8 +138,8 @@ async def get_cached_data():
 from nexios.http import Response
 from nexios_contrib.timeout import create_timeout_response
 
-@app.exception_handler(TimeoutException)
-async def timeout_exception_handler(request, exc):
+@app.add_exception_handler(TimeoutException)
+async def timeout_exception_handler(request, response, exc):
     return create_timeout_response(
         timeout=exc.timeout,
         detail={

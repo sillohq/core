@@ -32,14 +32,14 @@ app.mount_router(v1_router)
 
 ```
 
-Overriding Prefix at Mount Time
-You can override the default router prefix when mounting it to the app. This is helpful when reusing a router module in multiple places.
+Using a Different Prefix
+If you want the router mounted under a different prefix, set it on the router itself.
 ```py
-app.mount_router(v1_router, prefix="/api/v1")
-
+v1_router = Router(prefix="/api/v1")
+app.mount_router(v1_router)
 ```
-:::tip Tip 💡
-he prefix in mount_router always takes precedence over the one set in the Router instance.
+:::tip Tip
+`app.mount_router` does not take a prefix argument. Use `Router(prefix="/...")`.
 :::
 
 This example creates a router with two routes, one for listing users and another for getting a specific user. The router is then mounted to the main application using the `mount_router` method.
@@ -96,7 +96,7 @@ The `Router` class also have similar routing methods as `NexiosApp` class
 
 ## Sub-Applications = Routers
 
-NexiosApp is a subclass of Router. This means you can treat entire apps as routers and mount them.
+NexiosApp is an ASGI application. To mount a sub-app under a path, use `register`.
 
 ```py
 main_app = NexiosApp()
@@ -106,7 +106,7 @@ admin_app = NexiosApp()
 async def dashboard(req, res):
     return res.text("Welcome to the admin panel")
 
-main_app.mount_router(admin_app, prefix="/admin")
+main_app.register(admin_app, "/admin")
 
 ```
 
