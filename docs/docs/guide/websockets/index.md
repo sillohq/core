@@ -33,7 +33,7 @@ Websocket routing follows the same pattern as other http routes making it easy t
 5. **Cleanup**: Resources are cleaned up
    :::
 
-Websocket also pocessed a `WebsocketRoute` class for more complex routing needs
+Websocket also provides a `WebsocketRoute` class for more complex routing needs
 
 You can use it like this
 

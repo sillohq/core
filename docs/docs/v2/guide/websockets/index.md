@@ -14,6 +14,7 @@ head:
 
 ```python
 from nexios import NexiosApp
+from nexios.routing import WebsocketRoute
 app = NexiosApp()
 @app.ws_route("/ws")
 async def ws_handler(ws):
@@ -32,12 +33,13 @@ Websocket routing follows the same pattern as other http routes making it easy t
 5. **Cleanup**: Resources are cleaned up
    :::
 
-Websocket also pocessed a `WebsocketRoute` class for more complex routing needs
+Websocket also provides a `WebsocketRoute` class for more complex routing needs
 
 You can use it like this
 
 ```python
 from nexios import NexiosApp
+from nexios.routing import WebsocketRoute
 app = NexiosApp()
 async def ws_handler(ws):
     await ws.accept()
