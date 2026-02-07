@@ -7,7 +7,7 @@ Timeout middleware and utilities for Nexios web framework, providing flexible re
 - ⏱️ **Global and Per-Request Timeouts**: Set timeouts at both application and request levels
 - 🔍 **Automatic Timeout Extraction**: Extract timeout values from headers or query parameters
 - ⚡ **Async Timeout Control**: Built-in support for async/await patterns
-- 📊 **Request Duration Tracking**: Monitor how long requests take to process
+- 📊 **Request Duration Tracking** : Monitor how long requests take to process
 - 🛠️ **Flexible Error Handling**: Customize timeout responses or raise exceptions
 - 🔄 **Timeout Utilities**: Helper functions for common timeout-related tasks
 
@@ -28,14 +28,14 @@ uv add nexios-contrib
 ```python
 from nexios import NexiosApp
 from nexios_contrib.timeout import Timeout
-
+from nexios.http import Request, Response
 app = NexiosApp()
 
 # Add timeout middleware with default 30s timeout
 app.add_middleware(Timeout(default_timeout=30.0))
 
 @app.get("/slow-endpoint")
-async def slow_endpoint():
+async def slow_endpoint(request :Request, response:Response):
     # This will be automatically interrupted if it takes longer than 30 seconds
     await asyncio.sleep(35)
     return {"message": "This will never be reached"}
@@ -45,14 +45,14 @@ async def slow_endpoint():
 
 ```python
 from nexios import NexiosApp
-from nexios.http import Request
+from nexios.http import Request,Response
 from nexios_contrib.timeout import Timeout, get_timeout_from_request
 
 app = NexiosApp()
 app.add_middleware(Timeout())
 
 @app.get("/api/data")
-async def get_data(request: Request):
+async def get_data(request: Request,  response: Response):
     # Get timeout from request headers or query params
     timeout = get_timeout_from_request(request, default_timeout=10.0)
     
@@ -99,7 +99,7 @@ Timeouts can be specified in multiple ways (in order of precedence):
 
 ```python
 from nexios_contrib.timeout import timeout_after, TimeoutException
-
+from nexios.http import Request, Response
 @timeout_after(5.0)  # 5 second timeout
 async def fetch_data():
     # This will raise TimeoutException if it takes longer than 5 seconds
@@ -107,7 +107,7 @@ async def fetch_data():
 
 # In your route handler
 @app.get("/fetch")
-async def get_data():
+async def get_data(request :Request, response :Response):
     try:
         data = await fetch_data()
         return {"data": data}
@@ -119,9 +119,10 @@ async def get_data():
 
 ```python
 from nexios_contrib.timeout import timeout_with_fallback
+from nexios.http import Request, Response
 
 @app.get("/cached-data")
-async def get_cached_data():
+async def get_cached_data(request :Request, response :Response):
     # Try to get fresh data, fall back to cache if it takes too long
     data = await timeout_with_fallback(
         fetch_fresh_data(),  # Primary data source
@@ -135,7 +136,7 @@ async def get_cached_data():
 ### Custom Timeout Response
 
 ```python
-from nexios.http import Response
+from nexios.http import Request,  TimeoutExceptionResponse
 from nexios_contrib.timeout import create_timeout_response
 
 @app.add_exception_handler(TimeoutException)
@@ -166,7 +167,7 @@ async def get_stats(request, response):
     # Duration is automatically tracked and added to response headers
     return {"message": "Check the X-Request-Duration header"}
 
-@app.middleware
+@app.add_middleware
 async def duration_logger(request, response, call_next):
     from nexios_contrib.timeout import get_request_duration
     
@@ -186,7 +187,7 @@ async def duration_logger(request, response, call_next):
 ```python
 from nexios import NexiosApp
 from nexios_contrib.timeout import Timeout, timeout_after, TimeoutException
-
+from nexios.http import Request, Response
 app = NexiosApp()
 
 # Global timeout middleware
@@ -199,13 +200,13 @@ app.add_middleware(
 )
 
 @app.get("/api/quick")
-async def quick_endpoint():
+async def quick_endpoint(request :Request,response :Response):
     # Uses global timeout (30s)
     await asyncio.sleep(1)
     return {"message": "Quick response"}
 
 @app.get("/api/custom-timeout")
-async def custom_timeout_endpoint(request):
+async def custom_timeout_endpoint(request :Request,response :Response):
     # Client can specify timeout via header: X-Request-Timeout: 60
     # Or query param: ?timeout=60
     await asyncio.sleep(45)
@@ -213,13 +214,13 @@ async def custom_timeout_endpoint(request):
 
 @timeout_after(10.0)
 @app.get("/api/decorated")
-async def decorated_endpoint():
+async def decorated_endpoint(request :Request,response :Response):
     # Uses decorator timeout (10s) regardless of global settings
     await asyncio.sleep(5)
     return {"message": "Decorated response"}
 
 @app.get("/api/fallback")
-async def fallback_endpoint():
+async def fallback_endpoint(request :Request,response :Response):
     from nexios_contrib.timeout import timeout_with_fallback
     
     # Try fast operation, fallback to cached data
@@ -246,7 +247,7 @@ async def get_user_from_db(user_id: int):
         return await conn.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
 
 @app.get("/users/{user_id}")
-async def get_user(request, response, user_id: int):
+async def get_user(request :Request,response :Response, user_id: int):
     try:
         user = await get_user_from_db(user_id)
         if user:
@@ -274,7 +275,7 @@ async def fetch_external_data(api_key: str):
         return response.json()
 
 @app.get("/external-data")
-async def get_external_data(request, response):
+async def get_external_data(request :Request,response :Response):
     api_key = request.headers.get("Authorization")
     
     try:
@@ -315,7 +316,7 @@ app.add_middleware(
 )
 
 # Log timeout events
-@app.middleware
+@app.add_middleware
 async def timeout_logger(request, response, call_next):
     from nexios_contrib.timeout import get_request_duration
     
