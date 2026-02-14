@@ -170,9 +170,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_session_clear(self):
         """Test clearing session via middleware"""
-        app = NexiosApp(config=MakeConfig(
-            secret_key = "test-secret-key"
-        ))
+        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key"))
 
         @app.get("/clear-session-test")
         async def clear_session_test(request: Request, response: Response):

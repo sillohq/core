@@ -12,9 +12,11 @@ from .signed_cookies import SignedSessionManager
 
 
 class SessionMiddleware(BaseMiddleware):
-    def __init__(self, config: Optional[Union[MakeConfig, Dict[str, Any]]] = None, **kwargs: Any):
+    def __init__(
+        self, config: Optional[Union[MakeConfig, Dict[str, Any]]] = None, **kwargs: Any
+    ):
         super().__init__(**kwargs)
-        
+
         # Handle config parameter (new approach)
         if config is not None:
             if isinstance(config, MakeConfig):
@@ -29,15 +31,15 @@ class SessionMiddleware(BaseMiddleware):
                 "Using get_config() for Session middleware is deprecated. "
                 "Please pass config directly to SessionMiddleware constructor.",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             # Will be set in process_request
-            
+
     def get_manager(self):
-        if not hasattr(self, 'config') or not self.config:
+        if not hasattr(self, "config") or not self.config:
             return SignedSessionManager
         else:
-            return getattr(self.config, 'manager', None) or SignedSessionManager
+            return getattr(self.config, "manager", None) or SignedSessionManager
 
     async def process_request(
         self,
@@ -46,11 +48,11 @@ class SessionMiddleware(BaseMiddleware):
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
         # Use config from __init__ if available, otherwise fallback to get_config()
-        if hasattr(self, 'config') and self.config:
+        if hasattr(self, "config") and self.config:
             # Use provided config
             app_config = self.config
             # Get secret key from config or fallback
-            if hasattr(app_config, 'secret_key') and app_config.secret_key:
+            if hasattr(app_config, "secret_key") and app_config.secret_key:
                 self.secret = app_config.secret_key
             else:
                 # Try to get from global config
@@ -59,7 +61,7 @@ class SessionMiddleware(BaseMiddleware):
                 except RuntimeError:
                     self.secret = None
             # Get session config
-            if hasattr(app_config, 'session') and app_config.session:
+            if hasattr(app_config, "session") and app_config.session:
                 self.config = app_config.session
             else:
                 # Try to get from global config
@@ -71,7 +73,7 @@ class SessionMiddleware(BaseMiddleware):
             # Fallback to get_config() (old approach)
             self.secret = get_config().secret_key
             self.config = get_config().session
-            
+
         if not self.secret:
             return await call_next()
 

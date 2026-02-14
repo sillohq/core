@@ -19,9 +19,11 @@ SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-
 
 
 class CORSMiddleware(BaseMiddleware):
-    def __init__(self, config: Optional[Union[MakeConfig, Dict[str, Any]]] = None, **kwargs: Any):
+    def __init__(
+        self, config: Optional[Union[MakeConfig, Dict[str, Any]]] = None, **kwargs: Any
+    ):
         super().__init__(**kwargs)
-        
+
         # Handle config parameter (new approach)
         if config is not None:
             if isinstance(config, MakeConfig):
@@ -36,16 +38,16 @@ class CORSMiddleware(BaseMiddleware):
                 "Using get_config() for CORS middleware is deprecated. "
                 "Please pass config directly to CORSMiddleware constructor.",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             try:
                 self.config = get_config().cors
             except RuntimeError:
                 self.config = None
-        
+
         if not self.config:
             return
-            
+
         self._setup_cors_config()
         self._setup_preflight_headers()
 
@@ -56,11 +58,15 @@ class CORSMiddleware(BaseMiddleware):
         self.allow_methods = self.config.allow_methods or ALL_METHODS
         self.blacklist_headers: List[str] = self.config.blacklist_headers or []
         self.allow_credentials = (
-            self.config.allow_credentials if self.config.allow_credentials is not None else True
+            self.config.allow_credentials
+            if self.config.allow_credentials is not None
+            else True
         )
 
         self.allow_origin_regex = (
-            re.compile(self.config.allow_origin_regex) if self.config.allow_origin_regex else None
+            re.compile(self.config.allow_origin_regex)
+            if self.config.allow_origin_regex
+            else None
         )
         self.expose_headers: List[str] = self.config.expose_headers or []
         self.max_age = self.config.max_age or 600
@@ -70,7 +76,9 @@ class CORSMiddleware(BaseMiddleware):
         )
         self.debug = self.config.debug or False
         self.custom_error_status = self.config.custom_error_status or 400
-        self.custom_error_messages: Dict[str, Any] = self.config.custom_error_messages or {}
+        self.custom_error_messages: Dict[str, Any] = (
+            self.config.custom_error_messages or {}
+        )
 
     def _setup_preflight_headers(self) -> None:
         """Setup simple and preflight headers."""
@@ -105,12 +113,12 @@ class CORSMiddleware(BaseMiddleware):
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
         # Only use get_config() as fallback if config wasn't provided in __init__
-        if not hasattr(self, 'config') or self.config is None:
+        if not hasattr(self, "config") or self.config is None:
             warnings.warn(
                 "Using get_config() for CORS middleware is deprecated. "
                 "Please pass config directly to CORSMiddleware constructor.",
                 DeprecationWarning,
-                stacklevel=3
+                stacklevel=3,
             )
             try:
                 config = get_config().cors
@@ -147,12 +155,12 @@ class CORSMiddleware(BaseMiddleware):
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
         # Only use get_config() as fallback if config wasn't provided in __init__
-        if not hasattr(self, 'config') or self.config is None:
+        if not hasattr(self, "config") or self.config is None:
             warnings.warn(
                 "Using get_config() for CORS middleware is deprecated. "
                 "Please pass config directly to CORSMiddleware constructor.",
                 DeprecationWarning,
-                stacklevel=3
+                stacklevel=3,
             )
             try:
                 config = get_config().cors
@@ -160,7 +168,7 @@ class CORSMiddleware(BaseMiddleware):
                 config = None
         else:
             config = self.config
-            
+
         origin = request.origin
         if not config:
             return None
