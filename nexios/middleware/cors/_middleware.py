@@ -1,8 +1,10 @@
 import re
 import typing
-from typing import Any, Callable, Dict, List, Optional
+import warnings
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from nexios.config import get_config
+from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
 from nexios.logging import getLogger
 
@@ -17,33 +19,61 @@ SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-
 
 
 class CORSMiddleware(BaseMiddleware):
-    def __init__(self):
-        config = get_config().cors
+    def __init__(self, config: Optional[Union[MakeConfig, Dict[str, Any]]] = None, **kwargs: Any):
+        super().__init__(**kwargs)
+        
+        # Handle config parameter (new approach)
+        if config is not None:
+            if isinstance(config, MakeConfig):
+                self.config = config
+            elif isinstance(config, dict):
+                self.config = MakeConfig(config)
+            else:
+                raise TypeError("config must be a MakeConfig instance or dictionary")
+        else:
+            # Fallback to get_config() (old approach) with warning
+            warnings.warn(
+                "Using get_config() for CORS middleware is deprecated. "
+                "Please pass config directly to CORSMiddleware constructor.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            try:
+                self.config = get_config().cors
+            except RuntimeError:
+                self.config = None
+        
+        if not self.config:
+            return
+            
+        self._setup_cors_config()
+        self._setup_preflight_headers()
 
-        if not config:
-            return None
-        self.config = config
-        self.allow_origins: List[str] = config.allow_origins or []
-        self.blacklist_origins: List[str] = config.blacklist_origins or []
-        self.allow_methods = config.allow_methods or ALL_METHODS
-        self.blacklist_headers: List[str] = config.blacklist_headers or []
+    def _setup_cors_config(self) -> None:
+        """Setup CORS configuration from config object."""
+        self.allow_origins: List[str] = self.config.allow_origins or []
+        self.blacklist_origins: List[str] = self.config.blacklist_origins or []
+        self.allow_methods = self.config.allow_methods or ALL_METHODS
+        self.blacklist_headers: List[str] = self.config.blacklist_headers or []
         self.allow_credentials = (
-            config.allow_credentials if config.allow_credentials is not None else True
+            self.config.allow_credentials if self.config.allow_credentials is not None else True
         )
 
         self.allow_origin_regex = (
-            re.compile(config.allow_origin_regex) if config.allow_origin_regex else None
+            re.compile(self.config.allow_origin_regex) if self.config.allow_origin_regex else None
         )
-        self.expose_headers: List[str] = config.expose_headers or []
-        self.max_age = config.max_age or 600
-        self.strict_origin_checking = config.strict_origin_checking or False
+        self.expose_headers: List[str] = self.config.expose_headers or []
+        self.max_age = self.config.max_age or 600
+        self.strict_origin_checking = self.config.strict_origin_checking or False
         self.dynamic_origin_validator: Optional[Callable[[Optional[str]], bool]] = (
-            getattr(config, "dynamic_origin_validator", None)
+            getattr(self.config, "dynamic_origin_validator", None)
         )
-        self.debug = config.debug or False
-        self.custom_error_status = config.custom_error_status or 400
-        self.custom_error_messages: Dict[str, Any] = config.custom_error_messages or {}
+        self.debug = self.config.debug or False
+        self.custom_error_status = self.config.custom_error_status or 400
+        self.custom_error_messages: Dict[str, Any] = self.config.custom_error_messages or {}
 
+    def _setup_preflight_headers(self) -> None:
+        """Setup simple and preflight headers."""
         self.simple_headers: Dict[str, Any] = {}
         if self.allow_credentials:
             self.simple_headers["Access-Control-Allow-Credentials"] = "true"
@@ -60,10 +90,10 @@ class CORSMiddleware(BaseMiddleware):
         }
         if self.allow_credentials:
             self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
-        if config.allow_headers:
+        if self.config.allow_headers:
             self.allow_headers: List[str] = [
                 *list(SAFELISTED_HEADERS),
-                *(config.allow_headers or []),
+                *(self.config.allow_headers or []),
             ]
         else:
             self.allow_headers = list(SAFELISTED_HEADERS)
@@ -74,7 +104,20 @@ class CORSMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
-        config = get_config().cors
+        # Only use get_config() as fallback if config wasn't provided in __init__
+        if not hasattr(self, 'config') or self.config is None:
+            warnings.warn(
+                "Using get_config() for CORS middleware is deprecated. "
+                "Please pass config directly to CORSMiddleware constructor.",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            try:
+                config = get_config().cors
+            except RuntimeError:
+                config = None
+        else:
+            config = self.config
 
         if not config:
             await call_next()
@@ -103,7 +146,21 @@ class CORSMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
-        config = get_config().cors
+        # Only use get_config() as fallback if config wasn't provided in __init__
+        if not hasattr(self, 'config') or self.config is None:
+            warnings.warn(
+                "Using get_config() for CORS middleware is deprecated. "
+                "Please pass config directly to CORSMiddleware constructor.",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            try:
+                config = get_config().cors
+            except RuntimeError:
+                config = None
+        else:
+            config = self.config
+            
         origin = request.origin
         if not config:
             return None

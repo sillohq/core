@@ -1,10 +1,13 @@
 import re
 import secrets
 import typing
+import warnings
+from typing import Any, Dict, Optional, Union
 
 from itsdangerous import BadSignature, URLSafeSerializer  # type: ignore
 
 from nexios.config import get_config
+from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
 from nexios.middleware.base import BaseMiddleware
 
@@ -14,36 +17,79 @@ class CSRFMiddleware(BaseMiddleware):
     Middleware to protect against Cross-Site Request Forgery (CSRF) attacks for Nexios.
     """
 
-    def __init__(self) -> None:
-        app_config = get_config()
+    def __init__(self, config: Optional[Union[MakeConfig, Dict[str, Any]]] = None, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        
+        # Handle config parameter (new approach)
+        if config is not None:
+            if isinstance(config, MakeConfig):
+                self.config = config
+            elif isinstance(config, dict):
+                self.config = MakeConfig(config)
+            else:
+                raise TypeError("config must be a MakeConfig instance or dictionary")
+        else:
+            # Fallback to get_config() (old approach) with warning
+            warnings.warn(
+                "Using get_config() for CSRF middleware is deprecated. "
+                "Please pass config directly to CSRFMiddleware constructor.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            self.config = None
+            
+        self.use_csrf = False
+        self.secret = None
+        
+        # Setup configuration if provided
+        if self.config:
+            self._setup_csrf_config()
 
-        self.use_csrf = app_config.csrf_enabled or False
+    def _setup_csrf_config(self) -> None:
+        """Setup CSRF configuration from config object."""
+        # Check if CSRF is enabled
+        self.use_csrf = (
+            (getattr(self.config, 'csrf_enabled', False) or 
+             getattr(self.config, 'use_csrf', False))
+            if self.config else False
+        )
+        
         if self.use_csrf:
-            assert app_config.secret_key is not None, ""
-        if not self.use_csrf:
-            return
-        self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")  # type: ignore
-        self.required_urls: typing.List[str] = app_config.csrf_required_urls or ["*"]
-        self.exempt_urls = app_config.csrf_exempt_urls
-        self.sensitive_cookies = app_config.csrf_sensitive_cookies
-        self.safe_methods = set(
-            app_config.csrf_safe_methods
-            or [
-                "GET",
-                "HEAD",
-                "OPTIONS",
-                "TRACE",
-            ]
-        )
-        self.cookie_name = app_config.csrf_cookie_name or "csrftoken"
-        self.cookie_path = app_config.csrf_cookie_path or "/"
-        self.cookie_domain = app_config.csrf_cookie_domain
-        self.cookie_secure = app_config.csrf_cookie_secure or False
-        self.cookie_httponly = app_config.csrf_cookie_httponly or True
-        self.cookie_samesite: typing.Literal["lax", "none", "strict"] = (
-            app_config.csrf_cookie_samesite or "lax"
-        )
-        self.header_name = app_config.csrf_header_name or "X-CSRFToken"
+            # Get secret key from config or validate it exists
+            if hasattr(self.config, 'secret_key'):
+                self.secret = self.config.secret_key
+            elif hasattr(self.config, 'csrf_secret_key'):
+                self.secret = self.config.csrf_secret_key
+            else:
+                # Will need to get from get_config() later
+                self.secret = None
+                
+            # Setup serializer if we have a secret
+            if self.secret:
+                self.serializer = URLSafeSerializer(self.secret, "csrftoken")  # type: ignore
+            
+            # Setup CSRF configuration attributes
+            self.required_urls: typing.List[str] = getattr(self.config, 'csrf_required_urls', ["*"]) or ["*"]
+            self.exempt_urls = getattr(self.config, 'csrf_exempt_urls', None)
+            self.sensitive_cookies = getattr(self.config, 'csrf_sensitive_cookies', None)
+            self.safe_methods = set(
+                getattr(self.config, 'csrf_safe_methods', None)
+                or [
+                    "GET",
+                    "HEAD",
+                    "OPTIONS",
+                    "TRACE",
+                ]
+            )
+            self.cookie_name = getattr(self.config, 'csrf_cookie_name', "csrftoken") or "csrftoken"
+            self.cookie_path = getattr(self.config, 'csrf_cookie_path', "/") or "/"
+            self.cookie_domain = getattr(self.config, 'csrf_cookie_domain', None)
+            self.cookie_secure = getattr(self.config, 'csrf_cookie_secure', False) or False
+            self.cookie_httponly = getattr(self.config, 'csrf_cookie_httponly', True) or True
+            self.cookie_samesite: typing.Literal["lax", "none", "strict"] = (
+                getattr(self.config, 'csrf_cookie_samesite', "lax") or "lax"
+            )
+            self.header_name = getattr(self.config, 'csrf_header_name', "X-CSRFToken") or "X-CSRFToken"
 
     async def process_request(
         self,
@@ -54,9 +100,58 @@ class CSRFMiddleware(BaseMiddleware):
         """
         Process the incoming request to validate the CSRF token for unsafe HTTP methods.
         """
+        # Handle configuration setup if not done in __init__
+        if not hasattr(self, 'config') or self.config is None:
+            warnings.warn(
+                "Using get_config() for CSRF middleware is deprecated. "
+                "Please pass config directly to CSRFMiddleware constructor.",
+                DeprecationWarning,
+                stacklevel=3
+            )
+            try:
+                app_config = get_config()
+                self.use_csrf = app_config.csrf_enabled or False
+                if self.use_csrf:
+                    assert app_config.secret_key is not None, ""
+                    self.secret = app_config.secret_key
+                    self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")  # type: ignore
+                    self.required_urls = app_config.csrf_required_urls or ["*"]
+                    self.exempt_urls = app_config.csrf_exempt_urls
+                    self.sensitive_cookies = app_config.csrf_sensitive_cookies
+                    self.safe_methods = set(
+                        app_config.csrf_safe_methods
+                        or [
+                            "GET",
+                            "HEAD",
+                            "OPTIONS",
+                            "TRACE",
+                        ]
+                    )
+                    self.cookie_name = app_config.csrf_cookie_name or "csrftoken"
+                    self.cookie_path = app_config.csrf_cookie_path or "/"
+                    self.cookie_domain = app_config.csrf_cookie_domain
+                    self.cookie_secure = app_config.csrf_cookie_secure or False
+                    self.cookie_httponly = app_config.csrf_cookie_httponly or True
+                    self.cookie_samesite = app_config.csrf_cookie_samesite or "lax"
+                    self.header_name = app_config.csrf_header_name or "X-CSRFToken"
+            except (RuntimeError, AssertionError):
+                self.use_csrf = False
+        elif self.use_csrf and not hasattr(self, 'secret'):
+            # Try to get secret from get_config() if not available in provided config
+            try:
+                app_config = get_config()
+                self.secret = app_config.secret_key
+                if self.secret:
+                    self.serializer = URLSafeSerializer(self.secret, "csrftoken")  # type: ignore
+                else:
+                    self.use_csrf = False
+            except RuntimeError:
+                self.use_csrf = False
+                
         if not self.use_csrf:
             await call_next()
             return
+            
         csrf_token = self._generate_csrf_token()
         request.state.csrf_token = csrf_token
         csrf_cookie = request.cookies.get(self.cookie_name)
