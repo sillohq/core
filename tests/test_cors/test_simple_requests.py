@@ -46,7 +46,7 @@ def cors_app():
     async def delete_route(request: Request, response: Response):
         return response.json({"deleted": True})
 
-    app.add_middleware(CORSMiddleware())
+    app.add_middleware(CORSMiddleware(config=config.cors))
     return app
 
 
@@ -180,7 +180,7 @@ class TestSimpleRequests:
         async def port_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         port_client = TestClient(app)
 

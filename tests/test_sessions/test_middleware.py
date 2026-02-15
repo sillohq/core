@@ -36,12 +36,41 @@ class TestSessionMiddleware:
 
     def test_middleware_initialization(self):
         """Test session middleware initialization"""
-        middleware = SessionMiddleware()
+        # Test with new style config
+        config = MakeConfig(
+            secret_key="test-secret-key-for-middleware"
+            
+        )
+        middleware = SessionMiddleware(config=SessionConfig(
+                session_cookie_name="test_session",
+                session_expiration_time=3600,
+                session_permanent=False,
+                session_refresh_each_request=False,
+                session_cookie_secure=False,
+                session_cookie_httponly=True,
+                session_cookie_samesite="lax",
+            ))
         assert middleware is not None
+        assert middleware.config.session_cookie_name == "test_session"
 
     def test_signed_cookie_session_middleware(self):
         """Test session middleware with signed cookie backend"""
         app = NexiosApp()
+        
+        # Create config for middleware
+        config = MakeConfig(
+            secret_key="test-secret-key-for-middleware",
+            session=SessionConfig(
+                session_cookie_name="test_session",
+                session_expiration_time=3600,
+                session_permanent=False,
+                session_refresh_each_request=False,
+                session_cookie_secure=False,
+                session_cookie_httponly=True,
+                session_cookie_samesite="lax",
+            ),
+        )
+        app.add_middleware(SessionMiddleware(config=config))
 
         @app.get("/session-test")
         async def session_test(request: Request, response: Response):
@@ -49,8 +78,6 @@ class TestSessionMiddleware:
             user_id = request.session.get("user_id", 0)
             request.session["user_id"] = user_id + 1
             return response.json({"user_id": request.session["user_id"]})
-
-        app.add_middleware(SessionMiddleware())
 
         client = TestClient(app)
 
@@ -97,7 +124,7 @@ class TestSessionMiddleware:
                 request.session["counter"] = counter + 1
                 return response.json({"counter": request.session["counter"]})
 
-            app.add_middleware(SessionMiddleware())
+            app.add_middleware(SessionMiddleware(config=config))
 
             client = TestClient(app)
 
@@ -131,7 +158,7 @@ class TestSessionMiddleware:
         async def no_secret_test(request: Request, response: Response):
             return response.json({"message": "no session"})
 
-        app.add_middleware(SessionMiddleware())
+        app.add_middleware(SessionMiddleware(config=config))
 
         client = TestClient(app)
 
@@ -148,7 +175,7 @@ class TestSessionMiddleware:
             request.session["existing"] = "data"
             return response.json({"existing": request.session["existing"]})
 
-        app.add_middleware(SessionMiddleware())
+        app.add_middleware(SessionMiddleware(config=SessionConfig()))
 
         client = TestClient(app)
 
@@ -181,7 +208,7 @@ class TestSessionMiddleware:
                 request.session["clear"] = True
                 return response.json({"set": True})
 
-        app.add_middleware(SessionMiddleware())
+        app.add_middleware(SessionMiddleware(config=SessionConfig()))
 
         client = TestClient(app)
 
@@ -219,7 +246,7 @@ class TestSessionMiddleware:
             request.session["test"] = "configured"
             return response.json({"configured": True})
 
-        app.add_middleware(SessionMiddleware())
+        app.add_middleware(SessionMiddleware(config=config))
 
         client = TestClient(app)
 
@@ -248,7 +275,7 @@ class TestSessionMiddleware:
             except Exception as e:
                 return response.json({"error": str(e)})
 
-        app.add_middleware(SessionMiddleware())
+        app.add_middleware(SessionMiddleware(config=SessionConfig()))
 
         client = TestClient(app)
 

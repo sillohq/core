@@ -13,7 +13,7 @@ def test_csrf_token_generation_and_cookie(test_client_factory):
     config = MakeConfig(secret_key="test-secret", csrf_enabled=True)
     set_config(config)
     app = NexiosApp()
-    app.add_middleware(CSRFMiddleware())
+    app.add_middleware(CSRFMiddleware(config=config))
 
     @app.get("/csrf-token")
     async def get_token(request: Request, response: Response):
@@ -33,7 +33,7 @@ def test_protected_request_missing_token(test_client_factory):
     config = MakeConfig(secret_key="test-secret", csrf_enabled=True)
     set_config(config)
     app = NexiosApp()
-    app.add_middleware(CSRFMiddleware())
+    app.add_middleware(CSRFMiddleware(config=config))
 
     @app.post("/protected")
     async def protected(request: Request, response: Response):
@@ -50,7 +50,7 @@ def test_protected_request_valid_token(test_client_factory):
     config = MakeConfig(secret_key="test-secret", csrf_enabled=True)
     set_config(config)
     app = NexiosApp()
-    app.add_middleware(CSRFMiddleware())
+    app.add_middleware(CSRFMiddleware(config=config))
 
     @app.get("/csrf-token")
     async def get_token(request: Request, response: Response):
@@ -84,7 +84,7 @@ def test_protected_request_invalid_token(test_client_factory):
     config = MakeConfig(secret_key="test-secret", csrf_enabled=True)
     set_config(config)
     app = NexiosApp()
-    app.add_middleware(CSRFMiddleware())
+    app.add_middleware(CSRFMiddleware(config=config))
 
     @app.get("/csrf-token")
     async def get_token(request: Request, response: Response):
@@ -116,7 +116,7 @@ def test_cookie_is_reset_on_response(test_client_factory):
     config = MakeConfig(secret_key="test-secret", csrf_enabled=True)
     set_config(config)
     app = NexiosApp()
-    app.add_middleware(CSRFMiddleware())
+    app.add_middleware(CSRFMiddleware(config=config))
 
     @app.get("/csrf-token")
     async def get_token(request: Request, response: Response):

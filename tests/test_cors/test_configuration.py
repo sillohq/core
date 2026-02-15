@@ -31,7 +31,7 @@ class TestCORSConfiguration:
         async def wildcard_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -60,7 +60,7 @@ class TestCORSConfiguration:
         async def regex_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -105,7 +105,7 @@ class TestCORSConfiguration:
         async def regex_case_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -142,7 +142,7 @@ class TestCORSConfiguration:
         async def regex_port_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -186,7 +186,7 @@ class TestCORSConfiguration:
         async def dynamic_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -225,7 +225,7 @@ class TestCORSConfiguration:
         async def blacklist_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -260,7 +260,7 @@ class TestCORSConfiguration:
         async def blacklist_regex_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -299,7 +299,7 @@ class TestCORSConfiguration:
         async def no_creds_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -335,7 +335,7 @@ class TestCORSConfiguration:
         async def expose_headers_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -369,7 +369,7 @@ class TestCORSConfiguration:
         async def empty_expose_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -400,7 +400,7 @@ class TestCORSConfiguration:
         async def max_age_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -437,7 +437,7 @@ class TestCORSConfiguration:
         async def non_strict_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
@@ -463,7 +463,7 @@ class TestCORSConfiguration:
         async def debug_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware())
+        app.add_middleware(CORSMiddleware(config=config.cors))
 
         client = TestClient(app)
 
