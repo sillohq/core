@@ -37,11 +37,9 @@ class TestSessionMiddleware:
     def test_middleware_initialization(self):
         """Test session middleware initialization"""
         # Test with new style config
-        config = MakeConfig(
-            secret_key="test-secret-key-for-middleware"
-            
-        )
-        middleware = SessionMiddleware(config=SessionConfig(
+        config = MakeConfig(secret_key="test-secret-key-for-middleware")
+        middleware = SessionMiddleware(
+            config=SessionConfig(
                 session_cookie_name="test_session",
                 session_expiration_time=3600,
                 session_permanent=False,
@@ -49,14 +47,15 @@ class TestSessionMiddleware:
                 session_cookie_secure=False,
                 session_cookie_httponly=True,
                 session_cookie_samesite="lax",
-            ))
+            )
+        )
         assert middleware is not None
         assert middleware.config.session_cookie_name == "test_session"
 
     def test_signed_cookie_session_middleware(self):
         """Test session middleware with signed cookie backend"""
         app = NexiosApp()
-        
+
         # Create config for middleware
         config = MakeConfig(
             secret_key="test-secret-key-for-middleware",
