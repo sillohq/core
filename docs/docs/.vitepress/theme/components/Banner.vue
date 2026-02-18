@@ -45,10 +45,10 @@ onUnmounted(() => {
 
 <template>
   <transition name="banner-fade">
-    <div v-if="isVisible" class="banner" role="alert">
-      <div class="banner-content">
-        <span>⚠️ Nexios v2 has be deprecated </span>
-        <a href="/changelog" class="banner-link">Read more</a>
+      <div v-if="isVisible" class="banner" role="alert">
+        <div class="banner-content">
+      <span>Short on time? Check out the</span>
+      <a href="/summary" class="banner-link">docs summary</a>
       </div>
       <button @click="close" class="close-btn" aria-label="Close banner">
         &times;
