@@ -10,14 +10,14 @@ from nexios.pagination import (
     PageNumberPagination,
     PaginationError,
 )
-from nexios.testing import Client
+from nexios.testclient import TestClient
 
 
 @pytest.fixture
-async def test_client():
+def test_client(test_client_factory):
     """Create a test client for integration testing"""
     app = NexiosApp()
-    async with Client(app) as client:
+    with test_client_factory(app) as client:
         yield client, app
 
 
@@ -47,7 +47,7 @@ class TestPaginationIntegration:
                 return res.json({"error": str(e)}, status_code=400)
 
         # Test basic pagination
-        response = await client.get("/items?page=2&page_size=10")
+        response = client.get("/items?page=2&page_size=10")
         assert response.status_code == 200
         data = response.json()
 
@@ -80,7 +80,7 @@ class TestPaginationIntegration:
                 return res.json({"error": str(e)}, status_code=400)
 
         # Test basic pagination
-        response = await client.get("/items-limit-offset?limit=15&offset=30")
+        response = client.get("/items-limit-offset?limit=15&offset=30")
         assert response.status_code == 200
         data = response.json()
 
@@ -112,7 +112,7 @@ class TestPaginationIntegration:
                 return res.json({"error": str(e)}, status_code=400)
 
         # Test initial request
-        response = await client.get("/items-cursor?page_size=10")
+        response = client.get("/items-cursor?page_size=10")
         assert response.status_code == 200
         data = response.json()
 
@@ -125,7 +125,7 @@ class TestPaginationIntegration:
         next_cursor = (
             data["pagination"]["links"]["next"].split("cursor=")[1].split("&")[0]
         )
-        response = await client.get(f"/items-cursor?cursor={next_cursor}&page_size=10")
+        response = client.get(f"/items-cursor?cursor={next_cursor}&page_size=10")
         assert response.status_code == 200
         data = response.json()
 
@@ -164,7 +164,7 @@ class TestPaginationIntegration:
             except PaginationError as e:
                 return res.json({"error": str(e)}, status_code=400)
 
-        response = await client.get("/filtered-items?page=2&page_size=10&filter=even")
+        response = client.get("/filtered-items?page=2&page_size=10&filter=even")
         assert response.status_code == 200
         data = response.json()
 
@@ -200,12 +200,12 @@ class TestPaginationIntegration:
                 return res.json({"error": str(e)}, status_code=400)
 
         # Test invalid page
-        response = await client.get("/error-test?page=0")
+        response = client.get("/error-test?page=0")
         assert response.status_code == 400
         assert "Page number must be at least 1" in response.json()["error"]
 
         # Test invalid page size
-        response = await client.get("/error-test?page_size=0")
+        response = client.get("/error-test?page_size=0")
         assert response.status_code == 400
         assert "Page size must be at least 1" in response.json()["error"]
 
@@ -236,7 +236,7 @@ class TestPaginationIntegration:
             result = await paginator.paginate()
             return res.json(result)
 
-        response = await client.get("/custom-metadata?page=1&request_id=123")
+        response = client.get("/custom-metadata?page=1&request_id=123")
         assert response.status_code == 200
         data = response.json()
 
@@ -286,21 +286,21 @@ class TestPaginationIntegration:
             return res.json(result)
 
         # Test page number pagination
-        response = await client.get("/items-page?page=2&page_size=5")
+        response = client.get("/items-page?page=2&page_size=5")
         assert response.status_code == 200
         data = response.json()
         assert data["pagination"]["page"] == 2
         assert len(data["items"]) == 5
 
         # Test limit offset pagination
-        response = await client.get("/items-limit?limit=10&offset=20")
+        response = client.get("/items-limit?limit=10&offset=20")
         assert response.status_code == 200
         data = response.json()
         assert data["pagination"]["offset"] == 20
         assert data["pagination"]["limit"] == 10
 
         # Test cursor pagination
-        response = await client.get("/items-cursor?page_size=8")
+        response = client.get("/items-cursor?page_size=8")
         assert response.status_code == 200
         data = response.json()
         assert data["pagination"]["page_size"] == 8
@@ -328,7 +328,7 @@ class TestPaginationIntegration:
             return res.json(result)
 
         # Test with multiple query parameters
-        response = await client.get(
+        response = client.get(
             "/complex-items?page=1&page_size=5&category=tech&sort=name&filter=active&tags=python&tags=web"
         )
         assert response.status_code == 200

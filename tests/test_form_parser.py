@@ -6,7 +6,7 @@ from nexios import NexiosApp
 from nexios.http import Request, Response
 from nexios.http.formparsers import FormParser, MultiPartException, MultiPartParser
 from nexios.objects import FormData, Headers, UploadedFile
-from nexios.testing import Client
+from nexios.testclient import TestClient
 
 # Set default limits for MultiPartParser if they don't exist
 if not hasattr(MultiPartParser, "max_file_size"):
@@ -55,8 +55,8 @@ async def create_form_stream(data: bytes) -> AsyncGenerator[bytes, None]:
 
 # Pytest fixture for client
 @pytest.fixture
-async def client():
-    async with Client(app) as client:
+def client(test_client_factory):
+    with test_client_factory(app) as client:
         yield client
 
 
@@ -412,7 +412,7 @@ async def test_simple_form_submission(client):
         "message": "This is a test message",
     }
 
-    response = await client.post("/form", data=data)
+    response = client.post("/form", data=data)
     assert response.status_code == 200
 
     result = response.json()
@@ -427,7 +427,7 @@ async def test_form_with_special_chars_integration(client):
         "unicode": "Hello 世界 こんにちは",
     }
 
-    response = await client.post("/form", data=data)
+    response = client.post("/form", data=data)
     assert response.status_code == 200
 
     result = response.json()
@@ -440,7 +440,7 @@ async def test_single_file_upload(client):
     files = {"document": ("test.txt", file_content, "text/plain")}
     data = {"description": "Test file upload", "category": "documentation"}
 
-    response = await client.post("/upload", files=files, data=data)
+    response = client.post("/upload", files=files, data=data)
     assert response.status_code == 200
 
     result = response.json()
@@ -468,7 +468,7 @@ async def test_multiple_file_uploads(client):
     }
     data = {"description": "Multiple files upload test"}
 
-    response = await client.post("/upload", files=files, data=data)
+    response = client.post("/upload", files=files, data=data)
     assert response.status_code == 200
 
     result = response.json()
@@ -506,7 +506,7 @@ async def test_unicode_filename_and_content(client):
 
     files = {"unicode_file": (filename, content, "text/plain; charset=utf-8")}
 
-    response = await client.post("/upload", files=files)
+    response = client.post("/upload", files=files)
     assert response.status_code == 200
 
     result = response.json()
@@ -524,7 +524,7 @@ async def test_binary_file_upload(client):
 
     files = {"binary_file": ("data.bin", binary_content, "application/octet-stream")}
 
-    response = await client.post("/upload", files=files)
+    response = client.post("/upload", files=files)
     assert response.status_code == 200
 
     result = response.json()
