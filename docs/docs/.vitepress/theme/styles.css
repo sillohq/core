@@ -139,11 +139,15 @@ details * {
 
 /* Adjust main content padding in layout to prevent concealment */
 .Layout {
-  padding-top: var(--banner-height);
+  padding-top: calc(var(--banner-height) + 30px);
   min-height: 100vh;
 }
 
 /* On mobile/narrow screens, ensure the sidebar backdrop covers everything properly */
 .VPSidebarBackdrop {
-  top: var(--banner-height) !important;
+  top: calc(var(--banner-height) + 25px) !important;
+}
+
+a{
+  cursor: pointer !important;
 }
