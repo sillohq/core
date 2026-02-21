@@ -61,6 +61,7 @@ features:
       - Template engines
       - OpenAPI/Swagger
       - Testing utilities
+      - Email sending with nexios-contrib mail
 
   - icon: 🔒
     title: Built-in Security
@@ -225,6 +226,63 @@ async def chat_room(websocket, room_id: str):
             await channel.broadcast(message)
     except WebSocketDisconnect:
         await channel.disconnect(websocket)
+```
+
+:::
+
+### 📧 Email Sending
+
+::: code-group
+
+```python [Basic Email]
+from nexios.http import Request, Response
+from nexios_contrib.mail import MailDepend
+
+@app.post("/send-email")
+async def send_email(
+    request: Request,
+    response: Response,
+    mail_client: MailClient = MailDepend()
+):
+    result = await mail_client.send_email(
+        to="user@example.com",
+        subject="Welcome!",
+        body="Thanks for joining us"
+    )
+    return response.json({"success": result.success})
+```
+
+```python [Template Email]
+@app.post("/send-welcome")
+async def send_welcome(
+    request: Request,
+    response: Response,
+    mail_client: MailClient = MailDepend()
+):
+    result = await mail_client.send_template_email(
+        to="user@example.com",
+        subject="Welcome!",
+        template_name="welcome",
+        context={"name": "John", "company": "Acme Corp"}
+    )
+    return response.json({"success": result.success})
+```
+
+```python [Async Email]
+from nexios_contrib.mail import send_email_async
+
+@app.post("/send-async")
+async def send_async(
+    request: Request,
+    response: Response
+):
+    task = await send_email_async(
+        request=request,
+        to="user@example.com",
+        subject="Processing...",
+        body="We'll notify you when done"
+    )
+    return response.json({"task_id": task.id})
 ```
 
 :::
