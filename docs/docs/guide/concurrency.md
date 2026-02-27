@@ -258,6 +258,38 @@ async def setup_cache_reset():
     task.add_done_callback(app._background_tasks.discard)
 ```
 
+## 📡 AsyncEvent - Coroutine Coordination
+
+`AsyncEvent` allows multiple coroutines to wait for an event to be set. Perfect for coordinating shutdown, signaling, or workflow synchronization.
+
+```python
+from nexios.utils.concurrency import AsyncEvent
+import asyncio
+
+# Create event
+shutdown_event = AsyncEvent()
+
+async def worker():
+    print("Worker waiting...")
+    await shutdown_event.wait()
+    print("Worker shutting down")
+
+async def shutdown():
+    await asyncio.sleep(2)
+    shutdown_event.set()  # Wake up all waiters
+
+# Run both
+await asyncio.gather(
+    asyncio.create_task(worker()),
+    asyncio.create_task(shutdown())
+)
+```
+
+**Methods:**
+- `set()` - Wake up all waiting coroutines
+- `clear()` - Reset event for reuse  
+- `wait()` - Block until event is set
+
 ## ⚠️ Error Handling Best Practices
 
 Always handle errors appropriately in your handlers:
