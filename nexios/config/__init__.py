@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Optional
 
 from .base import MakeConfig
@@ -25,3 +26,14 @@ def get_config() -> MakeConfig:
     if _global_config is None:
         raise RuntimeError("Nexios config is not initialized")
     return _global_config
+
+
+def warn_deprecated_config_usage(middleware_name: str) -> None:
+    """Issue a warning when middleware falls back to get_config() instead of using provided config."""
+    warnings.warn(
+        f"{middleware_name} is using deprecated configuration method. "
+        f"Please provide a {middleware_name}Config object to the __init__ method "
+        f"instead of relying on get_config(). This will be required in future versions.",
+        DeprecationWarning,
+        stacklevel=3
+    )

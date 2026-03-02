@@ -10,7 +10,7 @@ from nexios.config import get_config
 from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
 from nexios.middleware.base import BaseMiddleware
-
+from nexios.middleware.csrf.config import CSRFConfig
 
 class CSRFMiddleware(BaseMiddleware):
     """
