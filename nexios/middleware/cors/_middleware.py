@@ -50,6 +50,7 @@ class CORSMiddleware(BaseMiddleware):
             if self.config.allow_origin_regex
             else None
         )
+        self.allow_headers = self.config.allow_headers or []
         self.expose_headers: List[str] = self.config.expose_headers or []
         self.max_age = self.config.max_age or 600
         self.strict_origin_checking = self.config.strict_origin_checking or False
@@ -61,6 +62,7 @@ class CORSMiddleware(BaseMiddleware):
         self.custom_error_messages: Dict[str, Any] = (
             self.config.custom_error_messages or {}
         )
+        self._setup_preflight_headers()
 
     def _setup_preflight_headers(self) -> None:
         """Setup simple and preflight headers."""
@@ -80,10 +82,10 @@ class CORSMiddleware(BaseMiddleware):
         }
         if self.allow_credentials:
             self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
-        if self.config.allow_headers:
+        if self.allow_headers:
             self.allow_headers: List[str] = [
                 *list(SAFELISTED_HEADERS),
-                *(self.self.config.allow_headers or []),
+                *(self.config.allow_headers or []),
             ]
         else:
             self.allow_headers = list(SAFELISTED_HEADERS)
@@ -242,7 +244,7 @@ class CORSMiddleware(BaseMiddleware):
             allowed_requested_headers = []
             for header in requested_header_list:
                 # If allow_headers is "*", allow any header (except blacklisted)
-                if "*" in self.allow_headers:
+                if "*" in self.config.allow_headers:
                     if header in self.blacklist_headers:
                         if self.debug:
                             logger.error(
