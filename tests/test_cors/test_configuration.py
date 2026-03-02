@@ -2,6 +2,7 @@
 Tests for CORS middleware configuration and advanced features
 """
 
+import warnings
 import pytest
 
 from nexios import NexiosApp
@@ -16,22 +17,20 @@ class TestCORSConfiguration:
 
     def test_wildcard_origin_configuration(self):
         """Test CORS with wildcard origin configuration"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["*"],
-                allow_methods=["GET", "POST"],
-                allow_credentials=False,
-            )
+        # New style - direct config to middleware
+        cors_config = CorsConfig(
+            allow_origins=["*"],
+            allow_methods=["GET", "POST"],
+            allow_credentials=False,
         )
-        set_config(config)
-
-        app = NexiosApp(config)
+        
+        app = NexiosApp()
 
         @app.get("/wildcard")
         async def wildcard_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -43,24 +42,52 @@ class TestCORSConfiguration:
         )
         assert "Access-Control-Allow-Credentials" not in response.headers
 
-    def test_regex_origin_configuration(self):
-        """Test CORS with regex-based origin validation"""
+    
+    def test_cors_deprecated_config_style(self):
+        """Test CORS middleware with deprecated config style (should show warning)."""
         config = MakeConfig(
             cors=CorsConfig(
-                allow_origin_regex=r"https://.*\.example\.com",
-                allow_methods=["GET"],
-                allow_credentials=True,
+                allow_origins=["*"],
+                allow_methods=["GET", "POST"],
             )
         )
         set_config(config)
 
         app = NexiosApp(config)
 
+        @app.get("/test")
+        async def test_route(request: Request, response: Response):
+            return response.json({"message": "OK"})
+
+        # This should trigger a deprecation warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            app.add_middleware(CORSMiddleware())
+            
+            # Check that deprecation warning was issued
+            assert len(w) > 0
+            assert any("deprecated" in str(warning.message).lower() for warning in w)
+
+        client = TestClient(app)
+        response = client.get("/test", headers={"Origin": "http://example.com"})
+        assert response.status_code == 200
+
+    def test_regex_origin_configuration(self):
+        """Test CORS with regex-based origin validation"""
+        # New style - direct config to middleware
+        cors_config = CorsConfig(
+            allow_origin_regex=r"https://.*\.example\.com",
+            allow_methods=["GET"],
+            allow_credentials=True,
+        )
+
+        app = NexiosApp()
+
         @app.get("/regex-test")
         async def regex_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 

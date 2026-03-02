@@ -6,12 +6,16 @@ import asyncio
 import json
 import os
 import tempfile
+import warnings
 
 import pytest
 
+from nexios import NexiosApp
 from nexios.config import MakeConfig, set_config
+from nexios.http import Request, Response
 from nexios.session import SessionConfig
 from nexios.session.file import FileSessionManager
+from nexios.session.middleware import SessionMiddleware
 
 
 class TestFileSessionManager:
@@ -204,3 +208,90 @@ class TestFileSessionManager:
 
         assert session.session_key is not None
         assert isinstance(session.session_key, str)
+
+
+class TestSessionMiddleware:
+    """Test session middleware with new configuration style"""
+
+    def setup_method(self):
+        """Set up test configuration with temporary directory"""
+        self.temp_dir = tempfile.mkdtemp()
+
+    def teardown_method(self):
+        """Clean up temporary directory"""
+        import shutil
+        if os.path.exists(self.temp_dir):
+            shutil.rmtree(self.temp_dir)
+
+    def test_session_middleware_with_config_object(self, test_client_factory):
+        """Test session middleware with SessionConfig object"""
+        session_config = SessionConfig(
+            session_cookie_name="test_session",
+            manager=FileSessionManager,
+        )
+        
+        app = NexiosApp()
+        app.add_middleware(SessionMiddleware(config=session_config))
+
+        @app.get("/set-session")
+        async def set_session(request: Request, response: Response):
+            request.session["user_id"] = 123
+            return response.json({"status": "session_set"})
+
+        @app.get("/get-session")
+        async def get_session(request: Request, response: Response):
+            user_id = request.session.get("user_id")
+            return response.json({"user_id": user_id})
+
+        with test_client_factory(app) as client:
+            # Set session
+            res1 = client.get("/set-session")
+            assert res1.status_code == 200
+            assert "test_session" in res1.cookies
+
+            # Get session
+            res2 = client.get("/get-session", cookies=res1.cookies)
+            assert res2.status_code == 200
+            assert res2.json() == {"user_id": 123}
+
+   
+    def test_session_middleware_deprecated_config_style(self, test_client_factory):
+        """Test session middleware with deprecated config style (should show warning)."""
+        config = MakeConfig(
+            secret_key="test-secret",
+            session=SessionConfig(session_cookie_name="deprecated_session"),
+        )
+        set_config(config)
+
+        app = NexiosApp(config)
+
+        @app.get("/test")
+        async def test_route(request: Request, response: Response):
+            return response.json({"status": "ok"})
+
+        # This should trigger a deprecation warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            app.add_middleware(SessionMiddleware())
+            
+            # Check that deprecation warning was issued
+            assert len(w) > 0
+            assert any("deprecated" in str(warning.message).lower() for warning in w)
+
+        with test_client_factory(app) as client:
+            res = client.get("/test")
+            assert res.status_code == 200
+
+    def test_session_middleware_no_config(self, test_client_factory):
+        """Test session middleware without any config (should use fallback)."""
+        app = NexiosApp()
+        app.add_middleware(SessionMiddleware())
+
+        @app.get("/test")
+        async def test_route(request: Request, response: Response):
+            return response.json({"status": "ok"})
+
+        with test_client_factory(app) as client:
+            res = client.get("/test")
+            # Should work but no session functionality
+            assert res.status_code == 200

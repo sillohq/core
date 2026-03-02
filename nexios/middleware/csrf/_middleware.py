@@ -20,7 +20,6 @@ class CSRFMiddleware(BaseMiddleware):
     def __init__(
         self, config: Optional[Union[MakeConfig, Dict[str, Any]]] = None, **kwargs: Any
     ) -> None:
-        super().__init__(**kwargs)
 
         # Handle config parameter (new approach)
         if config is not None:
@@ -54,59 +53,58 @@ class CSRFMiddleware(BaseMiddleware):
             (
                 getattr(self.config, "csrf_enabled", False)
                 or getattr(self.config, "use_csrf", False)
+                or getattr(self.config, "enabled", False)
             )
             if self.config
             else False
         )
 
-        if self.use_csrf:
-            # Get secret key from config or validate it exists
-            if hasattr(self.config, "secret_key"):
-                self.secret = self.config.secret_key
-            elif hasattr(self.config, "csrf_secret_key"):
-                self.secret = self.config.csrf_secret_key
-            else:
-                # Will need to get from get_config() later
-                self.secret = None
-
-            # Setup serializer if we have a secret
-            if self.secret:
-                self.serializer = URLSafeSerializer(self.secret, "csrftoken")  # type: ignore
-
-            # Setup CSRF configuration attributes
-            self.required_urls: typing.List[str] = getattr(
-                self.config, "csrf_required_urls", ["*"]
-            ) or ["*"]
-            self.exempt_urls = getattr(self.config, "csrf_exempt_urls", None)
-            self.sensitive_cookies = getattr(
-                self.config, "csrf_sensitive_cookies", None
-            )
-            self.safe_methods = set(
-                getattr(self.config, "csrf_safe_methods", None)
-                or [
-                    "GET",
-                    "HEAD",
-                    "OPTIONS",
-                    "TRACE",
-                ]
-            )
-            self.cookie_name = (
-                getattr(self.config, "csrf_cookie_name", "csrftoken") or "csrftoken"
-            )
-            self.cookie_path = getattr(self.config, "csrf_cookie_path", "/") or "/"
-            self.cookie_domain = getattr(self.config, "csrf_cookie_domain", None)
-            self.cookie_secure = (
-                getattr(self.config, "csrf_cookie_secure", False) or False
-            )
-            self.cookie_httponly = (
-                getattr(self.config, "csrf_cookie_httponly", True) or True
-            )
-            self.cookie_samesite: typing.Literal["lax", "none", "strict"] = (
-                getattr(self.config, "csrf_cookie_samesite", "lax") or "lax"
-            )
-            self.header_name = (
-                getattr(self.config, "csrf_header_name", "X-CSRFToken") or "X-CSRFToken"
-            )
+        # Setup CSRF configuration attributes
+        self.required_urls: typing.List[str] = getattr(
+            self.config, "csrf_required_urls", ["*"]
+        ) or getattr(self.config, "required_urls", ["*"]) or ["*"]
+        self.exempt_urls = getattr(self.config, "csrf_exempt_urls", None) or getattr(self.config, "exempt_urls", None)
+        self.sensitive_cookies = getattr(
+            self.config, "csrf_sensitive_cookies", None
+        ) or getattr(self.config, "sensitive_cookies", None)
+        self.safe_methods = set(
+            getattr(self.config, "csrf_safe_methods", None)
+            or getattr(self.config, "safe_methods", None)
+            or [
+                "GET",
+                "HEAD",
+                "OPTIONS",
+                "TRACE",
+            ]
+        )
+        self.cookie_name = (
+            getattr(self.config, "csrf_cookie_name", "csrftoken") 
+            or getattr(self.config, "cookie_name", "csrftoken")
+        )
+        self.cookie_path = (
+            getattr(self.config, "csrf_cookie_path", "/") 
+            or getattr(self.config, "cookie_path", "/")
+        )
+        self.cookie_domain = (
+            getattr(self.config, "csrf_cookie_domain", None) 
+            or getattr(self.config, "cookie_domain", None)
+        )
+        self.cookie_secure = (
+            getattr(self.config, "csrf_cookie_secure", False) 
+            or getattr(self.config, "cookie_secure", False)
+        )
+        self.cookie_httponly = (
+            getattr(self.config, "csrf_cookie_httponly", True) 
+            or getattr(self.config, "cookie_httponly", True)
+        )
+        self.cookie_samesite: typing.Literal["lax", "none", "strict"] = (
+            getattr(self.config, "csrf_cookie_samesite", "lax") 
+            or getattr(self.config, "cookie_samesite", "lax")
+        )
+        self.header_name = (
+            getattr(self.config, "csrf_header_name", "X-CSRFToken") 
+            or getattr(self.config, "header_name", "X-CSRFToken")
+        )
 
     async def process_request(
         self,
@@ -129,10 +127,10 @@ class CSRFMiddleware(BaseMiddleware):
                 app_config = get_config()
                 self.use_csrf = app_config.csrf_enabled or False
                 if self.use_csrf:
-                    assert app_config.secret_key is not None, ""
+                    assert app_config.secret_key is not None, "Secret key is required for CSRF protection"
                     self.secret = app_config.secret_key
                     self.serializer = URLSafeSerializer(
-                        app_config.secret_key, "csrftoken"
+                        self.secret, "csrftoken"
                     )  # type: ignore
                     self.required_urls = app_config.csrf_required_urls or ["*"]
                     self.exempt_urls = app_config.csrf_exempt_urls
@@ -155,8 +153,8 @@ class CSRFMiddleware(BaseMiddleware):
                     self.header_name = app_config.csrf_header_name or "X-CSRFToken"
             except (RuntimeError, AssertionError):
                 self.use_csrf = False
-        elif self.use_csrf and not hasattr(self, "secret"):
-            # Try to get secret from get_config() if not available in provided config
+        elif self.use_csrf:
+            # Always get secret key from get_config() at runtime, not from config passed to __init__
             try:
                 app_config = get_config()
                 self.secret = app_config.secret_key
