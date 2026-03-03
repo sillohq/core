@@ -49,7 +49,7 @@ features:
       - Structured error handling
       - Domain-driven design ready
 
-  - icon: 
+  - icon: 🔨
     title: Complete Toolkit
     details: |
       Everything you need in one place:
