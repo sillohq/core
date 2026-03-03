@@ -37,7 +37,7 @@ async def show_headers(request, response):
 | `User-Agent` | Client application information | `Mozilla/5.0` |
 | `X-Requested-With` | Indicates AJAX request | `XMLHttpRequest` |
 
-::: tip 💡 Tip
+::: tip  Tip
 Nexios normalizes header names to lowercase, so `request.headers.get("User-Agent")` and `request.headers.get("user-agent")` are equivalent.
 :::
 

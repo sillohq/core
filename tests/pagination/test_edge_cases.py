@@ -186,7 +186,7 @@ class TestEdgeCases:
             {"id": 1, "name": "测试"},  # Chinese characters
             {"id": 2, "description": "café"},  # Accented characters
             {"id": 3, "tags": ["python", "测试"]},  # Mixed
-            {"id": 4, "emoji": "🚀"},
+            {"id": 4, "emoji": ""},
             {"id": 5, "special": "!@#$%^&*()"},
         ]
         handler = SyncListDataHandler(data)

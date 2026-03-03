@@ -1,8 +1,8 @@
-# 🎨 Customizing OpenAPI Configuration in Nexios
+#  Customizing OpenAPI Configuration in Nexios
 
 Nexios provides extensive customization options for your OpenAPI documentation, allowing you to create professional, branded, and comprehensive API documentation that meets enterprise requirements and enhances developer experience.
 
-## 🎯 Why Customize OpenAPI Configuration?
+##  Why Customize OpenAPI Configuration?
 
 Customizing your OpenAPI configuration provides several benefits:
 
@@ -12,7 +12,7 @@ Customizing your OpenAPI configuration provides several benefits:
 - **Enterprise Requirements**: Meet corporate documentation standards
 - **Support Efficiency**: Reduce support requests with better documentation
 
-## 📋 Basic Configuration
+##  Basic Configuration
 
 Set fundamental API information directly in the `NexiosApp` constructor:
 
@@ -46,7 +46,7 @@ async def health_check(request, response):
     })
 ```
 
-## ⚙️ Advanced Configuration
+##  Advanced Configuration
 
 For complete control over your OpenAPI specification, use the configuration system:
 
@@ -113,7 +113,7 @@ app.openapi_config.openapi_spec.externalDocs = ExternalDocumentation(
 )
 ```
 
-## 🏷️ Tags and Organization
+##  Tags and Organization
 
 Organize your API endpoints with comprehensive tagging:
 
@@ -181,7 +181,7 @@ async def list_products(request, response):
     return response.json({"products": [], "total": 0})
 ```
 
-## 🔐 Security Schemes Configuration
+##  Security Schemes Configuration
 
 Configure comprehensive security schemes for different authentication methods:
 
@@ -273,7 +273,7 @@ app.openapi_config.add_security_scheme(
 )
 ```
 
-## 🌐 Multiple Environments Configuration
+##  Multiple Environments Configuration
 
 Configure different environments with appropriate settings:
 
@@ -341,7 +341,7 @@ else:
     )
 ```
 
-## 📚 Custom Documentation URLs
+##  Custom Documentation URLs
 
 Customize the documentation endpoint URLs to match your preferences:
 
@@ -366,7 +366,7 @@ app.openapi.openapi_url = "/api-spec.json"
 app.openapi.redoc_url = None  # Disable ReDoc
 ```
 
-## 🎨 Custom Response Examples
+##  Custom Response Examples
 
 Add comprehensive examples to your OpenAPI specification:
 
@@ -417,7 +417,7 @@ app.openapi_config.add_example(
 )
 ```
 
-## 🔧 Advanced Customization
+##  Advanced Customization
 
 ### Custom OpenAPI Extensions
 
@@ -506,7 +506,7 @@ partner_app = create_api_for_role("partner")
 public_app = create_api_for_role("public")
 ```
 
-## 📊 Documentation Analytics
+##  Documentation Analytics
 
 Track documentation usage and effectiveness:
 
@@ -550,7 +550,7 @@ async def custom_docs(request, response):
     return response.html(custom_docs_html)
 ```
 
-## ✅ Best Practices
+##  Best Practices
 
 ### Configuration Management
 

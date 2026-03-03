@@ -10,11 +10,11 @@ head:
       content: Serving static files is a common requirement for web applications. Nexios provides a robust and flexible system for serving static assets like CSS, JavaScript, images, and other file types with security and performance in mind.
 ---
 
-# 📂 Static Files
+#  Static Files
 
 Serving static files is a common requirement for web applications. Nexios provides a robust and flexible system for serving static assets like CSS, JavaScript, images, and other file types with security and performance in mind.
 
-## 🚀 Basic Setup
+##  Basic Setup
 
 To serve static files in Nexios, use the `StaticFiles` class:
 
@@ -42,7 +42,7 @@ static_files = StaticFiles(directory="static")
 app.register(static_files, prefix="/static")
 ```
 
-## 📁 Multiple Directories
+##  Multiple Directories
 
 For more complex setups, you can serve files from multiple directories:
 
@@ -53,7 +53,7 @@ app.register(static_files, prefix="/static")
 
 When serving from multiple directories, Nexios searches for files in the order the directories are specified.
 
-## 🛣️ URL Prefixing
+##  URL Prefixing
 
 The `prefix` parameter defines the URL path under which static files are served:
 
@@ -63,7 +63,7 @@ app.register(static_files, prefix="/assets")  # Serve files at /assets/ instead 
 ```
 
 
-## 📚 Examples
+##  Examples
 
 ### Complete Application Setup
 
@@ -87,7 +87,7 @@ app.register(static_files)
 app.add_middleware(StaticFileLogger())
 ```
 
-## 🔒 Security & Extension Filtering
+##  Security & Extension Filtering
 
 For security reasons, you can restrict which file extensions are allowed to be served:
 
@@ -102,7 +102,7 @@ app.register(static_files, prefix="/static")
 
 This prevents serving potentially dangerous files like `.php`, `.py`, or other executable files.
 
-## 🚫 Custom 404 Handler
+##  Custom 404 Handler
 
 You can provide a custom handler for when static files are not found:
 
@@ -130,7 +130,7 @@ static_files = StaticFiles(
 app.register(static_files, prefix="/static")
 ```
 
-## ⚡ Performance & Caching
+##  Performance & Caching
 
 ### Cache Control
 
@@ -144,7 +144,7 @@ static_files = StaticFiles(
 app.register(static_files, prefix="/static")
 ```
 
-## 📋 Advanced Configuration
+##  Advanced Configuration
 
 You can combine all these features for a fully configured static file server:
 
@@ -167,7 +167,7 @@ def custom_not_found(request, response):
         </head>
         <body>
             <div class="container">
-                <h1>🚫 File Not Found</h1>
+                <h1> File Not Found</h1>
                 <p>The requested file could not be found on this server.</p>
                 <p><a href="/">Return to Home</a></p>
             </div>

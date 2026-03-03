@@ -64,7 +64,7 @@ we can break it down further:
 
 ### blacklist\_origins
 
-* **Purpose:** Specifies which origins should be **blocked**, even if they match `allow_origins`.
+* **Purpose:** Specifies which origins should be**blocked**, even if they match `allow_origins`.
 * **Example:**
 
     ```python
@@ -115,7 +115,7 @@ we can break it down further:
 
 ### blacklist\_headers
 
-* **Purpose:** Defines headers that should **not** be allowed in requests.
+* **Purpose:** Defines headers that should**not** be allowed in requests.
 * **Example:**
 
     ```python
@@ -203,7 +203,7 @@ we can break it down further:
 
 ### strict\_origin\_checking
 
-* **Purpose:** If enabled, requests **must** include an `Origin` header.
+* **Purpose:** If enabled, requests**must** include an `Origin` header.
 * **Example:**
 
     ```python

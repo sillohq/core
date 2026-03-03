@@ -2,7 +2,7 @@
 
 The `Router` class is the core routing component in Nexios, responsible for organizing and managing HTTP routes with support for prefixes, middleware, dependencies, and sub-routers.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class Router(BaseRouter):
@@ -17,7 +17,7 @@ class Router(BaseRouter):
     )
 ```
 
-## ⚙️ Constructor Parameters
+##  Constructor Parameters
 
 ### prefix: str
 **Type**: `str`  
@@ -122,7 +122,7 @@ router = Router(
 )
 ```
 
-## 🛣️ Route Registration Methods
+##  Route Registration Methods
 
 ### get()
 Register GET endpoint.
@@ -229,7 +229,7 @@ async def user_handler(request: Request, response: Response):
         return response.status(204).empty()
 ```
 
-## 🔧 Route Management
+##  Route Management
 
 ### add_route()
 Programmatically add routes.
@@ -268,7 +268,7 @@ main_router.mount_router(user_router, name="users")
 main_router.mount_router(admin_router, name="admin")
 ```
 
-## 🔗 Middleware Management
+##  Middleware Management
 
 ### add_middleware()
 Add middleware to the router.
@@ -300,7 +300,7 @@ router.add_middleware(auth_middleware)      # Applied first
 router.add_middleware(rate_limit_middleware) # Applied second
 ```
 
-## 💉 Dependency Injection
+##  Dependency Injection
 
 ### Router-level Dependencies
 Dependencies applied to all routes in the router.
@@ -341,7 +341,7 @@ async def admin_users(request, response, admin=Depend(get_admin_user)):
     return response.json(users)
 ```
 
-## 🛣️ Path Parameters and Patterns
+##  Path Parameters and Patterns
 
 ### Basic Path Parameters
 
@@ -378,7 +378,7 @@ async def get_user_post(request: Request, response: Response):
     return response.json(post)
 ```
 
-## 🔗 URL Generation
+##  URL Generation
 
 ### url_for()
 Generate URLs for named routes.
@@ -407,7 +407,7 @@ async def handler(request: Request, response: Response):
     return response.json({"user_url": user_url})
 ```
 
-## 📖 OpenAPI Integration
+##  OpenAPI Integration
 
 ### Route Documentation
 
@@ -440,7 +440,7 @@ router = Router(
 )
 ```
 
-## 🚀 Advanced Routing Patterns
+##  Advanced Routing Patterns
 
 ### Conditional Routing
 
@@ -580,7 +580,7 @@ async def get_user(request: Request, response: Response):
     return response.json(user)
 ```
 
-## 🧪 Testing Router
+##  Testing Router
 
 ### Unit Testing Routes
 
@@ -644,7 +644,7 @@ async def test_user_crud():
         assert get_response.json()["name"] == "John Doe"
 ```
 
-## ⚡ Performance Considerations
+##  Performance Considerations
 
 ### Route Ordering
 More specific routes should be defined before general ones.
@@ -678,7 +678,7 @@ async def heavy_middleware(request, response, call_next):
     return await call_next()
 ```
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Use meaningful prefixes** for router organization
 2. **Group related routes** in the same router
@@ -691,7 +691,7 @@ async def heavy_middleware(request, response, call_next):
 9. **Order routes** from specific to general
 10. **Keep middleware lightweight** for performance
 
-## 📊 Router Properties
+##  Router Properties
 
 ### routes: List[Route]
 List of all routes registered with the router.
@@ -724,7 +724,7 @@ router.add_middleware(auth_middleware)
 print(len(router.middleware))  # 1
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [Route](./route.md) - Individual route definitions
 - [Groups](./group.md) - Route grouping and organization

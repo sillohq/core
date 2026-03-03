@@ -26,7 +26,7 @@ export default defineConfig({
       {
         text: 'Features',
         items: [
-          { text: '📚 Summary', link: '/summary' },
+          { text: ' Summary', link: '/summary' },
           { text: 'Sessions', link: '/guide/sessions' },
           { text: 'CORS', link: '/guide/cors' },
           { text: 'CSRF', link: '/guide/csrf' },

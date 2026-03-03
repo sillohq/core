@@ -1,15 +1,15 @@
-# 🔄 Proxy Middleware
+#  Proxy Middleware
 
 A production-ready proxy middleware for the Nexios ASGI framework that handles applications running behind proxy servers, load balancers, and CDNs.
 
 It automatically:
 
-- 🌐 Extracts real client IP addresses from `X-Forwarded-For` and `Forwarded` headers
-- 🔒 Determines correct protocol from `X-Forwarded-Proto` headers
-- 🏠 Handles `X-Forwarded-Host` for proper host resolution
-- 🛡️ Provides security controls to prevent header spoofing
-- 🎯 Supports trusted proxy configuration with CIDR ranges
-- 🔐 Includes enhanced security middleware for stricter controls
+-  Extracts real client IP addresses from `X-Forwarded-For` and `Forwarded` headers
+-  Determines correct protocol from `X-Forwarded-Proto` headers
+-  Handles `X-Forwarded-Host` for proper host resolution
+-  Provides security controls to prevent header spoofing
+-  Supports trusted proxy configuration with CIDR ranges
+-  Includes enhanced security middleware for stricter controls
 
 ## Installation
 

@@ -284,6 +284,6 @@ async def get_items(request, response):
     return paginator.paginate()
 ```
 
-::: tip 💡Tip
+::: tip Tip
 Use this only if you know what you are doing.
 ::: 

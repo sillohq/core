@@ -1,12 +1,12 @@
-# 🔄 Async Python
+#  Async Python
 
-## 📖 Introduction
+##  Introduction
 
-Modern web applications demand concurrency — the ability to handle thousands of tasks at the same time 🌊. Traditionally, Python's synchronous, blocking nature made this difficult. But with the advent of `asyncio`, Python now supports **asynchronous programming** 🔄, enabling it to handle I/O-bound tasks far more efficiently.
+Modern web applications demand concurrency — the ability to handle thousands of tasks at the same time . Traditionally, Python's synchronous, blocking nature made this difficult. But with the advent of `asyncio`, Python now supports **asynchronous programming** , enabling it to handle I/O-bound tasks far more efficiently.
 
 This guide dives deep into how asynchronous Python works, why it's necessary, and how to write scalable, non-blocking code using `async` and `await`. Understanding async programming is crucial for building high-performance web applications with Nexios.
 
-## 🚫 The Problem with Synchronous Code
+##  The Problem with Synchronous Code
 
 Python executes one line at a time. When it hits a long-running operation like a database query or an HTTP request, the whole program stops and waits. That's fine for scripts or small apps, but inefficient in systems that require concurrency — like servers or data pipelines.
 
@@ -40,9 +40,9 @@ This will block until each network request completes. During that time, Python c
 
 Now imagine you're building a server that needs to serve 500 clients simultaneously. Blocking each call like this would kill performance.
 
-## ✅ What Async Solves
+##  What Async Solves
 
-Async Python doesn't use threads to solve this — it uses something called the **event loop** 🔄, which lets Python switch between multiple "tasks" during I/O waits.
+Async Python doesn't use threads to solve this — it uses something called the **event loop** , which lets Python switch between multiple "tasks" during I/O waits.
 
 This model is useful when your code spends a lot of time **waiting** — for HTTP responses, file reads, database queries, etc.
 
@@ -84,7 +84,7 @@ In this async version, all three requests start simultaneously. If each request 
 
 Let's illustrate the difference with a simple diagram.
 
-### Synchronous Execution ⏳
+### Synchronous Execution 
 
 ```
 Task A: [==== wait 3s ====]
@@ -93,7 +93,7 @@ Task C:                                  [==== wait 3s ====]
 Total Time: 9s
 ```
 
-### Asynchronous Execution 🚀
+### Asynchronous Execution 
 
 ```
 Task A: [== initiated ==]     [== continues ==]
@@ -102,11 +102,11 @@ Task C:             [== starts ==]     [== finishes ==]
 Total Time: ~3s
 ```
 
-In async mode, while Task A is waiting (e.g. for a network response), Task B and C run. We achieve **concurrency** 🌊, not through threads, but via **non-blocking I/O**.
+In async mode, while Task A is waiting (e.g. for a network response), Task B and C run. We achieve **concurrency** , not through threads, but via**non-blocking I/O**.
 
-## 🧠 Core Concepts of Async Python
+##  Core Concepts of Async Python
 
-### 1. Coroutines ⚙️
+### 1. Coroutines 
 
 A coroutine is a function defined with `async def`. It's not executed immediately — instead, it returns a coroutine object. You need to **await** it.
 
@@ -131,7 +131,7 @@ async def main():
 asyncio.run(main())
 ```
 
-### 2. The Event Loop 🔄
+### 2. The Event Loop 
 
 The event loop runs in the background, managing coroutines and deciding when to pause or resume them. It's the heart of async programming.
 
@@ -174,14 +174,14 @@ Task 1 finished
 Results: Task 1 result, Task 2 result
 ```
 
-### 3. Awaitables 📋
+### 3. Awaitables 
 
 An object is *awaitable* if it can be used with the `await` keyword. These include:
 
-- **Coroutines** ⚙️: Functions defined with `async def`
-- **Tasks** 📝: Created with `asyncio.create_task()` or `asyncio.ensure_future()`
-- **Futures** 🔮: Low-level awaitable objects
-- **Custom awaitables** 🛠️: Objects that implement `__await__()`
+- **Coroutines** : Functions defined with `async def`
+- **Tasks** : Created with `asyncio.create_task()` or `asyncio.ensure_future()`
+- **Futures** : Low-level awaitable objects
+- **Custom awaitables** : Objects that implement `__await__()`
 
 ```python
 import asyncio

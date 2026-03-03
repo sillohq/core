@@ -8,7 +8,7 @@
   --vp-c-default-soft: rgba(249, 230, 199, 0.35);
   /* soft backgrounds */
 
-  /* 🧅 Onion Brand Palette */
+  /*  Onion Brand Palette */
   --vp-c-brand-1: #8bcf6c;
   /* main brand (links, active states) */
   --vp-c-brand-2: #6cad55;
@@ -51,7 +51,7 @@ details * {
  * Component: Button
  */
 :root {
-  /* ✅ Primary button (Get Started) */
+  /*  Primary button (Get Started) */
   --vp-button-brand-border: transparent;
   --vp-button-brand-text: #ffffff;
   --vp-button-brand-bg: var(--vp-c-brand-1);
@@ -62,7 +62,7 @@ details * {
   --vp-button-brand-active-text: #ffffff;
   --vp-button-brand-active-bg: var(--vp-c-brand-3);
 
-  /* 🎨 Secondary buttons (View on GitHub, Why Nexios?) */
+  /*  Secondary buttons (View on GitHub, Why Nexios?) */
   --vp-button-alt-border: #3a2a1d;
   /* dark brown */
   --vp-button-alt-text: #3a2a1d;

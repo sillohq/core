@@ -2,7 +2,7 @@
 
 The `TestClient` class provides a convenient way to test Nexios applications by making HTTP requests without running a server. It extends `httpx.Client` and handles ASGI application lifecycle automatically.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class TestClient(httpx.Client):
@@ -21,7 +21,7 @@ class TestClient(httpx.Client):
     )
 ```
 
-## ⚙️ Constructor Parameters
+##  Constructor Parameters
 
 ### app: ASGIApp
 **Type**: `ASGIApp`  
@@ -150,7 +150,7 @@ Whether to check ASGI protocol conformance.
 client = TestClient(app, check_asgi_conformance=False)
 ```
 
-## 🌐 HTTP Methods
+##  HTTP Methods
 
 ### get()
 Make a GET request.
@@ -240,7 +240,7 @@ def options(self, url: URLTypes, **kwargs: Any) -> httpx.Response
 response = client.options("/users")
 ```
 
-## 🔌 WebSocket Support
+##  WebSocket Support
 
 ### websocket_connect()
 Establish a WebSocket connection for testing.
@@ -262,7 +262,7 @@ with client.websocket_connect("/ws") as websocket:
     assert data == "Hello"
 ```
 
-## 🔄 Context Manager Support
+##  Context Manager Support
 
 ### Synchronous Context Manager
 
@@ -280,7 +280,7 @@ async with TestClient(app) as client:
     assert response.status_code == 200
 ```
 
-## 💡 Usage Examples
+##  Usage Examples
 
 ### Basic Testing
 
@@ -555,7 +555,7 @@ async def test_async_client():
         assert response.json() == {"data": "async result"}
 ```
 
-## 📊 Properties
+##  Properties
 
 ### app: ASGIApp
 The ASGI application being tested.
@@ -573,7 +573,7 @@ client = TestClient(app, base_url="http://localhost:8000")
 assert str(client.base_url) == "http://localhost:8000"
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [Request](./request.md) - HTTP request handling
 - [Response](./response.md) - HTTP response creation

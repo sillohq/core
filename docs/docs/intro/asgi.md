@@ -1,8 +1,8 @@
-# 🤔 What is ASGI?
+#  What is ASGI?
 
-**ASGI** stands for **Asynchronous Server Gateway Interface** 🌐. It is the spiritual successor to **WSGI** (Web Server Gateway Interface) and is designed to support **async** Python web apps, including **WebSockets 📡, HTTP/2 🚀**, and more.
+**ASGI** stands for**Asynchronous Server Gateway Interface** . It is the spiritual successor to**WSGI** (Web Server Gateway Interface) and is designed to support**async** Python web apps, including**WebSockets , HTTP/2 **, and more.
 
-If you’ve worked with WSGI-based frameworks like Django or Flask, you're used to synchronous request-response cycles. ASGI takes this further by enabling **asynchronous, long-lived connections** 🔄, such as **WebSockets** and **background tasks ⚙️**.
+If you’ve worked with WSGI-based frameworks like Django or Flask, you're used to synchronous request-response cycles. ASGI takes this further by enabling **asynchronous, long-lived connections** , such as**WebSockets** and**background tasks **.
 
 ---
 
@@ -10,25 +10,25 @@ If you’ve worked with WSGI-based frameworks like Django or Flask, you're used 
 
 Let’s start with a conceptual difference:
 
-### WSGI 📞
+### WSGI 
 
 ```txt
 Client --> HTTP Request --> WSGI App --> HTTP Response --> Client
 ```
 
-- One request at a time ⏳
-- Blocking 🚫
-- No native WebSocket support ❌
+- One request at a time 
+- Blocking 
+- No native WebSocket support 
 
-### ASGI 📱
+### ASGI 
 
 ```txt
 Client --> HTTP or WebSocket --> ASGI App --> Streamed Response or Event Handler
 ```
 
-- Supports both sync & async 🔄
-- Handles long-lived connections 🌐
-- Enables concurrent tasks (with `async def`) ⚡
+- Supports both sync & async 
+- Handles long-lived connections 
+- Enables concurrent tasks (with `async def`) 
 
 ---
 
@@ -68,9 +68,9 @@ Each ASGI app receives:
 
 ### Explanation:
 
-- The ASGI **server** (like **Uvicorn**) is responsible for translating raw sockets (TCP/HTTP/WebSocket) into Python callables.
-- Your **ASGI app** (like **Nexios**) just needs to handle the `scope`, `receive`, and `send` interfaces.
-- ASGI enables **streaming responses, background jobs,** and **real-time features** easily.
+- The ASGI **server** (like**Uvicorn**) is responsible for translating raw sockets (TCP/HTTP/WebSocket) into Python callables.
+- Your **ASGI app** (like**Nexios**) just needs to handle the `scope`, `receive`, and `send` interfaces.
+- ASGI enables **streaming responses, background jobs,** and**real-time features** easily.
 
 ---
 
@@ -88,11 +88,11 @@ Nexios is an **ASGI-native** framework. This means:
 
 | Use Case                 | WSGI Compatible | ASGI Compatible |
 | ------------------------ | --------------- | --------------- |
-| Traditional HTTP APIs    | ✅              | ✅              |
-| WebSockets               | ❌              | ✅              |
-| Background Tasks         | ❌              | ✅              |
-| Server-Sent Events (SSE) | ❌              | ✅              |
-| Long Polling             | ⚠️ Limited      | ✅              |
+| Traditional HTTP APIs    |               |               |
+| WebSockets               |               |               |
+| Background Tasks         |               |               |
+| Server-Sent Events (SSE) |               |               |
+| Long Polling             | ⚠️ Limited      |               |
 
 ---
 

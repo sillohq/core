@@ -1,7 +1,7 @@
 <template>
   <div class="mail-integration-banner">
     <div class="badge">NEW!</div>
-    <div class="rocket-icon">🚀</div>
+    <div class="rocket-icon"></div>
     <span class="banner-text">Nexios Mail integration</span>
     <a href="/community/integrations/mail" class="integration-link" @click="navigateToMail">send emails</a>
   </div>

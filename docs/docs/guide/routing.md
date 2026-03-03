@@ -9,11 +9,11 @@ head:
     - property: og:description
       content: Nexios provides a powerful and flexible routing system that supports path parameters, query parameters, and various HTTP methods. The routing system is designed to be intuitive, performant, and extensible.
 ---
-# 🛣️ Routing
+#  Routing
 
 Nexios provides a powerful and flexible routing system that supports using decorators to define routes or using the `Route` class. The routing system is designed to be intuitive, performant, and extensible, making it easy to define routes and handle requests.
 
-## 🏗️ Using decorators
+##  Using decorators
 
 Nexios provides a simple and intuitive way to define routes using decorators. You can use the `@app.get`, `@app.post`, `@app.put`, `@app.delete`, `@app.head`, and `@app.options` etc decorators to define routes.
 
@@ -96,7 +96,7 @@ async def items_options(request, response):
 
 :::
 
-## 📋 Using `Route` class and `add_route` method
+##  Using `Route` class and `add_route` method
 
 Nexios also provides a `Route` class that allows you to define routes in a more structured way.\
 It's especially useful when you have a lot of routes and want to organize them in a logical manner.
@@ -137,7 +137,7 @@ route = Route(
 )
 ```
 
-## 🏭 `Route` Class Constructor
+##  `Route` Class Constructor
 
 The `Route` constructor is used to define a route within the Nexios application. It takes several parameters:
 
@@ -179,7 +179,7 @@ Route(
 )
 ```
 
-## 🗂️ Creating and Using Routers
+##  Creating and Using Routers
 
 Routers allow you to organize related routes and apply common configuration:
 
@@ -215,7 +215,7 @@ app.mount_router(v1_router)
 app.mount_router(v2_router)
 ```
 
-## 🌳 Nested Routers
+##  Nested Routers
 
 You can create nested routers for complex API structures:
 
@@ -275,7 +275,7 @@ This creates the following URL structure:
 - `/api/v2/posts/` - List posts (v2)
 - `/api/v2/posts/{post_id}` - Get post (v2)
 
-## 🛠️ Router with Middleware
+##  Router with Middleware
 
 You can apply middleware to all routes in a router:
 
@@ -365,7 +365,7 @@ async def get_user(request, response):
     return {"id": user_id}
 ```
 
-## 🔄 Route Converters in Nexios
+##  Route Converters in Nexios
 
 By default, parameters are strings, but converters allow you to enforce/convert the parameter to a type, or alter what the pattern matches.
 The syntax is:
@@ -441,7 +441,7 @@ async def get_order(request, response):
 | `uuid`    | UUID    | `[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}` | UUID format                  |
 | `slug`    | String  | `[a-z0-9]+(?:-[a-z0-9]+)*`                                                        | URL-friendly strings         |
 
-## 🎯 Custom Path Converters
+##  Custom Path Converters
 
 You can create and register custom path converters by subclassing the `Convertor` class:
 
@@ -534,7 +534,7 @@ When creating custom converters:
 5. Test thoroughly with edge cases
    :::
 
-## 📚 Route Metadata and Documentation
+##  Route Metadata and Documentation
 
 ### Using Pydantic Models for Responses
 
@@ -781,7 +781,7 @@ async def get_user_stats(request, response):
     })
 ```
 
-## 🔐 OpenAPI Integration
+##  OpenAPI Integration
 
 Nexios automatically generates OpenAPI documentation from your routes:
 
@@ -818,7 +818,7 @@ async def get_user(request, response):
     return response.json({"id": user_id, "name": "John Doe", "email": "john@example.com"})
 ```
 
-## 🛡️ Security Requirements
+##  Security Requirements
 
 You can specify security requirements for routes:
 
@@ -896,7 +896,7 @@ url = url.add_query_params(page=1, limit=10)
 print(url)  # /users/123?page=1&limit=10
 ```
 
-## 🚀 Advanced Routing Patterns
+##  Advanced Routing Patterns
 
 ## Route Factories
 
@@ -1039,7 +1039,7 @@ for route_config in routes_config:
 # If a dynamically imported handler does not exist or fails to import, Nexios will raise an ImportError at startup.
 ```
 
-## 🧪 Route Testing and Debugging
+##  Route Testing and Debugging
 
 ## Getting All Route
 
@@ -1214,12 +1214,12 @@ While both `Group` and `Router` can be used to organize routes, they serve diffe
 
 | Feature         | Group | Router |
 | --------------- | ----- | ------ |
-| Path prefixing  | ✅    | ✅     |
-| Middleware      | ✅    | ❌     |
-| Mount ASGI apps | ✅    | ❌     |
-| Nested routing  | ✅    | ✅     |
-| Route methods   | ❌    | ✅     |
-| Standalone app  | ❌    | ✅     |
+| Path prefixing  |     |      |
+| Middleware      |     |      |
+| Mount ASGI apps |     |      |
+| Nested routing  |     |      |
+| Route methods   |     |      |
+| Standalone app  |     |      |
 
 ### Best Practices
 

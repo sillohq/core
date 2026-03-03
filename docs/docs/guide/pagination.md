@@ -9,11 +9,11 @@ head:
     - property: og:description
       content: Comprehensive guide to Nexios pagination system with flexible strategies, custom data handlers, and seamless API integration for managing large datasets efficiently.
 ---
-# 📄 Pagination
+#  Pagination
 
 Nexios provides a powerful, flexible pagination system that supports multiple strategies, custom data handlers, and seamless integration with your existing APIs. Whether you're building simple list pagination or complex cursor-based navigation, Nexios has you covered.
 
-## 🚀 Quick Start
+##  Quick Start
 
 Here's a quick example of how to paginate a list of items using `response.paginate()`:
 
@@ -41,7 +41,7 @@ async def get_items(request, response):
     return response.apaginate(sample_data)
 ```
 
-## 📊 Response Format
+##  Response Format
 
 The pagination response includes both the data and comprehensive metadata:
 
@@ -66,11 +66,11 @@ The pagination response includes both the data and comprehensive metadata:
 }
 ```
 
-::: tip 💡 **Navigation Links**
+::: tip  **Navigation Links**
 The `links` section provides ready-to-use URLs for navigating between pages. The `prev` link appears only when not on the first page.
 :::
 
-## 🗂️ Pagination Strategies
+##  Pagination Strategies
 
 Nexios supports three main pagination strategies, each suited for different use cases:
 
@@ -154,11 +154,11 @@ async def get_items(request, response):
 - `/items?page_size=50` - First 50 items
 - `/items` - Uses defaults (first page, 20 items per page)
 
-::: tip 💡 **Cursor Encoding**
+::: tip  **Cursor Encoding**
 Cursors are base64-encoded JSON objects containing the sort field value. This makes them URL-safe and opaque to clients.
 :::
 
-## 🔧 Advanced Configuration
+##  Advanced Configuration
 
 ### Custom Strategy Parameters
 
@@ -266,11 +266,11 @@ async def get_products(request, response):
 - `/products?min_price=50&page=2&page_size=20`
 - `/products?category=books&sort=name`
 
-::: tip 💡 **Preserving Query Parameters**
+::: tip  **Preserving Query Parameters**
 Pagination links automatically preserve non-pagination query parameters, so filters and sorting persist across page navigation.
 :::
 
-## 🔄 Data Handlers
+##  Data Handlers
 
 Data handlers abstract the data source, allowing pagination to work with any type of data storage. Nexios provides built-in handlers for in-memory lists and async operations.
 
@@ -292,11 +292,11 @@ Base class for asynchronous data handlers with two required methods:
 **Built-in Implementation:**
 - `AsyncListDataHandler`: Handles in-memory lists asynchronously
 
-::: info 💡 **Automatic Selection**
+::: info  **Automatic Selection**
 By default, `.paginate()` uses `AsyncListDataHandler` for async functions and `SyncListDataHandler` for sync functions.
 :::
 
-## 🏗️ Custom Data Handlers
+##  Custom Data Handlers
 
 Create custom data handlers to integrate with databases, external APIs, or any data source:
 
@@ -330,7 +330,7 @@ async def get_items(request, response):
 ```
 
 
-## ⚙️ Custom Pagination Strategies
+##  Custom Pagination Strategies
 
 Create custom pagination strategies by subclassing `BasePaginationStrategy`:
 

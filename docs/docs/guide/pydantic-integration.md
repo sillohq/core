@@ -9,14 +9,14 @@ head:
     - property: og:description
       content: Nexios provides seamless integration with Pydantic, offering a flexible way to handle data validation and serialization. Unlike some frameworks that force you to use type hints, Nexios gives you the freedom to choose between dynamic typing and strict type validation.
 ---
-## ❓ Why Pydantic with Nexios?
+##  Why Pydantic with Nexios?
 
 - **Flexible Validation**: Use Pydantic when you need it, without being forced into a type-hinted architecture
 - **Clean Error Handling**: Built-in error formatting that works out of the box
 - **Performance**: Efficient validation with minimal overhead
 - **Optional Typing**: Add type safety where it matters most
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Installation
 
@@ -103,7 +103,7 @@ Choose from three different error formats:
    }
    ```
 
-## ⚡ Advanced Usage
+##  Advanced Usage
 
 ### Nested Models
 
@@ -140,7 +140,7 @@ class Item(BaseModel):
         return v
 ```
 
-## 🎯 Why Nexios is More Flexible
+##  Why Nexios is More Flexible
 
 1. **No Type Hinting Required**
    - Use Pydantic where it makes sense
@@ -157,7 +157,7 @@ class Item(BaseModel):
    - Mix and match validation approaches
    - Evolve your codebase at your own pace
 
-## ✅ Best Practices
+##  Best Practices
 
 1. Use Pydantic for:
    - API request/response validation
@@ -175,7 +175,7 @@ class Item(BaseModel):
    - Critical business logic
    - Team projects with multiple developers
 
-## 📁 Example Project Structure
+##  Example Project Structure
 
 ```
 myapp/
@@ -191,7 +191,7 @@ myapp/
   main.py        # App setup and configuration
 ```
 
-## 🎯 Next Steps
+##  Next Steps
 
 - [Pydantic Documentation](https://pydantic-docs.helpmanual.io/)
 - [Nexios Error Handling](/guide/error-handling)

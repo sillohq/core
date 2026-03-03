@@ -5,11 +5,11 @@ Timeout middleware and utilities for Nexios web framework, providing flexible re
 ## Features
 
 - ⏱️ **Global and Per-Request Timeouts**: Set timeouts at both application and request levels
-- 🔍 **Automatic Timeout Extraction**: Extract timeout values from headers or query parameters
-- ⚡ **Async Timeout Control**: Built-in support for async/await patterns
-- 📊 **Request Duration Tracking** : Monitor how long requests take to process
-- 🛠️ **Flexible Error Handling**: Customize timeout responses or raise exceptions
-- 🔄 **Timeout Utilities**: Helper functions for common timeout-related tasks
+-  **Automatic Timeout Extraction**: Extract timeout values from headers or query parameters
+-  **Async Timeout Control**: Built-in support for async/await patterns
+-  **Request Duration Tracking** : Monitor how long requests take to process
+-  **Flexible Error Handling**: Customize timeout responses or raise exceptions
+-  **Timeout Utilities**: Helper functions for common timeout-related tasks
 
 ## Installation
 

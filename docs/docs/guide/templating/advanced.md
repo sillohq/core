@@ -10,11 +10,11 @@ head:
     - property: og:description
       content: This guide covers advanced features and patterns for the Nexios templating system.
 ---
-# ⚡ Advanced Templating
+#  Advanced Templating
 
 This guide covers advanced features and patterns for the Nexios templating system.
 
-## 🎯 Custom Filters
+##  Custom Filters
 
 Create and register custom template filters:
 
@@ -42,7 +42,7 @@ Usage in templates:
 {{ product.price|currency("€") }}
 ```
 
-## 🔧 Macros
+##  Macros
 
 Create reusable template components:
 
@@ -66,7 +66,7 @@ Create reusable template components:
 </form>
 ```
 
-## 🔄 Async Template Functions
+##  Async Template Functions
 
 Create async template functions for database queries or API calls:
 
@@ -93,7 +93,7 @@ Usage in templates:
 {% endfor %}
 ```
 
-## 📦 Context Processors
+##  Context Processors
 
 Advanced context processor patterns:
 
@@ -222,7 +222,7 @@ async def template_error(request: Request, response: Response, exc: Exception):
     )
 ```
 
-## 🧪 Testing Templates
+##  Testing Templates
 
 Write tests for your templates:
 

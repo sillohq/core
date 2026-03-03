@@ -2,7 +2,7 @@
 
 The `NexiosResponse` class provides a fluent interface for building HTTP responses with support for various content types, headers, cookies, caching, and more.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class NexiosResponse:
@@ -11,7 +11,7 @@ class NexiosResponse:
 
 The response object is typically provided automatically in route handlers and should not be instantiated manually.
 
-## 📄 Content Response Methods
+##  Content Response Methods
 
 ### json()
 Send JSON response with automatic serialization.
@@ -176,7 +176,7 @@ async def handler(request: Request, response: Response):
 - `status_code` (Optional[int]): HTTP status code
 - `headers` (Dict[str, Any]): Additional headers
 
-## 🔢 Status Code Management
+##  Status Code Management
 
 ### status()
 Set HTTP status code.
@@ -196,7 +196,7 @@ async def handler(request: Request, response: Response):
     return response.status(500).json({"error": "Internal Server Error"})
 ```
 
-## 📋 Header Management
+##  Header Management
 
 ### set_header()
 Set individual response header.
@@ -246,7 +246,7 @@ async def handler(request: Request, response: Response):
             .json({"data": "clean response"}))
 ```
 
-## 🍪 Cookie Management
+##  Cookie Management
 
 ### set_cookie()
 Set response cookie with comprehensive options.
@@ -313,7 +313,7 @@ async def handler(request: Request, response: Response):
             .json({"message": "Cookies set"}))
 ```
 
-## 💾 Caching Control
+##  Caching Control
 
 ### cache()
 Enable response caching.
@@ -346,7 +346,7 @@ async def handler(request: Request, response: Response):
             .json({"sensitive": "user data"}))
 ```
 
-## 🔒 Security Headers
+##  Security Headers
 
 ### add_csp_header()
 Add Content Security Policy header.
@@ -365,7 +365,7 @@ async def handler(request: Request, response: Response):
             .html("<html>...</html>"))
 ```
 
-## 📄 Pagination Support
+##  Pagination Support
 
 ### paginate()
 Paginate response data (synchronous).
@@ -397,7 +397,7 @@ async def handler(request: Request, response: Response):
     )
 ```
 
-## 📊 Response Properties
+##  Response Properties
 
 ### status_code: int
 Current HTTP status code.
@@ -447,7 +447,7 @@ async def handler(request: Request, response: Response):
     raw_body = response.body  # b"Hello"
 ```
 
-## 🚀 Advanced Usage
+##  Advanced Usage
 
 ### Custom Response Classes
 
@@ -658,7 +658,7 @@ async def serve_file(request: Request, response: Response):
         return response.status(500).json({"error": "Internal server error"})
 ```
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Use appropriate status codes** for different scenarios
 2. **Set proper content types** for different response formats
@@ -671,7 +671,7 @@ async def serve_file(request: Request, response: Response):
 9. **Use content negotiation** for multi-format APIs
 10. **Set appropriate cookie security** flags
 
-## 🔢 Response Status Codes
+##  Response Status Codes
 
 ### Success (2xx)
 - `200 OK` - Standard success response
@@ -697,7 +697,7 @@ async def serve_file(request: Request, response: Response):
 - `502 Bad Gateway` - Upstream server error
 - `503 Service Unavailable` - Service temporarily unavailable
 
-## 🔍 See Also
+##  See Also
 
 - [Request](./request.md) - HTTP request handling
 - [Middleware](./middleware.md) - Response middleware

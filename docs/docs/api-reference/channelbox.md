@@ -2,7 +2,7 @@
 
 The `ChannelBox` class is a singleton manager for WebSocket channels in Nexios. It provides group-based channel management, allowing you to organize channels into groups and broadcast messages to all channels within a group.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class ChannelBox:
@@ -11,7 +11,7 @@ class ChannelBox:
     HISTORY_SIZE: int = 1_048_576  # 1MB default
 ```
 
-## 📊 Class Attributes
+##  Class Attributes
 
 ### CHANNEL_GROUPS: Dict[str, Any]
 **Type**: `Dict[str, Dict[Channel, Any]]`  
@@ -26,7 +26,7 @@ class ChannelBox:
 **Default**: `1_048_576` (1MB)  
 **Description**: Maximum size for group message history. Configurable via `CHANNEL_BOX_HISTORY_SIZE` environment variable.
 
-## 🔧 Methods
+##  Methods
 
 ### add_channel_to_group()
 Add a channel to a specific group.
@@ -214,7 +214,7 @@ async def close_all_connections(cls) -> None
 await ChannelBox.close_all_connections()
 ```
 
-## 💡 Usage Examples
+##  Usage Examples
 
 ### Basic Group Management
 
@@ -486,7 +486,7 @@ async def shutdown_handler():
     print("All connections closed.")
 ```
 
-## 📋 Status Enums
+##  Status Enums
 
 ### ChannelAddStatusEnum
 - `CHANNEL_ADDED`: Channel added to new group
@@ -502,7 +502,7 @@ async def shutdown_handler():
 - `GROUP_SEND`: Message sent successfully
 - `NO_SUCH_GROUP`: Target group doesn't exist
 
-## ⚙️ Environment Configuration
+##  Environment Configuration
 
 ### CHANNEL_BOX_HISTORY_SIZE
 Set the maximum size for message history storage:
@@ -515,7 +515,7 @@ export CHANNEL_BOX_HISTORY_SIZE=2097152
 export CHANNEL_BOX_HISTORY_SIZE=524288
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [Channel](channel.md) - Individual WebSocket channel management
 - [WebSocket](websocket.md) - WebSocket connection handling

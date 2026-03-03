@@ -28,7 +28,7 @@ async def read_cookie(request, response):
     return {"token": auth_token}
 ```
 
-::: tip 💡 Tip
+::: tip  Tip
 The `request.cookies` property returns a dictionary where keys are cookie names and values are the corresponding cookie values.
 :::
 
@@ -109,7 +109,7 @@ async def multi_cookie(request, response):
 
 ## Cookie Security Considerations
 
-::: danger 🚨 Critical Warning
+::: danger  Critical Warning
 Improper cookie handling can lead to serious security vulnerabilities:
 - Never store sensitive data directly in cookies
 - Always validate and sanitize cookie values from requests

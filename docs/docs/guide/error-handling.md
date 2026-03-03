@@ -13,7 +13,7 @@ head:
 
 Nexios provides a robust and flexible error handling system that allows you to manage exceptions gracefully and return appropriate responses to clients. This documentation covers all aspects of error handling in Nexios applications.
 
-## 🔍 The Basic Idea
+##  The Basic Idea
 ```py
 from nexios.exceptions import HTTPException
 
@@ -32,7 +32,7 @@ If you raise a non-HTTPException (e.g., raise ValueError("fail")), Nexios will r
 
 
 
-## 🚨 HTTP Exceptions
+##  HTTP Exceptions
 
 Nexios includes built-in HTTP exceptions for common error scenarios:
 
@@ -48,7 +48,7 @@ async def get_user(request, response):
 # If you raise a non-HTTPException (e.g., raise ValueError("fail")), Nexios will return a 500 Internal Server Error unless you register a handler for that exception type.
 ```
 
-## 📝 Raising HTTP Exceptions
+##  Raising HTTP Exceptions
 All HTTP exceptions accept these parameters:
 
 - status_code: HTTP status code (required for base HTTPException)
@@ -65,7 +65,7 @@ raise HTTPException(
 )
 ```
 
-## 🎨 Custom Exception Classes
+##  Custom Exception Classes
 
 Nexios provides a way to create custom exception classes that extend the built-in HTTPException class. This allows you to define specific error handling behavior for specific types of errors.
 
@@ -89,7 +89,7 @@ async def get_premium_content(request, response):
 # If your custom exception handler raises an error, Nexios will return a 500 error. Always handle exceptions in your handlers gracefully.
 ```
 
-## 🛠️ Exception Handlers
+##  Exception Handlers
 
 Nexios provides a way to register custom exception handlers for specific exception types or HTTP status codes. This allows you to define custom error handling behavior for specific errors.
 
@@ -108,7 +108,7 @@ async def get_premium_content(request, response):
     return response.json({"message": "Premium content available"})      
 ``` 
 
-## 📊 Status Code Handlers
+##  Status Code Handlers
 Handle exceptions by status code:
 
 ```python
@@ -143,7 +143,7 @@ async def server_error_handler(request, response, exception):
 app = NexiosApp(server_error_handler=server_error_handler)
 ```
 
-## 🔍 Debug Mode
+##  Debug Mode
 Enable debug mode for detailed error responses:
 
 ```python
@@ -160,7 +160,7 @@ You can modify the app config simply as
 app.config.debug = True
 :::
 
-## 🎯 Customizing 404 Not Found Responses
+##  Customizing 404 Not Found Responses
 
 Nexios allows you to control how 404 Not Found errors are handled and presented to users. This is useful for providing a more user-friendly experience, matching your API or website style, or giving developers more debugging information during development.
 

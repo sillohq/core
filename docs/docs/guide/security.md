@@ -9,7 +9,7 @@ head:
     - property: og:description
       content: Nexios provides a comprehensive security middleware that implements various security headers and protections. This guide covers all available security options and best practices.
 ---
-# 🛡️ Security Middleware
+#  Security Middleware
 
 ```python
 from nexios import NexiosApp
@@ -31,7 +31,7 @@ app.add_middleware(
 )
 ```
 
-## 🔒 Security Features
+##  Security Features
 
 ### 1. Content Security Policy (CSP)
 
@@ -139,7 +139,7 @@ security = SecurityMiddleware(
 )
 ```
 
-## ⚙️ Complete Configuration Example
+##  Complete Configuration Example
 
 ::: details Full Configuration
 ```python
@@ -219,7 +219,7 @@ app.add_middleware(security)
 ```
 :::
 
-## 📋 Best Practices
+##  Best Practices
 
 ### Production Settings
 
@@ -291,7 +291,7 @@ security = SecurityMiddleware(
 )
 ```
 
-## 📊 Header Reference
+##  Header Reference
 
 | Header | Purpose | Default |
 |--------|---------|---------|
@@ -305,7 +305,7 @@ security = SecurityMiddleware(
 | Clear-Site-Data | Clear browser data | None |
 | Cross-Origin-*-Policy | Cross-origin isolation | same-origin |
 
-## 🎯 Common Scenarios
+##  Common Scenarios
 
 ### API Server
 
@@ -348,7 +348,7 @@ security = SecurityMiddleware(
 )
 ```
 
-## 🔧 Troubleshooting
+##  Troubleshooting
 
 ::: warning Common Issues
 1. **CSP Blocking Resources**: Check browser console for CSP violations

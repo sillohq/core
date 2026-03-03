@@ -2,7 +2,7 @@
 
 The `Group` class in Nexios provides a way to organize and mount sub-applications or collections of routes under a common path prefix. It acts as a mounting point that can contain either an ASGI application or a collection of routes, with support for middleware and path parameter handling.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class Group(BaseRoute):
@@ -17,7 +17,7 @@ class Group(BaseRoute):
     )
 ```
 
-## ⚙️ Constructor Parameters
+##  Constructor Parameters
 
 ### path: str
 **Type**: `str`  
@@ -118,7 +118,7 @@ protected_group = Group(
 )
 ```
 
-## 💡 Usage Examples
+##  Usage Examples
 
 ### Basic Route Grouping
 
@@ -243,7 +243,7 @@ api_group = Group(
 )
 ```
 
-## 🛣️ Path Parameter Handling
+##  Path Parameter Handling
 
 Groups support path parameters that can be captured and passed to the mounted application:
 
@@ -260,7 +260,7 @@ tenant_group = Group(
 # tenant_id is available in path_params
 ```
 
-## 🔗 URL Generation
+##  URL Generation
 
 ### Basic URL Generation
 
@@ -289,7 +289,7 @@ tenant_url = tenant_group.url_path_for(
 )  # "/tenant/abc123/dashboard"
 ```
 
-## 🎯 Route Matching
+##  Route Matching
 
 The Group class implements sophisticated path matching:
 
@@ -304,7 +304,7 @@ api_group = Group(path="/api/v1", app=sub_app)
 # 4. sub_app processes /users/123
 ```
 
-## 🔧 Integration with Router
+##  Integration with Router
 
 Groups work seamlessly with the Router class:
 
@@ -337,7 +337,7 @@ app.add_route(users_group_alt)
 ```
 
 
-## 📊 Properties
+##  Properties
 
 ### routes: List[BaseRoute]
 Access the routes within the group (if using routes parameter).
@@ -363,7 +363,7 @@ named_group = Group(path="/api", app=api_app, name="main_api")
 print(f"Group name: {named_group.name}")  # "main_api"
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [Router](router.md) - Route organization and management
 - [Route](route.md) - Individual route definitions

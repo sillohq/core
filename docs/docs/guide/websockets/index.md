@@ -10,7 +10,7 @@ head:
     - property: og:description
       content: WebSockets enable real-time, bidirectional communication between clients and servers, making them ideal for applications like chat systems, live dashboards, and notifications. Nexios provides a robust WebSocket implementation with intuitive APIs for managing connections, channels, and groups.
 ---
-# 🔌 WebSockets
+#  WebSockets
 
 ```python
 from nexios import NexiosApp
@@ -69,7 +69,7 @@ app.mount_router(router)
 :::
 
 
-## 📤 Sending Messages
+##  Sending Messages
 
 the `WebSocket` class has some methods that can be used to send messages to a connected client.
 
@@ -83,7 +83,7 @@ async def ws_handler(ws):
     # await ws.send_bytes(b"Hello World")
 ```
 
-## 📥 Receiving Messages
+##  Receiving Messages
 
 The `WebSocket` class has some methods that can be used to receive messages from a connected client.
 
@@ -123,7 +123,7 @@ await ws.send_json({"status": "success", "data": json_data})
 
 ---
 
-## 🔄 Connection Lifecycle
+##  Connection Lifecycle
 
 A WebSocket connection follows a clear lifecycle:
 
@@ -141,7 +141,7 @@ while True:
     # Process data
 ```
 
-## 🚪 Handle Disconnections
+##  Handle Disconnections
 
 ```python
 from nexios.websockets.base import WebSocketDisconnect

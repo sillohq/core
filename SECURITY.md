@@ -6,9 +6,9 @@ Nexios takes security seriously. Below are the versions currently receiving secu
 
 | Version | Supported |
 | ------- | --------- |
-| 3.7.x   | ✅        |
-| 3.x     | ✅        |
-| < 3.0   | ❌        |
+| 3.7.x   |         |
+| 3.x     |         |
+| < 3.0   |         |
 
 ## Reporting a Vulnerability
 

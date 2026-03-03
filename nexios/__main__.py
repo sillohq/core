@@ -9,7 +9,7 @@ ascii_art = f"""
  | |\\  | |  __/  >  <  | | | (_) | \\__ \\
  |_| \\_|  \\___| /_/\\_\\ |_|  \\___/  |___/
 
-    🚀 Welcome to Nexios 🚀
+     Welcome to Nexios 
       The sleek ASGI Backend Framework
       Version: {__version__}
 """

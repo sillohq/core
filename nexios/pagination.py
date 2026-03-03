@@ -38,7 +38,7 @@ class LinkBuilder:
             for k, v in self.request_params.items()
             if k not in self.pagination_params
         }
-        merged_params = {**filtered_params, **new_params}
+        merged_params = {**filtered_params,**new_params}
         return f"{self.base_url}?{urllib.parse.urlencode(merged_params, doseq=True)}"
 
 

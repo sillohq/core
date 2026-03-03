@@ -1,12 +1,12 @@
-# 🚀 Core Concepts
+#  Core Concepts
 
-Nexios is a modern, async-first Python web framework built on ASGI (Asynchronous Server Gateway Interface) 🌐. It combines high performance ⚡ with developer-friendly features while maintaining a clean and maintainable architecture. This guide will help you understand the fundamental concepts that make Nexios powerful and easy to use.
+Nexios is a modern, async-first Python web framework built on ASGI (Asynchronous Server Gateway Interface) . It combines high performance  with developer-friendly features while maintaining a clean and maintainable architecture. This guide will help you understand the fundamental concepts that make Nexios powerful and easy to use.
 
-## 🧠 Framework Philosophy
+##  Framework Philosophy
 
 Nexios is designed around several core principles that guide its architecture and API design:
 
-### 1. **Simplicity First 🎯**
+### 1. **Simplicity First**
 Nexios prioritizes simplicity in its API design. The goal is to make common tasks straightforward while keeping advanced features accessible when needed.
 
 ```python
@@ -20,10 +20,10 @@ async def get_user(request, response):
 app.add_middleware(CORSMiddleware())
 ```
 
-### 2. **Performance by Default ⚡**
+### 2. **Performance by Default**
 Every design decision in Nexios considers performance implications. The framework is optimized for high-throughput applications without sacrificing developer experience.
 
-### 3. **Type Safety Throughout 📝**
+### 3. **Type Safety Throughout**
 Full type hint support means better IDE integration, fewer runtime errors, and more maintainable code.
 
 ```python
@@ -35,53 +35,53 @@ async def get_data(request: Request, response: Response) -> Dict[str, Any]:
     return response.json({"status": "success"})
 ```
 
-### 4. **Production Ready 🏭**
-Built-in features for security 🔒, monitoring 📊, and deployment mean you can focus on business logic rather than infrastructure concerns.
+### 4. **Production Ready**
+Built-in features for security , monitoring , and deployment mean you can focus on business logic rather than infrastructure concerns.
 
-### 5. **Developer Experience 💻**
-Excellent tooling 🛠️, clear error messages 📢, and comprehensive documentation make development enjoyable and efficient.
+### 5. **Developer Experience**
+Excellent tooling , clear error messages , and comprehensive documentation make development enjoyable and efficient.
 
-## 🌐 Understanding ASGI
+##  Understanding ASGI
 
-ASGI (Asynchronous Server Gateway Interface) is the foundation that enables Nexios to handle concurrent connections efficiently 🔄. Understanding ASGI is key to understanding Nexios.
+ASGI (Asynchronous Server Gateway Interface) is the foundation that enables Nexios to handle concurrent connections efficiently . Understanding ASGI is key to understanding Nexios.
 
-### 🤔 What is ASGI?
+###  What is ASGI?
 
 ASGI is a specification that defines how web servers communicate with Python web applications. It's the successor to WSGI (Web Server Gateway Interface) and provides several key improvements:
 
-- **Async Support 🔄**: Native async/await support for non-blocking operations
-- **Concurrent Requests 🌊**: Ability to handle multiple requests simultaneously
-- **WebSocket Support 📡**: Built-in support for WebSocket connections
-- **HTTP/2 Support 🚀**: Modern HTTP protocol support
-- **Lifespan Protocol 🔄**: Application startup and shutdown management
+- **Async Support**: Native async/await support for non-blocking operations
+- **Concurrent Requests**: Ability to handle multiple requests simultaneously
+- **WebSocket Support**: Built-in support for WebSocket connections
+- **HTTP/2 Support**: Modern HTTP protocol support
+- **Lifespan Protocol**: Application startup and shutdown management
 
 ### ASGI vs WSGI
 
 | Feature | WSGI | ASGI |
 |---------|------|------|
-| **Concurrency** | Synchronous, one request at a time | Asynchronous, concurrent requests 🌊 |
-| **WebSockets** | Not supported | Native support 📡 |
-| **HTTP/2** | Limited support | Full support 🚀 |
-| **Performance** | Good for simple apps | Excellent for high-load apps ⚡ |
-| **Complexity** | Simple to understand | More complex but more powerful 🔧 |
+| **Concurrency** | Synchronous, one request at a time | Asynchronous, concurrent requests  |
+| **WebSockets** | Not supported | Native support  |
+| **HTTP/2** | Limited support | Full support  |
+| **Performance** | Good for simple apps | Excellent for high-load apps  |
+| **Complexity** | Simple to understand | More complex but more powerful  |
 
 ### Why ASGI Matters
 
 ASGI enables Nexios to:
 
-1. **Handle Thousands of Concurrent Connections 🌊**: Unlike WSGI applications that process one request at a time, ASGI applications can handle multiple requests concurrently.
+1. **Handle Thousands of Concurrent Connections**: Unlike WSGI applications that process one request at a time, ASGI applications can handle multiple requests concurrently.
 
-2. **Provide Real-time Features 📡**: WebSocket support enables real-time communication without additional infrastructure.
+2. **Provide Real-time Features**: WebSocket support enables real-time communication without additional infrastructure.
 
-3. **Scale Efficiently 📈**: Better resource utilization means you can serve more users with fewer servers.
+3. **Scale Efficiently**: Better resource utilization means you can serve more users with fewer servers.
 
-4. **Support Modern Web Standards 🌐**: HTTP/2, Server-Sent Events, and other modern web features are supported natively.
+4. **Support Modern Web Standards**: HTTP/2, Server-Sent Events, and other modern web features are supported natively.
 
-## 🏗️ Framework Architecture
+##  Framework Architecture
 
 Nexios follows a layered architecture that separates concerns and promotes maintainability. Let's explore each layer:
 
-### 1. ASGI Foundation Layer 🌐
+### 1. ASGI Foundation Layer 
 
 The foundation layer handles the low-level ASGI protocol and provides the interface between your application and the web server.
 
@@ -95,11 +95,11 @@ async def __call__(self, scope: Scope, receive: Receive, send: Send):
 ```
 
 **Key Components:**
-- **Scope 📋**: Contains request metadata (headers, method, path, etc.)
-- **Receive 📥**: Callback to receive request body data
-- **Send 📤**: Callback to send response data
+- **Scope**: Contains request metadata (headers, method, path, etc.)
+- **Receive**: Callback to receive request body data
+- **Send**: Callback to send response data
 
-### 2. Middleware Layer 🚰
+### 2. Middleware Layer 
 
 Middleware provides a way to process requests and responses as they flow through your application. Middleware can modify requests, add headers, handle authentication, and more.
 
@@ -125,7 +125,7 @@ class LoggingMiddleware(BaseMiddleware):
 Request → Middleware 1 → Middleware 2 → Handler → Middleware 2 → Middleware 1 → Response
 ```
 
-### 3. Routing Layer 🛣️
+### 3. Routing Layer 
 
 The routing layer matches incoming requests to the appropriate handlers based on URL patterns and HTTP methods.
 
@@ -145,11 +145,11 @@ async def search(request, response):
 ```
 
 **Routing Features:**
-- **Path Parameters 🔢**: Dynamic URL segments with type conversion
-- **Query Parameters ❓**: URL query string parsing
-- **HTTP Method Matching 🌐**: Different handlers for GET, POST, PUT, etc.
-- **Route Groups 📁**: Organize related routes together
-- **Nested Routers 🔗**: Modular route organization
+- **Path Parameters**: Dynamic URL segments with type conversion
+- **Query Parameters**: URL query string parsing
+- **HTTP Method Matching**: Different handlers for GET, POST, PUT, etc.
+- **Route Groups**: Organize related routes together
+- **Nested Routers**: Modular route organization
 
 ### 4. Handler Layer
 

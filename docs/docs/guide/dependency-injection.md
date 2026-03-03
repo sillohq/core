@@ -10,12 +10,12 @@ head:
       content: Learn how to use dependency injection utilities in Nexios
 ---
 
-# 💉 Dependency Injection in Nexios
+#  Dependency Injection in Nexios
 
 Nexios provides a modern, flexible, and powerful dependency injection (DI) system inspired by frameworks like FastAPI, but tailored for simplicity and performance in ASGI environments. Unlike more complex DI systems that rely heavily on runtime introspection or container scanning, Nexios emphasizes context-aware injection and declarative dependencies. This approach minimizes overhead, avoids unnecessary complexity, and leverages Python's context to pass request-specific data efficiently.
 
 
-## 🚀 Basic Example
+##  Basic Example
 ```py
 from nexios import NexiosApp, Depend
 
@@ -38,7 +38,7 @@ async def show_config(request, response, settings: dict = Depend(get_settings)):
 
 ```
 
-## ❓ What is Dependency Injection?
+##  What is Dependency Injection?
 
 Dependency Injection (DI) is a design pattern that allows decoupling components by injecting their dependencies rather than hardcoding them. In Nexios, this means declaring what your handlers need, and the framework handles the rest.
 
@@ -53,7 +53,7 @@ Nexios' take is pragmatic: use DI for reusable logic (e.g., DB connections, auth
 
 ---
 
-## ⚡ Quick Start: Basic Dependency
+##  Quick Start: Basic Dependency
 
 ```python
 from nexios import NexiosApp, Depend
@@ -73,7 +73,7 @@ async def show_config(request, response, settings: dict = Depend(get_settings)):
 
 ---
 
-## 🔗 Chaining & Sub-Dependencies
+##  Chaining & Sub-Dependencies
 
 Dependencies can depend on other dependencies, forming a tree:
 
@@ -143,7 +143,7 @@ You can also use `context=Context()` as a parameter, and Nexios will inject the 
 
 ---
 
-## 🌊 Deep Context Propagation
+##  Deep Context Propagation
 
 Nexios supports context propagation through deeply nested dependencies:
 
@@ -161,7 +161,7 @@ async def deep_context(req, res, b=Depend(dep_b)):
 
 ---
 
-## 🏗️ App-level and Router-level Dependencies
+##  App-level and Router-level Dependencies
 
 Nexios supports dependencies that apply to all routes in the app or in a router. This is useful for things like authentication, database sessions, or any logic you want to share across multiple routes.
 
@@ -236,7 +236,7 @@ async def protected_route(req, res, user = Depend(auth)):
 
 ---
 
-## 🎨 Context-Aware Dependencies and Simplicity
+##  Context-Aware Dependencies and Simplicity
 
 Nexios DI shines in context-aware scenarios, where dependencies need request-specific data. By passing `Context()`, you access `request`, `response`, `user`, and more without introspection:
 
@@ -260,7 +260,7 @@ async def user_profile(req, res, profile=Depend(get_user_profile)):
 
 
 
-## ⚙️ Advanced Patterns
+##  Advanced Patterns
 
 - **Dependency Caching**: Use `functools.lru_cache` for expensive dependencies
 - **Custom Scopes**: Implement your own scoping rules for advanced use cases

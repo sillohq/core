@@ -29,7 +29,7 @@ Middleware in Nexios provides:
 
 ---
 
-## 🔄 How Middleware Works
+##  How Middleware Works
 
 Middleware functions are executed in a sequence, forming a pipeline that processes incoming requests and outgoing responses. Each middleware function has access to the request (`req`), response (`res`), and a `next` function to pass control to the next middleware or the final route handler.
 
@@ -49,7 +49,7 @@ The middleware pipeline follows this pattern:
 4. **Return response**: Send the final response back to the client
    :::
 
-## 🚀 Basic Middleware Example
+##  Basic Middleware Example
 
 Below is a simple example demonstrating how to define and use middleware in a Nexios application:
 
@@ -88,11 +88,11 @@ async def hello_world(req, res):
 
 ```
 
-::: tip 💡Tip
+::: tip Tip
 All code before `await next()` is executed before the route handler.
 :::
 
-## 📋 Order of Execution
+##  Order of Execution
 
 Middleware functions are executed in the order they are added. The flow of execution is as follows:
 
@@ -112,17 +112,17 @@ Middleware functions are executed in the order they are added. The flow of execu
 
 ```
 
-::: tip 💡Tip
+::: tip Tip
 Middleware functions are executed in the order they are added. Ensure that middleware with dependencies (e.g., authentication before authorization) is added in the correct sequence.
 :::
 
 ---
 
-## ❔ What is `cnext`?
+##  What is `cnext`?
 
 In Nexios, middleware functions rely on a continuation callback (commonly called next, cnext, or callnext) to pass control to the next stage of the request pipeline. This parameter is crucial for request flow but its name is completely flexible — you're free to call it whatever makes sense for your codebase.
 
-## 🔗 Before and after handler
+##  Before and after handler
 For example, let's say we want to log the time it takes for a request to complete. We can write a middleware that will log the time before and after the handler is called:
 
 ```python
@@ -165,7 +165,7 @@ Modifying the response object should be done after the request is processed. It'
 
 :::
 
-## 🏗️ Class-Based Middleware
+##  Class-Based Middleware
 
 Nexios supports class-based middleware for better organization and reusability. A class-based middleware must inherit from `BaseMiddleware` and implement the following methods:
 
@@ -228,7 +228,7 @@ class ErrorCatchingMiddleware(BaseMiddleware):
 
 ---
 
-## ⚙️ Using make_response in Middleware
+##  Using make_response in Middleware
 
 The `make_response` method in Nexios allows you to create custom response objects within your middleware. This is particularly useful when you need to:
 
@@ -281,7 +281,7 @@ async def error_handler_middleware(req, res, next):
     return res
 ```
 
-## 🛣️ Route-Specific Middleware
+##  Route-Specific Middleware
 
 Route-specific middleware applies only to a particular route. This is useful for applying middleware logic to specific endpoints without affecting the entire application.
 
@@ -299,14 +299,14 @@ async def get_profile(req, res):
     return res.json({"message": "Welcome to your profile!"})
 ```
 
-**⚙️ Execution Order:**\
+** Execution Order:**\
 `auth_middleware → get_profile handler → response sent`
 
 # If you forget to call await cnext() in route-specific middleware, the request will not reach the handler.
 
 ---
 
-## 🗂️ Router-Specific Middleware
+##  Router-Specific Middleware
 
 Router-specific middleware applies to all routes under a specific router. This is useful for grouping middleware logic for a set of related routes.
 
@@ -335,7 +335,7 @@ app.mount_router(admin_router)  # Mount router at "/admin"
 
 ---
 
-## 🔧 Nexios Middleware vs. ASGI Middleware
+##  Nexios Middleware vs. ASGI Middleware
 
 Nexios offers two ways to add middleware to your application: `app.add_middleware()` and `app.wrap_asgi()`. While both are used to hook into the request/response lifecycle, they serve different purposes and are designed for different types of middleware.
 
@@ -413,7 +413,7 @@ async def home(req, res):
 
 By understanding the difference between these two methods, you can choose the right tool for the job and build more powerful and flexible applications with Nexios.
 
-## 🏷️ Using `@use_for_route` Decorator
+##  Using `@use_for_route` Decorator
 
 The `@use_for_route` decorator binds a middleware function to specific routes or route patterns, ensuring that the middleware only executes when a matching route is accessed.
 
@@ -439,7 +439,7 @@ Avoind modifying the request object in middleware. This can lead to unexpected b
 
 
 
-## 🔧 Raw ASGI Middleware
+##  Raw ASGI Middleware
 
 Nexios allows you to use raw ASGI middleware for scenarios where you need lower-level control over the ASGI protocol. This is especially useful when integrating with third-party ASGI middleware, performing operations that require direct access to the ASGI `scope`, or when you need to manipulate the request/response cycle before Nexios processes the request.
 

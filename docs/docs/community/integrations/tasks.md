@@ -8,13 +8,13 @@ This system allows you to execute time-consuming operations without blocking you
 
 Key capabilities that make background task management efficient and reliable:
 
-- 🚀 Simple task creation and management
-- 🔄 Built-in task status tracking
+-  Simple task creation and management
+-  Built-in task status tracking
 - ⏱️ Timeout and cancellation support
-- 🔌 Seamless integration with Nexios dependency injection
-- 📊 Progress tracking and result handling
-- 🧵 Thread-safe task management
-- 📝 Comprehensive logging
+-  Seamless integration with Nexios dependency injection
+-  Progress tracking and result handling
+-  Thread-safe task management
+-  Comprehensive logging
 
 ## Installation
 

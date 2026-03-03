@@ -1214,12 +1214,12 @@ While both `Group` and `Router` can be used to organize routes, they serve diffe
 
 | Feature         | Group | Router |
 | --------------- | ----- | ------ |
-| Path prefixing  | ✅    | ✅     |
-| Middleware      | ✅    | ❌     |
-| Mount ASGI apps | ✅    | ❌     |
-| Nested routing  | ✅    | ✅     |
-| Route methods   | ❌    | ✅     |
-| Standalone app  | ❌    | ✅     |
+| Path prefixing  |     |      |
+| Middleware      |     |      |
+| Mount ASGI apps |     |      |
+| Nested routing  |     |      |
+| Route methods   |     |      |
+| Standalone app  |     |      |
 
 ### Best Practices
 

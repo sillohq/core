@@ -1,14 +1,14 @@
-# 🚀 Why Migrating to Nexios is Worth It
+#  Why Migrating to Nexios is Worth It
 
 Migrating to Nexios is a worthwhile investment for several reasons:
 
-Nexios is built on top of [ASGI](https://asgi.readthedocs.io/) 🌐, a newer async server interface for Python. While [WSGI](https://wsgi.readthedocs.io/) is older and less efficient, ASGI offers superior performance and scalability. Nexios leverages ASGI to provide a high-performance web framework for modern Python applications.
+Nexios is built on top of [ASGI](https://asgi.readthedocs.io/) , a newer async server interface for Python. While [WSGI](https://wsgi.readthedocs.io/) is older and less efficient, ASGI offers superior performance and scalability. Nexios leverages ASGI to provide a high-performance web framework for modern Python applications.
 
 Additionally, Nexios promotes clean code practices, making it easier to write maintainable and testable code. The framework is designed to be easy to use, with a consistent and intuitive API. Lastly, Nexios is less opinionated about project structure, allowing you to adapt it to your needs.
 
 ---
 
-## 🛣️ Routing
+##  Routing
 
 Routing is how frameworks map an incoming HTTP request to a handler function. Each framework has its own way of registering routes.
 
@@ -71,7 +71,7 @@ async def hello(request):
 
 ---
 
-## ⚙️ Handler Signature
+##  Handler Signature
 
 A handler (or view) is just a Python function that receives the request and returns a response. Nexios passes both `request` and `response` explicitly, while Flask, FastAPI, and Starlette either auto-inject or expose only `request`.
 
@@ -133,7 +133,7 @@ app = Starlette(routes=[Route("/hello", hello)])
 
 ---
 
-## 📋 Request Object
+##  Request Object
 
 Every web framework exposes a `Request` object that allows you to inspect the incoming HTTP request. The exact API differs across frameworks.
 
@@ -154,7 +154,7 @@ Every web framework exposes a `Request` object that allows you to inspect the in
 
 ---
 
-## 📤 Sending Response
+##  Sending Response
 
 Returning a response can be as simple as returning a dictionary (which Nexios, Flask, and FastAPI auto-serialize to JSON) or manually constructing a `Response` object for more control.
 
@@ -213,7 +213,7 @@ async def data(request):
 
 ---
 
-## 📁 Static Files
+##  Static Files
 
 Static files (images, CSS, JavaScript) can be served natively. ASGI-based frameworks use `StaticFiles`, while Flask has built-in static folder support.
 
@@ -253,7 +253,7 @@ app.mount("/static", StaticFiles(directory="public"), name="static")
 
 ---
 
-## 🛡️ Error Handling
+##  Error Handling
 
 Error handling lets you intercept exceptions and return custom responses. Nexios, FastAPI, and Starlette have async exception handlers, while Flask uses decorators.
 
@@ -315,7 +315,7 @@ async def not_found(request, response, exc):
 
 ---
 
-## 💉 Dependency Injection (DI)
+##  Dependency Injection (DI)
 
 Dependency Injection allows you to cleanly separate concerns (like database access, services). Nexios and FastAPI have first-class DI support, while Flask/Starlette don’t provide it natively.
 
@@ -351,7 +351,7 @@ async def profile(user = Depends(get_user_service)):
 
 ---
 
-## 📡 WebSockets
+##  WebSockets
 
 WebSockets provide two-way real-time communication. Flask doesn’t support WebSockets natively, but Nexios, FastAPI, and Starlette do.
 

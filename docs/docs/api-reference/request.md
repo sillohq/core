@@ -2,7 +2,7 @@
 
 The `Request` class represents an incoming HTTP request and provides comprehensive access to request data, headers, body content, and metadata.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class Request(HTTPConnection):
@@ -14,7 +14,7 @@ class Request(HTTPConnection):
     )
 ```
 
-## 📊 Core Properties
+##  Core Properties
 
 ### Basic Request Information
 
@@ -169,7 +169,7 @@ async def handler(request: Request, response: Response):
         return response.status(413).json({"error": "Request too large"})
 ```
 
-## 📄 Body Content Access
+##  Body Content Access
 
 ### body: bytes
 Raw request body as bytes.
@@ -247,7 +247,7 @@ async def handler(request: Request, response: Response):
             f.write(content)
 ```
 
-## 🌊 Stream Processing
+##  Stream Processing
 
 ### stream()
 Stream request body in chunks for large files.
@@ -262,7 +262,7 @@ async def handler(request: Request, response: Response):
             return response.status(413).json({"error": "File too large"})
 ```
 
-## 🔐 Authentication & Session
+##  Authentication & Session
 
 ### user: Optional[BaseUser]
 Current authenticated user (requires auth middleware).
@@ -293,7 +293,7 @@ async def handler(request: Request, response: Response):
     request.session.clear()
 ```
 
-## 🗂️ State Management
+##  State Management
 
 ### state: State
 Request-scoped state for sharing data between middleware and handlers.
@@ -325,7 +325,7 @@ async def handler(request: Request, response: Response):
     debug_mode = request.app.config.get("debug", False)
 ```
 
-## 🔧 Utility Methods
+##  Utility Methods
 
 ### build_absolute_uri()
 Build absolute URIs from relative paths.
@@ -401,7 +401,7 @@ async def handler(request: Request, response: Response):
         params = dict(request.query_params)
 ```
 
-## 📝 Content Type Checks
+##  Content Type Checks
 
 ### is_json: bool
 Check if request content type is JSON.
@@ -446,7 +446,7 @@ async def handler(request: Request, response: Response):
         # Process form submission
 ```
 
-## ✅ Request State Checks
+##  Request State Checks
 
 ### is_secure: bool
 Check if request is using HTTPS.
@@ -660,7 +660,7 @@ async def handler(request: Request, response: Response):
         return response.status(500).json({"error": "Internal server error"})
 ```
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Always check content type** before parsing request body
 2. **Use appropriate parsing method** (json, form, files) based on content type
@@ -671,7 +671,7 @@ async def handler(request: Request, response: Response):
 7. **Check authentication state** before processing sensitive operations
 8. **Log important request information** for debugging and monitoring
 
-## 🔍 See Also
+##  See Also
 
 - [Response](./response.md) - HTTP response handling
 - [Middleware](./middleware.md) - Request/response middleware

@@ -10,11 +10,11 @@ head:
       content: Nexios provides a powerful command-line interface (CLI) that makes it easy to develop, test, and deploy your applications. This guide covers the basics of the CLI, including configuration and advanced usage.
 ---
 
-# 📺 Channels
+#  Channels
 
 WebSocket connections in Nexios are managed using the `Channel` class, which provides enhanced functionality for handling real-time communication. Channels wrap WebSocket connections with additional features like metadata, expiration, and structured message handling.
 
-## ✨ Channel Features
+##  Channel Features
 
 - **Automatic Message Serialization**: Supports JSON, text, and binary payloads
 - **Connection Lifecycle Management**: Built-in handling for connection states
@@ -22,9 +22,9 @@ WebSocket connections in Nexios are managed using the `Channel` class, which pro
 - **Expiration**: Automatic cleanup of inactive channels
 - **Error Handling**: Built-in error handling and cleanup
 
-## 🚀 Creating and Using a Channel
+##  Creating and Using a Channel
 
-### 🏗️ Basic Channel Creation
+###  Basic Channel Creation
 
 ```python
 from datetime import timedelta
@@ -65,7 +65,7 @@ async def chat_handler(ws: WebSocket):
         await channel.close()
 ```
 
-### 🔧 Channel Methods and Properties
+###  Channel Methods and Properties
 
 ```python
 # Get channel information
@@ -88,7 +88,7 @@ binary = await channel.receive_bytes()  # For binary payloads
 await channel.close(code=1000, reason="User left the chat")
 ```
 
-### ⏰ Channel Expiration and Heartbeats
+###  Channel Expiration and Heartbeats
 
 Channels can be configured to expire after a period of inactivity. To keep a channel alive, you can implement a heartbeat mechanism:
 
@@ -123,7 +123,7 @@ async def chat_handler(ws: WebSocket):
         await channel.close()
 ```
 
-## ✅ Best Practices for Channels
+##  Best Practices for Channels
 
 1. **Always Close Connections**
 

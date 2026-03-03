@@ -27,14 +27,14 @@ Nexios is a cutting-edge Python web framework that combines the best of modern w
 
 ### Key Features
 
-- **🚀 High Performance**: Built on ASGI for exceptional speed and concurrency
-- **🔄 Async-First**: Native async/await support throughout the framework
-- **🛡️ Type Safe**: Full type hint support for better development experience
-- **📚 Developer Friendly**: Intuitive API with excellent documentation
-- **🔧 Production Ready**: Built-in security, testing, and deployment features
-- **🎯 Flexible**: Extensive customization options for any use case
-- **📖 OpenAPI Ready**: Automatic API documentation generation
-- **🔌 Extensible**: Easy to add custom functionality and middleware
+- **High Performance**: Built on ASGI for exceptional speed and concurrency
+- **Async-First**: Native async/await support throughout the framework
+- **Type Safe**: Full type hint support for better development experience
+- **Developer Friendly**: Intuitive API with excellent documentation
+- **Production Ready**: Built-in security, testing, and deployment features
+- **Flexible**: Extensive customization options for any use case
+- **OpenAPI Ready**: Automatic API documentation generation
+- **Extensible**: Easy to add custom functionality and middleware
 
 ### Why Choose Nexios?
 
@@ -150,20 +150,20 @@ pipenv shell
 
 | Package Manager  | Fastest Installation | Virtual Environment | Compatible with pip | Production | Written in Rust |
 |------------------|---------------------|--------------------|--------------------|------------|----------------|
-| uv (Recommended) | ⚡                   | 🔧                  | 🔄                  | 🚀         | ✅            |
-| pip              | 🐌                   | ✅                  | ✅                  | ✅         |                |
-| poetry           |                     | ✅                  |                     | ✅         |                |
-| pipenv           |                     | ✅                  | ✅                  | ✅         |                |
+| uv (Recommended) |                    |                   |                   |          |             |
+| pip              |                    |                   |                   |          |                |
+| poetry           |                     |                   |                     |          |                |
+| pipenv           |                     |                   |                   |          |                |
 
 ::: tip Virtual Environments
 Always use virtual environments to isolate your project dependencies. This prevents conflicts between different projects and keeps your system Python clean.
 
 **Benefits of virtual environments:**
-- 🛡️ Isolate project dependencies
-- 🚫 Avoid version conflicts
-- 📤 Easy project sharing and deployment
-- 🧹 Clean system Python installation
-- 🔄 Reproducible builds
+-  Isolate project dependencies
+-  Avoid version conflicts
+-  Easy project sharing and deployment
+-  Clean system Python installation
+-  Reproducible builds
 
 **Creating virtual environments:**
 ```bash
@@ -235,11 +235,11 @@ hypercorn main:app --reload --bind 127.0.0.1:8000
 For development, we recommend using `uvicorn` with the `--reload` flag. This will automatically restart your application when you make changes to your code.
 
 **Benefits of uvicorn:**
-- 🔄 Auto-reload on code changes
-- ⚡ Fast startup time
-- 🐛 Good error reporting
-- 📊 Built-in logging
-- 🔧 Easy configuration
+-  Auto-reload on code changes
+-  Fast startup time
+-  Good error reporting
+-  Built-in logging
+-  Easy configuration
 :::
 
 ### Testing Your Application

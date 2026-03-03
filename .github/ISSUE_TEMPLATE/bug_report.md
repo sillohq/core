@@ -4,7 +4,7 @@ about: Help us make Nexios better by reporting bugs
 labels: bug
 ---
 
-## 🐞 **Bug Report**
+##  **Bug Report**
 
 Thank you for helping us improve Nexios! We're sorry you've encountered a bug, and we’ll do our best to get it fixed quickly.
 

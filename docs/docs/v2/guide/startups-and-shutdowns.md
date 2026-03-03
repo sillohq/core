@@ -71,7 +71,7 @@ async def app_lifespan(app):
 app = NexioApp(lifespan=app_lifespan)
 ```
 
-::: tip 💡Tip
+::: tip Tip
 
 You cannot use ``on_startup`` and ``on_shutdown`` together with ``lifespan`` But You can use this trick 
 

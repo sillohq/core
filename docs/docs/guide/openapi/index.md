@@ -1,8 +1,8 @@
-# 📋 OpenAPI Documentation in Nexios
+#  OpenAPI Documentation in Nexios
 
 Nexios provides comprehensive, automatic API documentation powered by the OpenAPI 3.0 standard. Every route you define is automatically documented with interactive UIs, type validation, and professional-grade specifications.
 
-## 🚀 Quick Start
+##  Quick Start
 
 By default, Nexios generates complete OpenAPI documentation for all your routes:
 
@@ -26,7 +26,7 @@ This automatically creates:
 - **ReDoc documentation** at `/redoc` 
 - **OpenAPI JSON specification** at `/openapi.json`
 
-## 📖 Documentation Interfaces
+##  Documentation Interfaces
 
 Nexios provides multiple ways to explore your API:
 
@@ -51,7 +51,7 @@ Machine-readable JSON specification for:
 - Integration with other services
 - Custom documentation tools
 
-## 🎯 Basic Route Documentation
+##  Basic Route Documentation
 Every route automatically generates documentation including:
 - HTTP method and path pattern
 - Path parameters with type conversion
@@ -70,7 +70,7 @@ async def health_check(request, response):
 
 The docstring becomes the endpoint description, and Nexios automatically documents the response structure.
 
-## 🔧 Enhanced Documentation with Metadata
+##  Enhanced Documentation with Metadata
 
 For production APIs, provide comprehensive metadata for professional documentation:
 
@@ -132,7 +132,7 @@ async def get_user_profile(request, response, user_id: int):
 
 **Responses**: Explicit response models for different status codes with proper error handling documentation.
 
-## 🎨 Advanced Documentation Features
+##  Advanced Documentation Features
 
 ### 1. Multiple Response Types
 
@@ -298,7 +298,7 @@ async def delete_user(request, response, user_id: int):
     pass
 ```
 
-## 🏗️ Organizing Large APIs
+##  Organizing Large APIs
 
 ### Using Tags for Grouping
 
@@ -363,7 +363,7 @@ app.mount_router(users_router)
 app.mount_router(admin_router)
 ```
 
-## ⚙️ Customizing OpenAPI Configuration
+##  Customizing OpenAPI Configuration
 
 ### Application-Level Configuration
 
@@ -454,16 +454,16 @@ async def debug_info(request, response):
     pass
 ```
 
-## 📝 Documentation Best Practices
+##  Documentation Best Practices
 
 ### Writing Effective Descriptions
 
 **Be Specific and Actionable**:
 ```python
-# ❌ Vague
+#  Vague
 @app.get("/users/{user_id}", summary="Get user")
 
-# ✅ Specific  
+#  Specific  
 @app.get(
     "/users/{user_id}",
     summary="Retrieve user profile by ID",
@@ -541,7 +541,7 @@ async def list_users_v1(request, response):
     pass
 ```
 
-## 🔧 Advanced Features
+##  Advanced Features
 
 ### Custom Documentation URLs
 

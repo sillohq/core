@@ -18,17 +18,17 @@ head:
 
 This documentation is provided for historical reference only. We strongly recommend upgrading to the latest version of Nexios for:
 
-- 🔒 **Security updates and patches**
-- 🚀 **Performance improvements**
-- ✨ **New features and enhancements**
-- 🐛 **Bug fixes and stability improvements**
-- 📚 **Active community support**
+-  **Security updates and patches**
+-  **Performance improvements**
+-  **New features and enhancements**
+-  **Bug fixes and stability improvements**
+-  **Active community support**
 
 ## Migration Path
 
 ### Current Status
-- **v2.x**: ❌ Deprecated (no longer maintained)
-- **v3.x**: ✅ Current stable version (recommended)
+- **v2.x**:  Deprecated (no longer maintained)
+- **v3.x**:  Current stable version (recommended)
 
 ### How to Upgrade
 
@@ -58,10 +58,10 @@ While we've tried to minimize breaking changes, some updates were necessary for 
 
 ### Need Help?
 
-- 📖 **Current Documentation**: [Latest Version Documentation](../../)
-- 💬 **Community Support**: [Join our Discord](https://discord.gg/nexios)
-- 🐛 **Report Issues**: [GitHub Issues](https://github.com/nexios-labs/nexios/issues)
-- 📧 **Email Support**: support@nexios.dev
+-  **Current Documentation**: [Latest Version Documentation](../../)
+-  **Community Support**: [Join our Discord](https://discord.gg/nexios)
+-  **Report Issues**: [GitHub Issues](https://github.com/nexios-labs/nexios/issues)
+-  **Email Support**: support@nexios.dev
 
 ---
 

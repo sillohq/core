@@ -1,8 +1,8 @@
-# 🔐 Authentication Documentation in Nexios
+#  Authentication Documentation in Nexios
 
 Securing your API is crucial for protecting user data and enabling safe integrations. Nexios provides comprehensive OpenAPI documentation for multiple authentication schemes, making it easy for API consumers to understand and implement proper authentication.
 
-## 🎯 Why Document Authentication?
+##  Why Document Authentication?
 
 Proper authentication documentation provides several benefits:
 
@@ -12,7 +12,7 @@ Proper authentication documentation provides several benefits:
 - **Compliance**: Proper documentation helps meet security audit requirements
 - **Developer Experience**: Clear auth flows improve API adoption
 
-## 🔑 Bearer Token Authentication
+##  Bearer Token Authentication
 
 Bearer token authentication (typically JWT) is the most common modern authentication method. Nexios includes built-in support with automatic documentation:
 
@@ -183,7 +183,7 @@ async def get_dashboard(request, response):
     return response.json({"dashboard": "data"})
 ```
 
-## 🔓 OAuth2 Authentication
+##  OAuth2 Authentication
 
 OAuth2 provides secure, delegated access and is ideal for third-party integrations. Nexios supports all OAuth2 flows:
 
@@ -302,7 +302,7 @@ async def get_internal_data(request, response):
     return response.json({"internal": "data"})
 ```
 
-## 🔗 Multiple Authentication Methods
+##  Multiple Authentication Methods
 
 Support multiple authentication methods to provide flexibility:
 
@@ -351,7 +351,7 @@ async def high_security_endpoint(request, response):
     return response.json({"data": "highly sensitive data"})
 ```
 
-## 🎨 Advanced Authentication Patterns
+##  Advanced Authentication Patterns
 
 ### Role-Based Access Control
 
@@ -420,7 +420,7 @@ async def get_content(request, response, content_id: int):
         })
 ```
 
-## 🛡️ Security Best Practices
+##  Security Best Practices
 
 ### Comprehensive Error Responses
 
@@ -505,7 +505,7 @@ async def auth_middleware(request, response, next_call):
 app.add_middleware(auth_middleware)
 ```
 
-## ✅ Documentation Best Practices
+##  Documentation Best Practices
 
 ### Clear Security Descriptions
 

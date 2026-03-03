@@ -4,14 +4,14 @@ Redis integration for Nexios web framework, providing seamless caching, session 
 
 ## Features
 
-- 🚀 **High-Performance Redis Client**: Async Redis client with connection pooling and health checks
-- 🔄 **Dependency Injection**: Multiple DI patterns for clean, testable code
-- 🏗️ **Connection Management**: Automatic connection lifecycle management
-- 📊 **Data Structure Support**: Strings, Hashes, Lists, Sets, JSON operations
-- ⚙️ **Configuration**: Environment-based and programmatic configuration
-- 🛡️ **Error Handling**: Robust error handling with custom exceptions
-- 🧪 **Testing Support**: Easy mocking and testing utilities
-- 📈 **Monitoring**: Built-in connection health monitoring
+-  **High-Performance Redis Client**: Async Redis client with connection pooling and health checks
+-  **Dependency Injection**: Multiple DI patterns for clean, testable code
+-  **Connection Management**: Automatic connection lifecycle management
+-  **Data Structure Support**: Strings, Hashes, Lists, Sets, JSON operations
+-  **Configuration**: Environment-based and programmatic configuration
+-  **Error Handling**: Robust error handling with custom exceptions
+-  **Testing Support**: Easy mocking and testing utilities
+-  **Monitoring**: Built-in connection health monitoring
 
 ## Installation
 

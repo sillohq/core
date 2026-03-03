@@ -16,7 +16,7 @@ export function generateDynamicOGImage(pageData) {
   if (title === 'Nexios' && pageData?.content) {
     const headingMatch = pageData.content.match(/^#\s+(.+)$/m)
     if (headingMatch) {
-      title = headingMatch[1].replace(/[🚀🤔⚡🔄🎯🌐🛣️📖🔐🐍📡🔌🏭]/g, '').trim()
+      title = headingMatch[1].replace(/[]/g, '').trim()
     }
   }
 

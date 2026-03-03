@@ -10,11 +10,11 @@ head:
     - property: og:description
       content: Nexios provides a powerful templating system built on top of Jinja2, offering features like template inheritance, context management, custom filters, and more.
 ---
-# 🎨 Templating
+#  Templating
 
 Nexios provides a powerful templating system built on top of Jinja2, offering features like template inheritance, context management, custom filters, and more.
 
-## 📋 Prerequisites
+##  Prerequisites
 
 Before using templating features, you need to install the required dependencies:
 
@@ -22,7 +22,7 @@ Before using templating features, you need to install the required dependencies:
 pip install nexios[templating]
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ```python
 from nexios import NexiosApp
@@ -42,7 +42,7 @@ Without setting up the templating engine , the render function throws a Notimpem
 
 :::
 
-## ⚙️ Customizing Default Configuration
+##  Customizing Default Configuration
 
 There are several ways to customize the templating system:
 
@@ -104,7 +104,7 @@ engine.config.template_dir = Path("new_templates")
 engine.setup_environment(engine.config)
 ```
 
-## 📊 Configuration Options
+##  Configuration Options
 
 The `TemplateConfig` class supports the following options:
 
@@ -120,7 +120,7 @@ The `TemplateConfig` class supports the following options:
 | custom_filters | Dict[str, callable] | {}          | Custom template filters         |
 | custom_globals | Dict[str, Any]      | {}          | Global template variables       |
 
-## 🏗️ Template Inheritance
+##  Template Inheritance
 
 Base template (`base.html`):
 
@@ -147,7 +147,7 @@ content %}
 {{ content }} {% endblock %}
 ```
 
-## 🔧 Context Middleware
+##  Context Middleware
 
 Add global and request-specific context to your templates:
 
@@ -191,7 +191,7 @@ from nexios.templating.utils import (
 {{ static_url('style.css') }}?v={{ static_hash('static/style.css') }}
 ```
 
-## ✅ Best Practices
+##  Best Practices
 
 1. **Template Organization**
 
@@ -216,7 +216,7 @@ from nexios.templating.utils import (
    - Use `|safe` filter carefully
    - Validate user input before rendering
 
-## 📚 API Reference
+##  API Reference
 
 ### Render Function
 
@@ -251,11 +251,11 @@ def static_hash(filepath: str) -> str
 def merge_dicts(*dicts: Dict[str, Any]) -> Dict[str, Any]
 ```
 
-## ⚡ Advanced Templating
+##  Advanced Templating
 
 This guide covers advanced features and patterns for the Nexios templating system.
 
-## 🎯 Custom Filters
+##  Custom Filters
 
 Create and register custom template filters:
 
@@ -283,7 +283,7 @@ Usage in templates:
 {{ post.content|markdown }} {{ product.price|currency("€") }}
 ```
 
-## 🔧 Macros
+##  Macros
 
 Create reusable template components:
 
@@ -308,7 +308,7 @@ Create reusable template components:
 </form>
 ```
 
-## 🔄 Async Template Functions
+##  Async Template Functions
 
 Create async template functions for database queries or API calls:
 
@@ -335,7 +335,7 @@ Usage in templates:
 {% endfor %}
 ```
 
-## 📦 Context Processors
+##  Context Processors
 
 Advanced context processor patterns:
 
@@ -464,7 +464,7 @@ async def template_error(request, response, exc):
     )
 ```
 
-## 🧪 Testing Templates
+##  Testing Templates
 
 Write tests for your templates:
 

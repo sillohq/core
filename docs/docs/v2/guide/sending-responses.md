@@ -123,7 +123,7 @@ async def getUsers(request, response):
     return response.status(200).json(["John Doe","Jane Smith"])
 ```
 
-::: tip 💡 Recommended
+::: tip  Recommended
 For clarity and to leverage the full power of Nexios's response handling, we recommend using the `response` object to build your responses, especially when you need to set custom headers, cookies, or status codes.
 :::
 
@@ -255,7 +255,7 @@ async def simple_response(req, res):
 
 However, for more control over the response, it is recommended to use the `Response` object and its methods.
 
-::: tip 💡 Recommended
+::: tip  Recommended
 For clarity and to leverage the full power of Nexios's response handling, we recommend using the `res` object to build your responses, especially when you need to set custom headers, cookies, or status codes.
 :::
 

@@ -179,7 +179,7 @@ def test_request_text_unicode(test_client_factory: Callable[[NexiosApp], TestCli
         return response.json({"text": text})
 
     with test_client_factory(app) as client:
-        content = "Hello 世界 🌍"
+        content = "Hello 世界 "
         resp = client.post("/data", content=content.encode("utf-8"))
         assert resp.json()["text"] == content
 

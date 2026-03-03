@@ -2,7 +2,7 @@
 
 The OpenAPI Builder in Nexios automatically generates comprehensive OpenAPI 3.0 documentation for your API, providing interactive documentation through Swagger UI and ReDoc interfaces.
 
-## 📋 APIDocumentation Class
+##  APIDocumentation Class
 
 ### Class Definition
 
@@ -19,7 +19,7 @@ class APIDocumentation:
 
 The APIDocumentation class handles the generation and serving of OpenAPI documentation.
 
-## ⚙️ OpenAPIConfig Class
+##  OpenAPIConfig Class
 
 ::: tip Important
 Always use proper Pydantic model instances (`Contact`, `License`, `Server`) instead of dictionaries when configuring OpenAPI. This ensures type safety and proper validation.
@@ -159,7 +159,7 @@ config.set_external_docs(ExternalDocumentation(
 ))
 ```
 
-## 🔒 Security Schemes
+##  Security Schemes
 
 ### Adding Security Schemes
 
@@ -223,7 +223,7 @@ async def admin_endpoint(request: Request, response: Response):
     return response.json({"message": "Admin access required"})
 ```
 
-## 📖 Route Documentation
+##  Route Documentation
 
 ### Basic Route Documentation
 
@@ -322,7 +322,7 @@ async def get_user(request: Request, response: Response):
     })
 ```
 
-## 📄 Request/Response Models
+##  Request/Response Models
 
 ### Request Body Models
 
@@ -438,7 +438,7 @@ async def list_users(request: Request, response: Response):
     })
 ```
 
-## 🔧 Custom Parameters
+##  Custom Parameters
 
 ### Path Parameters
 
@@ -500,7 +500,7 @@ async def get_data(request: Request, response: Response):
     return response.json(data)
 ```
 
-## 📝 Custom Documentation
+##  Custom Documentation
 
 ### Adding Custom Schemas
 
@@ -606,7 +606,7 @@ async def create_user(request: Request, response: Response):
     pass
 ```
 
-## 🎨 Customizing Documentation UI
+##  Customizing Documentation UI
 
 ### Swagger UI Customization
 
@@ -689,7 +689,7 @@ class CustomAPIDocumentation(APIDocumentation):
         """
 ```
 
-## 🚫 Excluding Routes from Documentation
+##  Excluding Routes from Documentation
 
 ### Exclude Individual Routes
 
@@ -712,7 +712,7 @@ async def internal_health(request: Request, response: Response):
 app.mount_router(internal_router, exclude_from_schema=True)
 ```
 
-## 🏗️ Generating OpenAPI Specification
+##  Generating OpenAPI Specification
 
 ### Programmatic Access
 
@@ -761,7 +761,7 @@ if __name__ == "__main__":
     generate_openapi()
 ```
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Provide comprehensive descriptions** for all endpoints
 2. **Use proper HTTP status codes** and document all possible responses
@@ -774,7 +774,7 @@ if __name__ == "__main__":
 9. **Provide contact information** for API support
 10. **Keep documentation up to date** with code changes
 
-## 🚀 Advanced Features
+##  Advanced Features
 
 ### Custom OpenAPI Extensions
 
@@ -843,7 +843,7 @@ app.openapi_config.add_webhook("user_created", {
 })
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [Application](./nexios-app.md) - Application setup
 - [Router](./router.md) - Route documentation

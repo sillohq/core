@@ -112,7 +112,7 @@ events.on("data.received", temporary_handler, priority=EventPriority.HIGH)
 ```python
 @emitter.once('first.login')  # Special decorator
 def first_login(user):
-    print(f"🎉 Welcome {user}")
+    print(f" Welcome {user}")
 
 emitter.emit('first.login', 'Alice')  # Fires
 emitter.emit('first.login', 'Alice')  # Doesn't fire

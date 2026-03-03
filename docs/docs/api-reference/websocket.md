@@ -2,7 +2,7 @@
 
 The WebSocket system in Nexios provides real-time, bidirectional communication between clients and servers with full async/await support and comprehensive error handling.
 
-## 📋 WebSocket Class
+##  WebSocket Class
 
 ### Class Definition
 
@@ -13,7 +13,7 @@ class WebSocket:
 
 The WebSocket class handles individual WebSocket connections and provides methods for sending and receiving messages.
 
-## 🔌 Connection Management
+##  Connection Management
 
 ### accept()
 
@@ -68,7 +68,7 @@ async def websocket_handler(websocket):
 - `code` (int): WebSocket close code (default: 1000)
 - `reason` (Optional[str]): Reason for closing
 
-## 💬 Message Handling
+##  Message Handling
 
 ### Receiving Messages
 
@@ -199,7 +199,7 @@ async def data_handler(websocket):
     })
 ```
 
-## 📊 WebSocket Properties
+##  WebSocket Properties
 
 ### client: Optional[Address]
 
@@ -291,7 +291,7 @@ async def websocket_handler(websocket):
         print(f"User {websocket.state.user_id} disconnected after {websocket.state.message_count} messages")
 ```
 
-## 🚀 Advanced WebSocket Patterns
+##  Advanced WebSocket Patterns
 
 ### Authentication and Authorization
 
@@ -641,7 +641,7 @@ async def websocket_handler(websocket):
         await cleanup_connection(websocket)
 ```
 
-## 🧪 Testing WebSockets
+##  Testing WebSockets
 
 ### WebSocket Test Client
 
@@ -695,7 +695,7 @@ async def test_websocket_json():
             assert response == {"type": "pong"}
 ```
 
-## ⚡ Performance Considerations
+##  Performance Considerations
 
 ### Connection Pooling
 
@@ -793,7 +793,7 @@ async def queued_websocket_handler(websocket):
         processor_task.cancel()
 ```
 
-## 📚 Channel History Management
+##  Channel History Management
 
 Nexios provides a pluggable history management system for WebSocket channels, allowing you to customize how message history is stored and retrieved. By default, messages are stored in memory, but you can implement custom backends like Redis, databases, or file systems.
 
@@ -1125,7 +1125,7 @@ async def chat_handler(websocket):
 6. **Test thoroughly**: Verify history persists and retrieves correctly
 7. **Document your implementation**: Make it clear to other developers how history is managed
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Always handle WebSocketDisconnect** - Clients can disconnect at any time
 2. **Implement heartbeat/ping-pong** - Keep connections alive and detect dead connections
@@ -1138,7 +1138,7 @@ async def chat_handler(websocket):
 9. **Implement rate limiting** - Prevent abuse
 10. **Test thoroughly** - Use WebSocket test clients for comprehensive testing
 
-## 🔍 See Also
+##  See Also
 
 - [Router](./router.md) - WebSocket routing system
 - [Channel](./channel.md) - WebSocket channel management

@@ -10,11 +10,11 @@ head:
       content: Nexios provides a powerful `WebSocketConsumer` class that simplifies building robust WebSocket endpoints. This class-based approach offers structure, reusability, and built-in channel management for your real-time applications.
 ---
 
-# 🎮 WebSocket Consumers in Nexios
+#  WebSocket Consumers in Nexios
 
 Nexios provides a powerful `WebSocketConsumer` class that simplifies building robust WebSocket endpoints. This class-based approach offers structure, reusability, and built-in channel management for your real-time applications.
 
-## 🏗️ Consumer Basics
+##  Consumer Basics
 
 The `WebSocketConsumer` class handles the complete connection lifecycle:
 
@@ -40,7 +40,7 @@ Key lifecycle methods:
 - `on_receive`: Handles incoming messages
 - `on_disconnect`: Cleans up when connection closes
 
-## ✨ Core Features
+##  Core Features
 
 ### **Automatic Message Decoding**
 Set `encoding` to automatically handle different message formats:
@@ -63,7 +63,7 @@ async def on_connect(self, ws):
     print(f"Expires at: {self.channel.created + self.channel.expires}")
 ```
 
-## 👥 Group Communication
+##  Group Communication
 
 ### **Joining and Leaving Groups**
 ```python
@@ -90,7 +90,7 @@ async def send_private_message(self, user_id, message):
     await self.send_to(user_id, {"private": message})
 ```
 
-## 🚀 Advanced Usage
+##  Advanced Usage
 
 ### **Custom Route Registration**
 Convert consumers to routes easily:
@@ -118,7 +118,7 @@ async def on_receive(self, ws, data):
         await ws.close(code=status.WS_1011_INTERNAL_ERROR)
 ```
 
-## ✅ Best Practices
+##  Best Practices
 
 1. **Keep consumers focused** - One consumer per logical endpoint
 2. **Use encoding** - Let the consumer handle message parsing
@@ -126,7 +126,7 @@ async def on_receive(self, ws, data):
 4. **Add middleware** - For cross-cutting concerns like auth
 5. **Log key events** - Connection, disconnection, and errors
 
-## 💬 Example: Complete Chat Consumer
+##  Example: Complete Chat Consumer
 
 ```python
 class ChatConsumer(WebSocketConsumer):

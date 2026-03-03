@@ -1,5 +1,5 @@
 # ==============================
-# 🔹 Environment & Configuration
+#  Environment & Configuration
 # ==============================
 env/
 .vscode/
@@ -7,14 +7,14 @@ env/
 poetry.lock
 
 # ==============================
-# 🔹 Build & Distribution Files
+#  Build & Distribution Files
 # ==============================
 build/
 dist/
 nexios.egg-info/
 
 # ==============================
-# 🔹 Caches & Temporary Files
+#  Caches & Temporary Files
 # ==============================
 __pycache__/
 .mypy_cache/
@@ -25,7 +25,7 @@ __pycache__/
 .coverage
 
 # ==============================
-# 🔹 Source Code & Development
+#  Source Code & Development
 # ==============================
 index.py
 sandbox.py
@@ -38,12 +38,12 @@ db.sqlite3-journal
 db.sqlite3-wal
 db.sqlite3-shm
 # ==============================
-# 🔹 Documentation & Static Files
+#  Documentation & Static Files
 # ==============================
 docs/site
 
 # ==============================
-# 🔹 Node.js Related Files
+#  Node.js Related Files
 # ==============================
 /**/node_modules/
 

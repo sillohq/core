@@ -9,7 +9,7 @@ head:
     - property: og:description
       content: In Nexios, processing inputs from HTTP requests is a fundamental aspect of building web applications. This document provides an overview of how to handle and process various types of inputs, such as JSON data, form data, files, and streaming request data.
 ---
-# 📨 Handling Request Inputs 
+#  Handling Request Inputs 
 
 To handle JSON data in a request, you can use the `json` property of the `Request` object. This property asynchronously parses the request body as JSON and returns it as a dictionary.
 
@@ -26,11 +26,11 @@ async def submit_data(req, res):
     return {"received": data}
 ```
 
-::: tip 💡Tip
+::: tip Tip
 Nexios only process `application/json` content types for JSON data.
 :::
 
-## 📋 Form Data
+##  Form Data
 
 Nexios provides built-in support for parsing form data, including `multipart/form-data` and `application/x-www-form-urlencoded`. You can access the parsed form data using the `form_data` property of the `Request` object.
 
@@ -45,7 +45,7 @@ async def submit_form(req, res):
 
 
 
-## 📁 Handling File Uploads
+##  Handling File Uploads
 
 When handling file uploads, the `form_data` property also provides access to the uploaded files. You can iterate over the form data to extract files.
 
@@ -62,7 +62,7 @@ async def upload_file(req, res):
 
 
 
-## 🌊 Handling Streaming Request Data
+##  Handling Streaming Request Data
 
 For large payloads or real-time data, you might need to handle streaming request data. Nexios supports streaming data using the `req.stream` property.
 
@@ -78,7 +78,7 @@ async def stream_data(req, res):
     return {"status": "stream received"}
 ```
 
-## ✅ Validating Inputs
+##  Validating Inputs
 
 Nexios integrates with Pydantic for input validation. You can define Pydantic models to validate and parse request data.
 

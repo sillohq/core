@@ -9,13 +9,13 @@ head:
     - property: og:description
       content: Learn how to use cors utilities in Nexios
 ---
-# 🌐 CORS in Nexios
+#  CORS in Nexios
 
 Got it! I'll go through each CORS configuration setting in **Nexios**, explaining what it does and how it impacts requests.
 
 ***
 
-### 🚀 Basic CORS Configuration in Nexios
+###  Basic CORS Configuration in Nexios
 
 Before diving into individual settings, here's a simple CORS setup using `CorsConfig`:
 :::code-group
@@ -57,7 +57,7 @@ we can break it down further:
 
 ***
 
-### 🔓 allow_origins
+###  allow_origins
 
 * **Purpose:** Specifies which domains can access the API.
 * **Example:**
@@ -75,9 +75,9 @@ cors_config=CorsConfig(
 
 ***
 
-### 🚫 blacklist_origins
+###  blacklist_origins
 
-* **Purpose:** Specifies which origins should be **blocked**, even if they match `allow_origins`.
+* **Purpose:** Specifies which origins should be**blocked**, even if they match `allow_origins`.
 * **Example:**
 
 ```python
@@ -90,7 +90,7 @@ cors_config=CorsConfig(
 
 ***
 
-### 🔧 allow_methods
+###  allow_methods
 
 * **Purpose:** Defines which HTTP methods (GET, POST, etc.) are allowed in cross-origin requests.
 * **Example:**
@@ -105,7 +105,7 @@ cors_config=CorsConfig(
 
 ***
 
-### 📝 allow_headers
+###  allow_headers
 
 * **Purpose:** Specifies which request headers are permitted in cross-origin requests.
 * **Example:**
@@ -120,9 +120,9 @@ cors_config=CorsConfig(
 
 ***
 
-### 🚫 blacklist_headers
+###  blacklist_headers
 
-* **Purpose:** Defines headers that should **not** be allowed in requests.
+* **Purpose:** Defines headers that should**not** be allowed in requests.
 * **Example:**
 
 ```python
@@ -135,7 +135,7 @@ cors_config=CorsConfig(
 
 ***
 
-### 🔑 allow_credentials
+###  allow_credentials
 
 * **Purpose:** Determines whether credentials (cookies, authorization headers) are allowed in requests.
 * **Example:**
@@ -153,7 +153,7 @@ cors_config=CorsConfig(
 
 ***
 
-### 🎯 allow_origin_regex
+###  allow_origin_regex
 
 * **Purpose:** Uses a regex pattern to match allowed origins dynamically.
 * **Example:**
@@ -198,9 +198,9 @@ cors_config=CorsConfig(
 
 ***
 
-### 🔍 strict_origin_checking
+###  strict_origin_checking
 
-* **Purpose:** If enabled, requests **must** include an `Origin` header.
+* **Purpose:** If enabled, requests**must** include an `Origin` header.
 * **Example:**
 
 ```python
@@ -213,7 +213,7 @@ cors_config=CorsConfig(
 
 ***
 
-### 🐛 debug
+###  debug
 
 * **Purpose:** Enables logging to troubleshoot CORS issues.
 * **Example:**
@@ -230,7 +230,7 @@ cors_config=CorsConfig(
 
 ***
 
-### ❌ custom_error_status &  custom_error_messages
+###  custom_error_status &  custom_error_messages
 
 * **Purpose:** Allows custom error handling for CORS failures.
 * **Example:**

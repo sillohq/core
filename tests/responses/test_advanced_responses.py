@@ -130,14 +130,14 @@ def test_response_with_unicode(test_client_factory: Callable[[NexiosApp], TestCl
     @app.get("/with-unicode")
     async def with_unicode(request: Request, response: Response):
         return response.json(
-            {"emoji": "🚀", "chinese": "你好", "arabic": "مرحبا", "special": "café"}
+            {"emoji": "", "chinese": "你好", "arabic": "مرحبا", "special": "café"}
         )
 
     with test_client_factory(app) as client:
         resp = client.get("/with-unicode")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["emoji"] == "🚀"
+        assert data["emoji"] == ""
         assert data["chinese"] == "你好"
 
 

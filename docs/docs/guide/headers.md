@@ -9,7 +9,7 @@ head:
     - property: og:description
       content: Headers are a fundamental part of HTTP requests and responses, carrying metadata about the message body, client capabilities, server information, and more. Nexios provides comprehensive tools for working with headers in both requests and responses.
 ---
-# 📋 Headers
+#  Headers
 
 Access incoming request headers through the `request.headers` property, which provides a case-insensitive dictionary-like interface:
 
@@ -37,11 +37,11 @@ async def show_headers(request, response):
 | `User-Agent` | Client application information | `Mozilla/5.0` |
 | `X-Requested-With` | Indicates AJAX request | `XMLHttpRequest` |
 
-::: tip 💡 Tip
+::: tip  Tip
 Nexios normalizes header names to lowercase, so `request.headers.get("User-Agent")` and `request.headers.get("user-agent")` are equivalent.
 :::
 
-## 📤 Response Headers
+##  Response Headers
 
 Set response headers using the `response.set_header()` method or by passing a headers dictionary:
 
@@ -66,7 +66,7 @@ async def set_headers(request, response):
 | `X-Frame-Options` | Clickjacking protection | `DENY` |
 | `Content-Security-Policy` | Security policy | `default-src 'self'` |
 
-## 🛠️ Setting Headers In Middleware
+##  Setting Headers In Middleware
 
 Middleware is an ideal place to set headers that should be applied to multiple routes:
 
@@ -88,7 +88,7 @@ async def security_headers_middleware(request, response, next):
 app.add_middleware(security_headers_middleware)
 ```
 
-## ⚙️ Header Manipulation Methods
+##  Header Manipulation Methods
 
 Nexios provides several methods for working with headers:
 
@@ -104,7 +104,7 @@ Nexios provides several methods for working with headers:
 - `response.has_header(key)` - Check if header exists
 - `response.set_headers(headers_dict, override_all=False)` - Set multiple headers
 
-## 🔐 Security Headers Best Practices
+##  Security Headers Best Practices
 
 For enhanced security, consider these recommended headers:
 
@@ -122,7 +122,7 @@ async def add_security_headers(request, response, next):
     await next()
 ```
 
-## ⚡ Performance Headers
+##  Performance Headers
 
 Optimize client-side caching and resource loading:
 
@@ -134,7 +134,7 @@ async def add_performance_headers(request, response, next):
     await next()
 ```
 
-## 🍪 Cookie Headers
+##  Cookie Headers
 
 Cookies are set via special `Set-Cookie` headers:
 
@@ -152,7 +152,7 @@ async def login(request, response):
     return response.redirect("/dashboard")
 ```
 
-## 🔄 Conditional Headers
+##  Conditional Headers
 
 Handle conditional requests with these headers:
 
@@ -163,7 +163,7 @@ Handle conditional requests with these headers:
 | `ETag` | Resource version identifier | `W/"xyz456"` |
 | `Last-Modified` | Resource modification time | `Sat, 01 Jan 2022 00:00:00 GMT` |
 
-## 🚫 Restricted Headers
+##  Restricted Headers
 
 Some headers are restricted and cannot be modified:
 
@@ -176,7 +176,7 @@ Some headers are restricted and cannot be modified:
 Always set headers after the request is processed in middleware when modifying responses. Setting headers too early may result in them being overwritten.
 :::
 
-## 📚 Further Reading
+##  Further Reading
 
 - [MDN HTTP Headers Reference](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers)
 - [OWASP Secure Headers Project](https://owasp.org/www-project-secure-headers/)

@@ -4,7 +4,7 @@ about: Suggest new features that would make Nexios even better!
 labels: enhancement
 ---
 
-## 🚀 **Feature Request**
+##  **Feature Request**
 
 We’re so glad you have an idea to make Nexios better! Your feedback is incredibly valuable, and we want to hear from you.
 
@@ -53,4 +53,4 @@ Do you have any mockups, examples, or other details to help us understand your r
 
 ---
 
-Thank you for taking the time to submit your feature request! We appreciate your input and will consider it as we continue to improve Nexios. 🙏
+Thank you for taking the time to submit your feature request! We appreciate your input and will consider it as we continue to improve Nexios. 

@@ -11,7 +11,7 @@ head:
       content: Learn how to use configuration utilities in Nexios
 ---
 
-# ⚙️ Configuration Management
+#  Configuration Management
  
 Nexios provides a simple way to manage configuration settings, using the `MakeConfig` class.
 
@@ -54,7 +54,7 @@ except AttributeError:
     print("Configuration is immutable")
 ```
 
-## 🌍 Global Configuration Access
+##  Global Configuration Access
 
 The framework provides global configuration management through the `get_config()` function, allowing you to access configuration from anywhere in your application:
 
@@ -105,9 +105,9 @@ When writing tests, be aware that `get_config()` relies on a global variable. If
 
 
 
-## 🌐 Environment-Based Configuration
+##  Environment-Based Configuration
 
-### 🔧 Using Environment Variables
+###  Using Environment Variables
 
 Environment variables are the most common way to configure applications in different environments:
 
@@ -129,7 +129,7 @@ config = MakeConfig(
 app = NexiosApp(config=config)
 ```
 
-### 📄 Using .env Files
+###  Using .env Files
 
 For development, you can use `.env` files to manage environment variables:
 
@@ -167,9 +167,9 @@ LOG_LEVEL=DEBUG
 
 
 
-## 🏗️ Advanced Configuration Patterns
+##  Advanced Configuration Patterns
 
-### 🔗 Nested Configuration
+###  Nested Configuration
 
 For complex applications, you can use nested configuration structures:
 

@@ -9,9 +9,9 @@ head:
     - property: og:description
       content: Nexios provides a powerful routing system that allows you to create modular and nested routing structures. Here's an example of how you can use routers and sub-applications in your application
 ---
-# 🛣️ Routers and Sub-Applications
+#  Routers and Sub-Applications
 Nexios provides a powerful routing system that allows you to create modular and nested routing structures. Here's an example of how you can use routers and sub-applications in your application.
-## 🚀 Creating a Router and Mounting it to the Main Application
+##  Creating a Router and Mounting it to the Main Application
 ```python
 from nexios import NexiosApp
 from nexios.routing import Router
@@ -50,7 +50,7 @@ This matches `/v1/users` and `/v1/users/{user_id}`
 Ensure to use `mount_router` after all routes have been defined.
 :::
 
-## ❓ What is Router?
+##  What is Router?
 
 A Router is a container for routes and sub-applications. It allows you to create a modular and nested routing structure in your application.
 
@@ -94,7 +94,7 @@ You can nest as deeply as you want. Internally, Nexios flattens the route tree d
 The `Router` class also have similar routing methods as `NexiosApp` class
 
 
-## 🏗️ Sub-Applications = Routers
+##  Sub-Applications = Routers
 
 NexiosApp is an ASGI application. To mount a sub-app under a path, use `register`.
 
@@ -115,7 +115,7 @@ Now you can access /admin/dashboard.
 This makes it trivial to build modular applications where teams can work on separate parts (e.g., auth, billing, analytics) in isolation and plug them into a larger system
 
 
-## 👥 Groups 
+##  Groups 
 
 Nexios also supports groups, which is a way to group routes together and share them between multiple apps.
 
@@ -151,7 +151,7 @@ app.add_route(group)
 Now you can access `/users` and `/users/{id}`
 
 
-## 📦 Grouping Sub-Applications
+##  Grouping Sub-Applications
 
 Nexios supports grouping sub-applications under a shared path or with middleware applied collectively.
 
@@ -175,7 +175,7 @@ main_app.register(group)
 
 Now you can access /admin/dashboard
 
-## 🌐 External ASGI Apps
+##  External ASGI Apps
 
 Nexios `.register` method allows you to mount other asgi application on the `NexiosApp` Instnce or `Router` class
 

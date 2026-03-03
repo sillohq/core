@@ -62,7 +62,7 @@ async def submit_data(req, res):
     return {"received": data}
 ```
 
-::: tip 💡Tip
+::: tip Tip
 Nexios only process `application/json` content types for JSON data.
 :::
 

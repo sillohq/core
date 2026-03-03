@@ -11,21 +11,21 @@ head:
       content: Build high-performance async APIs with Nexios, a modern Python web framework featuring clean architecture, zero boilerplate, and excellent developer experience.
 hero:
   name: Nexios
-  text: Async Python Web Framework 🚀
-  tagline: Nexios is a fast, minimalist Python framework for building async APIs with clean architecture ✨, zero boilerplate 📝, and a Pythonic feel 🐍.
+  text: Async Python Web Framework 
+  tagline: Nexios is a fast, minimalist Python framework for building async APIs with clean architecture , zero boilerplate , and a Pythonic feel .
 
   image:
     src: /logo.png
     alt: Nexios
   actions:
     - theme: brand
-      text: 🆕 Get Started
+      text:  Get Started
       link: /guide/getting-started
     - theme: alt
-      text: 📄 View on GitHub
+      text:  View on GitHub
       link: https://github.com/nexios-labs/nexios
     - theme: alt
-      text: ❔ Why Nexios?
+      text:  Why Nexios?
       link: /guide/why-nexios
 
 features:
@@ -49,7 +49,7 @@ features:
       - Structured error handling
       - Domain-driven design ready
 
-  - icon: 🛠️
+  - icon: 
     title: Complete Toolkit
     details: |
       Everything you need in one place:
@@ -96,7 +96,7 @@ features:
       - Database integrations
 ---
 
-## 😀 Quick Start
+##  Quick Start
 
 ::: code-group
 
@@ -143,11 +143,11 @@ app = NexiosApp(
 
 :::
 
-::: tip 🎉 Quick Development
+::: tip  Quick Development
 Use `nexios run --reload` for automatic reloading during development. 🔄
 :::
 
-## 🚀 Key Features
+##  Key Features
 
 ### Simple and easy Routing
 
@@ -196,7 +196,7 @@ async def get_user_post(request, response):
 
 :::
 
-### 📡 WebSocket Support
+###  WebSocket Support
 
 ::: code-group
 
@@ -230,7 +230,7 @@ async def chat_room(websocket, room_id: str):
 
 :::
 
-### 📧 Email Sending
+### Email Sending
 
 ::: code-group
 
@@ -287,7 +287,7 @@ async def send_async(
 
 :::
 
-## 🛠️ Middleware System
+##  Middleware System
 
 ::: code-group
 
@@ -438,33 +438,33 @@ For complete documentation on using the Nexios CLI, check out the [CLI Documenta
 
 Nexios embraces the Zen of Python, particularly the second principle: "Explicit is better than implicit." Here's how:
 
-- **Explicit Routing 🛣️**: Every route is explicitly defined, making it clear what endpoints are available
-- **Dependency Injection 💉**: Dependencies are explicitly declared and injected
-- **Type Annotations 📝**: Full support for Python's type hints throughout the framework
-- **Configuration Over Convention ⚙️**: While we provide sensible defaults, we don't hide important behavior behind "magic"
+- **Explicit Routing**: Every route is explicitly defined, making it clear what endpoints are available
+- **Dependency Injection**: Dependencies are explicitly declared and injected
+- **Type Annotations**: Full support for Python's type hints throughout the framework
+- **Configuration Over Convention**: While we provide sensible defaults, we don't hide important behavior behind "magic"
 
-## 🚀 Key Features
+##  Key Features
 
-### Performance Optimized ⚡
-- Designed for blazing-fast, production-ready performance 🚀
-- Async-first architecture for handling thousands of concurrent connections 🌊
-- Middleware system for fine-grained performance optimization 🛠️
+### Performance Optimized 
+- Designed for blazing-fast, production-ready performance 
+- Async-first architecture for handling thousands of concurrent connections 
+- Middleware system for fine-grained performance optimization 
 
-### Developer Experience 💻
-- Automatic API documentation with OpenAPI/Swagger 📖
-- Built-in testing utilities 🧪
-- Detailed error messages and stack traces 📢
-- Interactive API documentation at `/docs` 🌐
+### Developer Experience 
+- Automatic API documentation with OpenAPI/Swagger 
+- Built-in testing utilities 
+- Detailed error messages and stack traces 
+- Interactive API documentation at `/docs` 
 
 ### Extensibility 🔌
-- Plugin system for adding custom functionality 🧩
-- Support for WebSockets and HTTP/2 📡
-- Custom middleware support 🛠️
-- Background tasks and scheduled jobs ⏰
+- Plugin system for adding custom functionality 
+- Support for WebSockets and HTTP/2 
+- Custom middleware support 
+- Background tasks and scheduled jobs 
 
-### Security First 🔐
-- Built-in CSRF protection 🛡️
-- JWT Authentication 🆔
-- CORS middleware 🌐
-- Secure by default configurations ⚙️
+### Security First 
+- Built-in CSRF protection 
+- JWT Authentication 
+- CORS middleware 
+- Secure by default configurations 
 

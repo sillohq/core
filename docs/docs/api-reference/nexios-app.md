@@ -2,7 +2,7 @@
 
 The `NexiosApp` class is the core application class in Nexios, serving as the main entry point for building web applications.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class NexiosApp:
@@ -19,7 +19,7 @@ class NexiosApp:
     )
 ```
 
-## ⚙️ Constructor Parameters
+##  Constructor Parameters
 
 ### config: Optional[MakeConfig]
 **Type**: `MakeConfig`  
@@ -134,7 +134,7 @@ async def get_db():
 app = NexiosApp(dependencies=[Depend(get_db)])
 ```
 
-## 🔧 Core Methods
+##  Core Methods
 
 ### HTTP Route Decorators
 
@@ -360,7 +360,7 @@ async def websocket_handler(websocket):
 app.add_ws_route(path="/ws/echo", handler=websocket_handler)
 ```
 
-## 📊 Properties
+##  Properties
 
 ### config
 Access the application configuration.
@@ -417,7 +417,7 @@ app.openapi_config.add_security_scheme(
 )
 ```
 
-## 🔌 ASGI Integration
+##  ASGI Integration
 
 The `NexiosApp` class implements the ASGI protocol and can be used with any ASGI server.
 
@@ -450,7 +450,7 @@ gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker
 hypercorn main:app --bind 0.0.0.0:8000
 ```
 
-## 🚀 Advanced Usage
+##  Advanced Usage
 
 ### Custom Error Handling
 
@@ -521,7 +521,7 @@ app = NexiosApp(
 )
 ```
 
-## 🔧 Internal Methods
+##  Internal Methods
 
 ### __call__()
 ASGI application callable that handles incoming requests.
@@ -555,7 +555,7 @@ async def handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> 
     # Internal WebSocket handling - not called directly
 ```
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Configuration Management**: Use environment variables and the `MakeConfig` class for configuration
 2. **Error Handling**: Implement custom error handlers for better user experience
@@ -565,7 +565,7 @@ async def handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> 
 6. **Testing**: Use the built-in test client for comprehensive testing
 7. **Lifecycle Management**: Properly handle startup and shutdown for resource management
 
-## 🔍 See Also
+##  See Also
 
 - [Router](./router.md) - HTTP routing system
 - [Middleware](./middleware.md) - Middleware development

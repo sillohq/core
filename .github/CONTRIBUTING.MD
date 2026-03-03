@@ -204,4 +204,4 @@ For questions and discussions, please:
 
 ---
 
-Thank you for contributing to Nexios! Your help makes the project better for everyone. 🚀
+Thank you for contributing to Nexios! Your help makes the project better for everyone. 

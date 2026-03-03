@@ -9,9 +9,9 @@ head:
     - property: og:description
       content: Learn how to use csrf utilities in Nexios
 ---
-# 🛡️ Understanding CSRF Protection in Nexios
+#  Understanding CSRF Protection in Nexios
 
-## ❓ What is CSRF?
+##  What is CSRF?
 
 Cross-Site Request Forgery (CSRF) is a security vulnerability that tricks users into performing unwanted actions on web applications where they're authenticated. Attackers can force users to execute state-changing requests (like changing passwords, making purchases, or transferring funds) without their knowledge.
 
@@ -26,7 +26,7 @@ Imagine this scenario:
 
 Without CSRF protection, these malicious requests could perform harmful actions on your behalf.
 
-## 🔒 How CSRF Protection Works
+##  How CSRF Protection Works
 
 Nexios implements the "Synchronizer Token Pattern":
 
@@ -35,7 +35,7 @@ Nexios implements the "Synchronizer Token Pattern":
 3. **Token Validation**: Required for state-changing requests (POST, PUT, DELETE, etc.)
 4. **Request Verification**: Server verifies the token matches the session
 
-## 🚀 Basic Setup
+##  Basic Setup
 
 ```python
 from nexios import NexiosApp, MakeConfig
@@ -54,7 +54,7 @@ app = NexiosApp(config=config)
 app.add_middleware(CSRFMiddleware())
 ```
 
-## ⚙️ Configuration Options
+##  Configuration Options
 
 Nexios provides flexible configuration to customize CSRF protection for your application's needs. Here's a detailed breakdown of each option:
 
@@ -129,7 +129,7 @@ Nexios provides flexible configuration to customize CSRF protection for your app
   - Must match your form field names
   - Example: `"_csrf_token"`
 
-## 📄 Using CSRF with Templates
+##  Using CSRF with Templates
 
 When working with Nexios templates, you can easily include CSRF tokens in your forms. The CSRF token is automatically added to the request state and can be accessed in your templates.
 
@@ -246,7 +246,7 @@ Then update your form to use the custom field name:
 </form>
 ```
 
-## ✅ Best Practices
+##  Best Practices
 
 1. **Always use HTTPS** in production to protect the CSRF token in transit.
 2. **Don't expose the CSRF token** in logs or error messages.
@@ -254,7 +254,7 @@ Then update your form to use the custom field name:
 4. **Protect all state-changing endpoints** (POST, PUT, DELETE, PATCH) with CSRF tokens.
 5. **Use the same-site cookie attribute** to provide additional protection against CSRF attacks.
 
-## 💻 Client-Side Implementation
+##  Client-Side Implementation
 
 ### 1. HTML Forms
 

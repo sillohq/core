@@ -10,11 +10,11 @@ head:
     - property: og:description
       content: The Nexios community is a place for developers to connect, share knowledge, and help each other build amazing applications with Nexios.
 ---
-# 👋 Welcome to the Nexios Community!
+#  Welcome to the Nexios Community!
 
 We're thrilled to have you here! The Nexios community is a place for developers to connect, share knowledge, and help each other build amazing applications with Nexios.
 
-## 🌟 Open Source at Heart
+##  Open Source at Heart
 
 Nexios is proudly **100% open source** and community-driven. We believe in the power of collaboration and transparency in building great software. Our entire ecosystem is built on open source principles:
 
@@ -79,4 +79,4 @@ Please review our [Code of Conduct](https://github.com/nexios-labs/nexios/CODE_O
 
 ---
 
-We can't wait to see what you'll build with Nexios! 🚀
+We can't wait to see what you'll build with Nexios! 

@@ -88,7 +88,7 @@ async def hello_world(req, res):
 
 ```
 
-::: tip 💡Tip
+::: tip Tip
 All code before `await next()` is executed before the route handler.
 :::
 
@@ -112,7 +112,7 @@ Middleware functions are executed in the order they are added. The flow of execu
 
 ```
 
-::: tip 💡Tip
+::: tip Tip
 Middleware functions are executed in the order they are added. Ensure that middleware with dependencies (e.g., authentication before authorization) is added in the correct sequence.
 :::
 
@@ -299,7 +299,7 @@ async def get_profile(req, res):
     return res.json({"message": "Welcome to your profile!"})
 ```
 
-**⚙️ Execution Order:**\
+** Execution Order:**\
 `auth_middleware → get_profile handler → response sent`
 
 # If you forget to call await cnext() in route-specific middleware, the request will not reach the handler.

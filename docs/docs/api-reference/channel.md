@@ -2,7 +2,7 @@
 
 The `Channel` class represents a WebSocket connection in Nexios, providing methods for sending messages and managing connection lifecycle. It's used internally by the WebSocket system to handle individual client connections.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class Channel:
@@ -14,7 +14,7 @@ class Channel:
     )
 ```
 
-## ⚙️ Constructor Parameters
+##  Constructor Parameters
 
 ### websocket: WebSocket
 **Type**: `WebSocket`  
@@ -61,7 +61,7 @@ channel = Channel(websocket, payload_type="json", expires=3600)
 channel = Channel(websocket, payload_type="json", expires=None)
 ```
 
-## 📊 Properties
+##  Properties
 
 ### uuid: UUID
 **Type**: `uuid.UUID`  
@@ -121,7 +121,7 @@ channel = Channel(websocket, payload_type="json", expires=3600)
 print(f"Expires in: {channel.expires} seconds")
 ```
 
-## 🔧 Methods
+##  Methods
 
 ### _send()
 Send a message through the channel.
@@ -166,7 +166,7 @@ else:
     print("Channel is still active")
 ```
 
-## 💡 Usage Examples
+##  Usage Examples
 
 ### Basic Channel Usage
 
@@ -267,7 +267,7 @@ async def expiring_channel_example(websocket: WebSocket):
         await asyncio.sleep(5)
 ```
 
-## 🔧 Integration with ChannelBox
+##  Integration with ChannelBox
 
 Channels are typically managed by the `ChannelBox` class for group operations:
 
@@ -324,7 +324,7 @@ async def robust_channel_handler(websocket: WebSocket):
         print(f"Channel {channel.uuid} cleanup")
 ```
 
-## 🔄 Channel Lifecycle
+##  Channel Lifecycle
 
 ```python
 async def channel_lifecycle_example(websocket: WebSocket):
@@ -356,7 +356,7 @@ async def channel_lifecycle_example(websocket: WebSocket):
     await websocket.close()
 ```
 
-## 📝 Channel Representation
+##  Channel Representation
 
 ```python
 channel = Channel(websocket, payload_type="json", expires=3600)
@@ -364,7 +364,7 @@ print(repr(channel))
 # Output: Channel uuid=UUID('...') payload_type='json' expires=3600
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [WebSocket](websocket.md) - WebSocket connection handling
 - [ChannelBox](channelbox.md) - Channel group management

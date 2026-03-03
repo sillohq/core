@@ -1,10 +1,10 @@
-# 📝 Request Parameters in Nexios
+#  Request Parameters in Nexios
 
 Request parameters make your API flexible, searchable, and powerful. Nexios supports comprehensive parameter documentation for path parameters, query parameters, headers, and cookies. This guide shows how to document each type effectively in your OpenAPI specification.
 
 > **Important**: Always use specific parameter types (`Path`, `Query`, `Header`, `Cookie`) instead of the generic `Parameter` type. This ensures proper OpenAPI specification generation and better type safety.
 
-## 📦 Imports
+##  Imports
 
 Before using request parameters, import the specific parameter types you need:
 
@@ -12,7 +12,7 @@ Before using request parameters, import the specific parameter types you need:
 from nexios.openapi.models import Path, Query, Header, Cookie
 ```
 
-## 🎯 Types of Request Parameters
+##  Types of Request Parameters
 
 Nexios supports four main parameter types:
 
@@ -21,7 +21,7 @@ Nexios supports four main parameter types:
 - **Header Parameters**: HTTP headers (e.g., `Authorization`, `X-API-Key`) - use `Header`
 - **Cookie Parameters**: HTTP cookies (e.g., `session_id`) - use `Cookie`
 
-## 🛣️ Path Parameters
+##  Path Parameters
 
 Path parameters are automatically detected and documented by Nexios when you use parameter syntax in your route paths:
 
@@ -88,7 +88,7 @@ async def get_file_by_path(request, response, file_path: str):
     pass
 ```
 
-## ❓ Query Parameters
+##  Query Parameters
 
 Query parameters provide filtering, sorting, pagination, and search capabilities. Document them explicitly using the `parameters` argument:
 
@@ -251,7 +251,7 @@ async def list_articles(request, response):
     })
 ```
 
-## 📋 Header Parameters
+##  Header Parameters
 
 Headers are used for authentication, content negotiation, client information, and custom metadata:
 
@@ -307,7 +307,7 @@ async def get_current_user(request, response):
     })
 ```
 
-## 🍪 Cookie Parameters
+##  Cookie Parameters
 
 Cookie parameters are used for session management, user preferences, and tracking:
 
@@ -491,7 +491,7 @@ async def search(request, response):
     })
 ```
 
-## ✅ Best Practices
+##  Best Practices
 
 ### Parameter Naming Conventions
 
@@ -505,11 +505,11 @@ async def search(request, response):
 ])
 
 # Avoid ambiguous names
-# ❌ Bad
+#  Bad
 Query(name="id")                               # Which ID?
 Query(name="type")                             # Type of what?
 
-# ✅ Good  
+#  Good  
 Query(name="user_id")                          # Clear and specific
 Query(name="content_type")                     # Descriptive
 ```

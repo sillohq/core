@@ -10,7 +10,7 @@ head:
       content: Nexios provides powerful streaming capabilities for handling large datasets, real-time data, and long-polling scenarios. This guide covers how to implement and work with
 ---
 
-# 🌊 Streaming Responses in Nexios
+#  Streaming Responses in Nexios
 
 Nexios provides powerful streaming capabilities for handling large datasets, real-time data, and long-polling scenarios. This guide covers how to implement and work with
 
@@ -22,7 +22,7 @@ Streaming responses allow you to send data to the client as it becomes available
 - Server-Sent Events (SSE)
 - Progress reporting
 
-## 🚀 Basic Streaming
+##  Basic Streaming
 
 Before diving into the code, it's important to understand how async generators work in Python. An async generator is a special type of function that yields values asynchronously, allowing you to process and send data in chunks rather than all at once. This is particularly useful for streaming scenarios where you want to send data as it becomes available.
 
@@ -53,7 +53,7 @@ async def stream_data(request, response):
     return response.stream(generate(), content_type="text/plain")
 ```
 
-## 📦 Understanding Chunked Transfer Encoding
+##  Understanding Chunked Transfer Encoding
 
 Chunked transfer encoding is a streaming data transfer mechanism available in HTTP/1.1. It allows a server to start sending the response before knowing its total size, which is perfect for streaming scenarios where the total size might not be known in advance.
 
@@ -85,7 +85,7 @@ async def chunked_response(request, response):
     )
 ```
 
-## 📡 Understanding Server-Sent Events (SSE)
+##  Understanding Server-Sent Events (SSE)
 
 Server-Sent Events (SSE) is a standard that allows a web server to push real-time updates to the client over HTTP. Unlike WebSockets, SSE is a one-way communication channel from server to client, making it simpler and more efficient for certain use cases.
 
@@ -137,7 +137,7 @@ async def sse_events(request, response):
     )
 ```
 
-## 📁 Understanding File Streaming
+##  Understanding File Streaming
 
 Streaming files is essential when dealing with large files that shouldn't be loaded entirely into memory. This approach is memory-efficient and provides a better user experience as the client can start processing the file before the entire download is complete.
 
@@ -188,7 +188,7 @@ async def download_file(request, response, filename: str):
     )
 ```
 
-## ⚡ Performance Considerations
+##  Performance Considerations
 
 1. **Chunk Size**: Choose an appropriate chunk size (typically 4KB-16KB) for your use case.
 2. **Backpressure**: Be mindful of slow clients and implement backpressure handling.
@@ -234,7 +234,7 @@ async def safe_stream(request, response):
     return response.stream(generate())
 ```
 
-## 🔄 Building a Real-time Data Pipeline
+##  Building a Real-time Data Pipeline
 
 A real-time data pipeline processes and delivers data as it's generated, making it ideal for analytics, monitoring, and live dashboards. This example demonstrates how to build such a pipeline using Nexios streaming capabilities.
 

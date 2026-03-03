@@ -56,7 +56,7 @@
         <div class="lg:col-span-2 bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-[#8bcf6c]/20 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
           <div class="flex items-center mb-4">
             <div class="w-12 h-12 bg-[#8bcf6c] rounded-xl flex items-center justify-center mr-4">
-              <span class="text-2xl">⚡</span>
+              <span class="text-2xl"></span>
             </div>
             <h3 class="text-2xl font-bold text-[#3a2a1d]">Lightning Fast</h3>
           </div>
@@ -69,7 +69,7 @@
         <div class="bg-gradient-to-br from-[#f7b7a3] to-[#f49d8d] rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
           <div class="text-center">
             <div class="w-16 h-16 bg-white/90 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <span class="text-3xl">🎯</span>
+              <span class="text-3xl"></span>
             </div>
             <h3 class="text-xl font-bold text-[#3a2a1d] mb-3">Zero Boilerplate</h3>
             <p class="text-[#3a2a1d]/80">Clean, minimal code that focuses on what matters</p>
@@ -80,7 +80,7 @@
         <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-[#f7b7a3]/30 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
           <div class="flex items-center mb-4">
             <div class="w-10 h-10 bg-[#f7b7a3] rounded-lg flex items-center justify-center mr-3">
-              <span class="text-xl">🏗️</span>
+              <span class="text-xl"></span>
             </div>
             <h3 class="text-xl font-bold text-[#3a2a1d]">Clean Architecture</h3>
           </div>
@@ -93,7 +93,7 @@
         <div class="lg:col-span-2 bg-gradient-to-r from-[#8bcf6c]/10 to-[#f7b7a3]/10 backdrop-blur-sm rounded-2xl p-6 shadow-xl border border-[#8bcf6c]/20 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
           <div class="flex items-center mb-4">
             <div class="w-10 h-10 bg-[#8bcf6c] rounded-lg flex items-center justify-center mr-3">
-              <span class="text-xl">🚀</span>
+              <span class="text-xl"></span>
             </div>
             <h3 class="text-xl font-bold text-[#3a2a1d]">Developer Experience</h3>
           </div>

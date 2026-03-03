@@ -11,20 +11,20 @@ head:
       content: Welcome to Nexios! This comprehensive guide will walk you through everything you need to know to get started with Nexios, a modern, async-first Python web framework designed for high-performance applications.
 comment: true
 ---
-# 🚀 What is Nexios?
+#  What is Nexios?
 
 Nexios is a cutting-edge Python web framework that combines the best of modern web development practices with exceptional performance. Built on ASGI (Asynchronous Server Gateway Interface), Nexios provides a clean, intuitive API that makes building scalable web applications straightforward and enjoyable.
 
 ### Key Features
 
-- **🚀 High Performance**: Built on ASGI for exceptional speed and concurrency
-- **🔄 Async-First**: Native async/await support throughout the framework
-- **🛡️ Type Safe**: Full type hint support for better development experience
-- **📚 Developer Friendly**: Intuitive API with excellent documentation
-- **🔧 Production Ready**: Built-in security, testing, and deployment features
-- **🎯 Flexible**: Extensive customization options for any use case
-- **📖 OpenAPI Ready**: Automatic API documentation generation
-- **🔌 Extensible**: Easy to add custom functionality and middleware
+- **High Performance**: Built on ASGI for exceptional speed and concurrency
+- **Async-First**: Native async/await support throughout the framework
+- **Type Safe**: Full type hint support for better development experience
+- **Developer Friendly**: Intuitive API with excellent documentation
+- **Production Ready**: Built-in security, testing, and deployment features
+- **Flexible**: Extensive customization options for any use case
+- **OpenAPI Ready**: Automatic API documentation generation
+- **Extensible**: Easy to add custom functionality and middleware
 
 ### Why Choose Nexios?
 
@@ -38,15 +38,15 @@ Nexios stands out from other Python web frameworks for several reasons:
 
 **Production Features**: Built-in support for authentication, CORS, rate limiting, and other production-ready features means you can focus on your business logic rather than infrastructure concerns.
 
-## 📋 Prerequisites
+##  Prerequisites
 
 Before you begin with Nexios, ensure you have the following:
 
 ### System Requirements
 
-- **Python 3.9 or higher** - Nexios requires modern Python features
-- **pip, poetry, or uv** - For package management
-- **Basic understanding of async/await** - While not strictly required, it helps
+- **Python 3.9 or higher**- Nexios requires modern Python features
+- **pip, poetry, or uv**- For package management
+- **Basic understanding of async/await**- While not strictly required, it helps
 
 
 | Feature                                                                     | Supported in |
@@ -58,7 +58,7 @@ Before you begin with Nexios, ensure you have the following:
 | Better async/await support                                                   | 3.7+         |
 
 
-### ⚡ Async/Await Fundamentals
+###  Async/Await Fundamentals
 
 If you're new to async/await in Python, here are the key concepts you'll encounter:
 
@@ -70,7 +70,7 @@ If you're new to async/await in Python, here are the key concepts you'll encount
 Nexios uses async/await extensively for handling concurrent requests efficiently. Don't worry if this is new to you - we'll cover it in detail throughout the documentation.
 
 
-## 📦 Installation
+##  Installation
 
 Nexios can be installed using any Python package manager. We recommend using `uv` for the fastest and most reliable experience.
 
@@ -140,20 +140,20 @@ pipenv shell
 
 | Package Manager  | Fastest Installation | Virtual Environment | Compatible with pip | Production | Written in Rust |
 |------------------|---------------------|--------------------|--------------------|------------|----------------|
-| uv (Recommended) | ⚡                   | 🔧                  | 🔄                  | 🚀         | ✅            |
-| pip              | 🐌                   | ✅                  | ✅                  | ✅         |                |
-| poetry           |                     | ✅                  |                     | ✅         |                |
-| pipenv           |                     | ✅                  | ✅                  | ✅         |                |
+| uv (Recommended) |                    |                   |                   |          |             |
+| pip              |                    |                   |                   |          |                |
+| poetry           |                     |                   |                     |          |                |
+| pipenv           |                     |                   |                   |          |                |
 
 ::: tip Virtual Environments
 Always use virtual environments to isolate your project dependencies. This prevents conflicts between different projects and keeps your system Python clean.
 
 **Benefits of virtual environments:**
-- 🛡️ Isolate project dependencies
-- 🚫 Avoid version conflicts
-- 📤 Easy project sharing and deployment
-- 🧹 Clean system Python installation
-- 🔄 Reproducible builds
+-  Isolate project dependencies
+-  Avoid version conflicts
+-  Easy project sharing and deployment
+-  Clean system Python installation
+-  Reproducible builds
 
 **Creating virtual environments:**
 ```bash
@@ -168,7 +168,7 @@ virtualenv venv
 ```
 :::
 
-## 🛠️ Your First Nexios Application
+##  Your First Nexios Application
 
 Now that you have Nexios installed, let's create your first application. We'll start with a simple example and gradually build up to more complex features.
 
@@ -225,11 +225,11 @@ hypercorn main:app --reload --bind 127.0.0.1:8000
 For development, we recommend using `uvicorn` with the `--reload` flag. This will automatically restart your application when you make changes to your code.
 
 **Benefits of uvicorn:**
-- 🔄 Auto-reload on code changes
-- ⚡ Fast startup time
-- 🐛 Good error reporting
-- 📊 Built-in logging
-- 🔧 Easy configuration
+-  Auto-reload on code changes
+-  Fast startup time
+-  Good error reporting
+-  Built-in logging
+-  Easy configuration
 :::
 
 ### Testing Your Application
@@ -238,7 +238,7 @@ Once your application is running, you can test it by opening your browser and na
 
 nexios provide an intaractive  API documentation interface. This allows you to test your API endpoints and explore the available routes.
 
-## 🔍 Understanding the Code
+##  Understanding the Code
 
 Let's break down what's happening in our first application:
 
@@ -282,7 +282,7 @@ if __name__ == "__main__":
 ```
 
 
-## 🎯 Next Steps
+##  Next Steps
 
 Congratulations! You've successfully created and run your first Nexios application. Here's what you can explore next:
 
@@ -293,7 +293,7 @@ Congratulations! You've successfully created and run your first Nexios applicati
 | [Core Concepts](/guide/concepts)                                | Dive deeper into Nexios architecture and concepts:<br>- [Framework Architecture](/guide/concepts)<br>- [Async Python](/guide/async-python)<br>- [Configuration](/guide/configuration)                                            |
 | [Advanced Features](/guide/middleware)                           | Explore more advanced features as you become comfortable with the basics:<br>- [Middleware](/guide/middleware)<br>- [Authentication](/guide/authentication)<br>- [WebSockets](/guide/websockets)<br>- [Templating](/guide/templating) |
 
-## ❓ Common Questions
+##  Common Questions
 
 ### Why do all handlers need to be async?
 
@@ -366,14 +366,14 @@ Nexios offers a unique combination of simplicity and performance:
 
 `app.run()` is a convenience method that starts a development server. For production, you should use uvicorn, hypercorn, or another ASGI server directly for better control and performance.
 
-## 🆘 Getting Help
+##  Getting Help
 
 If you run into issues or have questions:
 
-1. **Check the documentation** - This guide and the other documentation pages
-2. **Look at examples** - The `examples/` directory contains working code
-3. **Search existing issues** - Check the GitHub repository for similar problems
-4. **Ask the community** - Join discussions on GitHub or other forums
+1. **Check the documentation**- This guide and the other documentation pages
+2. **Look at examples**- The `examples/` directory contains working code
+3. **Search existing issues**- Check the GitHub repository for similar problems
+4. **Ask the community**- Join discussions on GitHub or other forums
 
 Remember, everyone starts somewhere! Don't hesitate to ask questions and experiment with the code. The Nexios community is here to help you succeed.
 

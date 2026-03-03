@@ -9,11 +9,11 @@ head:
     - property: og:description
       content: Nexios provides a powerful command-line interface (CLI) that makes it easy to develop, test, and deploy your applications. This guide will walk you through using the CLI, starting with basic commands and gradually introducing the configuration system.
 ---
-# 🛠️ Nexios CLI Guide
+#  Nexios CLI Guide
 
 Nexios provides a powerful command-line interface (CLI) that makes it easy to develop, test, and deploy your applications. This guide will walk you through using the CLI, starting with basic commands and gradually introducing the configuration system.
 
-## 📦 Installation
+##  Installation
 
 First, install the Nexios CLI with the `cli` extra:
 
@@ -21,7 +21,7 @@ First, install the Nexios CLI with the `cli` extra:
 pip install nexios[cli]
 ```
 
-## 🎯 Basic Commands
+##  Basic Commands
 
 ```bash
 # Show help and available commands
@@ -43,7 +43,7 @@ nexios ping /api/status
 nexios shell
 ```
 
-## ⚙️ Configuration with nexios.config.py
+##  Configuration with nexios.config.py
 
 As your project grows, you'll want to customize how Nexios runs your application. This is where `nexios.config.py` comes in.
 
@@ -97,7 +97,7 @@ workers = 4  # For production servers that support workers
 log_level = "info"
 ```
 
-## 🔧 How Commands Use the Config
+##  How Commands Use the Config
 
 Each Nexios command uses the configuration in different ways:
 
@@ -113,7 +113,7 @@ Each Nexios command uses the configuration in different ways:
 - Uses: `app_path` to load your application
 - Example: `nexios urls` shows all routes
 
-## 🏭 Advanced Configuration
+##  Advanced Configuration
 
 ### Custom Server Command
 
@@ -189,14 +189,14 @@ nexios run
 
 ---
 
-## ⚡ Advanced: app vs. app_path
+##  Advanced: app vs. app_path
 
 - `app_path` (recommended): The string path to your app instance, e.g. `main:app`. Used by all CLI commands to dynamically import your app.
 - `app` (optional): If you want to use your app instance directly in Python scripts or for advanced CLI scripting, you can define it in `nexios.config.py`. Otherwise, it is not needed.
 
 ---
 
-## 🛠️ Troubleshooting & Migration
+##  Troubleshooting & Migration
 
 - **Error: Could not find app module**: Make sure `app_path` is set in `nexios.config.py` and points to a valid module:variable.
 - **Error: Could not load the app instance**: Check that your `app_path` is correct and the module is importable.
@@ -205,7 +205,7 @@ nexios run
 
 ---
 
-## 📋 Best Practices
+##  Best Practices
 
 - Always set `app_path` in your config for maximum compatibility.
 - Use `server = "gunicorn"` for production, `uvicorn` for development.
@@ -215,7 +215,7 @@ nexios run
 
 ---
 
-## 📚 Further Reading
+##  Further Reading
 
 - [Nexios Routing](./routing.md)
 - [Nexios Middleware](./middleware.md)

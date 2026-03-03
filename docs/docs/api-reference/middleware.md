@@ -2,7 +2,7 @@
 
 The `BaseMiddleware` class provides the foundation for creating custom middleware in Nexios, allowing you to intercept and process HTTP requests and responses.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class BaseMiddleware:
@@ -34,7 +34,7 @@ class BaseMiddleware:
         return response
 ```
 
-## 🔧 Creating Custom Middleware
+##  Creating Custom Middleware
 
 ### Basic Middleware Structure
 
@@ -157,7 +157,7 @@ class RateLimitMiddleware(BaseMiddleware):
         return request.client.host if request.client else "unknown"
 ```
 
-## 🔄 Middleware Execution Flow
+##  Middleware Execution Flow
 
 ### Request Processing Flow
 
@@ -213,7 +213,7 @@ class ErrorHandlingMiddleware(BaseMiddleware):
             })
 ```
 
-## 🚀 Advanced Middleware Patterns
+##  Advanced Middleware Patterns
 
 ### Conditional Middleware
 
@@ -346,7 +346,7 @@ class TransformationMiddleware(BaseMiddleware):
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 ```
 
-## 📝 Middleware Registration
+##  Middleware Registration
 
 ### Application-level Middleware
 
@@ -396,7 +396,7 @@ async def admin_users(request, response):
     return response.json(users)
 ```
 
-## 🧪 Middleware Testing
+##  Middleware Testing
 
 ### Unit Testing Middleware
 
@@ -447,7 +447,7 @@ def test_middleware_integration():
     assert "X-Processing-Time" in response.headers
 ```
 
-## ⚡ Performance Considerations
+##  Performance Considerations
 
 ### Lightweight Middleware
 
@@ -481,7 +481,7 @@ class AsyncMiddleware(BaseMiddleware):
         await self.session.close()
 ```
 
-## 📦 Built-in Middleware
+##  Built-in Middleware
 
 Nexios provides several built-in middleware classes:
 
@@ -531,7 +531,7 @@ app.add_middleware(SecurityMiddleware(
 ))
 ```
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Keep middleware focused** - Each middleware should have a single responsibility
 2. **Handle errors gracefully** - Always include proper error handling
@@ -544,7 +544,7 @@ app.add_middleware(SecurityMiddleware(
 9. **Use type hints** - Provide clear type annotations
 10. **Monitor performance** - Profile middleware for bottlenecks
 
-## 💡 Common Use Cases
+##  Common Use Cases
 
 ### API Versioning
 
@@ -611,7 +611,7 @@ class CompressionMiddleware(BaseMiddleware):
         return response
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [Application](./nexios-app.md) - Application middleware setup
 - [Router](./router.md) - Router-level middleware

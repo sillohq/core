@@ -9,7 +9,7 @@ head:
     - property: og:description
       content: In ASGI (Asynchronous Server Gateway Interface), startup and shutdown refer to the lifecycle events of an application. These events allow you to perform initialization and cleanup tasks when the application starts up or shuts down.
 ---
-# 🚀 Startup And Shutdowns 
+#  Startup And Shutdowns 
 In ASGI (Asynchronous Server Gateway Interface), startup and shutdown refer to the lifecycle events of an application. These events allow you to perform initialization and cleanup tasks when the application starts up or shuts down.
 
 
@@ -49,7 +49,7 @@ if an exception occurs during startup, the ASGI server may fail to start entirel
 
 :::
 
-## 🔄 Lifespan Async Context Manager
+##  Lifespan Async Context Manager
 
 Nexios also supports using an asynchronous context manager to handle both startup and shutdown events in a single construct. This is achieved by defining a lifespan function and passing it to the application via the `lifespan` argument. This approach encapsulates initialization and cleanup logic in one place.
 
@@ -71,7 +71,7 @@ async def app_lifespan(app):
 app = NexioApp(lifespan=app_lifespan)
 ```
 
-::: tip 💡Tip
+::: tip Tip
 
 You cannot use ``on_startup`` and ``on_shutdown`` together with ``lifespan`` But You can use this trick 
 

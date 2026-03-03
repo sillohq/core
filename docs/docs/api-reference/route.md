@@ -2,7 +2,7 @@
 
 The `Route` class represents individual HTTP routes in Nexios, providing detailed configuration options for path patterns, HTTP methods, middleware, dependencies, and OpenAPI documentation.
 
-## 📋 Class Definition
+##  Class Definition
 
 ```python
 class Route(BaseRoute):
@@ -22,7 +22,7 @@ class Route(BaseRoute):
     )
 ```
 
-## ⚙️ Constructor Parameters
+##  Constructor Parameters
 
 ### path: str
 **Type**: `str`  
@@ -136,7 +136,7 @@ route = Route(
 )
 ```
 
-## 📖 OpenAPI Documentation Parameters
+##  OpenAPI Documentation Parameters
 
 ### summary: Optional[str]
 Brief summary of what the route does.
@@ -198,7 +198,7 @@ route = Route(
 )
 ```
 
-## 🛣️ Path Parameter Types
+##  Path Parameter Types
 
 ### String Parameters (default)
 ```python
@@ -246,7 +246,7 @@ Route("/resources/{resource_id:uuid}", get_resource)
 # resource_id = request.path_params["resource_id"]  # type: str (UUID format)
 ```
 
-## 🎯 Route Matching
+##  Route Matching
 
 ### match()
 Check if a path matches this route's pattern.
@@ -273,7 +273,7 @@ routes = [
 ]
 ```
 
-## 🚀 Advanced Route Configuration
+##  Advanced Route Configuration
 
 ### Custom Converters
 ```python
@@ -346,7 +346,7 @@ route = Route(
 )
 ```
 
-## 📁 Route Groups and Organization
+##  Route Groups and Organization
 
 ### Grouping Related Routes
 ```python
@@ -442,7 +442,7 @@ async def route_error_middleware(request, response, call_next):
         })
 ```
 
-## 🧪 Testing Routes
+##  Testing Routes
 
 ### Unit Testing Individual Routes
 ```python
@@ -500,7 +500,7 @@ async def test_route_parameters():
         assert data["type"] == "int"
 ```
 
-## ⚡ Performance Considerations
+##  Performance Considerations
 
 ### Route Compilation
 Routes are compiled into regex patterns for efficient matching.
@@ -533,7 +533,7 @@ async def cached_handler(request: Request, response: Response):
     return response.json(result)
 ```
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Use descriptive route names** for URL generation
 2. **Order routes from specific to general** to avoid matching issues
@@ -546,7 +546,7 @@ async def cached_handler(request: Request, response: Response):
 9. **Use middleware for cross-cutting concerns** like authentication
 10. **Keep handlers focused** on a single responsibility
 
-## 🔄 Route Lifecycle
+##  Route Lifecycle
 
 ### Registration
 ```python
@@ -570,7 +570,7 @@ router.add_route(route)
 # 6. Response is returned
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [Router](./router.md) - Route organization and management
 - [Groups](./group.md) - Route grouping strategies

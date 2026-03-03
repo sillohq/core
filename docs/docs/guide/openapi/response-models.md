@@ -1,8 +1,8 @@
-# 📤 Response Models in Nexios
+#  Response Models in Nexios
 
 Response models define the structure and content of data your API returns. Nexios uses Pydantic models to provide automatic serialization, comprehensive OpenAPI documentation, and type-safe responses that ensure consistency across your API.
 
-## 🎯 Why Use Response Models?
+##  Why Use Response Models?
 
 Response models provide essential benefits for API development:
 
@@ -13,7 +13,7 @@ Response models provide essential benefits for API development:
 - **Error Standardization**: Consistent error response formats across your API
 - **Validation**: Ensures your API returns valid data structures
 
-## 🏗️ Basic Response Models
+##  Basic Response Models
 
 Define response schemas using Pydantic's `BaseModel`:
 
@@ -57,7 +57,7 @@ async def get_user(request, response, user_id: int):
     return response.json(user.dict())
 ```
 
-## 🔄 Multiple Response Models
+##  Multiple Response Models
 
 Document different responses for various status codes and scenarios:
 
@@ -127,7 +127,7 @@ async def get_user_with_errors(request, response, user_id: int):
         return response.json(error.dict(), status=500)
 ```
 
-## 📋 Collection Responses
+##  Collection Responses
 
 Handle lists and paginated responses:
 
@@ -194,7 +194,7 @@ async def get_active_users(request, response):
     return response.json([user.dict() for user in users])
 ```
 
-## 🎨 Advanced Response Patterns
+##  Advanced Response Patterns
 
 ### Nested Response Models
 
@@ -324,7 +324,7 @@ async def get_user_wrapped(request, response, user_id: int):
         return response.json(error_response.dict(), status=500)
 ```
 
-## 🔧 Response Customization
+##  Response Customization
 
 ### Custom Serialization
 
@@ -415,7 +415,7 @@ async def export_user_data(request, response, user_id: int):
     return response.json(user_data.dict())
 ```
 
-## ✅ Best Practices
+##  Best Practices
 
 ### Model Organization
 

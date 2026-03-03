@@ -2,7 +2,7 @@
 
 Nexios provides a powerful dependency injection system that allows you to manage shared resources, services, and state across your application in a clean and testable way.
 
-## 📋 Depend Class
+##  Depend Class
 
 The `Depend` class is the core component for dependency injection in Nexios.
 
@@ -27,7 +27,7 @@ async def list_users(request: Request, response: Response, db=Depend(get_databas
     return response.json(users)
 ```
 
-## 🔧 Dependency Types
+##  Dependency Types
 
 ### Simple Dependencies
 Functions that return a value.
@@ -95,7 +95,7 @@ async def get_profile(request: Request, response: Response, user=Depend(get_curr
     })
 ```
 
-## 🔗 Nested Dependencies
+##  Nested Dependencies
 
 Dependencies can depend on other dependencies, creating a dependency tree.
 
@@ -123,7 +123,7 @@ async def dashboard(
     return response.json(stats)
 ```
 
-## 🧹 Generator Dependencies (Cleanup)
+##  Generator Dependencies (Cleanup)
 
 Use generator functions for dependencies that need cleanup.
 
@@ -158,7 +158,7 @@ async def read_file(request: Request, response: Response, file=Depend(get_file_h
     return response.text(content)
 ```
 
-## 🏗️ Application-level Dependencies
+##  Application-level Dependencies
 
 Dependencies can be registered at the application level to apply to all routes.
 
@@ -188,7 +188,7 @@ async def list_users(
     return response.json(users)
 ```
 
-## 🛣️ Router-level Dependencies
+##  Router-level Dependencies
 
 Dependencies can be applied to specific routers.
 
@@ -216,7 +216,7 @@ async def admin_list_users(
 app.mount_router(admin_router)
 ```
 
-## 📋 Context Class
+##  Context Class
 
 The `Context` class provides access to request-scoped information within dependencies.
 
@@ -251,7 +251,7 @@ async def request_info(request: Request, response: Response, info=Depend(get_req
     return response.json(info)
 ```
 
-## 🚀 Advanced Dependency Patterns
+##  Advanced Dependency Patterns
 
 ### Conditional Dependencies
 
@@ -333,7 +333,7 @@ async def scoped_data(
     })
 ```
 
-## 💾 Dependency Caching and Lifecycle
+##  Dependency Caching and Lifecycle
 
 ### Per-request Caching
 Dependencies are cached per request by default.
@@ -387,7 +387,7 @@ async def list_users(request: Request, response: Response, db=Depend(get_databas
     return response.json(users)
 ```
 
-## 🧪 Testing with Dependencies
+##  Testing with Dependencies
 
 ### Dependency Overrides for Testing
 
@@ -485,7 +485,7 @@ async def get_data(request: Request, response: Response, cache=Depend(get_cache_
     return response.json(data or {})
 ```
 
-## ⚡ Performance Considerations
+##  Performance Considerations
 
 ### Lazy Loading
 
@@ -551,7 +551,7 @@ async def list_users(request: Request, response: Response, conn=Depend(get_poole
     return response.json(users)
 ```
 
-## ✨ Best Practices
+##  Best Practices
 
 1. **Keep dependencies focused** - Each dependency should have a single responsibility
 2. **Use generators for cleanup** - Always clean up resources properly
@@ -564,7 +564,7 @@ async def list_users(request: Request, response: Response, conn=Depend(get_poole
 9. **Consider lifecycle** - Think about when dependencies are created and destroyed
 10. **Monitor performance** - Profile dependency resolution for bottlenecks
 
-## 💡 Common Patterns
+##  Common Patterns
 
 ### Repository Pattern
 
@@ -620,7 +620,7 @@ async def list_users(request: Request, response: Response, service=Depend(get_us
     return response.json(users)
 ```
 
-## 🔍 See Also
+##  See Also
 
 - [Middleware](./middleware.md) - Middleware system
 - [Testing](./testclient.md) - Testing with dependencies

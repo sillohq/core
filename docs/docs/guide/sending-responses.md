@@ -9,11 +9,11 @@ head:
     - property: og:description
       content: In Nexios, sending responses is a core part of building web applications. The `Response` object provides a powerful and flexible way to construct and send HTTP responses to the client. This guide covers the various methods available for sending responses, from simple JSON to complex file downloads.
 ---
-# 📤 Sending Responses
+#  Sending Responses
 
 Sending a response is a fundamental aspect of every HTTP request. Nexios offers a well-rounded and robust framework designed to handle this process efficiently, ensuring clarity, flexibility, and performance in every interaction.
 
-## 🚀 Basic Example
+##  Basic Example
 
 ```py
 
@@ -24,7 +24,7 @@ async def getUsers(request, response):
 By default nexios turns `JSON-serializable` python data-types returned from route handlers as response which are sent to the client as json response 
  
 
-## 📊 Returning Various Data Types
+##  Returning Various Data Types
 You can return various data types from your route handlers:
 
 ::: code-group
@@ -61,7 +61,7 @@ async def getUsers(request, response):
 ```
 :::
 
-## 🔧 The `Response` Object
+##  The `Response` Object
 for complex responses you can use the `Response` object
 the response object is passed as the second argument to your route handlers
 
@@ -114,7 +114,7 @@ async def getUsers(request, response):
 ```
 :::
 
-## 📋 Sending Status Code
+##  Sending Status Code
 response object has a `status` method that allows you to set the status code of the response.
 
 ```py
@@ -123,7 +123,7 @@ async def getUsers(request, response):
     return response.status(200).json(["John Doe","Jane Smith"])
 ```
 
-::: tip 💡 Recommended
+::: tip  Recommended
 For clarity and to leverage the full power of Nexios's response handling, we recommend using the `response` object to build your responses, especially when you need to set custom headers, cookies, or status codes.
 :::
 
@@ -144,7 +144,7 @@ async def home(req, res):
 
 In this example, we set the status code, add a cookie, and send a JSON response all in a single, chained statement.
 
-## 🎯 Sending Different Types of Responses using the object directly 
+##  Sending Different Types of Responses using the object directly 
 
 Nexios provides several methods for sending different types of responses.
 
@@ -190,7 +190,7 @@ async def old_path(req, res):
     res.redirect("/new-path", status_code=301) # Permanent redirect
 ```
 
-## 🎨 Customizing the Response
+##  Customizing the Response
 
 You can customize the response by setting the status code, headers, and cookies.
 
@@ -230,7 +230,7 @@ async def login(req, res):
     ).json({"message": "Logged in"})
 ```
 
-## 📁 File Responses
+##  File Responses
 
 Nexios allows you to send files as responses using the `.file()` method. This is useful for serving images, documents, or other static assets.
 
@@ -243,7 +243,7 @@ async def download_report(req, res):
 
 By setting `content_disposition_type="attachment"`, you prompt the browser to download the file instead of displaying it.
 
-## 🔄 Returning Data Directly
+##  Returning Data Directly
 
 For simple cases, you can return a `dict`, `list`, or `str` directly from your handler. Nexios will automatically convert it into a JSON response.
 
@@ -255,11 +255,11 @@ async def simple_response(req, res):
 
 However, for more control over the response, it is recommended to use the `Response` object and its methods.
 
-::: tip 💡 Recommended
+::: tip  Recommended
 For clarity and to leverage the full power of Nexios's response handling, we recommend using the `res` object to build your responses, especially when you need to set custom headers, cookies, or status codes.
 :::
 
-## ⚙️ Advanced Usage: Response Classes
+##  Advanced Usage: Response Classes
 
 For more advanced use cases, Nexios allows you to work directly with `Response` classes. This gives you the ultimate flexibility to control the response sent to the client. You can either use the built-in response classes or create your own.
 

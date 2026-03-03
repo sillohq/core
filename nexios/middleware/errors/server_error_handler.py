@@ -666,7 +666,7 @@ JS = """
         const errorHeader = document.querySelector('.error-header');
         if (errorHeader) {
             const copyButton = document.createElement('button');
-            copyButton.innerHTML = '📋 Copy Error';
+            copyButton.innerHTML = ' Copy Error';
             copyButton.style.cssText = `
                 background: rgba(255, 255, 255, 0.2);
                 color: white;
@@ -760,7 +760,7 @@ TEMPLATE = """
             <!-- Traceback Section (Always visible) -->
             <div class="section">
                 <div class="section-title" onclick="toggleSection('traceback-section')">
-                    <span>🔍 Traceback & Stack Trace</span>
+                    <span> Traceback & Stack Trace</span>
                     <button class="collapse-btn" data-section="traceback-section" onclick="event.stopPropagation(); toggleSection('traceback-section')">&#8210;</button>
                 </div>
                 <div id="traceback-section" class="section-content">
@@ -771,7 +771,7 @@ TEMPLATE = """
             <!-- Request Information Section -->
             <div class="section">
                 <div class="section-title" onclick="toggleSection('request-section')">
-                    <span>📡 Request Information</span>
+                    <span> Request Information</span>
                     <button class="collapse-btn" data-section="request-section" onclick="event.stopPropagation(); toggleSection('request-section')">+</button>
                 </div>
                 <div id="request-section" class="section-content">
@@ -782,7 +782,7 @@ TEMPLATE = """
             <!-- System Information Section -->
             <div class="section">
                 <div class="section-title" onclick="toggleSection('system-section')">
-                    <span>⚙️ System Information</span>
+                    <span> System Information</span>
                     <button class="collapse-btn" data-section="system-section" onclick="event.stopPropagation(); toggleSection('system-section')">+</button>
                 </div>
                 <div id="system-section" class="section-content">
@@ -793,7 +793,7 @@ TEMPLATE = """
             <!-- Debugging Suggestions Section -->
             <div class="section">
                 <div class="section-title" onclick="toggleSection('suggestions-section')">
-                    <span>💡 Debugging Suggestions</span>
+                    <span> Debugging Suggestions</span>
                     <button class="collapse-btn" data-section="suggestions-section" onclick="event.stopPropagation(); toggleSection('suggestions-section')">+</button>
                 </div>
                 <div id="suggestions-section" class="section-content">
@@ -804,7 +804,7 @@ TEMPLATE = """
             <!-- JSON Data Section -->
             <div class="section">
                 <div class="section-title" onclick="toggleSection('json-section')">
-                    <span>📄 Error JSON Data</span>
+                    <span> Error JSON Data</span>
                     <button class="collapse-btn" data-section="json-section" onclick="event.stopPropagation(); toggleSection('json-section')">+</button>
                 </div>
                 <div id="json-section" class="section-content">
@@ -823,7 +823,7 @@ FRAME_TEMPLATE = """
 <div class="frame-container">
     <div class="frame-title" onclick="collapse(this.querySelector('.collapse-btn'))">
         <div class="frame-info">
-            <span class="frame-icon">📁</span>
+            <span class="frame-icon"></span>
             <span class="frame-filename">{frame_filename}</span>
             <span class="frame-separator">:</span>
             <span class="frame-lineno">{frame_lineno}</span>

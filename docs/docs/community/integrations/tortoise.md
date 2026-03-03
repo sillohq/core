@@ -4,12 +4,12 @@ The `nexios_contrib.tortoise` package provides seamless integration between Nexi
 
 ## Features
 
-- 🚀 **Easy Setup**: Simple initialization with minimal configuration
-- 🔄 **Lifecycle Management**: Automatic startup and shutdown handling
-- 🛡️ **Exception Handling**: Built-in handlers for common database exceptions
-- 🏗️ **Schema Management**: Optional automatic schema generation
-- 🔗 **Multiple Databases**: Support for multiple database connections
-- 📝 **Type Safety**: Full type hints and IDE support
+-  **Easy Setup**: Simple initialization with minimal configuration
+-  **Lifecycle Management**: Automatic startup and shutdown handling
+-  **Exception Handling**: Built-in handlers for common database exceptions
+-  **Schema Management**: Optional automatic schema generation
+-  **Multiple Databases**: Support for multiple database connections
+-  **Type Safety**: Full type hints and IDE support
 
 ## Installation
 

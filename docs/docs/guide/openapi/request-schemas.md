@@ -1,4 +1,4 @@
-# 📦 Request Schemas in Nexios
+#  Request Schemas in Nexios
 
 Request schemas define the structure and documentation for incoming data in your API. Nexios uses Pydantic models to provide comprehensive OpenAPI documentation and type definitions for all request bodies.
 
@@ -6,7 +6,7 @@ Request schemas define the structure and documentation for incoming data in your
 Nexios does **not** automatically validate request data against Pydantic models. The `request_model` parameter is used solely for OpenAPI documentation generation. You must implement your own validation logic in your handlers if you want to validate incoming data against the schema.
 :::
 
-## 🎯 Why Use Request Schemas?
+##  Why Use Request Schemas?
 
 Request schemas provide multiple benefits for API development:
 
@@ -16,7 +16,7 @@ Request schemas provide multiple benefits for API development:
 - **Code Generation**: Enable client SDK generation with proper types
 - **Developer Experience**: Interactive documentation with examples
 
-## 🏗️ Basic Request Models
+##  Basic Request Models
 
 Define request schemas using Pydantic's `BaseModel`. These work with POST, PUT, PATCH, and any endpoint expecting a request body:
 
@@ -58,7 +58,7 @@ async def create_user(request, response):
     return response.json({"id": 123, "username": username}, status=201)
 ```
 
-## 🔧 Advanced Request Schemas
+##  Advanced Request Schemas
 
 ### Nested Models for Complex Data
 
@@ -164,7 +164,7 @@ async def create_order(request, response):
         return response.json({"error": "Order validation failed", "details": str(e)}, status=400)
 ```
 
-## 📝 Content Type Support
+##  Content Type Support
 
 Nexios supports multiple content types for request bodies:
 
@@ -239,7 +239,7 @@ async def upload_file(request, response):
     })
 ```
 
-## 🎨 Documentation Enhancement
+##  Documentation Enhancement
 
 ### Field Documentation and Examples
 
@@ -336,7 +336,7 @@ async def update_user(request, response, user_id: int):
         return response.json({"error": "Update validation failed"}, status=400)
 ```
 
-## ✅ Best Practices
+##  Best Practices
 
 ### Model Organization
 

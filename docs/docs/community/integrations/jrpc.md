@@ -122,12 +122,12 @@ def main():
     # The plugin integrates with Nexios's routing and middleware system
     JsonRpcPlugin(app, {"path_prefix": "/rpc"})
 
-    print("🚀 JSON-RPC Server starting on port 3020...")
-    print("📋 Available JSON-RPC methods:")
+    print(" JSON-RPC Server starting on port 3020...")
+    print(" Available JSON-RPC methods:")
     print("   - add(a, b) -> int")
     print("   - echo(msg) -> str")
-    print("\n🔗 JSON-RPC endpoint: http://localhost:3020/rpc")
-    print("\n📖 Example JSON-RPC request:")
+    print("\n JSON-RPC endpoint: http://localhost:3020/rpc")
+    print("\n Example JSON-RPC request:")
     print('   POST /rpc')
     print('   {"jsonrpc": "2.0", "method": "add", "params": {"a": 5, "b": 3}, "id": 1}')
 
@@ -1174,9 +1174,9 @@ app.add_middleware(rate_limit_middleware)  # Third - rate limiting
 JsonRpcPlugin(app, {"path_prefix": "/rpc"})
 
 if __name__ == "__main__":
-    print("🚀 Starting Nexios JSON-RPC server with middleware...")
-    print("⚡ Rate limiting: 50 requests per minute per IP")
-    print("🌐 CORS: Enabled for web clients")
+    print(" Starting Nexios JSON-RPC server with middleware...")
+    print(" Rate limiting: 50 requests per minute per IP")
+    print(" CORS: Enabled for web clients")
     
     app.run(host="0.0.0.0", port=8000)
 ```
@@ -1570,10 +1570,10 @@ JsonRpcPlugin(app, {
 })
 
 if __name__ == "__main__":
-    print("🧮 Advanced Calculator Service")
-    print("📊 Features: Input validation, batch operations")
-    print("🔗 Endpoint: http://localhost:8000/calc")
-    print("\n📋 Available operations:")
+    print(" Advanced Calculator Service")
+    print(" Features: Input validation, batch operations")
+    print(" Endpoint: http://localhost:8000/calc")
+    print("\n Available operations:")
     print("   - add(a, b)")
     print("   - subtract(a, b)")
     print("   - multiply(a, b)")
@@ -2221,10 +2221,10 @@ JsonRpcPlugin(app, {
 })
 
 if __name__ == "__main__":
-    print("👥 Enterprise User Management Service")
-    print("🔒 Features: Validation, audit logging, search, pagination")
-    print("🔗 Endpoint: http://localhost:8000/users")
-    print("\n📋 Available operations:")
+    print(" Enterprise User Management Service")
+    print(" Features: Validation, audit logging, search, pagination")
+    print(" Endpoint: http://localhost:8000/users")
+    print("\n Available operations:")
     print("   - create_user(name, email, role?, metadata?)")
     print("   - get_user(user_id, include_metadata?)")
     print("   - list_users(status?, role?, limit?, offset?, include_deleted?)")

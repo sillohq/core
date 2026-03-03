@@ -4,12 +4,12 @@ An experimental Nexios application showcasing cutting-edge features and real-tim
 
 ## Experimental Features
 
-- 🚀 GraphQL API with Strawberry
-- 🔄 WebSocket support for real-time updates
-- 📡 Event-driven architecture
-- 💾 Advanced caching system
+-  GraphQL API with Strawberry
+-  WebSocket support for real-time updates
+-  Event-driven architecture
+-  Advanced caching system
 - 🗄️ Async database integration
-- 📚 Auto-generated API documentation
+-  Auto-generated API documentation
 
 ## Getting Started
 

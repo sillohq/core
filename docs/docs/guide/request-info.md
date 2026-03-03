@@ -9,7 +9,7 @@ head:
     - property: og:description
       content: Nexios provides a comprehensive `Request` object that gives you access to all the information about the incoming HTTP request. This object is automatically passed to your route handlers and contains methods and properties to access request data.
 ---
-# 📥 Request Information
+#  Request Information
 
 ```python
 @app.get("/example")
@@ -22,7 +22,7 @@ async def example_handler(req: Request, res):
     client_ip = req.client     # Client address (IP, port)
 ```
 
-## ❓ Query Parameters
+##  Query Parameters
 
 Access URL query parameters (after the `?` in the URL):
 
@@ -35,7 +35,7 @@ async def search_handler(req: Request, res):
     all_params = dict(req.query_params)    # {'q': 'nexios', 'page': '2'}
 ```
 
-## 🛣️ Path Parameters
+##  Path Parameters
 
 Access named parameters from the route path:
 
@@ -47,7 +47,7 @@ async def user_handler(req: Request, res):
     # Or directly as function parameter (shown above)
 ```
 
-## 📦 Request Body
+##  Request Body
 
 ### JSON Data
 
@@ -87,7 +87,7 @@ async def raw_handler(req: Request, res):
     body_text = await req.text  # Decoded text
 ```
 
-## 🍪 Cookies
+##  Cookies
 
 ```python
 @app.get("/profile")
@@ -95,7 +95,7 @@ async def profile_handler(req: Request, res):
     session_id = req.cookies.get("session_id")
 ```
 
-## 💻 Client Information
+##  Client Information
 
 ```python
 @app.get("/client-info")
@@ -105,7 +105,7 @@ async def client_info_handler(req: Request, res):
     origin = req.origin
 ```
 
-## 📊 State and Middleware Data
+##  State and Middleware Data
 
 ```python
 @app.get("/auth")
@@ -116,7 +116,7 @@ async def auth_handler(req: Request, res):
     custom_data = req.state.get("custom_data")
 ```
 
-## 🔗 URL Construction
+##  URL Construction
 
 ```python
 @app.get("/links")
@@ -126,7 +126,7 @@ async def links_handler(req: Request, res):
 ```
 
 
-## 🔍 Request Type Detection
+##  Request Type Detection
 
 Nexios provides convenient properties to quickly check the type and characteristics of incoming requests:
 
@@ -238,7 +238,7 @@ async def header_handler(req: Request, res):
 | `req.accepts_json` | True if client accepts JSON | API responses |
 | `req.accepts_html` | True if client accepts HTML | Web page responses |
 
-## ⚡ Advanced Features
+##  Advanced Features
 
 ### Streaming Requests
 

@@ -1,6 +1,6 @@
 <template>
   <div class="community-banner">
-    <div class="community-icon">💬</div>
+    <div class="community-icon"></div>
     <span class="banner-text">Join our community on</span>
     <a href="https://github.com/nexios-labs/nexios/discussions" 
        class="community-link" 

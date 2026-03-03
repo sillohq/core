@@ -11,7 +11,7 @@ head:
 ---
 
 
-# 🎯 Handlers
+#  Handlers
 Handlers are the heart of your Nexios application. They define how your application responds to incoming HTTP requests. Every route in your application is handled by a handler function that processes the request and returns a response.
 
 ```python
@@ -29,9 +29,9 @@ Nexios handler most accept at least two parameters
 :::
 
 
-## 📋 Handler Basics
+##  Handler Basics
 
-## 🏗️ Type Annotations for Better Development Experience
+##  Type Annotations for Better Development Experience
 
 Using type annotations provides better IDE support, improved documentation, static type checking, better refactoring support, and clearer interfaces between components.
 
@@ -45,7 +45,7 @@ async def index(request: Request, response: Response):
 
 For more detailed information about request and response objects, see the Request and Response documentation.
 
-## 🔧 Alternative Handler Registration
+##  Alternative Handler Registration
 
 You can also register handlers using the `Route` class for more control over route configuration:
 
@@ -61,7 +61,7 @@ async def dynamic_handler(req, res):
 app.add_route(Route("/dynamic", dynamic_handler))  # Handles All Methods by default
 ```
 
-## 🛣️ Handlers with path params
+##  Handlers with path params
 As seen at [`Dynamic Routing`](/guide/routing#dynamic-route) a nexios handler can optionally take an extra argument when a the route definition contains a dynamic value
 
 ```py
@@ -75,7 +75,7 @@ async def get_user(request, response, user_id):
 ```
 
 
-## 📥 Request Processing
+##  Request Processing
 
 ### Accessing Request Information
 
@@ -114,7 +114,7 @@ async def upload_file(request, response):
 ```
 
 
-### 📊 Query Parameters
+###  Query Parameters
 
 Query parameters are accessed through the `query_params` attribute:
 
@@ -143,7 +143,7 @@ async def search(request, response):
     })
 ```
 
-### 📦 Request Body
+###  Request Body
 
 Handlers can access the request body in various formats:
 
@@ -169,9 +169,9 @@ async def process_data(request, response):
     })
 ```
 
-## 📤 Response Handling
+##  Response Handling
 
-### 🎨 Creating Responses
+###  Creating Responses
 
 Nexios provides multiple ways to create responses:
 
@@ -200,7 +200,7 @@ async def demonstrate_responses(request, response):
     return response.json({"error": "Not found"}, status_code=404)
 ```
 
-### 📋 Setting Headers
+###  Setting Headers
 
 You can set custom headers on responses:
 
@@ -214,7 +214,7 @@ async def custom_headers(request, response):
     return response.json({"message": "Headers set"})
 ```
 
-### 📊 Response Status Codes
+###  Response Status Codes
 
 Nexios provides convenient methods for common status codes:
 
@@ -239,7 +239,7 @@ async def status_examples(request, response):
 
 ## ⚠️ Error Handling
 
-### 🚨 Raising Exceptions
+###  Raising Exceptions
 
 Handlers can raise exceptions that will be caught by exception handlers:
 
@@ -261,7 +261,7 @@ async def get_user(request, response):
     return response.json({"id": user_id, "name": "John Doe"})
 ```
 
-### 🛠️ Custom Exception Handling
+###  Custom Exception Handling
 
 You can define custom exception handlers:
 
@@ -281,9 +281,9 @@ async def handle_not_found(request, response, exc):
     }, status_code=404)
 ```
 
-## 💉 Dependency Injection
+##  Dependency Injection
 
-### 🎯 Using Dependencies
+###  Using Dependencies
 
 Handlers can use dependency injection for clean, testable code:
 
@@ -312,7 +312,7 @@ async def get_profile(request, response, user=Depend(get_current_user)):
     })
 ```
 
-### 🔄 Dependency Scopes
+###  Dependency Scopes
 
 Dependencies can have different scopes:
 

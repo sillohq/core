@@ -28,7 +28,7 @@ class UserView(APIHandler):
 app.add_route(UserView.as_route("/user"))
 ```
 
-::: tip 💡Tip
+::: tip Tip
 
 `.as_route` can also take same argument as route `decorators` or Nexios `Route` class
 

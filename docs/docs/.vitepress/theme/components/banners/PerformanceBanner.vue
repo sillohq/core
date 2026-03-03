@@ -1,6 +1,6 @@
 <template>
   <div class="performance-banner">
-    <div class="performance-icon">⚡</div>
+    <div class="performance-icon"></div>
     <span class="banner-text">Performance optimized for production</span>
     <a href="/guide/deployment" class="performance-link" @click="navigateToDeployment">deploy now</a>
   </div>

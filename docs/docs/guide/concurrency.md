@@ -9,11 +9,11 @@ head:
     - property: og:description
       content: Learn how to use concurrency utilities in Nexios
 ---
-# ⚡ Concurrency Utilities
+#  Concurrency Utilities
 
 Nexios provides powerful concurrency utilities to handle common async patterns in web applications. These utilities help you build performant, scalable applications by efficiently managing concurrent operations, parallel processing, and resource utilization.
 
-## 🎯 Why Use Concurrency in Web Applications?
+##  Why Use Concurrency in Web Applications?
 
 Modern web applications often need to:
 - Fetch data from multiple APIs simultaneously
@@ -24,7 +24,7 @@ Modern web applications often need to:
 
 Nexios concurrency utilities make these patterns simple and reliable.
 
-## 🚀 TaskGroup - Parallel API Calls
+##  TaskGroup - Parallel API Calls
 
 `TaskGroup` allows you to run multiple async operations concurrently and wait for all of them to complete. This is perfect for aggregating data from multiple sources, making parallel database queries, or calling multiple APIs simultaneously.
 
@@ -66,7 +66,7 @@ async def fetch_user_data(user_id: str):
         return r.json()
 ```
 
-## 🏭 Run in ThreadPool - Heavy Processing
+##  Run in ThreadPool - Heavy Processing
 
 `run_in_threadpool` moves CPU-intensive or blocking operations to a separate thread pool, preventing them from blocking the main event loop. This is essential for maintaining responsiveness in async applications.
 
@@ -108,7 +108,7 @@ def create_thumbnail(image: Image.Image, size: tuple):
     return image.resize(size, Image.LANCZOS)
 ```
 
-## 🏆 Run Until First Complete - Redundancy
+##  Run Until First Complete - Redundancy
 
 `run_until_first_complete` runs multiple async operations concurrently but returns as soon as the first one completes successfully. This pattern is excellent for implementing redundancy, failover mechanisms, and timeout handling.
 
@@ -155,7 +155,7 @@ async def search_fallback(query: str, timeout: float):
 ```
 
 
-## 🔄 Background Tasks
+##  Background Tasks
 
 `create_background_task` creates and returns an asyncio task that runs independently. This is useful for fire-and-forget operations or when you need to start a task but don't want to wait for it immediately.
 
@@ -207,7 +207,7 @@ task.cancel()
 await task
 ```
 
-## 💾 AsyncLazy - Cached Computations
+##  AsyncLazy - Cached Computations
 
 `AsyncLazy` provides lazy evaluation with caching for expensive async operations. The computation runs only once when first accessed, and subsequent calls return the cached result.
 
@@ -258,7 +258,7 @@ async def setup_cache_reset():
     task.add_done_callback(app._background_tasks.discard)
 ```
 
-## 📡 AsyncEvent - Coroutine Coordination
+##  AsyncEvent - Coroutine Coordination
 
 `AsyncEvent` allows multiple coroutines to wait for an event to be set. Perfect for coordinating shutdown, signaling, or workflow synchronization.
 
@@ -421,7 +421,7 @@ async def get_config(req, res):
     return config
 ```
 
-## 🚨 Error Handling and Resilience
+##  Error Handling and Resilience
 
 ### Timeout Management
 
@@ -500,7 +500,7 @@ async def protected_api_call(req, res):
         return {"error": "External service error"}, 502
 ```
 
-## 📈 Performance Tips and Best Practices
+##  Performance Tips and Best Practices
 
 ### 1. Choose the Right Tool
 
@@ -583,7 +583,7 @@ async def monitored_operation(req, res):
     return {"data": [result1, result2]}
 ```
 
-## 🎯 Summary
+##  Summary
 
 Nexios concurrency utilities provide a robust foundation for building high-performance async applications:
 

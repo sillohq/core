@@ -10,12 +10,12 @@ head:
       content: Nexios makes authentication simple yet powerful. Learn how to secure your API with just one line of code, and discover the built-in features that make authentication a breeze.
 ---
 
-# 🔐 Authentication in Nexios
+#  Authentication in Nexios
 Nexios provides a simple yet powerful authentication system that makes securing your API a breeze. With just one line of code, you can protect your routes with robust authentication logic.
 
 By default, Nexios will try to authenticate users with a provided list of `backends`. This means that users can authenticate with either JSON Web Tokens (JWT) or session-based authentication. You can also add custom backends to support other authentication methods, such as API keys or OAuth.
 
-## 🔑 The Basic Idea
+##  The Basic Idea
 
 Nexios uses a simple yet powerful authentication system that makes securing your API a breeze. With just one line of code, you can protect your routes with robust authentication logic.
 
@@ -46,11 +46,11 @@ async def user_profile(request: Request, response: Response):
     }
 ```
 
-::: tip 💡 User Model Basics
+::: tip  User Model Basics
 The `user_model` is the model that will be used to load the user from the authentication backend.
 :::
 
-## 🛡️ Authentication Middleware
+##  Authentication Middleware
 The `AuthenticationMiddleware` takes the following arguments:
 
 - `user_model`: The user model class that will be used to load the user from the authentication backend.
@@ -61,12 +61,12 @@ The middleware will then attach the user to the request object under the `reques
 
 The middleware will also attach the authentication type to the request object under the `request.scope["auth"]` attribute. This allows you to check the authentication type in your route handlers.
 
-::: tip ✨ Built-in SimpleUser
+::: tip  Built-in SimpleUser
 Nexios provides a built-in `SimpleUser` class that you can use as the `user_model` argument.
 :::
 
 
-## 👤 User Model
+##  User Model
 
 The user model is responsible for loading the user from the authentication backend. Nexios provides a simple `BaseUser` class that you can extend to create your own user model.
 
@@ -120,7 +120,7 @@ app.add_middleware(AuthenticationMiddleware(
 - `load_user` is a class method that is responsible for loading the user from the authentication backend it can be from a database or any other source.
 now you can access the user via `request.user` and the authentication type via `request.scope["auth"]` if the user is authenticated.
 
-## ✅ Checking Authentication Status
+##  Checking Authentication Status
 
 Once authentication middleware is set up, you can check if a user is authenticated using the `is_authenticated` property on the request user object:
 
@@ -176,7 +176,7 @@ class User(BaseUser):
         return None
 ```
 
-### 🔑 Key Points:
+###  Key Points:
 
 - **`is_authenticated` is a property**, not a method - access it without parentheses
 - **Return `True`** for authenticated users, `False` for unauthenticated users
@@ -188,14 +188,14 @@ This allows you to easily check authentication status in your route handlers and
 
 :::
 
-## 🎫 JWT Authentication Backend
+##  JWT Authentication Backend
 Nexios provides a built-in `JWTAuthBackend` that you can use to authenticate users with JSON Web Tokens (JWT).
 
 The `JWTAuthBackend` takes the following arguments:
 - `identifier`: The identifier to use for the user.
 
 
-### 🚀 Basic Usage
+###  Basic Usage
 
 ```python
 from nexios.auth.backends.jwt import JWTAuthBackend
@@ -212,7 +212,7 @@ async def index(request: Request, response: Response):
     return {"message": "Hello, world!"}
 ```
 
-### 🔑 Issuing a JWT
+###  Issuing a JWT
 Nexios provides a simple way to issue a JWT token.
 
 ```python
@@ -244,7 +244,7 @@ app.add_middleware(AuthenticationMiddleware(
 ))
 ```
 
-## 🍪 Session Authentication Backend
+##  Session Authentication Backend
 Nexios provides a built-in `SessionAuthBackend` that you can use to authenticate users with session-based authentication.
 
 
@@ -270,12 +270,12 @@ The `SessionAuthBackend` takes the following arguments:
 - `session_key`: The key used to store user data in the session (default: "user")
 - `identifier`: The identifier to use for the user.
 
-::: tip 📝 Session Setup Note
+::: tip  Session Setup Note
 - Ensure a session middleware is added to the app.
 :::
 
 
-### 🔑 Login & Logout
+###  Login & Logout
 
 ```python
 from nexios.auth.backends.session import login, logout
@@ -287,7 +287,7 @@ the `login` function takes the following arguments:
 - `request`: The HTTP request containing the session
 - `user`: The user to login (should be an instance of `BaseUser`)
 
-## 🔑 API Key Authentication Backend
+##  API Key Authentication Backend
 
 ::: warning API key authentication is a little bit complex
 API key authentication requires careful management of keys, proper storage of hashed keys, and secure transmission. Make sure to follow security best practices when implementing API key authentication.
@@ -462,7 +462,7 @@ backend = APIKeyAuthBackend(
 - Use different API keys for different environments (dev, staging, prod)
 :::
 
-## ⚙️ Custom Authentication Backend
+##  Custom Authentication Backend
 You can create a custom authentication backend by implementing the `AuthenticationBackend` interface.  This interface has only one method: `authenticate`. this method should return an `AuthResult` object.
 
 ### Basic Example
@@ -543,7 +543,7 @@ This code defines a custom authentication backend for Nexios, which uses an API 
 - `load_user` is an async method.
 :::
 
-## 🛡️ Protected Route
+##  Protected Route
 Nexios provides a simple way to protect routes with authentication.
 
 ```python
@@ -586,7 +586,7 @@ this will protect the route from unauthenticated requests and only allow request
 
 
 
-## 👑 Permissions (Role Based)
+##  Permissions (Role Based)
 nexios provides a `has_permission` decorator to protect routes with permissions.
 
 ```python

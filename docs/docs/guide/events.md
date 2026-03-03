@@ -13,7 +13,7 @@ head:
 
 The Nexios event system provides a powerful way to implement loosely coupled, event-driven architectures in your applications. It allows components to communicate without direct dependencies, making your code more maintainable and flexible.
 
-## 🚀 Basic Event Usage
+##  Basic Event Usage
 
 ```python
 from nexios import NexiosApp
@@ -34,7 +34,7 @@ At its core, Nexios events implement the [publish-subscribe (pub-sub) pattern](h
 Events should be used primarily for side effects (e.g., sending emails, tracking analytics, logging) that do not block the main request flow. Avoid using events to modify data that the main request cycle depends on.
 :::
 
-## 📡 Subscribing to Events
+##  Subscribing to Events
 
 To subscribe to an event, use the `on` method:
 
@@ -48,7 +48,7 @@ async def handle_user_created(user):
 
 This allows you to register a function that will be called when the "user.created" event is emitted.
 
-## 📤 Emitting Events
+##  Emitting Events
 
 To emit an event, use the `emit` method:
 
@@ -61,7 +61,7 @@ async def create_user(req, res):
 
 This endpoint will emit the "user.created" event when a new user is created. The `handle_user_created` function will then be called with the user data.
 
-## ⚙️ Managing Event Instances
+##  Managing Event Instances
 
 Each event is associated with a specific event emitter instance. This means that you can create multiple event emitters and manage their events independently.
 
@@ -101,7 +101,7 @@ app.events.off("data.received", temporary_handler)
 app.events.off("data.received")
 ```
 
-## ⭐ Priority Listeners
+##  Priority Listeners
 
 You can set a priority for event listeners. The higher the priority, the earlier the listener is called. By default, listeners are called in the order they are added.
 
@@ -112,18 +112,18 @@ events.on("data.received", temporary_handler, priority=EventPriority.MEDIUM)
 events.on("data.received", temporary_handler, priority=EventPriority.HIGH)
 ```
 
-## 🎯 One-time Listeners
+##  One-time Listeners
 
 ```python
 @emitter.once('first.login')  # Special decorator
 def first_login(user):
-    print(f"🎉 Welcome {user}")
+    print(f" Welcome {user}")
 
 emitter.emit('first.login', 'Alice')  # Fires
 emitter.emit('first.login', 'Alice')  # Doesn't fire
 ```
 
-## 🏷️ Namespaces
+##  Namespaces
 
 For more complex applications, you can create separate event namespaces:
 
@@ -142,7 +142,7 @@ app.emit('ui:button.click', 'submit')  # Same as above
 
 ```
 
-## 🔄 Asynchronous Events
+##  Asynchronous Events
 
 Nexios fully supports async event handlers.
 

@@ -1,6 +1,6 @@
 <template>
   <div class="mail-feature-banner">
-    <div class="mail-icon">📧</div>
+    <div class="mail-icon"></div>
     <span class="banner-text">Send emails easily with</span>
     <a href="/community/integrations/mail" class="mail-link" @click="navigateToMail">Nexios Mail</a>
   </div>

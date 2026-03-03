@@ -10,11 +10,11 @@ head:
       content: Nexios is a modern, async-first Python web framework designed with performance, developer experience, and clean architecture in mind. Here's why you might want to choose Nexios for your next project.
 ---
 
-# ❓ Why Nexios?
+#  Why Nexios?
 
 Nexios is a modern, async-first Python web framework designed with performance, developer experience, and clean architecture in mind. Here's why you might want to choose Nexios for your next project.
 
-## ✨ Key Advantages
+##  Key Advantages
 
 ### 1. True Async Performance
 
@@ -183,7 +183,7 @@ app.add_middleware(SecurityMiddleware())
 
 ```
 
-## 🏆 Comparison with Other Frameworks
+##  Comparison with Other Frameworks
 
 ### vs FastAPI
 
@@ -209,7 +209,7 @@ app.add_middleware(SecurityMiddleware())
 - **WebSocket**: Native WebSocket support
 - **Type Safe**: Comprehensive type hints
 
-## 🌟 Real World Use Cases
+##  Real World Use Cases
 
 Nexios is particularly well-suited for:
 
@@ -237,7 +237,7 @@ Nexios is particularly well-suited for:
    - Audit logging
    - Monitoring
 
-## 🚀 Getting Started
+##  Getting Started
 
 Ready to try Nexios? Check out our [Quick Start Guide](/guide/getting-started) or dive into the [Examples](/api-examples/).
 
