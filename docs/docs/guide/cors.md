@@ -19,12 +19,12 @@ Got it! I'll go through each CORS configuration setting in **Nexios**, explainin
 
 Before diving into individual settings, here's a simple CORS setup using `CorsConfig`:
 :::code-group
-```python
-from nexios import NexiosApp, MakeConfig
+```python [Recommended Approach]
+from nexios import NexiosApp
 from nexios.middleware.cors import CorsConfig
 from nexios.middleware.cors import CORSMiddleware
 
-cors_config=CorsConfig(
+cors_config = CorsConfig(
     allow_origins=["https://example.com"],
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "X-Requested-With"],
@@ -36,7 +36,11 @@ app = NexiosApp()
 app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
-```py [Old style [Depricated]]
+```py [Legacy Approach [Deprecated]]
+from nexios import NexiosApp, MakeConfig
+from nexios.middleware.cors import CorsConfig
+from nexios.middleware.cors import CORSMiddleware
+
 config = MakeConfig(
     cors = CorsConfig(
     allow_origins=["https://example.com"],
@@ -63,10 +67,11 @@ we can break it down further:
 * **Example:**
 
 ```python
-# Using CorsConfig
-cors_config=CorsConfig(
+# Using CorsConfig with recommended approach
+cors_config = CorsConfig(
     allow_origins=["https://example.com", "https://another-site.com"]
 )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Special cases:**
@@ -81,9 +86,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         blacklist_origins=["https://bad-actor.com"]
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Use case:** If you allow all origins (`["*"]`), but want to exclude specific ones.
@@ -96,9 +102,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
     allow_methods=["GET", "POST", "PUT"]
 )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Default:** All methods (`["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]`) are allowed.
@@ -111,9 +118,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         allow_headers=["Authorization", "X-Custom-Header"]
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Default:** Basic headers like `Accept`, `Content-Type`, etc., are always allowed.
@@ -126,9 +134,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
     blacklist_headers=["X-Disallowed-Header"]
 )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Use case:** If you allow most headers but want to restrict specific ones.
@@ -141,9 +150,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         allow_credentials=True
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Important:**
@@ -159,9 +169,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         allow_origin_regex=r"https://.*\.trusted-site\.com"
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Use case:** When you want to allow multiple subdomains without listing them individually.
@@ -174,9 +185,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         expose_headers=["X-Response-Time"]
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Default:** Only basic headers are exposed unless configured.
@@ -189,9 +201,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         max_age=600  # Cache for 10 minutes
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Impact:** Reduces unnecessary preflight requests for frequent API calls.
@@ -204,9 +217,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         strict_origin_checking=True
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Use case:** When you want to strictly enforce CORS checks, especially for security.
@@ -219,9 +233,10 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         debug=True
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Impact:**
@@ -236,13 +251,14 @@ cors_config=CorsConfig(
 * **Example:**
 
 ```python
-cors_config=CorsConfig(
+cors_config = CorsConfig(
         custom_error_status=403,
         custom_error_messages={
             "disallowed_origin": "This origin is not allowed.",
             "missing_origin": "The request is missing an origin."
         }
     )
+app.add_middleware(CORSMiddleware(config=cors_config))
 ```
 
 * **Use case:** When you want meaningful error messages instead of generic CORS errors.

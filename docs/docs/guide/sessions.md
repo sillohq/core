@@ -16,8 +16,33 @@ Session management is a critical component of web applications, allowing you to 
 
 Setting up sessions in your Nexios application is straightforward:
 
-```python
+```python [Recommended Approach]
 from nexios import NexiosApp
+from nexios.session.middleware import SessionMiddleware
+from nexios.session import SessionConfig
+
+app = NexiosApp()
+
+# Required: Configure a secret key for signing sessions
+app.config.secret_key = "your-secure-secret-key"
+
+# Create session configuration
+session_config = SessionConfig(
+    session_cookie_name="nexios_session",
+    cookie_path="/",
+    cookie_domain=None,
+    cookie_secure=True,
+    cookie_httponly=True,
+    cookie_samesite="lax",
+    session_expiration_time=86400  # 24 hours
+)
+
+# Add the session middleware with config
+app.add_middleware(SessionMiddleware(config=session_config))
+```
+
+```py [Legacy Approach [Deprecated]]
+from nexios import NexiosApp, MakeConfig
 from nexios.session.middleware import SessionMiddleware
 
 app = NexiosApp()
@@ -25,7 +50,7 @@ app = NexiosApp()
 # Required: Configure a secret key for signing sessions
 app.config.secret_key = "your-secure-secret-key"
 
-# Add the session middleware
+# Add the session middleware (uses global config)
 app.add_middleware(SessionMiddleware())
 ```
 
@@ -45,17 +70,18 @@ async def index(req, res):
 ##  Session Configuration Options
 
 Nexios offers various configuration options for customizing session behavior:
-:::
+:::code-group
 
-```py 
-from nexios import NexiosApp, MakeConfig
+```python [Recommended Approach]
+from nexios import NexiosApp
 from nexios.session import SessionConfig
 from nexios.session.middleware import SessionMiddleware
 from nexios.session.file import FileSessionInterface
 
 app = NexiosApp()
 app.config.secret_key = "secret-key"
-app.add_middleware(SessionMiddleware(config = SessionConfig(
+
+session_config = SessionConfig(
     session_cookie_name="nexios_session",
     cookie_path="/",
     cookie_domain=None,
@@ -66,11 +92,13 @@ app.add_middleware(SessionMiddleware(config = SessionConfig(
     manager=FileSessionInterface,
     session_file_storage_path="sessions",
     session_file_name="session_"
-)))
+)
+
+app.add_middleware(SessionMiddleware(config=session_config))
 
 ```
 
-```python [Old Style]
+```py [Legacy Approach [Deprecated]]
 from nexios import NexiosApp, MakeConfig
 from nexios.session import SessionConfig
 from nexios.session.middleware import SessionMiddleware
@@ -162,13 +190,11 @@ Sessions in Nexios behave similar to dictionaries but with additional methods:
 By default, sessions expire after 24 hours (86400 seconds). You can customize this:
 
 ```python
-from nexios import MakeConfig
-from nexios.session import SessionConfig
-
-# Set global session expiration time
+# Set global session expiration time using recommended approach
 session_config = SessionConfig(
     session_expiration_time=3600  # 1 hour
 )
+app.add_middleware(SessionMiddleware(config=session_config))
 
 
 
@@ -193,14 +219,11 @@ Nexios supports multiple session backends to store session data. Each backend ha
 The simplest session backend, storing the session data directly in a signed cookie:
 
 ```python
-from nexios import MakeConfig
-from nexios.session import SessionConfig
-from nexios.session.signed_cookies import SignedSessionManager
-
+# Using recommended approach for signed cookie sessions
 session_config = SessionConfig(
     manager=SignedSessionManager
 )
-
+app.add_middleware(SessionMiddleware(config=session_config))
 ```
 
 **Pros**:
@@ -220,16 +243,13 @@ session_config = SessionConfig(
 Stores session data in files on the server filesystem:
 
 ```python
-from nexios import MakeConfig
-from nexios.session import SessionConfig
-from nexios.session.file import FileSessionInterface
-
+# Using recommended approach for file-based sessions
 session_config = SessionConfig(
     manager=FileSessionInterface,
     session_file_storage_path="sessions",  # Directory to store session files
     session_file_name="session_"           # Prefix for session files
 )
-
+app.add_middleware(SessionMiddleware(config=session_config))
 ```
 
 **Pros**:
@@ -304,16 +324,13 @@ app.config.secret_key = os.environ.get("SECRET_KEY")
 #### Enable Secure Cookies
 
 ```python
-from nexios import MakeConfig
-from nexios.session import SessionConfig
-
+# Using recommended approach for secure cookies
 session_config = SessionConfig(
     cookie_secure=True,      # Only send cookies over HTTPS
     cookie_httponly=True,    # Prevent JavaScript access
     cookie_samesite="lax"    # Mitigate CSRF attacks
 )
-
-
+app.add_middleware(SessionMiddleware(config=session_config))
 ```
 
 #### Use Appropriate Session Expiration

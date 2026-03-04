@@ -37,7 +37,24 @@ Nexios implements the "Synchronizer Token Pattern":
 
 ##  Basic Setup
 
-```python
+```python [Recommended Approach]
+from nexios import NexiosApp
+from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
+
+csrf_config = CSRFConfig(
+    enabled=True,
+    required_urls=["*"],
+    safe_methods=["GET", "HEAD", "OPTIONS"],
+    cookie_name="csrftoken",
+    header_name="X-CSRFToken"
+)
+
+app = NexiosApp()
+app.config.secret_key = "your-secret-key-here"
+app.add_middleware(CSRFMiddleware(config=csrf_config))
+```
+
+```py [Legacy Approach [Deprecated]]
 from nexios import NexiosApp, MakeConfig
 from nexios.middleware import CSRFMiddleware
 
@@ -60,74 +77,73 @@ Nexios provides flexible configuration to customize CSRF protection for your app
 
 ### Core Settings
 
-- **`csrf_enabled`** (boolean, default: `False`)
+- **`enabled`** (boolean, default: `False`)
 
   - Enables or disables CSRF protection globally
   - **Recommended**: `True` in production environments
-  - Example: `csrf_enabled=True`
+  - Example: `enabled=True`
 
 - **`secret_key`** (string, required)
   - Cryptographic key used to sign CSRF tokens
   - **Security Note**: Keep this secret and consistent across application restarts
-  - Example: `secret_key="your-secure-key-123"`
+  - Example: Set via `app.config.secret_key = "your-secure-key-123"`
 
 ### URL Configuration
 
-- **`csrf_required_urls`** (list of strings, default: `[]`)
+- **`required_urls`** (list of strings, default: `["*"]`)
 
   - URL patterns that require CSRF protection
   - Supports wildcard `*` for matching multiple URLs
   - Example: `["/api/*", "/admin/*"]`
 
-- **`csrf_exempt_urls`** (list of strings, default: `[]`)
+- **`exempt_urls`** (list of strings, default: `[]`)
   - URL patterns excluded from CSRF protection
-  - Takes precedence over `csrf_required_urls`
+  - Takes precedence over `required_urls`
   - Example: `["/api/public/*", "/webhooks/stripe"]`
 
 ### HTTP Methods
 
-- **`csrf_safe_methods`** (list of strings, default: `["GET", "HEAD", "OPTIONS"]`)
+- **`safe_methods`** (list of strings, default: `["GET", "HEAD", "OPTIONS"]`)
   - HTTP methods that don't require CSRF tokens
   - These should be idempotent and have no side effects
   - Example: `["GET", "HEAD", "OPTIONS", "TRACE"]`
 
 ### Cookie Settings
 
-- **`csrf_cookie_name`** (string, default: `"csrftoken"`)
+- **`cookie_name`** (string, default: `"csrftoken"`)
 
   - Name of the cookie that stores the CSRF token
   - Change this if you need to avoid naming conflicts
-  - Example: `csrf_cookie_name="myapp_csrf_token"`
+  - Example: `cookie_name="myapp_csrf_token"`
 
-- **`csrf_cookie_secure`** (boolean, default: `False`)
+- **`cookie_secure`** (boolean, default: `False`)
 
   - When `True`, the cookie is only sent over HTTPS
   - **Security Best Practice**: Set to `True` in production
-  - Example: `csrf_cookie_secure=True`
+  - Example: `cookie_secure=True`
 
-- **`csrf_cookie_httponly`** (boolean, default: `True`)
+- **`cookie_httponly`** (boolean, default: `True`)
 
   - Prevents JavaScript from accessing the cookie
   - **Security Best Practice**: Keep this as `True`
-  - Example: `csrf_cookie_httponly=True`
+  - Example: `cookie_httponly=True`
 
-- **`csrf_cookie_samesite`** (string, default: `"lax"`)
+- **`cookie_samesite`** (string, default: `"lax"`)
   - Controls when cookies are sent with cross-site requests
   - Options: `"lax"` (recommended), `"strict"`, or `"none"`
   - Note: `"none"` requires `secure=True`
-  - Example: `csrf_cookie_samesite="lax"`
+  - Example: `cookie_samesite="lax"`
 
 ### Headers and Forms
 
-- **`csrf_header_name`** (string, default: `"X-CSRFToken"`)
+- **`header_name`** (string, default: `"X-CSRFToken"`)
 
   - HTTP header name for sending CSRF tokens in AJAX requests
   - Example: `"X-CSRF-TOKEN"`
 
-- **`csrf_form_field`** (string, default: `"csrf_token"`)
-  - Form field name for CSRF tokens in HTML forms
-  - Must match your form field names
-  - Example: `"_csrf_token"`
+- **`cookie_path`** (string, default: `"/"`)
+  - Path for which the cookie is valid
+  - Example: `cookie_path="/api"`
 
 ##  Using CSRF with Templates
 
@@ -231,10 +247,11 @@ For AJAX requests, include the CSRF token in your JavaScript:
 If you need to use a different field name for the CSRF token in your forms, you can customize it in your configuration:
 
 ```python
-config = MakeConfig(
+csrf_config = CSRFConfig(
     # ... other config
-    csrf_form_field="custom_csrf_field",  # Default is "csrftoken"
+    cookie_name="custom_csrf_field",  # Default is "csrftoken"
 )
+app.add_middleware(CSRFMiddleware(config=csrf_config))
 ```
 
 Then update your form to use the custom field name:
