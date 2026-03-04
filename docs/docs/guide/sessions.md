@@ -76,7 +76,7 @@ Nexios offers various configuration options for customizing session behavior:
 from nexios import NexiosApp
 from nexios.session import SessionConfig
 from nexios.session.middleware import SessionMiddleware
-from nexios.session.file import FileSessionInterface
+from nexios.session.file import FileSessionManager
 
 app = NexiosApp()
 app.config.secret_key = "secret-key"
@@ -89,7 +89,7 @@ session_config = SessionConfig(
     cookie_httponly=True,
     cookie_samesite="lax",
     session_expiration_time=86400,  # 24 hours
-    manager=FileSessionInterface,
+    manager=FileSessionManager,
     session_file_storage_path="sessions",
     session_file_name="session_"
 )
