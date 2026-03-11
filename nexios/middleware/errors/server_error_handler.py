@@ -869,7 +869,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         self.current_request = request
         # Get debug mode from config
         try:
-            self.debug = get_config().debug or True
+            self.debug = True
         except Exception:  # pragma: no cover
             self.debug = True
         try:

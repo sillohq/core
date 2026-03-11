@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import sys
+from this import s
 import typing
 from collections.abc import Iterator
-from typing import Any, Protocol
+from typing import Any, AsyncIterable, Mapping, MutableMapping, Protocol
 
 import anyio
 
 from nexios.http.request import ClientDisconnect, Request
-from nexios.http.response import NexiosResponse as Response
+from nexios.http.response import BaseResponse, NexiosResponse as Response, StreamingResponse
 from nexios.types import ASGIApp, Message, Receive, Scope, Send
 from nexios.utils.async_helpers import collapse_excgroups
 from nexios.websockets import WebSocket
@@ -26,6 +27,7 @@ DispatchFunction = typing.Callable[
 T = typing.TypeVar("T")
 P = ParamSpec("P")
 
+AsyncContentStream = AsyncIterable[str | bytes | memoryview | MutableMapping[str, Any]]
 
 class _MiddlewareFactory(Protocol[P]):
     def __call__(
@@ -148,12 +150,13 @@ class ASGIRequestResponseBridge:
 
         request = _CachedRequest(scope, receive)
         response = Response(request=request)
+        print("intiialzed in core mdw")
         wrapped_receive = request.wrapped_receive
         response_sent = anyio.Event()
 
         async def call_next(
             *_,
-        ) -> Response:
+        ) -> StreamingResponse:
             app_exc: Exception | None = None
 
             async def receive_or_disconnect() -> Message:
@@ -199,27 +202,23 @@ class ASGIRequestResponseBridge:
                     raise app_exc
                 raise RuntimeError("Client disconnected before response was sent")
             assert message["type"] == "http.response.start"
-            buffered_body = b""
 
             async def body_stream() -> typing.AsyncGenerator[bytes, None]:
-                nonlocal buffered_body
                 async for message in recv_stream:
                     assert message["type"] == "http.response.body"
                     body = message.get("body", b"")
                     if body:
-                        buffered_body += body
                         yield body
                     if not message.get("more_body", False):
                         break
                 if app_exc is not None:
                     raise app_exc
-
-            response_object = response.stream(
-                iterator=body_stream(),
-                status_code=message["status"],  # type: ignore
-            )  # type: ignore
-            response_object._response._headers = message["headers"]  # type: ignore
-            return response_object._response  # type: ignore
+            response_object = _StreamingResponse(
+                content=body_stream(),
+                status_code=message["status"],  
+            )  
+            response_object.raw_headers = message["headers"]  
+            return response_object
 
         streams: anyio.create_memory_object_stream[Message] = (  # type: ignore
             anyio.create_memory_object_stream()
@@ -227,11 +226,53 @@ class ASGIRequestResponseBridge:
         send_stream, recv_stream = streams
         with recv_stream, send_stream, collapse_excgroups():
             async with anyio.create_task_group() as task_group:
-                await self.dispatch_func(request, response, call_next)  # type: ignore
-                await response.get_response()(scope, wrapped_receive, send)
+                returned_response = await self.dispatch_func(request, response, call_next)  # type: ignore
+                await returned_response(scope, wrapped_receive, send)
                 response_sent.set()
                 recv_stream.close()
 
+
+
+class _StreamingResponse(BaseResponse):
+    def __init__(
+        self,
+        content: AsyncContentStream,
+        status_code: int = 200,
+        headers: Mapping[str, str] | None = None,
+        media_type: str | None = None,
+        info: Mapping[str, Any] | None = None,
+    ) -> None:
+        self.info = info
+        self.body_iterator = content
+        self.status_code = status_code
+        self.media_type = media_type
+
+        super().__init__(headers=dict(headers or {}),status_code=status_code)
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if self.info is not None:
+            await send({"type": "http.response.debug", "info": self.info})
+        await send(
+            {
+                "type": "http.response.start",
+                "status": self.status_code,
+                "headers": self.raw_headers,
+            }
+        )
+
+        should_close_body = True
+        async for chunk in self.body_iterator:
+            if isinstance(chunk, dict):
+                # We got an ASGI message which is not response body (eg: pathsend)
+                should_close_body = False
+                await send(chunk)
+                continue
+            await send({"type": "http.response.body", "body": chunk, "more_body": True})
+
+        if should_close_body:
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
+
+        
 
 WebSocketDispatchFunction = typing.Callable[
     ["WebSocket", typing.Coroutine[None, None, typing.Any]], typing.Awaitable[None]

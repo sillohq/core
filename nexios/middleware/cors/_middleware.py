@@ -112,8 +112,8 @@ class CORSMiddleware(BaseMiddleware):
             config = self.config
 
         if not config:
-            await call_next()
-            return
+            return await call_next()
+            
             
         origin = request.origin
 
@@ -158,7 +158,7 @@ class CORSMiddleware(BaseMiddleware):
         server_error_headers = request.scope.get("server_error_headers", {})
         server_error_headers["Access-Control-Allow-Origin"] = origin
         request.scope["server_error_headers"] = server_error_headers
-        await call_next()
+        cnext =  await call_next()
 
         if origin and self.is_allowed_origin(origin):
             response.set_header("Access-Control-Allow-Origin", origin, overide=True)
@@ -174,6 +174,7 @@ class CORSMiddleware(BaseMiddleware):
                 ", ".join(self.expose_headers),
                 overide=True,
             )
+        return cnext
 
     def is_allowed_origin(self, origin: Optional[str]) -> bool:
         if origin in self.blacklist_origins:

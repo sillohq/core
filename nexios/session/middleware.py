@@ -90,7 +90,7 @@ class SessionMiddleware(BaseMiddleware):
         )
         await session.load()  # type: ignore
         request.scope["session"] = session
-        await call_next()
+        return await call_next()
 
     async def process_response(self, request: Request, response: Response):
         if not self.secret:

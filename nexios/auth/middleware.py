@@ -99,4 +99,4 @@ class AuthenticationMiddleware(BaseMiddleware):
             request.scope["user"] = UnauthenticatedUser()
             request.scope["auth"] = None
 
-        await call_next()
+        return await call_next()

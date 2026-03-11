@@ -46,6 +46,7 @@ async def request_response(
 
         # Get or create response manager for this request
         # __new__ automatically returns existing instance if available
+        print("INitialized at _response tranformer")
         response_manager = Response(request)
 
         ctx = Context(
