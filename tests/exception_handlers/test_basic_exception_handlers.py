@@ -26,7 +26,7 @@ def test_exception_handler_custom_exception(
     async def custom_error_handler(
         request: Request, response: Response, exc: CustomError
     ):
-        return response.status(400).json({"error": "CustomError", "message": str(exc)})
+        return response.json({"error": "CustomError", "message": str(exc)}).status(400)
 
     app.add_exception_handler(CustomError, custom_error_handler)
 
@@ -81,7 +81,7 @@ def test_exception_handler_value_error(
     async def value_error_handler(
         request: Request, response: Response, exc: ValueError
     ):
-        return response.status(400).json({"error": "ValueError", "message": str(exc)})
+        return response.json({"error": "ValueError", "message": str(exc)}).status(400)
 
     app.add_exception_handler(ValueError, value_error_handler)
 
@@ -102,9 +102,9 @@ def test_exception_handler_type_error(
     app = NexiosApp()
 
     async def type_error_handler(request: Request, response: Response, exc: TypeError):
-        return response.status(400).json(
+        return response.json(
             {"error": "TypeError", "message": "Type mismatch"}
-        )
+        ).status(400)
 
     app.add_exception_handler(TypeError, type_error_handler)
 
@@ -131,10 +131,10 @@ def test_exception_handler_multiple_exceptions(
         pass
 
     async def error_a_handler(request: Request, response: Response, exc: ErrorA):
-        return response.status(400).json({"error": "ErrorA"})
+        return response.json({"error": "ErrorA"}).status(400)
 
     async def error_b_handler(request: Request, response: Response, exc: ErrorB):
-        return response.status(500).json({"error": "ErrorB"})
+        return response.json({"error": "ErrorB"}).status(500)
 
     app.add_exception_handler(ErrorA, error_a_handler)
     app.add_exception_handler(ErrorB, error_b_handler)
@@ -170,7 +170,7 @@ def test_exception_handler_decorator_style(
     async def handle_custom_exception(
         request: Request, response: Response, exc: CustomException
     ):
-        return response.status(418).json({"error": "I'm a teapot", "message": str(exc)})
+        return response.json({"error": "I'm a teapot", "message": str(exc)}).status(418)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -194,9 +194,9 @@ def test_exception_handler_status_code_404(
     async def custom_404_handler(
         request: Request, response: Response, exc: HTTPException
     ):
-        return response.status(404).json(
+        return response.json(
             {"error": "Not Found", "path": request.path, "custom": True}
-        )
+        ).status(404)
 
     app.add_exception_handler(404, custom_404_handler)
 
@@ -221,12 +221,12 @@ def test_exception_handler_status_code_500(
     async def custom_500_handler(
         request: Request, response: Response, exc: HTTPException
     ):
-        return response.status(500).json(
+        return response.json(
             {
                 "error": "Internal Server Error",
                 "message": "Something went wrong on our end",
             }
-        )
+        ).status(500)
 
     app.add_exception_handler(500, custom_500_handler)
 
@@ -249,9 +249,9 @@ def test_exception_handler_status_code_401(
     async def custom_401_handler(
         request: Request, response: Response, exc: HTTPException
     ):
-        return response.status(401).json(
+        return response.json(
             {"error": "Unauthorized", "login_url": "/login"}
-        )
+        ).status(401)
 
     app.add_exception_handler(401, custom_401_handler)
 
@@ -281,9 +281,9 @@ def test_exception_handler_with_custom_headers(
         request: Request, response: Response, exc: RateLimitError
     ):
         return (
-            response.status(429)
-            .set_header("Retry-After", "60")
+            response.set_header("Retry-After", "60")
             .json({"error": "Rate limit exceeded", "retry_after": 60})
+            .status(429)
         )
 
     app.add_exception_handler(RateLimitError, rate_limit_handler)
@@ -334,7 +334,7 @@ def test_exception_handler_inheritance(
         pass
 
     async def base_error_handler(request: Request, response: Response, exc: BaseError):
-        return response.status(400).json({"error": "BaseError"})
+        return response.json({"error": "BaseError"}).status(400)
 
     app.add_exception_handler(BaseError, base_error_handler)
 
@@ -366,7 +366,7 @@ def test_exception_handler_specific_over_base(
     async def specific_error_handler(
         request: Request, response: Response, exc: SpecificError
     ):
-        return response.status(422).json({"error": "SpecificError"})
+        return response.json({"error": "SpecificError"}).status(422)
 
     app.add_exception_handler(BaseError, base_error_handler)
     app.add_exception_handler(SpecificError, specific_error_handler)
@@ -396,13 +396,16 @@ def test_exception_handler_access_request_data(
     async def validation_error_handler(
         request: Request, response: Response, exc: ValidationError
     ):
-        return response.status(400).json(
-            {
-                "error": "Validation failed",
-                "path": request.path,
-                "method": request.method,
-                "message": str(exc),
-            }
+        return (
+            response.json(
+                {
+                    "error": "Validation failed",
+                    "path": request.path,
+                    "method": request.method,
+                    "message": str(exc),
+                }
+            )
+            .status(400)
         )
 
     app.add_exception_handler(ValidationError, validation_error_handler)
@@ -433,9 +436,9 @@ def test_exception_handler_with_exception_details(
     async def detailed_error_handler(
         request: Request, response: Response, exc: DetailedError
     ):
-        return response.status(400).json(
+        return response.json(
             {"error": "DetailedError", "message": str(exc), "code": exc.code}
-        )
+        ).status(400)
 
     app.add_exception_handler(DetailedError, detailed_error_handler)
 

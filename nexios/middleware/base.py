@@ -78,7 +78,9 @@ class BaseMiddleware:
 
         cnext = await self.process_request(request, response, wrapped_call_next)
         if self._call_next:
-            await self.process_response(request, response)
+            returned_response = await self.process_response(request, response)
+            if returned_response:
+                return returned_response
             return cnext
         return cnext
 

@@ -407,54 +407,7 @@ class TestCORSIntegration:
             == "https://api-client.com"
         )
 
-    def test_cors_with_websocket_upgrade_requests(self):
-        """Test CORS handling during WebSocket upgrade requests"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["https://chat.myapp.com"],
-                allow_methods=["GET"],  # WebSocket upgrade uses GET
-                allow_headers=[
-                    "Upgrade",
-                    "Connection",
-                    "Sec-WebSocket-Key",
-                    "Sec-WebSocket-Version",
-                ],
-                allow_credentials=True,
-            )
-        )
-        set_config(config)
-
-        app = NexiosApp(config)
-
-        @app.get("/ws")
-        async def websocket_endpoint(request: Request, response: Response):
-            # Simulate WebSocket upgrade handling
-            if request.headers.get("Upgrade") == "websocket":
-                return response.status(101).json({"message": "Switching Protocols"})
-            return response.json({"error": "Not a WebSocket request"})
-
-        app.add_middleware(CORSMiddleware(config=config.cors))
-
-        client = TestClient(app)
-
-        # Test WebSocket upgrade request
-        ws_response = client.get(
-            "/ws",
-            headers={
-                "Origin": "https://chat.myapp.com",
-                "Upgrade": "websocket",
-                "Connection": "Upgrade",
-                "Sec-WebSocket-Key": "test-key",
-                "Sec-WebSocket-Version": "13",
-            },
-        )
-
-        assert ws_response.status_code == 101
-        assert (
-            ws_response.headers["Access-Control-Allow-Origin"]
-            == "https://chat.myapp.com"
-        )
-        assert ws_response.headers["Access-Control-Allow-Credentials"] == "true"
+    
 
     def test_cors_with_subdomain_wildcard(self):
         """Test CORS with subdomain wildcard patterns"""

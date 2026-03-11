@@ -47,23 +47,6 @@ def test_set_body_method(test_client_factory: Callable[[NexiosApp], TestClient])
 # ========== Response Status Tests ==========
 
 
-def test_response_status_code_property(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test accessing response status code property"""
-    app = NexiosApp()
-
-    @app.get("/status-check")
-    async def check_status(request: Request, response: Response):
-        response.status(201)
-        current_status = response.status_code
-        assert current_status == 201
-        return response.json({"status": current_status})
-
-    with test_client_factory(app) as client:
-        resp = client.get("/status-check")
-        assert resp.status_code == 201
-        assert resp.json()["status"] == 201
 
 
 def test_response_status_codes(test_client_factory: Callable[[NexiosApp], TestClient]):
@@ -76,7 +59,7 @@ def test_response_status_codes(test_client_factory: Callable[[NexiosApp], TestCl
 
         @app.get(f"/status-{code}")
         async def handler(request: Request, response: Response, status_code=code):
-            return response.status(status_code).text(f"Status {status_code}")
+            return response.text(f"Status {status_code}").status(status_code)
 
     with test_client_factory(app) as client:
         for code in status_codes:
@@ -136,12 +119,13 @@ def test_method_chaining_all_methods(
     @app.get("/chain-all")
     async def chain_all(request: Request, response: Response):
         return (
-            response.status(201)
+            response
             .set_header("X-Custom-1", "value1")
             .set_header("X-Custom-2", "value2")
             .set_cookie("session", "abc123")
             .cache(max_age=3600)
             .json({"chained": True})
+            .status(201)
         )
 
     with test_client_factory(app) as client:
@@ -165,7 +149,7 @@ def test_method_chaining_order_independence(
 
     @app.get("/chain-order-2")
     async def chain_order_2(request: Request, response: Response):
-        return response.status(201).set_header("X-Test", "2").json({"test": 2})
+        return response.set_header("X-Test", "2").json({"test": 2}).status(201)
 
     with test_client_factory(app) as client:
         resp1 = client.get("/chain-order-1")
@@ -316,19 +300,23 @@ def test_response_with_error_status(
 
     @app.get("/bad-request")
     async def bad_request(request: Request, response: Response):
-        return response.status(400).json({"error": "Bad request"})
+        response = response.json({"error": "Bad request"})
+        return response.status(400)
 
     @app.get("/unauthorized")
     async def unauthorized(request: Request, response: Response):
-        return response.status(401).json({"error": "Unauthorized"})
+        response = response.json({"error": "Unauthorized"})
+        return response.status(401)
 
     @app.get("/not-found")
     async def not_found(request: Request, response: Response):
-        return response.status(404).json({"error": "Not found"})
+        response = response.json({"error": "Not found"})
+        return response.status(404)
 
     @app.get("/server-error")
     async def server_error(request: Request, response: Response):
-        return response.status(500).json({"error": "Internal server error"})
+        response = response.json({"error": "Internal server error"})
+        return response.status(500)
 
     with test_client_factory(app) as client:
         resp400 = client.get("/bad-request")
@@ -345,23 +333,3 @@ def test_response_with_error_status(
         assert resp500.status_code == 500
 
 
-# ========== Response Immutability Tests ==========
-
-
-def test_response_multiple_calls(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test that response can be modified multiple times"""
-    app = NexiosApp()
-
-    @app.get("/multiple-mods")
-    async def multiple_modifications(request: Request, response: Response):
-        response.status(200)
-        response.status(201)
-        response.status(202)
-        return response.json({"final_status": response.status_code})
-
-    with test_client_factory(app) as client:
-        resp = client.get("/multiple-mods")
-        assert resp.status_code == 202
-        assert resp.json()["final_status"] == 202

@@ -270,6 +270,23 @@ class BaseResponse:
         """Set multiple headers at once."""
         for key, value in headers.items():
             self.set_header(key, value)
+    
+    def remove_header(self, key: str):
+        """Remove a header from the response."""
+        self.raw_headers = [
+            (k, v)
+            for k, v in self.raw_headers
+            if k.decode("latin-1").lower() != key.lower()
+        ]  # type: ignore
+    
+    def remove_headers(self, keys: List[str]):
+        """Remove multiple headers from the response."""
+        self.raw_headers = [
+            (k, v)
+            for k, v in self.raw_headers
+            if k.decode("latin-1").lower() not in [key.lower() for key in keys]
+        ]  # type: ignore
+    
 
 
 class PlainTextResponse(BaseResponse):
@@ -1276,12 +1293,7 @@ class NexiosResponse:
 
     def remove_header(self, key: str):
         """Remove a header from the response."""
-        self._response._headers = [  # type: ignore
-            (k, v)
-            for k, v in self._response._headers  # type: ignore
-            if k.decode("latin-1").lower() != key.lower()
-        ]  # type: ignore
-
+        self._response.remove_header(key)
     def paginate(
         self,
         objects: List[Any],

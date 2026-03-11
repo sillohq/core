@@ -274,11 +274,11 @@ def test_response_based_on_method(
         if method == "GET":
             return response.json({"action": "read"})
         elif method == "POST":
-            return response.status(201).json({"action": "created"})
+            return response.json({"action": "created"}).status(201)
         elif method == "PUT":
             return response.json({"action": "updated"})
         elif method == "DELETE":
-            return response.status(204).empty()
+            return response.empty().status(204)
 
     with test_client_factory(app) as client:
         get_resp = client.get("/resource")

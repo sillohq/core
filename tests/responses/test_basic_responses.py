@@ -249,7 +249,7 @@ def test_response_status_method(test_client_factory: Callable[[NexiosApp], TestC
 
     @app.get("/custom-status")
     async def custom_status(request: Request, response: Response):
-        return response.status(418).text("I'm a teapot")
+        return response.text("I'm a teapot").status(418)
 
     with test_client_factory(app) as client:
         resp = client.get("/custom-status")
@@ -263,7 +263,7 @@ def test_response_chaining(test_client_factory: Callable[[NexiosApp], TestClient
 
     @app.get("/chain")
     async def chain_methods(request: Request, response: Response):
-        return response.status(201).json({"created": True})
+        return response.json({"created": True}).status(201)
 
     with test_client_factory(app) as client:
         resp = client.get("/chain")

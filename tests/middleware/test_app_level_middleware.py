@@ -148,7 +148,7 @@ def test_app_level_middleware_early_return(
     async def auth_middleware(request: Request, response: Response, call_next):
         token = request.headers.get("Authorization")
         if not token:
-            return response.status(401).json({"error": "Unauthorized"})
+            return response.json({"error": "Unauthorized"}).status(401)
         await call_next()
         return response
 
@@ -180,7 +180,7 @@ def test_app_level_middleware_exception_handling(
         try:
             await call_next()
         except ValueError as e:
-            return response.status(400).json({"error": str(e)})
+            return response.json({"error": str(e)}).status(400)
         return response
 
     app.add_middleware(error_handler_middleware)

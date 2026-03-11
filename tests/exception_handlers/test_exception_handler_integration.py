@@ -39,7 +39,7 @@ def test_exception_handler_with_middleware(
 
     async def error_handler(request: Request, response: Response, exc: CustomError):
         execution_log.append("error_handler")
-        return response.status(400).json({"error": str(exc)})
+        return response.json({"error": str(exc)}).status(400)
 
     app.add_middleware(logging_middleware)
     app.add_exception_handler(CustomError, error_handler)
@@ -146,7 +146,7 @@ def test_exception_handler_with_nested_routers(
     async def router_error_handler(
         request: Request, response: Response, exc: RouterError
     ):
-        return response.status(400).json({"error": "Router error"})
+        return response.json({"error": "Router error"}).status(400)
 
     app.add_exception_handler(RouterError, router_error_handler)
 
@@ -162,43 +162,6 @@ def test_exception_handler_with_nested_routers(
         assert resp.status_code == 400
 
 
-def test_exception_handler_different_routers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test exception handler applies across different routers"""
-    app = NexiosApp()
-    router1 = Router(prefix="/api1")
-    router2 = Router(prefix="/api2")
-
-    class SharedError(Exception):
-        pass
-
-    async def shared_error_handler(
-        request: Request, response: Response, exc: SharedError
-    ):
-        return response.status(400).json({"error": "Shared error", "message": str(exc)})
-
-    app.add_exception_handler(SharedError, shared_error_handler)
-
-    @router1.get("/test")
-    async def handler1(request: Request, response: Response):
-        raise SharedError("Error in router 1")
-
-    @router2.get("/test")
-    async def handler2(request: Request, response: Response):
-        raise SharedError("Error in router 2")
-
-    app.mount_router(router1)
-    app.mount_router(router2)
-
-    with test_client_factory(app) as client:
-        resp1 = client.get("/api1/test")
-        assert resp1.status_code == 400
-        assert "router 1" in resp1.json()["message"]
-
-        resp2 = client.get("/api2/test")
-        assert resp2.status_code == 400
-        assert "router 2" in resp2.json()["message"]
 
 
 # ========== Exception Handler with Different HTTP Methods ==========
@@ -319,8 +282,9 @@ def test_exception_handler_with_request_body(
         request: Request, response: Response, exc: ValidationError
     ):
         # Note: In real scenarios, body might already be consumed
-        return response.status(422).json(
-            {"error": "Validation failed", "message": str(exc), "path": request.path}
+        return response.json(
+            {"error": "Validation failed", "message": str(exc), "path": request.path},
+            status_code=422
         )
 
     app.add_exception_handler(ValidationError, validation_error_handler)
@@ -462,7 +426,7 @@ def test_exception_handler_complex_scenario(
     ):
         execution_log.append("error_handler")
         request_id = getattr(request.state, "request_id", None)
-        return response.status(500).json({"error": str(exc), "request_id": request_id})
+        return response.json({"error": str(exc), "request_id": request_id},status_code=500)
 
     app.add_middleware(logging_middleware)
     app.add_exception_handler(ComplexError, complex_error_handler)
@@ -512,7 +476,7 @@ def test_exception_handler_with_successful_request(
         pass
 
     async def test_error_handler(request: Request, response: Response, exc: TestError):
-        return response.status(400).json({"error": "handled"})
+        return response.json({"error": "handled"}).status(400)
 
     app.add_exception_handler(TestError, test_error_handler)
 

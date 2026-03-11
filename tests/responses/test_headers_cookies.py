@@ -380,11 +380,12 @@ def test_complex_response_chain(test_client_factory: Callable[[NexiosApp], TestC
     @app.get("/complex")
     async def complex_response(request: Request, response: Response):
         return (
-            response.status(201)
+            response
             .set_header("X-Custom", "value")
             .set_cookie("user", "alice")
             .cache(max_age=600)
             .json({"created": True})
+            .status(201)
         )
 
     with test_client_factory(app) as client:

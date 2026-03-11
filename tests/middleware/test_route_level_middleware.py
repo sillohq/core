@@ -124,7 +124,7 @@ def test_route_level_middleware_with_decorator(
     async def auth_middleware(request: Request, response: Response, call_next):
         token = request.headers.get("Authorization")
         if not token:
-            return response.status(401).json({"error": "Unauthorized"})
+            return response.json({"error": "Unauthorized"}).status(401)
         await call_next()
         return response
 
@@ -289,7 +289,7 @@ def test_route_middleware_validation(
     ):
         page = request.query_params.get("page")
         if page and not page.isdigit():
-            return response.status(400).json({"error": "Invalid page parameter"})
+            return response.json({"error": "Invalid page parameter"}).status(400)
         await call_next()
         return response
 
@@ -324,7 +324,7 @@ def test_route_middleware_rate_limiting(
         count = request_counts.get(client_ip, 0)
 
         if count >= 3:
-            return response.status(429).json({"error": "Rate limit exceeded"})
+            return response.json({"error": "Rate limit exceeded"}).status(429)
 
         request_counts[client_ip] = count + 1
         await call_next()
@@ -457,7 +457,7 @@ def test_route_middleware_error_handling(
         try:
             await call_next()
         except ValueError as e:
-            return response.status(400).json({"error": str(e), "handled": True})
+            return response.json({"error": str(e), "handled": True}).status(400)
         return response
 
     async def handler(request: Request, response: Response):

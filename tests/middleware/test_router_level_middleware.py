@@ -172,7 +172,7 @@ def test_router_level_middleware_auth(
     async def auth_middleware(request: Request, response: Response, call_next):
         token = request.headers.get("Authorization")
         if not token or not token.startswith("Bearer "):
-            return response.status(401).json({"error": "Unauthorized"})
+            return response.json({"error": "Unauthorized"}).status(401)
         await call_next()
         return response
 
@@ -370,7 +370,7 @@ def test_router_middleware_error_handling(
         try:
             await call_next()
         except ValueError as e:
-            return response.status(400).json({"error": str(e), "router": "api"})
+            return response.json({"error": str(e), "router": "api"}).status(400)
         return response
 
     router.add_middleware(error_handler_middleware)
