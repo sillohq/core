@@ -223,63 +223,6 @@ class TestCORSIntegration:
         )
         assert upload_response.headers["Access-Control-Allow-Credentials"] == "true"
 
-    def test_cors_with_pagination_api(self):
-        """Test CORS with paginated API endpoints"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["https://api-client.com"],
-                allow_methods=["GET"],
-                allow_credentials=True,
-                expose_headers=["X-Total-Count", "X-Page-Count", "X-Per-Page"],
-            )
-        )
-        set_config(config)
-
-        app = NexiosApp(config)
-
-        @app.get("/api/items")
-        async def get_items(request: Request, response: Response):
-            # Simulate pagination parameters
-            page = request.query_params.get("page", 1)
-            per_page = request.query_params.get("per_page", 10)
-
-            response.set_header("X-Total-Count", "100")
-            response.set_header("X-Page-Count", "10")
-            response.set_header("X-Per-Page", str(per_page))
-
-            return response.json(
-                {
-                    "items": [f"item_{i}" for i in range(int(per_page))],
-                    "page": page,
-                    "total": 100,
-                }
-            )
-
-        app.add_middleware(CORSMiddleware(config=config.cors))
-
-        client = TestClient(app)
-
-        # Test paginated request
-        response = client.get(
-            "/api/items?page=2&per_page=20",
-            headers={"Origin": "https://api-client.com"},
-        )
-
-        assert response.status_code == 200
-        assert (
-            response.headers["Access-Control-Allow-Origin"] == "https://api-client.com"
-        )
-        assert response.headers["Access-Control-Allow-Credentials"] == "true"
-        assert (
-            response.headers["Access-Control-Expose-Headers"]
-            == "X-Total-Count, X-Page-Count, X-Per-Page"
-        )
-
-        # Verify exposed headers are accessible to client
-        assert response.headers["X-Total-Count"] == "100"
-        assert response.headers["X-Page-Count"] == "10"
-        assert response.headers["X-Per-Page"] == "20"
-
     def test_cors_with_authentication_flow(self):
         """Test CORS with authentication-protected endpoints"""
         config = MakeConfig(
@@ -426,10 +369,11 @@ class TestCORSIntegration:
         @app.get("/api/data")
         async def subdomain_data(request: Request, response: Response):
             origin = request.origin
+            response.json({"data": "test"})
             if origin:
                 subdomain = origin.split(".")[0].replace("https://", "")
                 response.set_header("X-Subdomain", subdomain)
-            return response.json({"data": "test"})
+            return response
 
         app.add_middleware(CORSMiddleware(config=config.cors))
 

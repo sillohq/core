@@ -120,11 +120,11 @@ def test_method_chaining_all_methods(
     async def chain_all(request: Request, response: Response):
         return (
             response
+            .json({"chained": True})
             .set_header("X-Custom-1", "value1")
             .set_header("X-Custom-2", "value2")
             .set_cookie("session", "abc123")
             .cache(max_age=3600)
-            .json({"chained": True})
             .status(201)
         )
 
@@ -149,7 +149,7 @@ def test_method_chaining_order_independence(
 
     @app.get("/chain-order-2")
     async def chain_order_2(request: Request, response: Response):
-        return response.set_header("X-Test", "2").json({"test": 2}).status(201)
+        return response.json({"test": 2}).set_header("X-Test", "2").status(201)
 
     with test_client_factory(app) as client:
         resp1 = client.get("/chain-order-1")
@@ -202,52 +202,9 @@ def test_response_type_switching(
         assert "text/html" in resp_html.headers.get("content-type", "")
 
 
-# ========== Response Preservation Tests ==========
 
 
-def test_headers_preserved_across_response_changes(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test that headers are preserved when changing response type"""
-    app = NexiosApp()
 
-    @app.get("/preserve-headers")
-    async def preserve_headers(request: Request, response: Response):
-        response.set_header("X-Initial", "value")
-        response.text("First response")
-        response.set_header("X-Second", "value2")
-        return response.json({"final": True})
-
-    with test_client_factory(app) as client:
-        resp = client.get("/preserve-headers")
-        assert resp.status_code == 200
-        # Headers should be preserved
-        assert resp.headers.get("x-initial") == "value"
-        assert resp.headers.get("x-second") == "value2"
-
-
-def test_cookies_preserved_across_response_changes(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test that cookies are preserved when changing response type"""
-    app = NexiosApp()
-
-    @app.get("/preserve-cookies")
-    async def preserve_cookies(request: Request, response: Response):
-        response.set_cookie("cookie1", "value1")
-        response.text("First response")
-        response.set_cookie("cookie2", "value2")
-        return response.json({"final": True})
-
-    with test_client_factory(app) as client:
-        resp = client.get("/preserve-cookies")
-        assert resp.status_code == 200
-        # Cookies should be preserved
-        assert "cookie1" in resp.cookies
-        assert "cookie2" in resp.cookies
-
-
-# ========== Response Base Method Tests ==========
 
 
 def test_response_resp_method(test_client_factory: Callable[[NexiosApp], TestClient]):

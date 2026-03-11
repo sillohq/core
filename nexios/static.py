@@ -63,13 +63,14 @@ class StaticFiles(BaseRouter):
                     and file_path.is_file()
                     and self._is_extension_allowed(file_path)
                 ):
-                    # Apply cache control if specified
-                    if self.cache_control:
-                        response.set_header("cache-control", self.cache_control)
+                    
 
-                    return response.file(
+                    response.file(
                         str(file_path), content_disposition_type="inline"
                     )
+                    if self.cache_control:
+                        response.set_header("cache-control", self.cache_control)
+                    return response
             except (ValueError, RuntimeError):
                 continue
 

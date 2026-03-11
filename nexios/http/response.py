@@ -126,7 +126,7 @@ class BaseResponse:
             and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
             content_length = str(len(body))
-            # self.set_header("content-length", content_length, overide=True)
+            self.set_header("content-length", content_length, overide=True)
         content_type: typing.Optional[str] = self.content_type
         if content_type is not None and populate_content_type:
             if (
@@ -799,7 +799,7 @@ class NexiosResponse:
         if hasattr(self, "_initialized") and self._initialized:  # type: ignore
             return
 
-        self._response: BaseResponse 
+        self._response: BaseResponse = None  # type: ignore
         self._request = request
         self._initialized = True  # type: ignore
 
@@ -1038,6 +1038,8 @@ class NexiosResponse:
 
     def status(self, status_code: int):
         """Set response status code."""
+        if not self._response:
+            self.empty()
         self._response.status_code = status_code
         self._status_code = status_code
         return self
@@ -1256,6 +1258,8 @@ class NexiosResponse:
         return self
 
     def set_body(self, new_body: Any):
+        if not self._response:
+            return self.resp(new_body)
         self._response._body = new_body  # type: ignore
 
     def get_response(self) -> BaseResponse:

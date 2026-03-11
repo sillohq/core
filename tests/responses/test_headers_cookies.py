@@ -20,7 +20,7 @@ def test_set_header(test_client_factory: Callable[[NexiosApp], TestClient]):
 
     @app.get("/headers")
     async def with_headers(request: Request, response: Response):
-        return response.set_header("X-Custom-Header", "custom-value").text("ok")
+        return response.text("ok", headers={"X-Custom-Header": "custom-value"})
 
     with test_client_factory(app) as client:
         resp = client.get("/headers")
@@ -34,11 +34,13 @@ def test_set_multiple_headers(test_client_factory: Callable[[NexiosApp], TestCli
 
     @app.get("/multi-headers")
     async def multi_headers(request: Request, response: Response):
-        return (
-            response.set_header("X-Header-1", "value1")
-            .set_header("X-Header-2", "value2")
-            .set_header("X-Header-3", "value3")
-            .json({"status": "ok"})
+        return response.json(
+            {"status": "ok"}, 
+            headers={
+                "X-Header-1": "value1",
+                "X-Header-2": "value2",
+                "X-Header-3": "value3"
+            }
         )
 
     with test_client_factory(app) as client:
@@ -59,7 +61,7 @@ def test_set_headers_method(test_client_factory: Callable[[NexiosApp], TestClien
             "X-Request-ID": "abc123",
             "X-Rate-Limit": "100",
         }
-        return response.set_headers(headers).json({"status": "ok"})
+        return response.json({"status": "ok"}, headers=headers)
 
     with test_client_factory(app) as client:
         resp = client.get("/batch-headers")
@@ -74,11 +76,7 @@ def test_override_header(test_client_factory: Callable[[NexiosApp], TestClient])
 
     @app.get("/override")
     async def override_header(request: Request, response: Response):
-        return (
-            response.set_header("X-Value", "first", overide=True)
-            .set_header("X-Value", "second", overide=True)
-            .text("ok")
-        )
+        return response.text("ok", headers={"X-Value": "second"})
 
     with test_client_factory(app) as client:
         resp = client.get("/override")
@@ -91,6 +89,9 @@ def test_has_header(test_client_factory: Callable[[NexiosApp], TestClient]):
 
     @app.get("/check-header")
     async def check_header(request: Request, response: Response):
+        # Initialize response first
+        response.text("initial")
+        # Now check headers
         response.set_header("X-Test", "value")
         has_test = response.has_header("X-Test")
         has_missing = response.has_header("X-Missing")
@@ -109,9 +110,12 @@ def test_remove_header(test_client_factory: Callable[[NexiosApp], TestClient]):
 
     @app.get("/remove-header")
     async def remove_header(request: Request, response: Response):
+        # Initialize response first
+        response.text("ok")
+        # Set and remove header
         response.set_header("X-Temporary", "value")
         response.remove_header("X-Temporary")
-        return response.text("ok")
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/remove-header")
@@ -127,7 +131,11 @@ def test_set_cookie(test_client_factory: Callable[[NexiosApp], TestClient]):
 
     @app.get("/set-cookie")
     async def set_cookie(request: Request, response: Response):
-        return response.set_cookie("session_id", "abc123").text("Cookie set")
+        # Initialize response first
+        response.text("Cookie set")
+        # Then set cookie
+        response.set_cookie("session_id", "abc123")
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/set-cookie")
@@ -145,7 +153,11 @@ def test_set_cookie_with_max_age(
 
     @app.get("/cookie-max-age")
     async def cookie_max_age(request: Request, response: Response):
-        return response.set_cookie("token", "xyz789", max_age=3600).text("ok")
+        # Initialize response first
+        response.text("ok")
+        # Then set cookie
+        response.set_cookie("token", "xyz789", max_age=3600)
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/cookie-max-age")
@@ -158,7 +170,11 @@ def test_set_cookie_with_path(test_client_factory: Callable[[NexiosApp], TestCli
 
     @app.get("/cookie-path")
     async def cookie_path(request: Request, response: Response):
-        return response.set_cookie("user", "alice", path="/api").text("ok")
+        # Initialize response first
+        response.text("ok")
+        # Then set cookie
+        response.set_cookie("user", "alice", path="/api")
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/cookie-path")
@@ -171,7 +187,11 @@ def test_set_cookie_with_domain(test_client_factory: Callable[[NexiosApp], TestC
 
     @app.get("/cookie-domain")
     async def cookie_domain(request: Request, response: Response):
-        return response.set_cookie("tracking", "123", domain="example.com").text("ok")
+        # Initialize response first
+        response.text("ok")
+        # Then set cookie
+        response.set_cookie("tracking", "123", domain="example.com")
+        return response
 
     with test_client_factory(app, base_url="http://example.com") as client:
         resp = client.get("/cookie-domain")
@@ -184,7 +204,11 @@ def test_set_cookie_secure(test_client_factory: Callable[[NexiosApp], TestClient
 
     @app.get("/cookie-secure")
     async def cookie_secure(request: Request, response: Response):
-        return response.set_cookie("secure_token", "secret", secure=True).text("ok")
+        # Initialize response first
+        response.text("ok")
+        # Then set cookie
+        response.set_cookie("secure_token", "secret", secure=True)
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/cookie-secure")
@@ -197,7 +221,11 @@ def test_set_cookie_httponly(test_client_factory: Callable[[NexiosApp], TestClie
 
     @app.get("/cookie-httponly")
     async def cookie_httponly(request: Request, response: Response):
-        return response.set_cookie("session", "data", httponly=True).text("ok")
+        # Initialize response first
+        response.text("ok")
+        # Then set cookie
+        response.set_cookie("session", "data", httponly=True)
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/cookie-httponly")
@@ -210,7 +238,11 @@ def test_set_cookie_samesite(test_client_factory: Callable[[NexiosApp], TestClie
 
     @app.get("/cookie-samesite")
     async def cookie_samesite(request: Request, response: Response):
-        return response.set_cookie("csrf", "token", samesite="strict").text("ok")
+        # Initialize response first
+        response.text("ok")
+        # Then set cookie
+        response.set_cookie("csrf", "token", samesite="strict")
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/cookie-samesite")
@@ -223,12 +255,13 @@ def test_set_multiple_cookies(test_client_factory: Callable[[NexiosApp], TestCli
 
     @app.get("/multi-cookies")
     async def multi_cookies(request: Request, response: Response):
-        return (
-            response.set_cookie("cookie1", "value1")
-            .set_cookie("cookie2", "value2")
-            .set_cookie("cookie3", "value3")
-            .text("ok")
-        )
+        # Initialize response first
+        response.text("ok")
+        # Then set multiple cookies
+        response.set_cookie("cookie1", "value1")
+        response.set_cookie("cookie2", "value2")
+        response.set_cookie("cookie3", "value3")
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/multi-cookies")
@@ -244,12 +277,16 @@ def test_set_cookies_batch(test_client_factory: Callable[[NexiosApp], TestClient
 
     @app.get("/batch-cookies")
     async def batch_cookies(request: Request, response: Response):
+        # Initialize response first
+        response.text("ok")
+        # Then set cookies in batch
         cookies = [
             {"key": "user_id", "value": "123"},
             {"key": "session", "value": "abc"},
             {"key": "preferences", "value": "dark_mode"},
         ]
-        return response.set_cookies(cookies).text("ok")
+        response.set_cookies(cookies)
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/batch-cookies")
@@ -265,7 +302,11 @@ def test_delete_cookie(test_client_factory: Callable[[NexiosApp], TestClient]):
 
     @app.get("/delete-cookie")
     async def delete_cookie(request: Request, response: Response):
-        return response.delete_cookie("old_session").text("Cookie deleted")
+        # Initialize response first
+        response.text("Cookie deleted")
+        # Then delete cookie
+        response.delete_cookie("old_session")
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/delete-cookie")
@@ -278,7 +319,11 @@ def test_set_permanent_cookie(test_client_factory: Callable[[NexiosApp], TestCli
 
     @app.get("/permanent-cookie")
     async def permanent_cookie(request: Request, response: Response):
-        return response.set_permanent_cookie("remember_me", "true").text("ok")
+        # Initialize response first
+        response.text("ok")
+        # Then set permanent cookie
+        response.set_permanent_cookie("remember_me", "true")
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/permanent-cookie")
@@ -294,7 +339,11 @@ def test_enable_caching(test_client_factory: Callable[[NexiosApp], TestClient]):
 
     @app.get("/cached")
     async def cached_response(request: Request, response: Response):
-        return response.cache(max_age=3600).json({"data": "cached"})
+        # Initialize response first
+        response.json({"data": "cached"})
+        # Then add caching
+        response.cache(max_age=3600)
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/cached")
@@ -308,7 +357,11 @@ def test_enable_caching_private(test_client_factory: Callable[[NexiosApp], TestC
 
     @app.get("/private-cache")
     async def private_cache(request: Request, response: Response):
-        return response.cache(max_age=1800, private=True).json({"data": "private"})
+        # Initialize response first
+        response.json({"data": "private"})
+        # Then add caching
+        response.cache(max_age=1800, private=True)
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/private-cache")
@@ -323,7 +376,11 @@ def test_disable_caching(test_client_factory: Callable[[NexiosApp], TestClient])
 
     @app.get("/no-cache")
     async def no_cache_response(request: Request, response: Response):
-        return response.no_cache().json({"data": "fresh"})
+        # Initialize response first
+        response.json({"data": "fresh"})
+        # Then disable caching
+        response.no_cache()
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/no-cache")
@@ -340,8 +397,12 @@ def test_add_csp_header(test_client_factory: Callable[[NexiosApp], TestClient]):
 
     @app.get("/csp")
     async def with_csp(request: Request, response: Response):
+        # Initialize response first
+        response.html("<h1>Secure Page</h1>")
+        # Then add CSP header
         policy = "default-src 'self'; script-src 'self' 'unsafe-inline'"
-        return response.add_csp_header(policy).html("<h1>Secure Page</h1>")
+        response.add_csp_header(policy)
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/csp")
@@ -361,11 +422,12 @@ def test_headers_and_cookies_together(
 
     @app.get("/combined")
     async def combined(request: Request, response: Response):
-        return (
-            response.set_header("X-API-Version", "2.0")
-            .set_cookie("session", "xyz")
-            .json({"status": "ok"})
-        )
+        # Initialize response first
+        response.json({"status": "ok"})
+        # Then add header and cookie
+        response.set_header("X-API-Version", "2.0")
+        response.set_cookie("session", "xyz")
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/combined")
@@ -379,14 +441,14 @@ def test_complex_response_chain(test_client_factory: Callable[[NexiosApp], TestC
 
     @app.get("/complex")
     async def complex_response(request: Request, response: Response):
-        return (
-            response
-            .set_header("X-Custom", "value")
-            .set_cookie("user", "alice")
-            .cache(max_age=600)
-            .json({"created": True})
-            .status(201)
-        )
+        # Initialize response first
+        response.json({"created": True})
+        # Then add all other operations
+        response.set_header("X-Custom", "value")
+        response.set_cookie("user", "alice")
+        response.cache(max_age=600)
+        response.status(201)
+        return response
 
     with test_client_factory(app) as client:
         resp = client.get("/complex")

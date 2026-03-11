@@ -281,8 +281,9 @@ def test_exception_handler_with_custom_headers(
         request: Request, response: Response, exc: RateLimitError
     ):
         return (
-            response.set_header("Retry-After", "60")
+            response
             .json({"error": "Rate limit exceeded", "retry_after": 60})
+            .set_header("Retry-After", "60")
             .status(429)
         )
 
