@@ -94,7 +94,8 @@ class BaseResponse:
         self.raw_headers: List[Tuple[bytes, bytes]] = []
         self._body = self.render(body)
         self.content_type: typing.Optional[str] = content_type
-        self.headers = headers or {}
+        # self.headers = headers or {}
+        print("Response Initialzed")
         self._init_headers(headers)
        
 
@@ -106,7 +107,6 @@ class BaseResponse:
         return content.encode(self.charset)  # type: ignore
 
     def _init_headers(self, headers: Optional[Dict[str, str]] = None):
-        print(headers)
         if headers is None:
             raw_headers: list[tuple[bytes, bytes]] = []
             populate_content_length = True
@@ -125,7 +125,6 @@ class BaseResponse:
             and populate_content_length
             and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
-            print(self.headers)
             content_length = str(len(body))
             # self.set_header("content-length", content_length, overide=True)
         content_type: typing.Optional[str] = self.content_type
@@ -138,6 +137,11 @@ class BaseResponse:
             self.raw_headers.append((b"content-type", content_type.encode("latin-1")))
 
         self.raw_headers.extend(raw_headers)
+    @property
+    def headers(self) -> MutableHeaders:
+        if not hasattr(self, "_headers"):
+            self._headers = MutableHeaders(raw=self.raw_headers)
+        return self._headers
 
     def set_cookie(
         self,
@@ -272,19 +276,12 @@ class BaseResponse:
     
     def remove_header(self, key: str):
         """Remove a header from the response."""
-        self.raw_headers = [
-            (k, v)
-            for k, v in self.raw_headers
-            if k.decode("latin-1").lower() != key.lower()
-        ]  # type: ignore
+        del self.headers[key]
     
     def remove_headers(self, keys: List[str]):
         """Remove multiple headers from the response."""
-        self.raw_headers = [
-            (k, v)
-            for k, v in self.raw_headers
-            if k.decode("latin-1").lower() not in [key.lower() for key in keys]
-        ]  # type: ignore
+        for key in keys:
+            self.remove_header(key)
     
 
 
@@ -372,7 +369,6 @@ class FileResponse(BaseResponse):
         self.content_disposition_type = content_disposition_type
         self.status_code = status_code
 
-        self.headers = headers or {}
         content_type, _ = mimetypes.guess_type(str(self.path))
         self.set_header("content-type", content_type or "application/octet-stream")
         self.set_header(
@@ -583,7 +579,7 @@ class StreamingResponse(BaseResponse):
     """
     Response subclass for streaming content.
     """
-
+    
     def __init__(
         self,
         content: AsyncIterator[Union[str, bytes]],
@@ -600,7 +596,7 @@ class StreamingResponse(BaseResponse):
         self.content_type = content_type
         self.headers["content-type"] = self.content_type
 
-        self.headers.pop("content-length", None)
+        del self.headers["content-length"]
         self.raw_headers += [
             (k.lower().encode("latin-1"), v.encode("latin-1"))
             for k, v in self.headers.items()
@@ -786,7 +782,6 @@ class NexiosResponse:
         # Use _state dict directly to avoid State.__getattr__ returning None
         existing = request.state._state.get("_response_instance")
         if existing is not None:
-            print("Exisitng")
             return existing
 
         # Create new instance and store in request state
@@ -804,9 +799,7 @@ class NexiosResponse:
         if hasattr(self, "_initialized") and self._initialized:  # type: ignore
             return
 
-        self._response: BaseResponse = BaseResponse()
-        self._cookies: List[Dict[str, Any]] = []
-        # self._status_code = self._response.status_code
+        self._response: BaseResponse 
         self._request = request
         self._initialized = True  # type: ignore
 
@@ -814,9 +807,6 @@ class NexiosResponse:
     def headers(self):
         return MutableHeaders(raw=self._response.raw_headers)  # type: ignore
 
-    @property
-    def cookies(self):
-        return self._cookies  # type: ignore
 
     @property
     def body(self):
@@ -840,8 +830,8 @@ class NexiosResponse:
 
     def _preserve_headers_and_cookies(self, new_response: BaseResponse) -> BaseResponse:
         """Preserve headers and cookies when switching to a new response."""
-        for key, value in self.headers.items():
-            new_response.set_header(key, value)
+        # for key, value in self.headers.items():
+        #     new_response.set_header(key, value)
 
         return new_response
 
@@ -964,7 +954,8 @@ class NexiosResponse:
             indent=indent,
             ensure_ascii=ensure_ascii,
         )
-        self._response = self._preserve_headers_and_cookies(new_response)
+        # self._response = self._preserve_headers_and_cookies(new_response)
+        self._response = new_response
         return self
 
     def download(self, path: str, filename: Optional[str] = None) -> "NexiosResponse":
