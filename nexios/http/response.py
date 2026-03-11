@@ -28,6 +28,7 @@ from urllib.parse import quote
 import anyio
 import anyio.to_thread
 from anyio import AsyncFile
+from httpx import head
 from typing_extensions import Doc
 
 from nexios.http.request import ClientDisconnect, Request
@@ -93,10 +94,9 @@ class BaseResponse:
         self.raw_headers: List[Tuple[bytes, bytes]] = []
         self._body = self.render(body)
         self.content_type: typing.Optional[str] = content_type
-        self._init_headers(headers)
         self.headers = headers or {}
-        print("Initialzed response")
-        print(inspect.stack()[1].filename, inspect.stack()[1].lineno)
+        self._init_headers(headers)
+       
 
     def render(self, content: typing.Any) -> typing.Union[bytes, memoryview]:
         if content is None:
@@ -106,6 +106,7 @@ class BaseResponse:
         return content.encode(self.charset)  # type: ignore
 
     def _init_headers(self, headers: Optional[Dict[str, str]] = None):
+        print(headers)
         if headers is None:
             raw_headers: list[tuple[bytes, bytes]] = []
             populate_content_length = True
@@ -124,13 +125,11 @@ class BaseResponse:
             and populate_content_length
             and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
-            # print("Should Populate content type 1")
-
+            print(self.headers)
             content_length = str(len(body))
             # self.set_header("content-length", content_length, overide=True)
         content_type: typing.Optional[str] = self.content_type
         if content_type is not None and populate_content_type:
-            # print("Should Populate content type 2", content_type)
             if (
                 content_type.startswith("text/")
                 and "charset=" not in content_type.lower()
@@ -787,6 +786,7 @@ class NexiosResponse:
         # Use _state dict directly to avoid State.__getattr__ returning None
         existing = request.state._state.get("_response_instance")
         if existing is not None:
+            print("Exisitng")
             return existing
 
         # Create new instance and store in request state
@@ -794,7 +794,8 @@ class NexiosResponse:
         request.state._response_instance = instance
         instance._initialized = False  # type: ignore
         return instance
-
+    def get_response_manager_intance(self, request: Request) -> "NexiosResponse":
+        return request.state._response_instance
     def __init__(self, request: Request):
         """
         Initialize response instance. Only runs once per request.

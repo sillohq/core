@@ -150,7 +150,6 @@ class ASGIRequestResponseBridge:
 
         request = _CachedRequest(scope, receive)
         response = Response(request=request)
-        print("intiialzed in core mdw")
         wrapped_receive = request.wrapped_receive
         response_sent = anyio.Event()
 
