@@ -1,10 +1,9 @@
 import re
 import typing
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
 from nexios.config import get_config, warn_deprecated_config_usage
-from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
 from nexios.logging import getLogger
 
@@ -34,7 +33,7 @@ class CORSMiddleware(BaseMiddleware):
 
         if not self.config:
             return
-            
+
         self.allow_origins: List[str] = self.config.allow_origins or []
         self.blacklist_origins: List[str] = self.config.blacklist_origins or []
         self.allow_methods = self.config.allow_methods or ALL_METHODS
@@ -113,8 +112,7 @@ class CORSMiddleware(BaseMiddleware):
 
         if not config:
             return await call_next()
-            
-            
+
         origin = request.origin
 
         method = request.scope["method"]
@@ -140,25 +138,12 @@ class CORSMiddleware(BaseMiddleware):
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
         # Only use get_config() as fallback if config wasn't provided in __init__
-        if not hasattr(self, "config") or self.config is None:
-            warnings.warn(
-                "Using get_config() for CORS middleware is deprecated. "
-                "Please pass config directly to CORSMiddleware constructor.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            try:
-                config = get_config().cors
-            except RuntimeError:
-                config = None
-        else:
-            config = self.config
 
         origin = request.origin
         server_error_headers = request.scope.get("server_error_headers", {})
         server_error_headers["Access-Control-Allow-Origin"] = origin
         request.scope["server_error_headers"] = server_error_headers
-        cnext =  await call_next()
+        cnext = await call_next()
 
         if origin and self.is_allowed_origin(origin):
             response.set_header("Access-Control-Allow-Origin", origin, overide=True)

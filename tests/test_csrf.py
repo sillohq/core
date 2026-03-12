@@ -7,7 +7,7 @@ import warnings
 from nexios import NexiosApp
 from nexios.config import MakeConfig, set_config
 from nexios.http import Request, Response
-from nexios.middleware.csrf import CSRFMiddleware, CSRFConfig
+from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
 
 
 def test_csrf_deprecated_config_style(test_client_factory):

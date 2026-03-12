@@ -10,7 +10,6 @@ import typing
 import uuid
 
 from nexios.__main__ import __version__ as nexios_version
-from nexios.config import get_config
 from nexios.http import Request, Response
 from nexios.logging import DEBUG, create_logger
 from nexios.middleware.base import BaseMiddleware

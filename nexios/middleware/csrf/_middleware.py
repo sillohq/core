@@ -10,7 +10,7 @@ from nexios.config import get_config
 from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
 from nexios.middleware.base import BaseMiddleware
-from nexios.middleware.csrf.config import CSRFConfig
+
 
 class CSRFMiddleware(BaseMiddleware):
     """
@@ -60,10 +60,14 @@ class CSRFMiddleware(BaseMiddleware):
         )
 
         # Setup CSRF configuration attributes
-        self.required_urls: typing.List[str] = getattr(
-            self.config, "csrf_required_urls", ["*"]
-        ) or getattr(self.config, "required_urls", ["*"]) or ["*"]
-        self.exempt_urls = getattr(self.config, "csrf_exempt_urls", None) or getattr(self.config, "exempt_urls", None)
+        self.required_urls: typing.List[str] = (
+            getattr(self.config, "csrf_required_urls", ["*"])
+            or getattr(self.config, "required_urls", ["*"])
+            or ["*"]
+        )
+        self.exempt_urls = getattr(self.config, "csrf_exempt_urls", None) or getattr(
+            self.config, "exempt_urls", None
+        )
         self.sensitive_cookies = getattr(
             self.config, "csrf_sensitive_cookies", None
         ) or getattr(self.config, "sensitive_cookies", None)
@@ -77,34 +81,27 @@ class CSRFMiddleware(BaseMiddleware):
                 "TRACE",
             ]
         )
-        self.cookie_name = (
-            getattr(self.config, "csrf_cookie_name", "csrftoken") 
-            or getattr(self.config, "cookie_name", "csrftoken")
+        self.cookie_name = getattr(
+            self.config, "csrf_cookie_name", "csrftoken"
+        ) or getattr(self.config, "cookie_name", "csrftoken")
+        self.cookie_path = getattr(self.config, "csrf_cookie_path", "/") or getattr(
+            self.config, "cookie_path", "/"
         )
-        self.cookie_path = (
-            getattr(self.config, "csrf_cookie_path", "/") 
-            or getattr(self.config, "cookie_path", "/")
-        )
-        self.cookie_domain = (
-            getattr(self.config, "csrf_cookie_domain", None) 
-            or getattr(self.config, "cookie_domain", None)
-        )
-        self.cookie_secure = (
-            getattr(self.config, "csrf_cookie_secure", False) 
-            or getattr(self.config, "cookie_secure", False)
-        )
-        self.cookie_httponly = (
-            getattr(self.config, "csrf_cookie_httponly", True) 
-            or getattr(self.config, "cookie_httponly", True)
-        )
-        self.cookie_samesite: typing.Literal["lax", "none", "strict"] = (
-            getattr(self.config, "csrf_cookie_samesite", "lax") 
-            or getattr(self.config, "cookie_samesite", "lax")
-        )
-        self.header_name = (
-            getattr(self.config, "csrf_header_name", "X-CSRFToken") 
-            or getattr(self.config, "header_name", "X-CSRFToken")
-        )
+        self.cookie_domain = getattr(
+            self.config, "csrf_cookie_domain", None
+        ) or getattr(self.config, "cookie_domain", None)
+        self.cookie_secure = getattr(
+            self.config, "csrf_cookie_secure", False
+        ) or getattr(self.config, "cookie_secure", False)
+        self.cookie_httponly = getattr(
+            self.config, "csrf_cookie_httponly", True
+        ) or getattr(self.config, "cookie_httponly", True)
+        self.cookie_samesite: typing.Literal["lax", "none", "strict"] = getattr(
+            self.config, "csrf_cookie_samesite", "lax"
+        ) or getattr(self.config, "cookie_samesite", "lax")
+        self.header_name = getattr(
+            self.config, "csrf_header_name", "X-CSRFToken"
+        ) or getattr(self.config, "header_name", "X-CSRFToken")
 
     async def process_request(
         self,
@@ -127,11 +124,11 @@ class CSRFMiddleware(BaseMiddleware):
                 app_config = get_config()
                 self.use_csrf = app_config.csrf_enabled or False
                 if self.use_csrf:
-                    assert app_config.secret_key is not None, "Secret key is required for CSRF protection"
+                    assert app_config.secret_key is not None, (
+                        "Secret key is required for CSRF protection"
+                    )
                     self.secret = app_config.secret_key
-                    self.serializer = URLSafeSerializer(
-                        self.secret, "csrftoken"
-                    )  # type: ignore
+                    self.serializer = URLSafeSerializer(self.secret, "csrftoken")  # type: ignore
                     self.required_urls = app_config.csrf_required_urls or ["*"]
                     self.exempt_urls = app_config.csrf_exempt_urls
                     self.sensitive_cookies = app_config.csrf_sensitive_cookies
@@ -167,14 +164,13 @@ class CSRFMiddleware(BaseMiddleware):
 
         if not self.use_csrf:
             return await call_next()
-            
 
         csrf_token = self._generate_csrf_token()
         request.state.csrf_token = csrf_token
         csrf_cookie = request.cookies.get(self.cookie_name)
         if request.method.upper() in self.safe_methods:
             return await call_next()
-            
+
         if self._url_is_required(request.url.path) or (
             self._url_is_exempt(request.url.path)
             and self._has_sensitive_cookies(request.cookies)
@@ -186,18 +182,17 @@ class CSRFMiddleware(BaseMiddleware):
                 form = await request.form
                 submitted_csrf_token = form.get("csrftoken")
             if not csrf_cookie:
-               
-                return response.text("CSRF token missing from cookies", status_code=403).delete_cookie(
-                    self.cookie_name, self.cookie_path, self.cookie_domain
-                )
+                return response.text(
+                    "CSRF token missing from cookies", status_code=403
+                ).delete_cookie(self.cookie_name, self.cookie_path, self.cookie_domain)
             if not submitted_csrf_token:
-                return response.text("CSRF token missing from headers", status_code=403).delete_cookie(
-                    self.cookie_name, self.cookie_path, self.cookie_domain
-                )
+                return response.text(
+                    "CSRF token missing from headers", status_code=403
+                ).delete_cookie(self.cookie_name, self.cookie_path, self.cookie_domain)
             if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):  # type: ignore
-                return response.text("CSRF token incorrect", status_code=403).delete_cookie(
-                    self.cookie_name, self.cookie_path, self.cookie_domain
-                )
+                return response.text(
+                    "CSRF token incorrect", status_code=403
+                ).delete_cookie(self.cookie_name, self.cookie_path, self.cookie_domain)
         return await call_next()
 
     async def process_response(self, request: Request, response: Response):

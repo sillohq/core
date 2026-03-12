@@ -3,6 +3,7 @@ Tests for CORS middleware configuration and advanced features
 """
 
 import warnings
+
 import pytest
 
 from nexios import NexiosApp

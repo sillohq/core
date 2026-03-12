@@ -8,7 +8,6 @@ from nexios.http import Request, Response
 from nexios.middleware.base import BaseMiddleware
 
 from .base import BaseSessionInterface
-from .config import SessionConfig
 from .signed_cookies import SignedSessionManager
 
 

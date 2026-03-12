@@ -50,7 +50,7 @@ class MakeConfig:
 
         config = config or {}
         # Merge defaults, config dict, and kwargs, kwargs take highest priority
-        merged_config = {**(defaults or {}),**config, **kwargs}
+        merged_config = {**(defaults or {}), **config, **kwargs}
 
         for key, value in merged_config.items():
             if isinstance(value, MakeConfig):

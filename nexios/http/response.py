@@ -1,6 +1,5 @@
 import hashlib
 import http.cookies
-import inspect
 import json
 import mimetypes
 import os
@@ -28,7 +27,6 @@ from urllib.parse import quote
 import anyio
 import anyio.to_thread
 from anyio import AsyncFile
-from httpx import head
 from typing_extensions import Doc
 
 from nexios.http.request import ClientDisconnect, Request
@@ -95,7 +93,6 @@ class BaseResponse:
         self._body = self.render(body)
         self.content_type: typing.Optional[str] = content_type
         self._init_headers(headers)
-       
 
     def render(self, content: typing.Any) -> typing.Union[bytes, memoryview]:
         if content is None:
@@ -108,7 +105,7 @@ class BaseResponse:
         if headers is None:
             raw_headers: list[tuple[bytes, bytes]] = []
             populate_content_length = True
-            populate_content_type = True 
+            populate_content_type = True
         else:
             raw_headers = [
                 (k.lower().encode("latin-1"), v.encode("latin-1"))
@@ -135,6 +132,7 @@ class BaseResponse:
             self.raw_headers.append((b"content-type", content_type.encode("latin-1")))
 
         self.raw_headers.extend(raw_headers)
+
     @property
     def headers(self) -> MutableHeaders:
         if not hasattr(self, "_headers"):
@@ -223,7 +221,7 @@ class BaseResponse:
             {
                 "type": "http.response.start",
                 "status": self.status_code,
-                "headers": self.raw_headers
+                "headers": self.raw_headers,
             }
         )
 
@@ -237,7 +235,6 @@ class BaseResponse:
     @property
     def body(self):
         return self._body
-
 
     def _generate_etag(self) -> str:
         """Generate an ETag for the response content."""
@@ -271,16 +268,15 @@ class BaseResponse:
         """Set multiple headers at once."""
         for key, value in headers.items():
             self.set_header(key, value)
-    
+
     def remove_header(self, key: str):
         """Remove a header from the response."""
         del self.headers[key]
-    
+
     def remove_headers(self, keys: List[str]):
         """Remove multiple headers from the response."""
         for key in keys:
             self.remove_header(key)
-    
 
 
 class PlainTextResponse(BaseResponse):
@@ -577,7 +573,7 @@ class StreamingResponse(BaseResponse):
     """
     Response subclass for streaming content.
     """
-    
+
     def __init__(
         self,
         content: AsyncIterator[Union[str, bytes]],
@@ -787,8 +783,10 @@ class NexiosResponse:
         request.state._response_instance = instance
         instance._initialized = False  # type: ignore
         return instance
+
     def get_response_manager_intance(self, request: Request) -> "NexiosResponse":
         return request.state._response_instance
+
     def __init__(self, request: Request):
         """
         Initialize response instance. Only runs once per request.
@@ -804,7 +802,6 @@ class NexiosResponse:
     @property
     def headers(self):
         return MutableHeaders(raw=self._response.raw_headers)  # type: ignore
-
 
     @property
     def body(self):
@@ -836,6 +833,7 @@ class NexiosResponse:
     def has_header(self, key: str) -> bool:
         """Check if a header is present in the response."""
         return key.lower() in (k.lower() for k in self.headers.keys())
+
     def text(
         self,
         content: JSONType,
@@ -844,7 +842,7 @@ class NexiosResponse:
     ):
         """Send plain text or HTML content."""
         # if status_code is None:
-            # status_code = self._status_code
+        # status_code = self._status_code
         new_response = PlainTextResponse(
             body=content, status_code=status_code, headers=headers
         )
@@ -944,11 +942,11 @@ class NexiosResponse:
             )
             ```
         """
-        
+
         new_response = JSONResponse(
             content=data,
             headers=headers,
-            status_code = status_code,
+            status_code=status_code,
             indent=indent,
             ensure_ascii=ensure_ascii,
         )
@@ -970,7 +968,7 @@ class NexiosResponse:
 
     def empty(self, status_code: int = 200, headers: Dict[str, Any] = {}):
         """Send an empty response."""
-        
+
         new_response = BaseResponse(status_code=status_code, headers=headers)
         self._response = self._preserve_headers_and_cookies(new_response)
         return self
@@ -982,7 +980,7 @@ class NexiosResponse:
         headers: Dict[str, Any] = {},
     ):
         """Send HTML response."""
-       
+
         new_response = HTMLResponse(
             content=content, status_code=status_code, headers=headers
         )
@@ -1016,7 +1014,7 @@ class NexiosResponse:
         headers: Dict[str, Any] = {},
     ):
         """Send streaming response."""
-        
+
         new_response = StreamingResponse(
             content=iterator,  # type: ignore
             status_code=status_code or self._status_code,
@@ -1288,6 +1286,7 @@ class NexiosResponse:
     def remove_header(self, key: str):
         """Remove a header from the response."""
         self._response.remove_header(key)
+
     def paginate(
         self,
         objects: List[Any],
@@ -1369,7 +1368,7 @@ class NexiosResponse:
         return self.json(result)
 
     async def __call__(self, *args: Any, **kwargs: Any) -> "NexiosResponse":
-        return await self._response(*args, **kwargs) #type:ignore
+        return await self._response(*args, **kwargs)  # type:ignore
 
     def __str__(self):
         return f"Response [{self.status_code} {self.body}]"

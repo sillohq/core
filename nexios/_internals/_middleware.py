@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sys
-from this import s
 import typing
 from collections.abc import Iterator
 from typing import Any, AsyncIterable, Mapping, MutableMapping, Protocol
@@ -9,7 +8,13 @@ from typing import Any, AsyncIterable, Mapping, MutableMapping, Protocol
 import anyio
 
 from nexios.http.request import ClientDisconnect, Request
-from nexios.http.response import BaseResponse, NexiosResponse as Response, StreamingResponse
+from nexios.http.response import (
+    BaseResponse,
+)
+from nexios.http.response import NexiosResponse as Response
+from nexios.http.response import (
+    StreamingResponse,
+)
 from nexios.types import ASGIApp, Message, Receive, Scope, Send
 from nexios.utils.async_helpers import collapse_excgroups
 from nexios.websockets import WebSocket
@@ -28,6 +33,7 @@ T = typing.TypeVar("T")
 P = ParamSpec("P")
 
 AsyncContentStream = AsyncIterable[str | bytes | memoryview | MutableMapping[str, Any]]
+
 
 class _MiddlewareFactory(Protocol[P]):
     def __call__(
@@ -212,11 +218,12 @@ class ASGIRequestResponseBridge:
                         break
                 if app_exc is not None:
                     raise app_exc
+
             response_object = _StreamingResponse(
                 content=body_stream(),
-                status_code=message["status"],  
-            )  
-            response_object.raw_headers = message["headers"]  
+                status_code=message["status"],
+            )
+            response_object.raw_headers = message["headers"]
             return response_object
 
         streams: anyio.create_memory_object_stream[Message] = (  # type: ignore
@@ -225,11 +232,12 @@ class ASGIRequestResponseBridge:
         send_stream, recv_stream = streams
         with recv_stream, send_stream, collapse_excgroups():
             async with anyio.create_task_group() as task_group:
-                returned_response = await self.dispatch_func(request, response, call_next)  # type: ignore
+                returned_response = await self.dispatch_func(
+                    request, response, call_next
+                )  # type: ignore
                 await returned_response(scope, wrapped_receive, send)
                 response_sent.set()
                 recv_stream.close()
-
 
 
 class _StreamingResponse(BaseResponse):
@@ -246,7 +254,7 @@ class _StreamingResponse(BaseResponse):
         self.status_code = status_code
         self.media_type = media_type
 
-        super().__init__(headers=dict(headers or {}),status_code=status_code)
+        super().__init__(headers=dict(headers or {}), status_code=status_code)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if self.info is not None:
@@ -271,7 +279,6 @@ class _StreamingResponse(BaseResponse):
         if should_close_body:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
 
-        
 
 WebSocketDispatchFunction = typing.Callable[
     ["WebSocket", typing.Coroutine[None, None, typing.Any]], typing.Awaitable[None]

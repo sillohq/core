@@ -35,5 +35,5 @@ def warn_deprecated_config_usage(middleware_name: str) -> None:
         f"Please provide a {middleware_name}Config object to the __init__ method "
         f"instead of relying on get_config(). This will be required in future versions.",
         DeprecationWarning,
-        stacklevel=3
+        stacklevel=3,
     )
