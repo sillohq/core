@@ -1372,7 +1372,7 @@ class NexiosResponse:
         return await self._response(*args, **kwargs) #type:ignore
 
     def __str__(self):
-        return f"Response [{self._status_code} {self.body}]"
+        return f"Response [{self.status_code} {self.body}]"
 
 
 Response = BaseResponse

@@ -56,18 +56,14 @@ async def request_response(
         )
         token = current_context.set(ctx)
         try:
-            if is_async_callable(func):
-                func_result = await func(
-                    request, response_manager, **request.path_params
-                )
-            else:
-                func_result = await run_in_threadpool(
-                    func, request, response_manager, **request.path_params
-                )
+            func_result = await func(
+                request, response_manager, **request.path_params
+            )
+           
         finally:
             current_context.reset(token)
         response = _process_response(response_manager, func_result)
-        response_manager.set_body(response.body)
+        # response_manager.set_body(response.body)
         return await response(scope, receive, send)
 
     return app
