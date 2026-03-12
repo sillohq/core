@@ -94,8 +94,6 @@ class BaseResponse:
         self.raw_headers: List[Tuple[bytes, bytes]] = []
         self._body = self.render(body)
         self.content_type: typing.Optional[str] = content_type
-        # self.headers = headers or {}
-        print("Response Initialzed")
         self._init_headers(headers)
        
 
