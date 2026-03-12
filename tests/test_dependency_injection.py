@@ -343,7 +343,7 @@ def test_router_level_dependencies_with_app_dependencies(
         app_config: dict = Depend(get_app_config),
         router_config: dict = Depend(get_router_config),
     ):
-        return {**app_config,**router_config, "combined": True}
+        return {**app_config, **router_config, "combined": True}
 
     app = NexiosApp(dependencies=[Depend(get_app_config)])
     router = Router(prefix="/api", dependencies=[Depend(get_router_config)])
@@ -384,7 +384,7 @@ def test_nested_router_dependencies(
         api_config: dict = Depend(get_api_config),
         users_config: dict = Depend(get_users_config),
     ):
-        return {**api_config,**users_config, "nested": True}
+        return {**api_config, **users_config, "nested": True}
 
     # Main API router
     api_router = Router(prefix="/api", dependencies=[Depend(get_api_config)])

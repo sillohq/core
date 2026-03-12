@@ -35,12 +35,12 @@ def test_set_multiple_headers(test_client_factory: Callable[[NexiosApp], TestCli
     @app.get("/multi-headers")
     async def multi_headers(request: Request, response: Response):
         return response.json(
-            {"status": "ok"}, 
+            {"status": "ok"},
             headers={
                 "X-Header-1": "value1",
                 "X-Header-2": "value2",
-                "X-Header-3": "value3"
-            }
+                "X-Header-3": "value3",
+            },
         )
 
     with test_client_factory(app) as client:

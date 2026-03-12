@@ -47,8 +47,6 @@ def test_set_body_method(test_client_factory: Callable[[NexiosApp], TestClient])
 # ========== Response Status Tests ==========
 
 
-
-
 def test_response_status_codes(test_client_factory: Callable[[NexiosApp], TestClient]):
     """Test various HTTP status codes"""
     app = NexiosApp()
@@ -119,8 +117,7 @@ def test_method_chaining_all_methods(
     @app.get("/chain-all")
     async def chain_all(request: Request, response: Response):
         return (
-            response
-            .json({"chained": True})
+            response.json({"chained": True})
             .set_header("X-Custom-1", "value1")
             .set_header("X-Custom-2", "value2")
             .set_cookie("session", "abc123")
@@ -200,11 +197,6 @@ def test_response_type_switching(
         resp_html = client.get("/switch-type?format=html")
         assert resp_html.status_code == 200
         assert "text/html" in resp_html.headers.get("content-type", "")
-
-
-
-
-
 
 
 def test_response_resp_method(test_client_factory: Callable[[NexiosApp], TestClient]):
@@ -288,5 +280,3 @@ def test_response_with_error_status(
 
         resp500 = client.get("/server-error")
         assert resp500.status_code == 500
-
-

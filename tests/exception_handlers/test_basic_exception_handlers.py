@@ -102,9 +102,9 @@ def test_exception_handler_type_error(
     app = NexiosApp()
 
     async def type_error_handler(request: Request, response: Response, exc: TypeError):
-        return response.json(
-            {"error": "TypeError", "message": "Type mismatch"}
-        ).status(400)
+        return response.json({"error": "TypeError", "message": "Type mismatch"}).status(
+            400
+        )
 
     app.add_exception_handler(TypeError, type_error_handler)
 
@@ -249,9 +249,9 @@ def test_exception_handler_status_code_401(
     async def custom_401_handler(
         request: Request, response: Response, exc: HTTPException
     ):
-        return response.json(
-            {"error": "Unauthorized", "login_url": "/login"}
-        ).status(401)
+        return response.json({"error": "Unauthorized", "login_url": "/login"}).status(
+            401
+        )
 
     app.add_exception_handler(401, custom_401_handler)
 
@@ -281,8 +281,7 @@ def test_exception_handler_with_custom_headers(
         request: Request, response: Response, exc: RateLimitError
     ):
         return (
-            response
-            .json({"error": "Rate limit exceeded", "retry_after": 60})
+            response.json({"error": "Rate limit exceeded", "retry_after": 60})
             .set_header("Retry-After", "60")
             .status(429)
         )
@@ -397,17 +396,14 @@ def test_exception_handler_access_request_data(
     async def validation_error_handler(
         request: Request, response: Response, exc: ValidationError
     ):
-        return (
-            response.json(
-                {
-                    "error": "Validation failed",
-                    "path": request.path,
-                    "method": request.method,
-                    "message": str(exc),
-                }
-            )
-            .status(400)
-        )
+        return response.json(
+            {
+                "error": "Validation failed",
+                "path": request.path,
+                "method": request.method,
+                "message": str(exc),
+            }
+        ).status(400)
 
     app.add_exception_handler(ValidationError, validation_error_handler)
 

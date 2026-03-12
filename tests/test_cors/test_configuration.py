@@ -24,7 +24,7 @@ class TestCORSConfiguration:
             allow_methods=["GET", "POST"],
             allow_credentials=False,
         )
-        
+
         app = NexiosApp()
 
         @app.get("/wildcard")
@@ -43,7 +43,6 @@ class TestCORSConfiguration:
         )
         assert "Access-Control-Allow-Credentials" not in response.headers
 
-    
     def test_cors_deprecated_config_style(self):
         """Test CORS middleware with deprecated config style (should show warning)."""
         config = MakeConfig(
@@ -64,7 +63,7 @@ class TestCORSConfiguration:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             app.add_middleware(CORSMiddleware())
-            
+
             # Check that deprecation warning was issued
             assert len(w) > 0
             assert any("deprecated" in str(warning.message).lower() for warning in w)

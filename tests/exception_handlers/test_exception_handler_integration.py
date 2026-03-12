@@ -162,8 +162,6 @@ def test_exception_handler_with_nested_routers(
         assert resp.status_code == 400
 
 
-
-
 # ========== Exception Handler with Different HTTP Methods ==========
 
 
@@ -284,7 +282,7 @@ def test_exception_handler_with_request_body(
         # Note: In real scenarios, body might already be consumed
         return response.json(
             {"error": "Validation failed", "message": str(exc), "path": request.path},
-            status_code=422
+            status_code=422,
         )
 
     app.add_exception_handler(ValidationError, validation_error_handler)
@@ -426,7 +424,9 @@ def test_exception_handler_complex_scenario(
     ):
         execution_log.append("error_handler")
         request_id = getattr(request.state, "request_id", None)
-        return response.json({"error": str(exc), "request_id": request_id},status_code=500)
+        return response.json(
+            {"error": str(exc), "request_id": request_id}, status_code=500
+        )
 
     app.add_middleware(logging_middleware)
     app.add_exception_handler(ComplexError, complex_error_handler)

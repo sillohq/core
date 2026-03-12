@@ -1368,7 +1368,7 @@ class NexiosResponse:
         return self.json(result)
 
     async def __call__(self, *args: Any, **kwargs: Any) -> "NexiosResponse":
-        return await self._response(*args, **kwargs)  # type:ignore
+        return await self._response(*args, **kwargs)  # type: ignore
 
     def __str__(self):
         return f"Response [{self.status_code} {self.body}]"

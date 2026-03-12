@@ -350,8 +350,6 @@ class TestCORSIntegration:
             == "https://api-client.com"
         )
 
-    
-
     def test_cors_with_subdomain_wildcard(self):
         """Test CORS with subdomain wildcard patterns"""
         config = MakeConfig(

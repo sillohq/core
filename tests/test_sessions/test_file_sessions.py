@@ -220,6 +220,7 @@ class TestSessionMiddleware:
     def teardown_method(self):
         """Clean up temporary directory"""
         import shutil
+
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
@@ -229,7 +230,7 @@ class TestSessionMiddleware:
             session_cookie_name="test_session",
             manager=FileSessionManager,
         )
-        
+
         app = NexiosApp()
         app.add_middleware(SessionMiddleware(config=session_config))
 
@@ -254,7 +255,6 @@ class TestSessionMiddleware:
             assert res2.status_code == 200
             assert res2.json() == {"user_id": 123}
 
-   
     def test_session_middleware_deprecated_config_style(self, test_client_factory):
         """Test session middleware with deprecated config style (should show warning)."""
         config = MakeConfig(
@@ -273,7 +273,7 @@ class TestSessionMiddleware:
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             app.add_middleware(SessionMiddleware())
-            
+
             # Check that deprecation warning was issued
             assert len(w) > 0
             assert any("deprecated" in str(warning.message).lower() for warning in w)
