@@ -10,7 +10,7 @@ Key capabilities that make background task management efficient and reliable:
 
 -  Simple task creation and management
 -  Built-in task status tracking
-- ⏱️ Timeout and cancellation support
+- Timeout and cancellation support
 -  Seamless integration with Nexios dependency injection
 -  Progress tracking and result handling
 -  Thread-safe task management
@@ -103,7 +103,7 @@ from nexios_contrib.tasks import TaskDependency
 @app.post("/process")
 async def start_processing(
     request: Request, 
-    # Inject the task manager directly
+    response: Response,
     task_dep: TaskDependency = TaskDependency() 
 ) -> dict:
     """Start a background processing task using DI."""
@@ -122,12 +122,37 @@ async def start_processing(
 
 Monitor task progress and retrieve results through status endpoints:
 
-```python
+::: code-group
+
+```python [Dependency Injection (Recommended)]
+from nexios_contrib.tasks import TaskDependency, TaskStatus
+
+@app.get("/status/{task_id}")
+async def get_status(
+    request: Request, 
+    response: Response, 
+    task_id: str,
+    task_dep: TaskDependency = TaskDependency()
+) -> dict:
+    """Get the status of a background task using DI."""
+    task = task_dep.get_task(task_id)
+    if not task:
+        return {"error": "Task not found"}, 404
+    
+    return {
+        "task_id": task.id,
+        "status": task.status.value,
+        "result": task.result if task.status == TaskStatus.COMPLETED else None,
+        "error": str(task.error) if task.error else None
+    }
+```
+
+```python [Alternative: Task Manager]
 from nexios_contrib.tasks import TaskStatus
 
 @app.get("/status/{task_id}")
 async def get_status(request: Request, response: Response, task_id: str) -> dict:
-    """Get the status of a background task."""
+    """Get the status of a background task using task manager."""
     task = task_manager.get_task(task_id)
     if not task:
         return {"error": "Task not found"}, 404
@@ -140,6 +165,8 @@ async def get_status(request: Request, response: Response, task_id: str) -> dict
     }
 ```
 
+:::
+
 ## Using with Dependency Injection
 
 Nexios Tasks integrates seamlessly with Nexios's dependency injection system for a more elegant solution.
@@ -150,14 +177,16 @@ Leverage dependency injection to simplify task creation and management in your e
 
 Use TaskDependency to inject task management capabilities directly into your handlers:
 
-```python
+::: code-group
+
+```python [Dependency Injection (Recommended)]
 from nexios_contrib.tasks import TaskDependency
 
 @app.post("/process-with-deps")
 async def start_processing_with_deps(
     request: Request,
     response: Response,
-    task_dep = TaskDependency()
+    task_dep: TaskDependency = TaskDependency()
 ) -> dict:
     """Start a task with dependencies."""
     data = await request.json
@@ -169,18 +198,63 @@ async def start_processing_with_deps(
     return {"task_id": task.id}
 ```
 
+```python [Alternative: create_task]
+from nexios_contrib.tasks import create_task
+
+@app.post("/process-with-deps")
+async def start_processing_with_deps_alt(
+    request: Request,
+    response: Response
+) -> dict:
+    """Start a task using create_task function."""
+    data = await request.json
+    task = await create_task(
+        func=process_with_deps,
+        data=data,
+        name="data_processing_with_deps"
+    )
+    return {"task_id": task.id}
+```
+
+:::
+
+
 ## Task Management
 
-Administrative operations for monitoring and controlling background tasks.
+Operations for monitoring and controlling background tasks.
 
 ### Listing All Tasks
 
 Retrieve information about all tasks in the system:
 
-```python
+::: code-group
+
+```python [Dependency Injection]
+from nexios_contrib.tasks import TaskDependency
+
+@app.get("/tasks")
+async def list_tasks(
+    request: Request, 
+    response: Response,
+    task_dep: TaskDependency = TaskDependency()
+) -> list:
+    """List all tasks using dependency injection."""
+    return [
+        {
+            "id": task.id,
+            "name": task.name,
+            "status": task.status.value,
+            "created_at": task.created_at.isoformat(),
+            "completed_at": task.completed_at.isoformat() if task.completed_at else None
+        }
+        for task in task_dep.list_tasks()
+    ]
+```
+
+```python [Alternative: Task Manager]
 @app.get("/tasks")
 async def list_tasks(request: Request, response: Response) -> list:
-    """List all tasks."""
+    """List all tasks using task manager."""
     return [
         {
             "id": task.id,
@@ -193,17 +267,38 @@ async def list_tasks(request: Request, response: Response) -> list:
     ]
 ```
 
+:::
+
 ### Canceling a Task
 
 Stop running tasks when they're no longer needed:
 
-```python
+::: code-group
+
+```python [Dependency Injection]
+from nexios_contrib.tasks import TaskDependency
+
+@app.post("/tasks/{task_id}/cancel")
+async def cancel_task(
+    request: Request, 
+    response: Response, 
+    task_id: str,
+    task_dep: TaskDependency = TaskDependency()
+) -> dict:
+    """Cancel a running task using dependency injection."""
+    success = await task_dep.cancel_task(task_id)
+    return {"success": success, "task_id": task_id}
+```
+
+```python [Alternative: Task Manager]
 @app.post("/tasks/{task_id}/cancel")
 async def cancel_task(request: Request, response: Response, task_id: str) -> dict:
-    """Cancel a running task."""
+    """Cancel a running task using task manager."""
     success = await task_manager.cancel_task(task_id)
     return {"success": success, "task_id": task_id}
 ```
+
+:::
 
 ## Configuration
 
@@ -367,7 +462,71 @@ Real-world implementations demonstrating common background task patterns.
 
 Process files asynchronously with progress tracking:
 
-```python
+::: code-group
+
+```python [Dependency Injection Approach]
+from nexios import NexiosApp
+from nexios_contrib.tasks import setup_tasks, TaskDependency
+import asyncio
+import os
+
+app = NexiosApp()
+task_manager = setup_tasks(app)
+
+async def process_file(file_path: str, task_id: str) -> dict:
+    """Process a file in the background."""
+    from nexios_contrib.tasks import update_task_progress
+    
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File not found: {file_path}")
+    
+    file_size = os.path.getsize(file_path)
+    processed_bytes = 0
+    
+    # Simulate file processing
+    with open(file_path, 'rb') as f:
+        while True:
+            chunk = f.read(1024)  # Read 1KB chunks
+            if not chunk:
+                break
+            
+            # Simulate processing time
+            await asyncio.sleep(0.1)
+            
+            processed_bytes += len(chunk)
+            progress = (processed_bytes / file_size) * 100
+            await update_task_progress(task_id, progress)
+    
+    return {
+        "file_path": file_path,
+        "file_size": file_size,
+        "processed_bytes": processed_bytes,
+        "status": "completed"
+    }
+
+@app.post("/process-file")
+async def start_file_processing(
+    request: Request, 
+    response: Response,
+    task_dep: TaskDependency = TaskDependency()
+):
+    """Start file processing task using dependency injection."""
+    data = await request.json
+    file_path = data.get("file_path")
+    
+    if not file_path:
+        return {"error": "file_path is required"}, 400
+    
+    task = await task_dep.create(
+        func=process_file,
+        file_path=file_path,
+        name=f"process_file_{os.path.basename(file_path)}"
+    )
+    
+    return {"task_id": task.id, "file_path": file_path}
+```
+
+```python [create_task Approach]
 from nexios import NexiosApp
 from nexios_contrib.tasks import setup_tasks, create_task
 import asyncio
@@ -409,7 +568,7 @@ async def process_file(file_path: str, task_id: str) -> dict:
 
 @app.post("/process-file")
 async def start_file_processing(request: Request, response: Response):
-    """Start file processing task."""
+    """Start file processing task using create_task."""
     data = await request.json
     file_path = data.get("file_path")
     
@@ -425,11 +584,77 @@ async def start_file_processing(request: Request, response: Response):
     return {"task_id": task.id, "file_path": file_path}
 ```
 
+:::
+
 ### Email Sending Service
 
 Send bulk emails without blocking API responses:
 
-```python
+::: code-group
+
+```python [Dependency Injection Approach]
+from nexios_contrib.tasks import setup_tasks, TaskDependency
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+app = NexiosApp()
+task_manager = setup_tasks(app)
+
+async def send_bulk_emails(recipients: list, subject: str, body: str, task_id: str) -> dict:
+    """Send emails to multiple recipients."""
+    from nexios_contrib.tasks import update_task_progress
+    
+    total_recipients = len(recipients)
+    sent_count = 0
+    failed_count = 0
+    
+    for i, recipient in enumerate(recipients):
+        try:
+            # Send email (implement your email sending logic)
+            await send_single_email(recipient, subject, body)
+            sent_count += 1
+        except Exception as e:
+            print(f"Failed to send email to {recipient}: {e}")
+            failed_count += 1
+        
+        # Update progress
+        progress = ((i + 1) / total_recipients) * 100
+        await update_task_progress(task_id, progress)
+    
+    return {
+        "total_recipients": total_recipients,
+        "sent_count": sent_count,
+        "failed_count": failed_count,
+        "status": "completed"
+    }
+
+async def send_single_email(recipient: str, subject: str, body: str):
+    """Send a single email."""
+    # Implement your email sending logic here
+    await asyncio.sleep(0.5)  # Simulate email sending delay
+
+@app.post("/send-bulk-emails")
+async def start_bulk_email_sending(
+    request: Request, 
+    response: Response,
+    task_dep: TaskDependency = TaskDependency()
+):
+    """Start bulk email sending task using dependency injection."""
+    data = await request.json
+    
+    task = await task_dep.create(
+        func=send_bulk_emails,
+        recipients=data["recipients"],
+        subject=data["subject"],
+        body=data["body"],
+        name="bulk_email_sending"
+    )
+    
+    return {"task_id": task.id, "recipient_count": len(data["recipients"])}
+```
+
+```python [create_task Approach]
 from nexios_contrib.tasks import setup_tasks, create_task
 import smtplib
 from email.mime.text import MIMEText
@@ -473,7 +698,7 @@ async def send_single_email(recipient: str, subject: str, body: str):
 
 @app.post("/send-bulk-emails")
 async def start_bulk_email_sending(request: Request, response: Response):
-    """Start bulk email sending task."""
+    """Start bulk email sending task using create_task."""
     data = await request.json
     
     task = await create_task(
@@ -487,11 +712,102 @@ async def start_bulk_email_sending(request: Request, response: Response):
     return {"task_id": task.id, "recipient_count": len(data["recipients"])}
 ```
 
+:::
+
 ### Data Export Service
 
 Generate and export large datasets in various formats:
 
-```python
+::: code-group
+
+```python [Dependency Injection Approach]
+from nexios_contrib.tasks import setup_tasks, TaskDependency
+import csv
+import json
+from datetime import datetime
+
+app = NexiosApp()
+task_manager = setup_tasks(app)
+
+async def export_data(format: str, filters: dict, task_id: str) -> dict:
+    """Export data in specified format."""
+    from nexios_contrib.tasks import update_task_progress
+    
+    # Fetch data (implement your data fetching logic)
+    data = await fetch_data_from_database(filters)
+    total_records = len(data)
+    
+    # Generate filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"export_{timestamp}.{format}"
+    
+    if format == "csv":
+        await export_to_csv(data, filename, task_id)
+    elif format == "json":
+        await export_to_json(data, filename, task_id)
+    else:
+        raise ValueError(f"Unsupported format: {format}")
+    
+    return {
+        "filename": filename,
+        "format": format,
+        "total_records": total_records,
+        "status": "completed"
+    }
+
+async def fetch_data_from_database(filters: dict) -> list:
+    """Fetch data from database."""
+    # Implement your database query logic
+    await asyncio.sleep(1)  # Simulate database query
+    return [{"id": i, "name": f"Record {i}"} for i in range(1000)]
+
+async def export_to_csv(data: list, filename: str, task_id: str):
+    """Export data to CSV format."""
+    from nexios_contrib.tasks import update_task_progress
+    
+    with open(filename, 'w', newline='') as csvfile:
+        if data:
+            fieldnames = data[0].keys()
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            
+            for i, row in enumerate(data):
+                writer.writerow(row)
+                
+                # Update progress every 100 records
+                if i % 100 == 0:
+                    progress = (i / len(data)) * 100
+                    await update_task_progress(task_id, progress)
+
+async def export_to_json(data: list, filename: str, task_id: str):
+    """Export data to JSON format."""
+    from nexios_contrib.tasks import update_task_progress
+    
+    with open(filename, 'w') as jsonfile:
+        json.dump(data, jsonfile, indent=2)
+    
+    await update_task_progress(task_id, 100)
+
+@app.post("/export-data")
+async def start_data_export(
+    request: Request, 
+    response: Response,
+    task_dep: TaskDependency = TaskDependency()
+):
+    """Start data export task using dependency injection."""
+    data = await request.json
+    
+    task = await task_dep.create(
+        func=export_data,
+        format=data.get("format", "csv"),
+        filters=data.get("filters", {}),
+        name=f"data_export_{data.get('format', 'csv')}"
+    )
+    
+    return {"task_id": task.id, "format": data.get("format", "csv")}
+```
+
+```python [create_task Approach]
 from nexios_contrib.tasks import setup_tasks, create_task
 import csv
 import json
@@ -561,7 +877,7 @@ async def export_to_json(data: list, filename: str, task_id: str):
 
 @app.post("/export-data")
 async def start_data_export(request: Request, response: Response):
-    """Start data export task."""
+    """Start data export task using create_task."""
     data = await request.json
     
     task = await create_task(
@@ -573,6 +889,8 @@ async def start_data_export(request: Request, response: Response):
     
     return {"task_id": task.id, "format": data.get("format", "csv")}
 ```
+
+:::
 
 ## Best Practices
 
@@ -609,98 +927,6 @@ config = TaskConfig(
 )
 
 task_manager = setup_tasks(app, config=config)
-```
-
-## Testing
-
-Ensure your background tasks work correctly with comprehensive testing strategies.
-
-### Unit Testing Tasks
-
-Test individual task functions in isolation:
-
-```python
-import pytest
-from nexios_contrib.tasks import TaskManager, TaskConfig
-
-@pytest.fixture
-def task_manager():
-    config = TaskConfig(max_concurrent_tasks=10)
-    return TaskManager(config)
-
-@pytest.mark.asyncio
-async def test_simple_task(task_manager):
-    async def simple_task(value: int) -> int:
-        return value * 2
-    
-    task = await task_manager.create_task(
-        func=simple_task,
-        value=5,
-        name="test_task"
-    )
-    
-    # Wait for completion
-    await task_manager.wait_for_task(task.id)
-    
-    assert task.result == 10
-    assert task.status == TaskStatus.COMPLETED
-
-@pytest.mark.asyncio
-async def test_task_failure(task_manager):
-    async def failing_task():
-        raise ValueError("Test error")
-    
-    task = await task_manager.create_task(
-        func=failing_task,
-        name="failing_task"
-    )
-    
-    await task_manager.wait_for_task(task.id)
-    
-    assert task.status == TaskStatus.FAILED
-    assert "Test error" in str(task.error)
-```
-
-### Integration Testing
-
-Test the complete task workflow including API endpoints:
-
-```python
-import pytest
-from nexios.testclient import TestClient
-from nexios import NexiosApp
-from nexios_contrib.tasks import setup_tasks
-
-@pytest.fixture
-def app():
-    app = NexiosApp()
-    setup_tasks(app)
-    
-    @app.post("/test-task")
-    async def create_test_task(request, response):
-        from nexios_contrib.tasks import create_task
-        
-        async def test_task(value: str) -> str:
-            return f"processed_{value}"
-        
-        task = await create_task(
-            func=test_task,
-            value="test",
-            name="integration_test"
-        )
-        
-        return {"task_id": task.id}
-    
-    return app
-
-def test_task_creation(app):
-    client = TestClient(app)
-    
-    response = client.post("/test-task")
-    assert response.status_code == 200
-    
-    data = response.json()
-    assert "task_id" in data
 ```
 
 Built with ❤️ by the [@nexios-labs](https://github.com/nexios-labs) community.
