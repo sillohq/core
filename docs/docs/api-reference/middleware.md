@@ -38,6 +38,12 @@ class BaseMiddleware:
 
 ### Basic Middleware Structure
 
+::: warning ⚠️ Important Return Requirement
+**Middleware methods MUST return either `call_next()` result or a Response object**
+
+Failure to return will cause the client request to hang.
+:::
+
 ```python
 from nexios.middleware import BaseMiddleware
 
@@ -155,34 +161,6 @@ class RateLimitMiddleware(BaseMiddleware):
             return real_ip
         
         return request.client.host if request.client else "unknown"
-```
-
-##  Middleware Execution Flow
-
-### Request Processing Flow
-
-```python
-class RequestFlowMiddleware(BaseMiddleware):
-    async def process_request(self, request, response, call_next):
-        print("1. Before request processing")
-        
-        # Modify request if needed
-        request.state.middleware_data = "processed"
-        
-        # Call next middleware/handler
-        result = await call_next()
-        
-        print("4. After request processing")
-        return result
-
-    async def process_response(self, request, response):
-        print("5. Processing response")
-        
-        # Modify response if needed
-        response.set_header("X-Middleware", "processed")
-        
-        print("6. Response processed")
-        return response
 ```
 
 ### Error Handling Middleware
@@ -532,6 +510,12 @@ app.add_middleware(SecurityMiddleware(
 ```
 
 ##  Best Practices
+
+::: warning ⚠️ Critical Return Requirement
+**ALL middleware methods MUST return either `call_next()` result or a Response object**
+
+Missing returns will cause client requests to hang and timeout.
+:::
 
 1. **Keep middleware focused** - Each middleware should have a single responsibility
 2. **Handle errors gracefully** - Always include proper error handling

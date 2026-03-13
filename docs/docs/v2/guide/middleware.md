@@ -51,6 +51,12 @@ The middleware pipeline follows this pattern:
 
 ## **Basic Middleware Example**
 
+::: warning ⚠️ Important Return Requirement
+**Middleware functions MUST return either `await next()` result or a Response object**
+
+Failure to return will cause the client request to hang.
+:::
+
 Below is a simple example demonstrating how to define and use middleware in a Nexios application:
 
 ```python
@@ -61,19 +67,22 @@ app = NexiosApp()
 # Middleware 1: Logging
 async def my_logger(req, res, next):
     print(f"Received request: {req.method} {req.path}")
-    await next()  # Pass control to the next middleware or handler
+    result = await next()  # MUST return this result
     # If you forget to call await next(), the request will hang or time out and the client will not receive a response.
+    return result
 
 # Middleware 2: Request Timing
 async def request_time(req, res, next):
     req.request_time = datetime.now()  # Store request time in context
-    await next()
+    result = await next()  # MUST return this result
+    return result
 
 # Middleware 3: Cookie Validation
 async def validate_cookies(req, res, next):
     if "session_id" not in req.cookies:
-        return res.json({"error": "Missing session_id cookie"}, status_code=400)
-    await next()
+        return res.json({"error": "Missing session_id cookie"}, status_code=400)  # Return error response
+    result = await next()  # MUST return this result
+    return result
     # If you return a response before calling next(), the pipeline is short-circuited and no further middleware or handlers will run. This is useful for early exits, such as authentication failures.
 
 # Add middleware to the application
@@ -132,9 +141,10 @@ app = NexiosApp()
 
 async def log_time(req, res, next):
     start_time = time.time() #  Get current time Before handler
-    await next()
+    result = await next()  # MUST return this result
     end_time = time.time() # Get current time After handler
     print(f"Request {req.method} {req.url} took {end_time - start_time} seconds")
+    return result
 
 app.add_middleware(log_time)
 ```
@@ -148,8 +158,9 @@ app = NexiosApp()
 async def modify_request(req, res, next):
     req.state.name = "John"
     
-    await next()
+    result = await next()  # MUST return this result
     res.set_header("X-Custom-Header", "Custom Value") # Set header after handler
+    return result
 
 app.add_middleware(modify_request)
 
@@ -163,6 +174,14 @@ async def index(req, res):
 
 Modifying the response object should be done after the request is processed. It's best to use the `process_response` method of middleware or `callnext`
 
+:::
+
+::: warning ⚠️ Class-Based Middleware Return Requirements
+**Class-based middleware methods MUST return appropriate values:**
+- `process_request()`: Either `await cnext()` result or a Response object
+- `process_response()`: The modified Response object
+
+Missing returns will cause the client request to hang.
 :::
 
 ## **Class-Based Middleware**
@@ -181,7 +200,9 @@ class ExampleMiddleware(BaseMiddleware):
     async def process_request(self, req, res, cnext):
         """Executed before the request handler."""
         print("Processing Request:", req.method, req.url)
-        await cnext()  # Pass control to the next middleware or handler
+        result = await cnext()  # MUST return this result
+        print("After processing request")
+        return result
         # If you use the wrong parameter order in your methods, Nexios will raise an error at startup.
         # If you forget to call await cnext(req, res), the request will not reach the handler and the client will not receive a response.
 
@@ -196,11 +217,12 @@ class ExampleMiddleware(BaseMiddleware):
 
 1. **`process_request(req, res, cnext)`**
    - Used for pre-processing tasks like logging, authentication, or data injection.
-   - Must call `await cnext(req, res)` to continue processing.
+   - Must call `await cnext(req, res)` AND return its result to continue processing.
+   - Can return a Response object to short-circuit the pipeline.
 2. **`process_response(req, res)`**
    - Used for post-processing tasks like modifying the response or logging.
    - Must return the modified `res` object.
-
+   - Never modify response without returning it!
 
  If you forget to return the response in process_response, the client will not receive the intended response.
 
@@ -216,13 +238,14 @@ from nexios.middleware import BaseMiddleware
 class ErrorCatchingMiddleware(BaseMiddleware):
     async def process_request(self, req, res, cnext):
         try:
-            await cnext(req, res)
+            result = await cnext(req, res)  # MUST return this result in success case
+            return result
         except Exception as exc:
-            return res.json({"error": str(exc)}, status_code=500)
+            return res.json({"error": str(exc)}, status_code=500)  # Return error response
     # If you raise an error in middleware and do not handle it, Nexios will return a 500 error. Always use try/except for critical middleware logic.
 
     async def process_response(self, req, res):
-        return res
+        return res  # Must return the response
 
 ```
 
@@ -245,8 +268,8 @@ async def custom_response_middleware(req, res, next):
     # Create a custom JSON response
     res.make_response(JSONResponse({"message": "Hello, World!"}))
     
-    
-
+    result = await next()  # MUST return this result if continuing
+    return result
     # Note: If you don't return the response, the original response will be used
     # If you need to continue with the normal flow, call await next()
 ```
@@ -262,7 +285,8 @@ from nexios.http.response import JSONResponse
 
 async def error_handler_middleware(req, res, next):
     try:
-        await next()
+        result = await next()  # MUST return this result in success case
+        return result
     except Exception as e:
         # Create a custom error response
         error_response = res.json(
@@ -276,8 +300,9 @@ async def error_handler_middleware(req, res, next):
             status_code=getattr(e, "status_code", 500)
         )
         
-        return error_response
+        return error_response  # Return error response
 
+    # This line is unreachable but shown for completeness
     return res
 ```
 
@@ -290,8 +315,9 @@ Route-specific middleware applies only to a particular route. This is useful for
 ```python
 async def auth_middleware(req, res, cnext):
     if not req.headers.get("Authorization"):
-        return res.json({"error": "Unauthorized"}, status_code=401)
-    await cnext(req, res)
+        return res.json({"error": "Unauthorized"}, status_code=401)  # Return error response
+    result = await cnext(req, res)  # MUST return this result
+    return result
     # If you forget to call await cnext() in route-specific middleware, the request will not reach the handler and the client will not receive a response.
 
 @app.route("/profile", "GET", middleware=[auth_middleware])
@@ -317,8 +343,9 @@ admin_router = Router(prefix="/admin")
 
 async def admin_auth(req, res, cnext):
     if not req.headers.get("Admin-Token"):
-        return res.json({"error": "Forbidden"}, status_code=403)
-    await cnext(req, res)
+        return res.json({"error": "Forbidden"}, status_code=403)  # Return error response
+    result = await cnext(req, res)  # MUST return this result
+    return result
     # Returning a response before calling cnext will stop further processing for this request.
 
 admin_router.add_middleware(admin_auth)  # Applies to all routes inside admin_router
@@ -361,8 +388,9 @@ async def nexios_style_middleware(req: Request, res: Response, next_call):
     # This middleware has access to the Nexios Request and Response objects
     print(f"Request path: {req.path}")
     print(f"Query params: {req.query_params}")
-    await next_call()
+    result = await next_call()  # MUST return this result
     res.set_header("X-Nexios-Middleware", "true")
+    return result
 
 app.add_middleware(nexios_style_middleware)
 
@@ -425,10 +453,18 @@ from nexios.middleware.utils import use_for_route
 @use_for_route("/dashboard")
 async def log_middleware(req, res, cnext):
     print(f"User accessed {req.path.url}")
-    await cnext()  # Proceed to the next function (handler or middleware)
+    result = await cnext()  # MUST return this result
+    return result
+    # Proceed to the next function (handler or middleware)
 ```
 
 ---
+
+::: warning ⚠️ Critical Middleware Return Requirement
+**ALL middleware functions MUST return either `await next()` result or a Response object**
+
+Missing returns will cause client requests to hang and timeout.
+:::
 
 Always call `await next()` in middleware to ensure the request continues processing. Failing to do so will block the request pipeline.
 
