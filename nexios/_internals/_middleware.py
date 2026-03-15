@@ -224,6 +224,7 @@ class ASGIRequestResponseBridge:
                 status_code=message["status"],
             )
             response_object.raw_headers = message["headers"]
+            response._response = response_object
             return response_object
 
         streams: anyio.create_memory_object_stream[Message] = (  # type: ignore
@@ -250,7 +251,7 @@ class _StreamingResponse(BaseResponse):
         info: Mapping[str, Any] | None = None,
     ) -> None:
         self.info = info
-        self.body_iterator = content
+        self.content_iterator = content
         self.status_code = status_code
         self.media_type = media_type
 
@@ -268,7 +269,7 @@ class _StreamingResponse(BaseResponse):
         )
 
         should_close_body = True
-        async for chunk in self.body_iterator:
+        async for chunk in self.content_iterator:
             if isinstance(chunk, dict):
                 # We got an ASGI message which is not response body (eg: pathsend)
                 should_close_body = False

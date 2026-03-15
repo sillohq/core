@@ -27,6 +27,9 @@ def _process_response(
         response_manager.json(func_result.model_dump())
     elif isinstance(func_result, Enum):
         response_manager.json(func_result.value)
+    elif isinstance(func_result, bytes):
+        response_manager.resp(func_result)
+        
     return response_manager.get_response()
 
 
@@ -59,7 +62,6 @@ async def request_response(
         finally:
             current_context.reset(token)
         response = _process_response(response_manager, func_result)
-        # response_manager.set_body(response.body)
         return await response(scope, receive, send)
 
     return app
