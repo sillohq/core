@@ -68,25 +68,74 @@ async def set_headers(request, response):
 
 ##  Setting Headers In Middleware
 
-Middleware is an ideal place to set headers that should be applied to multiple routes:
+In middleware, you need to modify headers after the response has been created by the route handler.
 
-```python{5,6}
-from nexios import NexiosApp
-app = NexiosApp()
+### Correct Middleware Pattern
 
-async def security_headers_middleware(request, response, next):
-    # Set security headers before processing
+Always set headers **after** calling `await call_next()`:
+
+```python
+async def cors_middleware(request, response, call_next):
+    response = await call_next()
+    response.set_header("Access-Control-Allow-Origin", "*")
+    response.set_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+    response.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    return response
+```
+
+### Common Middleware Use Cases
+
+#### CORS Headers
+```python
+async def cors_middleware(request, response, call_next):
+    response = await call_next()
+    response.set_header("Access-Control-Allow-Origin", "*")
+    response.set_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+    response.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    response.set_header("Access-Control-Max-Age", "86400")
+    return response
+```
+
+#### Security Headers
+```python
+async def security_middleware(request, response, call_next):
+    response = await call_next()
     response.set_header("X-Content-Type-Options", "nosniff")
     response.set_header("X-Frame-Options", "DENY")
-    response.set_header("Content-Security-Policy", "default-src 'self'")
-    
-    await next()
-    
-    # Can also modify headers after processing
-    response.remove_header("Server")  # Remove server identification
-
-app.add_middleware(security_headers_middleware)
+    response.set_header("X-XSS-Protection", "1; mode=block")
+    response.set_header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
 ```
+
+#### Request ID Tracking
+```python
+async def request_id_middleware(request, response, call_next):
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    response = await call_next()
+    response.set_header("X-Request-ID", request_id)
+    return response
+```
+
+::: tip Best Practice
+
+In route handlers, prefer passing headers as arguments to response methods for cleaner code:
+
+```python
+# Clean approach for handlers
+@app.get("/api/data")
+async def get_data(req, res):
+    return res.json(
+        {"data": "success"}, 
+        headers={
+            "X-API-Version": "1.0",
+            "Cache-Control": "no-cache"
+        }
+    )
+```
+
+Use `set_header()` primarily in middleware where you need to modify responses after they're created.
+
+:::
 
 ##  Header Manipulation Methods
 

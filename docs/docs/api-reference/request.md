@@ -166,7 +166,7 @@ Content-Length header value as integer.
 async def handler(request: Request, response: Response):
     size = request.content_length  # Size in bytes
     if size > 1024 * 1024:  # 1MB
-        return response.status(413).json({"error": "Request too large"})
+        return response.json({"error": "Request too large"}, status_code=413)
 ```
 
 ##  Body Content Access
@@ -205,10 +205,10 @@ async def handler(request: Request, response: Response):
         
         # Validate required fields
         if not name or not email:
-            return response.status(400).json({"error": "Missing required fields"})
+            return response.json({"error": "Missing required fields"}, status_code=400)
             
     except json.JSONDecodeError:
-        return response.status(400).json({"error": "Invalid JSON"})
+        return response.json({"error": "Invalid JSON"}, status_code=400)
 ```
 
 ### form: FormData
@@ -259,7 +259,7 @@ async def handler(request: Request, response: Response):
         total_size += len(chunk)
         # Process chunk
         if total_size > MAX_FILE_SIZE:
-            return response.status(413).json({"error": "File too large"})
+            return response.json({"error": "File too large"}, status_code=413)
 ```
 
 ##  Authentication & Session
@@ -274,7 +274,7 @@ async def handler(request: Request, response: Response):
         username = request.user.username
         is_admin = request.user.is_admin
     else:
-        return response.status(401).json({"error": "Authentication required"})
+        return response.json({"error": "Authentication required"}, status_code=401)
 ```
 
 ### session: BaseSessionInterface

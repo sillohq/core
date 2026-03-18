@@ -300,18 +300,18 @@ async def get_user(request: Request, response: Response):
     # Authenticate user
     current_user = await authenticate_user(request)
     if not current_user:
-        return response.status(401).json({
+        return response.json({
             "error": "Authentication required",
             "code": "AUTH_REQUIRED"
-        })
+        }, status_code=401)
     
     # Get user
     user = await get_user_by_id(user_id)
     if not user or not user.is_active:
-        return response.status(404).json({
+        return response.json({
             "error": "User not found",
             "code": "USER_NOT_FOUND"
-        })
+        }, status_code=404)
     
     return response.json({
         "id": user.id,
@@ -360,10 +360,10 @@ async def create_user(request: Request, response: Response):
         
         # Create user
         user = await create_user_service(user_data)
-        return response.status(201).json(user)
+        return response.json(user, status_code=201)
         
     except ValidationError as e:
-        return response.status(400).json({
+        return response.json({
             "error": "Validation failed",
             "code": "VALIDATION_ERROR",
             "details": e.errors()

@@ -322,7 +322,7 @@ app = NexiosApp()
 async def protected(request, response):
     auth = request.headers.get("Authorization")
     if not auth or not auth.startswith("Bearer "):
-        return response.status(401).json({"error": "Unauthorized"})
+        return response.json({"error": "Unauthorized"}, status_code=401)
     return response.json({"message": "Protected data"})
 
 client = TestClient(app)
@@ -349,7 +349,7 @@ app = NexiosApp()
 async def create_user(request, response):
     user_data = await request.json
     user_data["id"] = 123
-    return response.status(201).json(user_data)
+    return response.json(user_data, status_code=201)
 
 client = TestClient(app)
 
@@ -379,7 +379,7 @@ async def upload_file(request, response):
             "filename": file.filename,
             "size": len(content)
         })
-    return response.status(400).json({"error": "No file"})
+    return response.json({"error": "No file"}, status_code=400)
 
 client = TestClient(app)
 

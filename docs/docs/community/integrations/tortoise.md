@@ -105,11 +105,11 @@ async def create_user(request, response):
             name=data["name"],
             email=data["email"]
         )
-        return response.status(201).json({
+        return response.json({
             "id": user.id,
             "name": user.name,
             "email": user.email
-        })
+        }, status_code=201)
     except Exception:
         # IntegrityError (duplicate email) automatically handled
         # Returns 400 with proper error message

@@ -49,7 +49,7 @@ async def get_cache(request: Request, response: Response, key: str):
 
     value = await redis_get(key)
     if value is None:
-        return response.status(404).json({"error": "Key not found"})
+        return response.json({"error": "Key not found"}, status_code=404)
 
     return {"key": key, "value": value}
 ```
@@ -509,12 +509,12 @@ async def get_profile(
     session_id = request.headers.get("X-Session-ID")
 
     if not session_id:
-        return response.status(401).json({"error": "No session"})
+        return response.json({"error": "No session"}, status_code=401)
 
     # Get session data
     session_data = await redis.json_get(f"session:{session_id}")
     if not session_data:
-        return response.status(401).json({"error": "Invalid session"})
+        return response.json({"error": "Invalid session"}, status_code=401)
 
     return {"user": session_data}
 ```

@@ -134,7 +134,7 @@ The `response` object provides a fluent API for sending various content types.
 ::: code-group
 
 ```python [JSON]
-return response.status(200).json({"success": True})
+return response.json({"success": True}, status_code=200)
 ```
 
 ```python [HTML]

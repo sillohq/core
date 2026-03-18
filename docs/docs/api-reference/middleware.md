@@ -89,7 +89,7 @@ class AuthenticationMiddleware(BaseMiddleware):
         # Extract token
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
-            return response.status(401).json({"error": "Authentication required"})
+            return response.json({"error": "Authentication required"}, status_code=401)
 
         token = auth_header[7:]  # Remove "Bearer " prefix
         
@@ -99,7 +99,7 @@ class AuthenticationMiddleware(BaseMiddleware):
             request.state.user = user
             return await call_next()
         except InvalidTokenError:
-            return response.status(401).json({"error": "Invalid token"})
+            return response.json({"error": "Invalid token"}, status_code=401)
 
     async def verify_token(self, token: str):
         # Token verification logic
@@ -140,10 +140,10 @@ class RateLimitMiddleware(BaseMiddleware):
             
             # Check rate limit
             if len(self.requests[client_ip]) >= self.requests_per_minute:
-                return response.status(429).json({
+                return response.json({
                     "error": "Rate limit exceeded",
                     "retry_after": 60
-                })
+                }, status_code=429)
             
             # Record this request
             self.requests[client_ip].append(now)
@@ -171,24 +171,24 @@ class ErrorHandlingMiddleware(BaseMiddleware):
         try:
             return await call_next()
         except ValidationError as e:
-            return response.status(400).json({
+            return response.json({
                 "error": "Validation failed",
                 "details": e.errors()
-            })
+            }, status_code=400)
         except PermissionError:
-            return response.status(403).json({
-                "error": "Permission denied"
-            })
+            return response.json({
+                "error": "Access denied"
+            }, status_code=403)
         except NotFoundError:
-            return response.status(404).json({
+            return response.json({
                 "error": "Resource not found"
-            })
+            }, status_code=404)
         except Exception as e:
             # Log unexpected errors
             logger.error(f"Unexpected error: {e}", exc_info=True)
-            return response.status(500).json({
+            return response.json({
                 "error": "Internal server error"
-            })
+            }, status_code=500)
 ```
 
 ##  Advanced Middleware Patterns

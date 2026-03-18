@@ -101,12 +101,12 @@ Route-specific middleware that applies only to this route.
 ```python
 async def auth_required(request, response, call_next):
     if not request.user:
-        return response.status(401).json({"error": "Authentication required"})
+        return response.json({"error": "Authentication required"}, status_code=401)
     return await call_next()
 
 async def admin_required(request, response, call_next):
     if not request.user.is_admin:
-        return response.status(403).json({"error": "Admin access required"})
+        return response.json({"error": "Admin access required"}, status_code=403)
     return await call_next()
 
 route = Route(
@@ -326,13 +326,13 @@ async def create_user_handler(request: Request, response: Response):
         
         # Create user with validated data
         user = await create_user_service(user_data)
-        return response.status(201).json(user)
+        return response.json(user, status_code=201)
         
     except ValidationError as e:
-        return response.status(400).json({
+        return response.json({
             "error": "Validation failed",
             "details": e.errors()
-        })
+        }, status_code=400)
 
 route = Route(
     "/users",
@@ -394,19 +394,19 @@ async def safe_handler(request: Request, response: Response):
         return response.json(result)
         
     except ValidationError as e:
-        return response.status(400).json({
+        return response.json({
             "error": "Invalid input",
             "details": str(e)
-        })
+        }, status_code=400)
     except PermissionError:
-        return response.status(403).json({
+        return response.json({
             "error": "Access denied"
-        })
+        }, status_code=403)
     except Exception as e:
         logger.error(f"Unexpected error in route: {e}")
-        return response.status(500).json({
+        return response.json({
             "error": "Internal server error"
-        })
+        }, status_code=500)
 
 route = Route("/safe-endpoint", safe_handler)
 ```
@@ -436,10 +436,10 @@ async def route_error_middleware(request, response, call_next):
     try:
         return await call_next()
     except RouteException as e:
-        return response.status(e.status_code).json({
+        return response.json({
             "error": e.message,
             "details": e.details
-        })
+        }, status_code=e.status_code)
 ```
 
 ##  Testing Routes

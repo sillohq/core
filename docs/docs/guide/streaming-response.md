@@ -14,6 +14,42 @@ head:
 
 Nexios provides powerful streaming capabilities for handling large datasets, real-time data, and long-polling scenarios. This guide covers how to implement and work with
 
+::: warning ⚠️ Important: Response Type Must Be Set First
+
+When using the `Response` object in streaming endpoints, you **must** call one of the response type methods (`.json()`, `.html()`, `.text()`, `.file()`, `.stream()`, `.redirect()`, `.empty()`) **before** you can use methods like `.set_cookie()`, `.set_header()`, or `.status()`.
+
+**This will cause an error in a streaming endpoint:**
+```python
+@app.get("/stream")
+async def stream_data(request, response):
+    # ❌ WRONG: Setting header before response type
+    response.set_header("X-Streaming", "enabled")  # Will raise AttributeError
+    async def generate():
+        for i in range(5):
+            yield f"Data chunk {i}\n"
+            await asyncio.sleep(1)
+    return response.stream(generate())
+```
+
+**This is correct:**
+```python
+@app.get("/stream")
+async def stream_data(request, response):
+    async def generate():
+        for i in range(5):
+            yield f"Data chunk {i}\n"
+            await asyncio.sleep(1)
+    
+    # ✅ CORRECT: Pass headers to the stream method or chain
+    return response.stream(
+        generate(), 
+        content_type="text/plain",
+        headers={"X-Streaming": "enabled"}
+    )
+```
+
+:::
+
 Streaming responses allow you to send data to the client as it becomes available, rather than buffering everything in memory first. This is particularly useful for:
 
 - Large file downloads

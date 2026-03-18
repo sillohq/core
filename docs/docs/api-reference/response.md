@@ -2,6 +2,32 @@
 
 The `NexiosResponse` class provides a fluent interface for building HTTP responses with support for various content types, headers, cookies, caching, and more.
 
+::: warning ⚠️ Important: Response Type Must Be Set First
+
+When using the `Response` object, you **must** call one of the response type methods (`.json()`, `.html()`, `.text()`, `.file()`, `.stream()`, `.redirect()`, `.empty()`, `.resp()`) **before** you can use methods like `.set_cookie()`, `.set_header()`, or `.status()`.
+
+**This will cause an error:**
+```python
+async def handler(request: Request, response: Response):
+    # ❌ WRONG: Setting header before response type
+    response.set_header("X-Custom", "value")  # Will raise AttributeError
+    return response.json({"data": "response"})
+```
+
+**This is correct:**
+```python
+async def handler(request: Request, response: Response):
+    # ✅ CORRECT: Set response type first, then chain other methods
+    return response.json({"data": "response"}).set_header("X-Custom", "value")
+    
+    # OR:
+    response.json({"data": "response"})
+    response.set_header("X-Custom", "value")
+    return response
+```
+
+:::
+
 ##  Class Definition
 
 ```python
@@ -181,6 +207,22 @@ async def handler(request: Request, response: Response):
 ### status()
 Set HTTP status code.
 
+::: warning ⚠️ Requires Response Type First
+
+You must call a response type method (`.json()`, `.html()`, `.text()`, etc.) before using `.status()`.
+
+```python
+async def handler(request: Request, response: Response):
+    # ❌ WRONG: Status before response type
+    response.status(404)  # Will fail
+    return response.json({"error": "Not found"})
+    
+    # ✅ CORRECT: Chain or set type first
+    return response.status(404).json({"error": "Not found"})
+```
+
+:::
+
 ```python
 async def handler(request: Request, response: Response):
     # Success responses
@@ -200,6 +242,22 @@ async def handler(request: Request, response: Response):
 
 ### set_header()
 Set individual response header.
+
+::: warning ⚠️ Requires Response Type First
+
+You must call a response type method before using `.set_header()`.
+
+```python
+async def handler(request: Request, response: Response):
+    # ❌ WRONG: Header before response type
+    response.set_header("X-API-Version", "1.0")  # Will fail
+    return response.json({"data": "response"})
+    
+    # ✅ CORRECT: Chain or set type first
+    return response.json({"data": "response"}).set_header("X-API-Version", "1.0")
+```
+
+:::
 
 ```python
 async def handler(request: Request, response: Response):
@@ -250,6 +308,22 @@ async def handler(request: Request, response: Response):
 
 ### set_cookie()
 Set response cookie with comprehensive options.
+
+::: warning ⚠️ Requires Response Type First
+
+You must call a response type method before using `.set_cookie()`.
+
+```python
+async def handler(request: Request, response: Response):
+    # ❌ WRONG: Cookie before response type
+    response.set_cookie("session_id", "abc123")  # Will fail
+    return response.json({"message": "Logged in"})
+    
+    # ✅ CORRECT: Chain or set type first
+    return response.json({"message": "Logged in"}).set_cookie("session_id", "abc123")
+```
+
+:::
 
 ```python
 async def handler(request: Request, response: Response):

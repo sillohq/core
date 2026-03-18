@@ -156,7 +156,7 @@ async def get_user(request: Request, response: Response):
     user_id = request.path_params['user_id']
     user = await get_user_by_id(user_id)
     if not user:
-        return response.status(404).json({"error": "User not found"})
+        return response.json({"error": "User not found"}, status_code=404)
     return response.json(user)
 ```
 
@@ -193,7 +193,7 @@ class CreateUserRequest(BaseModel):
 async def create_user(request: Request, response: Response):
     user_data = CreateUserRequest(**await request.json)
     user = await create_user_in_db(user_data)
-    return response.status(201).json(user)
+    return response.json(user, status_code=201)
 ```
 
 #### put()
@@ -216,7 +216,7 @@ Register a DELETE endpoint for removing resources.
 async def delete_user(request: Request, response: Response):
     user_id = request.path_params['user_id']
     await delete_user_from_db(user_id)
-    return response.status(204).empty()
+    return response.empty(status_code=204)
 ```
 
 #### patch()
@@ -459,17 +459,17 @@ from nexios.exceptions import HTTPException
 
 async def custom_error_handler(request, response, exc):
     if isinstance(exc, HTTPException):
-        return response.status(exc.status_code).json({
+        return response.json({
             "error": exc.detail,
             "status_code": exc.status_code
-        })
+        }, status_code=exc.status_code)
     
     # Log unexpected errors
     logger.error(f"Unexpected error: {exc}")
-    return response.status(500).json({
+    return response.json({
         "error": "Internal server error",
         "status_code": 500
-    })
+    }, status_code=500)
 
 app = NexiosApp(server_error_handler=custom_error_handler)
 ```

@@ -71,6 +71,34 @@ async def getUsers(request, response):
     return response.json(["John Doe","Jane Smith"])
 ```
 
+::: warning ⚠️ Important: Response Type Must Be Set First
+
+When using the `Response` object, you **must** call one of the response type methods (`.json()`, `.html()`, `.text()`, `.file()`, `.stream()`, `.redirect()`, `.empty()`) **before** you can use methods like `.set_cookie()`, `.set_header()`, or `.status()`.
+
+**This will cause an error:**
+```py
+@app.get("/users")
+async def getUsers(request, response):
+    # ❌ WRONG: Setting cookie before response type
+    response.set_cookie("session", "abc123")
+    return response.json(["John Doe","Jane Smith"])
+```
+
+**This is correct:**
+```py
+@app.get("/users")
+async def getUsers(request, response):
+    # ✅ CORRECT: Chain methods or set type first
+    return response.json(["John Doe","Jane Smith"]).set_cookie("session", "abc123")
+    
+    # OR:
+    response.json(["John Doe","Jane Smith"])
+    response.set_cookie("session", "abc123")
+    return response
+```
+
+:::
+
 **Other Response Types**
 ::: code-group
 
@@ -139,11 +167,37 @@ app = NexiosApp()
 @app.get("/")
 async def home(req, res):
     res.status(200).set_cookie("session_id", "123").json({"message": "Hello, World!"})
-
 ```
 
-In this example, we set the status code, add a cookie, and send a JSON response all in a single, chained statement.
+::: tip Method Chaining vs Sequential Calls
 
+You have two options when working with the response object:
+
+**Option 1: Method Chaining (Recommended)**
+```python
+@app.get("/api/data")
+async def get_data(req, res):
+    return (res
+            .status(200)
+            .set_cookie("session", "abc123")
+            .set_header("X-API-Version", "1.0")
+            .json({"data": "success"}))
+```
+
+**Option 2: Sequential Calls**
+```python
+@app.get("/api/data")
+async def get_data(req, res):
+    res.json({"data": "success"})  # Set response type first
+    res.set_cookie("session", "abc123")
+    res.set_header("X-API-Version", "1.0")
+    res.status(200)
+    return res
+```
+
+Both approaches work, but chaining is more readable and ensures the response type is set before other operations.
+In this example, we set the status code, add a cookie, and send a JSON response all in a single, chained statement.
+:::
 ##  Sending Different Types of Responses using the object directly 
 
 Nexios provides several methods for sending different types of responses.
@@ -253,7 +307,37 @@ async def simple_response(req, res):
     return {"message": "This is a simple response."}
 ```
 
-However, for more control over the response, it is recommended to use the `Response` object and its methods.
+::: tip When to Use Direct Returns vs Response Object
+
+**Use direct returns when:**
+- You only need to return simple data
+- You don't need custom headers, cookies, or status codes
+- You want the most concise code possible
+
+**Use the Response object when:**
+- You need to set custom headers or cookies
+- You need specific HTTP status codes
+- You need to serve files, HTML, or streaming content
+- You need fine-grained control over the response
+
+```python
+# Simple case - direct return
+@app.get("/users")
+async def get_users(req, res):
+    return [{"id": 1, "name": "John"}, {"id": 2, "name": "Jane"}]
+
+# Complex case - response object
+@app.get("/users-with-metadata")
+async def get_users_with_metadata(req, res):
+    users = [{"id": 1, "name": "John"}, {"id": 2, "name": "Jane"}]
+    return (res
+            .status(200)
+            .set_header("X-Total-Count", str(len(users)))
+            .set_cookie("page", "1")
+            .json({"data": users, "total": len(users)}))
+```
+
+:::
 
 ::: tip  Recommended
 For clarity and to leverage the full power of Nexios's response handling, we recommend using the `res` object to build your responses, especially when you need to set custom headers, cookies, or status codes.

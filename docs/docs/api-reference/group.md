@@ -101,7 +101,7 @@ Middleware that applies to all routes within the group. Middleware is applied in
 async def auth_middleware(request, response, call_next):
     # Authentication logic
     if not request.headers.get("authorization"):
-        return response.status(401).json({"error": "Unauthorized"})
+        return response.json({"error": "Unauthorized"}, status_code=401)
     return await call_next()
 
 async def logging_middleware(request, response, call_next):
@@ -136,7 +136,7 @@ async def list_users(request, response):
 async def create_user(request, response):
     user_data = await request.json
     user = await create_user_service(user_data)
-    return response.status(201).json(user)
+    return response.json(user, status_code=201)
 
 async def get_user(request, response):
     user_id = request.path_params["user_id"]
@@ -228,7 +228,7 @@ async def rate_limit_middleware(request, response, call_next):
     # Rate limiting logic
     client_ip = request.client.host
     if await is_rate_limited(client_ip):
-        return response.status(429).json({"error": "Rate limit exceeded"})
+        return response.json({"error": "Rate limit exceeded"}, status_code=429)
     return await call_next()
 
 # Apply middleware to all routes in the group
@@ -321,7 +321,7 @@ async def list_users(request, response):
 @user_router.post("/")
 async def create_user(request, response):
     user_data = await request.json
-    return response.status(201).json(user_data)
+    return response.json(user_data, status_code=201)
 
 # Mount router in a group
 users_group = Group(path="/users", app=user_router, name="users")
