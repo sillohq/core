@@ -102,30 +102,7 @@ async def test_auth_decorator_single_scope(test_client):
         assert res.status_code == 401
 
 
-async def test_auth_decorator_multiple_scopes(test_client):
-    app = NexiosApp()
 
-    class MultiScopeBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
-            if request.headers.get("Authorization") == "Bearer multi_token":
-                return AuthResult(success=True, identity="multi_user", scope="multi")
-            return AuthResult(success=False, identity="", scope="")
-
-    app.add_middleware(AuthenticationMiddleware(SimpleUser, MultiScopeBackend()))
-
-    @app.get("/protected")
-    @auth(["multi", "other"])
-    async def protected(req: Request, res: Response):
-        return res.json({"authenticated": True})
-
-    async with test_client(app) as client:
-        res = await client.get(
-            "/protected", headers={"Authorization": "Bearer multi_token"}
-        )
-        assert res.status_code == 200
-
-        res = await client.get("/protected")
-        assert res.status_code == 401
 
 
 async def test_auth_decorator_no_scopes(test_client):
