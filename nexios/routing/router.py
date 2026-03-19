@@ -341,8 +341,6 @@ class Router(BaseRouter):
             warnings.warn("Router prefix should start with '/'")
             self.prefix = f"/{self.prefix}"
 
-        
-
     def build_middleware_stack(self, app: ASGIApp) -> ASGIApp:
         """
         Builds the middleware stack by applying all registered middleware to the app.
