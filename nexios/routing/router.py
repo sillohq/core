@@ -47,7 +47,7 @@ from .grouping import Group
 from .websocket import WebsocketRoute
 
 if TYPE_CHECKING:
-    from nexios.typing import WsHandlerType
+    from nexios.types import WsHandlerType
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
@@ -97,7 +97,7 @@ class Route(BaseRoute):
             """),
         ],
         methods: Annotated[
-            Optional[List[str]],
+            List[str],
             Doc("""
             HTTP methods allowed for this endpoint. Common methods include:
             - GET: Retrieve resources
@@ -318,7 +318,7 @@ class Router(BaseRouter):
     def __init__(
         self,
         prefix: Optional[str] = None,
-        routes: Optional[Sequence[Union[Route, type[BaseRoute]]]] = None,
+        routes: Sequence[BaseRoute] = [],
         tags: Optional[Sequence[str]] = None,
         exclude_from_schema: bool = False,
         name: Optional[str] = None,
@@ -326,7 +326,7 @@ class Router(BaseRouter):
     ):
         self.prefix = prefix or ""
         self.prefix.rstrip("/")
-        self.routes = list(routes or [])
+        self.routes = list(routes)
         self.middleware: typing.List[Middleware] = []
         self.sub_routers: Dict[str, Union[Router, ASGIApp]] = {}
         self.route_class = Route
@@ -341,9 +341,7 @@ class Router(BaseRouter):
             warnings.warn("Router prefix should start with '/'")
             self.prefix = f"/{self.prefix}"
 
-        if routes:
-            for route in routes:
-                self.add_route(route)
+        
 
     def build_middleware_stack(self, app: ASGIApp) -> ASGIApp:
         """
@@ -363,7 +361,7 @@ class Router(BaseRouter):
     def add_route(
         self,
         route: Annotated[
-            Optional[Union[Route, type[BaseRoute]]],
+            Optional[BaseRoute],
             Doc("An instance of the Route class representing an HTTP route."),
         ] = None,
         path: Annotated[

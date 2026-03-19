@@ -1,7 +1,8 @@
 import asyncio
 import typing
-from typing import Any
+from typing import Any, Dict
 
+from nexios.objects.routing import URLPath
 from typing_extensions import Annotated, Doc
 
 from nexios._internals._route_builder import RouteBuilder
@@ -13,11 +14,11 @@ from nexios.types import (
 )
 from nexios.websockets import WebSocket
 from nexios.websockets.errors import WebSocketErrorMiddleware
-
+from .base import BaseRoute
 from ._utils import MatchStatus, get_route_path
 
 
-class WebsocketRoute:
+class WebsocketRoute(BaseRoute):
     """
     WebSocket route configuration for handling real-time bidirectional communication.
 
@@ -183,7 +184,27 @@ class WebsocketRoute:
         app = WebSocketErrorMiddleware(handler_app)
 
         await app(scope, receive, send)
-
+    def url_path_for(self, name: str, **path_params: Dict[str, Any]) -> URLPath:
+        """
+        Generate URL path for this WebSocket route by name.
+        
+        Args:
+            name: The name of the route
+            **path_params: Path parameters to substitute
+            
+        Returns:
+            URLPath object for the generated URL
+        """
+        if name != self.name:
+            raise ValueError(f"Route name '{name}' does not match this route's name '{self.name}'")
+        
+        # Build the path with parameters
+        path = self.raw_path
+        for param_name, param_value in path_params.items():
+            if f"{{{param_name}}}" in path:
+                path = path.replace(f"{{{param_name}}}", str(param_value))
+        
+        return URLPath(path=path)
     def __repr__(self) -> str:
         return f"<WSRoute {self.raw_path}>"
 

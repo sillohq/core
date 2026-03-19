@@ -105,7 +105,7 @@ class NexiosApp(object):
                 """),
         ] = None,
         routes: Annotated[
-            Optional[List[Route]],
+            List[Route],
             Doc("""
                     A list of routes for the application. These routes define the URLs that the application will handle and the handlers that will be called when those URLs are accessed.
 
@@ -113,7 +113,7 @@ class NexiosApp(object):
 
                     You can add routes to the application using the `add_route` method of the `Router` class.
                 """),
-        ] = None,
+        ] = [],
         dependencies: Annotated[
             Optional[list[Depend]],
             Doc("""
@@ -1751,7 +1751,7 @@ class NexiosApp(object):
     def add_route(
         self,
         route: Annotated[
-            Optional[Union[Route, type[BaseRoute]]],
+            Optional[BaseRoute],
             Doc("An instance of the Route class representing an HTTP route."),
         ] = None,
         path: Annotated[
