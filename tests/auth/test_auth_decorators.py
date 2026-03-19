@@ -102,9 +102,6 @@ async def test_auth_decorator_single_scope(test_client):
         assert res.status_code == 401
 
 
-
-
-
 async def test_auth_decorator_no_scopes(test_client):
     app = NexiosApp()
 

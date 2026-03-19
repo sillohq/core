@@ -53,10 +53,10 @@ class auth(RouteDecorator):
             scopes = request.scope.get("auth")  # type: ignore
             if not scopes:  # pragma: no cover
                 return self._handle_401(request, response)
-            
+
             # Ensure scopes is a list for consistent comparison
             user_scopes = scopes if isinstance(scopes, list) else [scopes]
-            
+
             # Check if user has any of the required scopes
             for scope in self.scopes:
                 if scope not in user_scopes:
