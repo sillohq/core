@@ -256,7 +256,7 @@ def test_exception_handler_with_path_params(
     app.add_exception_handler(ItemNotFoundError, item_not_found_handler)
 
     @app.get("/items/{item_id}")
-    async def handler(request: Request, response: Response,item_id):
+    async def handler(request: Request, response: Response, item_id):
         raise ItemNotFoundError()
 
     with test_client_factory(app) as client:

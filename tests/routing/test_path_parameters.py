@@ -66,8 +66,6 @@ def test_path_parameter_with_router(
         assert resp.json()["product_id"] == "abc123"
 
 
-
-
 # ========== Path Parameter Types Tests ==========
 
 
@@ -263,7 +261,7 @@ def test_path_params_in_request_object(
     app = NexiosApp()
 
     @app.get("/api/{version}/users/{user_id}")
-    async def get_user(request: Request, response: Response,*args,**kwargs):
+    async def get_user(request: Request, response: Response, *args, **kwargs):
         return response.json(
             {
                 "version": request.path_params["version"],

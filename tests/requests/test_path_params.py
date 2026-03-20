@@ -136,7 +136,13 @@ def test_request_path_params_nested_resources(
     app = NexiosApp()
 
     @app.get("/users/{user_id}/posts/{post_id}/comments/{comment_id}")
-    async def handler(request: Request, response: Response, user_id: str, post_id: str, comment_id: str):
+    async def handler(
+        request: Request,
+        response: Response,
+        user_id: str,
+        post_id: str,
+        comment_id: str,
+    ):
         return response.json(
             {
                 "user_id": user_id,

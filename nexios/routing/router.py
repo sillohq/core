@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import inspect
 import re
 import typing
 import warnings
@@ -35,7 +34,6 @@ from nexios._internals._route_builder import RouteBuilder
 from nexios.dependencies import Depend, inject_dependencies
 from nexios.events import EventEmitter
 from nexios.exceptions import NotFoundException
-from nexios.http import Request, Response
 from nexios.http.response import JSONResponse
 from nexios.objects import RouteParam, URLPath
 from nexios.openapi.models import Parameter
@@ -543,7 +541,7 @@ class Router(BaseRouter):
         route.tags = list(self.tags).extend(route.tags) if route.tags else self.tags
         if self.exclude_from_schema:
             route.exclude_from_schema = True
-        
+
         self.routes.append(route)
         if getattr(route, "exclude_from_schema", False):
             return
