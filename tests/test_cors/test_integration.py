@@ -47,8 +47,7 @@ class TestCORSIntegration:
             return response.json({"users": []})
 
         @app.get("/api/users/{user_id}")
-        async def get_user(request: Request, response: Response):
-            user_id = request.path_params["user_id"]
+        async def get_user(request: Request, response: Response,user_id):
             return response.json({"user": {"id": user_id, "name": "John"}})
 
         @app.post("/api/users")
@@ -56,13 +55,11 @@ class TestCORSIntegration:
             return response.json({"created": True})
 
         @app.put("/api/users/{user_id}")
-        async def update_user(request: Request, response: Response):
-            user_id = request.path_params["user_id"]
+        async def update_user(request: Request, response: Response,user_id):
             return response.json({"updated": True})
 
         @app.delete("/api/users/{user_id}")
-        async def delete_user(request: Request, response: Response):
-            user_id = request.path_params["user_id"]
+        async def delete_user(request: Request, response: Response,user_id):
             return response.json({"deleted": True})
 
         @app.get("/api/posts")

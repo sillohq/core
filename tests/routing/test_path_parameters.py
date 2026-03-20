@@ -66,21 +66,6 @@ def test_path_parameter_with_router(
         assert resp.json()["product_id"] == "abc123"
 
 
-def test_path_parameter_from_request_path_params(
-    test_client_factory: Callable[[NexiosApp], TestClient],
-):
-    """Test accessing path parameters from request.path_params"""
-    app = NexiosApp()
-
-    @app.get("/items/{item_id}")
-    async def get_item(request: Request, response: Response):
-        item_id = request.path_params.get("item_id")
-        return response.json({"item_id": item_id})
-
-    with test_client_factory(app) as client:
-        resp = client.get("/items/xyz")
-        assert resp.status_code == 200
-        assert resp.json()["item_id"] == "xyz"
 
 
 # ========== Path Parameter Types Tests ==========
@@ -278,7 +263,7 @@ def test_path_params_in_request_object(
     app = NexiosApp()
 
     @app.get("/api/{version}/users/{user_id}")
-    async def get_user(request: Request, response: Response):
+    async def get_user(request: Request, response: Response,*args,**kwargs):
         return response.json(
             {
                 "version": request.path_params["version"],
