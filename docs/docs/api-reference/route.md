@@ -54,8 +54,7 @@ Route("/files/{file_path:path}", serve_file)
 Async function that handles requests for this route.
 
 ```python
-async def user_handler(request: Request, response: Response):
-    user_id = request.path_params.get("user_id")
+async def user_handler(request: Request, response: Response, user_id: str):
     user = await get_user_by_id(user_id)
     return response.json(user)
 
@@ -206,7 +205,7 @@ route = Route(
 Route("/users/{username}", get_user_by_name)
 
 # In handler:
-# username = request.path_params["username"]  # type: str
+# username: str  # type: str
 ```
 
 ### Integer Parameters
@@ -215,7 +214,7 @@ Route("/users/{username}", get_user_by_name)
 Route("/users/{user_id:int}", get_user)
 
 # In handler:
-# user_id = request.path_params["user_id"]  # type: int
+# user_id: int  # type: int
 ```
 
 ### Float Parameters
@@ -224,7 +223,7 @@ Route("/users/{user_id:int}", get_user)
 Route("/products/{price:float}", get_products_by_price)
 
 # In handler:
-# price = request.path_params["price"]  # type: float
+# price: float  # type: float
 ```
 
 ### Path Parameters
@@ -233,8 +232,7 @@ Route("/products/{price:float}", get_products_by_price)
 Route("/files/{file_path:path}", serve_file)
 
 # In handler:
-# file_path = request.path_params["file_path"]  # type: str
-# Example: "/files/documents/report.pdf" -> file_path = "documents/report.pdf"
+# file_path: str  # type: str
 ```
 
 ### UUID Parameters
@@ -243,7 +241,7 @@ Route("/files/{file_path:path}", serve_file)
 Route("/resources/{resource_id:uuid}", get_resource)
 
 # In handler:
-# resource_id = request.path_params["resource_id"]  # type: str (UUID format)
+# resource_id: str  # type: str (UUID format)
 ```
 
 ##  Route Matching
@@ -419,8 +417,7 @@ class RouteException(Exception):
         self.message = message
         self.details = details or {}
 
-async def handler_with_custom_exceptions(request: Request, response: Response):
-    user_id = request.path_params.get("user_id")
+async def handler_with_custom_exceptions(request: Request, response: Response, user_id: str):
     
     if not user_id:
         raise RouteException(400, "User ID is required")
@@ -485,8 +482,7 @@ def test_route_matching():
 ```python
 @pytest.mark.asyncio
 async def test_route_parameters():
-    async def test_handler(request, response):
-        user_id = request.path_params["user_id"]
+    async def test_handler(request, response, user_id: str):
         return response.json({"user_id": user_id, "type": type(user_id).__name__})
     
     route = Route("/users/{user_id:int}", test_handler)

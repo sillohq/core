@@ -134,8 +134,7 @@ async def list_users(request: Request, response: Response):
     return response.json(users)
 
 @router.get("/users/{user_id}")
-async def get_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def get_user(request: Request, response: Response, user_id: str):
     user = await get_user_by_id(user_id)
     return response.json(user)
 ```
@@ -156,8 +155,7 @@ Register PUT endpoint.
 
 ```python
 @router.put("/users/{user_id}")
-async def update_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def update_user(request: Request, response: Response, user_id: str):
     user_data = await request.json
     user = await update_user_service(user_id, user_data)
     return response.json(user)
@@ -168,8 +166,7 @@ Register DELETE endpoint.
 
 ```python
 @router.delete("/users/{user_id}")
-async def delete_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def delete_user(request: Request, response: Response, user_id: str):
     await delete_user_service(user_id)
     return response.status(204).empty()
 ```
@@ -179,8 +176,7 @@ Register PATCH endpoint.
 
 ```python
 @router.patch("/users/{user_id}")
-async def patch_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def patch_user(request: Request, response: Response, user_id: str):
     patch_data = await request.json
     user = await patch_user_service(user_id, patch_data)
     return response.json(user)
@@ -200,8 +196,7 @@ Register HEAD endpoint.
 
 ```python
 @router.head("/users/{user_id}")
-async def user_head(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def user_head(request: Request, response: Response, user_id: str):
     exists = await user_exists(user_id)
     if exists:
         return response.status(200).empty()
@@ -214,8 +209,7 @@ Register route with custom methods.
 
 ```python
 @router.route("/users/{user_id}", methods=["GET", "PUT", "DELETE"])
-async def user_handler(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def user_handler(request: Request, response: Response, user_id: str):
     
     if request.method == "GET":
         user = await get_user_by_id(user_id)
@@ -347,8 +341,7 @@ async def admin_users(request, response, admin=Depend(get_admin_user)):
 
 ```python
 @router.get("/users/{user_id}")
-async def get_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]  # String by default
+async def get_user(request: Request, response: Response, user_id: str):
     return response.json({"user_id": user_id})
 ```
 
@@ -356,13 +349,11 @@ async def get_user(request: Request, response: Response):
 
 ```python
 @router.get("/users/{user_id:int}")
-async def get_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]  # Automatically converted to int
+async def get_user(request: Request, response: Response, user_id: int):
     return response.json({"user_id": user_id})
 
 @router.get("/files/{file_path:path}")
-async def get_file(request: Request, response: Response):
-    file_path = request.path_params["file_path"]  # Captures full path
+async def get_file(request: Request, response: Response, file_path: str):
     return response.file(f"/uploads/{file_path}")
 ```
 
@@ -370,9 +361,7 @@ async def get_file(request: Request, response: Response):
 
 ```python
 @router.get("/users/{user_id:int}/posts/{post_id:int}")
-async def get_user_post(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
-    post_id = request.path_params["post_id"]
+async def get_user_post(request: Request, response: Response, user_id: int, post_id: int):
     
     post = await get_post(user_id, post_id)
     return response.json(post)
@@ -385,8 +374,7 @@ Generate URLs for named routes.
 
 ```python
 @router.get("/users/{user_id}", name="get_user")
-async def get_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def get_user(request: Request, response: Response, user_id: str):
     user = await get_user_by_id(user_id)
     return response.json(user)
 
@@ -512,19 +500,16 @@ class UserRouter:
         user = await self.user_service.create(user_data)
         return response.status(201).json(user)
     
-    async def get_user(self, request, response):
-        user_id = request.path_params["user_id"]
+    async def get_user(self, request, response, user_id: str):
         user = await self.user_service.get_by_id(user_id)
         return response.json(user)
     
-    async def update_user(self, request, response):
-        user_id = request.path_params["user_id"]
+    async def update_user(self, request, response, user_id: str):
         user_data = await request.json
         user = await self.user_service.update(user_id, user_data)
         return response.json(user)
     
-    async def delete_user(self, request, response):
-        user_id = request.path_params["user_id"]
+    async def delete_user(self, request, response, user_id: str):
         await self.user_service.delete(user_id)
         return response.status(204).empty()
 
@@ -620,8 +605,7 @@ async def test_user_crud():
         return response.status(201).json(user)
     
     @router.get("/{user_id}")
-    async def get_user(request, response):
-        user_id = request.path_params["user_id"]
+    async def get_user(request, response, user_id: str):
         user = await get_user_service(user_id)
         return response.json(user)
     

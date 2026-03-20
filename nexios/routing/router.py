@@ -569,8 +569,8 @@ class Router(BaseRouter):
                 Receives (request, response) and returns response or raw data.
                 
                 Example:
-                async def get_user(request, response):
-                    user = await get_user_from_db(request.path_params['user_id'])
+                async def get_user(request, response, user_id: str):
+                    user = await get_user_from_db(user_id)
                     return response.json(user)
             """),
         ] = None,

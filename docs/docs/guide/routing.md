@@ -11,6 +11,11 @@ head:
 ---
 #  Routing
 
+::: warning Important Note
+Nexios now enforces that path parameters must be passed directly to handler functions as arguments. The old pattern of accessing `request.path_params` is no longer supported.
+
+:::
+
 Nexios provides a powerful and flexible routing system that supports using decorators to define routes or using the `Route` class. The routing system is designed to be intuitive, performant, and extensible, making it easy to define routes and handle requests.
 
 ##  Using decorators
@@ -52,14 +57,12 @@ async def create_item(request, response):
     return response.json(data, status_code=201)
 
 @app.put("/items/{id}")
-async def update_item(request, response):
-    item_id = request.path_params.id
+async def update_item(request, response, id: str):
     data = await request.json
-    return response.json({"id": item_id, **data})
+    return response.json({"id": id, **data})
 
 @app.delete("/items/{id}")
-async def delete_item(request, response):
-    item_id = request.path_params.id
+async def delete_item(request, response, id: str):
     return response.json(None, status_code=204)
 
 # If a required path parameter is missing or invalid, Nexios will return a 422 error.
@@ -237,8 +240,7 @@ async def list_users(request, response):
     return response.json({"users": []})
 
 @users_router.get("/{user_id:int}")
-async def get_user(request, response):
-    user_id = request.path_params.user_id
+async def get_user(request, response, user_id: int):
     return response.json({"id": user_id})
 
 @posts_router.get("/")
@@ -246,8 +248,7 @@ async def list_posts(request, response):
     return response.json({"posts": []})
 
 @posts_router.get("/{post_id:int}")
-async def get_post(request, response):
-    post_id = request.path_params.post_id
+async def get_post(request, response, post_id: int):
     return response.json({"id": post_id})
 
 # Mount resource routers to version routers
@@ -352,7 +353,7 @@ and automatically pass the part inside {} (user_id here) as an argument to your 
 
 Nexios provides several built-in path converters for validating and converting URL parameters:
 
-you can also get the dynamic params from `request.path_params.<dynamic value>`
+you can also get the dynamic params as direct function parameters.
 
 ```py
 from nexios import NexiosApp
@@ -360,8 +361,7 @@ from nexios import NexiosApp
 app = NexiosApp()
 
 @app.get("/users/{user_id}")
-async def get_user(request, response):
-    user_id = request.path_params.user_id
+async def get_user(request, response, user_id: str):
     return {"id": user_id}
 ```
 
@@ -381,20 +381,17 @@ The syntax is:
 
 ```python [Basic Types]
 @app.get("/users/{user_id:int}")
-async def get_user(request, response):
-    user_id = request.path_params.user_id  # Automatically converted to int
+async def get_user(request, response, user_id: int):
     return response.json({"id": user_id})
 
 # If user_id is not an integer, Nexios will return a 422 error.
 
 @app.get("/files/{filename:str}")
-async def get_file(request, response):
-    filename = request.path_params.filename
+async def get_file(request, response, filename: str):
     return response.json({"file": filename})
 
 @app.get("/items/{item_id:uuid}")
-async def get_item(request, response):
-    item_id = request.path_params.item_id  # UUID object
+async def get_item(request, response, item_id: str):
     return response.json({"id": str(item_id)})
 
 # If item_id is not a valid UUID, Nexios will return a 422 error.
@@ -402,13 +399,11 @@ async def get_item(request, response):
 
 ```python [Path and Slug]
 @app.get("/static/{filepath:path}")
-async def get_static_file(request, response):
-    filepath = request.path_params.filepath  # Can contain slashes
+async def get_static_file(request, response, filepath: str):
     return response.json({"path": filepath})
 
 @app.get("/posts/{slug:slug}")
-async def get_post(request, response):
-    slug = request.path_params.slug  # URL-friendly string
+async def get_post(request, response, slug: str):
     return response.json({"slug": slug})
 
 # If the slug does not match the expected pattern, Nexios will return a 422 error.
@@ -416,13 +411,11 @@ async def get_post(request, response):
 
 ```python [Numeric Types]
 @app.get("/products/{price:float}")
-async def get_product(request, response):
-    price = request.path_params.price  # Float value
+async def get_product(request, response, price: float):
     return response.json({"price": price})
 
 @app.get("/orders/{order_id:int}")
-async def get_order(request, response):
-    order_id = request.path_params.order_id  # Integer value
+async def get_order(request, response, order_id: int):
     return response.json({"order_id": order_id})
 
 # If price or order_id are not valid numbers, Nexios will return a 422 error.
@@ -467,8 +460,7 @@ register_url_convertor("email", EmailConvertor())
 
 # Use the custom converter in routes
 @app.get("/users/{email:email}")
-async def get_user_by_email(request, response):
-    email = request.path_params.email
+async def get_user_by_email(request, response, email: str):
     return response.json({"email": email})
 
 # If your custom converter raises a ValueError, Nexios will return a 422 error with your message.
@@ -515,8 +507,7 @@ class VersionConvertor(Convertor[str]):
 register_url_convertor("version", VersionConvertor())
 
 @app.get("/api/{version:version}/users")
-async def get_users(request, response):
-    version = request.path_params.version
+async def get_users(request, response, version: str):
     return response.json({"version": version})
 ```
 
@@ -586,15 +577,9 @@ class SuccessResponse(BaseModel):
         404: ErrorResponse
     }
 )
-async def get_user(request, response):
-    user_id = request.path_params.user_id
-    return response.json({
-        "id": user_id,
-        "name": "John Doe",
-        "email": "john@example.com",
-        "created_at": datetime.utcnow(),
-        "is_active": True
-    })
+async def get_user(request, response, user_id: int):
+    user = await get_user_from_db(user_id)
+    return response.json(user)
 
 @app.get(
     "/users",
@@ -676,8 +661,7 @@ async def create_user(request, response):
         404: ErrorResponse
     }
 )
-async def delete_user(request, response):
-    user_id = request.path_params.user_id
+async def delete_user(request, response, user_id: int):
     # ... delete user logic
     return response.json({
         "message": "User deleted successfully",
@@ -723,7 +707,7 @@ class ApiErrorResponse(BaseResponse):
         404: ApiErrorResponse
     }
 )
-async def get_user_detail(request, response):
+async def get_user_detail(request, response, user_id: int):
     # ... implementation
     pass
 
@@ -768,8 +752,7 @@ class UserWithStats(BaseModel):
         404: ErrorResponse
     }
 )
-async def get_user_stats(request, response):
-    user_id = request.path_params.user_id
+async def get_user_stats(request, response, user_id: int):
     # ... fetch user stats
     return response.json({
         "id": user_id,
@@ -813,9 +796,9 @@ class ErrorResponse(BaseModel):
     },
     deprecated=False
 )
-async def get_user(request, response):
-    user_id = request.path_params.user_id
-    return response.json({"id": user_id, "name": "John Doe", "email": "john@example.com"})
+async def get_user(request, response, user_id: int):
+    user = await get_user_from_db(user_id)
+    return response.json(user)
 ```
 
 ##  Security Requirements
@@ -859,13 +842,11 @@ You can generate URLs using route names:
 
 ```python
 @app.get("/users/{user_id:int}", name="get_user")
-async def get_user(request, response):
-    user_id = request.path_params.user_id
+async def get_user(request, response, user_id: int):
     return response.json({"id": user_id})
 
 @app.get("/posts/{post_id:int}", name="get_post")
-async def get_post(request, response):
-    post_id = request.path_params.post_id
+async def get_post(request, response, post_id: int):
     return response.json({"id": post_id})
 
 # Generate URLs
@@ -947,9 +928,8 @@ def create_crud_routes(resource_name: str, model_class):
     ))
 
     # Get route
-    async def get_handler(request, response):
-        item_id = request.path_params.id
-        item = await model_class.get(item_id)
+    async def get_handler(request, response, id: str):
+        item = await model_class.get(id)
         return response.json(item)
 
     routes.append(Route(

@@ -234,8 +234,7 @@ async def admin_endpoint(request: Request, response: Response):
     description="Retrieve a specific user by their unique identifier",
     tags=["Users"]
 )
-async def get_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def get_user(request: Request, response: Response, user_id: str):
     user = await get_user_by_id(user_id)
     return response.json(user)
 ```
@@ -294,8 +293,7 @@ class ErrorResponse(BaseModel):
     operation_id="getUserById",
     deprecated=False
 )
-async def get_user(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
+async def get_user(request: Request, response: Response, user_id: str):
     
     # Authenticate user
     current_user = await authenticate_user(request)
@@ -461,9 +459,7 @@ from nexios.openapi.models import Path, Schema
         )
     ]
 )
-async def get_user_post(request: Request, response: Response):
-    user_id = request.path_params["user_id"]
-    post_id = request.path_params["post_id"]
+async def get_user_post(request: Request, response: Response, user_id: str, post_id: str):
     
     post = await get_post(user_id, post_id)
     return response.json(post)

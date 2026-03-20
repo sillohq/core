@@ -152,8 +152,7 @@ Register a GET endpoint with comprehensive OpenAPI support.
     },
     tags=["Users"]
 )
-async def get_user(request: Request, response: Response):
-    user_id = request.path_params['user_id']
+async def get_user(request: Request, response: Response, user_id: str):
     user = await get_user_by_id(user_id)
     if not user:
         return response.json({"error": "User not found"}, status_code=404)
@@ -201,8 +200,7 @@ Register a PUT endpoint for updating resources.
 
 ```python
 @app.put("/users/{user_id}")
-async def update_user(request: Request, response: Response):
-    user_id = request.path_params['user_id']
+async def update_user(request: Request, response: Response, user_id: str):
     user_data = await request.json
     updated_user = await update_user_in_db(user_id, user_data)
     return response.json(updated_user)
@@ -213,8 +211,7 @@ Register a DELETE endpoint for removing resources.
 
 ```python
 @app.delete("/users/{user_id}")
-async def delete_user(request: Request, response: Response):
-    user_id = request.path_params['user_id']
+async def delete_user(request: Request, response: Response, user_id: str):
     await delete_user_from_db(user_id)
     return response.empty(status_code=204)
 ```
@@ -224,8 +221,7 @@ Register a PATCH endpoint for partial updates.
 
 ```python
 @app.patch("/users/{user_id}")
-async def patch_user(request: Request, response: Response):
-    user_id = request.path_params['user_id']
+async def patch_user(request: Request, response: Response, user_id: str):
     patch_data = await request.json
     user = await patch_user_in_db(user_id, patch_data)
     return response.json(user)
@@ -312,8 +308,7 @@ async def list_users(request, response):
     return response.json(users)
 
 @user_router.get("/{user_id}")
-async def get_user(request, response):
-    user_id = request.path_params['user_id']
+async def get_user(request, response, user_id: str):
     user = await get_user_by_id(user_id)
     return response.json(user)
 
