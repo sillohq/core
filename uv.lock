@@ -17,17 +17,16 @@ wheels = [
 
 [[package]]
 name = "anyio"
-version = "4.11.0"
+version = "4.12.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "idna" },
-    { name = "sniffio" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c6/78/7d432127c41b50bccba979505f272c16cbcadcc33645d5fa3a738110ae75/anyio-4.11.0.tar.gz", hash = "sha256:82a8d0b81e318cc5ce71a5f1f8b5c4e63619620b63141ef8c995fa0db95a57c4", size = 219094, upload-time = "2025-09-23T09:19:12.58Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/96/f0/5eb65b2bb0d09ac6776f2eb54adee6abe8228ea05b20a5ad0e4945de8aac/anyio-4.12.1.tar.gz", hash = "sha256:41cfcc3a4c85d3f05c932da7c26d0201ac36f72abd4435ba90d0464a3ffed703", size = 228685, upload-time = "2026-01-06T11:45:21.246Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/15/b3/9b1a8074496371342ec1e796a96f99c82c945a339cd81a8e73de28b4cf9e/anyio-4.11.0-py3-none-any.whl", hash = "sha256:0287e96f4d26d4149305414d4e3bc32f0dcd0862365a4bddea19d7a1ec38c4fc", size = 109097, upload-time = "2025-09-23T09:19:10.601Z" },
+    { url = "https://files.pythonhosted.org/packages/38/0e/27be9fdef66e72d64c0cdc3cc2823101b80585f8119b5c112c2e8f5f7dab/anyio-4.12.1-py3-none-any.whl", hash = "sha256:d405828884fc140aa80a3c667b8beed277f1dfedec42ba031bd6ac3db606ab6c", size = 113592, upload-time = "2026-01-06T11:45:19.497Z" },
 ]
 
 [[package]]
@@ -506,7 +505,7 @@ wheels = [
 
 [[package]]
 name = "nexios"
-version = "3.3.2"
+version = "3.10.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -522,7 +521,6 @@ all = [
     { name = "anyio" },
     { name = "click", version = "8.1.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "click", version = "8.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
-    { name = "granian" },
     { name = "itsdangerous" },
     { name = "jinja2" },
     { name = "pyjwt" },
@@ -570,7 +568,7 @@ templating = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anyio", specifier = "==4.11.0" },
+    { name = "anyio", specifier = "==4.12.1" },
     { name = "anyio", marker = "extra == 'all'", specifier = ">=4.0.0" },
     { name = "anyio", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "anyio", marker = "extra == 'http'", specifier = ">=4.0.0" },
@@ -579,7 +577,6 @@ requires-dist = [
     { name = "click", marker = "extra == 'cli'", specifier = ">=8.1.3" },
     { name = "click", marker = "extra == 'dev'", specifier = ">=8.1.3" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=6.3,<8.0" },
-    { name = "granian", marker = "extra == 'all'", specifier = ">=1.2.0" },
     { name = "granian", marker = "extra == 'granian'", specifier = ">=1.2.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.23.3,<0.29.0" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5.13.2" },
@@ -595,8 +592,8 @@ requires-dist = [
     { name = "pyjwt", marker = "extra == 'all'", specifier = ">=2.7.0" },
     { name = "pyjwt", marker = "extra == 'dev'", specifier = ">=2.7.0" },
     { name = "pyjwt", marker = "extra == 'jwt'", specifier = ">=2.7.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4,<8.5.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.25.3,<1.3.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4,<9.1.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.25.3,<1.4.0" },
     { name = "python-multipart", specifier = ">=0.0.6" },
     { name = "python-multipart", marker = "extra == 'all'", specifier = ">=0.0.6" },
     { name = "python-multipart", marker = "extra == 'dev'", specifier = ">=0.0.6" },
@@ -842,15 +839,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/ef/b960ab4818f90ff59e571d03c3f992828d4683561095e80f9ef31f3d58b7/ruff-0.12.0-py3-none-win32.whl", hash = "sha256:7162a4c816f8d1555eb195c46ae0bd819834d2a3f18f98cc63819a7b46f474fb", size = 10525289, upload-time = "2025-06-17T15:19:19.688Z" },
     { url = "https://files.pythonhosted.org/packages/34/93/8b16034d493ef958a500f17cda3496c63a537ce9d5a6479feec9558f1695/ruff-0.12.0-py3-none-win_amd64.whl", hash = "sha256:d00b7a157b8fb6d3827b49d3324da34a1e3f93492c1f97b08e222ad7e9b291e0", size = 11598311, upload-time = "2025-06-17T15:19:21.785Z" },
     { url = "https://files.pythonhosted.org/packages/d0/33/4d3e79e4a84533d6cd526bfb42c020a23256ae5e4265d858bd1287831f7d/ruff-0.12.0-py3-none-win_arm64.whl", hash = "sha256:8cd24580405ad8c1cc64d61725bca091d6b6da7eb3d36f72cc605467069d7e8b", size = 10724946, upload-time = "2025-06-17T15:19:23.952Z" },
-]
-
-[[package]]
-name = "sniffio"
-version = "1.3.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a2/87/a6771e1546d97e7e041b6ae58d80074f81b7d5121207425c964ddf5cfdbd/sniffio-1.3.1.tar.gz", hash = "sha256:f4324edc670a0f49750a81b895f35c3adb843cca46f0530f79fc1babb23789dc", size = 20372, upload-time = "2024-02-25T23:20:04.057Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/44/75a9c9421471a6c4805dbf2356f7c181a29c1879239abab1ea2cc8f38b40/sniffio-1.3.1-py3-none-any.whl", hash = "sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2", size = 10235, upload-time = "2024-02-25T23:20:01.196Z" },
 ]
 
 [[package]]
