@@ -295,8 +295,9 @@ async def send_async(
 
 async def basic_middleware(request, response, call_next):
   print("do something before handler")
-  await call_next()
+  res = await call_next()
   print("do something after handler")
+  return res
 
 
 app.add_middleware(basic_middleware())
@@ -308,7 +309,7 @@ class BasicMiddleware(BaseMiddleware):
 
   async def process_request(request, response, call_next):
     print("do something before handler")
-    await call_next()
+    return await call_next()
   async def process_response(request, response, call_next):
     print("do something after handler")
 
