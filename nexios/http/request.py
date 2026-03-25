@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import typing
 from http import cookies as http_cookies
+from urllib.parse import urlencode
 
 import anyio
 
@@ -29,6 +30,7 @@ try:
 
 except ImportError:
     parse_options_header = None
+
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
 
@@ -210,7 +212,6 @@ class HTTPConnection(object):
             uri = f"{base_url}/{path}"
 
         if query_params:
-            from urllib.parse import urlencode
 
             query_string = urlencode(query_params)
             uri = f"{uri}?{query_string}"
