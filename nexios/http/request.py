@@ -360,15 +360,8 @@ class Request(HTTPConnection):
     async def json(self) -> typing.Dict[str, JSONType]:
         if not hasattr(self, "_json"):
             _body = await self.body
-            try:
-                body = _body.decode()
-            except UnicodeDecodeError:
-                return {}
-            try:
-                self._json = json.loads(body)
-            except json.JSONDecodeError:
-                self._json = {}
-        return self._json  # type: ignore
+            self._json = json.loads(_body)
+        return self._json 
 
     @property
     async def text(self) -> str:
@@ -416,7 +409,7 @@ class Request(HTTPConnection):
                 self._form = await form_parser.parse()
             else:
                 self._form: FormData = FormData()
-        return self._form  # type: ignore
+        return self._form  
 
     @property
     def form_data(self) -> AwaitableOrContextManager[FormData]:
