@@ -361,7 +361,7 @@ class Request(HTTPConnection):
         if not hasattr(self, "_json"):
             _body = await self.body
             self._json = json.loads(_body)
-        return self._json 
+        return self._json
 
     @property
     async def text(self) -> str:
@@ -409,7 +409,7 @@ class Request(HTTPConnection):
                 self._form = await form_parser.parse()
             else:
                 self._form: FormData = FormData()
-        return self._form  
+        return self._form
 
     @property
     def form_data(self) -> AwaitableOrContextManager[FormData]:
