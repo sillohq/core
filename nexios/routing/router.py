@@ -205,9 +205,10 @@ class Route(BaseRoute):
         self.methods = {method.upper() for method in methods}
         if "GET" in self.methods:
             self.methods.add("HEAD")
-       
-        route_handler_as_asgi_app = request_response(self.handler)  #threat route handlers as ASGI apps
 
+        route_handler_as_asgi_app = request_response(
+            self.handler
+        )  # threat route handlers as ASGI apps
 
         def apply_middleware(app: ASGIApp) -> ASGIApp:
             middleware: typing.List[Middleware] = []
@@ -216,8 +217,8 @@ class Route(BaseRoute):
             for cls, args, kwargs in reversed(middleware):
                 app = cls(app, *args, **kwargs)
             return app
-        self.app = apply_middleware(route_handler_as_asgi_app)
 
+        self.app = apply_middleware(route_handler_as_asgi_app)
 
     def match(self, scope: Scope) -> typing.Tuple[MatchStatus, Any]:
         """
@@ -296,15 +297,13 @@ class Route(BaseRoute):
             Response: The processed HTTP response object.
         """
 
-        
-
         if self.methods and scope["method"] not in self.methods:
             self.app = JSONResponse(
                 {"Method Not Allowed"},
                 status_code=405,
                 headers={"Allow": ", ".join(self.methods)},
             )
-            
+
         await self.app(scope, receive, send)
 
     def __repr__(self) -> str:
