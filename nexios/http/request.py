@@ -212,7 +212,6 @@ class HTTPConnection(object):
             uri = f"{base_url}/{path}"
 
         if query_params:
-
             query_string = urlencode(query_params)
             uri = f"{uri}?{query_string}"
 
