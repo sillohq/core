@@ -33,14 +33,13 @@ def _process_response(
     return response_manager.get_response()
 
 
-async def request_response(
+def request_response(
     func: typing.Callable[[Request, Response], typing.Awaitable[Response]],
 ) -> ASGIApp:
     """
     Takes a function or coroutine `func(request) -> response`,
     and returns an ASGI application.
     """
-    assert asyncio.iscoroutinefunction(func), "Endpoints must be async"
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
         request = Request(scope, receive, send)
