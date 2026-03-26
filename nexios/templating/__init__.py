@@ -106,15 +106,18 @@ async def render(
     final_context = context or {}
     final_context.update(kwargs)
 
-    # Merge with template context from middleware if available
-    if (
-        request
-        and hasattr(request, "state")
-        and hasattr(request.state, "template_context")
-    ):
-        middleware_context = request.state.template_context
-        if middleware_context:
-            final_context.update(middleware_context)
+    # Provide core request-related utilities if request is available
+    if request:
+        final_context.setdefault("request", request)
+        if hasattr(request, "base_app"):
+            final_context.setdefault("url_for", request.base_app.url_for)
+        if hasattr(request, "state"):
+            final_context.setdefault("csrf_token", getattr(request.state, "csrf_token", None))
+
+            # Merge with existing template context from middleware if available
+            middleware_context = getattr(request.state, "template_context", None)
+            if middleware_context:
+                final_context.update(middleware_context)
 
     content = await engine.render(template_name, final_context)
     return HTMLResponse(content=content, status_code=status_code, headers=headers)
