@@ -48,8 +48,6 @@ class SignedSessionManager(BaseSessionInterface):
     def load_session_from_cookie(
         self, cookie: str
     ) -> typing.Optional[typing.Dict[str, typing.Any]]:
-        cookie = self.session_key
-
         """
         Load the session data from a signed cookie, and verify it.
         """
@@ -64,10 +62,10 @@ class SignedSessionManager(BaseSessionInterface):
         return signed_session
 
     async def load(self):
-        cookie = self.session_key
         """
         Load the session data from a signed cookie.
         """
+        cookie = self.session_key
         session_data = self.load_session_from_cookie(cookie)
 
         if session_data:
