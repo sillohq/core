@@ -27,9 +27,182 @@ pip install nexios-contrib[mail,templating]
 pip install nexios-contrib[all]
 ```
 
-## Quick Start
+## Direct MailClient Usage
 
-### Basic Setup
+The most straightforward way to send emails is by using the `MailClient` class directly. This approach gives you full control over the email sending process without requiring dependency injection.
+
+### Creating a MailClient
+
+```python
+from nexios_contrib.mail import MailClient, MailConfig
+
+# Create with default configuration (uses environment variables)
+mail_client = MailClient()
+
+# Or with explicit configuration
+config = MailConfig(
+    smtp_host="smtp.gmail.com",
+    smtp_port=587,
+    smtp_username="your-email@gmail.com",
+    smtp_password="your-app-password",
+    use_tls=True,
+    default_from="Your Name <your-email@gmail.com>"
+)
+mail_client = MailClient(config=config)
+```
+
+### Basic Email Sending
+
+```python
+import asyncio
+
+async def send_basic_email():
+    # Start the client (establishes SMTP connection)
+    await mail_client.start()
+    
+    try:
+        # Send a simple email
+        result = await mail_client.send_email(
+            to="recipient@example.com",
+            subject="Hello World",
+            body="This is a plain text email",
+            html_body="<h1>Hello World</h1><p>This is an HTML email.</p>"
+        )
+        
+        if result.success:
+            print(f"Email sent successfully! Message ID: {result.message_id}")
+        else:
+            print(f"Failed to send email: {result.error}")
+    
+    finally:
+        # Always stop the client to close connections
+        await mail_client.stop()
+
+# Run the async function
+asyncio.run(send_basic_email())
+```
+
+### Using Templates
+
+Create templates in your `templates/emails/` directory:
+
+**templates/emails/welcome.html**
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome {{ name }}!</title>
+</head>
+<body>
+    <h1>Welcome {{ name }}!</h1>
+    <p>Thank you for joining {{ company_name }}.</p>
+    <p>Your account has been created with email: {{ email }}</p>
+    <a href="{{ activation_url }}">Activate Your Account</a>
+</body>
+</html>
+```
+
+**templates/emails/welcome.txt**
+```text
+Welcome {{ name }}!
+
+Thank you for joining {{ company_name }}.
+Your account has been created with email: {{ email }}.
+
+Activate Your Account: {{ activation_url }}
+```
+
+Send template emails:
+
+```python
+async def send_template_email():
+    config = MailConfig(
+        smtp_host="smtp.gmail.com",
+        smtp_port=587,
+        smtp_username="your-email@gmail.com",
+        smtp_password="your-app-password",
+        use_tls=True,
+        template_directory="templates/emails"
+    )
+    mail_client = MailClient(config=config)
+    
+    await mail_client.start()
+    
+    try:
+        result = await mail_client.send_template_email(
+            to="newuser@example.com",
+            subject="Welcome to Our Platform!",
+            template_name="welcome",
+            context={
+                "name": "John Doe",
+                "email": "newuser@example.com",
+                "company_name": "Acme Corp",
+                "activation_url": "https://example.com/activate/12345"
+            }
+        )
+        
+        print(f"Template email sent: {result.success}")
+    
+    finally:
+        await mail_client.stop()
+
+asyncio.run(send_template_email())
+```
+
+### Advanced Message Creation
+
+For more control, create `EmailMessage` objects directly:
+
+```python
+from nexios_contrib.mail import EmailMessage
+
+async def send_advanced_email():
+    config = MailConfig(
+        smtp_host="smtp.gmail.com",
+        smtp_port=587,
+        smtp_username="your-email@gmail.com",
+        smtp_password="your-app-password",
+        use_tls=True
+    )
+    mail_client = MailClient(config=config)
+    
+    await mail_client.start()
+    
+    try:
+        # Create a detailed email message
+        message = EmailMessage(
+            to="recipient@example.com",
+            subject="Advanced Email",
+            body="Plain text content",
+            html_body="<h1>HTML Content</h1>",
+            cc="manager@example.com",
+            bcc="archive@example.com"
+        )
+        
+        # Add custom headers
+        message.add_header("X-Campaign-ID", "summer-2024")
+        message.add_header("X-Mailer", "Nexios Mail")
+        
+        # Add attachments
+        message.add_attachment("report.pdf", b"PDF content", "application/pdf")
+        
+        # Send the message
+        result = await mail_client.send_message(message)
+        print(f"Advanced email sent: {result.success}")
+    
+    finally:
+        await mail_client.stop()
+
+asyncio.run(send_advanced_email())
+```
+
+## Integration with Nexios Applications
+
+While direct MailClient usage is simple, integrating with Nexios applications provides additional benefits like automatic lifecycle management and dependency injection.
+
+### Application Setup
+
+For Nexios applications, use the `setup_mail` function for automatic lifecycle management:
 
 ```python
 from nexios import NexiosApp
@@ -75,9 +248,9 @@ MAIL_DEBUG=false
 MAIL_SUPPRESS_SEND=false
 ```
 
-## Usage Examples
+### Dependency Injection
 
-### Sending Basic Emails
+For cleaner code in your route handlers, use dependency injection:
 
 ```python
 from nexios.http import Request, Response
@@ -103,55 +276,21 @@ async def send_email(
     })
 ```
 
-### Using Email Templates
+### Getting MailClient from Request
 
-Create templates in your `templates/emails/` directory:
-
-**templates/emails/welcome.html**
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Welcome {{ name }}!</title>
-</head>
-<body>
-    <h1>Welcome {{ name }}!</h1>
-    <p>Thank you for joining {{ company_name }}.</p>
-    <p>Your account has been created with email: {{ email }}</p>
-    <a href="{{ activation_url }}">Activate Your Account</a>
-</body>
-</html>
-```
-
-**templates/emails/welcome.txt**
-```text
-Welcome {{ name }}!
-
-Thank you for joining {{ company_name }}.
-Your account has been created with email: {{ email }}.
-
-Activate Your Account: {{ activation_url }}
-```
-
-Send template emails:
+Alternatively, get the mail client directly from the request:
 
 ```python
-@app.post("/send-welcome")
-async def send_welcome_email(
-    request: Request,
-    response: Response,
-    mail_client: MailClient = MailDepend()
-):
-    result = await mail_client.send_template_email(
-        to="newuser@example.com",
-        subject="Welcome to Our Platform!",
-        template_name="welcome",
-        context={
-            "name": "John Doe",
-            "email": "newuser@example.com",
-            "company_name": "Acme Corp",
-            "activation_url": "https://example.com/activate/12345"
-        }
+from nexios_contrib.mail import get_mail_from_request
+
+@app.post("/send-email-manual")
+async def send_email_manual(request: Request, response: Response):
+    mail_client = get_mail_from_request(request)
+    
+    result = await mail_client.send_email(
+        to="user@example.com",
+        subject="Welcome to Our Service",
+        body="Thank you for joining our platform!"
     )
     
     return response.json({"success": result.success, "message_id": result.message_id})
