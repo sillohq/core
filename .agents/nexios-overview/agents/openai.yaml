@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nexios Overview"
+  short_description: "Comprehensive Nexios learning guide"
+  default_prompt: "Use $nexios-overview to teach Nexios with concrete examples across routing, auth, pagination, WebSockets, and the rest of the framework."
