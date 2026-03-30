@@ -1,5 +1,58 @@
 # Changelog
 
+## v3.10.4 (2026-03-27)
+
+#### Fixes
+
+* (templating): inject request context into Jinja2 templates automatically ([#340](https://github.com/nexios-labs/nexios/issues/340))
+#### Docs
+
+* (mail): expand email integration examples and usage ([#341](https://github.com/nexios-labs/nexios/issues/341))
+#### Others
+
+* bump version to 3.10.4
+
+Full set of changes: [`v3.10.3...v3.10.4`](https://github.com/nexios-labs/nexios/compare/v3.10.3...v3.10.4)
+
+## v3.10.3 (2026-03-26)
+
+#### Fixes
+
+* (session): remove  parameter overwrite in load_session_from_cookie ([#339](https://github.com/nexios-labs/nexios/issues/339))
+#### Performance improvements
+
+* (http): optimize import statements and code structure ([#337](https://github.com/nexios-labs/nexios/issues/337))
+#### Others
+
+* bump version to 3.10.3
+* (views): add comprehensive test  for APIView  ([#338](https://github.com/nexios-labs/nexios/issues/338))
+
+Full set of changes: [`v3.10.2...v3.10.3`](https://github.com/nexios-labs/nexios/compare/v3.10.2...v3.10.3)
+
+## v3.10.2 (2026-03-25)
+
+#### Refactorings
+
+* (http): improve json parsing and form handling ([#336](https://github.com/nexios-labs/nexios/issues/336))
+* (nexios): wrap route level middleware at init ([#335](https://github.com/nexios-labs/nexios/issues/335))
+#### Others
+
+* (release): bump version to 3.10.2
+
+Full set of changes: [`v3.10.1...v3.10.2`](https://github.com/nexios-labs/nexios/compare/v3.10.1...v3.10.2)
+
+## v3.10.1 (2026-03-24)
+
+#### Docs
+
+* update middleware docs in docs index ([#334](https://github.com/nexios-labs/nexios/issues/334))
+#### Others
+
+* (release): bump version to 3.10.1
+* (docs): update release notes ([#333](https://github.com/nexios-labs/nexios/issues/333))
+
+Full set of changes: [`v3.10.0...v3.10.1`](https://github.com/nexios-labs/nexios/compare/v3.10.0...v3.10.1)
+
 ## v3.10.0 (2026-03-20)
 
 #### Refactorings
