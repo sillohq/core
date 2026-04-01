@@ -5,7 +5,7 @@ Redis integration for Nexios web framework, providing seamless caching, session 
 ## Features
 
 -  **High-Performance Redis Client**: Async Redis client with connection pooling and health checks
--  **Dependency Injection**: Multiple DI patterns for clean, testable code
+-  **Dependency Injection**: Simplified DI pattern for clean, testable code
 -  **Connection Management**: Automatic connection lifecycle management
 -  **Data Structure Support**: Strings, Hashes, Lists, Sets, JSON operations
 -  **Configuration**: Environment-based and programmatic configuration
@@ -130,77 +130,7 @@ async def get_user(
     return {"user": user_data or {"id": user_id, "name": "Unknown"}}
 ```
 
-### Operation-Level Injection
 
-```python
-from nexios import NexiosApp
-from nexios_contrib.redis import RedisOperationDepend
-
-app = NexiosApp()
-
-@app.get("/counter/{name}")
-async def get_counter(
-    request: Request,
-    response: Response,
-    name: str,
-    counter_value: int = RedisOperationDepend("get", f"counter:{name}")
-):
-    # counter_value is already the result of redis.get(f"counter:{name}")
-    return {"counter": name, "value": counter_value or 0}
-
-@app.post("/counter/{name}/incr")
-async def increment_counter(
-    request: Request,
-    response: Response,
-    name: str,
-    new_value: int = RedisOperationDepend("incr", f"counter:{name}", 1)
-):
-    # new_value is already the result of redis.incr(f"counter:{name}", 1)
-    return {"counter": name, "value": new_value}
-```
-
-### Key-Based Injection
-
-```python
-from nexios import NexiosApp
-from nexios_contrib.redis import RedisKeyDepend
-
-app = NexiosApp()
-
-@app.get("/user/{user_id}")
-async def get_user(
-    request: Request,
-    response: Response,
-    user_id: str,
-    user_data: dict = RedisKeyDepend(
-        f"user:{{user_id}}",  # Uses path parameter
-        "json_get",
-        {"name": "Unknown"}   # Default value
-    )
-):
-    # user_data is already fetched from Redis with fallback
-    return {"user": user_data}
-```
-
-### Cache Pattern
-
-```python
-from nexios import NexiosApp
-from nexios_contrib.redis import RedisCacheDepend
-
-app = NexiosApp()
-
-@app.get("/expensive-computation/{param}")
-async def expensive_computation(
-    request: Request,
-    response: Response,
-    param: str,
-    result: str = RedisCacheDepend(f"expensive:{param}", ttl=600)
-):
-    # In a real implementation, this would check cache first
-    # and compute/fallback if not found
-    return {"param": param, "result": f"computed_{param}"}
-```
 
 ## Redis Operations
 
@@ -425,7 +355,7 @@ except RedisOperationError as e:
 from nexios import NexiosApp
 from nexios.http import Request, Response
 from nexios_contrib.redis import (
-    init_redis, RedisDepend, RedisOperationDepend
+    init_redis, RedisDepend
 )
 
 app = NexiosApp()
@@ -462,8 +392,9 @@ async def record_visit(
     request: Request,
     response: Response,
     user_id: str,
-    visit_count: int = RedisOperationDepend("incr", f"user:{user_id}:visits", 1)
+    redis: RedisClient = RedisDepend()
 ):
+    visit_count = await redis.incr(f"user:{user_id}:visits", 1)
     return {"user_id": user_id, "visits": visit_count}
 
 if __name__ == "__main__":
