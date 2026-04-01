@@ -430,7 +430,7 @@ nexios new my-awesome-app
 
 
 ::: danger Important Note
-Do not use the Nexios CLI if you are still learning Python.
+Do not use the Nexios CLI if you are new to nexios.
 :::
 
 For complete documentation on using the Nexios CLI, check out the [CLI Documentation](/guide/cli).
@@ -447,7 +447,7 @@ Nexios embraces the Zen of Python, particularly the second principle: "Explicit 
 ##  Key Features
 
 ### Performance Optimized 
-- Designed for blazing-fast, production-ready performance 
+- Designed for production-ready performance 
 - Async-first architecture for handling thousands of concurrent connections 
 - Middleware system for fine-grained performance optimization 
 

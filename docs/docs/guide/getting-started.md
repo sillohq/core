@@ -140,10 +140,10 @@ pipenv shell
 
 | Package Manager  | Fastest Installation | Virtual Environment | Compatible with pip | Production | Written in Rust |
 |------------------|---------------------|--------------------|--------------------|------------|----------------|
-| uv (Recommended) |                    |                   |                   |          |             |
-| pip              |                    |                   |                   |          |                |
-| poetry           |                     |                   |                     |          |                |
-| pipenv           |                     |                   |                   |          |                |
+| uv (Recommended) | ✅                   | ✅                  | ✅                  | ✅          | ✅              |
+| pip              | ❌                   | ❌                  | ✅                  | ✅          | ❌              |
+| poetry           | ❌                   | ✅                  | ❌                  | ✅          | ❌              |
+| pipenv           | ❌                   | ✅                  | ✅                  | ✅          | ❌              |
 
 ::: tip Virtual Environments
 Always use virtual environments to isolate your project dependencies. This prevents conflicts between different projects and keeps your system Python clean.
@@ -153,7 +153,7 @@ Always use virtual environments to isolate your project dependencies. This preve
 -  Avoid version conflicts
 -  Easy project sharing and deployment
 -  Clean system Python installation
--  Reproducible builds
+-  Reproducible buildss
 
 **Creating virtual environments:**
 ```bash
