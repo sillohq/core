@@ -34,12 +34,12 @@ from nexios._internals._route_builder import RouteBuilder
 from nexios.dependencies import Depend, inject_dependencies
 from nexios.events import EventEmitter
 from nexios.exceptions import NotFoundException
+from nexios.http import Request, Response
 from nexios.http.response import JSONResponse
 from nexios.objects import RouteParam, URLPath
 from nexios.openapi.models import Parameter
 from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, Send
 
-from nexios.http import Request, Response
 from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
 from .grouping import Group
