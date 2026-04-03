@@ -124,6 +124,12 @@ class NexiosApp(object):
                     You can add dependencies to the application using the `add_dependency` method of the `Router` class.
                 """),
         ] = None,
+        route_class: Annotated[
+            Optional[Route],
+            Doc("""
+                    The class used to create routes. This can be a custom route class that inherits from `Route`.
+                """),
+        ] = Route,
     ):
         self.config = config
         self.dependencies = dependencies or []
@@ -138,7 +144,10 @@ class NexiosApp(object):
         self.server_error_handler = server_error_handler
         self._background_tasks = set()  # type: ignore
 
-        self.app = Router(routes=routes, dependencies=self.dependencies)  # type: ignore
+        self.route_class = route_class
+        self.app = Router(
+            routes=routes, dependencies=self.dependencies, route_class=self.route_class
+        )  # type: ignore
         self.exceptions_handler = ExceptionMiddleware()
         self.router = self.app
         self.route = self.router.route

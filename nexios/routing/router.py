@@ -39,6 +39,7 @@ from nexios.objects import RouteParam, URLPath
 from nexios.openapi.models import Parameter
 from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, Send
 
+from nexios.http import Request, Response
 from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
 from .grouping import Group
@@ -207,7 +208,7 @@ class Route(BaseRoute):
             self.methods.add("HEAD")
 
         route_handler_as_asgi_app = request_response(
-            self.handler
+            self.get_route_handler
         )  # threat route handlers as ASGI apps
 
         def apply_middleware(app: ASGIApp) -> ASGIApp:
@@ -285,6 +286,23 @@ class Route(BaseRoute):
 
         return URLPath(path=path, protocol="http")
 
+    async def get_route_handler(
+        self, request: Request, response: Response, **kwargs: Any
+    ) -> Any:
+        """
+        The main hook for handling the request. This can be overridden in subclasses
+        to modify how the handler is invoked.
+
+        Args:
+            request: The incoming HTTP request.
+            response: The outgoing HTTP response.
+            **kwargs: Captured path parameters.
+
+        Returns:
+            Any: The response from the handler.
+        """
+        return await self.handler(request, response, **kwargs)
+
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
         Process an incoming request using the route's handler.
@@ -325,13 +343,14 @@ class Router(BaseRouter):
         exclude_from_schema: bool = False,
         name: Optional[str] = None,
         dependencies: Optional[list[Depend]] = None,
+        route_class: Optional[Route] = Route,
     ):
         self.prefix = prefix or ""
         self.prefix.rstrip("/")
         self.routes = list(routes)
         self.middleware: typing.List[Middleware] = []
         self.sub_routers: Dict[str, Union[Router, ASGIApp]] = {}
-        self.route_class = Route
+        self.route_class = route_class
         self.tags = tags or []
         self.exclude_from_schema = exclude_from_schema
         self.name = name
