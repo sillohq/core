@@ -1,4 +1,3 @@
-from typing import cast
 import datetime
 import html
 import inspect
@@ -9,6 +8,7 @@ import sys
 import traceback
 import typing
 import uuid
+from typing import cast
 
 from nexios.__main__ import __version__ as nexios_version
 from nexios.http import Request, Response
