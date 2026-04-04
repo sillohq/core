@@ -48,7 +48,7 @@ class BasePaginationStrategy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def calculate_offset_limit(self, *args: List[int]) -> Tuple[int, int]:
+    def calculate_offset_limit(self, *args: Any, **kwargs: Any) -> Tuple[int, int]:
         pass
 
     @abc.abstractmethod
@@ -138,7 +138,7 @@ class PageNumberPagination(BasePaginationStrategy):
 
         return page, page_size
 
-    def calculate_offset_limit(self, page: int, page_size: int) -> Tuple[int, int]:  # type: ignore
+    def calculate_offset_limit(self, page: int, page_size: int) -> Tuple[int, int]:
         return (page - 1) * page_size, page_size
 
     def generate_metadata(
@@ -208,7 +208,7 @@ class LimitOffsetPagination(BasePaginationStrategy):
 
         return limit, offset
 
-    def calculate_offset_limit(self, limit: int, offset: int) -> Tuple[int, int]:  # type: ignore
+    def calculate_offset_limit(self, limit: int, offset: int) -> Tuple[int, int]:
         return offset, limit
 
     def generate_metadata(

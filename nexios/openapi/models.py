@@ -7,10 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.networks import AnyUrl
 
 try:
-    import email_validator  # type: ignore # noqa: F401
+    import email_validator  # noqa: F401
     from pydantic import EmailStr
 except ImportError:  # pragma: no cover
-    EmailStr = str  # type: ignore
+    EmailStr = str
 
 
 from typing import Annotated, Literal
