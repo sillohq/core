@@ -356,8 +356,11 @@ class SyncPaginator:
         self.request_params = request_params
         self.validate_total_items = validate_total_items
 
-    def paginate(self) -> Dict[str, Any]:
-        params = self.pagination_strategy.parse_parameters(self.request_params)
+    def paginate(self, **kwargs: Any) -> Dict[str, Any]:
+        # Merge request params with kwargs to allow direct overrides
+        request_params = {**self.request_params, **kwargs}
+
+        params = self.pagination_strategy.parse_parameters(request_params)
         offset, limit = self.pagination_strategy.calculate_offset_limit(*params)
 
         total_items = self.data_handler.get_total_items()
@@ -366,7 +369,7 @@ class SyncPaginator:
 
         items = self.data_handler.get_items(offset, limit)
         metadata = self.pagination_strategy.generate_metadata(
-            total_items, items, self.base_url, self.request_params
+            total_items, items, self.base_url, request_params
         )
 
         return {"items": items, "pagination": metadata}
@@ -387,8 +390,11 @@ class AsyncPaginator:
         self.request_params = request_params
         self.validate_total_items = validate_total_items
 
-    async def paginate(self) -> Dict[str, Any]:
-        params = self.pagination_strategy.parse_parameters(self.request_params)
+    async def paginate(self, **kwargs: Any) -> Dict[str, Any]:
+        # Merge request params with kwargs to allow direct overrides
+        request_params = {**self.request_params, **kwargs}
+
+        params = self.pagination_strategy.parse_parameters(request_params)
         offset, limit = self.pagination_strategy.calculate_offset_limit(*params)
 
         total_items = await self.data_handler.get_total_items()
@@ -397,7 +403,7 @@ class AsyncPaginator:
 
         items = await self.data_handler.get_items(offset, limit)
         metadata = self.pagination_strategy.generate_metadata(
-            total_items, items, self.base_url, self.request_params
+            total_items, items, self.base_url, request_params
         )
 
         return {"items": items, "pagination": metadata}

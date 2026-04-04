@@ -26,7 +26,7 @@ if typing.TYPE_CHECKING:
 
 
 try:
-    from python_multipart.multipart import parse_options_header  # type: ignore
+    from python_multipart.multipart import parse_options_header
 
 except ImportError:
     parse_options_header = None
@@ -72,7 +72,7 @@ def cookie_parser(cookie_string: str) -> dict[str, str]:
         key, val = key.strip(), val.strip()
         if key or val:
             # unquote using Python's algorithm.
-            cookie_dict[key] = http_cookies._unquote(val)  # type: ignore
+            cookie_dict[key] = http_cookies._unquote(val)
     return cookie_dict
 
 
@@ -310,7 +310,7 @@ class Request(HTTPConnection):
         self._send = send
         self._stream_consumed = False
         self._is_disconnected = False
-        self._form = None  # type: ignore
+        self._form = None
 
     @property
     def method(self) -> str:
@@ -323,9 +323,10 @@ class Request(HTTPConnection):
     @property
     def content_type(self) -> typing.Optional[str]:
         content_type_header = self.headers.get("Content-Type")
-        content_type: str
-        content_type, _ = parse_options_header(content_type_header)  # type: ignore
-        return content_type.decode("utf-8") if content_type else None  # type: ignore
+        if content_type_header is None:
+            return None
+        content_type, _ = parse_options_header(content_type_header)
+        return content_type.decode("utf-8") if content_type else None
 
     async def stream(self) -> typing.AsyncGenerator[bytes, None]:
         if hasattr(self, "_body"):
@@ -385,13 +386,13 @@ class Request(HTTPConnection):
         max_files: typing.Optional[int] = 1000,
         max_fields: typing.Optional[int] = 1000,
     ) -> FormData:
-        if self._form is None:  # type: ignore
+        if self._form is None:
             assert parse_options_header is not None, (
                 "The `python-multipart` library must be installed to use form parsing."
             )
             content_type_header = self.headers.get("Content-Type")
             content_type: bytes
-            content_type, _ = parse_options_header(content_type_header)  # type: ignore
+            content_type, _ = parse_options_header(content_type_header)
             if content_type == b"multipart/form-data":
                 try:
                     multipart_parser = MultiPartParser(
@@ -402,7 +403,7 @@ class Request(HTTPConnection):
                     )
                     self._form = await multipart_parser.parse()
                 except MultiPartException as _:
-                    self._form = {}  # type: ignore
+                    self._form = {}
             elif content_type == b"application/x-www-form-urlencoded":
                 form_parser = FormParser(self.headers, self.stream())
 
@@ -416,17 +417,17 @@ class Request(HTTPConnection):
         return AwaitableOrContextManagerWrapper(self._get_form())
 
     async def close(self) -> None:
-        if self._form is not None:  # type: ignore
+        if self._form is not None:
             await self._form.close()
 
     async def is_disconnected(self) -> bool:
         if not self._is_disconnected:
-            message: typing.Dict[str, typing.Any] = {}
+            message = {}
 
             # If message isn't immediately available, move on
-            with anyio.CancelScope() as cs:  # type: ignore
-                cs.cancel()  # type: ignore
-                message = await self._receive()  # type: ignore
+            with anyio.CancelScope() as cs:
+                cs.cancel()
+                message = await self._receive()
 
             if message.get("type") == "http.disconnect":
                 self._is_disconnected = True
@@ -454,8 +455,8 @@ class Request(HTTPConnection):
         files_dict: typing.Dict[str, typing.Any] = {}
         for key, value in form_data.items():
             if isinstance(value, (list, tuple)):
-                for item in value:  # type: ignore
-                    if hasattr(item, "filename"):  # type: ignore
+                for item in value:
+                    if hasattr(item, "filename"):
                         files_dict[key] = item
             elif hasattr(value, "filename"):
                 files_dict[key] = value
@@ -468,7 +469,7 @@ class Request(HTTPConnection):
         Handles both URL-encoded and multipart form data.
         Uses the existing form_data property which already handles all form types.
         """
-        if not hasattr(self, "_form") or self._form is None:  # type: ignore
+        if not hasattr(self, "_form") or self._form is None:
             form_data = await self.form_data
             self._form = form_data
         return self._form

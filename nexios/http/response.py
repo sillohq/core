@@ -98,8 +98,8 @@ class BaseResponse:
         if content is None:
             return b""
         if isinstance(content, (bytes, memoryview)):
-            return content  # type: ignore
-        return content.encode(self.charset)  # type: ignore
+            return content
+        return content.encode(self.charset)
 
     def _init_headers(self, headers: Optional[Dict[str, str]] = None):
         if headers is None:
@@ -239,7 +239,7 @@ class BaseResponse:
     def _generate_etag(self) -> str:
         """Generate an ETag for the response content."""
         content_hash = sha1()
-        content_hash.update(self._body)  # type: ignore
+        content_hash.update(self._body)
         return f'W/"{b64encode(content_hash.digest()).decode("utf-8")}"'
 
     def set_header(self, key: str, value: str, overide: bool = False) -> "BaseResponse":
@@ -416,7 +416,7 @@ class FileResponse(BaseResponse):
             for range_str in ranges.split(","):
                 range = range_str.split("-")
                 start: int = int(range[0])
-                end: int = int(range[-1]) if range[-1] != "" else 0  # type: ignore
+                end: int = int(range[-1]) if range[-1] != "" else 0
                 start = int(start) if start else 0
                 end: int = int(end) if end else file_size - 1
 
@@ -476,14 +476,14 @@ class FileResponse(BaseResponse):
                 )
             elif self._ranges:
                 start, end = self._ranges[0]
-                await self._send_range(file, start, end, send)  # type: ignore
+                await self._send_range(file, start, end, send)
             else:
-                await self._send_full_file(file, send)  # type: ignore
+                await self._send_full_file(file, send)
 
-    async def _send_full_file(self, file: AsyncIterator[bytes], send: Send) -> None:
+    async def _send_full_file(self, file: AsyncFile[bytes], send: Send) -> None:
         """Send the entire file in chunks using AnyIO."""
         while True:
-            chunk = await file.read(self.chunk_size)  # type: ignore
+            chunk = await file.read(self.chunk_size)
             if not chunk:
                 break
             await send(
@@ -541,7 +541,7 @@ class FileResponse(BaseResponse):
         header = next(
             (value for key, value in self.raw_headers if key == b"content-type"), None
         )
-        headers = f"Content-Type: {header}\r\nContent-Range: bytes {start}-{end}/{self.path.stat().st_size}\r\n\r\n"  # type: ignore[str-bytes-safe]
+        headers = f"Content-Type: {header}\r\nContent-Range: bytes {start}-{end}/{self.path.stat().st_size}\r\n\r\n"
         await send(
             {
                 "type": "http.response.body",
@@ -612,7 +612,7 @@ class StreamingResponse(BaseResponse):
         )
         async for chunk in self.content_iterator:
             if not isinstance(chunk, (bytes, memoryview)):
-                chunk = chunk.encode(self.charset)  # type: ignore
+                chunk = chunk.encode(self.charset)
 
             await send({"type": "http.response.body", "body": chunk, "more_body": True})
 
@@ -767,7 +767,7 @@ class NexiosResponse:
         ```
     """
 
-    def __new__(cls, request: Request):  # type: ignore
+    def __new__(cls, request: Request):
         """
         Create or retrieve request-scoped response instance.
         Each request gets its own instance stored in request.state.
@@ -781,7 +781,7 @@ class NexiosResponse:
         # Create new instance and store in request state
         instance = super(NexiosResponse, cls).__new__(cls)
         request.state._response_instance = instance
-        instance._initialized = False  # type: ignore
+        instance._initialized = False
         return instance
 
     def get_response_manager_intance(self, request: Request) -> "NexiosResponse":
@@ -792,20 +792,20 @@ class NexiosResponse:
         Initialize response instance. Only runs once per request.
         """
         # Only initialize once per request
-        if hasattr(self, "_initialized") and self._initialized:  # type: ignore
+        if hasattr(self, "_initialized") and self._initialized:
             return
 
-        self._response: BaseResponse = None  # type: ignore
+        self._response: BaseResponse | Any = None
         self._request = request
-        self._initialized = True  # type: ignore
+        self._initialized = True
 
     @property
     def headers(self):
-        return MutableHeaders(raw=self._response.raw_headers)  # type: ignore
+        return MutableHeaders(raw=self._response.raw_headers)
 
     @property
     def body(self):
-        return self._response._body  # type: ignore
+        return self._response._body
 
     @property
     def content_type(self):
@@ -959,11 +959,11 @@ class NexiosResponse:
         return self.file(path, filename, content_disposition_type="attachment")
 
     def set_permanent_cookie(
-        self, key: str, value: str, **kwargs: Dict[str, Any]
+        self, key: str, value: str, **kwargs: Any
     ) -> "NexiosResponse":
         """Set a permanent cookie with a far-future expiration date."""
         expires = datetime.now(timezone.utc) + timedelta(days=365 * 10)
-        self.set_cookie(key, value, expires=expires, **kwargs)  # type: ignore
+        self.set_cookie(key, value, expires=expires, **kwargs)
         return self
 
     def empty(self, status_code: int = 200, headers: Dict[str, Any] = {}):
@@ -1008,7 +1008,7 @@ class NexiosResponse:
 
     def stream(
         self,
-        iterator: Generator[Union[str, bytes], Any, Any],
+        iterator: AsyncIterator[Union[str, bytes]],
         content_type: str = "text/plain",
         status_code: int = 200,
         headers: Dict[str, Any] = {},
@@ -1016,7 +1016,7 @@ class NexiosResponse:
         """Send streaming response."""
 
         new_response = StreamingResponse(
-            content=iterator,  # type: ignore
+            content=iterator,
             status_code=status_code or self._status_code,
             headers=headers,
             content_type=content_type,
@@ -1243,10 +1243,10 @@ class NexiosResponse:
     def set_headers(self, headers: Dict[str, str], overide_all: bool = False):
         if overide_all:
             self._response.set_headers(headers)
-            self._response._headers = [  # type: ignore
+            self._response._headers = [
                 (bytes(str(k), "utf-8"), bytes(str(v), "utf-8"))
                 for k, v in self.headers.items()
-            ]  # type: ignore
+            ]
             return
         """Set multiple headers at once."""
         for key, value in headers.items():
@@ -1256,7 +1256,7 @@ class NexiosResponse:
     def set_body(self, new_body: Any):
         if not self._response:
             return self.resp(new_body)
-        self._response._body = new_body  # type: ignore
+        self._response._body = new_body
 
     def get_response(self) -> BaseResponse:
         """Make the response ASGI-compatible."""
@@ -1292,30 +1292,45 @@ class NexiosResponse:
         objects: List[Any],
         strategy: Union[str, BasePaginationStrategy] = "page_number",
         data_handler: type[SyncListDataHandler] = SyncListDataHandler,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> "NexiosResponse":
         """
         Paginate the response data.
 
         Args:
             objects: List of items to paginate
-            total_items: Total number of items (optional, defaults to len(items))
             strategy: Either a string ('page_number', 'limit_offset', 'cursor') or
                     a custom pagination strategy instance
-            **kwargs: Additional arguments for the pagination strategy
+            **kwargs: Additional arguments for the pagination strategy or parameter overrides
         """
         if isinstance(strategy, str):
+            # Define known configuration keys for strategies to separate them from parameter overrides
+            config_keys = {
+                "page_param",
+                "page_size_param",
+                "default_page",
+                "default_page_size",
+                "max_page_size",
+                "limit_param",
+                "offset_param",
+                "default_limit",
+                "max_limit",
+                "cursor_param",
+                "sort_field",
+            }
+            strategy_kwargs = {k: v for k, v in kwargs.items() if k in config_keys}
+
             if strategy == "page_number":
-                strategy = PageNumberPagination(**kwargs)  # type: ignore
+                strategy = PageNumberPagination(**strategy_kwargs)
             elif strategy == "limit_offset":
-                strategy = LimitOffsetPagination(**kwargs)  # type: ignore
+                strategy = LimitOffsetPagination(**strategy_kwargs)
             elif strategy == "cursor":
-                strategy = CursorPagination(**kwargs)  # type: ignore
+                strategy = CursorPagination(**strategy_kwargs)
             else:
                 raise ValueError(f"Unknown pagination strategy: {strategy}")
 
         _data_handler = data_handler(objects)
-        request = self._request  # You'll need to store the request in the response
+        request = self._request
 
         paginator = SyncPaginator(
             data_handler=_data_handler,
@@ -1324,7 +1339,7 @@ class NexiosResponse:
             request_params=dict(request.query_params),
         )
 
-        result = paginator.paginate()
+        result = paginator.paginate(**kwargs)
         return self.json(result)
 
     async def apaginate(
@@ -1332,30 +1347,45 @@ class NexiosResponse:
         objects: List[Any],
         strategy: Union[str, BasePaginationStrategy] = "page_number",
         data_handler: type[AsyncListDataHandler] = AsyncListDataHandler,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> "NexiosResponse":
         """
-        Paginate the response data.
+        Paginate the response data asynchronously.
 
         Args:
             objects: List of items to paginate
-            total_items: Total number of items (optional, defaults to len(items))
             strategy: Either a string ('page_number', 'limit_offset', 'cursor') or
                     a custom pagination strategy instance
-            **kwargs: Additional arguments for the pagination strategy
+            **kwargs: Additional arguments for the pagination strategy or parameter overrides
         """
         if isinstance(strategy, str):
+            # Define known configuration keys for strategies to separate them from parameter overrides
+            config_keys = {
+                "page_param",
+                "page_size_param",
+                "default_page",
+                "default_page_size",
+                "max_page_size",
+                "limit_param",
+                "offset_param",
+                "default_limit",
+                "max_limit",
+                "cursor_param",
+                "sort_field",
+            }
+            strategy_kwargs = {k: v for k, v in kwargs.items() if k in config_keys}
+
             if strategy == "page_number":
-                strategy = PageNumberPagination(**kwargs)  # type: ignore
+                strategy = PageNumberPagination(**strategy_kwargs)
             elif strategy == "limit_offset":
-                strategy = LimitOffsetPagination(**kwargs)  # type: ignore
+                strategy = LimitOffsetPagination(**strategy_kwargs)
             elif strategy == "cursor":
-                strategy = CursorPagination(**kwargs)  # type: ignore
+                strategy = CursorPagination(**strategy_kwargs)
             else:
                 raise ValueError(f"Unknown pagination strategy: {strategy}")
 
         _data_handler = data_handler(objects)
-        request = self._request  # You'll need to store the request in the response
+        request = self._request
 
         paginator = AsyncPaginator(
             data_handler=_data_handler,
@@ -1364,11 +1394,12 @@ class NexiosResponse:
             request_params=dict(request.query_params),
         )
 
-        result = await paginator.paginate()
+        result = await paginator.paginate(**kwargs)
         return self.json(result)
 
-    async def __call__(self, *args: Any, **kwargs: Any) -> "NexiosResponse":
-        return await self._response(*args, **kwargs)  # type: ignore
+    async def __call__(self, *args: Any, **kwargs: Any):
+
+        return await self._response(*args, **kwargs)
 
     def __str__(self):
         return f"Response [{self.status_code} {self.body}]"
