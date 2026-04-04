@@ -155,7 +155,7 @@ class NexiosApp:
         self.state: Dict[str, Any] = {}
         if not self.config:
             return
-        openapi_config: Dict[str, Any] = self.config.to_dict().get("openapi", {})  # type: ignore
+        openapi_config: Dict[str, Any] = self.config.to_dict().get("openapi", {})
 
         # Handle license - ensure it's a License model instance
         license_data = openapi_config.get("license")
@@ -222,7 +222,7 @@ class NexiosApp:
         self.setup()
 
     def setup(self):
-        @self.get(self.openapi.openapi_url, exclude_from_schema=True)  # type: ignore
+        @self.get(self.openapi.openapi_url, exclude_from_schema=True)
         async def serve_openapi(request: "Request", response: "Response"):
             root_path = request.scope.get("root_path", "")
 
@@ -230,14 +230,14 @@ class NexiosApp:
                 self.openapi.get_openapi(self.router, current_prefix=root_path)
             )
 
-        @self.get(self.openapi.swagger_url, exclude_from_schema=True)  # type: ignore
+        @self.get(self.openapi.swagger_url, exclude_from_schema=True)
         async def swagger_ui(request: "Request", response: "Response"):
             # Get the current mount path from the request scope
             root_path = request.scope.get("root_path", "")
             openapi_url = root_path + self.openapi.openapi_url
             return response.html(self.openapi._generate_swagger_ui(openapi_url))
 
-        @self.get(self.openapi.redoc_url, exclude_from_schema=True)  # type: ignore
+        @self.get(self.openapi.redoc_url, exclude_from_schema=True)
         async def redoc_ui(request: "Request", response: "Response"):
             # Get the current mount path from the request scope
             root_path = request.scope.get("root_path", "")
@@ -389,7 +389,7 @@ class NexiosApp:
 
         except Exception as e:
             logger.debug(f"Error handling lifespan event: {e}")
-            if message["type"].startswith("lifespan.startup"):  # type: ignore
+            if message["type"].startswith("lifespan.startup"):
                 await send({"type": "lifespan.startup.failed", "message": str(e)})
             else:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
@@ -429,7 +429,7 @@ class NexiosApp:
 
         self.http_middleware.insert(
             0,
-            Middleware(ASGIRequestResponseBridge, dispatch=middleware),  # type: ignore
+            Middleware(ASGIRequestResponseBridge, dispatch=middleware),
         )
 
     def add_ws_route(
@@ -512,9 +512,7 @@ class NexiosApp:
                 )
             ]
             + self.http_middleware
-            + [
-                Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)  # type: ignore
-            ]
+            + [Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)]
         )
         for cls, args, kwargs in reversed(middleware):
             app = cls(app, *args, **kwargs)
