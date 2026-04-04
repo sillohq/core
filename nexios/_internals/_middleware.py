@@ -1,9 +1,8 @@
 from __future__ import annotations
-from typing import Callable
 
 import typing
 from collections.abc import Iterator
-from typing import Any, AsyncIterable, Mapping, MutableMapping
+from typing import Any, AsyncIterable, Callable, Mapping, MutableMapping
 
 import anyio
 

@@ -1,6 +1,6 @@
-from typing import Any
 import re
 import typing
+from typing import Any
 
 from nexios._internals._middleware import DefineMiddleware as Middleware
 from nexios._internals._route_builder import RouteBuilder
