@@ -281,7 +281,7 @@ class SecurityMiddleware(BaseMiddleware):
                     f"; trusted-types {' '.join(self.trusted_types_policies)}"
                 )
             if "Content-Security-Policy" in headers:
-                headers["Content-Security-Policy"] += f"; {policy_value}"  # type: ignore
+                headers["Content-Security-Policy"] += f"; {policy_value}"
             else:
                 headers["Content-Security-Policy"] = policy_value
 
@@ -290,5 +290,5 @@ class SecurityMiddleware(BaseMiddleware):
             headers.pop("Server", None)
         elif self.server_header:
             headers["Server"] = self.server_header
-        response.set_headers(headers)  # type: ignore
+        response.set_headers(headers)
         return response

@@ -940,14 +940,14 @@ class ServerErrorMiddleware(BaseMiddleware):
         return locals_html
 
     def generate_frame_html(self, frame: inspect.FrameInfo, is_collapsed: bool) -> str:
-        code_context: str = "".join(  # type: ignore
+        code_context: str = "".join(
             self.format_line(
                 index,
                 line,
                 frame.lineno,
-                frame.index,  # type: ignore
+                frame.index,
             )
-            for index, line in enumerate(frame.code_context or [])  # type: ignore
+            for index, line in enumerate(frame.code_context or [])
         )
 
         # Format local variables if available

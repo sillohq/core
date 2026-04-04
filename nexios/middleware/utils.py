@@ -6,7 +6,7 @@ from nexios.http import Request, Response
 from nexios.types import HandlerType
 
 
-def use_for_route(route: str) -> None:
+def use_for_route(route: str) -> Callable[[HandlerType], HandlerType]:
     if route.endswith("/*"):
         route = route[:-2]
         route = f"^{route}/.*$"
@@ -21,7 +21,7 @@ def use_for_route(route: str) -> None:
             call_next: Callable[..., Awaitable[Response]],
         ) -> Any:
             if re.match(route, request.url.path):
-                return await func(request, response, call_next)  # type: ignore
+                return await func(request, response, call_next)
             else:
                 return await call_next()
 
@@ -33,13 +33,13 @@ def use_for_route(route: str) -> None:
             call_next: Callable[..., Awaitable[Response]],
         ) -> Any:
             if re.match(route, request.url.path):
-                return await func(self, request, response, call_next)  # type: ignore
+                return await func(self, request, response, call_next)
             else:
                 return await call_next()
 
-        if func.__name__ == "__call__":
+        if func.__name__ == "__call__":  # ty: ignore
             return wrapper_klass
         else:
             return wrapper_func
 
-    return decorator  # type: ignore
+    return decorator

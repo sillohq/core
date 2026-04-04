@@ -22,7 +22,7 @@ class QueryParams(ImmutableMultiDict[str, str]):
         self,
         *args: typing.Union[
             "ImmutableMultiDict[str,typing.Any]",
-            typing.Mapping[str, typing.Any],
+            typing.Mapping[str, str],
             typing.List[typing.Tuple[typing.Any, typing.Any]],
             str,
             bytes,
@@ -40,7 +40,7 @@ class QueryParams(ImmutableMultiDict[str, str]):
                 parse_qsl(value.decode("latin-1"), keep_blank_values=True), **kwargs
             )
         else:
-            super().__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)  # ty: ignore
         self._list = [(str(k), str(v)) for k, v in self._list]
         self._dict = {str(k): str(v) for k, v in self._dict.items()}
 
