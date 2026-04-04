@@ -1,8 +1,9 @@
 from __future__ import annotations
-from nexios.http.response import StreamingResponse
 
 import typing
 from typing import Any, Callable
+
+from nexios.http.response import StreamingResponse
 
 from .http.request import Request
 from .http.response import NexiosResponse as Response
