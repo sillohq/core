@@ -23,7 +23,7 @@ from .models import (
 
 
 class APIDocumentation:
-    def __init__(  # type: ignore
+    def __init__(
         self,
         config: Optional[OpenAPIConfig] = None,
         swagger_url: str = "/docs",
@@ -418,18 +418,3 @@ class APIDocumentation:
             parameters.extend(route.parameters)
 
         return parameters
-
-    def _add_response_schemas(self, responses: Any) -> None:
-        """
-        Add response model schemas to components.
-        """
-        if isinstance(responses, dict):
-            for model in responses.values():
-                if isinstance(model, type) and issubclass(model, BaseModel):
-                    self.add_schema(model)
-                elif hasattr(model, "__origin__") and model.__origin__ is list:
-                    item_model = model.__args__[0]
-                    if issubclass(item_model, BaseModel):
-                        self.add_schema(item_model)
-        elif isinstance(responses, type) and issubclass(responses, BaseModel):
-            self.add_schema(responses)

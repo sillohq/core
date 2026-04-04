@@ -67,7 +67,7 @@ class OpenAPIConfig:
         if not self.openapi_spec.components.schemas:
             self.openapi_spec.components.schemas = {}
 
-        if isinstance(schema, type) and issubclass(schema, BaseModel):  # type: ignore
+        if isinstance(schema, type) and issubclass(schema, BaseModel):
             self.openapi_spec.components.schemas[name] = Schema(
                 **schema.model_json_schema()
             )

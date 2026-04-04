@@ -245,5 +245,5 @@ class RouteParam:
         """Return the value for the given key, or a default value if the key does not exist."""
         return self.data.get(key, default)
 
-    def __dict__(self) -> Dict[str, Any]:  # type: ignore
+    def __dict__(self) -> Dict[str, Any]:
         return self.data

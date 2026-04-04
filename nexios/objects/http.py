@@ -40,7 +40,7 @@ class QueryParams(ImmutableMultiDict[str, str]):
                 parse_qsl(value.decode("latin-1"), keep_blank_values=True), **kwargs
             )
         else:
-            super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+            super().__init__(*args, **kwargs)
         self._list = [(str(k), str(v)) for k, v in self._list]
         self._dict = {str(k): str(v) for k, v in self._dict.items()}
 
@@ -71,7 +71,7 @@ class Headers(typing.Mapping[str, str]):
         if headers is not None:
             assert raw is None, 'Cannot set both "headers" and "raw".'
             assert scope is None, 'Cannot set both "headers" and "scope".'
-            if isinstance(headers, typing.Mapping):  # type: ignore
+            if isinstance(headers, typing.Mapping):
                 self._list = [
                     (key.lower().encode("latin-1"), value.encode("latin-1"))
                     for key, value in headers.items()
@@ -101,13 +101,13 @@ class Headers(typing.Mapping[str, str]):
     def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
         return list(self._list)
 
-    def keys(self) -> typing.List[str]:  # type: ignore[override]
+    def keys(self):
         return [key.decode("latin-1") for key, _ in self._list]
 
-    def values(self) -> typing.List[str]:  # type: ignore[override]
+    def values(self):
         return [value.decode("latin-1") for _, value in self._list]
 
-    def items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore
+    def items(self):
         return [
             (key.decode("latin-1"), value.decode("latin-1"))
             for key, value in self._list
@@ -195,13 +195,13 @@ class MutableHeaders(Headers):
             del self._list[idx]
 
     def __ior__(self, other: typing.Mapping[str, str]) -> "MutableHeaders":
-        if not isinstance(other, typing.Mapping):  # type: ignore
+        if not isinstance(other, typing.Mapping):
             raise TypeError(f"Expected a mapping but got {other.__class__.__name__}")
         self.update(other)
         return self
 
     def __or__(self, other: typing.Mapping[str, str]) -> "MutableHeaders":
-        if not isinstance(other, typing.Mapping):  # type: ignore
+        if not isinstance(other, typing.Mapping):
             raise TypeError(f"Expected a mapping but got {other.__class__.__name__}")
         new = self.mutablecopy()
         new.update(other)
@@ -340,9 +340,7 @@ class UploadedFile:
         }
 
 
-class FormData(
-    MultiDict[str, typing.Union[UploadedFile, str, Sequence[Any]]]  # type: ignore
-):  # type: ignore
+class FormData(MultiDict[str, typing.Union[UploadedFile, str, Sequence[Any]]]):
     def __init__(
         self,
         *args: typing.Union[
