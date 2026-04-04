@@ -1,9 +1,9 @@
 from __future__ import annotations
+from typing import Callable
 
-import sys
 import typing
 from collections.abc import Iterator
-from typing import Any, AsyncIterable, Mapping, MutableMapping, Protocol
+from typing import Any, AsyncIterable, Mapping, MutableMapping
 
 import anyio
 
@@ -19,34 +19,24 @@ from nexios.types import ASGIApp, Message, Receive, Scope, Send
 from nexios.utils.async_helpers import collapse_excgroups
 from nexios.websockets import WebSocket
 
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import ParamSpec
-else:  # pragma: no cover
-    from typing_extensions import ParamSpec
-
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[
     [Request, Response, typing.Callable[[], typing.Awaitable[Response]]],
     typing.Awaitable[Response],
 ]
 T = typing.TypeVar("T")
-P = ParamSpec("P")
 
 AsyncContentStream = AsyncIterable[str | bytes | memoryview | MutableMapping[str, Any]]
 
-
-class _MiddlewareFactory(Protocol[P]):
-    def __call__(
-        self, app: ASGIApp, /, *args: P.args, **kwargs: P.kwargs
-    ) -> ASGIApp: ...  # pragma: no cover
+MiddlewareFactory = Callable[..., ASGIApp]
 
 
 class DefineMiddleware:
     def __init__(
         self,
-        cls: _MiddlewareFactory[P],
-        *args: P.args,
-        **kwargs: P.kwargs,
+        cls: MiddlewareFactory,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         self.cls = cls
         self.args = args

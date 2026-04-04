@@ -1,3 +1,4 @@
+from typing import Any
 import re
 import typing
 
@@ -52,7 +53,9 @@ class Group(BaseRoute):
     def routes(self) -> list[BaseRoute]:
         return getattr(self._base_app, "routes", [])
 
-    def match(self, scope: Scope) -> typing.Tuple[typing.Any, typing.Any, typing.Any]:
+    def match(
+        self, scope: Scope
+    ) -> typing.Tuple[MatchStatus, dict[str, Any], dict[str, Any]]:
         """
         Match a path against this mounted route's pattern.
         """
@@ -70,8 +73,8 @@ class Group(BaseRoute):
                 if value is not None:
                     matched_params[key] = self.route_info.convertor[key].convert(value)
 
-            return MatchStatus.FULL, matched_params
-        return MatchStatus.NONE, {}
+            return MatchStatus.FULL, matched_params, {}
+        return MatchStatus.NONE, {}, {}
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         original_path = scope["path"]
@@ -90,13 +93,13 @@ class Group(BaseRoute):
                 scope["root_path"] = scope["root_path"][: -len(matched_path)]
             raise
 
-    def url_path_for(self, _name: str, **path_params: typing.Any) -> URLPath:
+    def url_path_for(self, name: str, **path_params: typing.Any) -> URLPath:
         """
         Generate a URL path for the mounted route.
         """
-        if _name != self.name:
+        if name != self.name:
             raise ValueError(
-                f"Route name '{_name}' does not match the mounted route name '{self.name}'."
+                f"Route name '{name}' does not match the mounted route name '{self.name}'."
             )
 
         path = self.path.rstrip("/")

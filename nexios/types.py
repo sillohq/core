@@ -14,7 +14,7 @@ Message = typing.MutableMapping[str, typing.Any]
 
 Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[[Message], typing.Awaitable[None]]
-RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
+RequestResponseEndpoint = typing.Callable[[], typing.Awaitable[Response]]
 
 MiddlewareType = typing.Callable[
     [Request, Response, RequestResponseEndpoint], typing.Awaitable[Response]
