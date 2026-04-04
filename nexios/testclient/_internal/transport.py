@@ -317,15 +317,15 @@ class TestClientTransport(httpx.BaseTransport):
                 return {"type": "http.disconnect"}
 
             body = request.read()
-            if isinstance(cast(str, body), str):
+            if isinstance(body, str):
                 if self.check_asgi_conformance:
                     raise ASGISpecViolation(
                         "ASGI Spec violation: body must be a bytes string"
                     )
-                body_bytes: bytes = body.encode("utf-8")
+                body_bytes = body.encode("utf-8")
             elif body is None:
                 body_bytes = b""
-            elif isinstance(cast(str, body), GeneratorType):
+            elif isinstance(body, GeneratorType):
                 try:
                     chunk = body.send(None)
                     if isinstance(chunk, str):

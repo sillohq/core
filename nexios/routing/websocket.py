@@ -166,9 +166,7 @@ class WebsocketRoute(BaseRoute):
         if match:
             matched_params = match.groupdict()
             for key, value in matched_params.items():
-                matched_params[key] = self.route_info.convertor[  # type: ignore
-                    key
-                ].convert(value)
+                matched_params[key] = self.route_info.convertor[key].convert(value)
             return MatchStatus.FULL, matched_params
         return MatchStatus.NONE, {}
 

@@ -61,7 +61,7 @@ class BaseRoute(ABC):
         raise NotImplementedError("Subclasses must implement this method")
 
     @abstractmethod
-    def url_path_for(self, _name: str, **path_params: Dict[str, Any]) -> URLPath:
+    def url_path_for(self, name: str, **path_params: Dict[str, Any]) -> URLPath:
         raise NotImplementedError("Subclasses must implement this method")
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

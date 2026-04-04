@@ -161,7 +161,7 @@ class BaseSessionInterface:
     def has_expired(self) -> bool:
         """Returns True if the session has expired."""
         expiration_time = self.get_expiration_time()
-        if expiration_time and datetime.now(timezone.utc) > expiration_time:  # type: ignore
+        if expiration_time and datetime.now(timezone.utc) > expiration_time:
             return True
         return False
 

@@ -62,7 +62,7 @@ class FileSessionManager(BaseSessionInterface):
         """Check if the session is empty."""
         return len(self._session_cache.items()) == 0
 
-    async def save(self):  # type: ignore
+    async def save(self):
         """Save the session data to the file."""
         signed_session = self.get_session_key()
         self.session_key = signed_session
@@ -79,7 +79,7 @@ class FileSessionManager(BaseSessionInterface):
     def has_expired(self) -> bool:
         """Returns True if the session has expired."""
         expiration_time = self.get_expiration_time()
-        if expiration_time and datetime.now(timezone.utc) > expiration_time:  # type: ignore
+        if expiration_time and datetime.now(timezone.utc) > expiration_time:
             return True
         return False
 

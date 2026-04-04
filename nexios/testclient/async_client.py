@@ -1,4 +1,10 @@
 from __future__ import annotations
+from httpx._types import RequestExtensions
+from httpx import USE_CLIENT_DEFAULT
+from httpx._urls import URL
+from httpx._client import UseClientDefault
+from types import TracebackType
+from anyio.abc import TaskStatus
 
 import contextlib
 import math
@@ -50,7 +56,7 @@ class AsyncTestClient(httpx.AsyncClient):
         )
 
         if is_asgi3(app):
-            asgi_app = cast(ASGIApp, app)  # type: ignore
+            asgi_app = cast(ASGIApp, app)
         else:
             app2 = cast(ASGI2App, app)
             asgi_app = cast(ASGIApp, WrapASGI2(app2))
@@ -88,48 +94,24 @@ class AsyncTestClient(httpx.AsyncClient):
     async def request(
         self,
         method: str,
-        url: URLTypes,
+        url: URL | str,
         *,
         content: RequestContent | None = None,
         data: RequestData | None = None,
         files: RequestFiles | None = None,
-        json: Any = None,
+        json: Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
-        auth: (
-            AuthTypes | httpx._client.UseClientDefault
-        ) = httpx._client.USE_CLIENT_DEFAULT,
-        follow_redirects: bool | None = None,
-        timeout: (
-            TimeoutTypes | httpx._client.UseClientDefault
-        ) = httpx._client.USE_CLIENT_DEFAULT,
-        extensions: dict[str, Any] | None = None,
-        stream: bool = False,
+        auth: AuthTypes | UseClientDefault | None = USE_CLIENT_DEFAULT,
+        follow_redirects: bool | UseClientDefault = USE_CLIENT_DEFAULT,
+        timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
+        extensions: RequestExtensions | None = None,
     ) -> httpx.Response:
         url = self._merge_url(url)
-        redirect: bool | httpx._client.UseClientDefault = (
-            httpx._client.USE_CLIENT_DEFAULT
-        )
+        redirect: bool | UseClientDefault = USE_CLIENT_DEFAULT
         if follow_redirects is not None:
             redirect = follow_redirects
-
-        if stream:
-            return await self.stream(
-                method=method,
-                url=url,
-                content=content,
-                data=data,
-                files=files,
-                json=json,
-                params=params,
-                headers=headers,
-                cookies=cookies,
-                auth=auth,
-                timeout=timeout,
-                extensions=extensions,
-                follow_redirects=follow_redirects,
-            ).__aenter__()
 
         return await super().request(
             method,
@@ -218,12 +200,17 @@ class AsyncTestClient(httpx.AsyncClient):
         await self.wait_startup()
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
+    ) -> None:
         await self.wait_shutdown()
-        await self._tg.__aexit__(None, None, None)
+        await self._tg.__aexit__(exc_type, exc_value, traceback)
 
     async def _lifespan_runner(
-        self, *, task_status: anyio.abc.TaskStatus = anyio.TASK_STATUS_IGNORED
+        self, *, task_status: TaskStatus = anyio.TASK_STATUS_IGNORED
     ) -> None:
         task_status.started()
         await self.lifespan()

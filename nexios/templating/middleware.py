@@ -14,10 +14,8 @@ class TemplateContextMiddleware(BaseMiddleware):
 
     def __init__(
         self,
-        default_context: Optional[Dict[str, Any]] = None,
-        context_processor: Optional[
-            Callable[[Request], Awaitable[Dict[str, Any]]]
-        ] = None,
+        default_context: Dict[str, Any] | None = None,
+        context_processor: Callable[[Request], Awaitable[Dict[str, Any]]] | None = None,
     ):
         """Initialize middleware with context."""
         self.default_context = default_context or {}
@@ -27,7 +25,7 @@ class TemplateContextMiddleware(BaseMiddleware):
         self,
         request: Request,
         response: Response,
-        next: Callable[..., Awaitable[Any]],
+        call_next: Callable[..., Awaitable[Any]],
     ) -> Response:
         """Process request and inject context."""
         context = self.default_context.copy()
@@ -37,7 +35,7 @@ class TemplateContextMiddleware(BaseMiddleware):
                 request_context = self.context_processor(request)
             else:
                 request_context = await self.context_processor(request)
-            context.update(request_context)
+            context.update(request_context)  # ty :ignore[no-matching-overload]
 
         context.update(
             {
@@ -48,7 +46,7 @@ class TemplateContextMiddleware(BaseMiddleware):
         )
 
         request.state.template_context = context
-        return await next()
+        return await call_next()
 
 
 def template_context(

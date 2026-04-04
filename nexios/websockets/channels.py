@@ -118,7 +118,6 @@ class ChannelBox:
             channel (Channel): Instance of Channel class
             group_name (str): Group name
         """
-        channel_remove_status: typing.Any = None
         if channel in cls.CHANNEL_GROUPS.get(group_name, {}):
             try:
                 del cls.CHANNEL_GROUPS[group_name][channel]

@@ -35,9 +35,9 @@ class Group(BaseRoute):
         else:
             from .router import Router
 
-            self._base_app = Router(routes=routes)  # type: ignore
+            self._base_app = Router(routes=routes)
 
-        self.app = self._base_app  # type: ignore
+        self.app = self._base_app
         for cls, args, kwargs in reversed(middleware):
             self.app = cls(self.app, *args, **kwargs)
 

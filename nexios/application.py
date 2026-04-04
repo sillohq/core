@@ -54,7 +54,7 @@ logger = create_logger("nexios")
 lifespan_manager = Callable[["NexiosApp"], AsyncContextManager[bool]]
 
 
-class NexiosApp(object):
+class NexiosApp:
     def __init__(
         self,
         config: Annotated[
@@ -105,7 +105,7 @@ class NexiosApp(object):
                 """),
         ] = None,
         routes: Annotated[
-            List[Route],
+            List[Route] | None,
             Doc("""
                     A list of routes for the application. These routes define the URLs that the application will handle and the handlers that will be called when those URLs are accessed.
 
@@ -142,12 +142,12 @@ class NexiosApp(object):
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
         self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
         self.server_error_handler = server_error_handler
-        self._background_tasks = set()  # type: ignore
+        self._background_tasks = set()
 
         self.route_class = route_class
         self.app = Router(
             routes=routes, dependencies=self.dependencies, route_class=self.route_class
-        )  # type: ignore
+        )
         self.exceptions_handler = ExceptionMiddleware()
         self.router = self.app
         self.route = self.router.route

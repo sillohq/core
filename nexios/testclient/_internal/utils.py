@@ -21,7 +21,7 @@ class WrapASGI2:
     Provide an ASGI3 interface onto an ASGI2 app.
     """
 
-    def __init__(self, app: ASGI2App) -> None:
+    def __init__(self, app) -> None:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

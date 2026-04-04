@@ -65,18 +65,24 @@ def raise_sync_error():
     raise ValueError("Sync error")
 
 
-# Run Until First Complete Tests
 async def test_run_until_first_complete():
+    state = {"winner": None}
+
     async def slow():
         await asyncio.sleep(0.2)
-        return "slow"
+        state["winner"] = "slow"
 
     async def fast():
         await asyncio.sleep(0.1)
-        return "fast"
+        state["winner"] = "fast"
 
-    result = await run_until_first_complete(slow, fast)
-    assert result == "fast"
+    result = await run_until_first_complete(
+        (slow, {}),
+        (fast, {}),
+    )
+
+    assert result is None
+    assert state["winner"] == "fast"
 
 
 async def test_create_background_task():

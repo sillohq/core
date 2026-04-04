@@ -1,3 +1,7 @@
+import anyio
+import warnings
+from typing import cast
+from typing import Mapping
 import asyncio
 import functools
 from concurrent.futures import ThreadPoolExecutor
@@ -79,33 +83,20 @@ async def run_in_threadpool(func: Callable[..., T], *args: Any, **kwargs: Any) -
     return await loop.run_in_executor(get_threadpool(), func, *args)
 
 
-async def run_until_first_complete(
-    *args: Union[
-        Tuple[Callable[[], Coroutine[Any, Any, T]], dict[Any, Any]],
-        Callable[[], Coroutine[Any, Any, T]],
-    ],
-) -> T:
-    """Run multiple coroutines and return when the first one completes."""
-    tasks: List[asyncio.Task[Any]] = []
-    for item in args:
-        if callable(item):
-            task = asyncio.create_task(item())
-        else:
-            func, kwargs = item
-            task = asyncio.create_task(func(**kwargs))
-        tasks.append(task)
-    try:
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        # Get the result or raise exception from the first completed task
-        result = next(iter(done)).result()
-    finally:
-        # Cancel any pending tasks
-        for task in pending:
-            task.cancel()
-        if pending:
-            await asyncio.gather(*pending, return_exceptions=True)
+async def run_until_first_complete(*args: tuple[Callable, dict]) -> None:  # type: ignore[type-arg]
+    warnings.warn(
+        "run_until_first_complete is deprecated and will be removed in a future version.",
+        DeprecationWarning,
+    )
 
-    return result
+    async with anyio.create_task_group() as task_group:
+
+        async def run(func: Callable[[], Coroutine]) -> None:  # type: ignore[type-arg]
+            await func()
+            task_group.cancel_scope.cancel()
+
+        for func, kwargs in args:
+            task_group.start_soon(run, functools.partial(func, **kwargs))
 
 
 def create_background_task(

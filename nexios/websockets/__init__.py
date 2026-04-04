@@ -1,6 +1,6 @@
 import typing
 
-from .base import WebSocket, WebSocketDisconnect  # type: ignore
+from .base import WebSocket, WebSocketDisconnect
 from .channels import Channel, ChannelBox
 from .consumers import WebSocketConsumer
 from .history import BaseHistoryManager, InMemoryHistoryManager, NoOpHistoryManager

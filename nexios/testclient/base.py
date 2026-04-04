@@ -1,7 +1,9 @@
-#!/usr/bin/env python
-# type: ignore
 from __future__ import annotations
-
+from anyio.abc import BlockingPortal
+from httpx._types import RequestExtensions
+from httpx._client import UseClientDefault
+from types import TracebackType
+from anyio.abc import TaskStatus
 import contextlib
 import math
 from collections.abc import Generator, MutableMapping, Sequence
@@ -63,7 +65,7 @@ class TestClient(httpx.Client):
 
     __test__ = False
     task: Future[None]
-    portal: anyio.abc.BlockingPortal | None = None
+    portal: BlockingPortal | None = None
 
     def __init__(
         self,
@@ -84,8 +86,8 @@ class TestClient(httpx.Client):
         if is_asgi3(app):
             asgi_app = app
         else:
-            app = cast(ASGI2App, app)  # type: ignore[assignment]
-            asgi_app = WrapASGI2(app)  # type: ignore[arg-type]
+            asgi2_app = cast(ASGI2App, app)
+            asgi_app = WrapASGI2(asgi2_app)
         self.app = asgi_app
         self.app_state: dict[str, Any] = {}
         transport = TestClientTransport(
@@ -98,7 +100,9 @@ class TestClient(httpx.Client):
         )
         if headers is None:
             headers = {}
-        headers.setdefault("user-agent", "testclient")
+        headers.setdefault(  # ty :ignore[unresolved-attribute]
+            "user-agent", "testclient"
+        )
         super().__init__(
             base_url=base_url,
             headers=headers,
@@ -108,7 +112,7 @@ class TestClient(httpx.Client):
         )
 
     @contextlib.contextmanager
-    def _portal_factory(self) -> Generator[anyio.abc.BlockingPortal, None, None]:
+    def _portal_factory(self) -> Generator[BlockingPortal, None, None]:
         """
         Context manager that creates a blocking portal for handling async tasks.
 
@@ -131,18 +135,18 @@ class TestClient(httpx.Client):
         content: RequestContent | None = None,
         data: RequestData | None = None,
         files: RequestFiles | None = None,
-        json: Any = None,
+        json: Any | None = None,
         params: QueryParamTypes | None = None,
         headers: HeaderTypes | None = None,
         cookies: CookieTypes | None = None,
         auth: (
-            AuthTypes | httpx._client.UseClientDefault
+            AuthTypes | httpx._client.UseClientDefault | None
         ) = httpx._client.USE_CLIENT_DEFAULT,
-        follow_redirects: bool | None = None,
+        follow_redirects: bool | UseClientDefault = UseClientDefault,
         timeout: (
-            TimeoutTypes | httpx._client.UseClientDefault
+            TimeoutTypes | httpx._client.UseClientDefault | None
         ) = httpx._client.USE_CLIENT_DEFAULT,
-        extensions: dict[str, Any] | None = None,
+        extensions: RequestExtensions | None = None,
         stream: bool = False,
     ) -> httpx.Response:
         """
@@ -210,8 +214,8 @@ class TestClient(httpx.Client):
 
     def _process_request(
         self, method: str, url: URLTypes, **kwargs: Any
-    ) -> httpx.Request:
-        """
+    ) -> httpx.Response:
+        """*args: Any
         Processes the request.
 
         Args:
@@ -223,63 +227,63 @@ class TestClient(httpx.Client):
             httpx.Request: The HTTP request.
         """
         if not kwargs:
-            kwargs = RequestInputsDefaultValues  # type: ignore
+            kwargs = RequestInputsDefaultValues
         else:
             remaining_kwargs = {
                 k: v for k, v in RequestInputsDefaultValues.items() if k not in kwargs
             }
-            kwargs.update(remaining_kwargs)  # type: ignore
+            kwargs.update(remaining_kwargs)
 
-        return self.request(method=method, url=url, **kwargs)  # type: ignore
+        return self.request(method=method, url=url, **kwargs)  # ty: ignore[invalid-argument-type]
 
     def get(
         self,
         url: URLTypes,
         **kwargs: Any,
     ) -> httpx.Response:
-        return self._process_request(method="GET", url=url, **kwargs)  # type: ignore
+        return self._process_request(method="GET", url=url, **kwargs)
 
     def head(
         self,
         url: URLTypes,
         **kwargs: Any,
     ) -> httpx.Response:
-        return self._process_request(method="HEAD", url=url, **kwargs)  # type: ignore
+        return self._process_request(method="HEAD", url=url, **kwargs)
 
     def post(
         self,
         url: URLTypes,
         **kwargs: Any,
     ) -> httpx.Response:
-        return self._process_request(method="POST", url=url, **kwargs)  # type: ignore
+        return self._process_request(method="POST", url=url, **kwargs)
 
     def put(
         self,
         url: URLTypes,
         **kwargs: Any,
     ) -> httpx.Response:
-        return self._process_request(method="PUT", url=url, **kwargs)  # type: ignore
+        return self._process_request(method="PUT", url=url, **kwargs)
 
     def patch(
         self,
         url: URLTypes,
         **kwargs: Any,
     ) -> httpx.Response:
-        return self._process_request(method="PATCH", url=url, **kwargs)  # type: ignore
+        return self._process_request(method="PATCH", url=url, **kwargs)
 
     def delete(
         self,
         url: URLTypes,
         **kwargs: Any,
     ) -> httpx.Response:
-        return self._process_request(method="DELETE", url=url, **kwargs)  # type: ignore
+        return self._process_request(method="DELETE", url=url, **kwargs)
 
     def options(
         self,
         url: URLTypes,
         **kwargs: Any,
     ) -> httpx.Response:
-        return self._process_request(method="OPTIONS", url=url, **kwargs)  # type: ignore
+        return self._process_request(method="OPTIONS", url=url, **kwargs)
 
     def websocket_connect(
         self,
@@ -392,7 +396,12 @@ class TestClient(httpx.Client):
         await self.wait_startup()
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_value: BaseException | None = None,
+        traceback: TracebackType | None = None,
+    ) -> None:
         """
         Exits the context manager.
         """
@@ -406,7 +415,7 @@ class TestClient(httpx.Client):
         await self._tg.__aexit__(None, None, None)
 
     async def _lifespan_runner(
-        self, *, task_status: anyio.abc.TaskStatus = anyio.TASK_STATUS_IGNORED
+        self, *, task_status: TaskStatus = anyio.TASK_STATUS_IGNORED
     ) -> None:
         """Helper task running the ASGI lifespan inside async context."""
         task_status.started()

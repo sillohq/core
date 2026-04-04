@@ -1,4 +1,5 @@
 from __future__ import annotations
+from anyio.abc import TaskGroup
 
 import contextlib
 import json
@@ -45,7 +46,7 @@ class WebSocketTestSession:
         self,
         app: ASGI3App,
         scope: Scope,
-        portal_factory: PortalFactoryType,
+        portal_factory,
     ) -> None:
         """
         Initialize the WebSocketTestSession.
@@ -120,7 +121,7 @@ class WebSocketTestSession:
         Run the WebSocket session in a sub-thread.
         """
 
-        async def run_app(tg: anyio.abc.TaskGroup) -> None:
+        async def run_app(tg: TaskGroup) -> None:
             try:
                 await self.app(self.scope, self._asgi_receive, self._asgi_send)
             except anyio.get_cancelled_exc_class():
