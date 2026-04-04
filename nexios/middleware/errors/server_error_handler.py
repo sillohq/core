@@ -1,3 +1,4 @@
+from typing import cast
 import datetime
 import html
 import inspect
@@ -862,8 +863,8 @@ class ServerErrorMiddleware(BaseMiddleware):
         self,
         request: Request,
         response: Response,
-        next_middleware: typing.Callable[[], typing.Awaitable[Response]],
-    ) -> typing.Any:
+        call_next: typing.Callable[[], typing.Awaitable[Response]],
+    ):
         # Store the current request for error context
         self.current_request = request
         # Get debug mode from config
@@ -872,7 +873,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         except Exception:  # pragma: no cover
             self.debug = True
         try:
-            return await next_middleware()
+            return await call_next()
         except Exception as exc:
             if self.handler:
                 response = await self.handler(request, response, exc)
@@ -903,7 +904,11 @@ class ServerErrorMiddleware(BaseMiddleware):
         return response.text(content, status_code=500)
 
     def format_line(
-        self, index: int, line: str, frame_lineno: int, frame_index: int
+        self,
+        index: int,
+        line: str,
+        frame_lineno: int,
+        frame_index: int,
     ) -> str:
         values: typing.Dict[str, typing.Any] = {
             # HTML escape - line could contain < or >
@@ -945,7 +950,7 @@ class ServerErrorMiddleware(BaseMiddleware):
                 index,
                 line,
                 frame.lineno,
-                frame.index,
+                cast(int, frame.index),
             )
             for index, line in enumerate(frame.code_context or [])
         )

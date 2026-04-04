@@ -4,7 +4,7 @@ import typing
 import warnings
 from typing import Any, Dict, Optional, Union
 
-from itsdangerous import BadSignature, URLSafeSerializer  # type: ignore
+from itsdangerous import BadSignature, URLSafeSerializer
 
 from nexios.config import get_config
 from nexios.config.base import MakeConfig
@@ -128,7 +128,7 @@ class CSRFMiddleware(BaseMiddleware):
                         "Secret key is required for CSRF protection"
                     )
                     self.secret = app_config.secret_key
-                    self.serializer = URLSafeSerializer(self.secret, "csrftoken")  # type: ignore
+                    self.serializer = URLSafeSerializer(self.secret, "csrftoken")
                     self.required_urls = app_config.csrf_required_urls or ["*"]
                     self.exempt_urls = app_config.csrf_exempt_urls
                     self.sensitive_cookies = app_config.csrf_sensitive_cookies
@@ -156,7 +156,7 @@ class CSRFMiddleware(BaseMiddleware):
                 app_config = get_config()
                 self.secret = app_config.secret_key
                 if self.secret:
-                    self.serializer = URLSafeSerializer(self.secret, "csrftoken")  # type: ignore
+                    self.serializer = URLSafeSerializer(self.secret, "csrftoken")
                 else:
                     self.use_csrf = False
             except RuntimeError:
@@ -246,15 +246,15 @@ class CSRFMiddleware(BaseMiddleware):
                 return True
         return False
 
-    def _generate_csrf_token(self) -> str:  # type: ignore
+    def _generate_csrf_token(self) -> str:
         """Generate a secure CSRF token."""
-        return self.serializer.dumps(secrets.token_urlsafe(32))  # type: ignore
+        return self.serializer.dumps(secrets.token_urlsafe(32))
 
     def _csrf_tokens_match(self, token1: str, token2: str) -> bool:
         """Compare two CSRF tokens securely."""
         try:
-            decoded1 = self.serializer.loads(token1)  # type: ignore
-            decoded2 = self.serializer.loads(token2)  # type: ignore
-            return secrets.compare_digest(decoded1, decoded2)  # type: ignore
+            decoded1 = self.serializer.loads(token1)
+            decoded2 = self.serializer.loads(token2)
+            return secrets.compare_digest(decoded1, decoded2)
         except BadSignature:
             return False

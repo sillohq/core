@@ -207,7 +207,7 @@ class CORSMiddleware(BaseMiddleware):
                 status_code=self.custom_error_status,
             )
 
-        headers["Access-Control-Allow-Origin"] = origin  # type: ignore
+        headers["Access-Control-Allow-Origin"] = origin
 
         if not self.is_allowed_method(requested_method):
             if self.debug:
@@ -230,7 +230,7 @@ class CORSMiddleware(BaseMiddleware):
             allowed_requested_headers = []
             for header in requested_header_list:
                 # If allow_headers is "*", allow any header (except blacklisted)
-                if "*" in self.config.allow_headers:
+                if "*" in self.config.allow_headers:  # ty: ignore
                     if header in self.blacklist_headers:
                         if self.debug:
                             logger.error(
