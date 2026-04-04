@@ -342,7 +342,7 @@ class Router(BaseRouter):
         exclude_from_schema: bool = False,
         name: Optional[str] = None,
         dependencies: Optional[list[Depend]] = None,
-        route_class: Optional[Route] = Route,
+        route_class: Type[Route] = Route,
     ):
         self.prefix = prefix or ""
         self.prefix.rstrip("/")
@@ -1958,8 +1958,8 @@ class Router(BaseRouter):
             The route handler function (when used as decorator)
         """
 
-        def decorator(handler: HandlerType) -> HandlerType:
-            route = self.route_class(
+        def decorator(handler: HandlerType):
+            route_instance = self.route_class(
                 path=path,
                 handler=handler,
                 methods=methods,
@@ -1978,8 +1978,7 @@ class Router(BaseRouter):
                 exclude_from_schema=exclude_from_schema,
                 **kwargs,
             )
-            self.add_route(route)
-            return handler
+            self.add_route(route_instance)
 
         if handler is None:
             return decorator

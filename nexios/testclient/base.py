@@ -99,9 +99,7 @@ class TestClient(httpx.Client):
         )
         if headers is None:
             headers = {}
-        headers.setdefault(  # ty :ignore[unresolved-attribute]
-            "user-agent", "testclient"
-        )
+        headers.setdefault("user-agent", "testclient")
         super().__init__(
             base_url=base_url,
             headers=headers,
