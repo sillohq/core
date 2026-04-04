@@ -43,7 +43,7 @@ async def handle_404_error(
     request: Request,
     response: Response,
     exception: NotFoundException,
-) -> typing.Any:
+) -> Response:
     """
     Handles 404 errors dynamically, supporting JSON, HTML, and plain text responses.
 

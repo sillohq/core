@@ -18,7 +18,7 @@ def set_config(config: Optional[MakeConfig] = None, **kwargs: Any) -> None:
         _global_config = config
     if kwargs and _global_config:
         for key, value in kwargs.items():
-            _global_config._set_config(key, value)  # type: ignore
+            _global_config._set_config(key, value)
 
 
 def get_config() -> MakeConfig:

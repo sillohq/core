@@ -326,7 +326,7 @@ def get_app_dependencies(router: "Router") -> List[Depend]:
     dependencies: List[Depend] = []
     if hasattr(router, "sub_routers"):
         for child_router in router.sub_routers.values():
-            dependencies.extend(get_app_dependencies(child_router))  # type: ignore[arg-type]
+            dependencies.extend(get_app_dependencies(child_router))  # ty :ignore
     if hasattr(router, "dependencies"):
         dependencies.extend(router.dependencies)
     return dependencies

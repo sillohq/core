@@ -103,8 +103,8 @@ def shell(app_path: str, ipython: bool = False):
 def _try_start_ipython_shell(shell_vars: dict[str, Any]) -> bool:
     """Try to start IPython shell."""
     try:
-        import IPython  # type: ignore # noqa: F401
-        from IPython.terminal.embed import InteractiveShellEmbed  # type: ignore
+        import IPython  # noqa: F401
+        from IPython.terminal.embed import InteractiveShellEmbed
 
         _echo_info("Starting IPython shell...")
         _echo_info(
@@ -134,7 +134,7 @@ Examples:
   print(app.config)
 """
 
-        shell = InteractiveShellEmbed(banner1=banner)  # type: ignore
+        shell = InteractiveShellEmbed(banner1=banner)
         shell(local_ns=shell_vars)
         return True
 

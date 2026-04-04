@@ -65,7 +65,7 @@ class MakeConfig:
                 raise ValueError(f"Invalid value for '{key}': {value}")
 
         if isinstance(value, dict):
-            value = MakeConfig(value, immutable=self._immutable)  # type: ignore
+            value = MakeConfig(value, immutable=self._immutable)
 
         self._config[key] = value
 
@@ -108,7 +108,7 @@ class MakeConfig:
         """Convert configuration to a standard dictionary."""
 
         def recurse(config: "MakeConfig") -> Dict[str, Any]:
-            if isinstance(config, MakeConfig):  # type: ignore
+            if isinstance(config, MakeConfig):
                 return {k: recurse(v) for k, v in config._config.items()}
             return config
 

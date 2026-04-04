@@ -426,7 +426,7 @@ class Event(EventSerializationMixin):
                 # Resolve weak references
                 actual_listener: Optional[Callable[..., Any]] = None
                 if isinstance(listener, (ref, WeakMethod)):
-                    actual_listener = listener()  # type: ignore
+                    actual_listener = listener()
                     if actual_listener is None:
                         continue
                 else:

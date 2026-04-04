@@ -23,7 +23,7 @@ def _lookup_exception_handler(
 ):
     for cls in type(exc).__mro__:
         if cls in exc_handlers:
-            return exc_handlers[cls]
+            return exc_handlers[cls]  # ty: ignore[invalid-argument-type]
     return None
 
 
@@ -71,9 +71,7 @@ class ExceptionMiddleware:
         except Exception:
             self.debug = True
         self._status_handlers: typing.Dict[int, ExceptionHandlerType] = {}
-        self._exception_handlers: typing.Dict[
-            typing.Type[Exception] | int, ExceptionHandlerType
-        ] = {
+        self._exception_handlers = {
             HTTPException: self.http_exception,
             AuthenticationFailed: AuthErrorHandler,
             NotFoundException: handle_404_error,
@@ -88,7 +86,7 @@ class ExceptionMiddleware:
             self._status_handlers[exc_class_or_status_code] = handler
         else:
             assert issubclass(exc_class_or_status_code, Exception)
-            self._exception_handlers[exc_class_or_status_code] = handler
+            self._exception_handlers[exc_class_or_status_code] = handler  # ty: ignore[invalid-assignment]
 
     async def __call__(
         self,
@@ -102,13 +100,13 @@ class ExceptionMiddleware:
             request=request,
             response=response,
             call_next=call_next,
-            exception_handlers=self._exception_handlers,
+            exception_handlers=self._exception_handlers,  # ty :ignore
             status_handlers=self._status_handlers,
         )
 
     async def http_exception(
         self, request: Request, response: Response, exc: HTTPException
-    ) -> typing.Any:
+    ) -> Response:
         assert isinstance(exc, HTTPException)
         if exc.status_code in {204, 304}:
             return response.empty(status_code=exc.status_code, headers=exc.headers)

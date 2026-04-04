@@ -197,7 +197,7 @@ class EventNamespace:
         Returns:
             Event instance
         """
-        full_name = f"{self._namespace}{self._emitter._namespace_separator}{event_name}"  # type: ignore
+        full_name = f"{self._namespace}{self._emitter._namespace_separator}{event_name}"
         return self._emitter.event(full_name)
 
     def namespace(self, sub_namespace: str) -> "EventNamespace":
@@ -212,7 +212,7 @@ class EventNamespace:
         """
         return EventNamespace(
             self._emitter,
-            f"{self._namespace}{self._emitter._namespace_separator}{sub_namespace}",  # type: ignore
+            f"{self._namespace}{self._emitter._namespace_separator}{sub_namespace}",
         )
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
@@ -324,7 +324,7 @@ class AsyncEventEmitter(EventEmitter):
 
     def schedule_emit(
         self, event_name: str, *args: Any, **kwargs: Any
-    ) -> asyncio.Future:  # type: ignore
+    ) -> asyncio.Future:
         """
         Schedule an event to be triggered asynchronously.
 

@@ -22,13 +22,10 @@ class EventSerializationMixin(EventProtocol):
         )
 
     @classmethod
-    def from_json(cls: Type[_T], json_str: str) -> _T:  # type: ignore
+    def from_json(cls: Type[_T], json_str: str) -> _T:
         """Deserialize event configuration from JSON"""
-
-        # Note: cls needs to be the concrete class (Event)
         data = json.loads(json_str)
-        # Assuming __init__ takes name:
-        event = cls(data["name"])  # type: ignore
-        event.max_listeners = data["max_listeners"]  # type: ignore
-        event.enabled = data["enabled"]  # type: ignore
+        event = cls(data["name"])  # ty: ignore[too-many-positional-arguments]
+        event.max_listeners = data["max_listeners"]
+        event.enabled = data["enabled"]
         return event

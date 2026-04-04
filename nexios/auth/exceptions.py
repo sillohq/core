@@ -1,8 +1,7 @@
 from typing import Any, Dict, Optional
 
 from nexios.exceptions import HTTPException
-from nexios.http import Request
-from nexios.http.response import NexiosResponse
+from nexios.http import Request, Response
 
 HeadersType = Dict[str, Any]  # Alias for better readability
 
@@ -53,7 +52,7 @@ class PermissionDenied(AuthException):
 
 
 async def AuthErrorHandler(
-    req: Request, res: NexiosResponse, exc: HTTPException
+    request: Request, response: Response, exc: HTTPException
 ) -> Any:
     """
     Handle authentication exceptions and return a JSON response.
@@ -66,4 +65,4 @@ async def AuthErrorHandler(
     Returns:
         Response: JSON-formatted error response.
     """
-    return res.json(exc.detail, status_code=exc.status_code, headers=exc.headers)
+    return response.json(exc.detail, status_code=exc.status_code, headers=exc.headers)
