@@ -33,7 +33,7 @@ def create_jwt(
     secret = secret or get_config().secret_key
     if expires_in and not payload.get("exp"):
         payload["exp"] = datetime.now(timezone.utc) + expires_in
-    return jwt.encode(payload, secret, algorithm=algorithm)  # type: ignore
+    return jwt.encode(payload, secret, algorithm=algorithm)
 
 
 def decode_jwt(
@@ -52,18 +52,18 @@ def decode_jwt(
         raise ImportError("JWT support is not installed.")
     secret = secret or get_config().secret_key
     try:
-        return jwt.decode(token, secret, algorithms=algorithms)  # type: ignore
-    except jwt.ExpiredSignatureError:  # type: ignore
-        raise ValueError("Token has expired")  # type: ignore
-    except jwt.InvalidTokenError:  # type: ignore
+        return jwt.decode(token, secret, algorithms=algorithms)
+    except jwt.ExpiredSignatureError:
+        raise ValueError("Token has expired")
+    except jwt.InvalidTokenError:
         raise ValueError("Invalid token")
 
 
 class JWTAuthBackend(AuthenticationBackend):
-    def __init__(self, identifier: str = "id"):  # type: ignore
+    def __init__(self, identifier: str = "id"):
         self.identifier = identifier
 
-    async def authenticate(self, request: Request, response: Response) -> Any:  # type: ignore
+    async def authenticate(self, request: Request, response: Response) -> Any:
         app_config = get_config()
         self.secret = app_config.secret_key
         self.algorithms = app_config.jwt_algorithms or ["HS256"]

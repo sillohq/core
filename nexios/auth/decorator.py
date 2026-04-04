@@ -66,7 +66,7 @@ class auth(RouteDecorator):
                 return await handler(*args, **kwargs)
             return handler(*args, **kwargs)
 
-        wrapper._is_wrapped = True
+        wrapper._is_wrapped = True  # ty: ignore[unresolved-attribute]
         return wrapper
 
 
@@ -76,7 +76,7 @@ class has_permission(RouteDecorator):
         if isinstance(permissions, str):
             self.permissions = [permissions]
         elif permissions is None:
-            self.permissions = []  # Allow authentication with any scope
+            self.permissions = []
         else:
             self.permissions = permissions
 
@@ -111,5 +111,5 @@ class has_permission(RouteDecorator):
                 return await handler(*args, **kwargs)
             return handler(*args, **kwargs)
 
-        wrapper._is_wrapped = True
+        wrapper._is_wrapped = True  # ty: ignore[unresolved-attribute]
         return wrapper
