@@ -195,7 +195,7 @@ def get_application(
         version=version,
         description=description,
         lifespan=lifespan,
-        routes=routes,
+        routes=routes,  # ty :ignore[invalid-argument-type]
         dependencies=dependencies,
     )
 

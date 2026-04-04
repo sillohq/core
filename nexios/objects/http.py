@@ -251,7 +251,7 @@ class UploadedFile:
 
     def __init__(
         self,
-        file: typing.BinaryIO,
+        file: typing.Any,
         *,
         size: typing.Optional[int] = None,
         filename: typing.Optional[str] = None,

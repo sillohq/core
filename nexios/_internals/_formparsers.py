@@ -9,8 +9,8 @@ from tempfile import SpooledTemporaryFile
 from nexios.objects import FormData, Headers, UploadedFile
 
 if typing.TYPE_CHECKING:
-    import multipart  # type: ignore
-    from multipart.multipart import (  # type: ignore
+    import multipart
+    from multipart.multipart import (
         parse_options_header,
     )
 else:
@@ -195,7 +195,7 @@ class MultiPartParser:
                     self._current_part.field_name,
                     _user_safe_decode(
                         self._current_part.data,
-                        self._charset,  # type: ignore
+                        self._charset,
                     ),
                 )
             )
@@ -227,7 +227,7 @@ class MultiPartParser:
         try:
             self._current_part.field_name = _user_safe_decode(
                 options[b"name"],
-                self._charset,  # type: ignore
+                self._charset,
             )
         except KeyError:
             raise MultiPartException(
@@ -241,12 +241,12 @@ class MultiPartParser:
                 )
             filename = _user_safe_decode(
                 options[b"filename"],
-                self._charset,  # type: ignore
-            )  # type: ignore
+                self._charset,
+            )
             tempfile = SpooledTemporaryFile(max_size=self.max_file_size)
             self._files_to_close_on_error.append(tempfile)
             self._current_part.file = UploadedFile(
-                file=tempfile,  # type: ignore[arg-type]
+                file=tempfile,
                 size=0,
                 filename=filename,
                 headers=Headers(raw=self._current_part.item_headers),
@@ -288,11 +288,11 @@ class MultiPartParser:
             "on_end": self.on_end,
         }
 
-        parser = multipart.MultipartParser(boundary, callbacks)  # type: ignore
+        parser = multipart.MultipartParser(boundary, callbacks)
         try:
             # Feed the parser with data from the request.
             async for chunk in self.stream:
-                parser.write(chunk)  # type: ignore
+                parser.write(chunk)
                 # Write file data, it needs to use await with the UploadedFile methods
                 # that call the corresponding file methods *in a threadpool*,
                 # otherwise, if they were called directly in the callback methods above
@@ -300,7 +300,7 @@ class MultiPartParser:
                 # the main thread.
                 for part, data in self._file_parts_to_write:
                     # assert part.file  # for type checkers
-                    await part.file.write(data)  # type: ignore
+                    await part.file.write(data)  # ty: ignore[unresolved-attribute]
                 for part in self._file_parts_to_finish:
                     assert part.file  # for type checkers
                     await part.file.seek(0)
@@ -312,5 +312,5 @@ class MultiPartParser:
                 file.close()
             raise exc
 
-        parser.finalize()  # type: ignore
+        parser.finalize()
         return FormData(self.items)
