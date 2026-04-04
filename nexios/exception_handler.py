@@ -18,11 +18,11 @@ logger = logging.getLogger("nexios")
 
 
 def _lookup_exception_handler(
-    exc_handlers: typing.Dict[typing.Any[int, Exception], ExceptionHandlerType],
+    exc_handlers: typing.Dict[int | typing.Type[Exception], ExceptionHandlerType],
     exc: Exception,
 ):
     for cls in type(exc).__mro__:
-        if cls in exc_handlers:  # type: ignore
+        if cls in exc_handlers:
             return exc_handlers[cls]
     return None
 
@@ -31,9 +31,9 @@ async def wrap_http_exceptions(
     request: Request,
     response: Response,
     call_next: typing.Callable[..., typing.Awaitable[Response]],
-    exception_handlers: typing.Dict[type[Exception], ExceptionHandlerType],
+    exception_handlers: typing.Dict[int | typing.Type[Exception], ExceptionHandlerType],
     status_handlers: typing.Dict[int, ExceptionHandlerType],
-) -> typing.Any:
+):
     try:
         exception_handlers, status_handlers = exception_handlers, status_handlers
     except KeyError:
@@ -42,18 +42,18 @@ async def wrap_http_exceptions(
     try:
         return await call_next()
     except Exception as exc:
-        handler: typing.Union[ExceptionHandlerType, None] = None  # type: ignore
+        handler: typing.Union[ExceptionHandlerType, None] = None
 
         if isinstance(exc, HTTPException):
             handler: typing.Optional[ExceptionHandlerType] = status_handlers.get(
                 exc.status_code
-            )  # type: ignore
+            )
             if handler:
                 return _process_response(
                     response, await handler(request, response, exc)
-                )  # type: ignore
+                )
 
-        if handler is None:  # type: ignore
+        if handler is None:
             handler = _lookup_exception_handler(exception_handlers, exc)
             if not handler:
                 error = traceback.format_exc()
@@ -71,8 +71,8 @@ class ExceptionMiddleware:
         except Exception:
             self.debug = True
         self._status_handlers: typing.Dict[int, ExceptionHandlerType] = {}
-        self._exception_handlers: dict[
-            typing.Type[Exception], typing.Callable[..., typing.Awaitable[None]]
+        self._exception_handlers: typing.Dict[
+            typing.Type[Exception] | int, ExceptionHandlerType
         ] = {
             HTTPException: self.http_exception,
             AuthenticationFailed: AuthErrorHandler,
