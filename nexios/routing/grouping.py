@@ -17,7 +17,7 @@ class Group(BaseRoute):
         self,
         path: str = "",
         app: typing.Optional[ASGIApp] = None,
-        routes: typing.Optional[typing.List[BaseRoute]] = None,
+        routes: typing.List[BaseRoute] = [],
         name: typing.Optional[str] = None,
         *,
         middleware: typing.List[Middleware] = [],
@@ -53,9 +53,7 @@ class Group(BaseRoute):
     def routes(self) -> list[BaseRoute]:
         return getattr(self._base_app, "routes", [])
 
-    def match(
-        self, scope: Scope
-    ) -> typing.Tuple[MatchStatus, dict[str, Any], dict[str, Any]]:
+    def match(self, scope: Scope) -> typing.Tuple[MatchStatus, dict[str, Any]]:
         """
         Match a path against this mounted route's pattern.
         """
@@ -73,8 +71,8 @@ class Group(BaseRoute):
                 if value is not None:
                     matched_params[key] = self.route_info.convertor[key].convert(value)
 
-            return MatchStatus.FULL, matched_params, {}
-        return MatchStatus.NONE, {}, {}
+            return MatchStatus.FULL, matched_params
+        return MatchStatus.NONE, {}
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         original_path = scope["path"]
