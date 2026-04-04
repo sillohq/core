@@ -1,31 +1,30 @@
 from __future__ import annotations
-from httpx._types import RequestExtensions
-from httpx import USE_CLIENT_DEFAULT
-from httpx._urls import URL
-from httpx._client import UseClientDefault
-from types import TracebackType
-from anyio.abc import TaskStatus
 
 import contextlib
 import math
 from collections.abc import Sequence
+from types import TracebackType
 from typing import Any, Literal, cast
 from urllib.parse import urljoin
 
 import anyio
 import httpx
-from anyio.abc import ObjectReceiveStream, ObjectSendStream
+from anyio.abc import ObjectReceiveStream, ObjectSendStream, TaskStatus
 from anyio.streams.stapled import StapledObjectStream
+from httpx import USE_CLIENT_DEFAULT
+from httpx._client import UseClientDefault
 from httpx._types import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
     QueryParamTypes,
     RequestContent,
+    RequestExtensions,
     RequestFiles,
     TimeoutTypes,
     URLTypes,
 )
+from httpx._urls import URL
 
 from nexios.testclient._internal.transport import AsyncTestClientTransport
 from nexios.testclient._internal.types import ASGI2App, RequestData

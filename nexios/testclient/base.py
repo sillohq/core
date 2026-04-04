@@ -1,27 +1,26 @@
 from __future__ import annotations
-from anyio.abc import BlockingPortal
-from httpx._types import RequestExtensions
-from httpx._client import UseClientDefault
-from types import TracebackType
-from anyio.abc import TaskStatus
+
 import contextlib
 import math
 from collections.abc import Generator, MutableMapping, Sequence
 from concurrent.futures import Future
+from types import TracebackType
 from typing import Any, Literal, cast
 from urllib.parse import urljoin
 
 import anyio
 import anyio.from_thread
 import httpx
-from anyio.abc import ObjectReceiveStream, ObjectSendStream
+from anyio.abc import BlockingPortal, ObjectReceiveStream, ObjectSendStream, TaskStatus
 from anyio.streams.stapled import StapledObjectStream
+from httpx._client import UseClientDefault
 from httpx._types import (
     AuthTypes,
     CookieTypes,
     HeaderTypes,
     QueryParamTypes,
     RequestContent,
+    RequestExtensions,
     RequestFiles,
     TimeoutTypes,
     URLTypes,

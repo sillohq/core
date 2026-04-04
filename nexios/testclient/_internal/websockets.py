@@ -1,5 +1,4 @@
 from __future__ import annotations
-from anyio.abc import TaskGroup
 
 import contextlib
 import json
@@ -10,8 +9,9 @@ from functools import cached_property
 
 import anyio
 import anyio.from_thread  # noqa
+from anyio.abc import TaskGroup
 
-from nexios.testclient._internal.types import ASGI3App, PortalFactoryType
+from nexios.testclient._internal.types import ASGI3App
 from nexios.types import Message, Scope
 from nexios.websockets import WebSocketDisconnect
 

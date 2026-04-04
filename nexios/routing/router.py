@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import cast
 
 import copy
 import re
@@ -18,6 +17,7 @@ from typing import (
     Sequence,
     Type,
     Union,
+    cast,
 )
 
 from pydantic import BaseModel

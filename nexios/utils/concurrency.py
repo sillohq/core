@@ -1,9 +1,6 @@
-import anyio
-import warnings
-from typing import cast
-from typing import Mapping
 import asyncio
 import functools
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from typing import (
@@ -16,10 +13,10 @@ from typing import (
     List,
     Optional,
     Set,
-    Tuple,
     TypeVar,
-    Union,
 )
+
+import anyio
 
 T = TypeVar("T")
 
