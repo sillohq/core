@@ -216,7 +216,7 @@ class ASGIRequestResponseBridge:
             response._response = response_object
             return response_object
 
-        streams: anyio.create_memory_object_stream[Message] = (  # type: ignore
+        streams: anyio.create_memory_object_stream[Message] = (
             anyio.create_memory_object_stream()
         )
         send_stream, recv_stream = streams
@@ -224,7 +224,7 @@ class ASGIRequestResponseBridge:
             async with anyio.create_task_group() as task_group:
                 returned_response = await self.dispatch_func(
                     request, response, call_next
-                )  # type: ignore
+                )
                 await returned_response(scope, wrapped_receive, send)
                 response_sent.set()
                 recv_stream.close()

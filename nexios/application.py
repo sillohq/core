@@ -1,3 +1,4 @@
+from typing import Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -105,7 +106,7 @@ class NexiosApp:
                 """),
         ] = None,
         routes: Annotated[
-            List[Route] | None,
+            Sequence[BaseRoute],
             Doc("""
                     A list of routes for the application. These routes define the URLs that the application will handle and the handlers that will be called when those URLs are accessed.
 
@@ -125,7 +126,7 @@ class NexiosApp:
                 """),
         ] = None,
         route_class: Annotated[
-            Optional[Route],
+            Type[Route],
             Doc("""
                     The class used to create routes. This can be a custom route class that inherits from `Route`.
                 """),
@@ -152,7 +153,7 @@ class NexiosApp:
         self.router = self.app
         self.route = self.router.route
         self.lifespan_context: Optional[lifespan_manager] = lifespan
-        self.state: Dict[str, Any] = {}
+        self.state: dict[str, Any] = {}
         if not self.config:
             return
         openapi_config: Dict[str, Any] = self.config.to_dict().get("openapi", {})
@@ -360,7 +361,7 @@ class NexiosApp:
                             self.lifespan_manager: Any = self.lifespan_context(self)
                             returned_state = await self.lifespan_manager.__aenter__()
                             if returned_state:
-                                self.state.update(returned_state)
+                                self.state.update(returned_state)  # ty: ignore[no-matching-overload]
                         else:
                             # Otherwise, fall back to the default startup handlers
                             await self._startup()

@@ -100,9 +100,7 @@ class RoutePattern:
 class RouteBuilder:
     @staticmethod
     def create_pattern(path: str) -> RoutePattern:
-        path_regex, path_format, param_convertors, param_names = (  # type: ignore
-            compile_path(path)
-        )
+        path_regex, path_format, param_convertors, param_names = compile_path(path)
         return RoutePattern(
             pattern=path_regex,
             raw_path=path,
