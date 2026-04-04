@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Any
 
 import json
 import typing
@@ -310,7 +311,7 @@ class Request(HTTPConnection):
         self._send = send
         self._stream_consumed = False
         self._is_disconnected = False
-        self._form = None
+        self._form: FormData | Any = None
 
     @property
     def method(self) -> str:
@@ -325,7 +326,9 @@ class Request(HTTPConnection):
         content_type_header = self.headers.get("Content-Type")
         if content_type_header is None:
             return None
-        content_type, _ = parse_options_header(content_type_header)
+        content_type, _ = parse_options_header(
+            content_type_header
+        )  # ty :ignore[call-non-callable]
         return content_type.decode("utf-8") if content_type else None
 
     async def stream(self) -> typing.AsyncGenerator[bytes, None]:
@@ -410,7 +413,7 @@ class Request(HTTPConnection):
                 self._form = await form_parser.parse()
             else:
                 self._form: FormData = FormData()
-        return self._form
+        return self._form  # ty : ignore[invalid-return-type]
 
     @property
     def form_data(self) -> AwaitableOrContextManager[FormData]:
