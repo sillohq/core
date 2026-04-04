@@ -16,7 +16,6 @@ from typing import (
     Any,
     AsyncIterator,
     Dict,
-    Generator,
     List,
     Optional,
     Tuple,
