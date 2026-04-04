@@ -390,7 +390,7 @@ class OpenAPI(BaseModel):
     paths: Annotated[Dict[str, Union[PathItem, Extension]], Field(default_factory=dict)]
     servers: Optional[List[Server]] = None
     # Using Any for Specification Extensions
-    components: Optional[Components] = None
+    components: Components = Components()
     security: Optional[List[Dict[str, List[str]]]] = None
     tags: Optional[List[Tag]] = None
     externalDocs: Optional[ExternalDocumentation] = None

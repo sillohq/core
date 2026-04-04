@@ -96,13 +96,13 @@ class OpenAPIConfig:
 
     def add_example(self, name: str, example: Example):
         """Add an example to the OpenAPI components section"""
-        if not self.openapi_spec.components:
+        if self.openapi_spec.components is None:
             self.openapi_spec.components = Components()
 
-        if not self.openapi_spec.components.examples:
+        if self.openapi_spec.components.examples is None:
             self.openapi_spec.components.examples = {}
 
-        self.openapi_spec.components.examples[name] = example  # type: ignore
+        self.openapi_spec.components.examples[name] = example  # ty: igore[unresolved-attribute]
 
     def add_tag(self, tag: Tag):
         """Add a tag to the OpenAPI specification"""
