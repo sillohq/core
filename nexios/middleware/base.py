@@ -74,7 +74,7 @@ class BaseMiddleware:
 
         async def wrapped_call_next() -> Any:
             self._call_next = True
-            return await call_next()  # type: ignore
+            return await call_next()
 
         cnext = await self.process_request(request, response, wrapped_call_next)
         if self._call_next:

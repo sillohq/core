@@ -84,7 +84,7 @@ class CORSMiddleware(BaseMiddleware):
         if self.allow_headers:
             self.allow_headers: List[str] = [
                 *list(SAFELISTED_HEADERS),
-                *(self.config.allow_headers or []),
+                *(self.allow_headers or []),
             ]
         else:
             self.allow_headers = list(SAFELISTED_HEADERS)
@@ -171,7 +171,7 @@ class CORSMiddleware(BaseMiddleware):
         if "*" in self.allow_origins:
             return True
         try:
-            if self.allow_origin_regex and self.allow_origin_regex.fullmatch(origin):
+            if self.allow_origin_regex and self.allow_origin_regex.fullmatch(origin):  # ty: ignore
                 return True
         except re.error:
             return False
