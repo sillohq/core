@@ -14,15 +14,12 @@ from nexios.http.response import NexiosResponse as Response
 from nexios.http.response import (
     StreamingResponse,
 )
-from nexios.types import ASGIApp, Message, Receive, Scope, Send
+from nexios.types import ASGIApp, Message, Receive, Scope, Send, MiddlewareType
 from nexios.utils.async_helpers import collapse_excgroups
 from nexios.websockets import WebSocket
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
-DispatchFunction = typing.Callable[
-    [Request, Response, typing.Callable[[], typing.Awaitable[Response]]],
-    typing.Awaitable[Response],
-]
+
 T = typing.TypeVar("T")
 
 AsyncContentStream = AsyncIterable[str | bytes | memoryview | MutableMapping[str, Any]]
@@ -131,7 +128,7 @@ class _CachedRequest(Request):
 
 
 class ASGIRequestResponseBridge:
-    def __init__(self, app: ASGIApp, dispatch: DispatchFunction) -> None:
+    def __init__(self, app: ASGIApp, dispatch: MiddlewareType) -> None:
         self.app = app
         self.dispatch_func = dispatch
 
@@ -275,11 +272,5 @@ WebSocketDispatchFunction = typing.Callable[
 ]
 
 
-MiddlewareType = typing.Callable[
-    [Request, Response, typing.Awaitable[None]],
-    typing.Callable[[], typing.Awaitable[None]],
-]
-
-
-def wrap_middleware(middleware_function: DispatchFunction) -> DefineMiddleware:
+def wrap_middleware(middleware_function: MiddlewareType) -> DefineMiddleware:
     return DefineMiddleware(ASGIRequestResponseBridge, dispatch=middleware_function)
