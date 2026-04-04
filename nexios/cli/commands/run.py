@@ -104,34 +104,34 @@ def run(
         options.update(extra_options)
 
         # Use app_path from options
-        app_path = options.get("app_path", app_path)
+        app_path = str(options.get("app_path", app_path))
         if not app_path:
             _echo_error("App path is required. Please specify it with --app option.")
             sys.exit(1)
 
         # Support custom_command as either a string or a list (array)
         if "custom_command" in options and options["custom_command"]:
-            custom_cmd = options["custom_command"]
+            custom_cmd = str(options["custom_command"])
             if isinstance(custom_cmd, (list, tuple)):
-                subprocess.run(custom_cmd, check=True)  # type: ignore
+                subprocess.run(custom_cmd, check=True)
             else:
                 # Assume string, run in shell
                 os.system(custom_cmd)
             return
 
         # Extract merged values
-        host = options.get("host", host)
-        port = options.get("port", port)
-        reload = options.get("reload", reload)
-        server = options.get("server", server)
-        workers = options.get("workers", workers)
+        host = str(options.get("host", host))
+        port = int(options.get("port", port))
+        reload = bool(options.get("reload", reload))
+        server = str(options.get("server", server))
+        workers = int(options.get("workers", workers))
 
         # Use gunicorn if server is gunicorn
         if server == "gunicorn":
-            workers = options.get("workers", 4)
-            host = options.get("host", "0.0.0.0")
-            port = options.get("port", 8000)
-            app_path = options.get("app_path", "main:app")
+            workers = int(options.get("workers", 4))
+            host = str(options.get("host", "0.0.0.0"))
+            port = int(options.get("port", 8000))
+            app_path = str(options.get("app_path", "main:app"))
             cmd = f"gunicorn -w {workers} -b {host}:{port} {app_path}"
             os.system(cmd)
             return
