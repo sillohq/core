@@ -1,4 +1,3 @@
-from typing import Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -9,6 +8,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Type,
     Union,
 )
