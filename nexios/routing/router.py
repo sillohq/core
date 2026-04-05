@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import inspect
 import re
 import typing
 import warnings
@@ -32,7 +33,15 @@ from nexios._internals._middleware import (
 )
 from nexios._internals._response_transformer import request_response
 from nexios._internals._route_builder import RouteBuilder
-from nexios.dependencies import Depend, inject_dependencies
+from nexios.dependencies import (
+    Context,
+    Depend,
+    SolvedDependency,
+    current_context,
+    resolve_dependency,
+    solve_dependencies,
+    solve_handler_dependencies,
+)
 from nexios.events import EventEmitter
 from nexios.exceptions import NotFoundException
 from nexios.http import Request, Response
@@ -40,6 +49,8 @@ from nexios.http.response import JSONResponse
 from nexios.objects import RouteParam, URLPath
 from nexios.openapi.models import Parameter
 from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, Send
+from nexios.utils.async_helpers import is_async_callable
+from nexios.utils.concurrency import run_in_threadpool
 
 from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
@@ -182,8 +193,13 @@ class Route(BaseRoute):
         if path == "":
             path = "/"
         self.raw_path = path
-        self.handler = inject_dependencies(handler)
+        self.handler = handler
+        self.handler_signature = inspect.signature(handler)
         self.name = name
+        self._own_resolved_dependencies = list(solve_handler_dependencies(handler))
+        self.resolved_dependencies: List[SolvedDependency] = list(
+            self._own_resolved_dependencies
+        )
 
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
@@ -300,7 +316,34 @@ class Route(BaseRoute):
         Returns:
             Any: The response from the handler.
         """
-        return await self.handler(request, response, **kwargs)
+        try:
+            ctx: Optional[Context] = current_context.get()
+        except LookupError:
+            ctx = None
+
+        cleanup_callbacks: List[Callable[[], Any]] = []
+        bound_args = self.handler_signature.bind_partial(request, response, **kwargs)
+
+        try:
+            for dependency in self.resolved_dependencies:
+                resolved_value = await resolve_dependency(
+                    dependency, ctx, cleanup_callbacks
+                )
+                if dependency.parameter_name is None:
+                    continue
+                if dependency.parameter_name not in bound_args.arguments:
+                    bound_args.arguments[dependency.parameter_name] = resolved_value
+
+            if is_async_callable(self.handler):
+                return await self.handler(*bound_args.args, **bound_args.kwargs)
+            return await run_in_threadpool(
+                self.handler, *bound_args.args, **bound_args.kwargs
+            )
+        finally:
+            for cleanup in reversed(cleanup_callbacks):
+                result = cleanup()
+                if inspect.isawaitable(result):
+                    await result
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -354,12 +397,39 @@ class Router(BaseRouter):
         self.exclude_from_schema = exclude_from_schema
         self.name = name
         self.event = EventEmitter()
-        self.dependencies = dependencies or []
+        self.dependencies: List[SolvedDependency] = solve_dependencies(
+            dependencies or []
+        )
+        self._inherited_dependencies: List[SolvedDependency] = []
         self.root_path = ""
 
         if self.prefix and not self.prefix.startswith("/"):
             warnings.warn("Router prefix should start with '/'")
             self.prefix = f"/{self.prefix}"
+
+        self._refresh_route_dependencies()
+
+    def _get_combined_dependencies(self) -> List[SolvedDependency]:
+        return [*self._inherited_dependencies, *self.dependencies]
+
+    def _refresh_route_dependencies(self) -> None:
+        combined_dependencies = self._get_combined_dependencies()
+        for route in self.routes:
+            if isinstance(route, Route):
+                route.resolved_dependencies = [
+                    *combined_dependencies,
+                    *route._own_resolved_dependencies,
+                ]
+            elif isinstance(route, Group):
+                mounted_router = getattr(route, "_base_app", None)
+                if isinstance(mounted_router, Router):
+                    mounted_router._set_inherited_dependencies(combined_dependencies)
+
+    def _set_inherited_dependencies(
+        self, inherited_dependencies: Sequence[SolvedDependency]
+    ) -> None:
+        self._inherited_dependencies = list(inherited_dependencies)
+        self._refresh_route_dependencies()
 
     def build_middleware_stack(self, app: ASGIApp) -> ASGIApp:
         """
@@ -563,6 +633,10 @@ class Router(BaseRouter):
         route.tags = list(self.tags).extend(route.tags) if route.tags else self.tags
         if self.exclude_from_schema:
             route.exclude_from_schema = True
+        route.resolved_dependencies = [
+            *self._get_combined_dependencies(),
+            *route._own_resolved_dependencies,
+        ]
 
         self.routes.append(route)
         if getattr(route, "exclude_from_schema", False):
@@ -2196,6 +2270,7 @@ class Router(BaseRouter):
         Args:
             app: The ASGI application (e.g., another Router) to mount.
         """
+        app._set_inherited_dependencies(self._get_combined_dependencies())
         path = app.prefix
         self.routes.append(Group(app=app, path=path, name=name))
 

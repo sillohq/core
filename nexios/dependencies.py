@@ -1,13 +1,10 @@
 import contextvars
+from dataclasses import dataclass, field
 import inspect
-from functools import wraps
 from inspect import Parameter, signature
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from typing_extensions import Annotated, Doc
-
-from nexios.utils.async_helpers import is_async_callable
-from nexios.utils.concurrency import run_in_threadpool
 
 if TYPE_CHECKING:
     from nexios import NexiosApp, Router
@@ -223,29 +220,78 @@ current_context: contextvars.ContextVar[Context] = contextvars.ContextVar(
 )
 
 
+@dataclass(frozen=True, slots=True)
+class SolvedDependency:
+    dependency: Callable[..., Any]
+    parameter_name: Optional[str] = None
+    nested_dependencies: Tuple["SolvedDependency", ...] = field(default_factory=tuple)
+    context_parameter_names: Tuple[str, ...] = field(default_factory=tuple)
+
+
+def _solve_depend(
+    depend: Depend,
+    parameter_name: Optional[str] = None,
+) -> SolvedDependency:
+    dependency_func = depend.dependency
+    if dependency_func is None:
+        if parameter_name is None:
+            raise ValueError("Dependency has no provider")
+        raise ValueError(f"Dependency for parameter '{parameter_name}' has no provider")
+
+    dependency_signature = signature(dependency_func)
+    nested_dependencies: List[SolvedDependency] = []
+    context_parameter_names: List[str] = []
+
+    for param in dependency_signature.parameters.values():
+        if param.default != Parameter.empty and isinstance(param.default, Depend):
+            nested_dependencies.append(_solve_depend(param.default, param.name))
+        elif param.default != Parameter.empty and isinstance(param.default, Context):
+            context_parameter_names.append(param.name)
+
+    return SolvedDependency(
+        dependency=dependency_func,
+        parameter_name=parameter_name,
+        nested_dependencies=tuple(nested_dependencies),
+        context_parameter_names=tuple(context_parameter_names),
+    )
+
+
+def solve_dependencies(dependencies: Sequence[Depend]) -> List[SolvedDependency]:
+    return [_solve_depend(depend) for depend in dependencies]
+
+
+def solve_handler_dependencies(handler: Callable[..., Any]) -> List[SolvedDependency]:
+    handler_signature = signature(handler)
+    solved_dependencies: List[SolvedDependency] = []
+
+    for param in handler_signature.parameters.values():
+        if param.default != Parameter.empty and isinstance(param.default, Depend):
+            solved_dependencies.append(_solve_depend(param.default, param.name))
+
+    return solved_dependencies
+
+
 async def resolve_dependency(
-    func: Callable[..., Any],
+    dependency: SolvedDependency,
     ctx: Optional[Context] = None,
     cleanup_callbacks: Optional[List[Callable[[], Any]]] = None,
 ) -> Any:
     if cleanup_callbacks is None:
         cleanup_callbacks = []
 
-    dep_sig = signature(func)
     dep_kwargs = {}
 
-    for param in dep_sig.parameters.values():
-        if param.default != Parameter.empty and isinstance(param.default, Depend):
-            nested_func = param.default.dependency
-            if nested_func is None:
-                raise ValueError(
-                    f"Dependency for parameter '{param.name}' has no provider"
-                )
-            dep_kwargs[param.name] = await resolve_dependency(
-                nested_func, ctx, cleanup_callbacks
-            )
-        elif param.default != Parameter.empty and isinstance(param.default, Context):
-            dep_kwargs[param.name] = ctx
+    for nested_dependency in dependency.nested_dependencies:
+        if nested_dependency.parameter_name is None:
+            raise ValueError("Nested dependency is missing a parameter name")
+        dep_kwargs[nested_dependency.parameter_name] = await resolve_dependency(
+            nested_dependency, ctx, cleanup_callbacks
+        )
+
+    for context_parameter_name in dependency.context_parameter_names:
+        dep_kwargs[context_parameter_name] = ctx
+
+    func = dependency.dependency
 
     if inspect.isasyncgenfunction(func):
         agen = func(**dep_kwargs)
@@ -261,72 +307,3 @@ async def resolve_dependency(
         return await func(**dep_kwargs)
     else:
         return func(**dep_kwargs)
-
-
-def inject_dependencies(handler: Callable[..., Any]) -> Callable[..., Any]:
-    """Decorator to inject dependencies into a route handler while supporting deep DI."""
-
-    @wraps(handler)
-    async def wrapped(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
-        sig = signature(handler)
-        bound_args = sig.bind_partial(*args, **kwargs)
-        params = list(sig.parameters.values())
-
-        try:
-            ctx = current_context.get()
-        except LookupError:
-            ctx = None
-
-        cleanup_callbacks: List[Callable[[], Any]] = []
-        if ctx is not None and not hasattr(ctx, "_dependency_cleanup"):
-            setattr(ctx, "_dependency_cleanup", [])
-        if ctx is not None:
-            cleanup_callbacks = getattr(ctx, "_dependency_cleanup")
-
-        if ctx is not None and ctx.base_app:
-            app_dependencies = get_app_dependencies(ctx.base_app.router)
-            for dep in app_dependencies:
-                dependency_func = dep.dependency
-                if dependency_func is None:
-                    raise ValueError("Dependency has no provider")
-                await resolve_dependency(dependency_func, ctx, cleanup_callbacks)
-
-        for param in params:
-            if (
-                param.default != Parameter.empty
-                and isinstance(param.default, Depend)
-                and param.name not in bound_args.arguments
-            ):
-                depend = param.default
-                dependency_func = depend.dependency
-                if dependency_func is None:
-                    raise ValueError(
-                        f"Dependency for parameter '{param.name}' has no provider"
-                    )
-
-                bound_args.arguments[param.name] = await resolve_dependency(
-                    dependency_func, ctx, cleanup_callbacks
-                )
-
-        try:
-            if is_async_callable(handler):
-                return await handler(**bound_args.arguments)
-            else:
-                return await run_in_threadpool(handler, **bound_args.arguments)
-        finally:
-            for cleanup in reversed(cleanup_callbacks):
-                result = cleanup()
-                if inspect.isawaitable(result):
-                    await result
-
-    return wrapped
-
-
-def get_app_dependencies(router: "Router") -> List[Depend]:
-    dependencies: List[Depend] = []
-    if hasattr(router, "sub_routers"):
-        for child_router in router.sub_routers.values():
-            dependencies.extend(get_app_dependencies(child_router))  # ty :ignore
-    if hasattr(router, "dependencies"):
-        dependencies.extend(router.dependencies)
-    return dependencies

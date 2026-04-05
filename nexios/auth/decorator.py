@@ -42,7 +42,7 @@ class auth(RouteDecorator):
         async def wrapper(
             *args: typing.List[typing.Any], **kwargs: typing.Dict[str, typing.Any]
         ) -> typing.Any:
-            request, response, *_ = kwargs.values()
+            request, response = args[0], args[1]
 
             if not isinstance(request, Request) or not isinstance(response, Response):
                 raise TypeError("Expected request and response as the fist arguments")
@@ -94,7 +94,7 @@ class has_permission(RouteDecorator):
         async def wrapper(
             *args: typing.List[typing.Any], **kwargs: typing.Dict[str, typing.Any]
         ) -> typing.Any:
-            request, response, *_ = kwargs.values()
+            request, response, *_ = args
 
             if not isinstance(request, Request) or not isinstance(response, Response):
                 raise TypeError("Expected request and response as the fist arguments")
