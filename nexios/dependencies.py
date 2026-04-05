@@ -226,6 +226,9 @@ class SolvedDependency:
     parameter_name: Optional[str] = None
     nested_dependencies: Tuple["SolvedDependency", ...] = field(default_factory=tuple)
     context_parameter_names: Tuple[str, ...] = field(default_factory=tuple)
+    is_async_generator: bool = False
+    is_generator: bool = False
+    is_coroutine: bool = False
 
 
 def _solve_depend(
@@ -253,6 +256,9 @@ def _solve_depend(
         parameter_name=parameter_name,
         nested_dependencies=tuple(nested_dependencies),
         context_parameter_names=tuple(context_parameter_names),
+        is_async_generator=inspect.isasyncgenfunction(dependency_func),
+        is_generator=inspect.isgeneratorfunction(dependency_func),
+        is_coroutine=inspect.iscoroutinefunction(dependency_func),
     )
 
 
@@ -293,17 +299,17 @@ async def resolve_dependency(
 
     func = dependency.dependency
 
-    if inspect.isasyncgenfunction(func):
+    if dependency.is_async_generator:
         agen = func(**dep_kwargs)
         value = await agen.__anext__()
         cleanup_callbacks.append(lambda agen=agen: agen.aclose())
         return value
-    elif inspect.isgeneratorfunction(func):
+    elif dependency.is_generator:
         gen = func(**dep_kwargs)
         value = next(gen)
         cleanup_callbacks.append(lambda gen=gen: gen.close())
         return value
-    elif inspect.iscoroutinefunction(func):
+    elif dependency.is_coroutine:
         return await func(**dep_kwargs)
     else:
         return func(**dep_kwargs)
