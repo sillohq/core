@@ -82,12 +82,12 @@ Note: This framework builds upon concepts from Starlette and other ASGI framewor
 while providing additional features and a more intuitive API design.
 """
 
+from nexios.routing import Route, Router
+
 from .application import NexiosApp
 from .config import set_config
 from .config.base import MakeConfig
 from .dependencies import Depend
-from nexios.routing import Router, Route
-
 
 __all__ = [
     "NexiosApp",
