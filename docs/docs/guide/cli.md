@@ -115,25 +115,7 @@ Each Nexios command uses the configuration in different ways:
 
 ##  Advanced Configuration
 
-### Custom Server Command
 
-For complete control, you can specify a custom command:
-
-```python
-# nexios.config.py
-custom_command = "gunicorn -w 4 -k uvicorn.workers.UvicornWorker myapp.main:app"
-```
-
-### Environment Variables
-
-You can use environment variables in your config:
-
-```python
-import os
-
-app_path = os.getenv("APP_PATH", "main:app")
-port = int(os.getenv("PORT", "8000"))
-```
 
 ### Multiple Environments
 

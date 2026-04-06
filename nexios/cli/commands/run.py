@@ -109,16 +109,6 @@ def run(
             _echo_error("App path is required. Please specify it with --app option.")
             sys.exit(1)
 
-        # Support custom_command as either a string or a list (array)
-        if "custom_command" in options and options["custom_command"]:
-            custom_cmd = str(options["custom_command"])
-            if isinstance(custom_cmd, (list, tuple)):
-                subprocess.run(custom_cmd, check=True)
-            else:
-                # Assume string, run in shell
-                os.system(custom_cmd)
-            return
-
         # Extract merged values
         host = str(options.get("host", host))
         port = int(options.get("port", port))
