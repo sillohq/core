@@ -6,7 +6,7 @@ import pytest
 from nexios import NexiosApp
 from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
-from nexios.routing import Route, Router, Group
+from nexios.routing import Group, Route, Router
 from nexios.testclient import TestClient
 from nexios.websockets import WebSocket
 
