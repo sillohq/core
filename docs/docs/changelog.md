@@ -1,5 +1,46 @@
 # Changelog
 
+## v3.11.0 (2026-04-05)
+
+#### New Features
+
+* (routing): add custom route class support ([#348](https://github.com/nexios-labs/nexios/issues/348))
+#### Fixes
+
+* fix types and implement  ty ([#349](https://github.com/nexios-labs/nexios/issues/349))
+#### Refactorings
+
+* (dependencies): rewrite di system to improve performance ([#351](https://github.com/nexios-labs/nexios/issues/351))
+* remove deprecated get_application function  ([#350](https://github.com/nexios-labs/nexios/issues/350))
+#### Others
+
+* bump version to 3.11.0
+
+Full set of changes: [`v3.10.6...v3.11.0`](https://github.com/nexios-labs/nexios/compare/v3.10.6...v3.11.0)
+
+## v3.10.6 (2026-04-01)
+
+#### Docs
+
+* (redis): fix contrib docs to match v0.4.2 ([#347](https://github.com/nexios-labs/nexios/issues/347))
+* fix issues with docs ([#346](https://github.com/nexios-labs/nexios/issues/346))
+#### Others
+
+* bump version to 3.10.6
+
+Full set of changes: [`v3.10.5...v3.10.6`](https://github.com/nexios-labs/nexios/compare/v3.10.5...v3.10.6)
+
+## v3.10.5 (2026-03-30)
+
+#### Docs
+
+* (changelog): update changelog ([#344](https://github.com/nexios-labs/nexios/issues/344))
+#### Others
+
+* bump version to 3.10.5
+
+Full set of changes: [`v3.10.4...v3.10.5`](https://github.com/nexios-labs/nexios/compare/v3.10.4...v3.10.5)
+
 ## v3.10.4 (2026-03-27)
 
 #### Fixes
