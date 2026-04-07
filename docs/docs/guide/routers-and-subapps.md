@@ -96,9 +96,12 @@ The `Router` class also have similar routing methods as `NexiosApp` class
 
 ##  Sub-Applications = Routers
 
-NexiosApp is an ASGI application. To mount a sub-app under a path, use `register`.
+NexiosApp is an ASGI application. To mount a sub-app under a path, prefer using Group directly to mount sub-apps, or use Router.mount_router for sub-routers.
 
 ```py
+from nexios import NexiosApp
+from nexios.routing import Group
+
 main_app = NexiosApp()
 admin_app = NexiosApp()
 
@@ -106,7 +109,8 @@ admin_app = NexiosApp()
 async def dashboard(req, res):
     return res.text("Welcome to the admin panel")
 
-main_app.register(admin_app, "/admin")
+admin_group = Group(path="/admin", app=admin_app)
+main_app.add_route(admin_group)
 
 ```
 
@@ -169,7 +173,7 @@ async def dashboard(req, res):
 group = Group(path="/admin", app=admin_app)
 
 main_app = NexiosApp()
-main_app.register(group)
+main_app.add_route(group)
 
 ```
 
@@ -185,7 +189,8 @@ app = NexiosApp()
 def external_app(scope, receive , send):
     ...
 
-app.register(external_app, "/mount_path")
+external_group = Group(path="/mount_path", app=external_app)
+app.add_route(external_group)
 ```
 
 You can also mount  a `fastapi` or `starlatte` app
@@ -197,7 +202,6 @@ from fastapi import FastApi
 app = NexiosApp()
 
 fast_app = FastApi()
-
-app.register(fast_app,"/service2")
+fast_group = Group(path="/service2", app=fast_app)
+app.add_route(fast_group)
 ```
-

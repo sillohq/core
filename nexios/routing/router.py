@@ -2309,6 +2309,14 @@ class Router(BaseRouter):
             prefix: The path prefix under which the app will be registered.
         """
 
+        import warnings
+
+        warnings.warn(
+            "Router.register(...) is deprecated and will be removed in a future release. "
+            "Please mount sub-apps using Group directly (Group(path=..., app=...)) or use Router.mount_router(...) for sub-routers.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.add_route(Group(app=app, path=prefix))
 
     def wrap_asgi(

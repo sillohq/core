@@ -27,8 +27,9 @@ app = NexiosApp()
 # Create a static files handler for a single directory
 static_files = StaticFiles(directory="static")
 
-# Register the static files handler with a prefix
-app.register(static_files, prefix="/static")
+## Mounting with Group
+static_group = Group(path="/static", app=static_files)
+app.add_route(static_group)
 ```
 
 With this setup, a file at `static/css/style.css` would be accessible at `/static/css/style.css`.
@@ -39,7 +40,8 @@ The simplest configuration uses a single directory for all static files:
 
 ```python
 static_files = StaticFiles(directory="static")
-app.register(static_files, prefix="/static")
+static_group = Group(path="/static", app=static_files)
+app.add_route(static_group)
 ```
 
 ##  Multiple Directories
@@ -48,7 +50,8 @@ For more complex setups, you can serve files from multiple directories:
 
 ```python
 static_files = StaticFiles(directories=["static", "public/assets", "uploads"])
-app.register(static_files, prefix="/static")
+static_group = Group(path="/static", app=static_files)
+app.add_route(static_group)
 ```
 
 When serving from multiple directories, Nexios searches for files in the order the directories are specified.
@@ -70,6 +73,7 @@ app.register(static_files, prefix="/assets")  # Serve files at /assets/ instead 
 ```python
 from nexios import NexiosApp
 from nexios.static import StaticFiles
+from nexios.routing import Group
 
 app = NexiosApp()
 
@@ -80,8 +84,8 @@ static_files = StaticFiles(
     cache_control="public, max-age=3600",
     allowed_extensions=["css", "js", "png", "jpg"]
 )
-
-app.register(static_files)
+static_group = Group(path="/static", app=static_files)
+app.add_route(static_group)
 
 # Add middleware for logging
 app.add_middleware(StaticFileLogger())
@@ -92,12 +96,14 @@ app.add_middleware(StaticFileLogger())
 For security reasons, you can restrict which file extensions are allowed to be served:
 
 ```python
+from nexios.routing import Group
 # Only allow specific file extensions
 static_files = StaticFiles(
     directory="static",
     allowed_extensions=["css", "js", "png", "jpg", "jpeg", "gif", "svg", "ico"]
 )
-app.register(static_files, prefix="/static")
+static_group = Group(path="/static", app=static_files)
+app.add_route(static_group)
 ```
 
 This prevents serving potentially dangerous files like `.php`, `.py`, or other executable files.
@@ -185,5 +191,6 @@ static_files = StaticFiles(
     cache_control="public, max-age=86400",  # Cache for 24 hours
 )
 
-app.register(static_files, prefix="/static")
+static_group = Group(path="/static", app=static_files)
+app.add_route(static_group)
 ```

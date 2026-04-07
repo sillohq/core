@@ -8,7 +8,7 @@ import pytest
 
 from nexios import NexiosApp
 from nexios.http import Request, Response
-from nexios.routing import Route, Router
+from nexios.routing import Route, Router, Group
 from nexios.testclient import TestClient
 
 # ========== Basic Router Mounting Tests ==========
@@ -164,7 +164,8 @@ def test_mount_sub_application(test_client_factory: Callable[[NexiosApp], TestCl
     async def sub_hello(request: Request, response: Response):
         return response.text("Hello from sub-app")
 
-    main_app.register(sub_app, "/sub")
+    sub_group = Group(path="/sub", app=sub_app)
+    main_app.add_route(sub_group)
 
     with test_client_factory(main_app) as client:
         resp = client.get("/sub/hello")
@@ -190,8 +191,10 @@ def test_multiple_sub_applications(
     async def user_dashboard(request: Request, response: Response):
         return response.json({"area": "user"})
 
-    main_app.register(admin_app, "/admin")
-    main_app.register(user_app, "/user")
+    admin_group = Group(path="/admin", app=admin_app)
+    main_app.add_route(admin_group)
+    user_group = Group(path="/user", app=user_app)
+    main_app.add_route(user_group)
 
     with test_client_factory(main_app) as client:
         admin_resp = client.get("/admin/dashboard")
