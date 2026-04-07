@@ -98,7 +98,6 @@ class APIKeyAuthBackend(AuthenticationBackend):
         raw_token = request.headers.get(self.header_name)
 
         if not raw_token:
-            response.set_header("WWW-Authenticate", 'APIKey realm="Access to the API"')
             return AuthResult(success=False, identity="", scope="")
 
         # Authenticate the API key using the provided function
