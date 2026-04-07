@@ -18,8 +18,8 @@ Nexios provides a robust and flexible error handling system that allows you to m
 from nexios.exceptions import HTTPException
 
 @app.get("/users/{user_id}")    
-async def get_user(request, response):
-    user = await find_user(request.path_params['user_id'])
+async def get_user(request, response, user_id: int):
+    user = await find_user(user_id)
     if not user:
         raise HTTPException(detail="User not found", status = 404)
     return response.json(user)
@@ -39,8 +39,8 @@ Nexios includes built-in HTTP exceptions for common error scenarios:
 ```python{6}
 from nexios.exceptions import HTTPException
 @app.get("/users/{user_id}")
-async def get_user(request, response):
-    user = await find_user(request.path_params['user_id'])
+async def get_user(request, response, user_id: int):
+    user = await find_user(user_id)
     if not user:
         raise HTTPException(detail="User not found", status = 404)
     return response.json(user)

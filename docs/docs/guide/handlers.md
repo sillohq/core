@@ -247,9 +247,7 @@ Handlers can raise exceptions that will be caught by exception handlers:
 from nexios.exceptions import HTTPException
 
 @app.get("/users/{user_id:int}")
-async def get_user(request, response):
-    user_id = request.path_params.user_id
-    
+async def get_user(request, response, user_id: int):
     # Simulate user not found
     if user_id > 1000:
         raise HTTPException(404, f"User {user_id} not found")
