@@ -16,19 +16,19 @@ mkdir -p templates/components templates/pages templates/blog
 
 ## Examples
 
-### 1. Basic Template Usage (example_001.py)
+### 1. Basic Template Usage (01_basic.py)
 - Basic template configuration
 - Async template rendering
 - Context passing
 - URL parameter handling
 
-### 2. Template Inheritance (example_002.py)
+### 2. Template Inheritance (02_inheritance.py)
 - Template inheritance with base templates
 - Component includes
 - Template blocks
 - Basic filters
 
-### 3. Advanced Features (example_003.py)
+### 3. Advanced Features (03_custom_filters.py)
 - Custom template filters
 - Global template variables
 - Markdown rendering
@@ -57,9 +57,9 @@ templates/
 Each example can be run directly:
 
 ```bash
-python example_001.py  # Basic example
-python example_002.py  # Inheritance example
-python example_003.py  # Advanced features
+python 01_basic.py  # Basic example
+python 02_inheritance.py  # Inheritance example
+python 03_custom_filters.py  # Advanced features
 ```
 
 The server will start on `http://localhost:8000`
