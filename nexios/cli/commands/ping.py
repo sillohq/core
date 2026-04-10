@@ -16,7 +16,7 @@ from nexios.cli.utils import (
 )
 
 try:
-    from nexios.testing.client import Client
+    from nexios.testclient import TestClient as Client
 except ImportError:
     Client = None
 
