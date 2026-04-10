@@ -1023,13 +1023,51 @@ class NexiosResponse:
         self._response = self._preserve_headers_and_cookies(new_response)
         return self
 
-    def redirect(self, url: str, status_code: int = 302, headers: Dict[str, Any] = {}):
-        """Send redirect response."""
+    def redirect(
+        self,
+        url: typing.Optional[str] = None,
+        name: typing.Optional[str] = None,
+        status_code: int = 302,
+        headers: Dict[str, Any] = {},
+        **path_params: typing.Any,
+    ):
+        """
+        Send redirect response.
+
+        Can use either a URL or a route name. When using name, path_params
+        are passed to url_for() to generate the URL.
+
+        Args:
+            url: Direct URL to redirect to
+            name: Route name to redirect to (uses url_for to generate URL)
+            status_code: HTTP status code (default 302 Found)
+            headers: Additional headers to include
+            **path_params: Path parameters for URL generation when using name
+        """
+        request = self._request
+        if url is None and name is None:
+            raise ValueError("Either 'url' or 'name' must be provided")
+        if url is not None and name is not None:
+            raise ValueError("Cannot provide both 'url' and 'name'")
+
+        if name is not None:
+            app = self._get_base_app()
+            url_path = app.url_for(name, **path_params)
+            url = str(request.base_url) + str(url_path)
+
         new_response = RedirectResponse(
             url=url, status_code=status_code, headers=headers
         )
         self._response = self._preserve_headers_and_cookies(new_response)
         return self
+
+    def _get_base_app(self) -> typing.Any:
+        if hasattr(self, "_base_app"):
+            return self._base_app
+        if hasattr(self, "_request"):
+            self._base_app = self._request.scope.get("base_app")
+            return self._base_app
+        raise RuntimeError("Could not access base app for URL generation")
 
     def status(self, status_code: int):
         """Set response status code."""

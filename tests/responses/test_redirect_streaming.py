@@ -158,6 +158,63 @@ def test_redirect_with_query_params(
         assert data["page"] == "1"
 
 
+def test_redirect_by_route_name(test_client_factory: Callable[[NexiosApp], TestClient]):
+    """Test redirect using route name instead of URL"""
+    app = NexiosApp()
+
+    @app.get("/user/{user_id}", name="user_profile")
+    async def get_user(request: Request, response: Response):
+        user_id = request.path_params.get("user_id")
+        return response.json({"user_id": user_id})
+
+    @app.get("/users")
+    async def list_users(request: Request, response: Response):
+        return response.redirect(name="user_profile", user_id=42)
+
+    with test_client_factory(app) as client:
+        resp = client.get("/users", follow_redirects=False)
+        assert resp.status_code == 302
+        assert "/user/42" in resp.headers.get("location", "")
+
+
+def test_redirect_by_route_name_absolute_url(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test redirect by name generates absolute URL"""
+    app = NexiosApp()
+
+    @app.get("/profile/{user_id}", name="profile")
+    async def profile(request: Request, response: Response):
+        return response.json({"id": request.path_params.get("user_id")})
+
+    @app.get("/goto")
+    async def goto(request: Request, response: Response):
+        return response.redirect(name="profile", user_id=123)
+
+    with test_client_factory(app) as client:
+        resp = client.get("/goto", follow_redirects=False)
+        location = resp.headers["location"]
+        assert location.startswith("http://")
+        assert "/profile/123" in location
+
+
+
+
+def test_redirect_name_and_url_error(
+    test_client_factory: Callable[[NexiosApp], TestClient],
+):
+    """Test redirect raises error when both url and name provided"""
+    app = NexiosApp()
+
+    @app.get("/test")
+    async def test_route(request: Request, response: Response):
+        return response.redirect(url="/a", name="b")
+
+    with test_client_factory(app) as client:
+        resp = client.get("/test")
+        assert resp.status_code == 500
+
+
 # ========== Streaming Response Tests ==========
 
 
