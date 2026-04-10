@@ -198,8 +198,6 @@ def test_redirect_by_route_name_absolute_url(
         assert "/profile/123" in location
 
 
-
-
 def test_redirect_name_and_url_error(
     test_client_factory: Callable[[NexiosApp], TestClient],
 ):
