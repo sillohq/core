@@ -190,6 +190,26 @@ async def old_path(req, res):
     res.redirect("/new-path", status_code=301) # Permanent redirect
 ```
 
+You can also use a route name instead of a URL. This generates an absolute URL using the route's registered name and path parameters:
+
+```python
+# Define routes with names
+@app.get("/user/{user_id}", name="user_profile")
+async def get_user(req, res):
+    user_id = req.path_params.get("user_id")
+    res.json({"user_id": user_id})
+
+@app.get("/users")
+async def list_users(req, res):
+    # Redirect by route name - generates absolute URL like http://localhost:8000/user/42
+    res.redirect(name="user_profile", user_id=42)
+
+# Permanent redirect with route name
+@app.get("/legacy-user/{user_id}")
+async def legacy_user(req, res):
+    res.redirect(name="user_profile", user_id=req.path_params["user_id"], status_code=301)
+```
+
 ## Customizing the Response
 
 You can customize the response by setting the status code, headers, and cookies.

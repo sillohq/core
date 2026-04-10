@@ -244,6 +244,19 @@ async def old_path(req, res):
     res.redirect("/new-path", status_code=301) # Permanent redirect
 ```
 
+You can also redirect by route name instead of URL:
+
+```python
+@app.get("/user/{user_id}", name="user_profile")
+async def get_user(req, res):
+    res.json({"user_id": req.path_params.get("user_id")})
+
+@app.get("/users")
+async def list_users(req, res):
+    # Redirect by route name - generates absolute URL
+    res.redirect(name="user_profile", user_id=42)
+```
+
 ##  Customizing the Response
 
 You can customize the response by setting the status code, headers, and cookies.
