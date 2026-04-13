@@ -18,7 +18,7 @@ from nexios.cli.utils import (
 try:
     from nexios.testclient import TestClient as Client
 except ImportError:
-    Client = None
+    Client = None  # ty: ignore[invalid-assignment]
 
 
 @click.command()

@@ -363,7 +363,7 @@ class NexiosApp:
                             self.lifespan_manager: Any = self.lifespan_context(self)
                             returned_state = await self.lifespan_manager.__aenter__()
                             if returned_state:
-                                self.state.update(returned_state)  # ty: ignore[no-matching-overload]
+                                self.state.update(returned_state)
                         else:
                             # Otherwise, fall back to the default startup handlers
                             await self._startup()

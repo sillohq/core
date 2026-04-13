@@ -1055,6 +1055,9 @@ class NexiosResponse:
             url_path = app.url_for(name, **path_params)
             url = str(request.base_url) + str(url_path)
 
+        if url is None:
+            raise ValueError("URL is required for redirect")
+
         new_response = RedirectResponse(
             url=url, status_code=status_code, headers=headers
         )
