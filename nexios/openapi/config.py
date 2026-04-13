@@ -2,7 +2,6 @@ from typing import Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel
 
-
 from .models import (
     Components,
     Contact,
@@ -103,9 +102,7 @@ class OpenAPIConfig:
         if self.openapi_spec.components.examples is None:
             self.openapi_spec.components.examples = {}
 
-        self.openapi_spec.components.examples[name] = (  # ty: igore[unresolved-attribute]  # ty:ignore[invalid-assignment]
-            example
-        )
+        self.openapi_spec.components.examples[name] = example  # ty: igore[unresolved-attribute]  # ty:ignore[invalid-assignment]
 
     def add_tag(self, tag: Tag):
         """Add a tag to the OpenAPI specification"""

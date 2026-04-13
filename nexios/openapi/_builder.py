@@ -1,10 +1,10 @@
 from __future__ import annotations
-from nexios.openapi.models import Reference
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
+from nexios.openapi.models import Reference
 from nexios.routing import Route, Router
 from nexios.routing.grouping import Group
 

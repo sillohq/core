@@ -53,9 +53,9 @@ def compile_path(
     for match in PARAM_REGEX.finditer(path):
         param_name, convertor_type = match.groups("str")
         convertor_type = convertor_type.lstrip(":")
-        assert (
-            convertor_type in CONVERTOR_TYPES
-        ), f"Unknown path convertor '{convertor_type}'"
+        assert convertor_type in CONVERTOR_TYPES, (
+            f"Unknown path convertor '{convertor_type}'"
+        )
         convertor = CONVERTOR_TYPES[convertor_type]
 
         path_regex += re.escape(path[idx : match.start()])

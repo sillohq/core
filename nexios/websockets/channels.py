@@ -74,9 +74,9 @@ class Channel:
 
 
 class ChannelBox:
-    CHANNEL_GROUPS: typing.Dict[str, typing.Any] = (
-        {}
-    )  # groups of channels ~ key: group_name, val: dict of channels
+    CHANNEL_GROUPS: typing.Dict[
+        str, typing.Any
+    ] = {}  # groups of channels ~ key: group_name, val: dict of channels
     HISTORY_SIZE: int = int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", 1_048_576))
     HISTORY_MANAGER: BaseHistoryManager = InMemoryHistoryManager(
         history_size=int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", 1_048_576))

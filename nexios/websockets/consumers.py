@@ -103,9 +103,9 @@ class WebSocketConsumer:
                 await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
                 raise RuntimeError("Malformed JSON data received.")
 
-        assert (
-            self.encoding is None
-        ), f"Unsupported 'encoding' attribute {self.encoding}"
+        assert self.encoding is None, (
+            f"Unsupported 'encoding' attribute {self.encoding}"
+        )
         return message["text"] if message.get("text") else message["bytes"]
 
     async def on_connect(self, websocket: WebSocket) -> None:
