@@ -1,5 +1,49 @@
 # Changelog
 
+## v3.11.3 (2026-04-10)
+
+#### New Features
+
+* (http): enhance redirect method with route name support ([#361](https://github.com/nexios-labs/nexios/issues/361))
+#### Fixes
+
+* (cli): update import path for TestClient ([#360](https://github.com/nexios-labs/nexios/issues/360))
+#### Others
+
+* (release): bump version to 3.11.3
+* remove outdated example files ([#359](https://github.com/nexios-labs/nexios/issues/359))
+
+Full set of changes: [`v3.11.2...v3.11.3`](https://github.com/nexios-labs/nexios/compare/v3.11.2...v3.11.3)
+
+## v3.11.2 (2026-04-08)
+
+#### Refactorings
+
+* (handlers): update route parameter handling ([#357](https://github.com/nexios-labs/nexios/issues/357))
+#### Docs
+
+* (mounting): deprecate register ([#358](https://github.com/nexios-labs/nexios/issues/358))
+* remove old Nexios framework references and clean up ([#356](https://github.com/nexios-labs/nexios/issues/356))
+#### Others
+
+* bump version to 3.11.2
+
+Full set of changes: [`v3.11.1...v3.11.2`](https://github.com/nexios-labs/nexios/compare/v3.11.1...v3.11.2)
+
+## v3.11.1 (2026-04-07)
+
+#### Refactorings
+
+* (auth): remove support for www-authenticate headers ([#354](https://github.com/nexios-labs/nexios/issues/354))
+* (cli): remove custom command functionality and update configuration options ([#352](https://github.com/nexios-labs/nexios/issues/352))
+#### Others
+
+* bump version to 3.11.1
+* (deps): bump anyio from 4.12.1 to 4.13.0 ([#353](https://github.com/nexios-labs/nexios/issues/353))
+* (docs): update release notes ([#355](https://github.com/nexios-labs/nexios/issues/355))
+
+Full set of changes: [`v3.11.0...v3.11.1`](https://github.com/nexios-labs/nexios/compare/v3.11.0...v3.11.1)
+
 ## v3.11.0 (2026-04-05)
 
 #### New Features
