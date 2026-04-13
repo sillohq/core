@@ -277,7 +277,7 @@ class MultiPartParser:
         charset = params.get(b"charset")
         self._charset = charset.decode("latin-1") if charset else "utf-8"
 
-        callbacks: typing.Dict[str, typing.Callable[..., typing.Any]] = {
+        callbacks = {
             "on_part_begin": self.on_part_begin,
             "on_part_data": self.on_part_data,
             "on_part_end": self.on_part_end,
@@ -288,7 +288,7 @@ class MultiPartParser:
             "on_end": self.on_end,
         }
 
-        parser = multipart.MultipartParser(boundary, callbacks)
+        parser = multipart.MultipartParser(boundary, callbacks)  # ty:ignore[invalid-argument-type]
         try:
             # Feed the parser with data from the request.
             async for chunk in self.stream:

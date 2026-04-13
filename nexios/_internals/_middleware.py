@@ -208,9 +208,7 @@ class ASGIRequestResponseBridge:
             response._response = response_object
             return response_object
 
-        streams: anyio.create_memory_object_stream[Message] = (
-            anyio.create_memory_object_stream()
-        )
+        streams = anyio.create_memory_object_stream()
         send_stream, recv_stream = streams
         with recv_stream, send_stream, collapse_excgroups():
             async with anyio.create_task_group() as task_group:

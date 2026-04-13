@@ -30,7 +30,7 @@ try:
     from python_multipart.multipart import parse_options_header
 
 except ImportError:
-    parse_options_header = None
+    parse_options_header = None  # ty:ignore[invalid-assignment]
 
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
@@ -326,9 +326,7 @@ class Request(HTTPConnection):
         content_type_header = self.headers.get("Content-Type")
         if content_type_header is None:
             return None
-        content_type, _ = parse_options_header(
-            content_type_header
-        )  # ty :ignore[call-non-callable]
+        content_type, _ = parse_options_header(content_type_header)
         return content_type.decode("utf-8") if content_type else None
 
     async def stream(self) -> typing.AsyncGenerator[bytes, None]:

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from nexios.openapi.models import Reference
 
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -35,7 +36,7 @@ class APIDocumentation:
         self.redoc_url = redoc_url
         self.openapi_url = openapi_url
 
-    def _generate_redoc_ui(self, openapi_url: str = None) -> str:
+    def _generate_redoc_ui(self, openapi_url: str | None = None) -> str:
         """Generate ReDoc UI HTML"""
         url = openapi_url or self.openapi_url
         return f"""
@@ -68,7 +69,7 @@ class APIDocumentation:
         </html>
         """
 
-    def _generate_swagger_ui(self, openapi_url: str = None) -> str:
+    def _generate_swagger_ui(self, openapi_url: str | None = None) -> str:
         """Generate Swagger UI HTML"""
         url = openapi_url or self.openapi_url
         return f"""
@@ -222,8 +223,8 @@ class APIDocumentation:
                 summary=route.summary or f"{method.upper()} {openapi_path}",
                 description=route.description,
                 responses=responses_spec,
-                tags=route.tags or [],
-                parameters=parameters,
+                tags=route.tags or [],  # ty:ignore[invalid-argument-type]
+                parameters=parameters,  # ty:ignore[invalid-argument-type]
                 requestBody=request_body_spec,
                 security=route.security,
                 operationId=route.operation_id
@@ -262,7 +263,7 @@ class APIDocumentation:
                 content={
                     getattr(
                         route, "request_content_type", "application/json"
-                    ): MediaType(schema=Schema(**processed_schema))
+                    ): MediaType(spec=Schema(**processed_schema))
                 }
             )
         elif method.upper() not in ["GET", "DELETE", "HEAD", "OPTIONS"]:
@@ -270,7 +271,7 @@ class APIDocumentation:
             return RequestBody(
                 content={
                     "application/json": MediaType(
-                        schema=Schema(
+                        spec=Schema(
                             example={"example": "This is an example request body"},
                             type="object",
                         )
@@ -279,7 +280,9 @@ class APIDocumentation:
             )
         return None
 
-    def _build_responses_spec(self, route: Route) -> Dict[str, OpenAPIResponse]:
+    def _build_responses_spec(
+        self, route: Route
+    ) -> Dict[str, OpenAPIResponse | Reference]:
         """
         Build response specifications for the route.
         """
@@ -300,7 +303,7 @@ class APIDocumentation:
                 description="Successful Response",
                 content={
                     "application/json": MediaType(
-                        schema=Schema(
+                        spec=Schema(
                             example={"example": "This is an example response"},
                             type="object",
                         )
@@ -359,10 +362,21 @@ class APIDocumentation:
         if isinstance(model, type) and issubclass(model, BaseModel):
             schema_dict = model.model_json_schema()
             processed_schema = self._extract_and_add_nested_schemas(schema_dict)
+
+            # Generate example from model
+            try:
+                # Create empty instance to get defaults
+                example = model.model_validate({}).model_dump(exclude_none=True)
+            except Exception:
+                example = None
+
+            if example:
+                processed_schema["example"] = example
+
             return OpenAPIResponse(
                 description=f"Response for status code {status_code}",
                 content={
-                    "application/json": MediaType(schema=Schema(**processed_schema))
+                    "application/json": MediaType(spec=Schema(**processed_schema))
                 },
             )
         elif hasattr(model, "__origin__") and model.__origin__ is list:
@@ -371,11 +385,23 @@ class APIDocumentation:
             if issubclass(item_model, BaseModel):
                 schema_dict = item_model.model_json_schema()
                 processed_schema = self._extract_and_add_nested_schemas(schema_dict)
+
+                # Generate example from model
+                try:
+                    example = item_model.model_validate({}).model_dump(
+                        exclude_none=True
+                    )
+                except Exception:
+                    example = None
+
+                if example:
+                    processed_schema["example"] = [example]
+
                 return OpenAPIResponse(
                     description=f"Response for status code {status_code}",
                     content={
                         "application/json": MediaType(
-                            schema=Schema(
+                            spec=Schema(
                                 type="array",
                                 items=Schema(**processed_schema),
                             )
@@ -390,7 +416,7 @@ class APIDocumentation:
                 ),
                 content={
                     "application/json": MediaType(
-                        schema=Schema(type="object", example=model)
+                        spec=Schema(type="object", example=model)
                     )
                 },
             )
@@ -398,7 +424,7 @@ class APIDocumentation:
         # Fallback
         return OpenAPIResponse(
             description=f"Response for status code {status_code}",
-            content={"application/json": MediaType(schema=Schema(type="object"))},
+            content={"application/json": MediaType(spec=Schema(type="object"))},
         )
 
     def _build_parameters_spec(self, route: Route) -> List[Parameter]:
@@ -410,7 +436,7 @@ class APIDocumentation:
         # Add path parameters using the specific Path type
         for param_name in route.param_names:
             parameters.append(
-                Path(name=param_name, required=True, schema=Schema(type="string"))
+                Path(name=param_name, required=True, spec=Schema(type="string"))
             )
 
         # Add any additional parameters defined on the route

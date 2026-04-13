@@ -7,10 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.networks import AnyUrl
 
 try:
-    import email_validator  # noqa: F401
+    import email_validator
     from pydantic import EmailStr
-except ImportError:  # pragma: no cover
-    EmailStr = str
+except ImportError:
+    EmailStr = str  # ty:ignore[invalid-assignment]
 
 
 from typing import Annotated, Literal
@@ -160,7 +160,9 @@ class Encoding(BaseModel):
 
 
 class MediaType(BaseModel):
-    schema_: Annotated[Optional[Union[Schema, Reference]], Field(alias="schema")]
+    spec: Optional[Union[Schema, Reference]] = Field(
+        default=None, serialization_alias="schema"
+    )
     examples: Optional[Examples] = None
     encoding: Optional[Dict[str, Encoding]] = None
 
@@ -169,12 +171,13 @@ class ParameterBase(BaseModel):
     description: Optional[str] = None
     required: Optional[bool] = None
     deprecated: Optional[bool] = None
-    # Serialization rules for simple scenarios
     style: Optional[str] = None
     explode: Optional[bool] = None
-    schema_: Annotated[Optional[Union[Schema, Reference]], Field(alias="schema")]
+    spec: Annotated[
+        Optional[Union[Schema, Reference]],
+        Field(default=None, serialization_alias="schema"),
+    ] = None
     examples: Optional[Examples] = None
-    # Serialization rules for more complex scenarios
     content: Optional[Dict[str, MediaType]] = None
 
 
@@ -184,24 +187,26 @@ class ConcreteParameter(ParameterBase):
 
 
 class Header(ConcreteParameter):
-    in_: Literal["header"] = Field(default="header", alias="in")
+    in_: Literal["header"] = Field(default="header", serialization_alias="in")
     style: HeaderParamStyles = "simple"
     explode: bool = False
-    schema_: Annotated[Optional[Union[Schema, Reference]], Field(alias="schema")] = (
-        Schema(type="string")
-    )
+    spec: Annotated[
+        Optional[Union[Schema, Reference]],
+        Field(default=None, serialization_alias="schema"),
+    ] = Schema(type="string")
 
 
 class Query(ConcreteParameter):
     in_: Literal["query"] = Field(
-        default="query",  # Explicit default
-        alias="in",  # Explicit alias for OpenAPI compliance
+        default="query",
+        serialization_alias="in",
     )
     style: QueryParamStyles = "form"
     explode: bool = True
-    schema_: Annotated[Optional[Union[Schema, Reference]], Field(alias="schema")] = (
-        Schema(type="string")
-    )
+    spec: Annotated[
+        Optional[Union[Schema, Reference]],
+        Field(default=None, serialization_alias="schema"),
+    ] = Schema(type="string")
 
 
 class Path(ConcreteParameter):
@@ -238,12 +243,13 @@ class Link(BaseModel):
 class ResponseHeader(BaseModel):
     description: Optional[str] = None
     deprecated: Optional[bool] = None
-    # Serialization rules for simple scenarios
     style: HeaderParamStyles = "simple"
     explode: bool = False
-    schema_: Annotated[Optional[Union[Schema, Reference]], Field(alias="schema")] = None
+    spec: Annotated[
+        Optional[Union[Schema, Reference]],
+        Field(default=None, serialization_alias="schema"),
+    ] = None
     examples: Optional[Examples] = None
-    # Serialization rules for more complex scenarios
     content: Optional[Dict[str, MediaType]] = None
 
 
