@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -52,7 +53,7 @@ if TYPE_CHECKING:
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 logger = create_logger("nexios")
-lifespan_manager = Callable[["NexiosApp"], AsyncContextManager[bool]]
+lifespan_manager = Callable[["NexiosApp"], AsyncContextManager[Any]]
 
 
 class NexiosApp:
