@@ -34,5 +34,5 @@ jobs:
       - name: Install dependencies
         run: uv pip install -e ".[dev]"
 
-      - name: Run mypy
+      - name: Run ty
         run: uv run ty check nexios
