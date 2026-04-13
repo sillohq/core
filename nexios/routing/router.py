@@ -2339,7 +2339,10 @@ class Router(BaseRouter):
             middleware_cls: An ASGI middleware class or callable that follows the ASGI interface
             **kwargs: Additional keyword arguments to pass to the middleware
         """
-        self.app = middleware_cls(self.app, **kwargs)  # ty: ignore[invalid-argument-type]
+        self.app = middleware_cls(
+            self.app,  # ty:ignore[invalid-argument-type]
+            **kwargs,
+        )
 
 
 Routes = Route  # for backward compatibilty

@@ -86,7 +86,9 @@ class ExceptionMiddleware:
             self._status_handlers[exc_class_or_status_code] = handler
         else:
             assert issubclass(exc_class_or_status_code, Exception)
-            self._exception_handlers[exc_class_or_status_code] = handler  # ty: ignore[invalid-assignment]
+            self._exception_handlers[exc_class_or_status_code] = (
+                handler  # ty: ignore[invalid-assignment]
+            )
 
     async def __call__(
         self,

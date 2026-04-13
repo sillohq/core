@@ -80,7 +80,9 @@ class AuthenticationMiddleware(BaseMiddleware):
         # Try each backend until one successfully authenticates the user
         for backend in self.backends:
             try:
-                auth_result = await backend.authenticate(request, response)  # ty: ignore[unresolved-attribute]
+                auth_result = await backend.authenticate(  # ty: ignore[unresolved-attribute]
+                    request, response
+                )
 
                 if auth_result.success:
                     # Authentication successful, store user and auth type

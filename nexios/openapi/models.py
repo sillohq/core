@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.networks import AnyUrl
 
 try:
-    import email_validator
+    import email_validator  # noqa f401
     from pydantic import EmailStr
 except ImportError:
     EmailStr = str  # ty:ignore[invalid-assignment]

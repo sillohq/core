@@ -288,7 +288,10 @@ class MultiPartParser:
             "on_end": self.on_end,
         }
 
-        parser = multipart.MultipartParser(boundary, callbacks)  # ty:ignore[invalid-argument-type]
+        parser = multipart.MultipartParser(
+            boundary,
+            callbacks,  # ty:ignore[invalid-argument-type]
+        )
         try:
             # Feed the parser with data from the request.
             async for chunk in self.stream:

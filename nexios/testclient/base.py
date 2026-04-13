@@ -231,7 +231,11 @@ class TestClient(httpx.Client):
             }
             kwargs.update(remaining_kwargs)
 
-        return self.request(method=method, url=url, **kwargs)  # ty: ignore[invalid-argument-type]
+        return self.request(
+            method=method,
+            url=url,
+            **kwargs,  # ty: ignore[invalid-argument-type]
+        )
 
     def get(
         self,

@@ -171,7 +171,9 @@ class CORSMiddleware(BaseMiddleware):
         if "*" in self.allow_origins:
             return True
         try:
-            if self.allow_origin_regex and self.allow_origin_regex.fullmatch(origin):  # ty: ignore
+            if self.allow_origin_regex and self.allow_origin_regex.fullmatch(
+                origin
+            ):  # ty: ignore
                 return True
         except re.error:
             return False

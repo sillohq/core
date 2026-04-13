@@ -124,9 +124,9 @@ class CSRFMiddleware(BaseMiddleware):
                 app_config = get_config()
                 self.use_csrf = app_config.csrf_enabled or False
                 if self.use_csrf:
-                    assert app_config.secret_key is not None, (
-                        "Secret key is required for CSRF protection"
-                    )
+                    assert (
+                        app_config.secret_key is not None
+                    ), "Secret key is required for CSRF protection"
                     self.secret = app_config.secret_key
                     self.serializer = URLSafeSerializer(self.secret, "csrftoken")
                     self.required_urls = app_config.csrf_required_urls or ["*"]
