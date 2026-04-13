@@ -24,13 +24,7 @@ jobs:
 
       - name: Install Formatters
         run: |
-          pip install black isort ruff
-
-      - name: Run isort
-        run: isort .
-
-      - name: Run Black Formatter
-        run: black .
+          pip install  ruff
 
       - name: Run Ruff Linter and Auto-fix
         run: |
