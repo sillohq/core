@@ -84,6 +84,7 @@ dev = [
     "isort>=5.13.2",
     "ruff>=0.0.256",
     "black>=23.0.0",
+    "ty>=0.0.29",
 ]
 
 [project.scripts]
