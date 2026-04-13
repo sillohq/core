@@ -56,7 +56,7 @@ def ping(
                 return
 
             async with Client(app) as client:
-                resp = await client.request(method.upper(), route_path)
+                resp = client.request(method.upper(), route_path)
                 click.echo(f"{route_path} [{method.upper()}] -> {resp.status_code}")
 
                 if resp.status_code == 200:

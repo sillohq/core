@@ -1,7 +1,7 @@
 try:
     import jwt
 except ImportError:
-    jwt = None
+    jwt = None  # ty:ignore[invalid-assignment]
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
