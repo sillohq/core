@@ -1281,14 +1281,10 @@ class NexiosResponse:
         return self
 
     def set_headers(self, headers: Dict[str, str], overide_all: bool = False):
+        """Set multiple headers at once."""
         if overide_all:
             self._response.set_headers(headers)
-            self._response._headers = [
-                (bytes(str(k), "utf-8"), bytes(str(v), "utf-8"))
-                for k, v in self.headers.items()
-            ]
-            return
-        """Set multiple headers at once."""
+            return self
         for key, value in headers.items():
             self.set_header(key, value)
         return self
@@ -1297,6 +1293,7 @@ class NexiosResponse:
         if not self._response:
             return self.resp(new_body)
         self._response._body = new_body
+        return self
 
     def get_response(self) -> BaseResponse:
         """Make the response ASGI-compatible."""
