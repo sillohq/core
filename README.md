@@ -117,7 +117,7 @@ async def get_database():
     return {"connection": "active"}
 
 @app.get("/health")
-async def health_check(request: Request, response: Response, db: Depend(get_database)):
+async def health_check(request: Request, response: Response, db =  Depend(get_database)):
     return {"status": "healthy", "database": db}
 ```
 
