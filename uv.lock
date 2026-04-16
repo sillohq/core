@@ -390,7 +390,7 @@ wheels = [
 
 [[package]]
 name = "nexios"
-version = "3.11.3"
+version = "3.11.4"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -446,6 +446,15 @@ templating = [
     { name = "jinja2" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "anyio" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pytest" },
+    { name = "python-multipart" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anyio", specifier = "==4.13.0" },
@@ -486,6 +495,15 @@ requires-dist = [
     { name = "uvicorn", marker = "extra == 'http'", specifier = ">=0.27.0" },
 ]
 provides-extras = ["templating", "jwt", "granian", "cli", "http", "all", "dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "anyio", specifier = ">=4.13.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "python-multipart", specifier = ">=0.0.20" },
+]
 
 [[package]]
 name = "packaging"

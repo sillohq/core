@@ -88,6 +88,7 @@ from .application import NexiosApp
 from .config import set_config
 from .config.base import MakeConfig
 from .dependencies import Depend
+from .parameters import Query, Header, Cookie
 
 __all__ = [
     "NexiosApp",
@@ -96,4 +97,7 @@ __all__ = [
     "MakeConfig",
     "Router",
     "Route",
+    "Query",
+    "Header",
+    "Cookie",
 ]

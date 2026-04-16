@@ -215,3 +215,12 @@ update_changelog_on_bump = true
 [tool.ty.rules]
 unresolved-import = "ignore"
 invalid-parameter-default = "ignore"
+
+[dependency-groups]
+dev = [
+    "anyio>=4.13.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.11.7",
+    "pytest>=8.3.5",
+    "python-multipart>=0.0.20",
+]

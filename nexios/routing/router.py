@@ -42,6 +42,12 @@ from nexios.dependencies import (
     solve_dependencies,
     solve_handler_dependencies,
 )
+from nexios.parameters import (
+    solve_params,
+    resolve_param,
+    SolvedParamDependency,
+    ParameterExtractor,
+)
 from nexios.events import EventEmitter
 from nexios.exceptions import NotFoundException
 from nexios.http import Request, Response
@@ -200,6 +206,10 @@ class Route(BaseRoute):
         self.resolved_dependencies: List[SolvedDependency] = list(
             self._own_resolved_dependencies
         )
+        self._own_resolved_params = solve_params(handler)
+        self.resolved_params: List[SolvedParamDependency] = list(
+            self._own_resolved_params
+        )
 
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
@@ -333,6 +343,11 @@ class Route(BaseRoute):
                     continue
                 if dependency.parameter_name not in bound_args.arguments:
                     bound_args.arguments[dependency.parameter_name] = resolved_value
+
+            for param_dep in self.resolved_params:
+                resolved_value = await resolve_param(param_dep, ctx)
+                if param_dep.param_name not in bound_args.arguments:
+                    bound_args.arguments[param_dep.param_name] = resolved_value
 
             if is_async_callable(self.handler):
                 return await self.handler(*bound_args.args, **bound_args.kwargs)

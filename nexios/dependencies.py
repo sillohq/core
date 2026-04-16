@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from nexios import NexiosApp, Router
     from nexios.auth.users.base import BaseUser
     from nexios.http import Request
+    from nexios.parameters import ParameterExtractor, SolvedParamDependency
 
 
 class Depend:
@@ -226,6 +227,9 @@ class SolvedDependency:
     parameter_name: Optional[str] = None
     nested_dependencies: Tuple["SolvedDependency", ...] = field(default_factory=tuple)
     context_parameter_names: Tuple[str, ...] = field(default_factory=tuple)
+    param_dependencies: Tuple["SolvedParamDependency", ...] = field(
+        default_factory=tuple
+    )
     is_async_generator: bool = False
     is_generator: bool = False
     is_coroutine: bool = False
@@ -235,6 +239,8 @@ def _solve_depend(
     depend: Depend,
     parameter_name: Optional[str] = None,
 ) -> SolvedDependency:
+    from nexios.parameters import solve_params, ParameterExtractor
+
     dependency_func = depend.dependency
     if dependency_func is None:
         if parameter_name is None:
@@ -244,18 +250,36 @@ def _solve_depend(
     dependency_signature = signature(dependency_func)
     nested_dependencies: List[SolvedDependency] = []
     context_parameter_names: List[str] = []
+    param_dependencies: List["SolvedParamDependency"] = []
 
     for param in dependency_signature.parameters.values():
         if param.default != Parameter.empty and isinstance(param.default, Depend):
             nested_dependencies.append(_solve_depend(param.default, param.name))
         elif param.default != Parameter.empty and isinstance(param.default, Context):
             context_parameter_names.append(param.name)
+        elif param.default != Parameter.empty and isinstance(
+            param.default, ParameterExtractor
+        ):
+            from nexios.parameters import Header, SolvedParamDependency
+
+            extractor = param.default
+            extractor.param_name = param.name
+            if not extractor.alias:
+                if isinstance(extractor, Header):
+                    extractor.alias = extractor._convert_param_to_header_name(
+                        param.name
+                    )
+                else:
+                    extractor.alias = param.name
+
+            param_dependencies.append(SolvedParamDependency(extractor, param.name))
 
     return SolvedDependency(
         dependency=dependency_func,
         parameter_name=parameter_name,
         nested_dependencies=tuple(nested_dependencies),
         context_parameter_names=tuple(context_parameter_names),
+        param_dependencies=tuple(param_dependencies),
         is_async_generator=inspect.isasyncgenfunction(dependency_func),
         is_generator=inspect.isgeneratorfunction(dependency_func),
         is_coroutine=inspect.iscoroutinefunction(dependency_func),
@@ -296,6 +320,11 @@ async def resolve_dependency(
 
     for context_parameter_name in dependency.context_parameter_names:
         dep_kwargs[context_parameter_name] = ctx
+
+    from nexios.parameters import resolve_param
+
+    for param_dep in dependency.param_dependencies:
+        dep_kwargs[param_dep.param_name] = await resolve_param(param_dep, ctx)
 
     func = dependency.dependency
 
