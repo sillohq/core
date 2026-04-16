@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from nexios import NexiosApp, Router
     from nexios.auth.users.base import BaseUser
     from nexios.http import Request
-    from nexios.parameters import ParameterExtractor, SolvedParamDependency
+    from nexios.parameters import SolvedParamDependency
 
 
 class Depend:
@@ -239,7 +239,7 @@ def _solve_depend(
     depend: Depend,
     parameter_name: Optional[str] = None,
 ) -> SolvedDependency:
-    from nexios.parameters import solve_params, ParameterExtractor
+    from nexios.parameters import ParameterExtractor
 
     dependency_func = depend.dependency
     if dependency_func is None:

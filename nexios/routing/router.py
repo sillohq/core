@@ -46,7 +46,6 @@ from nexios.parameters import (
     solve_params,
     resolve_param,
     SolvedParamDependency,
-    ParameterExtractor,
 )
 from nexios.events import EventEmitter
 from nexios.exceptions import NotFoundException
