@@ -644,7 +644,10 @@ class Router(BaseRouter):
             self.routes.append(route)
             return
 
-        route.tags = list(self.tags).extend(route.tags) if route.tags else self.tags
+        if route.tags:
+            route.tags = list(self.tags) + list(route.tags)
+        else:
+            route.tags = self.tags
         if self.exclude_from_schema:
             route.exclude_from_schema = True
         route.resolved_dependencies = [
