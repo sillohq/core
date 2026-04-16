@@ -295,6 +295,66 @@ Use `Query`, `Header`, and `Cookie` parameter extractors in dependencies. They p
 
 ---
 
+## OpenAPI Integration
+
+Parameters automatically appear in your OpenAPI documentation. Nexios generates proper OpenAPI parameter objects with correct types, locations, and default values.
+
+### Example OpenAPI Output
+
+Given this handler:
+
+```python
+@app.get("/items")
+async def get_items(
+    request, response,
+    page: int = Query(1),
+    limit: int = Query(10),
+    authorization: str = Header()
+):
+    return {"page": page}
+```
+
+The generated OpenAPI spec includes:
+
+```json
+{
+  "/items": {
+    "get": {
+      "parameters": [
+        {
+          "name": "page",
+          "in": "query",
+          "schema": {"type": "integer", "default": 1},
+          "required": false
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {"type": "integer", "default": 10},
+          "required": false
+        },
+        {
+          "name": "Authorization",
+          "in": "header",
+          "schema": {"type": "string"},
+          "required": true
+        }
+      ]
+    }
+  }
+}
+```
+
+### Features
+
+- **Automatic type inference**: `int` → `integer`, `float` → `number`, `bool` → `boolean`, `str` → `string`
+- **Header name conversion**: `authorization` → `Authorization`, `x_request_id` → `X-Request-Id`
+- **Default values**: Included in schema for documentation
+- **Required status**: Automatically determined from `required=True` or when no default is provided
+- **Aliases**: Respected for custom parameter names
+
+---
+
 ## API Reference
 
 ### Query(default=..., *, alias=None, required=False)

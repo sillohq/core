@@ -7,14 +7,18 @@ from pydantic import BaseModel
 from nexios.openapi.models import Reference
 from nexios.routing import Route, Router
 from nexios.routing.grouping import Group
+from nexios.parameters import Query, Header, Cookie, SolvedParamDependency
 
 from .config import OpenAPIConfig
 from .models import (
+    Cookie as OpenAPICookie,
+    Header as OpenAPIHeader,
     MediaType,
     Operation,
     Parameter,
-    Path,
+    Path as OpenAPIPath,
     PathItem,
+    Query as OpenAPIQuery,
     RequestBody,
 )
 from .models import Response as OpenAPIResponse
@@ -436,11 +440,93 @@ class APIDocumentation:
         # Add path parameters using the specific Path type
         for param_name in route.param_names:
             parameters.append(
-                Path(name=param_name, required=True, spec=Schema(type="string"))
+                OpenAPIPath(name=param_name, required=True, spec=Schema(type="string"))
             )
+
+        # Add Query, Header, Cookie parameters from resolved_params
+        if hasattr(route, "resolved_params") and route.resolved_params:
+            for param_dep in route.resolved_params:
+                openapi_param = self._convert_param_dependency(param_dep)
+                if openapi_param:
+                    parameters.append(openapi_param)
 
         # Add any additional parameters defined on the route
         if hasattr(route, "parameters") and route.parameters:
             parameters.extend(route.parameters)
 
         return parameters
+
+    def _convert_param_dependency(
+        self, param_dep: SolvedParamDependency
+    ) -> Optional[Parameter]:
+        """
+        Convert a SolvedParamDependency to an OpenAPI Parameter.
+        """
+        extractor = param_dep.extractor
+        param_name = param_dep.param_name
+        alias = extractor.alias or param_name
+
+        # Build schema from default value
+        schema = self._infer_schema_from_default(extractor.default)
+
+        # Determine required status
+        required = extractor.required
+        if extractor.default is ...:
+            required = True
+
+        if isinstance(extractor, Query):
+            return OpenAPIQuery(
+                name=alias,
+                spec=schema,
+                required=required if required is not None else False,
+            )
+        elif isinstance(extractor, Header):
+            return OpenAPIHeader(
+                name=alias,
+                spec=schema,
+                required=required if required is not None else False,
+            )
+        elif isinstance(extractor, Cookie):
+            return OpenAPICookie(
+                name=alias,
+                spec=schema,
+                required=required if required is not None else False,
+            )
+
+        return None
+
+    def _infer_schema_from_default(self, default: Any) -> Schema:
+        """
+        Infer OpenAPI schema type from a default value.
+        """
+        if default is ... or default is None:
+            return Schema(type="string")
+
+        type_map = {
+            int: "integer",
+            float: "number",
+            bool: "boolean",
+            str: "string",
+        }
+
+        type_default = type(default)
+        if type_default in type_map:
+            schema_type = type_map[type_default]
+            schema = Schema(type=schema_type)
+
+            # Add default value to schema
+            if default is not None:
+                schema.default = default
+
+            # Add format for specific types
+            if type_default is float:
+                schema.format = "float"
+
+            return schema
+
+        # Handle list types
+        if isinstance(default, list):
+            return Schema(type="array", items=Schema(type="string"))
+
+        # Fallback to string
+        return Schema(type="string")
