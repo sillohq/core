@@ -133,27 +133,22 @@ async def get_data(request, response):
 
 ## Dependency Injection
 
-Nexios supports dependency injection for clean, testable code.
+Nexios supports dependency injection for clean, testable code. Use `Query`, `Header`, and `Cookie` parameter extractors for request data.
 
 ```python
-from nexios import Depend
+from nexios import Depend, Query, Header
 
-async def get_database():
-    return Database()
-
-async def get_current_user(request, db=Depend(get_database)):
-    token = request.headers.get("Authorization")
-    if not token:
+def get_current_user(authorization: str = Header()):
+    if not authorization:
         raise HTTPException(401, "Unauthorized")
-    user = await db.get_user_by_token(token)
-    if not user:
-        raise HTTPException(401, "Invalid token")
-    return user
+    return verify_token(authorization)
 
 @app.get("/profile")
 async def get_profile(request, response, user=Depend(get_current_user)):
     return response.json({"id": user.id, "name": user.name})
 ```
+
+See the [Dependency Injection](/guide/dependency-injection) and [Request Parameters](/guide/request-parameters) guides for more.
 
 ---
 

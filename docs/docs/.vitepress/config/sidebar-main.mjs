@@ -98,6 +98,7 @@ export const sidebarGuide = [
       { text: 'Events', link: '/guide/events' },
       { text: 'Streaming Response', link: '/guide/streaming-response' },
       { text: 'Dependency Injection', link: '/guide/dependency-injection' },
+      { text: 'Request Parameters', link: '/guide/request-parameters' },
       { text: "Templating", link: "/guide/templating/index" },
       { text: 'Static Files', link: '/guide/static-files' },
       { text: 'File Upload', link: '/guide/file-upload' },
