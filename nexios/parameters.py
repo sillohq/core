@@ -1,4 +1,5 @@
 from __future__ import annotations
+from inspect import signature, Parameter
 
 import typing
 from dataclasses import dataclass
@@ -149,7 +150,6 @@ class SolvedParamDependency:
 
 
 def solve_params(handler: Any) -> List["SolvedParamDependency"]:
-    from inspect import signature, Parameter
 
     sig = signature(handler)
     solved = []

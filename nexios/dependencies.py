@@ -5,6 +5,7 @@ from inspect import Parameter, signature
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from typing_extensions import Annotated, Doc
+from nexios.parameters import resolve_param
 
 if TYPE_CHECKING:
     from nexios import NexiosApp, Router
@@ -320,8 +321,6 @@ async def resolve_dependency(
 
     for context_parameter_name in dependency.context_parameter_names:
         dep_kwargs[context_parameter_name] = ctx
-
-    from nexios.parameters import resolve_param
 
     for param_dep in dependency.param_dependencies:
         dep_kwargs[param_dep.param_name] = await resolve_param(param_dep, ctx)
