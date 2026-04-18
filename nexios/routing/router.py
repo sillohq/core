@@ -209,6 +209,13 @@ class Route(BaseRoute):
         self.resolved_params: List[SolvedParamDependency] = list(
             self._own_resolved_params
         )
+        self._params_to_inject: List[str] = []
+        for dep in self._own_resolved_dependencies:
+            if dep.parameter_name:
+                self._params_to_inject.append(dep.parameter_name)
+        for param in self._own_resolved_params:
+            if param.param_name not in self._params_to_inject:
+                self._params_to_inject.append(param.param_name)
 
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
@@ -331,27 +338,24 @@ class Route(BaseRoute):
             ctx = None
 
         cleanup_callbacks: List[Callable[[], Any]] = []
-        bound_args = self.handler_signature.bind_partial(request, response, **kwargs)
+        injected: Dict[str, Any] = {}
+
+        for dependency in self.resolved_dependencies:
+            resolved_value = await resolve_dependency(
+                dependency, ctx, cleanup_callbacks
+            )
+            if dependency.parameter_name:
+                injected[dependency.parameter_name] = resolved_value
+
+        for param_dep in self.resolved_params:
+            resolved_value = await resolve_param(param_dep, ctx)
+            injected[param_dep.param_name] = resolved_value
 
         try:
-            for dependency in self.resolved_dependencies:
-                resolved_value = await resolve_dependency(
-                    dependency, ctx, cleanup_callbacks
-                )
-                if dependency.parameter_name is None:
-                    continue
-                if dependency.parameter_name not in bound_args.arguments:
-                    bound_args.arguments[dependency.parameter_name] = resolved_value
-
-            for param_dep in self.resolved_params:
-                resolved_value = await resolve_param(param_dep, ctx)
-                if param_dep.param_name not in bound_args.arguments:
-                    bound_args.arguments[param_dep.param_name] = resolved_value
-
             if is_async_callable(self.handler):
-                return await self.handler(*bound_args.args, **bound_args.kwargs)
+                return await self.handler(request, response, **kwargs, **injected)
             return await run_in_threadpool(
-                self.handler, *bound_args.args, **bound_args.kwargs
+                self.handler, request, response, **kwargs, **injected
             )
         finally:
             for cleanup in reversed(cleanup_callbacks):
