@@ -856,8 +856,11 @@ ServerErrHandlerType = typing.Callable[[Request, Response, Exception], typing.An
 
 
 class ServerErrorMiddleware(BaseMiddleware):
-    def __init__(self, handler: typing.Optional[ServerErrHandlerType] = None):
+    def __init__(
+        self, handler: typing.Optional[ServerErrHandlerType] = None, debug: bool = True
+    ):
         self.handler = handler
+        self.debug = debug
 
     async def __call__(
         self,
@@ -868,10 +871,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         # Store the current request for error context
         self.current_request = request
         # Get debug mode from config
-        try:
-            self.debug = True
-        except Exception:  # pragma: no cover
-            self.debug = True
+
         try:
             return await call_next()
         except Exception as exc:

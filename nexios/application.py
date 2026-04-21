@@ -70,6 +70,12 @@ class NexiosApp:
                     Additionally, this design allows for merging and overriding configurations, making it adaptable for various use cases. Whether used for small projects or large-scale applications, this subclass ensures that configuration management remains efficient and scalable. By extending MakeConfig, it leverages existing functionality while adding new capabilities tailored to Nexios. This makes it an essential component for maintaining structured and well-organized application settings.
                     """),
         ] = MakeConfig(),
+        debug: Annotated[
+            bool,
+            Doc("""
+                    Whether to enable debug mode.
+                    """),
+        ] = True,
         title: Annotated[
             Optional[str],
             Doc("""
@@ -135,6 +141,7 @@ class NexiosApp:
         ] = Route,
     ):
         self.config = config
+        self.debug = debug
         self.dependencies = dependencies or []
         try:
             get_config()
@@ -511,7 +518,9 @@ class NexiosApp:
             [
                 Middleware(
                     ASGIRequestResponseBridge,
-                    dispatch=ServerErrorMiddleware(handler=self.server_error_handler),
+                    dispatch=ServerErrorMiddleware(
+                        handler=self.server_error_handler, debug=self.debug
+                    ),
                 )
             ]
             + self.http_middleware
