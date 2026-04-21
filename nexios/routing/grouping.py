@@ -13,6 +13,13 @@ from .base import BaseRoute
 
 
 class Group(BaseRoute):
+    """A route group that prefixes all routes with a common path.
+
+    Groups allow organizing routes under a shared path prefix and mounting
+    sub-applications at specific URL paths. This is useful for modular applications
+    where different features are developed separately.
+    """
+
     def __init__(
         self,
         path: str = "",
@@ -22,6 +29,15 @@ class Group(BaseRoute):
         *,
         middleware: typing.List[Middleware] = [],
     ) -> None:
+        """Initialize a route group.
+
+        Args:
+            path: URL path prefix for all routes in this group.
+            app: An existing ASGI app to mount.
+            routes: A list of routes to include in this group.
+            name: Optional name for URL generation.
+            middleware: List of middleware to apply to this group.
+        """
         assert path == "" or path.startswith("/"), "Routed paths must start with '/'"
         assert app is not None or routes is not None, (
             "Either 'app=...', or 'routes=' must be specified"
@@ -51,11 +67,17 @@ class Group(BaseRoute):
 
     @property
     def routes(self) -> list[BaseRoute]:
+        """Get all routes in this group."""
         return getattr(self._base_app, "routes", [])
 
     def match(self, scope: Scope) -> typing.Tuple[MatchStatus, dict[str, Any]]:
-        """
-        Match a path against this mounted route's pattern.
+        """Match a path against this group's pattern.
+
+        Args:
+            scope: ASGI scope containing the request path.
+
+        Returns:
+            A tuple of (MatchStatus, dict) containing match status and parameters.
         """
         match = self.pattern.match(get_route_path(scope))
         if match:
@@ -75,6 +97,16 @@ class Group(BaseRoute):
         return MatchStatus.NONE, {}
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Handle an incoming request by delegating to the mounted app.
+
+        Modifies the scope path to remove the group prefix before passing
+        to the mounted application.
+
+        Args:
+            scope: ASGI scope containing request information.
+            receive: ASGI receive callable.
+            send: ASGI send callable.
+        """
         original_path = scope["path"]
         matched_path = self.path.rstrip("/")
 
@@ -92,8 +124,14 @@ class Group(BaseRoute):
             raise
 
     def url_path_for(self, name: str, **path_params: typing.Any) -> URLPath:
-        """
-        Generate a URL path for the mounted route.
+        """Generate a URL path by substituting parameters.
+
+        Args:
+            name: The route name to generate URL for.
+            **path_params: Parameters to substitute in the path.
+
+        Returns:
+            The generated URL path.
         """
         if name != self.name:
             raise ValueError(
@@ -110,9 +148,11 @@ class Group(BaseRoute):
         return URLPath(path=path, protocol="http")
 
     def __call__(self, scope: Scope, receive: Receive, send: Send) -> typing.Any:
+        """Handle the request by delegating to handle()."""
         return self.handle(scope, receive, send)
 
     def __repr__(self) -> str:
+        """Return a string representation of this group."""
         class_name = self.__class__.__name__
         name = self.name or ""
         return f"{class_name}(path={self.path!r}, name={name!r}, app={self.app!r})"

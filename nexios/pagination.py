@@ -22,17 +22,34 @@ class InvalidCursorError(PaginationError):
 
 
 class LinkBuilder:
+    """Helper to build pagination URLs."""
+
     def __init__(
         self,
         base_url: str,
         request_params: Dict[str, Union[str, List[str]]],
         pagination_params: List[str],
     ):
+        """Initialize LinkBuilder.
+
+        Args:
+            base_url: The base URL for pagination links.
+            request_params: All request query parameters.
+            pagination_params: Parameter names used for pagination.
+        """
         self.base_url = base_url
         self.request_params = request_params
         self.pagination_params = pagination_params
 
     def build_link(self, new_params: Dict[str, Any]) -> str:
+        """Build a pagination URL.
+
+        Args:
+            new_params: New pagination parameters to add.
+
+        Returns:
+            Full URL with query string.
+        """
         filtered_params: Dict[str, Any] = {
             k: v
             for k, v in self.request_params.items()
@@ -43,12 +60,16 @@ class LinkBuilder:
 
 
 class BasePaginationStrategy(abc.ABC):
+    """Abstract base class for pagination strategies."""
+
     @abc.abstractmethod
     def parse_parameters(self, request_params: Dict[str, Any]) -> Any:
+        """Parse pagination parameters from request."""
         pass
 
     @abc.abstractmethod
     def calculate_offset_limit(self, *args: Any, **kwargs: Any) -> Tuple[int, int]:
+        """Calculate offset and limit for data fetching."""
         pass
 
     @abc.abstractmethod
@@ -59,48 +80,75 @@ class BasePaginationStrategy(abc.ABC):
         base_url: str,
         request_params: Dict[str, Any],
     ) -> Dict[str, Any]:
+        """Generate pagination metadata."""
         pass
 
 
 class SyncDataHandler(abc.ABC):
+    """Abstract base for synchronous data handlers."""
+
     @abc.abstractmethod
     def get_total_items(self) -> int:
+        """Get total number of items."""
         pass
 
     @abc.abstractmethod
     def get_items(self, offset: int, limit: int) -> List[Any]:
+        """Get items for the current page."""
         pass
 
 
 class SyncListDataHandler(SyncDataHandler):
+    """Synchronous data handler for lists."""
+
     def __init__(self, data: List[Any]):
+        """Initialize with a list of data.
+
+        Args:
+            data: The list of items to paginate.
+        """
         self.data = data
 
     def get_total_items(self) -> int:
+        """Get total number of items."""
         return len(self.data)
 
     def get_items(self, offset: int, limit: int) -> List[Any]:
+        """Get items for the current page."""
         return self.data[offset : offset + limit]
 
 
 class AsyncDataHandler(abc.ABC):
+    """Abstract base for asynchronous data handlers."""
+
     @abc.abstractmethod
     async def get_total_items(self) -> int:
+        """Get total number of items."""
         pass
 
     @abc.abstractmethod
     async def get_items(self, offset: int, limit: int) -> List[Any]:
+        """Get items for the current page."""
         pass
 
 
 class AsyncListDataHandler(AsyncDataHandler):
+    """Asynchronous data handler for lists."""
+
     def __init__(self, data: List[Any]):
+        """Initialize with a list of data.
+
+        Args:
+            data: The list of items to paginate.
+        """
         self.data = data
 
     async def get_total_items(self) -> int:
+        """Get total number of items."""
         return len(self.data)
 
     async def get_items(self, offset: int, limit: int) -> List[Any]:
+        """Get items for the current page."""
         return self.data[offset : offset + limit]
 
 

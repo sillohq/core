@@ -20,6 +20,8 @@ class ParameterLocation(Enum):
 
 
 class ParameterExtractor:
+    """Base class for extracting parameters from request context."""
+
     def __init__(
         self,
         default: Any = ...,
@@ -27,24 +29,50 @@ class ParameterExtractor:
         alias: str | None = None,
         required: bool = False,
     ):
+        """Initialize the parameter extractor.
+
+        Args:
+            default: Default value if parameter is missing.
+            alias: Alternative name for the parameter.
+            required: Raise error if parameter is missing.
+        """
         self.default = default
         self.alias = alias
         self.required = required
         self.param_name: str | None = None
 
     def extract(self, ctx: Context | None) -> Any:
+        """Extract the parameter value from context.
+
+        Args:
+            ctx: The dependency injection context.
+
+        Returns:
+            The extracted parameter value.
+        """
         raise NotImplementedError
 
     def _get_param_name(self) -> str | None:
+        """Get the parameter name, preferring alias."""
         if self.alias:
             return self.alias
         return self.param_name
 
     def _convert_param_to_header_name(self, param_name: str) -> str:
+        """Convert snake_case param name to HTTP header name (X-Custom-Header)."""
         parts = param_name.split("_")
         return "-".join(part.title() for part in parts)
 
     def _convert(self, value: str, default: Any) -> Any:
+        """Convert a string value to the expected type based on default.
+
+        Args:
+            value: The string value from request.
+            default: Default value defining expected type.
+
+        Returns:
+            The value converted to the expected type.
+        """
         if default is ...:
             return value
         if default is None:
@@ -75,9 +103,19 @@ class ParameterExtractor:
 
 
 class Query(ParameterExtractor):
+    """Extractor for query string parameters."""
+
     location = ParameterLocation.QUERY
 
     def extract(self, ctx: Context | None) -> Any:
+        """Extract query parameter from request.
+
+        Args:
+            ctx: The dependency injection context.
+
+        Returns:
+            The query parameter value.
+        """
         if ctx is None or ctx.request is None:
             return self.default
 
@@ -98,9 +136,19 @@ class Query(ParameterExtractor):
 
 
 class Header(ParameterExtractor):
+    """Extractor for HTTP header parameters."""
+
     location = ParameterLocation.HEADER
 
     def extract(self, ctx: Context | None) -> Any:
+        """Extract header parameter from request.
+
+        Args:
+            ctx: The dependency injection context.
+
+        Returns:
+            The header parameter value.
+        """
         if ctx is None or ctx.request is None:
             return self.default
 
@@ -121,9 +169,19 @@ class Header(ParameterExtractor):
 
 
 class Cookie(ParameterExtractor):
+    """Extractor for cookie parameters."""
+
     location = ParameterLocation.COOKIE
 
     def extract(self, ctx: Context | None) -> Any:
+        """Extract cookie parameter from request.
+
+        Args:
+            ctx: The dependency injection context.
+
+        Returns:
+            The cookie parameter value.
+        """
         if ctx is None or ctx.request is None:
             return self.default
 
@@ -145,12 +203,21 @@ class Cookie(ParameterExtractor):
 
 @dataclass(frozen=True, slots=True)
 class SolvedParamDependency:
+    """A solved parameter dependency with extractor and name."""
+
     extractor: ParameterExtractor
     param_name: str
 
 
 def solve_params(handler: Any) -> List["SolvedParamDependency"]:
+    """Solve all parameter extractors for a handler.
 
+    Args:
+        handler: The handler function to analyze.
+
+    Returns:
+        List of SolvedParamDependency objects.
+    """
     sig = signature(handler)
     solved = []
 
@@ -175,6 +242,15 @@ async def resolve_param(
     param_dep: SolvedParamDependency,
     ctx: Optional["Context"] = None,
 ) -> Any:
+    """Resolve a parameter dependency.
+
+    Args:
+        param_dep: The solved parameter dependency.
+        ctx: The dependency injection context.
+
+    Returns:
+        The resolved parameter value.
+    """
     return param_dep.extractor.extract(ctx)
 
 

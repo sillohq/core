@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence,
 
 from typing_extensions import Annotated, Doc
 from nexios.parameters import resolve_param
+from nexios.parameters import Header, SolvedParamDependency
 
 if TYPE_CHECKING:
     from nexios import NexiosApp, Router
@@ -123,6 +124,7 @@ class Depend:
         self.dependency = dependency
 
     def __class_getitem__(cls, item: Any):
+        """Support Depend[...] type annotation syntax."""
         return cls
 
 
@@ -224,6 +226,19 @@ current_context: contextvars.ContextVar[Context] = contextvars.ContextVar(
 
 @dataclass(frozen=True, slots=True)
 class SolvedDependency:
+    """A resolved dependency with all its metadata.
+
+    Attributes:
+        dependency: The callable that provides the dependency.
+        parameter_name: Name of the parameter this dependency fills.
+        nested_dependencies: Any nested dependencies that this depends on.
+        context_parameter_names: Names of parameters that receive Context.
+        param_dependencies: Parameters resolved from request (Query, Header, Cookie).
+        is_async_generator: True if dependency is an async generator.
+        is_generator: True if dependency is a generator.
+        is_coroutine: True if dependency is an async function.
+    """
+
     dependency: Callable[..., Any]
     parameter_name: Optional[str] = None
     nested_dependencies: Tuple["SolvedDependency", ...] = field(default_factory=tuple)
@@ -240,6 +255,15 @@ def _solve_depend(
     depend: Depend,
     parameter_name: Optional[str] = None,
 ) -> SolvedDependency:
+    """Solve a Depend instance into a SolvedDependency.
+
+    Args:
+        depend: The Depend instance to solve.
+        parameter_name: Name of the parameter this dependency fills.
+
+    Returns:
+        A SolvedDependency with all resolved metadata.
+    """
     from nexios.parameters import ParameterExtractor
 
     dependency_func = depend.dependency
@@ -261,8 +285,6 @@ def _solve_depend(
         elif param.default != Parameter.empty and isinstance(
             param.default, ParameterExtractor
         ):
-            from nexios.parameters import Header, SolvedParamDependency
-
             extractor = param.default
             extractor.param_name = param.name
             if not extractor.alias:
@@ -288,10 +310,26 @@ def _solve_depend(
 
 
 def solve_dependencies(dependencies: Sequence[Depend]) -> List[SolvedDependency]:
+    """Solve multiple Depend instances.
+
+    Args:
+        dependencies: Sequence of Depend instances.
+
+    Returns:
+        List of SolvedDependency objects.
+    """
     return [_solve_depend(depend) for depend in dependencies]
 
 
 def solve_handler_dependencies(handler: Callable[..., Any]) -> List[SolvedDependency]:
+    """Solve all dependencies for a handler function.
+
+    Args:
+        handler: The handler function to analyze.
+
+    Returns:
+        List of SolvedDependency objects for the handler.
+    """
     handler_signature = signature(handler)
     solved_dependencies: List[SolvedDependency] = []
 
@@ -307,9 +345,19 @@ async def resolve_dependency(
     ctx: Optional[Context] = None,
     cleanup_callbacks: Optional[List[Callable[[], Any]]] = None,
 ) -> Any:
+    """Resolve a dependency and return its value.
+
+    Args:
+        dependency: The solved dependency to resolve.
+        ctx: The dependency injection context.
+        cleanup_callbacks: Callbacks to invoke for cleanup (generators).
+
+    Returns:
+        The resolved dependency value.
+    """
     if cleanup_callbacks is None:
         cleanup_callbacks = []
-
+    print("Resolving dependency:")
     dep_kwargs = {}
 
     for nested_dependency in dependency.nested_dependencies:
