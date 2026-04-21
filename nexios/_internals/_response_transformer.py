@@ -3,7 +3,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from nexios.context import Context, get_current_context, set_context, reset_context
+from nexios.context import Context, set_context, reset_context
 from nexios.http import Request, Response
 from nexios.http.response import BaseResponse
 from nexios.types import ASGIApp, Receive, Scope, Send
