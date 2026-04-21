@@ -3,7 +3,7 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-from nexios.dependencies import Context, current_context
+from nexios.context import Context, set_context, reset_context
 from nexios.http import Request, Response
 from nexios.http.response import BaseResponse
 from nexios.types import ASGIApp, Receive, Scope, Send
@@ -43,8 +43,6 @@ def request_response(
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
         request = Request(scope, receive, send)
 
-        # Get or create response manager for this request
-        # __new__ automatically returns existing instance if available
         response_manager = Response(request)
 
         ctx = Context(
@@ -53,12 +51,12 @@ def request_response(
             app=request.app,
             base_app=getattr(request, "base_app", None),
         )
-        token = current_context.set(ctx)
+        token = set_context(ctx)
         try:
             func_result = await func(request, response_manager, **request.path_params)
 
         finally:
-            current_context.reset(token)
+            reset_context(token)
         response = _process_response(response_manager, func_result)
         return await response(scope, receive, send)
 

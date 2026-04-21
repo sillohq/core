@@ -37,11 +37,11 @@ from nexios.dependencies import (
     Context,
     Depend,
     SolvedDependency,
-    current_context,
     resolve_dependency,
     solve_dependencies,
     solve_handler_dependencies,
 )
+from nexios.context import get_current_context
 from nexios.parameters import (
     solve_params,
     resolve_param,
@@ -332,10 +332,7 @@ class Route(BaseRoute):
         Returns:
             Any: The response from the handler.
         """
-        try:
-            ctx: Optional[Context] = current_context.get()
-        except LookupError:
-            ctx = None
+        ctx: Optional[Context] = get_current_context()
 
         cleanup_callbacks: List[Callable[[], Any]] = []
         injected: Dict[str, Any] = {}

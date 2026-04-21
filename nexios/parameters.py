@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any, TypeVar, List, Optional
 
 if typing.TYPE_CHECKING:
-    from nexios.dependencies import Context
+    from nexios.context import Context
 
 
 T = TypeVar("T")
