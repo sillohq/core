@@ -85,23 +85,32 @@ T = typing.TypeVar("T")
 
 
 class HTTPConnection(object):
-    """
-    A base class for incoming HTTP connections, that is used to provide
-    any functionality that is common to both `Request` and `WebSocket`.
+    """Base class for incoming HTTP connections.
+
+    Provides common functionality for both Request and WebSocket classes.
     """
 
     def __init__(self, scope: Scope, receive: Receive) -> None:
+        """Initialize HTTP connection from ASGI scope.
+
+        Args:
+            scope: ASGI scope dictionary.
+            receive: ASGI receive callable.
+        """
         assert scope["type"] in ("http", "websocket")
         self.scope = scope
         self.scope.update({"extensions": {"websocket.http.response": {}}})
 
     def __getitem__(self, key: str) -> typing.Any:
+        """Get a value from the scope by key."""
         return self.scope[key]
 
     def __iter__(self) -> typing.Iterator[str]:
+        """Iterate over scope keys."""
         return iter(self.scope)
 
     def __len__(self) -> int:
+        """Return the number of items in scope."""
         return len(self.scope)
 
     __eq__ = object.__eq__
@@ -109,20 +118,24 @@ class HTTPConnection(object):
 
     @property
     def app(self) -> typing.Any:
+        """The ASGI application instance."""
         return self.scope["app"]
 
     @property
     def base_app(self) -> "NexiosApp":  # noqa: F821
+        """The root ASGI application instance."""
         return self.scope["base_app"]
 
     @property
     def url(self) -> URL:
+        """The full URL for this request."""
         if not hasattr(self, "_url"):  # pragma: no branch
             self._url = URL(scope=self.scope)
         return self._url
 
     @property
     def base_url(self) -> URL:
+        """The base URL (root path) for this request."""
         if not hasattr(self, "_base_url"):
             base_url_scope = dict(self.scope)
             app_root_path = base_url_scope.get(
@@ -139,26 +152,31 @@ class HTTPConnection(object):
 
     @property
     def headers(self) -> Headers:
+        """The request headers."""
         if not hasattr(self, "_headers"):
             self._headers = Headers(scope=self.scope)
         return self._headers
 
     @property
     def path(self) -> str:
+        """The URL path for this request."""
         return self.url.path
 
     @property
     def query_params(self) -> QueryParams:
+        """The URL query parameters."""
         if not hasattr(self, "_query_params"):  # pragma: no branch
             self._query_params = QueryParams(self.scope["query_string"])
         return self._query_params
 
     @property
     def path_params(self) -> dict[str, typing.Any]:
+        """The path parameters extracted from the URL."""
         return self.scope.get("route_params", {})
 
     @property
     def cookies(self) -> dict[str, str]:
+        """The cookies sent with this request."""
         if not hasattr(self, "_cookies"):
             cookies: dict[str, str] = {}
             cookie_header = self.headers.get("cookie")
@@ -170,6 +188,7 @@ class HTTPConnection(object):
 
     @property
     def client(self) -> typing.Union[Address, None]:
+        """The client address (host, port) for this request."""
         host_port = self.scope.get("client")
         if host_port is not None:
             return Address(*host_port)
@@ -177,6 +196,7 @@ class HTTPConnection(object):
 
     @property
     def state(self) -> State:
+        """Request-scoped state for sharing data between middleware."""
         if not hasattr(self, "_state"):
             # Ensure 'state' has an empty dict if it's not already populated.
             self.scope.setdefault("state", {})
@@ -188,11 +208,12 @@ class HTTPConnection(object):
 
     @property
     def origin(self):
+        """The Origin header value."""
         return self.headers.get("Origin")
 
     @property
     def user_agent(self) -> str:
-        """Returns the User-Agent header if available."""
+        """The User-Agent header value."""
         return self.headers.get("user-agent", "")
 
     def build_absolute_uri(
@@ -305,6 +326,13 @@ class Request(HTTPConnection):
     def __init__(
         self, scope: Scope, receive: Receive = empty_receive, send: Send = empty_send
     ):
+        """Initialize a Request from ASGI scope and receive callable.
+
+        Args:
+            scope: ASGI scope dictionary.
+            receive: ASGI receive callable.
+            send: ASGI send callable.
+        """
         super().__init__(scope, receive)
         assert scope["type"] == "http"
         self._receive = receive
@@ -315,14 +343,17 @@ class Request(HTTPConnection):
 
     @property
     def method(self) -> str:
+        """The HTTP method (GET, POST, etc.)."""
         return self.scope["method"]
 
     @property
     def receive(self):
+        """The ASGI receive callable."""
         return self._receive
 
     @property
     def content_type(self) -> typing.Optional[str]:
+        """The Content-Type header without parameters."""
         content_type_header = self.headers.get("Content-Type")
         if content_type_header is None:
             return None
@@ -330,6 +361,10 @@ class Request(HTTPConnection):
         return content_type.decode("utf-8") if content_type else None
 
     async def stream(self) -> typing.AsyncGenerator[bytes, None]:
+        """Stream the request body as an async generator.
+
+        Yields chunks of bytes as they are received from the client.
+        """
         if hasattr(self, "_body"):
             yield self._body
             yield b""
@@ -351,6 +386,7 @@ class Request(HTTPConnection):
 
     @property
     async def body(self) -> bytes:
+        """The full request body as bytes."""
         if not hasattr(self, "_body"):
             chunks: list[bytes] = []
             async for chunk in self.stream():
@@ -360,6 +396,7 @@ class Request(HTTPConnection):
 
     @property
     async def json(self) -> typing.Dict[str, JSONType]:
+        """The request body parsed as JSON."""
         if not hasattr(self, "_json"):
             _body = await self.body
             self._json = json.loads(_body)
@@ -387,6 +424,15 @@ class Request(HTTPConnection):
         max_files: typing.Optional[int] = 1000,
         max_fields: typing.Optional[int] = 1000,
     ) -> FormData:
+        """Parse form data from the request body.
+
+        Args:
+            max_files: Maximum number of files to parse.
+            max_fields: Maximum number of form fields to parse.
+
+        Returns:
+            FormData object containing parsed form fields.
+        """
         if self._form is None:
             assert parse_options_header is not None, (
                 "The `python-multipart` library must be installed to use form parsing."
@@ -415,13 +461,16 @@ class Request(HTTPConnection):
 
     @property
     def form_data(self) -> AwaitableOrContextManager[FormData]:
+        """Context manager for accessing form data."""
         return AwaitableOrContextManagerWrapper(self._get_form())
 
     async def close(self) -> None:
+        """Close any resources held by the request."""
         if self._form is not None:
             await self._form.close()
 
     async def is_disconnected(self) -> bool:
+        """Check if the client has disconnected."""
         if not self._is_disconnected:
             message = {}
 
@@ -436,6 +485,11 @@ class Request(HTTPConnection):
         return self._is_disconnected
 
     async def send_push_promise(self, path: str) -> None:
+        """Send an HTTP/2 push promise for the given path.
+
+        Args:
+            path: The path to push.
+        """
         if "http.response.push" in self.scope.get("extensions", {}):
             raw_headers: list[tuple[bytes, bytes]] = []
             for name in SERVER_PUSH_HEADERS_TO_COPY:
@@ -449,9 +503,7 @@ class Request(HTTPConnection):
 
     @property
     async def files(self) -> typing.Dict[str, UploadedFile]:
-        """
-        This method returns a dictionary of files from the form_data.
-        """
+        """A dictionary of uploaded files from the request."""
         form_data = await self.form_data
         files_dict: typing.Dict[str, typing.Any] = {}
         for key, value in form_data.items():
@@ -465,20 +517,14 @@ class Request(HTTPConnection):
 
     @property
     async def form(self) -> FormData:
-        """
-        Parse and return form data from the request body.
-        Handles both URL-encoded and multipart form data.
-        Uses the existing form_data property which already handles all form types.
-        """
+        """The parsed form data from the request body."""
         if not hasattr(self, "_form") or self._form is None:
             form_data = await self.form_data
             self._form = form_data
         return self._form
 
     def valid(self) -> bool:
-        """
-        Checks if the request is valid by ensuring the method and headers are properly set.
-        """
+        """Check if the request has a valid HTTP method and headers."""
         return self.method in {
             "GET",
             "POST",
@@ -491,58 +537,56 @@ class Request(HTTPConnection):
 
     @property
     def session(self) -> BaseSessionInterface:
+        """The session interface for this request."""
         assert "session" in self.scope.keys(), "No Session Middleware Installed"
         return typing.cast(BaseSessionInterface, self.scope["session"])
 
     @property
     def user(self) -> typing.Optional[BaseUser]:
+        """The authenticated user for this request."""
         return self.scope.get("user", None)
 
     def url_for(self, _name: str, **path_params: typing.Dict[str, typing.Any]) -> str:
+        """Generate a URL for the given route name.
+
+        Args:
+            _name: The name of the route.
+            **path_params: Path parameters to substitute.
+
+        Returns:
+            The generated URL path.
+        """
         return self.base_app.url_for(_name, **path_params)
 
     def __str__(self) -> str:
+        """Return a string representation of this request."""
         return f"<Request {self.method} {self.url}>"
 
     @property
     def is_ajax(self) -> bool:
-        """
-        Check if the request is an AJAX request.
-        Returns True if the X-Requested-With header is XMLHttpRequest.
-        """
+        """Check if the request is an AJAX request."""
         return self.headers.get("x-requested-with", "").lower() == "xmlhttprequest"
 
     @property
     def is_secure(self) -> bool:
-        """
-        Check if the request is using HTTPS.
-        """
+        """Check if the request is using HTTPS."""
         return self.url.scheme == "https"
 
     @property
     def accepts_html(self) -> bool:
-        """
-        Check if the request accepts HTML response.
-        Returns True if the Accept header includes text/html.
-        """
+        """Check if the request accepts HTML response."""
         accept = self.headers.get("accept", "")
         return "text/html" in accept or "*/*" in accept
 
     @property
     def is_json(self) -> bool:
-        """
-        Check if the request content type is JSON.
-        Returns True if Content-Type header starts with application/json.
-        """
+        """Check if the request content type is JSON."""
         content_type = self.content_type
         return content_type is not None and "application/json" in content_type
 
     @property
     def is_form(self) -> bool:
-        """
-        Check if the request is form data (either URL-encoded or multipart).
-        Returns True if Content-Type is application/x-www-form-urlencoded or multipart/form-data.
-        """
+        """Check if the request is form data."""
         content_type = self.content_type
         return content_type is not None and (
             content_type.startswith("application/x-www-form-urlencoded")
@@ -551,10 +595,7 @@ class Request(HTTPConnection):
 
     @property
     def is_multipart(self) -> bool:
-        """
-        Check if the request is multipart form data.
-        Returns True if Content-Type starts with multipart/form-data.
-        """
+        """Check if the request is multipart form data."""
         content_type = self.content_type
         return content_type is not None and content_type.startswith(
             "multipart/form-data"
@@ -562,10 +603,7 @@ class Request(HTTPConnection):
 
     @property
     def is_urlencoded(self) -> bool:
-        """
-        Check if the request is URL-encoded form data.
-        Returns True if Content-Type is application/x-www-form-urlencoded.
-        """
+        """Check if the request is URL-encoded form data."""
         content_type = self.content_type
         return (
             content_type is not None
@@ -574,32 +612,21 @@ class Request(HTTPConnection):
 
     @property
     def has_cookie(self) -> bool:
-        """
-        Check if the request has cookies.
-        Returns True if Cookie header exists and has content.
-        """
+        """Check if the request has cookies."""
         cookie_header = self.headers.get("cookie")
         return cookie_header is not None and cookie_header.strip() != ""
 
     @property
     def has_files(self) -> bool:
-        """
-        Check if the request contains uploaded files.
-        Returns True if the request has multipart form data with files.
-        """
+        """Check if the request contains uploaded files."""
         try:
-            # This will check if there are any files in the form data
             import asyncio
 
             if self.is_multipart:
-                # Try to get form data to check for files
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    # If we're in an async context, we can't use asyncio.run
-                    # Just check if the content type suggests files might be present
                     return True
                 else:
-                    # Safe to use asyncio.run
                     form_data = loop.run_until_complete(self.form_data)
                     for value in form_data.values():
                         if hasattr(value, "filename") and value.filename:
@@ -611,10 +638,7 @@ class Request(HTTPConnection):
 
     @property
     def has_body(self) -> bool:
-        """
-        Check if the request has a body.
-        Returns True if Content-Length > 0 or if body contains data.
-        """
+        """Check if the request has a body."""
         content_length = self.content_length
         if content_length > 0:
             return True
@@ -627,66 +651,42 @@ class Request(HTTPConnection):
 
     @property
     def is_authenticated(self) -> bool:
-        """
-        Check if the request is authenticated (has user in scope).
-        Returns True if user is set in the request scope.
-        """
+        """Check if the request has an authenticated user."""
         return self.user is not None
 
     @property
     def has_session(self) -> bool:
-        """
-        Check if session middleware is available.
-        Returns True if session is available in the request scope.
-        """
+        """Check if session middleware is available."""
         return "session" in self.scope
 
     @property
     def accepts_json(self) -> bool:
-        """
-        Check if the request accepts JSON response.
-        Returns True if the Accept header includes application/json.
-        """
+        """Check if the request accepts JSON response."""
         accept = self.headers.get("accept", "")
         return "application/json" in accept or "*/*" in accept
 
     def get_header(self, key: str, default: typing.Any = None) -> typing.Any:
-        """
-        Get a header value with a default if not found.
-        Case-insensitive header lookup.
-        """
+        """Get a header value with a default if not found."""
         return self.headers.get(key.lower()) or default
 
     def has_header(self, key: str) -> bool:
-        """
-        Check if a header exists.
-        Case-insensitive header lookup.
-        """
+        """Check if a header exists."""
         return key.lower() in self.headers
 
     @property
     def origin(self) -> str:
-        """
-        Get the request's origin.
-        Returns the Origin header value or constructs it from the URL.
-        """
+        """Get the request's origin URL."""
         if "origin" in self.headers:
             return typing.cast(str, self.headers["origin"])
         return f"{self.url.scheme}://{self.url.netloc}"
 
     @property
     def referrer(self) -> str:
-        """
-        Get the request's referrer.
-        Returns the Referer header value or empty string if not set.
-        """
+        """Get the request's referrer."""
         return typing.cast(str, self.headers.get("referer")) or ""
 
     def get_client_ip(self) -> str:
-        """
-        Get the client's IP address.
-        Handles X-Forwarded-For and X-Real-IP headers for proxy scenarios.
-        """
+        """Get the client's IP address, considering proxy headers."""
         forwarded_for = self.headers.get("x-forwarded-for")
         if forwarded_for:
             return forwarded_for.split(",")[0].strip()
@@ -706,10 +706,7 @@ class Request(HTTPConnection):
 
     @property
     def content_length(self) -> int:
-        """
-        Get the request's content length.
-        Returns the Content-Length header value as int or 0 if not set.
-        """
+        """The Content-Length header value as int."""
         try:
             return int(self.headers.get("content-length", 0))
         except (ValueError, TypeError):
@@ -718,8 +715,7 @@ class Request(HTTPConnection):
     def get_query_params(
         self, flat: bool = True
     ) -> typing.Union[typing.Dict[str, str], typing.Dict[str, typing.List[str]]]:
-        """
-        Get query parameters with option to flatten multiple values.
+        """Get query parameters, optionally flattened.
 
         Args:
             flat (bool): If True, returns only the first value for each parameter.

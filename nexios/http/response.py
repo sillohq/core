@@ -51,18 +51,25 @@ JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 
 
 class MalformedRangeHeader(Exception):
+    """Exception raised for malformed range headers."""
+
     def __init__(self, content: str = "Malformed range header.") -> None:
+        """Initialize the exception with content."""
         self.content = content
 
 
 class RangeNotSatisfiable(Exception):
+    """Exception raised when range is not satisfiable."""
+
     def __init__(self, max_size: int) -> None:
+        """Initialize with max size."""
         self.max_size = max_size
 
 
 class BaseResponse:
-    """
-    Base ASGI-compatible Response class with support for cookies, caching, and custom headers.
+    """Base ASGI-compatible Response class.
+
+    Provides support for cookies, caching, and custom headers.
     """
 
     STATUS_CODES = {
@@ -86,6 +93,14 @@ class BaseResponse:
         headers: Optional[Dict[str, str]] = None,
         content_type: Optional[str] = None,
     ):
+        """Initialize a BaseResponse.
+
+        Args:
+            body: Response body content.
+            status_code: HTTP status code.
+            headers: Response headers dict.
+            content_type: Content-Type header value.
+        """
         self.charset = "utf-8"
         self.status_code: int = status_code
         self.raw_headers: List[Tuple[bytes, bytes]] = []
@@ -94,6 +109,7 @@ class BaseResponse:
         self._init_headers(headers)
 
     def render(self, content: typing.Any) -> typing.Union[bytes, memoryview]:
+        """Render content to bytes."""
         if content is None:
             return b""
         if isinstance(content, (bytes, memoryview)):
@@ -101,6 +117,7 @@ class BaseResponse:
         return content.encode(self.charset)
 
     def _init_headers(self, headers: Optional[Dict[str, str]] = None):
+        """Initialize response headers."""
         if headers is None:
             raw_headers: list[tuple[bytes, bytes]] = []
             populate_content_length = True
@@ -134,6 +151,7 @@ class BaseResponse:
 
     @property
     def headers(self) -> MutableHeaders:
+        """The response headers."""
         if not hasattr(self, "_headers"):
             self._headers = MutableHeaders(raw=self.raw_headers)
         return self._headers
@@ -233,6 +251,7 @@ class BaseResponse:
 
     @property
     def body(self):
+        """The response body as bytes."""
         return self._body
 
     def _generate_etag(self) -> str:
@@ -242,8 +261,12 @@ class BaseResponse:
         return f'W/"{b64encode(content_hash.digest()).decode("utf-8")}"'
 
     def set_header(self, key: str, value: str, overide: bool = False) -> "BaseResponse":
-        """
-        Set a response header. If `overide` is True, replace the existing header.
+        """Set a response header.
+
+        Args:
+            key: Header name.
+            value: Header value.
+            overide: If True, replace existing header with same name.
         """
         key_bytes = key.lower().encode(
             "latin-1"
@@ -258,13 +281,18 @@ class BaseResponse:
         return self
 
     def set_headers(self, headers: Dict[str, str], overide_all: bool = False):
+        """Set multiple headers at once.
+
+        Args:
+            headers: Dict of header name to value.
+            overide_all: If True, replace all existing headers.
+        """
         if overide_all:
             self.raw_headers = [
                 (k.lower().encode("latin-1"), v.encode("latin-1"))
                 for k, v in headers.items()
             ]
             return
-        """Set multiple headers at once."""
         for key, value in headers.items():
             self.set_header(key, value)
 
