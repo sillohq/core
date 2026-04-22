@@ -6,4 +6,4 @@ typing-extensions==4.15.0
 pytest-asyncio>=0.25.3,<1.4.0
 pyjwt>=2.7.0
 isort>=5.13.2
-flake8>=7.0.0 
+flake8>=7.3.0 
