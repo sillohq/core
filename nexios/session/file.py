@@ -12,13 +12,12 @@ class FileSessionManager(BaseSessionInterface):
         self.session_key = session_key
 
     def _get_storage_path(self):
+
         path = os.path.join(
-            self.session_config.session_file_storage_path or "sessions",
+            "__sessions",
             f"{self.session_key}.json",
         )
-        os.makedirs(
-            self.session_config.session_file_storage_path or "sessions", exist_ok=True
-        )
+        os.makedirs("__sessions", exist_ok=True)
         return path
 
     def _load_session_data(self) -> Optional[Dict[str, Any]]:

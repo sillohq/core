@@ -2,14 +2,15 @@ import re
 import secrets
 import typing
 import warnings
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional
 
 from itsdangerous import BadSignature, URLSafeSerializer
 
 from nexios.config import get_config
-from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
 from nexios.middleware.base import BaseMiddleware
+
+from .config import CSRFConfig
 
 
 class CSRFMiddleware(BaseMiddleware):
@@ -18,90 +19,45 @@ class CSRFMiddleware(BaseMiddleware):
     """
 
     def __init__(
-        self, config: Optional[Union[MakeConfig, Dict[str, Any]]] = None, **kwargs: Any
+        self,
+        config: Optional[CSRFConfig] = None,
+        **kwargs: Any,
     ) -> None:
 
-        # Handle config parameter (new approach)
         if config is not None:
-            if isinstance(config, MakeConfig):
-                self.config = config
-            elif isinstance(config, dict):
-                self.config = MakeConfig(config)
-            else:
-                raise TypeError("config must be a MakeConfig instance or dictionary")
+            if not isinstance(config, CSRFConfig):
+                raise TypeError("config must be a CSRFConfig instance")
+            self.csrf_config = config
         else:
-            # Fallback to get_config() (old approach) with warning
             warnings.warn(
                 "Using get_config() for CSRF middleware is deprecated. "
-                "Please pass config directly to CSRFMiddleware constructor.",
+                "Please pass CSRFConfig directly to CSRFMiddleware constructor.",
                 DeprecationWarning,
                 stacklevel=2,
             )
-            self.config = None
+            self.csrf_config = None
 
         self.use_csrf = False
         self.secret = None
 
-        # Setup configuration if provided
-        if self.config:
+        if self.csrf_config:
             self._setup_csrf_config()
 
     def _setup_csrf_config(self) -> None:
         """Setup CSRF configuration from config object."""
-        # Check if CSRF is enabled
-        self.use_csrf = (
-            (
-                getattr(self.config, "csrf_enabled", False)
-                or getattr(self.config, "use_csrf", False)
-                or getattr(self.config, "enabled", False)
-            )
-            if self.config
-            else False
-        )
-
-        # Setup CSRF configuration attributes
-        self.required_urls: typing.List[str] = (
-            getattr(self.config, "csrf_required_urls", ["*"])
-            or getattr(self.config, "required_urls", ["*"])
-            or ["*"]
-        )
-        self.exempt_urls = getattr(self.config, "csrf_exempt_urls", None) or getattr(
-            self.config, "exempt_urls", None
-        )
-        self.sensitive_cookies = getattr(
-            self.config, "csrf_sensitive_cookies", None
-        ) or getattr(self.config, "sensitive_cookies", None)
-        self.safe_methods = set(
-            getattr(self.config, "csrf_safe_methods", None)
-            or getattr(self.config, "safe_methods", None)
-            or [
-                "GET",
-                "HEAD",
-                "OPTIONS",
-                "TRACE",
-            ]
-        )
-        self.cookie_name = getattr(
-            self.config, "csrf_cookie_name", "csrftoken"
-        ) or getattr(self.config, "cookie_name", "csrftoken")
-        self.cookie_path = getattr(self.config, "csrf_cookie_path", "/") or getattr(
-            self.config, "cookie_path", "/"
-        )
-        self.cookie_domain = getattr(
-            self.config, "csrf_cookie_domain", None
-        ) or getattr(self.config, "cookie_domain", None)
-        self.cookie_secure = getattr(
-            self.config, "csrf_cookie_secure", False
-        ) or getattr(self.config, "cookie_secure", False)
-        self.cookie_httponly = getattr(
-            self.config, "csrf_cookie_httponly", True
-        ) or getattr(self.config, "cookie_httponly", True)
-        self.cookie_samesite: typing.Literal["lax", "none", "strict"] = getattr(
-            self.config, "csrf_cookie_samesite", "lax"
-        ) or getattr(self.config, "cookie_samesite", "lax")
-        self.header_name = getattr(
-            self.config, "csrf_header_name", "X-CSRFToken"
-        ) or getattr(self.config, "header_name", "X-CSRFToken")
+        cfg = self.csrf_config
+        self.use_csrf = cfg.enabled  # ty:ignore[unresolved-attribute]
+        self.required_urls = cfg.required_urls  # ty:ignore[unresolved-attribute]
+        self.exempt_urls = cfg.exempt_urls  # ty:ignore[unresolved-attribute]
+        self.sensitive_cookies = cfg.sensitive_cookies  # ty:ignore[unresolved-attribute]
+        self.safe_methods = set(cfg.safe_methods)  # ty:ignore[unresolved-attribute]
+        self.cookie_name = cfg.cookie_name  # ty:ignore[unresolved-attribute]
+        self.cookie_path = cfg.cookie_path  # ty:ignore[unresolved-attribute]
+        self.cookie_domain = cfg.cookie_domain  # ty:ignore[unresolved-attribute]
+        self.cookie_secure = cfg.cookie_secure  # ty:ignore[unresolved-attribute]
+        self.cookie_httponly = cfg.cookie_httponly  # ty:ignore[unresolved-attribute]
+        self.cookie_samesite = cfg.cookie_samesite  # ty:ignore[unresolved-attribute]
+        self.header_name = cfg.header_name  # ty:ignore[unresolved-attribute]
 
     async def process_request(
         self,
@@ -112,11 +68,10 @@ class CSRFMiddleware(BaseMiddleware):
         """
         Process the incoming request to validate the CSRF token for unsafe HTTP methods.
         """
-        # Handle configuration setup if not done in __init__
-        if not hasattr(self, "config") or self.config is None:
+        if not hasattr(self, "csrf_config") or self.csrf_config is None:
             warnings.warn(
                 "Using get_config() for CSRF middleware is deprecated. "
-                "Please pass config directly to CSRFMiddleware constructor.",
+                "Please pass CSRFConfig directly to CSRFMiddleware constructor.",
                 DeprecationWarning,
                 stacklevel=3,
             )
@@ -151,7 +106,6 @@ class CSRFMiddleware(BaseMiddleware):
             except (RuntimeError, AssertionError):
                 self.use_csrf = False
         elif self.use_csrf:
-            # Always get secret key from get_config() at runtime, not from config passed to __init__
             try:
                 app_config = get_config()
                 self.secret = app_config.secret_key
@@ -189,7 +143,7 @@ class CSRFMiddleware(BaseMiddleware):
                 return response.text(
                     "CSRF token missing from headers", status_code=403
                 ).delete_cookie(self.cookie_name, self.cookie_path, self.cookie_domain)
-            if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):  # type: ignore
+            if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):  # ty:ignore[invalid-argument-type]
                 return response.text(
                     "CSRF token incorrect", status_code=403
                 ).delete_cookie(self.cookie_name, self.cookie_path, self.cookie_domain)
