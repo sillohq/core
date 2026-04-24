@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from nexios.config import MakeConfig, set_config
-from nexios.session import SessionConfig
 from nexios.session.base import BaseSessionInterface
 
 
@@ -33,15 +32,7 @@ class TestBaseSessionInterface:
 
     def setup_method(self):
         """Set up test configuration"""
-        config = MakeConfig(
-            secret_key="test-secret-key",
-            session=SessionConfig(
-                session_cookie_name="test_session",
-                session_expiration_time=3600,
-                session_permanent=False,
-                session_refresh_each_request=False,
-            ),
-        )
+        config = MakeConfig(secret_key="test-secret-key")
         set_config(config)
 
     def test_session_initialization(self):

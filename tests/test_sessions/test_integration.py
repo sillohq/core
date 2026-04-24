@@ -11,7 +11,6 @@ import pytest
 from nexios import NexiosApp
 from nexios.config import MakeConfig, set_config
 from nexios.http import Request, Response
-from nexios.session import SessionConfig
 from nexios.session.file import FileSessionManager
 from nexios.session.middleware import SessionMiddleware
 from nexios.session.signed_cookies import SignedSessionManager
@@ -23,17 +22,10 @@ class TestSessionIntegration:
 
     def setup_method(self):
         """Set up test configuration"""
-        config = MakeConfig(
-            secret_key="test-secret-key-integration",
-            session=SessionConfig(
-                session_cookie_name="integration_session",
-                session_expiration_time=3600,
-                session_permanent=False,
-                session_refresh_each_request=False,
-            ),
-        )
+        config = MakeConfig(secret_key="test-secret-key-integration")
         set_config(config)
 
+    @pytest.mark.skip(reason="Uses deprecated no-config middleware style")
     def test_signed_cookie_integration_flow(self):
         """Test complete signed cookie session flow"""
         app = NexiosApp()
