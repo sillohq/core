@@ -1,3 +1,4 @@
+from typing import Literal
 import secrets
 import typing
 import warnings
@@ -114,7 +115,7 @@ class BaseSessionInterface:
             return None
         return self.session_config.session_cookie_secure
 
-    def get_cookie_samesite(self) -> typing.Optional[str]:
+    def get_cookie_samesite(self) -> typing.Optional[Literal["lax", "strict", "none"]]:
         """Returns the SameSite attribute for the cookie. Uses `session_config.session_cookie_samesite`."""
         if not self.session_config:
             return None
