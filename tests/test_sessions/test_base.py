@@ -9,22 +9,23 @@ import pytest
 
 from nexios.config import MakeConfig, set_config
 from nexios.session.base import BaseSessionInterface
+from nexios.session.session_objects import Session
 
 
 class MockSessionManager(BaseSessionInterface):
     """Mock session manager for testing base functionality"""
 
-    def __init__(self, session_key: str = None):
-        super().__init__(session_key)
+    def __init__(self, config=None):
+        super().__init__(config)
         self._data = {}
 
-    async def save(self):
+    async def save(self, session):
         """Mock save method"""
-        pass
+        self._data = session._session_cache.copy()
 
-    async def load(self):
+    async def load(self, session):
         """Mock load method"""
-        pass
+        session._session_cache.update(self._data)
 
 
 class TestBaseSessionInterface:
@@ -34,10 +35,11 @@ class TestBaseSessionInterface:
         """Set up test configuration"""
         config = MakeConfig(secret_key="test-secret-key")
         set_config(config)
+        self.manager = MockSessionManager()
 
     def test_session_initialization(self):
         """Test session initialization"""
-        session = MockSessionManager("test-key")
+        session = Session(self.manager, "test-key")
 
         assert session.session_key == "test-key"
         assert session._session_cache == {}
@@ -47,7 +49,7 @@ class TestBaseSessionInterface:
 
     def test_session_getitem_setitem(self):
         """Test getting and setting session items"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         # Test setting a value
         session["key1"] = "value1"
@@ -61,7 +63,7 @@ class TestBaseSessionInterface:
 
     def test_session_delitem(self):
         """Test deleting session items"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         session["key1"] = "value1"
         session["key2"] = "value2"
@@ -74,7 +76,7 @@ class TestBaseSessionInterface:
 
     def test_session_contains(self):
         """Test 'in' operator for session"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         session["key1"] = "value1"
         assert "key1" in session
@@ -83,7 +85,7 @@ class TestBaseSessionInterface:
 
     def test_session_len(self):
         """Test length of session"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         assert len(session) == 0
         session["key1"] = "value1"
@@ -93,7 +95,7 @@ class TestBaseSessionInterface:
 
     def test_session_iter(self):
         """Test iterating over session"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         session["key1"] = "value1"
         session["key2"] = "value2"
@@ -104,7 +106,7 @@ class TestBaseSessionInterface:
 
     def test_session_get_method(self):
         """Test session get method"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         session["key1"] = "value1"
 
@@ -114,7 +116,7 @@ class TestBaseSessionInterface:
 
     def test_session_keys_values(self):
         """Test session keys and values methods"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         session["key1"] = "value1"
         session["key2"] = "value2"
@@ -122,31 +124,21 @@ class TestBaseSessionInterface:
         assert set(session.keys()) == {"key1", "key2"}
         assert set(session.values()) == {"value1", "value2"}
 
-    def test_session_get_all(self):
-        """Test session get_all method"""
-        session = MockSessionManager()
+    def test_session_delete_key(self):
+        """Test deleting session key via delete method"""
+        session = Session(self.manager)
 
         session["key1"] = "value1"
         session["key2"] = "value2"
 
-        items = dict(session.get_all())
-        assert items == {"key1": "value1", "key2": "value2"}
-
-    def test_session_delete_session(self):
-        """Test deleting session key"""
-        session = MockSessionManager()
-
-        session["key1"] = "value1"
-        session["key2"] = "value2"
-
-        session.delete_session("key1")
+        session.delete("key1")
         assert session.modified is True
         assert session.deleted is True
         assert "key1" not in session._session_cache
 
     def test_session_is_empty(self):
         """Test session is_empty method"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         assert session.is_empty() is True
 
@@ -155,28 +147,28 @@ class TestBaseSessionInterface:
 
     def test_session_clear(self):
         """Test session clear method"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         session["key1"] = "value1"
         session["key2"] = "value2"
 
         session.clear()
         assert session._session_cache == {}
+        assert session.deleted is True
 
     def test_session_get_session_key(self):
         """Test getting session key"""
-        session = MockSessionManager("custom-key")
+        session = Session(self.manager, "custom-key")
         assert session.get_session_key() == "custom-key"
 
-        session_no_key = MockSessionManager()
-        # Should generate a key (in real implementation, but our mock doesn't)
-        # For testing, we'll just check it returns something
+        session_no_key = Session(self.manager)
+        # Should generate a key
         key = session_no_key.get_session_key()
         assert key is not None
 
     def test_session_expiration_time(self):
         """Test session expiration time"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         # Test default expiration
         expiration = session.get_expiration_time()
@@ -185,7 +177,7 @@ class TestBaseSessionInterface:
 
     def test_session_has_expired(self):
         """Test session has_expired method"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         # Should not be expired initially
         assert session.has_expired() is False
@@ -197,7 +189,7 @@ class TestBaseSessionInterface:
 
     def test_session_should_set_cookie(self):
         """Test should_set_cookie property"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         # Initially should not set cookie if not modified
         assert session.should_set_cookie is False
@@ -206,20 +198,71 @@ class TestBaseSessionInterface:
         session["key1"] = "value1"
         assert session.should_set_cookie is True
 
-    def test_session_set_session_and_get_session(self):
-        """Test set_session and get_session methods"""
-        session = MockSessionManager()
+    def test_session_set_and_get_methods(self):
+        """Test set and get methods"""
+        session = Session(self.manager)
 
-        session.set_session("key1", "value1")
-        assert session.get_session("key1") == "value1"
+        session.set("key1", "value1")
+        assert session.get("key1") == "value1"
         assert session.modified is True
         assert session.accessed is True
 
     def test_session_str_method(self):
         """Test session string representation"""
-        session = MockSessionManager()
+        session = Session(self.manager)
 
         session["key1"] = "value1"
         str_repr = str(session)
-        assert "Sesion" in str_repr  # Note: There's a typo in the original code
+        assert "Session" in str_repr
         assert "key1" in str_repr
+
+    def test_create_session_via_interface(self):
+        """Test creating session via interface"""
+        manager = MockSessionManager()
+
+        session = manager.create_session("test-key")
+        assert isinstance(session, Session)
+        assert session.session_key == "test-key"
+        assert session.interface is manager
+
+    def test_generate_session_key(self):
+        """Test session key generation"""
+        manager = MockSessionManager()
+        key = manager.generate_session_key()
+
+        assert key is not None
+        assert len(key) == 64  # 32 bytes hex = 64 chars
+
+
+class TestSessionInterfaceCookieConfig:
+    """Test cookie configuration from interface"""
+
+    def setup_method(self):
+        """Set up test configuration"""
+        config = MakeConfig(secret_key="test-secret-key")
+        set_config(config)
+        self.manager = MockSessionManager()
+
+    def test_get_cookie_name(self):
+        """Test getting cookie name"""
+        assert self.manager.get_cookie_name() == "session_id"
+
+    def test_get_cookie_domain(self):
+        """Test getting cookie domain"""
+        assert self.manager.get_cookie_domain() is None
+
+    def test_get_cookie_path(self):
+        """Test getting cookie path"""
+        assert self.manager.get_cookie_path() == "/"
+
+    def test_get_cookie_httponly(self):
+        """Test getting cookie httponly flag"""
+        assert self.manager.get_cookie_httponly() is True
+
+    def test_get_cookie_secure(self):
+        """Test getting cookie secure flag"""
+        assert self.manager.get_cookie_secure() is False
+
+    def test_get_cookie_samesite(self):
+        """Test getting cookie samesite"""
+        assert self.manager.get_cookie_samesite() == "lax"

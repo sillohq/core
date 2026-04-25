@@ -1,8 +1,7 @@
+from nexios.session.session_objects import Session
 import typing
-import warnings
 from typing import Any, Optional
 
-from nexios.config import get_config
 from nexios.http import Request, Response
 from nexios.middleware.base import BaseMiddleware
 
@@ -19,27 +18,14 @@ class SessionMiddleware(BaseMiddleware):
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
-        self.manager = manager
 
-        if config is not None:
-            if not isinstance(config, SessionConfig):
-                raise TypeError("config must be a SessionConfig instance")
-            self.session_config = config
-        else:
-            warnings.warn(
-                "Using get_config() for Session middleware is deprecated. "
-                "Please pass SessionConfig directly to SessionMiddleware constructor.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
+        if config is not None and not isinstance(config, SessionConfig):
+            raise TypeError("config must be a SessionConfig instance")
 
-    def get_manager(self):
-        if self.manager:
-            return self.manager
-        if not hasattr(self, "session_config") or not self.session_config:
-            return SignedSessionManager
-        else:
-            return self.session_config.manager or SignedSessionManager
+        self.session_config = config or SessionConfig()
+
+        # IMPORTANT: manager is now an INSTANCE, not a class
+        self.session_interface = manager or SignedSessionManager()
 
     async def process_request(
         self,
@@ -47,56 +33,37 @@ class SessionMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
-        if hasattr(self, "session_config") and self.session_config:
-            session_cfg = self.session_config
-            try:
-                self.secret = get_config().secret_key
-            except RuntimeError:
-                self.secret = None
-        else:
-            try:
-                app_config = get_config()
-                self.secret = app_config.secret_key
-                session_cfg = app_config.session
-            except RuntimeError:
-                self.secret = None
-                session_cfg = None
+        cookie_name = self.session_config.session_cookie_name or "session_id"
+        session_key = request.cookies.get(cookie_name)
 
-        if not self.secret:
-            return await call_next()
-
-        if session_cfg:
-            session_cookie_name = session_cfg.session_cookie_name or "session_id"
-        else:
-            session_cookie_name = "session_id"
-
-        self.session_cookie_name = session_cookie_name
-        manager = self.get_manager()
-        session: type[BaseSessionInterface] = manager(
-            session_key=request.cookies.get(session_cookie_name)
-        )
+        session = self.session_interface.create_session(session_key)
         await session.load()
+
         request.scope["session"] = session
+
         return await call_next()
 
     async def process_response(self, request: Request, response: Response):
-        if not self.secret:
-            return
-        if request.session.is_empty() and request.session.accessed:
-            response.delete_cookie(key=self.session_cookie_name)
+        session: Session | None = request.scope.get("session")
+        if session is None:
             return
 
-        if request.session.should_set_cookie:
-            await request.session.save()
+        cookie_name = self.session_config.session_cookie_name or "session_id"
 
-            session_key = request.session.get_session_key()
+        if session.is_empty() and session.accessed:
+            response.delete_cookie(key=cookie_name)
+            return
+
+        if session.should_set_cookie:
+            value = await session.save()
+
             response.set_cookie(
-                key=self.session_cookie_name,
-                value=session_key,
-                domain=request.session.get_cookie_domain(),
-                path=request.session.get_cookie_path() or "/",
-                httponly=request.session.get_cookie_httponly() or False,
-                secure=request.session.get_cookie_secure() or False,
-                samesite=request.session.get_cookie_samesite() or "lax",
-                expires=request.session.get_expiration_time(),
+                key=cookie_name,
+                value=value,
+                domain=self.session_config.session_cookie_domain,
+                path=self.session_config.session_cookie_path or "/",
+                httponly=self.session_config.session_cookie_httponly,
+                secure=self.session_config.session_cookie_secure,
+                samesite=self.session_config.session_cookie_samesite,
+                expires=session.get_expiration_time(),
             )
