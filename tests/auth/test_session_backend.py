@@ -141,23 +141,26 @@ async def test_session_auth_backend_logout(test_client):
 
     @app.post("/logout")
     async def logout_route(req: Request, res: Response):
+        print("req.session",req.session)
         logout(req)
         return res.json({"message": "logged out"})
 
     @app.get("/protected")
     @auth(["session"])
     async def protected(req: Request, res: Response):
-        print(req.session)
         return res.json({"user_id": req.user.identity})
 
     client = test_client(app)
     async with client:
-        await client.post("/login")
-        res1 = await client.get("/protected")
+        login_res = await client.post("/login")
+        res1 = await client.get("/protected",headers={"Cookie":f"session_id={login_res.cookies.get('session_id')}"})
         assert res1.status_code == 200
 
-        await client.post("/logout")
-        res2 = await client.get("/protected")
+        res1 = await client.get("/protected",headers={"Cookie":f"session_id={login_res.cookies.get('session_id')}"})
+        assert res1.status_code == 200
+
+        logout_res = await client.post("/logout",headers={"Cookie":f"session_id={login_res.cookies.get('session_id')}"})
+        res2 = await client.get("/protected",headers={"Cookie":f"session_id={logout_res.cookies.get('session_id')}"})
         assert res2.status_code == 401
 
 
@@ -186,7 +189,7 @@ async def test_session_auth_backend_custom_session_key(test_client):
 
     client = test_client(app)
     async with client:
-        await client.post("/login")
-        res = await client.get("/protected")
+        login_res = await client.post("/login")
+        res = await client.get("/protected",headers={"Cookie":f"session_id={login_res.cookies.get('session_id')}"})
         assert res.status_code == 200
         assert res.json()["user_id"] == "1"

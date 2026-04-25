@@ -1,3 +1,4 @@
+from typing import Literal
 from typing import Any, Optional
 
 from nexios.config.base import MakeConfig
@@ -64,7 +65,7 @@ class SessionConfig(MakeConfig):
         return self._config.get("session_cookie_httponly", True)
 
     @property
-    def session_cookie_samesite(self) -> str:
+    def session_cookie_samesite(self) -> Literal["lax", "strict", "none"]:
         return self._config.get("session_cookie_samesite", "lax")
 
     @property

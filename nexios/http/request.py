@@ -15,7 +15,6 @@ from nexios._internals._formparsers import (
     UploadedFile,
 )
 from nexios.objects import URL, Address, FormData, Headers, QueryParams, State
-from nexios.session.base import BaseSessionInterface
 from nexios.utils.async_helpers import (
     AwaitableOrContextManager,
     AwaitableOrContextManagerWrapper,
@@ -24,6 +23,7 @@ from nexios.utils.async_helpers import (
 if typing.TYPE_CHECKING:
     from nexios import NexiosApp
     from nexios.auth.users.base import BaseUser
+    from nexios.session.session_objects import Session
 
 
 try:
@@ -536,10 +536,10 @@ class Request(HTTPConnection):
         } and bool(self.headers)
 
     @property
-    def session(self) -> BaseSessionInterface:
+    def session(self) -> Session:
         """The session interface for this request."""
         assert "session" in self.scope.keys(), "No Session Middleware Installed"
-        return typing.cast(BaseSessionInterface, self.scope["session"])
+        return self.scope["session"]
 
     @property
     def user(self) -> typing.Optional[BaseUser]:

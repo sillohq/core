@@ -1,99 +1,65 @@
 import json
 import os
-from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from .base import BaseSessionInterface
 
 
 class FileSessionManager(BaseSessionInterface):
-    def __init__(self, session_key: Optional[str] = None) -> None:
-        super().__init__(session_key)
-        self.session_key = session_key
+    def __init__(self, config=None) -> None:
+        super().__init__(config)
+        self.storage_path = getattr(config, "session_file_storage_path", "__sessions")
 
-    def _get_storage_path(self):
+        if self.storage_path and not os.path.exists(self.storage_path):
+            os.makedirs(self.storage_path, exist_ok=True)
 
-        path = os.path.join(
-            "__sessions",
-            f"{self.session_key}.json",
-        )
-        os.makedirs("__sessions", exist_ok=True)
-        return path
+    def _get_file_path(self, session_key: str) -> str:
+        return os.path.join(self.storage_path, f"{session_key}.json")
 
-    def _load_session_data(self) -> Optional[Dict[str, Any]]:
-        """Load session data from the file."""
-        if os.path.exists(self._get_storage_path()):
-            with open(self._get_storage_path(), "r") as file:
+    def _load_session_data(self, session_key: str) -> Optional[Dict[str, Any]]:
+        path = self._get_file_path(session_key)
+
+        if os.path.exists(path):
+            with open(path, "r") as file:
                 try:
-                    session_data = json.load(file)
-                    return session_data
+                    return json.load(file)
                 except json.JSONDecodeError:
                     return None
+
         return None
 
-    def _save_session_data(self):
-        """Save the session data to a file."""
-        with open(self._get_storage_path(), "w+") as file:
-            json.dump(self._session_cache, file)
+    def _save_session_data(self, session_key: str, data: Dict[str, Any]) -> None:
+        path = self._get_file_path(session_key)
 
-    def set_session(self, key: str, value: str):
-        """Set a session value."""
-        self.modified = True
-        self._session_cache[key] = value
+        with open(path, "w") as file:
+            json.dump(data, file)
 
-    def get_session(self, key: str) -> Optional[str]:
-        """Get a session value."""
-        return self._session_cache.get(key, None)
+    def _delete_session_file(self, session_key: str) -> None:
+        path = self._get_file_path(session_key)
 
-    def get_all(self):
-        """Get all session data."""
-        return self._session_cache.items()
+        if os.path.exists(path):
+            os.remove(path)
 
-    def keys(self):
-        """Get all session keys."""
-        return self._session_cache.keys()
+    async def load(self, session):
+        key = session.get_session_key()
 
-    def values(self):
-        """Get all session values."""
-        return self._session_cache.values()
+        data = self._load_session_data(key)
 
-    def is_empty(self) -> bool:
-        """Check if the session is empty."""
-        return len(self._session_cache.items()) == 0
-
-    async def save(self):
-        """Save the session data to the file."""
-        signed_session = self.get_session_key()
-        self.session_key = signed_session
-        self._save_session_data()
-
-    @property
-    def should_set_cookie(self) -> bool:
-        """Determines if the cookie should be set."""
-        return self.modified or (
-            self.session_config.session_permanent
-            and self.session_config.session_refresh_each_request
-        )
-
-    def has_expired(self) -> bool:
-        """Returns True if the session has expired."""
-        expiration_time = self.get_expiration_time()
-        if expiration_time and datetime.now(timezone.utc) > expiration_time:
-            return True
-        return False
-
-    async def load(self):
-        """Load the session data from the file."""
-        session_data = self._load_session_data()
-
-        if session_data:
-            self._session_cache.update(session_data)
+        if data:
+            session._session_cache.update(data)
         else:
-            self._session_cache = {}
+            session._session_cache.clear()
 
-    def clear(self):
-        """Clear the session data."""
-        self.modified = True
-        self._session_cache.clear()
-        if os.path.exists(self._get_storage_path()):
-            os.remove(self._get_storage_path())
+    async def save(self, session):
+        key = session.get_session_key()
+
+        if session.deleted:
+            self._delete_session_file(key)
+            session.session_key = None
+            return ""
+
+        self._save_session_data(key, session._session_cache)
+
+        session.session_key = key
+
+        return key

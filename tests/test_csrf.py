@@ -12,33 +12,6 @@ from nexios.http import Request, Response
 from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
 
 
-@pytest.mark.skip(reason="Deprecated config style no longer supported")
-def test_csrf_deprecated_config_style(test_client_factory):
-    """Test CSRF middleware with deprecated config style (should show warning)."""
-    config = MakeConfig(secret_key="test-secret")
-    set_config(config)
-    app = NexiosApp()
-
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        app.add_middleware(CSRFMiddleware())
-
-        assert len(w) > 0
-        assert any("deprecated" in str(warning.message).lower() for warning in w)
-
-    @app.get("/csrf-token")
-    async def get_token(request: Request, response: Response):
-        token = getattr(request.state, "csrf_token", None)
-        return response.json({"token": token})
-
-    with test_client_factory(app) as client:
-        res = client.get("/csrf-token")
-        assert res.status_code == 200
-        data = res.json()
-        assert "token" in data and data["token"]
-        assert "csrftoken" in res.cookies
-
-
 @pytest.mark.skip(
     reason="CSRF middleware needs fix - use_csrf not set properly in runtime"
 )

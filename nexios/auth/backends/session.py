@@ -9,7 +9,7 @@ _session_key = "user"
 _identifier = "id"
 
 
-def login(request: Request, user: type[BaseUser]):
+def login(request: Request, user: BaseUser):
     assert "session" in request.scope, "No Session Middleware Installed"
     if request.session.get(_session_key):
         del request.session[_session_key]
@@ -60,6 +60,7 @@ class SessionAuthBackend(AuthenticationBackend):
         """
         assert "session" in request.scope, "No Session Middleware Installed"
         user = request.session.get(_session_key)
+
         if not user:
             return AuthResult(success=False, identity="", scope="")
 
