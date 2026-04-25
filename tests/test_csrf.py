@@ -7,18 +7,16 @@ import warnings
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
+from nexios.config import MakeConfig
 from nexios.http import Request, Response
 from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
 
 
-@pytest.mark.skip(
-    reason="CSRF middleware needs fix - use_csrf not set properly in runtime"
-)
+
 def test_protected_request_missing_token(test_client_factory):
     """POST to protected route without CSRF should fail."""
     csrf_config = CSRFConfig(enabled=True)
-    app = NexiosApp()
+    app = NexiosApp(config=MakeConfig(secret_key="secret"))
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.post("/protected")
@@ -31,13 +29,11 @@ def test_protected_request_missing_token(test_client_factory):
         assert "CSRF" in res.text
 
 
-@pytest.mark.skip(
-    reason="CSRF middleware needs fix - use_csrf not set properly in runtime"
-)
+
 def test_protected_request_valid_token(test_client_factory):
     """POST to protected route with valid CSRF token should pass."""
     csrf_config = CSRFConfig(enabled=True)
-    app = NexiosApp()
+    app = NexiosApp(config=MakeConfig(secret_key="secret"))
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -67,13 +63,11 @@ def test_protected_request_valid_token(test_client_factory):
         assert res.json() == {"status": "protected"}
 
 
-@pytest.mark.skip(
-    reason="CSRF middleware needs fix - use_csrf not set properly in runtime"
-)
+
 def test_protected_request_invalid_token(test_client_factory):
     """POST to protected route with wrong CSRF token should fail."""
     csrf_config = CSRFConfig(enabled=True)
-    app = NexiosApp()
+    app = NexiosApp(config=MakeConfig(secret_key="secret"))
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -101,13 +95,11 @@ def test_protected_request_invalid_token(test_client_factory):
         assert "incorrect" in res.text.lower()
 
 
-@pytest.mark.skip(
-    reason="CSRF middleware needs fix - use_csrf not set properly in runtime"
-)
+
 def test_cookie_is_reset_on_response(test_client_factory):
     """Every response should set or refresh CSRF cookie."""
     csrf_config = CSRFConfig(enabled=True)
-    app = NexiosApp()
+    app = NexiosApp(config=MakeConfig(secret_key="secret"))
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -125,9 +117,7 @@ def test_cookie_is_reset_on_response(test_client_factory):
         assert token_1 != token_2 or token_2 is not None
 
 
-@pytest.mark.skip(
-    reason="CSRF middleware needs fix - use_csrf not set properly in runtime"
-)
+
 def test_csrf_custom_configuration(test_client_factory):
     """Test CSRF middleware with custom configuration."""
     csrf_config = CSRFConfig(
@@ -138,7 +128,7 @@ def test_csrf_custom_configuration(test_client_factory):
         secure=True,
         httponly=False,
     )
-    app = NexiosApp()
+    app = NexiosApp(config=MakeConfig(secret_key="secret"))
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
