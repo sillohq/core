@@ -6,7 +6,7 @@ import warnings
 
 import pytest
 
-from nexios import NexiosApp
+from nexios import NexiosApp, set_config
 from nexios.config import MakeConfig
 from nexios.http import Request, Response
 from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
@@ -16,7 +16,9 @@ from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
 def test_protected_request_missing_token(test_client_factory):
     """POST to protected route without CSRF should fail."""
     csrf_config = CSRFConfig(enabled=True)
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    config=MakeConfig(secret_key="secret")
+    app = NexiosApp()
+    set_config(config)
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.post("/protected")
