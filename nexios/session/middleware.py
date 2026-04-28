@@ -15,17 +15,17 @@ class SessionMiddleware(BaseMiddleware):
         self,
         config: Optional[SessionConfig] = None,
         manager: Optional[BaseSessionInterface] = None,
+        secret_key: Optional[str] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
 
-        if config is not None and not isinstance(config, SessionConfig):
-            raise TypeError("config must be a SessionConfig instance")
-
         self.session_config = config or SessionConfig()
 
-        # IMPORTANT: manager is now an INSTANCE, not a class
-        self.session_interface = manager or SignedSessionManager()
+        if manager is not None:
+            self.session_interface = manager
+        else:
+            self.session_interface = SignedSessionManager(secret_key=secret_key)
 
     async def process_request(
         self,

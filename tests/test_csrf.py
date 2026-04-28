@@ -12,13 +12,10 @@ from nexios.http import Request, Response
 from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
 
 
-
 def test_protected_request_missing_token(test_client_factory):
     """POST to protected route without CSRF should fail."""
-    csrf_config = CSRFConfig(enabled=True)
-    config=MakeConfig(secret_key="secret")
+    csrf_config = CSRFConfig(enabled=True, secret_key="secret")
     app = NexiosApp()
-    set_config(config)
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.post("/protected")
@@ -31,11 +28,10 @@ def test_protected_request_missing_token(test_client_factory):
         assert "CSRF" in res.text
 
 
-
 def test_protected_request_valid_token(test_client_factory):
     """POST to protected route with valid CSRF token should pass."""
-    csrf_config = CSRFConfig(enabled=True)
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    csrf_config = CSRFConfig(enabled=True, secret_key="secret")
+    app = NexiosApp()
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -65,11 +61,10 @@ def test_protected_request_valid_token(test_client_factory):
         assert res.json() == {"status": "protected"}
 
 
-
 def test_protected_request_invalid_token(test_client_factory):
     """POST to protected route with wrong CSRF token should fail."""
-    csrf_config = CSRFConfig(enabled=True)
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    csrf_config = CSRFConfig(enabled=True, secret_key="secret")
+    app = NexiosApp()
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -97,11 +92,10 @@ def test_protected_request_invalid_token(test_client_factory):
         assert "incorrect" in res.text.lower()
 
 
-
 def test_cookie_is_reset_on_response(test_client_factory):
     """Every response should set or refresh CSRF cookie."""
-    csrf_config = CSRFConfig(enabled=True)
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    csrf_config = CSRFConfig(enabled=True, secret_key="secret")
+    app = NexiosApp()
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -119,18 +113,18 @@ def test_cookie_is_reset_on_response(test_client_factory):
         assert token_1 != token_2 or token_2 is not None
 
 
-
 def test_csrf_custom_configuration(test_client_factory):
     """Test CSRF middleware with custom configuration."""
     csrf_config = CSRFConfig(
         enabled=True,
+        secret_key="secret",
         cookie_name="custom_csrf",
         header_name="X-Custom-CSRF",
         cookie_path="/custom",
         secure=True,
         httponly=False,
     )
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    app = NexiosApp()
     app.add_middleware(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")

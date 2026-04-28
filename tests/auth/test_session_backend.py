@@ -15,7 +15,6 @@ import pytest
 from nexios.application import NexiosApp
 from nexios.auth import AuthenticationMiddleware, BaseUser, auth
 from nexios.auth.backends.session import SessionAuthBackend, login, logout
-from nexios.config.base import MakeConfig
 from nexios.http import Request, Response
 from nexios.session.middleware import SessionMiddleware
 from nexios.testclient import AsyncTestClient
@@ -51,7 +50,6 @@ class TestUser(BaseUser):
 
     @classmethod
     async def load_user(cls, identity: str):
-        print("identity =", identity)
         users_db = {
             "1": cls("1", "testuser", ["read", "write"]),
             "2": cls("2", "admin", ["read", "write", "admin", "delete"]),
@@ -67,9 +65,9 @@ def test_client():
 
 
 async def test_session_auth_backend_success(test_client):
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    app = NexiosApp()
     app.add_middleware(AuthenticationMiddleware(TestUser, [SessionAuthBackend()]))
-    app.add_middleware(SessionMiddleware())
+    app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
     async def login_route(req: Request, res: Response):
@@ -89,7 +87,6 @@ async def test_session_auth_backend_success(test_client):
     assert res_login.status_code == 200
 
     session = res_login.cookies.get("session_id")
-    print("session =", session)
     res_protected = await client.get("/protected", cookies={"session_id": session})
     assert res_protected.status_code == 200
     data = res_protected.json()
@@ -98,9 +95,9 @@ async def test_session_auth_backend_success(test_client):
 
 
 async def test_session_auth_backend_no_session(test_client):
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    app = NexiosApp()
     app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
-    app.add_middleware(SessionMiddleware())
+    app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     @app.get("/protected")
     @auth("session")
@@ -114,7 +111,7 @@ async def test_session_auth_backend_no_session(test_client):
 
 
 async def test_session_auth_backend_missing_session_middleware(test_client):
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    app = NexiosApp()
     app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
 
     @app.get("/protected")
@@ -129,9 +126,9 @@ async def test_session_auth_backend_missing_session_middleware(test_client):
 
 
 async def test_session_auth_backend_logout(test_client):
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    app = NexiosApp()
     app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
-    app.add_middleware(SessionMiddleware())
+    app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
     async def login_route(req: Request, res: Response):
@@ -141,7 +138,6 @@ async def test_session_auth_backend_logout(test_client):
 
     @app.post("/logout")
     async def logout_route(req: Request, res: Response):
-        print("req.session",req.session)
         logout(req)
         return res.json({"message": "logged out"})
 
@@ -153,25 +149,31 @@ async def test_session_auth_backend_logout(test_client):
     client = test_client(app)
     async with client:
         login_res = await client.post("/login")
-        res1 = await client.get("/protected",headers={"Cookie":f"session_id={login_res.cookies.get('session_id')}"})
+        res1 = await client.get(
+            "/protected",
+            headers={"Cookie": f"session_id={login_res.cookies.get('session_id')}"},
+        )
         assert res1.status_code == 200
 
-        res1 = await client.get("/protected",headers={"Cookie":f"session_id={login_res.cookies.get('session_id')}"})
-        assert res1.status_code == 200
-
-        logout_res = await client.post("/logout",headers={"Cookie":f"session_id={login_res.cookies.get('session_id')}"})
-        res2 = await client.get("/protected",headers={"Cookie":f"session_id={logout_res.cookies.get('session_id')}"})
+        logout_res = await client.post(
+            "/logout",
+            headers={"Cookie": f"session_id={login_res.cookies.get('session_id')}"},
+        )
+        res2 = await client.get(
+            "/protected",
+            headers={"Cookie": f"session_id={logout_res.cookies.get('session_id')}"},
+        )
         assert res2.status_code == 401
 
 
 async def test_session_auth_backend_custom_session_key(test_client):
-    app = NexiosApp(config=MakeConfig(secret_key="secret"))
+    app = NexiosApp()
     app.add_middleware(
         AuthenticationMiddleware(
             TestUser, SessionAuthBackend(session_key="custom_user")
         )
     )
-    app.add_middleware(SessionMiddleware())
+    app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
     async def login_route(req: Request, res: Response):
@@ -190,6 +192,9 @@ async def test_session_auth_backend_custom_session_key(test_client):
     client = test_client(app)
     async with client:
         login_res = await client.post("/login")
-        res = await client.get("/protected",headers={"Cookie":f"session_id={login_res.cookies.get('session_id')}"})
+        res = await client.get(
+            "/protected",
+            headers={"Cookie": f"session_id={login_res.cookies.get('session_id')}"},
+        )
         assert res.status_code == 200
         assert res.json()["user_id"] == "1"

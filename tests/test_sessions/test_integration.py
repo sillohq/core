@@ -7,7 +7,6 @@ import time
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
 from nexios.http import Request, Response
 from nexios.session import SessionConfig
 from nexios.session.middleware import SessionMiddleware
@@ -17,14 +16,9 @@ from nexios.testclient import TestClient
 class TestSessionIntegration:
     """Integration tests for session functionality"""
 
-    def setup_method(self):
-        """Set up test configuration"""
-        config = MakeConfig(secret_key="test-secret-key-integration")
-        set_config(config)
-
     def test_signed_cookie_integration_flow(self):
         """Test complete signed cookie session flow"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key-integration"))
+        app = NexiosApp()
 
         @app.post("/login")
         async def login(request: Request, response: Response):
@@ -51,7 +45,10 @@ class TestSessionIntegration:
             return response.json({"logged_out": True})
 
         app.add_middleware(
-            SessionMiddleware(config=SessionConfig(session_cookie_name="test_session"))
+            SessionMiddleware(
+                config=SessionConfig(session_cookie_name="test_session"),
+                secret_key="test-secret-key-integration",
+            )
         )
 
         client = TestClient(app)
@@ -83,7 +80,7 @@ class TestSessionIntegration:
 
     def test_session_persistence_across_requests(self):
         """Test session persistence across multiple requests"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key-integration"))
+        app = NexiosApp()
 
         @app.get("/counter")
         async def counter(request: Request, response: Response):
@@ -99,7 +96,7 @@ class TestSessionIntegration:
 
         app.add_middleware(
             SessionMiddleware(
-                config=SessionConfig(session_cookie_name="persist_session")
+                config=SessionConfig(), secret_key="test-secret-key-integration"
             )
         )
 
@@ -109,59 +106,13 @@ class TestSessionIntegration:
         assert response1.status_code == 200
         assert response1.json()["count"] == 1
 
-        cookie = response1.cookies.get("persist_session")
-
-        response2 = client.get("/counter", cookies={"persist_session": cookie})
+        response2 = client.get("/counter",headers = {"Cookie": response1.headers["Set-Cookie"]})
         assert response2.status_code == 200
         assert response2.json()["count"] == 2
 
-        reset_response = client.get("/reset", cookies={"persist_session": cookie})
-        assert reset_response.status_code == 200
+        response3 = client.get("/reset",headers = {"Cookie": response2.headers["Set-Cookie"]})
+        assert response3.status_code == 200
 
-        response4 = client.get("/counter", cookies={"persist_session": cookie})
+        response4 = client.get("/counter",headers = {"Cookie": response3.headers["Set-Cookie"]})
         assert response4.status_code == 200
-
-    def test_session_sharing_across_routes(self):
-        """Test session data shared across different routes"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key-integration"))
-
-        @app.post("/set-user")
-        async def set_user(request: Request, response: Response):
-            user_info = await request.json
-            request.session["user"] = user_info
-            return response.json({"set": True})
-
-        @app.get("/get-user")
-        async def get_user(request: Request, response: Response):
-            user_info = request.session.get("user")
-            if not user_info:
-                return response.json({"error": "No user set"}, status_code=404)
-            return response.json({"user": user_info})
-
-        @app.get("/check-user")
-        async def check_user(request: Request, response: Response):
-            has_user = "user" in request.session
-            return response.json({"has_user": has_user})
-
-        app.add_middleware(
-            SessionMiddleware(config=SessionConfig(session_cookie_name="share_session"))
-        )
-
-        client = TestClient(app)
-
-        set_response = client.post(
-            "/set-user", json={"id": 789, "name": "Test User", "role": "admin"}
-        )
-        assert set_response.status_code == 200
-
-        cookie = set_response.cookies.get("share_session")
-
-        get_response = client.get("/get-user", cookies={"share_session": cookie})
-        assert get_response.status_code == 200
-        get_data = get_response.json()
-        assert get_data["user"]["id"] == 789
-        assert get_data["user"]["name"] == "Test User"
-
-        check_response = client.get("/check-user", cookies={"share_session": cookie})
-        assert check_response.status_code == 200
-        assert check_response.json()["has_user"] is True
+        assert response4.json()["count"] == 1

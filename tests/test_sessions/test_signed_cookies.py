@@ -15,18 +15,18 @@ class TestSignedSessionManager:
 
     def setup_method(self):
         """Set up test configuration"""
-        config = MakeConfig(secret_key="test-secret-key-for-signed-sessions")
-        set_config(config)
-        self.manager = SignedSessionManager()
+        self.manager = SignedSessionManager(
+            secret_key="test-secret-key-for-signed-sessions"
+        )
 
     def test_signed_session_initialization(self):
         """Test signed session manager initialization"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
         assert manager.serializer is not None
 
     def test_sign_and_verify_session_data(self):
         """Test signing and verifying session data"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
 
         test_data = {"user_id": 123, "preferences": {"theme": "dark"}}
         signed_token = manager.sign_session_data(test_data)
@@ -39,7 +39,7 @@ class TestSignedSessionManager:
 
     def test_verify_invalid_signature(self):
         """Test verification of invalid signature"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
 
         invalid_token = "invalid.signature.here"
         verified_data = manager.verify_session_data(invalid_token)
@@ -48,7 +48,7 @@ class TestSignedSessionManager:
 
     def test_verify_empty_token(self):
         """Test verification of empty token"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
 
         verified_data = manager.verify_session_data("")
         assert verified_data == {}
@@ -58,7 +58,7 @@ class TestSignedSessionManager:
 
     async def test_async_save(self):
         """Test async save method"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
         session = manager.create_session()
 
         session["user_id"] = 789
@@ -72,7 +72,7 @@ class TestSignedSessionManager:
 
     async def test_async_load(self):
         """Test async load method"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
 
         test_data = {"user_id": 101, "logged_in": True}
         signed_token = manager.sign_session_data(test_data)
@@ -87,7 +87,7 @@ class TestSignedSessionManager:
 
     async def test_session_operations_with_signed_cookies(self):
         """Test full session operations with signed cookies"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
         session = manager.create_session()
 
         session["user_id"] = 202
@@ -103,7 +103,7 @@ class TestSignedSessionManager:
 
     def test_clear_session(self):
         """Test clearing session data"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
         session = manager.create_session()
 
         session["user_id"] = 303
@@ -114,7 +114,7 @@ class TestSignedSessionManager:
 
     async def test_session_key_generation(self):
         """Test session key generation"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
         session = manager.create_session()
 
         assert session.session_key is None
@@ -127,7 +127,7 @@ class TestSignedSessionManager:
 
     async def test_multiple_save_load_cycles(self):
         """Test multiple save and load cycles"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
         session = manager.create_session()
 
         session["counter"] = 1
@@ -146,7 +146,7 @@ class TestSignedSessionManager:
 
     async def test_session_with_complex_data(self):
         """Test session with complex data types"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
         session = manager.create_session()
 
         complex_data = {
@@ -171,7 +171,7 @@ class TestSignedSessionManager:
 
     def test_signed_manager_creates_session(self):
         """Test that manager creates proper Session objects"""
-        manager = SignedSessionManager()
+        manager = SignedSessionManager(secret_key="test-secret-key")
         session = manager.create_session("test-key")
 
         assert isinstance(session, Session)

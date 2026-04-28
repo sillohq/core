@@ -19,11 +19,6 @@ from nexios.testclient import TestClient
 class TestSessionMiddleware:
     """Test session middleware functionality"""
 
-    def setup_method(self):
-        """Set up test configuration"""
-        config = MakeConfig(secret_key="test-secret-key-for-middleware")
-        set_config(config)
-
     def test_middleware_initialization(self):
         """Test session middleware initialization"""
         middleware = SessionMiddleware(
@@ -35,14 +30,15 @@ class TestSessionMiddleware:
                 session_cookie_secure=False,
                 session_cookie_httponly=True,
                 session_cookie_samesite="lax",
-            )
+            ),
+            secret_key="test-secret-key-for-middleware",
         )
         assert middleware is not None
         assert middleware.session_config.session_cookie_name == "test_session"
 
     def test_signed_cookie_session_middleware(self):
         """Test session middleware with signed cookie backend"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key-for-middleware"))
+        app = NexiosApp()
 
         app.add_middleware(
             SessionMiddleware(
@@ -54,7 +50,8 @@ class TestSessionMiddleware:
                     session_cookie_secure=False,
                     session_cookie_httponly=True,
                     session_cookie_samesite="lax",
-                )
+                ),
+                secret_key="test-secret-key-for-middleware",
             )
         )
 
@@ -77,17 +74,13 @@ class TestSessionMiddleware:
         assert "Set-Cookie" in response1.headers
         assert "test_session" in response1.headers["Set-Cookie"]
 
-    @pytest.mark.skip(
-        reason="File session backend needs architectural fix for cookie/session key separation"
-    )
+    
     def test_file_session_middleware(self):
         """Test session middleware with file backend"""
         temp_dir = tempfile.mkdtemp()
 
         try:
-            app = NexiosApp(
-                config=MakeConfig(secret_key="test-secret-key-for-file-middleware")
-            )
+            app = NexiosApp()
 
             file_manager = FileSessionManager(
                 SessionConfig(session_file_storage_path=temp_dir)
@@ -100,6 +93,7 @@ class TestSessionMiddleware:
                         session_file_storage_path=temp_dir,
                     ),
                     manager=file_manager,
+                    secret_key="test-secret-key-for-file-middleware",
                 )
             )
 
@@ -115,7 +109,7 @@ class TestSessionMiddleware:
             assert response1.status_code == 200
             assert response1.json()["counter"] == 1
 
-            response2 = client.get("/file-session-test")
+            response2 = client.get("/file-session-test",headers = {"Cookie": response1.headers["Set-Cookie"]})
             assert response2.status_code == 200
             assert response2.json()["counter"] == 2
 
@@ -127,9 +121,9 @@ class TestSessionMiddleware:
 
     def test_session_middleware_with_instance_manager(self):
         """Test middleware with manager instance passed directly"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key-instance"))
+        app = NexiosApp()
 
-        signed_manager = SignedSessionManager()
+        signed_manager = SignedSessionManager(secret_key="test-secret-key-instance")
 
         app.add_middleware(
             SessionMiddleware(
@@ -151,14 +145,16 @@ class TestSessionMiddleware:
 
     def test_session_middleware_with_existing_cookie(self):
         """Test middleware with existing session cookie"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key"))
+        app = NexiosApp()
 
         @app.get("/existing-cookie-test")
         async def existing_cookie_test(request: Request, response: Response):
             request.session["existing"] = "data"
             return response.json({"existing": request.session["existing"]})
 
-        app.add_middleware(SessionMiddleware(config=SessionConfig()))
+        app.add_middleware(
+            SessionMiddleware(config=SessionConfig(), secret_key="test-secret-key")
+        )
 
         client = TestClient(app)
 
@@ -174,7 +170,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_session_clear(self):
         """Test clearing session via middleware"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key-clear"))
+        app = NexiosApp()
 
         @app.get("/clear-session-test")
         async def clear_session_test(request: Request, response: Response):
@@ -187,7 +183,10 @@ class TestSessionMiddleware:
                 return response.json({"set": True})
 
         app.add_middleware(
-            SessionMiddleware(config=SessionConfig(session_cookie_name="clear_session"))
+            SessionMiddleware(
+                config=SessionConfig(session_cookie_name="clear_session"),
+                secret_key="test-secret-key-clear",
+            )
         )
 
         client = TestClient(app)
@@ -202,12 +201,9 @@ class TestSessionMiddleware:
         assert response2.status_code == 200
         assert response2.json()["cleared"] is True
 
-    @pytest.mark.skip(
-        reason="Signed cookie path/domain not visible in Set-Cookie header"
-    )
     def test_session_middleware_configuration_options(self):
         """Test session middleware with various configuration options"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key-config"))
+        app = NexiosApp()
 
         app.add_middleware(
             SessionMiddleware(
@@ -218,7 +214,8 @@ class TestSessionMiddleware:
                     session_cookie_secure=True,
                     session_cookie_httponly=True,
                     session_cookie_samesite="strict",
-                )
+                ),
+                secret_key="test-secret-key-config",
             )
         )
 
@@ -242,7 +239,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_error_handling(self):
         """Test middleware error handling"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key"))
+        app = NexiosApp()
 
         @app.get("/error-test")
         async def error_test(request: Request, response: Response):
@@ -252,7 +249,9 @@ class TestSessionMiddleware:
             except Exception as e:
                 return response.json({"error": str(e)})
 
-        app.add_middleware(SessionMiddleware(config=SessionConfig()))
+        app.add_middleware(
+            SessionMiddleware(config=SessionConfig(), secret_key="test-secret-key")
+        )
 
         client = TestClient(app)
 
@@ -263,13 +262,17 @@ class TestSessionMiddleware:
 
     def test_session_cookie_deletion_on_empty_session(self):
         """Test that cookies are deleted when session is accessed but empty"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key-delete"))
+        app = NexiosApp()
 
         @app.get("/delete-test")
         async def delete_test(request: Request, response: Response):
             return response.json({"status": "ok"})
 
-        app.add_middleware(SessionMiddleware(config=SessionConfig()))
+        app.add_middleware(
+            SessionMiddleware(
+                config=SessionConfig(), secret_key="test-secret-key-delete"
+            )
+        )
 
         client = TestClient(app)
 

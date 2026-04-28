@@ -1,4 +1,3 @@
-from nexios.config import get_config
 import typing
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
@@ -6,11 +5,8 @@ from .base import BaseSessionInterface
 
 
 class SignedSessionManager(BaseSessionInterface):
-    def __init__(self, config=None):
+    def __init__(self, config=None, secret_key: typing.Optional[str] = None):
         super().__init__(config)
-
-        secret_key = get_config().secret_key
-        print(secret_key)
 
         if not secret_key:
             raise RuntimeError("secret_key is required for signed sessions")

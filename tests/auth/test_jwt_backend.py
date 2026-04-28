@@ -86,13 +86,13 @@ def jwt_payload():
 
 @pytest.fixture
 def valid_jwt_token(jwt_payload):
-    return create_jwt(jwt_payload)
+    return create_jwt(jwt_payload, "test_secret_12345")
 
 
 @pytest.fixture
 def expired_jwt_token(jwt_payload):
     expired_payload = {**jwt_payload, "exp": 1}
-    return create_jwt(expired_payload)
+    return create_jwt(expired_payload, "test_secret_12345")
 
 
 @pytest.fixture
@@ -102,7 +102,7 @@ def invalid_jwt_token():
 
 async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
     app = NexiosApp()
-    jwt_backend = JWTAuthBackend()
+    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected")
@@ -125,7 +125,30 @@ async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
 
 async def test_jwt_auth_backend_missing_header(test_client):
     app = NexiosApp()
-    jwt_backend = JWTAuthBackend()
+    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
+    app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
+
+    @app.get("/protected")
+    @auth("jwt")
+    async def protected_route(req: Request, res: Response):
+        return res.json(
+            {"user_id": req.user.identity, "username": req.user.display_name}
+        )
+
+    client = test_client(app)
+    async with client:
+        res = await client.get(
+            "/protected", headers={"Authorization": f"Bearer {valid_jwt_token}"}
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["user_id"] == "1"
+        assert data["username"] == "testuser"
+
+
+async def test_jwt_auth_backend_missing_header(test_client):
+    app = NexiosApp()
+    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected")
@@ -141,7 +164,7 @@ async def test_jwt_auth_backend_missing_header(test_client):
 
 async def test_jwt_auth_backend_invalid_header_format(test_client):
     app = NexiosApp()
-    jwt_backend = JWTAuthBackend()
+    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected")
@@ -157,7 +180,7 @@ async def test_jwt_auth_backend_invalid_header_format(test_client):
 
 async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
     app = NexiosApp()
-    jwt_backend = JWTAuthBackend()
+    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected")
@@ -175,7 +198,7 @@ async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
 
 async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
     app = NexiosApp()
-    jwt_backend = JWTAuthBackend()
+    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected")
@@ -193,7 +216,7 @@ async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
 
 async def test_jwt_auth_backend_user_not_found(test_client):
     app = NexiosApp()
-    jwt_backend = JWTAuthBackend()
+    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected")
@@ -202,7 +225,7 @@ async def test_jwt_auth_backend_user_not_found(test_client):
         return res.json({"user": req.user})
 
     payload = {"id": "999", "username": "ghost"}
-    token = create_jwt(payload)
+    token = create_jwt(payload, "test_secret_12345")
 
     client = test_client(app)
     async with client:
@@ -214,7 +237,7 @@ async def test_jwt_auth_backend_user_not_found(test_client):
 
 async def test_jwt_auth_backend_wrong_identifier_field(test_client):
     app = NexiosApp()
-    jwt_backend = JWTAuthBackend(identifier="user_id")
+    jwt_backend = JWTAuthBackend(identifier="user_id", secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected")
@@ -223,7 +246,7 @@ async def test_jwt_auth_backend_wrong_identifier_field(test_client):
         return res.json({"user": req.user})
 
     payload = {"user_id": "1", "username": "testuser"}
-    token = create_jwt(payload)
+    token = create_jwt(payload, "test_secret_12345")
 
     client = test_client(app)
     async with client:
