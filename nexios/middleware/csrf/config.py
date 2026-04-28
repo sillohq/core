@@ -23,6 +23,7 @@ class CSRFConfig(MakeConfig):
         cookie_httponly: bool = True,
         cookie_samesite: typing.Literal["lax", "none", "strict"] = "lax",
         header_name: str = "X-CSRFToken",
+        secret_key: Optional[str] = None,
         **kwargs: Any,
     ):
         config = {
@@ -38,6 +39,7 @@ class CSRFConfig(MakeConfig):
             "cookie_httponly": cookie_httponly,
             "cookie_samesite": cookie_samesite,
             "header_name": header_name,
+            "secret_key": secret_key,
         }
         super().__init__(config=config, **kwargs)
 
@@ -88,3 +90,7 @@ class CSRFConfig(MakeConfig):
     @property
     def header_name(self) -> str:
         return self._config["header_name"]
+
+    @property
+    def secret_key(self) -> Optional[str]:
+        return self._config.get("secret_key")

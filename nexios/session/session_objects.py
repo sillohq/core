@@ -32,10 +32,6 @@ class Session:
         self.accessed = True
         return key in self._session_cache
 
-    def __iter__(self) -> Iterable[str]:
-        self.accessed = True
-        return iter(self._session_cache)
-
     def __len__(self) -> int:
         self.accessed = True
         return len(self._session_cache)
@@ -76,6 +72,10 @@ class Session:
     def is_empty(self) -> bool:
         return len(self._session_cache) == 0
 
+    def update(self, other: Dict[str, Any]):
+        self.modified = True
+        self._session_cache.update(other)
+
     def get_session_key(self) -> str:
         if self.session_key:
             return self.session_key
@@ -84,7 +84,7 @@ class Session:
     def set_expiration_time(self, expiration: datetime) -> None:
         self._expiration_time = expiration
 
-    def get_expiration_time(self) -> Optional[datetime]:
+    def get_expiration_time(self) -> datetime:
         if self._expiration_time:
             return self._expiration_time
 
@@ -107,7 +107,7 @@ class Session:
             )
             return self._expiration_time
 
-        return None
+        return datetime.max
 
     def has_expired(self) -> bool:
         expiration_time = self.get_expiration_time()
@@ -133,7 +133,17 @@ class Session:
         return await self.interface.load(self)
 
     async def save(self) -> Optional[str]:
+        self.modified = False
+        self.deleted = False
+        self.accessed = False
         return await self.interface.save(self)
 
     def __str__(self) -> str:
         return f"<Session {self._session_cache}>"
+
+    def __iter__(self) -> Iterable[str]:
+        self.accessed = True
+        return iter(self._session_cache)
+
+    def __repr__(self) -> str:
+        return f"<Session {self.session_key} {self._session_cache}>"

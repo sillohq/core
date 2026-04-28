@@ -1,12 +1,14 @@
+from typing import Optional
+import typing
+
 try:
     import jwt
 except ImportError:
     jwt = None  # ty:ignore[invalid-assignment]
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from nexios.auth.model import AuthResult
-from nexios.config import get_config
 from nexios.http import Request, Response
 
 from .base import AuthenticationBackend
@@ -14,7 +16,7 @@ from .base import AuthenticationBackend
 
 def create_jwt(
     payload: Dict[str, Any],
-    secret: Optional[str] = None,
+    secret: str,
     algorithm: str = "HS256",
     expires_in: Optional[timedelta] = None,
 ) -> str:
@@ -30,14 +32,13 @@ def create_jwt(
     if jwt is None:
         raise ImportError("JWT support is not installed.")
 
-    secret = secret or get_config().secret_key
     if expires_in and not payload.get("exp"):
         payload["exp"] = datetime.now(timezone.utc) + expires_in
     return jwt.encode(payload, secret, algorithm=algorithm)
 
 
 def decode_jwt(
-    token: str, secret: Optional[str] = None, algorithms: List[str] = ["HS256"]
+    token: str, secret: str, algorithms: List[str] = ["HS256"]
 ) -> Dict[str, Any]:
     """
     Decode a JWT token.
@@ -50,7 +51,6 @@ def decode_jwt(
     """
     if jwt is None:
         raise ImportError("JWT support is not installed.")
-    secret = secret or get_config().secret_key
     try:
         return jwt.decode(token, secret, algorithms=algorithms)
     except jwt.ExpiredSignatureError:
@@ -60,13 +60,13 @@ def decode_jwt(
 
 
 class JWTAuthBackend(AuthenticationBackend):
-    def __init__(self, identifier: str = "id"):
+    def __init__(self, identifier: str = "id", secret_key: typing.Optional[str] = None):
         self.identifier = identifier
+        self.secret_key = secret_key
 
     async def authenticate(self, request: Request, response: Response) -> Any:
-        app_config = get_config()
-        self.secret = app_config.secret_key
-        self.algorithms = app_config.jwt_algorithms or ["HS256"]
+        if not self.secret_key:
+            raise RuntimeError("secret_key is required for JWTAuthBackend")
 
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
@@ -74,7 +74,7 @@ class JWTAuthBackend(AuthenticationBackend):
 
         token = auth_header.split(" ")[1]
         try:
-            payload = decode_jwt(token, self.secret, self.algorithms)
+            payload = decode_jwt(token, self.secret_key)
         except ValueError as _:
             return AuthResult(success=False, identity="", scope="")
 

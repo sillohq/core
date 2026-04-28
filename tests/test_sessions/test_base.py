@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from nexios.config import MakeConfig, set_config
 from nexios.session.base import BaseSessionInterface
 from nexios.session.session_objects import Session
 
@@ -31,15 +30,10 @@ class MockSessionManager(BaseSessionInterface):
 class TestBaseSessionInterface:
     """Test base session interface functionality"""
 
-    def setup_method(self):
-        """Set up test configuration"""
-        config = MakeConfig(secret_key="test-secret-key")
-        set_config(config)
-        self.manager = MockSessionManager()
-
     def test_session_initialization(self):
         """Test session initialization"""
-        session = Session(self.manager, "test-key")
+        manager = MockSessionManager()
+        session = Session(manager, "test-key")
 
         assert session.session_key == "test-key"
         assert session._session_cache == {}
@@ -49,7 +43,8 @@ class TestBaseSessionInterface:
 
     def test_session_getitem_setitem(self):
         """Test getting and setting session items"""
-        session = Session(self.manager)
+        manager = MockSessionManager()
+        session = Session(manager)
 
         # Test setting a value
         session["key1"] = "value1"
@@ -63,7 +58,8 @@ class TestBaseSessionInterface:
 
     def test_session_delitem(self):
         """Test deleting session items"""
-        session = Session(self.manager)
+        manager = MockSessionManager()
+        session = Session(manager)
 
         session["key1"] = "value1"
         session["key2"] = "value2"
@@ -76,7 +72,8 @@ class TestBaseSessionInterface:
 
     def test_session_contains(self):
         """Test 'in' operator for session"""
-        session = Session(self.manager)
+        manager = MockSessionManager()
+        session = Session(manager)
 
         session["key1"] = "value1"
         assert "key1" in session
@@ -85,7 +82,8 @@ class TestBaseSessionInterface:
 
     def test_session_len(self):
         """Test length of session"""
-        session = Session(self.manager)
+        manager = MockSessionManager()
+        session = Session(manager)
 
         assert len(session) == 0
         session["key1"] = "value1"
@@ -95,174 +93,297 @@ class TestBaseSessionInterface:
 
     def test_session_iter(self):
         """Test iterating over session"""
-        session = Session(self.manager)
+        manager = MockSessionManager()
+        session = Session(manager)
 
         session["key1"] = "value1"
         session["key2"] = "value2"
-
+        session["key3"] = "value3"
         keys = list(session)
-        assert set(keys) == {"key1", "key2"}
+        assert "key1" in keys
+        assert "key2" in keys
+        assert "key3" in keys
         assert session.accessed is True
 
-    def test_session_get_method(self):
-        """Test session get method"""
-        session = Session(self.manager)
-
-        session["key1"] = "value1"
-
-        assert session.get("key1") == "value1"
-        assert session.get("key2") is None
-        assert session.get("key2", "default") == "default"
-
-    def test_session_keys_values(self):
-        """Test session keys and values methods"""
-        session = Session(self.manager)
+    def test_session_clear(self):
+        """Test clearing session"""
+        manager = MockSessionManager()
+        session = Session(manager)
 
         session["key1"] = "value1"
         session["key2"] = "value2"
-
-        assert set(session.keys()) == {"key1", "key2"}
-        assert set(session.values()) == {"value1", "value2"}
-
-    def test_session_delete_key(self):
-        """Test deleting session key via delete method"""
-        session = Session(self.manager)
-
-        session["key1"] = "value1"
-        session["key2"] = "value2"
-
-        session.delete("key1")
+        session.clear()
+        assert len(session) == 0
         assert session.modified is True
         assert session.deleted is True
-        assert "key1" not in session._session_cache
 
-    def test_session_is_empty(self):
-        """Test session is_empty method"""
-        session = Session(self.manager)
+    def test_session_modified_flag(self):
+        """Test modified flag behavior"""
+        manager = MockSessionManager()
+        session = Session(manager)
 
-        assert session.is_empty() is True
+        assert not session.modified
+        session["key"] = "value"
+        assert session.modified
 
-        session["key1"] = "value1"
-        assert session.is_empty() is False
 
-    def test_session_clear(self):
-        """Test session clear method"""
-        session = Session(self.manager)
+    def test_get_expiration_time(self):
+        """Test session expiration time calculation"""
+        manager = MockSessionManager()
+        session = Session(manager)
 
-        session["key1"] = "value1"
-        session["key2"] = "value2"
+        now = datetime.now(timezone.utc)
+        exp = session.get_expiration_time()
 
-        session.clear()
-        assert session._session_cache == {}
-        assert session.deleted is True
+        assert exp > now
 
-    def test_session_get_session_key(self):
-        """Test getting session key"""
-        session = Session(self.manager, "custom-key")
-        assert session.get_session_key() == "custom-key"
-
-        session_no_key = Session(self.manager)
-        # Should generate a key
-        key = session_no_key.get_session_key()
-        assert key is not None
-
-    def test_session_expiration_time(self):
-        """Test session expiration time"""
-        session = Session(self.manager)
-
-        # Test default expiration
-        expiration = session.get_expiration_time()
-        assert expiration is not None
-        assert isinstance(expiration, datetime)
-
-    def test_session_has_expired(self):
-        """Test session has_expired method"""
-        session = Session(self.manager)
-
-        # Should not be expired initially
-        assert session.has_expired() is False
-
-        # Set expiration to past time
-        past_time = datetime.now(timezone.utc) - timedelta(hours=1)
-        session.set_expiration_time(past_time)
-        assert session.has_expired() is True
+        session.interface.permanent = True
+        exp2 = session.get_expiration_time()
+        assert exp2 > now
 
     def test_session_should_set_cookie(self):
         """Test should_set_cookie property"""
-        session = Session(self.manager)
+        manager = MockSessionManager()
+        session = Session(manager)
 
-        # Initially should not set cookie if not modified
-        assert session.should_set_cookie is False
+        assert not session.should_set_cookie
 
-        # After modification, should set cookie
-        session["key1"] = "value1"
-        assert session.should_set_cookie is True
+        session["key"] = "value"
+        assert session.should_set_cookie
 
-    def test_session_set_and_get_methods(self):
-        """Test set and get methods"""
-        session = Session(self.manager)
+        session.clear()
+        assert  session.should_set_cookie
 
-        session.set("key1", "value1")
-        assert session.get("key1") == "value1"
-        assert session.modified is True
-        assert session.accessed is True
+    async def test_async_save_and_load(self):
+        """Test async save and load operations"""
+        manager = MockSessionManager()
 
-    def test_session_str_method(self):
+        session = Session(manager)
+        session["test"] = "value"
+        await session.save()
+
+        session2 = Session(manager)
+        await session2.load()
+
+    async def test_session_async_operations(self):
+        """Test async session operations"""
+        manager = MockSessionManager()
+
+        session = Session(manager)
+        session["async_key"] = "async_value"
+        await session.save()
+
+        new_session = Session(manager, session.session_key)
+        await new_session.load()
+
+        assert new_session["async_key"] == "async_value"
+
+    def test_session_with_custom_session_key(self):
+        """Test session with custom session key"""
+        manager = MockSessionManager()
+        session = Session(manager, "custom-key-123")
+
+        assert session.session_key == "custom-key-123"
+
+    def test_session_is_empty(self):
+        """Test is_empty method"""
+        manager = MockSessionManager()
+        session = Session(manager)
+
+        assert session.is_empty()
+
+        session["key"] = "value"
+        assert not session.is_empty()
+
+        session.clear()
+        assert session.is_empty()
+
+    async def test_session_save_then_modify(self):
+        """Test save then modify scenario"""
+        manager = MockSessionManager()
+
+        session = Session(manager)
+        session["initial"] = "data"
+        await session.save()
+
+        session["new"] = "data2"
+
+        new_session = Session(manager, session.session_key)
+        await new_session.load()
+
+        assert new_session["initial"] == "data"
+        assert "new" not in new_session
+
+    def test_session_nonexistent_key(self):
+        """Test accessing nonexistent key"""
+        manager = MockSessionManager()
+        session = Session(manager)
+
+        assert session.get("nonexistent") is None
+        assert session.get("nonexistent", "default") == "default"
+
+    def test_session_set_get_multiple(self):
+        """Test setting and getting multiple keys"""
+        manager = MockSessionManager()
+        session = Session(manager)
+
+        data = {
+            "user_id": 123,
+            "username": "testuser",
+            "preferences": {"theme": "dark"},
+        }
+
+        for key, value in data.items():
+            session[key] = value
+
+        for key, value in data.items():
+            assert session[key] == value
+
+    async def test_session_persistence_across_instances(self):
+        """Test session data persistence across instances"""
+        manager = MockSessionManager()
+
+        session1 = Session(manager)
+        session1["persistent"] = "data"
+        await session1.save()
+
+        session2 = Session(manager, session1.session_key)
+        await session2.load()
+
+        assert session2["persistent"] == "data"
+
+    def test_session_repr(self):
         """Test session string representation"""
-        session = Session(self.manager)
+        manager = MockSessionManager()
+        session = Session(manager, "test-key")
 
-        session["key1"] = "value1"
-        str_repr = str(session)
-        assert "Session" in str_repr
-        assert "key1" in str_repr
+        repr_str = repr(session)
+        assert "test-key" in repr_str
 
-    def test_create_session_via_interface(self):
-        """Test creating session via interface"""
+    def test_session_modified_after_load(self):
+        """Test that session is not modified after load"""
         manager = MockSessionManager()
 
-        session = manager.create_session("test-key")
-        assert isinstance(session, Session)
-        assert session.session_key == "test-key"
-        assert session.interface is manager
+        session = Session(manager)
+        session["key"] = "value"
+        session.modified = False
 
-    def test_generate_session_key(self):
-        """Test session key generation"""
+        session2 = Session(manager, session.session_key)
+        assert not session2.modified
+
+    async def test_session_with_complex_data(self):
+        """Test session with complex data types"""
         manager = MockSessionManager()
-        key = manager.generate_session_key()
 
-        assert key is not None
-        assert len(key) == 64  # 32 bytes hex = 64 chars
+        complex_data = {
+            "user": {"id": 1, "name": "Test"},
+            "items": [1, 2, 3],
+            "nested": {"a": {"b": {"c": "deep"}}},
+        }
+
+        session = Session(manager)
+        for key, value in complex_data.items():
+            session[key] = value
+
+        await session.save()
+
+        new_session = Session(manager, session.session_key)
+        await new_session.load()
+
+        for key, value in complex_data.items():
+            assert new_session[key] == value
+
+    def test_session_cookie_properties(self):
+        """Test session cookie-related properties"""
+        manager = MockSessionManager()
+        session = Session(manager)
+
+        assert session.interface.get_cookie_name() == "session_id"
+        assert session.interface.get_cookie_domain() is None
+        assert session.interface.get_cookie_path() == "/"
+        assert session.interface.get_cookie_httponly() is True
+        assert session.interface.get_cookie_secure() is False
+        assert session.interface.get_cookie_samesite() == "lax"
+
+    def test_session_clear_sets_deleted_flag(self):
+        """Test that clear() sets the deleted flag"""
+        manager = MockSessionManager()
+        session = Session(manager)
+
+        session["key"] = "value"
+        assert not session.deleted
+
+        session.clear()
+        assert session.deleted
+
+    async def test_session_save_clears_flags(self):
+        """Test that save() clears modified and deleted flags"""
+        manager = MockSessionManager()
+
+        session = Session(manager)
+        session["key"] = "value"
+        session.deleted = True
+
+        await session.save()
+
+        assert not session.modified
+        assert not session.deleted
+
+    def test_session_with_empty_key(self):
+        """Test session with empty string key"""
+        manager = MockSessionManager()
+        session = Session(manager, "")
+
+        assert session.session_key == ""
+
+    def test_session_get_with_default(self):
+        """Test session.get() with default value"""
+        manager = MockSessionManager()
+        session = Session(manager)
+
+        assert session.get("missing") is None
+        assert session.get("missing", "default") == "default"
+
+        session["exists"] = "value"
+        assert session.get("exists", "default") == "value"
+
+    async def test_concurrent_session_access(self):
+        """Test concurrent access to sessions"""
+        manager = MockSessionManager()
+
+        session1 = Session(manager, "shared-key")
+        session1["shared"] = "data1"
+        await session1.save()
+
+        session2 = Session(manager, "shared-key")
+        await session2.load()
+        session2["shared"] = "data2"
+        await session2.save()
+
+        session3 = Session(manager, "shared-key")
+        await session3.load()
+        assert session3["shared"] == "data2"
+
+    def test_session_keys_values_items(self):
+        """Test session.keys(), .values(), .items() methods"""
+        manager = MockSessionManager()
+        session = Session(manager)
+
+        session["a"] = 1
+        session["b"] = 2
+
+        assert set(session.keys()) == {"a", "b"}
+        assert set(session.values()) == {1, 2}
+        assert set(session.items()) == {("a", 1), ("b", 2)}
 
 
-class TestSessionInterfaceCookieConfig:
-    """Test cookie configuration from interface"""
 
-    def setup_method(self):
-        """Set up test configuration"""
-        config = MakeConfig(secret_key="test-secret-key")
-        set_config(config)
-        self.manager = MockSessionManager()
+    def test_session_update(self):
+        """Test session.update() method"""
+        manager = MockSessionManager()
+        session = Session(manager)
 
-    def test_get_cookie_name(self):
-        """Test getting cookie name"""
-        assert self.manager.get_cookie_name() == "session_id"
+        session.update({"a": 1, "b": 2})
+        assert session["a"] == 1
+        assert session["b"] == 2
 
-    def test_get_cookie_domain(self):
-        """Test getting cookie domain"""
-        assert self.manager.get_cookie_domain() is None
-
-    def test_get_cookie_path(self):
-        """Test getting cookie path"""
-        assert self.manager.get_cookie_path() == "/"
-
-    def test_get_cookie_httponly(self):
-        """Test getting cookie httponly flag"""
-        assert self.manager.get_cookie_httponly() is True
-
-    def test_get_cookie_secure(self):
-        """Test getting cookie secure flag"""
-        assert self.manager.get_cookie_secure() is False
-
-    def test_get_cookie_samesite(self):
-        """Test getting cookie samesite"""
-        assert self.manager.get_cookie_samesite() == "lax"

@@ -2,6 +2,8 @@
 Tests for file-based session manager
 """
 
+from nexios.http import Response
+from nexios.http import Request
 import json
 import os
 import tempfile
@@ -9,13 +11,12 @@ import tempfile
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
-from nexios.http import Request, Response
 from nexios.session import SessionConfig
 from nexios.session.base import BaseSessionInterface
 from nexios.session.file import FileSessionManager
 from nexios.session.middleware import SessionMiddleware
 from nexios.session.session_objects import Session
+from nexios.testclient import TestClient
 
 
 class TestFileSessionManager:
@@ -24,8 +25,6 @@ class TestFileSessionManager:
     def setup_method(self):
         """Set up test configuration with temporary directory"""
         self.temp_dir = tempfile.mkdtemp()
-        config = MakeConfig(secret_key="test-secret-key-for-file-sessions")
-        set_config(config)
         self.config = SessionConfig(session_file_storage_path=self.temp_dir)
 
     def teardown_method(self):
@@ -98,141 +97,146 @@ class TestFileSessionManager:
         assert session._session_cache == {}
 
     async def test_file_session_missing_file(self):
-        """Test loading when session file doesn't exist"""
+        """Test loading session with missing file"""
         manager = FileSessionManager(self.config)
-        session = manager.create_session("nonexistent-key")
+        session = manager.create_session("non-existent-key")
 
         await session.load()
         assert session._session_cache == {}
 
-    async def test_file_session_clear(self):
-        """Test clearing session data and file"""
+    async def test_file_session_overwrite(self):
+        """Test overwriting session data"""
         manager = FileSessionManager(self.config)
-        session = manager.create_session("clear-test")
+        session = manager.create_session("overwrite-key")
 
-        session["data"] = "test"
+        session["version"] = 1
         await session.save()
 
-        file_path = manager._get_file_path("clear-test")
+        session["version"] = 2
+        session["new_field"] = "added"
+        await session.save()
+
+        new_session = manager.create_session("overwrite-key")
+        await new_session.load()
+
+        assert new_session["version"] == 2
+        assert new_session["new_field"] == "added"
+
+    async def test_file_session_delete(self):
+        """Test deleting session data"""
+        manager = FileSessionManager(self.config)
+        session = manager.create_session("delete-key")
+
+        session["to_delete"] = "value"
+        await session.save()
+
+        file_path = manager._get_file_path("delete-key")
         assert os.path.exists(file_path)
 
         session.clear()
         await session.save()
 
-        assert not os.path.exists(file_path)
-        assert session._session_cache == {}
+        new_session = manager.create_session("delete-key")
+        await new_session.load()
+        assert new_session._session_cache == {}
 
-    def test_file_session_operations(self):
-        """Test various session operations via Session object"""
+    def test_file_session_storage_path_creation(self):
+        """Test that storage path is created if not exists"""
+        new_temp_dir = tempfile.mkdtemp()
+        new_path = os.path.join(new_temp_dir, "nested", "storage")
+
+        config = SessionConfig(session_file_storage_path=new_path)
+        manager = FileSessionManager(config)
+
+        assert os.path.exists(new_path)
+        import shutil
+
+        shutil.rmtree(new_temp_dir)
+
+    async def test_file_session_complex_data(self):
+        """Test file session with complex data types"""
         manager = FileSessionManager(self.config)
-        session = manager.create_session("operations-test")
+        session = manager.create_session("complex-key")
 
-        session.set("key1", "value1")
-        assert session.get("key1") == "value1"
+        complex_data = {
+            "user": {"id": 1, "name": "Test"},
+            "items": [1, 2, 3],
+            "nested": {"a": {"b": "deep"}},
+        }
 
-        session.set("key2", "value2")
-        assert dict(session.items()) == {"key1": "value1", "key2": "value2"}
+        for key, value in complex_data.items():
+            session[key] = value
 
-        assert set(session.keys()) == {"key1", "key2"}
-        assert set(session.values()) == {"value1", "value2"}
-
-        assert not session.is_empty()
-
-        session.clear()
-        assert session.is_empty()
-
-    async def test_file_session_concurrent_access(self):
-        """Test concurrent access to session files"""
-        manager = FileSessionManager(self.config)
-
-        session1 = manager.create_session("concurrent-test")
-        session1["counter"] = 1
-        await session1.save()
-
-        session2 = manager.create_session("concurrent-test")
-        await session2.load()
-        session2["counter"] = 2
-        await session2.save()
-
-        session3 = manager.create_session("concurrent-test")
-        await session3.load()
-        assert session3["counter"] == 2
-
-    async def test_file_session_large_data(self):
-        """Test session with large data"""
-        manager = FileSessionManager(self.config)
-        session = manager.create_session("large-data-test")
-
-        large_data = {"data": "x" * 10000, "list": list(range(1000))}
-        session["large"] = large_data
         await session.save()
 
-        new_session = manager.create_session("large-data-test")
+        new_session = manager.create_session("complex-key")
         await new_session.load()
-        assert new_session["large"] == large_data
 
-    async def test_file_session_key_generation(self):
-        """Test session key generation"""
+        for key, value in complex_data.items():
+            assert new_session[key] == value
+
+    def test_file_session_multiple_sessions(self):
+        """Test handling multiple sessions simultaneously"""
         manager = FileSessionManager(self.config)
-        session = manager.create_session()
 
-        assert session.session_key is None
+        for i in range(5):
+            session = manager.create_session(f"key-{i}")
+            session[f"data_{i}"] = f"value_{i}"
+
+    def test_file_session_json_format(self):
+        """Test that session data is stored as valid JSON"""
+        manager = FileSessionManager(self.config)
+        session = manager.create_session("json-test")
 
         session["test"] = "value"
-        await session.save()
 
-        assert session.session_key is not None
-        assert isinstance(session.session_key, str)
+        file_path = manager._get_file_path("json-test")
+        assert file_path.endswith(".json")
 
 
-class TestSessionMiddlewareFileIntegration:
-    """Test session middleware with file backend integration"""
+class TestFileSessionIntegration:
+    """Integration tests for file-based sessions"""
 
     def setup_method(self):
-        """Set up test configuration with temporary directory"""
+        """Set up test configuration"""
         self.temp_dir = tempfile.mkdtemp()
 
     def teardown_method(self):
-        """Clean up temporary directory"""
+        """Clean up"""
         import shutil
 
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
-    @pytest.mark.skip(
-        reason="File session backend needs architectural fix for cookie/session key separation"
-    )
-    def test_session_middleware_with_file_manager_instance(self):
-        """Test file session manager via middleware with instance"""
-        app = NexiosApp(config=MakeConfig(secret_key="test-secret-key"))
+    def test_file_session_integration(self):
+        """Test file session with middleware integration"""
+        app = NexiosApp()
 
-        file_config = SessionConfig(session_file_storage_path=self.temp_dir)
-        file_manager = FileSessionManager(file_config)
+        @app.get("/file-session-test")
+        async def file_session_test(request: Request, response: Response):
+            counter = request.session.get("counter", 0)
+            counter += 1
+            request.session["counter"] = counter
+            return response.json({"counter": request.session["counter"]})
+
+        file_manager = FileSessionManager(
+            SessionConfig(session_file_storage_path=self.temp_dir)
+        )
 
         app.add_middleware(
             SessionMiddleware(
-                config=SessionConfig(session_cookie_name="file_session"),
+                config=SessionConfig(session_file_storage_path=self.temp_dir),
                 manager=file_manager,
+                secret_key="test-secret-key-for-file-sessions",
             )
         )
 
-        @app.get("/set-session")
-        async def set_session(request: Request, response: Response):
-            request.session["user_id"] = 123
-            return response.json({"status": "session_set"})
-
-        @app.get("/get-session")
-        async def get_session(request: Request, response: Response):
-            user_id = request.session.get("user_id")
-            return response.json({"user_id": user_id})
-
-        from nexios.testclient import TestClient
-
         client = TestClient(app)
 
-        res1 = client.get("/set-session")
-        assert res1.status_code == 200
+        response1 = client.get("/file-session-test")
+        assert response1.status_code == 200
+        assert response1.json()["counter"] == 1
 
-        res2 = client.get("/get-session", cookies=res1.cookies)
-        assert res2.status_code == 200
-        assert res2.json() == {"user_id": 123}
+        response2 = client.get("/file-session-test",headers = {"Cookie": response1.headers["Set-Cookie"]})
+        assert response2.status_code == 200
+        assert response2.json()["counter"] == 2

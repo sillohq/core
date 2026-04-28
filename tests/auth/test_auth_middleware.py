@@ -72,6 +72,11 @@ class TestUser(BaseUser):
 
 
 class CustomUser(BaseUser):
+
+    def __init__(self, user_id: str, username: str):
+        self.user_id = user_id
+        self.username = username
+
     @classmethod
     async def load_user(cls, identity: str):
         if identity == "fail_user":
@@ -189,7 +194,7 @@ async def test_auth_middleware_user_loading_failure(test_client):
 
     from nexios.auth import JWTAuthBackend, create_jwt
 
-    jwt_backend = JWTAuthBackend()
+    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(CustomUser, jwt_backend))
 
     @app.get("/protected")
@@ -198,7 +203,7 @@ async def test_auth_middleware_user_loading_failure(test_client):
         return res.json({"user": req.user})
 
     payload = {"id": "fail_user"}
-    token = create_jwt(payload)
+    token = create_jwt(payload, "test_secret_12345")
 
     async with client:
         res = await client.get(

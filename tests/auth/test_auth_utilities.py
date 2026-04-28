@@ -17,11 +17,8 @@ from nexios.auth import create_jwt, decode_jwt
 from nexios.auth.backends.apikey import create_api_key, verify_key
 from nexios.auth.backends.session import login, logout
 from nexios.auth.users.simple import SimpleUser
-from nexios.config import MakeConfig, set_config
+from nexios.config import MakeConfig
 from nexios.session.middleware import SessionMiddleware
-
-config = MakeConfig(secret_key="secret")
-set_config(config)
 
 
 def test_create_jwt_basic():
@@ -132,7 +129,7 @@ def test_verify_key_timing_attack_protection():
 async def test_session_login_logout():
     """Test session login and logout utilities."""
     app = NexiosApp()
-    app.add_middleware(SessionMiddleware())
+    app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request with session
     class MockRequest:
@@ -159,6 +156,7 @@ async def test_session_login_logout():
 def test_session_login_without_session_middleware():
     """Test session login without session middleware raises error."""
     app = NexiosApp()
+    app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session
     class MockRequest:
@@ -175,6 +173,7 @@ def test_session_login_without_session_middleware():
 def test_session_logout_without_session_middleware():
     """Test session logout without session middleware raises error."""
     app = NexiosApp()
+    app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session
     class MockRequest:

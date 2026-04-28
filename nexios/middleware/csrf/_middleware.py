@@ -42,6 +42,8 @@ class CSRFMiddleware(BaseMiddleware):
 
         if self.csrf_config:
             self._setup_csrf_config()
+            if self.secret:
+                self.serializer = URLSafeSerializer(self.secret, "csrftoken")
 
     def _setup_csrf_config(self) -> None:
         """Setup CSRF configuration from config object."""
@@ -58,6 +60,7 @@ class CSRFMiddleware(BaseMiddleware):
         self.cookie_httponly = cfg.cookie_httponly  # ty:ignore[unresolved-attribute]
         self.cookie_samesite = cfg.cookie_samesite  # ty:ignore[unresolved-attribute]
         self.header_name = cfg.header_name  # ty:ignore[unresolved-attribute]
+        self.secret = cfg.secret_key  # ty:ignore[unresolved-attribute]
 
     async def process_request(
         self,
@@ -106,14 +109,15 @@ class CSRFMiddleware(BaseMiddleware):
             except (RuntimeError, AssertionError):
                 self.use_csrf = False
         elif self.use_csrf:
-            try:
-                app_config = get_config()
-                self.secret = app_config.secret_key
-                if self.secret:
-                    self.serializer = URLSafeSerializer(self.secret, "csrftoken")
-                else:
+            if not self.secret:
+                try:
+                    app_config = get_config()
+                    self.secret = app_config.secret_key
+                except RuntimeError:
                     self.use_csrf = False
-            except RuntimeError:
+            if self.secret:
+                self.serializer = URLSafeSerializer(self.secret, "csrftoken")
+            else:
                 self.use_csrf = False
 
         if not self.use_csrf:
