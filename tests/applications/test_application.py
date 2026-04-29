@@ -234,20 +234,15 @@ def test_app_init():
     async def index2(request: Request, response: Response):
         return "hello world"
 
-    config = MakeConfig(
-        debug=True,
-        is_test=True,
-    )
     routes = [
         Route(path="/", handler=index1, methods=["GET"]),
         Route(path="/index2", handler=index2, methods=["GET"]),
     ]
-    app = NexiosApp(routes=routes, config=config)
+    app = NexiosApp(routes=routes)
     for route in routes:
         assert route in app.router.routes
     assert len(app.router.routes) >= len(routes)
-    assert app.config.debug == config.debug
-    assert app.config.is_test == config.is_test
+
 
 
 # ========== Lifespan Tests ==========
