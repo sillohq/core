@@ -22,7 +22,6 @@ from nexios._internals._middleware import (
     ASGIRequestResponseBridge,
 )
 from nexios._internals._middleware import DefineMiddleware as Middleware
-from nexios.config import MakeConfig, get_config, set_config
 from nexios.dependencies import Depend
 from nexios.events import EventEmitter
 from nexios.exception_handler import ExceptionHandlerType, ExceptionMiddleware
@@ -60,16 +59,6 @@ lifespan_manager = Callable[["NexiosApp"], AsyncContextManager[Any]]
 class NexiosApp:
     def __init__(
         self,
-        config: Annotated[
-            Optional[MakeConfig],
-            Doc("""
-                    This subclass is derived from the MakeConfig class and is responsible for managing configurations within the Nexios framework. It takes arguments in the form of dictionaries, allowing for structured and flexible configuration handling. By using dictionaries, this subclass makes it easy to pass multiple configuration values at once, reducing complexity and improving maintainability.
-
-                    One of the key advantages of this approach is its ability to dynamically update and modify settings without requiring changes to the core codebase. This is particularly useful in environments where configurations need to be frequently adjusted, such as database settings, API credentials, or feature flags. The subclass can also validate the provided configuration data, ensuring that incorrect or missing values are handled properly.
-
-                    Additionally, this design allows for merging and overriding configurations, making it adaptable for various use cases. Whether used for small projects or large-scale applications, this subclass ensures that configuration management remains efficient and scalable. By extending MakeConfig, it leverages existing functionality while adding new capabilities tailored to Nexios. This makes it an essential component for maintaining structured and well-organized application settings.
-                    """),
-        ] = MakeConfig(),
         debug: Annotated[
             bool,
             Doc("""
@@ -140,13 +129,8 @@ class NexiosApp:
                 """),
         ] = Route,
     ):
-        self.config = config
         self.debug = debug
         self.dependencies = dependencies or []
-        try:
-            get_config()
-        except RuntimeError:
-            set_config(self.config)
 
         self.http_middleware: List[Middleware] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
@@ -163,9 +147,8 @@ class NexiosApp:
         self.route = self.router.route
         self.lifespan_context: Optional[lifespan_manager] = lifespan
         self.state: dict[str, Any] = {}
-        if not self.config:
-            return
-        openapi_config: Dict[str, Any] = self.config.to_dict().get("openapi", {})
+
+        openapi_config: Dict[str, Any] = {}
 
         # Handle license - ensure it's a License model instance
         license_data = openapi_config.get("license")

@@ -5,7 +5,6 @@ Integration tests for CORS middleware with realistic scenarios
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
 from nexios.http import Request, Response
 from nexios.middleware.cors import CorsConfig, CORSMiddleware
 from nexios.testclient import TestClient
@@ -16,30 +15,27 @@ class TestCORSIntegration:
 
     def test_real_world_web_app_scenario(self):
         """Test CORS in a realistic web application scenario"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=[
-                    "https://myapp.com",
-                    "https://admin.myapp.com",
-                    "http://localhost:3000",
-                    "http://localhost:8080",
-                ],
-                allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                allow_headers=[
-                    "Content-Type",
-                    "Authorization",
-                    "X-Requested-With",
-                    "X-CSRF-Token",
-                    "X-Custom-App-Header",
-                ],
-                allow_credentials=True,
-                expose_headers=["X-Request-ID", "X-Response-Time"],
-                max_age=86400,  # 24 hours
-            )
+        cors_config = CorsConfig(
+            allow_origins=[
+                "https://myapp.com",
+                "https://admin.myapp.com",
+                "http://localhost:3000",
+                "http://localhost:8080",
+            ],
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allow_headers=[
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "X-CSRF-Token",
+                "X-Custom-App-Header",
+            ],
+            allow_credentials=True,
+            expose_headers=["X-Request-ID", "X-Response-Time"],
+            max_age=86400,  # 24 hours
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         # API routes like a real web app
         @app.get("/api/users")
@@ -66,7 +62,7 @@ class TestCORSIntegration:
         async def get_posts(request: Request, response: Response):
             return response.json({"posts": []})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -98,16 +94,13 @@ class TestCORSIntegration:
 
     def test_cors_with_multiple_middleware_layers(self):
         """Test CORS with other middleware layers"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET", "POST"],
-                allow_credentials=True,
-            )
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET", "POST"],
+            allow_credentials=True,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         # Middleware execution order tracking
         execution_order = []
@@ -139,7 +132,7 @@ class TestCORSIntegration:
         # Add middleware in specific order
         app.add_middleware(logging_middleware)
         app.add_middleware(auth_middleware)
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
         app.add_middleware(timing_middleware)
 
         client = TestClient(app)
@@ -162,29 +155,26 @@ class TestCORSIntegration:
 
     def test_cors_with_file_uploads(self):
         """Test CORS with file upload scenarios"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["https://files.myapp.com"],
-                allow_methods=["POST", "OPTIONS"],
-                allow_headers=[
-                    "Content-Type",
-                    "Authorization",
-                    "X-File-Name",
-                    "X-File-Size",
-                ],
-                allow_credentials=True,
-                max_age=3600,
-            )
+        cors_config = CorsConfig(
+            allow_origins=["https://files.myapp.com"],
+            allow_methods=["POST", "OPTIONS"],
+            allow_headers=[
+                "Content-Type",
+                "Authorization",
+                "X-File-Name",
+                "X-File-Size",
+            ],
+            allow_credentials=True,
+            max_age=3600,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.post("/api/upload")
         async def upload_file(request: Request, response: Response):
             return response.json({"uploaded": True, "filename": "test.jpg"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -222,17 +212,14 @@ class TestCORSIntegration:
 
     def test_cors_with_authentication_flow(self):
         """Test CORS with authentication-protected endpoints"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["https://dashboard.myapp.com"],
-                allow_methods=["GET", "POST", "DELETE"],
-                allow_headers=["Authorization", "Content-Type"],
-                allow_credentials=True,
-            )
+        cors_config = CorsConfig(
+            allow_origins=["https://dashboard.myapp.com"],
+            allow_methods=["GET", "POST", "DELETE"],
+            allow_headers=["Authorization", "Content-Type"],
+            allow_credentials=True,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.post("/api/login")
         async def login(request: Request, response: Response):
@@ -256,7 +243,7 @@ class TestCORSIntegration:
 
             return response.json({"deleted": True})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -298,17 +285,14 @@ class TestCORSIntegration:
 
     def test_cors_with_different_content_types(self):
         """Test CORS with various content types"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["https://api-client.com"],
-                allow_methods=["POST", "PUT"],
-                allow_headers=["Content-Type", "Authorization"],
-                allow_credentials=True,
-            )
+        cors_config = CorsConfig(
+            allow_origins=["https://api-client.com"],
+            allow_methods=["POST", "PUT"],
+            allow_headers=["Content-Type", "Authorization"],
+            allow_credentials=True,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.post("/api/json")
         async def json_endpoint(request: Request, response: Response):
@@ -318,7 +302,7 @@ class TestCORSIntegration:
         async def text_endpoint(request: Request, response: Response):
             return response.text("text response")
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -349,17 +333,14 @@ class TestCORSIntegration:
 
     def test_cors_with_subdomain_wildcard(self):
         """Test CORS with subdomain wildcard patterns"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origin_regex=r"https://.*\.myapp\.com",
-                allow_methods=["GET", "POST"],
-                allow_credentials=True,
-                expose_headers=["X-Subdomain"],
-            )
+        cors_config = CorsConfig(
+            allow_origin_regex=r"https://.*\.myapp\.com",
+            allow_methods=["GET", "POST"],
+            allow_credentials=True,
+            expose_headers=["X-Subdomain"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/api/data")
         async def subdomain_data(request: Request, response: Response):
@@ -370,7 +351,7 @@ class TestCORSIntegration:
                 response.set_header("X-Subdomain", subdomain)
             return response
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -391,22 +372,19 @@ class TestCORSIntegration:
         many_origins = [f"https://app{i}.example.com" for i in range(100)]
         many_origins.extend([f"http://localhost:{port}" for port in range(3000, 3100)])
 
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=many_origins,
-                allow_methods=["GET"],
-                allow_credentials=False,
-            )
+        cors_config = CorsConfig(
+            allow_origins=many_origins,
+            allow_methods=["GET"],
+            allow_credentials=False,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/performance-test")
         async def performance_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -419,17 +397,14 @@ class TestCORSIntegration:
 
     def test_cors_with_request_id_tracking(self):
         """Test CORS with request ID tracking middleware"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["https://tracking.myapp.com"],
-                allow_methods=["GET", "POST"],
-                allow_credentials=True,
-                expose_headers=["X-Request-ID", "X-Trace-ID"],
-            )
+        cors_config = CorsConfig(
+            allow_origins=["https://tracking.myapp.com"],
+            allow_methods=["GET", "POST"],
+            allow_credentials=True,
+            expose_headers=["X-Request-ID", "X-Trace-ID"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         # Request ID middleware
         async def request_id_middleware(
@@ -454,7 +429,7 @@ class TestCORSIntegration:
 
         # Add middleware
         app.add_middleware(request_id_middleware)
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
