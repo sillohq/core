@@ -27,7 +27,6 @@ def create_client(
     Create a synchronous test client for a Nexios application.
     """
     app = NexiosApp(
-        config=config,
         title=title,
         version=version,
         description=description,
@@ -81,7 +80,6 @@ def create_async_client(
     Create an asynchronous test client for a Nexios application.
     """
     app = NexiosApp(
-        config=config,
         title=title,
         version=version,
         description=description,

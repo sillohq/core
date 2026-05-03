@@ -132,7 +132,7 @@ class Session:
     async def load(self) -> None:
         return await self.interface.load(self)
 
-    async def save(self) -> Optional[str]:
+    async def save(self) -> str:
         self.modified = False
         self.deleted = False
         self.accessed = False
