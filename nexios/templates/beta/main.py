@@ -5,7 +5,7 @@ from nexios import NexiosApp
 from nexios.routing import Route
 
 # Create the application
-app = NexiosApp(title="{{project_name_title}}", config=app_config)
+app = NexiosApp(title="{{project_name_title}}")
 
 
 @app.on_startup
