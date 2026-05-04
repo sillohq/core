@@ -3,7 +3,7 @@ import typing
 import warnings
 from typing import Any, Callable, Dict, List, Optional
 
-from nexios.config import get_config, warn_deprecated_config_usage
+from nexios.config import get_config
 from nexios.http import Request, Response
 from nexios.logging import getLogger
 
