@@ -11,42 +11,54 @@ head:
       content: Learn how to use configuration utilities in Nexios
 ---
 
-#  Configuration Management
- 
-Nexios provides a simple way to manage configuration settings, using the `MakeConfig` class.
+# Configuration Management
+
+Nexios applications are configured by passing settings directly to the app or middleware:
 
 ```python
 from nexios import NexiosApp
-from nexios.config import MakeConfig
 
-config = MakeConfig(
-    port=8000,
-    debug=True,
-    secret_key="your-secret-key-here",
-)
+app = NexiosApp()
 
-app = NexiosApp(config=config)
+# Configure the app
+app.config.port = 8000
+app.config.debug = True
 ```
 
-You can access the configuration using the `config` attribute of the `NexiosApp` instance:
+You can also set configuration values directly:
 
 ```python
 from nexios import NexiosApp
-from nexios.config import MakeConfig
 
-config = MakeConfig({
-    "port": 8000,
-    "debug": True,
-    "database_url": "postgresql://user:pass@localhost/dbname"
-})
-
-app = NexiosApp(config=config)
+app = NexiosApp()
+app.config.database_url = "postgresql://user:pass@localhost/dbname"
 
 # Access configuration values
-print(app.config.port)  # Output: 8000
-print(app.config.debug)  # Output: True
-print(app.config.database_url)  # Output: postgresql://user:pass@localhost/dbname
+print(app.config.port)          # Output: 8000 (default)
+print(app.config.debug)          # Output: False (default)
+print(app.config.database_url)    # Output: postgresql://user:pass@localhost/dbname
+```
 
+For middleware-specific config, pass settings directly:
+
+```python
+from nexios import NexiosApp
+from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+app = NexiosApp()
+app.add_middleware(
+    CORSMiddleware(
+        config=CorsConfig(
+            allow_origins=["https://example.com"],
+            allow_methods=["GET", "POST"]
+        )
+    )
+)
+```
+
+Configuration is immutable by default:
+
+```python
 # Configuration is immutable by default
 try:
     app.config.port = 9000  # This will raise an error
@@ -54,106 +66,86 @@ except AttributeError:
     print("Configuration is immutable")
 ```
 
-##  Global Configuration Access
+## Global Configuration Access
 
-The framework provides global configuration management through the `get_config()` function, allowing you to access configuration from anywhere in your application:
+The framework provides global configuration management through `app.config`, allowing you to access configuration from anywhere in your application:
 
 ```python
-from nexios.config import get_config, set_config
 from nexios import NexiosApp
 
-# Set up configuration
-config = MakeConfig({
-    "port": 8000,
-    "debug": True,
-    "database_url": "postgresql://user:pass@localhost/dbname"
-})
+app = NexiosApp()
+app.config.port = 8000
+app.config.debug = True
+app.config.database_url = "postgresql://user:pass@localhost/dbname"
 
-app = NexiosApp(config=config)
-
-# Access global configuration from startup handler
+# Access configuration from startup handler
 @app.on_startup
 async def startup_handler():
-    config = get_config()
-    print(f"Starting server on port {config.port}")
-    print(f"Debug mode: {config.debug}")
-    print(f"Database URL: {config.database_url}")
+    print(f"Starting server on port {app.config.port}")
+    print(f"Debug mode: {app.config.debug}")
+    print(f"Database URL: {app.config.database_url}")
 
-# Get global configuration from any handler
+# Get configuration from any handler
 @app.get("/config")
 async def get_config_handler(request, response):
-    config = get_config()
     return response.json({
-        "port": config.port,
-        "debug": config.debug,
-        "database_url": config.database_url
+        "port": app.config.port,
+        "debug": app.config.debug,
+        "database_url": app.config.database_url
     })
 
 # Access configuration from utility functions
 def get_database_connection():
-    config = get_config()
-    return create_connection(config.database_url)
+    return create_connection(app.config.database_url)
 ```
 
 ::: warning ⚠️Warning
-You get access to the global configuration through the `get_config()` function from any module in your application. However, if you try to call `get_config()` before it has been set, it will raise a `RuntimeError`.
+You can access the configuration through `app.config` from any module in your application. However, if you modify the configuration in one test without resetting it, other tests running in parallel or subsequent tests might fail unexpectedly. Always reset the configuration in your test teardown or use fixtures to ensure a clean state for each test.
 :::
 
-::: warning Configuration in Tests
-When writing tests, be aware that `get_config()` relies on a global variable. If you modify the configuration in one test without resetting it, other tests running in parallel or subsequent tests might fail unexpectedly. Always reset the configuration in your test teardown or use fixtures to ensure a clean state for each test.
-:::
+## Environment-Based Configuration
 
-
-
-##  Environment-Based Configuration
-
-###  Using Environment Variables
+### Using Environment Variables
 
 Environment variables are the most common way to configure applications in different environments:
 
 ```python
 import os
-from nexios import NexiosApp, MakeConfig
+from nexios import NexiosApp
 
-# Load configuration from environment variables
-config = MakeConfig(
-    debug = os.getenv("DEBUG", "False").lower() == "true",
-    secret_key = os.getenv("SECRET_KEY", "default-secret-key"),
-    database_url= os.getenv("DATABASE_URL", "sqlite:///app.db"),
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379"),
-    port = int(os.getenv("PORT", "8000")),
-    host = os.getenv("HOST", "127.0.0.1"),
-    log_level = os.getenv("LOG_LEVEL", "INFO")
-)
-
-app = NexiosApp(config=config)
+app = NexiosApp()
+app.config.debug = os.getenv("DEBUG", "False").lower() == "true"
+app.config.secret_key = os.getenv("SECRET_KEY", "default-secret-key")
+app.config.database_url = os.getenv("DATABASE_URL", "sqlite:///app.db")
+app.config.redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+app.config.port = int(os.getenv("PORT", "8000"))
+app.config.host = os.getenv("HOST", "127.0.0.1")
+app.config.log_level = os.getenv("LOG_LEVEL", "INFO")
 ```
 
-###  Using .env Files
+### Using .env Files
 
 For development, you can use `.env` files to manage environment variables:
 
 ```python
-from nexios import NexiosApp, MakeConfig
+from nexios import NexiosApp
 from nexios.config import load_env
 import os
 
 # Load environment variables from .env file
 load_env()
 
-config = MakeConfig(
-    debug= os.getenv("DEBUG", "False").lower() == "true",
-    secret_key= os.getenv("SECRET_KEY"),
-    database_url= os.getenv("DATABASE_URL"),
-    redis_url= os.getenv("REDIS_URL"),
-    port= int(os.getenv("PORT", "8000")),
-    host=  os.getenv("HOST", "127.0.0.1")
-)
-
-app = NexiosApp(config=config)
+app = NexiosApp()
+app.config.debug = os.getenv("DEBUG", "False").lower() == "true"
+app.config.secret_key = os.getenv("SECRET_KEY")
+app.config.database_url = os.getenv("DATABASE_URL")
+app.config.redis_url = os.getenv("REDIS_URL")
+app.config.port = int(os.getenv("PORT", "8000"))
+app.config.host = os.getenv("HOST", "127.0.0.1")
 ```
 
 Example `.env` file:
+
 ```ini
 # Development Environment
 DEBUG=true
@@ -165,54 +157,47 @@ HOST=127.0.0.1
 LOG_LEVEL=DEBUG
 ```
 
+## Advanced Configuration Patterns
 
+### Nested Configuration
 
-##  Advanced Configuration Patterns
-
-###  Nested Configuration
-
-For complex applications, you can use nested configuration structures:
+For complex applications, you can use nested configuration structures directly on `app.config`:
 
 ```python
-from nexios import NexiosApp, MakeConfig
+from nexios import NexiosApp
 
-config = MakeConfig(**{
-    "server": dict(
-        host="127.0.0.1",
-        port=8000,
-        workers=4
-    ),
-    "database": dict(
-        url="postgresql://user:pass@localhost/dbname",
-        pool_size=20,
-        max_overflow=30,
-        timeout=30
-    ),
-    "redis": dict(
-        url="redis://localhost:6379",
-        pool_size=10,
-        timeout=5
-    ),
-    "security": dict(
-        secret_key="your-secret-key",
-        session_timeout=3600,
-        csrf_enabled=True
-    ),
-    "logging": dict(
-        level="INFO",
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        file="app.log"
-    )
-})
+app = NexiosApp()
 
-app = NexiosApp(config=config)
+# Server config
+app.config.server_host = "127.0.0.1"
+app.config.server_port = 8000
+app.config.server_workers = 4
+
+# Database config
+app.config.database_url = "postgresql://user:pass@localhost/dbname"
+app.config.database_pool_size = 20
+app.config.database_max_overflow = 30
+app.config.database_timeout = 30
+
+# Redis config
+app.config.redis_url = "redis://localhost:6379"
+app.config.redis_pool_size = 10
+app.config.redis_timeout = 5
+
+# Security config
+app.config.secret_key = "your-secret-key"
+app.config.session_timeout = 3600
+app.config.csrf_enabled = True
+
+# Logging config
+app.config.logging_level = "INFO"
+app.config.logging_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+app.config.logging_file = "app.log"
 
 # Access nested configuration
-print(app.config.server.host)  # 127.0.0.1
-print(app.config.database.pool_size)  # 20
-print(app.config.security.csrf_enabled)  # True
+print(app.config.server_host)      # 127.0.0.1
+print(app.config.database_pool_size)   # 20
+print(app.config.csrf_enabled)        # True
 ```
 
-
 This comprehensive configuration guide covers all aspects of managing configuration in Nexios applications. The configuration system is designed to be flexible, secure, and easy to use while providing the power to handle complex configuration scenarios across different environments.
-

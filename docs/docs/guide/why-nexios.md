@@ -106,21 +106,21 @@ We prioritize developer experience with:
 - Excellent documentation
 
 ```python
-from nexios import NexiosApp, MakeConfig
-from nexios.middleware import CORSMiddleware
+from nexios import NexiosApp
+from nexios.middleware.cors import CorsConfig, CORSMiddleware
 
 # Clear configuration
-app = NexiosApp(
-    config=MakeConfig(
-        debug=True,
-       cors = {
-        allowed_origins = ["https//localhost:5000","api.nexios.hub"]
-       }
+app = NexiosApp()
+
+# Middleware with direct config
+app.add_middleware(
+    CORSMiddleware(
+        config=CorsConfig(
+            debug=True,
+            allow_origins=["https://localhost:5000", "https://api.nexios.hub"]
+        )
     )
 )
-
-# Middleware with sensible defaults
-app.add_middleware(CORSMiddleware())
 ```
 
 ### 5. WebSocket Support
@@ -168,13 +168,15 @@ from nexios.middleware import (
 )
 
 # Production configuration
-app = NexiosApp(
-    config=MakeConfig(
-        debug=False,
-        security={
-            "ssl_redirect": True,
-            "hsts_enabled": True
-        }
+app = NexiosApp()
+
+# Production middleware
+from nexios.middleware.security import SecurityMiddleware
+
+app.add_middleware(
+    SecurityMiddleware(
+        ssl_redirect=True,
+        hsts_enabled=True
     )
 )
 

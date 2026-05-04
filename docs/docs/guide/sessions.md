@@ -19,39 +19,22 @@ Setting up sessions in your Nexios application is straightforward:
 ```python [Recommended Approach]
 from nexios import NexiosApp
 from nexios.session.middleware import SessionMiddleware
-from nexios.session import SessionConfig
 
 app = NexiosApp()
 
-# Required: Configure a secret key for signing sessions
-app.config.secret_key = "your-secure-secret-key"
-
-# Create session configuration
-session_config = SessionConfig(
-    session_cookie_name="nexios_session",
-    cookie_path="/",
-    cookie_domain=None,
-    cookie_secure=True,
-    cookie_httponly=True,
-    cookie_samesite="lax",
-    session_expiration_time=86400  # 24 hours
+# Add the session middleware with secret_key passed directly
+app.add_middleware(
+    SessionMiddleware(
+        secret_key="your-secure-secret-key",
+        session_cookie_name="nexios_session",
+        cookie_path="/",
+        cookie_domain=None,
+        cookie_secure=True,
+        cookie_httponly=True,
+        cookie_samesite="lax",
+        session_expiration_time=86400  # 24 hours
+    )
 )
-
-# Add the session middleware with config
-app.add_middleware(SessionMiddleware(config=session_config))
-```
-
-```py [Legacy Approach [Deprecated]]
-from nexios import NexiosApp, MakeConfig
-from nexios.session.middleware import SessionMiddleware
-
-app = NexiosApp()
-
-# Required: Configure a secret key for signing sessions
-app.config.secret_key = "your-secure-secret-key"
-
-# Add the session middleware (uses global config)
-app.add_middleware(SessionMiddleware())
 ```
 
 With this minimal setup, Nexios will use the default cookie-based session backend. Your routes can now access the session through the request object:
