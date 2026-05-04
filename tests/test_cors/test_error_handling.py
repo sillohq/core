@@ -5,7 +5,6 @@ Tests for CORS middleware error handling and edge cases
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
 from nexios.http import Request, Response
 from nexios.middleware.cors import CorsConfig, CORSMiddleware
 from nexios.testclient import TestClient
@@ -16,23 +15,18 @@ class TestCORSErrorHandling:
 
     def test_malformed_origin_header(self):
         """Test CORS with malformed Origin header"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/malformed-origin")
         async def malformed_origin_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -46,23 +40,18 @@ class TestCORSErrorHandling:
 
     def test_origin_with_invalid_characters(self):
         """Test CORS with Origin header containing invalid characters"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/invalid-origin-chars")
         async def invalid_origin_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -86,16 +75,15 @@ class TestCORSErrorHandling:
 
     def test_empty_configuration_handling(self):
         """Test CORS middleware with empty configuration"""
-        config = MakeConfig(cors=CorsConfig())
-        set_config(config)
+        cors_config = CorsConfig()
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/empty-cors")
         async def empty_cors_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -104,38 +92,20 @@ class TestCORSErrorHandling:
         assert response.status_code == 200
         assert "Access-Control-Allow-Origin" not in response.headers
 
-    def test_none_configuration_handling(self):
-        """Test CORS middleware with None configuration"""
-        config = MakeConfig(cors=None)
-        set_config(config)
-
-        app = NexiosApp(config)
-
-        @app.get("/none-cors")
-        async def none_cors_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
-
-        app.add_middleware(CORSMiddleware(config=config.cors))
-
-        client = TestClient(app)
-
-        # Should handle gracefully without CORS headers
-        response = client.get("/none-cors", headers={"Origin": "http://example.com"})
-        assert response.status_code == 200
-        assert "Access-Control-Allow-Origin" not in response.headers
-
     def test_missing_cors_config(self):
         """Test app without any CORS configuration"""
-        config = MakeConfig({})  # No CORS config at all
-        set_config(config)
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+        )
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/no-cors-config")
         async def no_cors_config_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -145,29 +115,23 @@ class TestCORSErrorHandling:
 
         assert response.status_code == 200
         assert response.json() == {"message": "OK"}
-        # Should not have any CORS headers
-        cors_headers = [
-            h for h in response.headers.keys() if h.startswith("Access-Control-")
-        ]
-        assert len(cors_headers) == 0
+        # Should have CORS headers since origin is allowed
+        assert "Access-Control-Allow-Origin" in response.headers
 
     def test_non_callable_dynamic_validator(self):
         """Test CORS with non-callable dynamic validator"""
-        config = MakeConfig(
-            cors=CorsConfig(
-                dynamic_origin_validator="not-a-function",  # type: ignore
-                allow_methods=["GET"],
-            )
+        cors_config = CorsConfig(
+            dynamic_origin_validator="not-a-function",  # type: ignore
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/non-callable-validator")
         async def non_callable_validator_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -182,23 +146,18 @@ class TestCORSErrorHandling:
 
     def test_request_with_multiple_origin_headers(self):
         """Test request with multiple Origin headers (HTTP header injection)"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/multiple-origins")
         async def multiple_origins_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -215,23 +174,18 @@ class TestCORSErrorHandling:
 
     def test_request_with_very_long_origin(self):
         """Test request with extremely long Origin header"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/long-origin")
         async def long_origin_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -245,23 +199,18 @@ class TestCORSErrorHandling:
 
     def test_request_with_null_byte_origin(self):
         """Test request with null bytes in Origin header"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/null-byte-origin")
         async def null_byte_origin_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -275,23 +224,18 @@ class TestCORSErrorHandling:
 
     def test_cors_middleware_with_exception_in_route(self):
         """Test CORS middleware when route handler raises exception"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/exception-route")
         async def exception_route(request: Request, response: Response):
             raise ValueError("Route error")
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -305,23 +249,18 @@ class TestCORSErrorHandling:
 
     def test_cors_preflight_with_invalid_method_header(self):
         """Test preflight request with invalid Access-Control-Request-Method"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/invalid-method-preflight")
         async def invalid_method_preflight_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -339,23 +278,18 @@ class TestCORSErrorHandling:
 
     def test_cors_preflight_with_empty_method_header(self):
         """Test preflight request with empty Access-Control-Request-Method"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/empty-method-preflight")
         async def empty_method_preflight_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -373,17 +307,12 @@ class TestCORSErrorHandling:
 
     def test_cors_preflight_with_whitespace_method(self):
         """Test preflight request with whitespace in method header"""
-        config = MakeConfig(
-            {
-                "cors": {
-                    "allow_origins": ["http://example.com"],
-                    "allow_methods": ["GET"],
-                }
-            }
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/whitespace-method-preflight")
         async def whitespace_method_preflight_route(
@@ -391,7 +320,7 @@ class TestCORSErrorHandling:
         ):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 

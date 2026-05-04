@@ -42,31 +42,18 @@ class TestCORSConfiguration:
         assert "Access-Control-Allow-Credentials" not in response.headers
 
     def test_cors_deprecated_config_style(self):
-        """Test CORS middleware with deprecated config style (should show warning)."""
-        from nexios.config import MakeConfig, set_config
-
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["*"],
-                allow_methods=["GET", "POST"],
-            )
+        """Test CORS middleware no longer supports MakeConfig - verify direct CorsConfig usage."""
+        cors_config = CorsConfig(
+            allow_origins=["*"],
+            allow_methods=["GET", "POST"],
         )
-        set_config(config)
 
         app = NexiosApp()
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         @app.get("/test")
         async def test_route(request: Request, response: Response):
             return response.json({"message": "OK"})
-
-        # This should trigger a deprecation warning
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            app.add_middleware(CORSMiddleware())
-
-            # Check that deprecation warning was issued
-            assert len(w) > 0
-            assert any("deprecated" in str(warning.message).lower() for warning in w)
 
         client = TestClient(app)
         response = client.get("/test", headers={"Origin": "http://example.com"})
@@ -117,15 +104,10 @@ class TestCORSConfiguration:
 
     def test_regex_origin_case_sensitive(self):
         """Test that regex origin matching is case-sensitive"""
-        from nexios.config import MakeConfig, set_config
-
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origin_regex=r"https://.*\.EXAMPLE\.COM",
-                allow_methods=["GET"],
-            )
+        cors_config = CorsConfig(
+            allow_origin_regex=r"https://.*\.EXAMPLE\.COM",
+            allow_methods=["GET"],
         )
-        set_config(config)
 
         app = NexiosApp()
 
@@ -133,7 +115,7 @@ class TestCORSConfiguration:
         async def regex_case_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -156,15 +138,10 @@ class TestCORSConfiguration:
 
     def test_regex_origin_with_ports(self):
         """Test regex origin matching with ports"""
-        from nexios.config import MakeConfig, set_config
-
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origin_regex=r"https://.*\.example\.com(:[0-9]+)?",
-                allow_methods=["GET"],
-            )
+        cors_config = CorsConfig(
+            allow_origin_regex=r"https://.*\.example\.com(:[0-9]+)?",
+            allow_methods=["GET"],
         )
-        set_config(config)
 
         app = NexiosApp()
 
@@ -172,7 +149,7 @@ class TestCORSConfiguration:
         async def regex_port_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -198,12 +175,11 @@ class TestCORSConfiguration:
 
     def test_dynamic_origin_validator(self):
         """Test CORS with dynamic origin validator function"""
-        from nexios.config import MakeConfig, set_config
 
         def validate_origin(origin):
             return origin and origin.endswith(".trusted-domain.com")
 
-        config = CorsConfig(
+        cors_config = CorsConfig(
             dynamic_origin_validator=validate_origin,
             allow_methods=["GET"],
             allow_credentials=True,
@@ -215,7 +191,7 @@ class TestCORSConfiguration:
         async def dynamic_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -238,15 +214,12 @@ class TestCORSConfiguration:
 
     def test_blacklisted_origins(self):
         """Test CORS with blacklisted origins"""
-        from nexios.config import MakeConfig, set_config
-
-        config = CorsConfig(
+        cors_config = CorsConfig(
             allow_origins=["*"],
             blacklist_origins=["https://evil.com", "http://malicious.org"],
             allow_methods=["GET"],
             allow_credentials=False,
-            )
-     
+        )
 
         app = NexiosApp()
 
@@ -254,7 +227,7 @@ class TestCORSConfiguration:
         async def blacklist_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -274,13 +247,11 @@ class TestCORSConfiguration:
 
     def test_blacklist_with_regex_origins(self):
         """Test blacklisting combined with regex origins"""
-        from nexios.config import MakeConfig, set_config
-
-        config =CorsConfig(
-                allow_origin_regex=r"https://.*\.example\.com",
-                blacklist_origins=["https://bad.example.com"],
-                allow_methods=["GET"],
-            )
+        cors_config = CorsConfig(
+            allow_origin_regex=r"https://.*\.example\.com",
+            blacklist_origins=["https://bad.example.com"],
+            allow_methods=["GET"],
+        )
 
         app = NexiosApp()
 
@@ -288,7 +259,7 @@ class TestCORSConfiguration:
         async def blacklist_regex_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -311,15 +282,12 @@ class TestCORSConfiguration:
 
     def test_credentials_disabled_configuration(self):
         """Test CORS configuration without credentials"""
-        from nexios.config import MakeConfig, set_config
-
-        config = CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                allow_credentials=False,
-                expose_headers=["X-Custom-Header"],
-            )
-     
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            allow_credentials=False,
+            expose_headers=["X-Custom-Header"],
+        )
 
         app = NexiosApp()
 
@@ -327,7 +295,7 @@ class TestCORSConfiguration:
         async def no_creds_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -343,19 +311,16 @@ class TestCORSConfiguration:
 
     def test_expose_headers_configuration(self):
         """Test CORS expose headers configuration"""
-        from nexios.config import MakeConfig, set_config
-
-        config = CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                allow_credentials=True,
-                expose_headers=[
-                    "X-Request-ID",
-                    "X-Response-Time",
-                    "X-Custom-Header",
-                ],
-            )
-       
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            allow_credentials=True,
+            expose_headers=[
+                "X-Request-ID",
+                "X-Response-Time",
+                "X-Custom-Header",
+            ],
+        )
 
         app = NexiosApp()
 
@@ -363,7 +328,7 @@ class TestCORSConfiguration:
         async def expose_headers_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -381,15 +346,12 @@ class TestCORSConfiguration:
 
     def test_empty_expose_headers(self):
         """Test CORS with empty expose headers"""
-        from nexios.config import MakeConfig, set_config
-
-        config = CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                allow_credentials=True,
-                expose_headers=[],
-            )
-        
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            allow_credentials=True,
+            expose_headers=[],
+        )
 
         app = NexiosApp()
 
@@ -397,7 +359,7 @@ class TestCORSConfiguration:
         async def empty_expose_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -413,14 +375,11 @@ class TestCORSConfiguration:
 
     def test_max_age_configuration(self):
         """Test CORS max-age configuration"""
-        from nexios.config import MakeConfig, set_config
-
-        config = CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                max_age=86400,  # 24 hours
-            )
-        
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            max_age=86400,  # 24 hours
+        )
 
         app = NexiosApp()
 
@@ -428,7 +387,7 @@ class TestCORSConfiguration:
         async def max_age_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -450,14 +409,11 @@ class TestCORSConfiguration:
 
     def test_strict_origin_checking_disabled(self):
         """Test CORS with strict origin checking disabled (default)"""
-        from nexios.config import MakeConfig, set_config
-
-        config = CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                strict_origin_checking=False,
-            )
-        
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            strict_origin_checking=False,
+        )
 
         app = NexiosApp()
 
@@ -465,7 +421,7 @@ class TestCORSConfiguration:
         async def non_strict_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -476,14 +432,11 @@ class TestCORSConfiguration:
 
     def test_debug_mode_configuration(self):
         """Test CORS debug mode configuration"""
-        from nexios.config import MakeConfig, set_config
-
-        config = CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                debug=True,
-            )
-        
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            debug=True,
+        )
 
         app = NexiosApp()
 
@@ -491,7 +444,7 @@ class TestCORSConfiguration:
         async def debug_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 

@@ -5,7 +5,6 @@ Tests for CORS preflight requests (OPTIONS)
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
 from nexios.http import Request, Response
 from nexios.middleware.cors import CorsConfig, CORSMiddleware
 from nexios.testclient import TestClient
@@ -14,25 +13,22 @@ from nexios.testclient import TestClient
 @pytest.fixture
 def cors_app():
     """Create a test app with CORS middleware configured"""
-    config = MakeConfig(
-        cors=CorsConfig(
-            allow_origins=["http://example.com", "https://example.org"],
-            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            allow_headers=[
-                "Content-Type",
-                "Authorization",
-                "X-Custom-Header",
-                "X-Another-Header",
-            ],
-            allow_credentials=True,
-            expose_headers=["X-Exposed-Header"],
-            max_age=3600,
-            debug=True,
-        )
+    cors_config = CorsConfig(
+        allow_origins=["http://example.com", "https://example.org"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=[
+            "Content-Type",
+            "Authorization",
+            "X-Custom-Header",
+            "X-Another-Header",
+        ],
+        allow_credentials=True,
+        expose_headers=["X-Exposed-Header"],
+        max_age=3600,
+        debug=True,
     )
-    set_config(config)
 
-    app = NexiosApp(config)
+    app = NexiosApp()
 
     # Add test routes
     @app.get("/test")
@@ -47,7 +43,7 @@ def cors_app():
     async def update_route(request: Request, response: Response):
         return response.json({"updated": True})
 
-    app.add_middleware(CORSMiddleware(config=config.cors))
+    app.add_middleware(CORSMiddleware(config=cors_config))
     return app
 
 
@@ -99,23 +95,20 @@ class TestPreflightRequests:
     def test_preflight_with_wildcard_headers(self, client):
         """Test preflight with wildcard allowed headers"""
         # Create app with wildcard headers
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                allow_headers=["*"],  # Allow all headers
-                allow_credentials=True,
-            )
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            allow_headers=["*"],  # Allow all headers
+            allow_credentials=True,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/wildcard-headers")
         async def wildcard_headers_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         wildcard_client = TestClient(app)
 
@@ -259,22 +252,19 @@ class TestPreflightRequests:
     def test_preflight_with_credentials_false(self, client):
         """Test preflight when credentials are disabled"""
         # Create app without credentials
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                allow_credentials=False,
-            )
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            allow_credentials=False,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/no-creds-preflight")
         async def no_creds_preflight_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         no_creds_client = TestClient(app)
 
@@ -294,22 +284,19 @@ class TestPreflightRequests:
     def test_preflight_max_age_configuration(self, client):
         """Test preflight max-age configuration"""
         # Create app with different max_age
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["http://example.com"],
-                allow_methods=["GET"],
-                max_age=86400,  # 24 hours
-            )
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            max_age=86400,  # 24 hours
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/max-age-test")
         async def max_age_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         max_age_client = TestClient(app)
 
@@ -327,23 +314,20 @@ class TestPreflightRequests:
     def test_preflight_blacklisted_origin(self, client):
         """Test preflight with blacklisted origin"""
         # Create app with blacklisted origin
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=["*"],
-                blacklist_origins=["http://evil.com"],
-                allow_methods=["GET"],
-                allow_credentials=True,
-            )
+        cors_config = CorsConfig(
+            allow_origins=["*"],
+            blacklist_origins=["http://evil.com"],
+            allow_methods=["GET"],
+            allow_credentials=True,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/blacklist-preflight")
         async def blacklist_preflight_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         blacklist_client = TestClient(app)
 

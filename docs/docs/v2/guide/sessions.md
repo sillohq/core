@@ -22,11 +22,8 @@ from nexios.session.middleware import SessionMiddleware
 
 app = NexiosApp()
 
-# Required: Configure a secret key for signing sessions
-app.config.secret_key = "your-secure-secret-key"
-
-# Add the session middleware
-app.add_middleware(SessionMiddleware())
+# Add the session middleware with a secret key for signing sessions
+app.add_middleware(SessionMiddleware(secret_key="your-secure-secret-key"))
 ```
 
 With this minimal setup, Nexios will use the default cookie-based session backend. Your routes can now access the session through the request object:
@@ -47,14 +44,15 @@ async def index(req, res):
 Nexios offers various configuration options for customizing session behavior:
 
 ```python
-from nexios import NexiosApp, MakeConfig
-from nexios.session import SessionConfig
+from nexios import NexiosApp
 from nexios.session.middleware import SessionMiddleware
 from nexios.session.file import FileSessionInterface
 
-config = MakeConfig(
-    secret_key="your-secure-secret-key",
-    session=SessionConfig(
+app = NexiosApp()
+
+app.add_middleware(
+    SessionMiddleware(
+        secret_key="your-secure-secret-key",
         session_cookie_name="nexios_session",
         cookie_path="/",
         cookie_domain=None,
@@ -67,9 +65,6 @@ config = MakeConfig(
         session_file_name="session_"
     )
 )
-
-app = NexiosApp(config=config)
-app.add_middleware(SessionMiddleware())
 ```
 
 ## Configuration Options Reference
@@ -135,12 +130,10 @@ Sessions in Nexios behave similar to dictionaries but with additional methods:
 By default, sessions expire after 24 hours (86400 seconds). You can customize this:
 
 ```python
-from nexios import MakeConfig
-from nexios.session import SessionConfig
-
-# Set global session expiration time
-config = MakeConfig(
-    session=SessionConfig(
+# Set global session expiration time via middleware
+app.add_middleware(
+    SessionMiddleware(
+        secret_key="your-secure-secret-key",
         session_expiration_time=3600  # 1 hour
     )
 )
@@ -166,12 +159,11 @@ Nexios supports multiple session backends to store session data. Each backend ha
 The simplest session backend, storing the session data directly in a signed cookie:
 
 ```python
-from nexios import MakeConfig
-from nexios.session import SessionConfig
 from nexios.session.signed_cookies import SignedSessionManager
 
-config = MakeConfig(
-    session=SessionConfig(
+app.add_middleware(
+    SessionMiddleware(
+        secret_key="your-secure-secret-key",
         manager=SignedSessionManager
     )
 )
@@ -194,12 +186,11 @@ config = MakeConfig(
 Stores session data in files on the server filesystem:
 
 ```python
-from nexios import MakeConfig
-from nexios.session import SessionConfig
 from nexios.session.file import FileSessionInterface
 
-config = MakeConfig(
-    session=SessionConfig(
+app.add_middleware(
+    SessionMiddleware(
+        secret_key="your-secure-secret-key",
         manager=FileSessionInterface,
         session_file_storage_path="sessions",  # Directory to store session files
         session_file_name="session_"           # Prefix for session files
@@ -270,20 +261,20 @@ Session management requires careful attention to security:
 import secrets
 
 # Generate a secure random key
-app.config.secret_key = secrets.token_hex(32)
+secret_key = secrets.token_hex(32)
 
 # For production, store this in environment variables
-app.config.secret_key = os.environ.get("SECRET_KEY")
+secret_key = os.environ.get("SESSION_SECRET_KEY")
+
+app.add_middleware(SessionMiddleware(secret_key=secret_key))
 ```
 
 #### Enable Secure Cookies
 
 ```python
-from nexios import MakeConfig
-from nexios.session import SessionConfig
-
-config = MakeConfig(
-    session=SessionConfig(
+app.add_middleware(
+    SessionMiddleware(
+        secret_key="your-secure-secret-key",
         cookie_secure=True,      # Only send cookies over HTTPS
         cookie_httponly=True,    # Prevent JavaScript access
         cookie_samesite="lax"    # Mitigate CSRF attacks

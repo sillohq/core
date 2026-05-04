@@ -19,21 +19,8 @@ SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-
 
 
 class CORSMiddleware(BaseMiddleware):
-    def __init__(self, config: Optional[CorsConfig] = None):
-        if config is not None:
-            self.config = config
-        else:
-            warn_deprecated_config_usage("CORS")
-            app_config = get_config()
-            if not app_config.cors:
-                self.config = None
-                return
-            # Use existing config from app config
-            self.config = app_config.cors
-
-        if not self.config:
-            return
-
+    def __init__(self, config: CorsConfig):
+        self.config = config
         self.allow_origins: List[str] = self.config.allow_origins or []
         self.blacklist_origins: List[str] = self.config.blacklist_origins or []
         self.allow_methods = self.config.allow_methods or ALL_METHODS
