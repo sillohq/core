@@ -1066,14 +1066,13 @@ print(f"Method allowed: {allowed}")  # False
 Enable debug mode to see route information:
 
 ```python
-from nexios import MakeConfig
+from nexios import NexiosApp
 
-config = MakeConfig(debug=True)
-app = NexiosApp(config=config)
+app = NexiosApp()
+app.config.debug = True
 
 # In debug mode, you'll see detailed route information
 # and better error messages for route matching issues
-
 # In debug mode, route matching errors will include detailed information about why a route did not match.
 ```
 
