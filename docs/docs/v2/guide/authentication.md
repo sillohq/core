@@ -293,11 +293,10 @@ By understanding these patterns and best practices, you can implement a robust p
 
 ### JWT Backend
 
-Handles JSON Web Token authentication.
+Handles JSON Web Token authentication. The `secret_key` parameter is **required** — it is passed directly to the backend and used by `create_jwt()` and `decode_jwt()`.
 
 ```python
 from nexios.auth.backends.jwt import JWTAuthBackend
-import jwt
 
 async def load_user_from_jwt(payload: dict) -> SimpleUser:
     """Load user from JWT payload"""
@@ -309,13 +308,14 @@ async def load_user_from_jwt(payload: dict) -> SimpleUser:
     return None
 
 jwt_backend = JWTAuthBackend(
-
+    secret_key="your-jwt-secret-key",  # Required: used for signing/verifying tokens
     authenticate_func=load_user_from_jwt,
 )
 ```
 
 **Key Parameters:**
 
+- `secret_key` (**required**): Secret key used for signing and verifying JWT tokens
 - `authenticate_func`: Function that loads user from JWT payload
 
 ### Session Backend
@@ -389,7 +389,7 @@ app.add_middleware(
     AuthenticationMiddleware,
     backends=[
         JWTAuthBackend(
-            secret_key="jwt-secret",
+            secret_key=os.getenv("JWT_SECRET"),  # Required
             authenticate_func=load_user_from_jwt
         ),
         SessionAuthBackend(

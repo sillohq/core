@@ -9,9 +9,10 @@ head:
     - property: og:description
       content: Learn how to use csrf utilities in Nexios
 ---
-#  Understanding CSRF Protection in Nexios
 
-##  What is CSRF?
+# Understanding CSRF Protection in Nexios
+
+## What is CSRF?
 
 Cross-Site Request Forgery (CSRF) is a security vulnerability that tricks users into performing unwanted actions on web applications where they're authenticated. Attackers can force users to execute state-changing requests (like changing passwords, making purchases, or transferring funds) without their knowledge.
 
@@ -26,7 +27,7 @@ Imagine this scenario:
 
 Without CSRF protection, these malicious requests could perform harmful actions on your behalf.
 
-##  How CSRF Protection Works
+## How CSRF Protection Works
 
 Nexios implements the "Synchronizer Token Pattern":
 
@@ -35,14 +36,15 @@ Nexios implements the "Synchronizer Token Pattern":
 3. **Token Validation**: Required for state-changing requests (POST, PUT, DELETE, etc.)
 4. **Request Verification**: Server verifies the token matches the session
 
-##  Basic Setup
+## Basic Setup
 
-```python [Recommended Approach]
+```python
 from nexios import NexiosApp
 from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
 
 csrf_config = CSRFConfig(
     enabled=True,
+    secret_key="your-secret-key-here",  # Required: used to sign CSRF tokens
     required_urls=["*"],
     safe_methods=["GET", "HEAD", "OPTIONS"],
     cookie_name="csrftoken",
@@ -50,48 +52,28 @@ csrf_config = CSRFConfig(
 )
 
 app = NexiosApp()
-app.config.secret_key = "your-secret-key-here"
 app.add_middleware(CSRFMiddleware(config=csrf_config))
 ```
 
-```py [Legacy Approach [Deprecated]]
-from nexios import NexiosApp, MakeConfig
-from nexios.middleware import CSRFMiddleware
-
-config = MakeConfig(
-    secret_key="your-secret-key-here",
-    csrf_enabled=True,
-    csrf_safe_methods=["GET", "HEAD", "OPTIONS"],
-    csrf_required_urls=["*"],
-    csrf_cookie_name="csrftoken",
-    csrf_header_name="X-CSRFToken"
-)
-
-app = NexiosApp(config=config)
-app.add_middleware(CSRFMiddleware())
-```
-
-##  Configuration Options
+## Configuration Options
 
 Nexios provides flexible configuration to customize CSRF protection for your application's needs. Here's a detailed breakdown of each option:
 
 ### Core Settings
 
 - **`enabled`** (boolean, default: `False`)
-
   - Enables or disables CSRF protection globally
   - **Recommended**: `True` in production environments
-  - Example: `enabled=True`
+  - Example: `CSRFConfig(enabled=True)`
 
 - **`secret_key`** (string, required)
   - Cryptographic key used to sign CSRF tokens
   - **Security Note**: Keep this secret and consistent across application restarts
-  - Example: Set via `app.config.secret_key = "your-secure-key-123"`
+  - Example: `CSRFConfig(secret_key="your-secure-key-123")`
 
 ### URL Configuration
 
 - **`required_urls`** (list of strings, default: `["*"]`)
-
   - URL patterns that require CSRF protection
   - Supports wildcard `*` for matching multiple URLs
   - Example: `["/api/*", "/admin/*"]`
@@ -111,41 +93,42 @@ Nexios provides flexible configuration to customize CSRF protection for your app
 ### Cookie Settings
 
 - **`cookie_name`** (string, default: `"csrftoken"`)
-
   - Name of the cookie that stores the CSRF token
   - Change this if you need to avoid naming conflicts
-  - Example: `cookie_name="myapp_csrf_token"`
+  - Example: `CSRFConfig(cookie_name="myapp_csrf_token")`
 
 - **`cookie_secure`** (boolean, default: `False`)
-
   - When `True`, the cookie is only sent over HTTPS
   - **Security Best Practice**: Set to `True` in production
-  - Example: `cookie_secure=True`
+  - Example: `CSRFConfig(cookie_secure=True)`
 
 - **`cookie_httponly`** (boolean, default: `True`)
-
   - Prevents JavaScript from accessing the cookie
   - **Security Best Practice**: Keep this as `True`
-  - Example: `cookie_httponly=True`
+  - Example: `CSRFConfig(cookie_httponly=True)`
 
 - **`cookie_samesite`** (string, default: `"lax"`)
   - Controls when cookies are sent with cross-site requests
   - Options: `"lax"` (recommended), `"strict"`, or `"none"`
   - Note: `"none"` requires `secure=True`
-  - Example: `cookie_samesite="lax"`
+  - Example: `CSRFConfig(cookie_samesite="lax")`
 
 ### Headers and Forms
 
 - **`header_name`** (string, default: `"X-CSRFToken"`)
-
   - HTTP header name for sending CSRF tokens in AJAX requests
-  - Example: `"X-CSRF-TOKEN"`
+  - Example: `CSRFConfig(header_name="X-CSRF-TOKEN")`
+
+- **`form_field`** (string, default: `"csrf_token"`)
+  - Form field name for CSRF tokens in HTML forms
+  - Must match your form field names
+  - Example: `CSRFConfig(form_field="_csrf_token")`
 
 - **`cookie_path`** (string, default: `"/"`)
   - Path for which the cookie is valid
-  - Example: `cookie_path="/api"`
+  - Example: `CSRFConfig(cookie_path="/api")`
 
-##  Using CSRF with Templates
+## Using CSRF with Templates
 
 When working with Nexios templates, you can easily include CSRF tokens in your forms. The CSRF token is automatically added to the request state and can be accessed in your templates.
 
@@ -249,7 +232,7 @@ If you need to use a different field name for the CSRF token in your forms, you 
 ```python
 csrf_config = CSRFConfig(
     # ... other config
-    cookie_name="custom_csrf_field",  # Default is "csrftoken"
+    form_field="custom_csrf_field",  # Default is "csrftoken"
 )
 app.add_middleware(CSRFMiddleware(config=csrf_config))
 ```
@@ -263,7 +246,7 @@ Then update your form to use the custom field name:
 </form>
 ```
 
-##  Best Practices
+## Best Practices
 
 1. **Always use HTTPS** in production to protect the CSRF token in transit.
 2. **Don't expose the CSRF token** in logs or error messages.
@@ -271,7 +254,7 @@ Then update your form to use the custom field name:
 4. **Protect all state-changing endpoints** (POST, PUT, DELETE, PATCH) with CSRF tokens.
 5. **Use the same-site cookie attribute** to provide additional protection against CSRF attacks.
 
-##  Client-Side Implementation
+## Client-Side Implementation
 
 ### 1. HTML Forms
 

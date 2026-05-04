@@ -17,41 +17,47 @@ Got it! I'll go through each CORS configuration setting in **Nexios**, explainin
 
 #### **Basic CORS Configuration in Nexios**
 
-Before diving into individual settings, here's a simple CORS setup using `CorsConfig`:
+Before diving into individual settings, here's a simple CORS setup using `CorsConfig` directly with the middleware:
 
 ```python
-from nexios import NexiosApp, MakeConfig
-from nexios.middleware.cors import CorsConfig
-from nexios.middleware.cors import CORSMiddleware
+from nexios import NexiosApp
+from nexios.middleware.cors import CorsConfig, CORSMiddleware
 
-config = MakeConfig(
-    cors=CorsConfig(
-        allow_origins=["https://example.com"],
-        allow_methods=["GET", "POST"],
-        allow_headers=["Authorization", "X-Requested-With"],
-        allow_credentials=True,
-        max_age=600,
-        debug=True
+app = NexiosApp()
+
+app.add_middleware(
+    CORSMiddleware(
+        config=CorsConfig(
+            allow_origins=["https://example.com"],
+            allow_methods=["GET", "POST"],
+            allow_headers=["Authorization", "X-Requested-With"],
+            allow_credentials=True,
+            max_age=600,
+            debug=True,
+        )
     )
 )
-app = NexiosApp(config=config)
-app.add_middleware(CORSMiddleware())
 ```
 
 we can break it down further:
 
 ***
 
-### allow\_origins
+### allow_origins
 
 * **Purpose:** Specifies which domains can access the API.
 * **Example:**
 
     ```python
-    # Using CorsConfig
-    config = MakeConfig(
-        cors=CorsConfig(
-            allow_origins=["https://example.com", "https://another-site.com"]
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                allow_origins=["https://example.com", "https://another-site.com"]
+            )
         )
     )
     ```
@@ -62,15 +68,21 @@ we can break it down further:
 
 ***
 
-### blacklist\_origins
+### blacklist_origins
 
-* **Purpose:** Specifies which origins should be**blocked**, even if they match `allow_origins`.
+* **Purpose:** Specifies which origins should be **blocked**, even if they match `allow_origins`.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            blacklist_origins=["https://bad-actor.com"]
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                blacklist_origins=["https://bad-actor.com"]
+            )
         )
     )
     ```
@@ -79,15 +91,21 @@ we can break it down further:
 
 ***
 
-### allow\_methods
+### allow_methods
 
 * **Purpose:** Defines which HTTP methods (GET, POST, etc.) are allowed in cross-origin requests.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            allow_methods=["GET", "POST", "PUT"]
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                allow_methods=["GET", "POST", "PUT"]
+            )
         )
     )
     ```
@@ -96,15 +114,21 @@ we can break it down further:
 
 ***
 
-### allow\_headers
+### allow_headers
 
 * **Purpose:** Specifies which request headers are permitted in cross-origin requests.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            allow_headers=["Authorization", "X-Custom-Header"]
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                allow_headers=["Authorization", "X-Custom-Header"]
+            )
         )
     )
     ```
@@ -113,15 +137,21 @@ we can break it down further:
 
 ***
 
-### blacklist\_headers
+### blacklist_headers
 
-* **Purpose:** Defines headers that should**not** be allowed in requests.
+* **Purpose:** Defines headers that should **not** be allowed in requests.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            blacklist_headers=["X-Disallowed-Header"]
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                blacklist_headers=["X-Disallowed-Header"]
+            )
         )
     )
     ```
@@ -130,15 +160,21 @@ we can break it down further:
 
 ***
 
-### allow\_credentials
+### allow_credentials
 
 * **Purpose:** Determines whether credentials (cookies, authorization headers) are allowed in requests.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            allow_credentials=True
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                allow_credentials=True
+            )
         )
     )
     ```
@@ -150,15 +186,21 @@ we can break it down further:
 
 ***
 
-### allow\_origin\_regex
+### allow_origin_regex
 
 * **Purpose:** Uses a regex pattern to match allowed origins dynamically.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            allow_origin_regex=r"https://.*\.trusted-site\.com"
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                allow_origin_regex=r"https://.*\.trusted-site\.com"
+            )
         )
     )
     ```
@@ -167,15 +209,21 @@ we can break it down further:
 
 ***
 
-### expose\_headers
+### expose_headers
 
 * **Purpose:** Specifies which response headers the client is allowed to access.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            expose_headers=["X-Response-Time"]
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                expose_headers=["X-Response-Time"]
+            )
         )
     )
     ```
@@ -184,15 +232,21 @@ we can break it down further:
 
 ***
 
-### max\_age
+### max_age
 
 * **Purpose:** Defines how long the preflight (OPTIONS) response can be cached.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            max_age=600  # Cache for 10 minutes
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                max_age=600  # Cache for 10 minutes
+            )
         )
     )
     ```
@@ -201,15 +255,21 @@ we can break it down further:
 
 ***
 
-### strict\_origin\_checking
+### strict_origin_checking
 
-* **Purpose:** If enabled, requests**must** include an `Origin` header.
+* **Purpose:** If enabled, requests **must** include an `Origin` header.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            strict_origin_checking=True
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                strict_origin_checking=True
+            )
         )
     )
     ```
@@ -224,9 +284,15 @@ we can break it down further:
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            debug=True
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                debug=True
+            )
         )
     )
     ```
@@ -237,19 +303,25 @@ we can break it down further:
 
 ***
 
-### custom\_error\_status \u0026 custom\_error\_messages
+### custom_error_status & custom_error_messages
 
 * **Purpose:** Allows custom error handling for CORS failures.
 * **Example:**
 
     ```python
-    config = MakeConfig(
-        cors=CorsConfig(
-            custom_error_status=403,
-            custom_error_messages={
-                "disallowed_origin": "This origin is not allowed.",
-                "missing_origin": "The request is missing an origin."
-            }
+    from nexios import NexiosApp
+    from nexios.middleware.cors import CorsConfig, CORSMiddleware
+
+    app = NexiosApp()
+    app.add_middleware(
+        CORSMiddleware(
+            config=CorsConfig(
+                custom_error_status=403,
+                custom_error_messages={
+                    "disallowed_origin": "This origin is not allowed.",
+                    "missing_origin": "The request is missing an origin."
+                }
+            )
         )
     )
     ```

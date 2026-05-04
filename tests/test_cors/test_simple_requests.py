@@ -5,7 +5,6 @@ Tests for simple CORS requests (GET, POST, PUT, DELETE)
 import pytest
 
 from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
 from nexios.http import Request, Response
 from nexios.middleware.cors import CorsConfig, CORSMiddleware
 from nexios.testclient import TestClient
@@ -14,20 +13,17 @@ from nexios.testclient import TestClient
 @pytest.fixture
 def cors_app():
     """Create a test app with CORS middleware configured"""
-    config = MakeConfig(
-        cors=CorsConfig(
-            allow_origins=["http://example.com", "https://example.org"],
-            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            allow_headers=["Content-Type", "Authorization", "X-Custom-Header"],
-            allow_credentials=True,
-            expose_headers=["X-Exposed-Header", "X-Response-Time"],
-            max_age=3600,
-            debug=True,
-        )
+    cors_config = CorsConfig(
+        allow_origins=["http://example.com", "https://example.org"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-Custom-Header"],
+        allow_credentials=True,
+        expose_headers=["X-Exposed-Header", "X-Response-Time"],
+        max_age=3600,
+        debug=True,
     )
-    set_config(config)
 
-    app = NexiosApp(config)
+    app = NexiosApp()
 
     # Add test routes
     @app.get("/test")
@@ -46,7 +42,7 @@ def cors_app():
     async def delete_route(request: Request, response: Response):
         return response.json({"deleted": True})
 
-    app.add_middleware(CORSMiddleware(config=config.cors))
+    app.add_middleware(CORSMiddleware(config=cors_config))
     return app
 
 
@@ -162,25 +158,22 @@ class TestSimpleRequests:
     def test_origin_with_ports(self, client):
         """Test origins with explicit ports"""
         # Create app that allows specific port
-        config = MakeConfig(
-            cors=CorsConfig(
-                allow_origins=[
-                    "http://example.com:8080",
-                    "https://example.org:3000",
-                ],
-                allow_methods=["GET"],
-                allow_credentials=True,
-            )
+        cors_config = CorsConfig(
+            allow_origins=[
+                "http://example.com:8080",
+                "https://example.org:3000",
+            ],
+            allow_methods=["GET"],
+            allow_credentials=True,
         )
-        set_config(config)
 
-        app = NexiosApp(config)
+        app = NexiosApp()
 
         @app.get("/port-test")
         async def port_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=config.cors))
+        app.add_middleware(CORSMiddleware(config=cors_config))
 
         port_client = TestClient(app)
 

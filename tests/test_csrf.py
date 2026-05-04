@@ -6,8 +6,7 @@ import warnings
 
 import pytest
 
-from nexios import NexiosApp, set_config
-from nexios.config import MakeConfig
+from nexios import NexiosApp
 from nexios.http import Request, Response
 from nexios.middleware.csrf import CSRFConfig, CSRFMiddleware
 
