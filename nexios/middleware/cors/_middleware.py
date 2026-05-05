@@ -217,7 +217,7 @@ class CORSMiddleware(BaseMiddleware):
             allowed_requested_headers = []
             for header in requested_header_list:
                 # If allow_headers is "*", allow any header (except blacklisted)
-                if "*" in self.config.allow_headers:  # ty: ignore
+                if "*" in self.config.allow_headers:
                     if header in self.blacklist_headers:
                         if self.debug:
                             logger.error(

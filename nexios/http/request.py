@@ -1,4 +1,5 @@
 from __future__ import annotations
+from nexios.auth.users.simple import UnauthenticatedUser
 
 import json
 import typing
@@ -542,9 +543,9 @@ class Request(HTTPConnection):
         return self.scope["session"]
 
     @property
-    def user(self) -> typing.Optional[BaseUser]:
+    def user(self) -> BaseUser:
         """The authenticated user for this request."""
-        return self.scope.get("user", None)
+        return self.scope.get("user", UnauthenticatedUser())
 
     def url_for(self, _name: str, **path_params: typing.Dict[str, typing.Any]) -> str:
         """Generate a URL for the given route name.
