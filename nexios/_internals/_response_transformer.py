@@ -47,7 +47,6 @@ def request_response(
 
         ctx = Context(
             request=request,
-            user=getattr(request, "user", None),
             app=request.app,
             base_app=getattr(request, "base_app", None),
         )
