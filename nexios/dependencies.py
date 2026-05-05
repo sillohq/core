@@ -168,17 +168,7 @@ class Context:
             return Database(db_url)
         ```
 
-        3. User-specific dependencies:
-        ```python
-        def get_user_preferences(ctx=Depend(Context)):
-            if not ctx.user:
-                return default_preferences()
-            return UserPreferences.get(ctx.user.id)
 
-        @app.get("/dashboard")
-        async def dashboard(request, response, prefs=Depend(get_user_preferences)):
-            return response.json({"preferences": prefs})
-        ```
     """
 
     def __init__(
@@ -187,12 +177,6 @@ class Context:
             Optional["Request"],
             Doc(
                 "The current HTTP request object containing headers, body, and metadata"
-            ),
-        ] = None,
-        user: Annotated[
-            Optional["BaseUser"],
-            Doc(
-                "The authenticated user object (available when authentication middleware is used)"
             ),
         ] = None,
         base_app: Annotated[
@@ -212,7 +196,6 @@ class Context:
         ],
     ):
         self.request = request
-        self.user = user
         self.base_app = base_app
         self.app = app
         for k, v in kwargs.items():

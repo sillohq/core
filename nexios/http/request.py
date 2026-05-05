@@ -542,9 +542,13 @@ class Request(HTTPConnection):
         return self.scope["session"]
 
     @property
-    def user(self) -> typing.Optional[BaseUser]:
+    def user(self) -> BaseUser:
         """The authenticated user for this request."""
-        return self.scope.get("user", None)
+
+        user = self.scope.get("user", None)
+        if not user:
+            raise ValueError("Authentication middleware required to use request.user")
+        return user
 
     def url_for(self, _name: str, **path_params: typing.Dict[str, typing.Any]) -> str:
         """Generate a URL for the given route name.
@@ -652,7 +656,11 @@ class Request(HTTPConnection):
     @property
     def is_authenticated(self) -> bool:
         """Check if the request has an authenticated user."""
-        return self.user is not None
+        try:
+            user = self.user
+            return user.is_authenticated
+        except ValueError:
+            return False
 
     @property
     def has_session(self) -> bool:
