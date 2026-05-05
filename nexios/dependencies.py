@@ -10,7 +10,6 @@ from nexios.parameters import Header, SolvedParamDependency
 
 if TYPE_CHECKING:
     from nexios import NexiosApp, Router
-    from nexios.auth.users.base import BaseUser
     from nexios.http import Request
     from nexios.parameters import SolvedParamDependency
 
