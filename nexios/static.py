@@ -34,14 +34,11 @@ class StaticFiles(BaseRouter):
             raise ValueError(f"{directory} is not a directory")
         return directory
 
-    def _is_safe_path(self, path: Path) -> bool:
+    def _is_safe_path(self, path: Path, root: Path) -> bool:
         """Check if the path is safe to serve"""
         try:
             full_path = path.resolve()
-            return any(
-                str(full_path).startswith(str(directory))
-                for directory in self.directories
-            )
+            return full_path.is_relative_to(root)
         except (ValueError, RuntimeError):
             return False
 
@@ -59,7 +56,7 @@ class StaticFiles(BaseRouter):
             try:
                 file_path = (directory / path).resolve()
                 if (
-                    self._is_safe_path(file_path)
+                    self._is_safe_path(file_path, directory)
                     and file_path.is_file()
                     and self._is_extension_allowed(file_path)
                 ):
