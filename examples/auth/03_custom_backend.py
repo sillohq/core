@@ -43,7 +43,7 @@ class db:
 
 
 class CustomAuthBackend(AuthenticationBackend):
-    async def authenticate(self, request: Request, response: Response):
+    async def authenticate(self, request: Request):
         custom_token = request.headers.get("X-Custom-Token")
 
         if not custom_token:

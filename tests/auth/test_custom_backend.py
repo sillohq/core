@@ -75,7 +75,7 @@ async def test_custom_auth_backend_success(test_client):
     client = test_client(app)
 
     class CustomAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             auth_header = request.headers.get("X-Custom-Auth")
             if auth_header == "valid_token_123":
                 return AuthResult(success=True, identity="custom1", scope="custom")
@@ -105,7 +105,7 @@ async def test_custom_auth_backend_failure(test_client):
     client = test_client(app)
 
     class CustomAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             auth_header = request.headers.get("X-Custom-Auth")
             if auth_header == "valid_token_123":
                 return AuthResult(success=True, identity="custom1", scope="custom")
@@ -128,11 +128,11 @@ async def test_custom_auth_backend_exception_handling(test_client):
     client = test_client(app)
 
     class FaultyAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             raise Exception("Backend error")
 
     class WorkingAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Backup-Auth") == "backup_valid":
                 return AuthResult(success=True, identity="backup_user", scope="backup")
             return AuthResult(success=False, identity="", scope="")
@@ -159,7 +159,7 @@ async def test_custom_auth_backend_complex_logic(test_client):
     client = test_client(app)
 
     class ComplexAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             api_key = request.headers.get("X-API-Key")
             token = request.headers.get("Authorization")
             user_param = request.query_params.get("user")

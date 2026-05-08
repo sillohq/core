@@ -461,7 +461,7 @@ from nexios.auth.model import AuthResult
 from nexios.http import Request, Response
 
 class CustomAuthBackend(AuthenticationBackend):
-    async def authenticate(self, request: Request, response: Response) -> AuthResult:
+    async def authenticate(self, request: Request) -> AuthResult:
         return AuthResult(success=True, identity="123", scope="custom")
 ```
 
@@ -485,7 +485,7 @@ from nexios.auth.model import AuthResult
 from nexios.http import Request, Response
 
 class DatabaseAuthBackend(AuthenticationBackend):
-    async def authenticate(self, request: Request, response: Response) -> AuthResult:
+    async def authenticate(self, request: Request) -> AuthResult:
         header = request.headers.get("X-Key")
         if not header:
             return AuthResult(success=False, identity="", scope="database")

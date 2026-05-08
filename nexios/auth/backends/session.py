@@ -3,7 +3,7 @@ from typing import Any
 from nexios.auth.backends.base import AuthenticationBackend
 from nexios.auth.model import AuthResult
 from nexios.auth.users.base import BaseUser
-from nexios.http import Request, Response
+from nexios.http import Request
 
 _session_key = "user"
 _identifier = "id"
@@ -45,13 +45,12 @@ class SessionAuthBackend(AuthenticationBackend):
         self.key = session_key
         _identifier = identifier
 
-    async def authenticate(self, request: Request, response: Response) -> Any:
+    async def authenticate(self, request: Request) -> Any:
         """
         Authenticate the user using the framework's session.
 
         Args:
             request: The HTTP request containing the session
-            response: The HTTP response (unused in this backend)
 
         Raises:
             AuthenticationError: If the user is not authenticated

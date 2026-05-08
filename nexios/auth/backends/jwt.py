@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
 from nexios.auth.model import AuthResult
-from nexios.http import Request, Response
+from nexios.http import Request
 
 from .base import AuthenticationBackend
 
@@ -64,7 +64,7 @@ class JWTAuthBackend(AuthenticationBackend):
         self.identifier = identifier
         self.secret_key = secret_key
 
-    async def authenticate(self, request: Request, response: Response) -> Any:
+    async def authenticate(self, request: Request) -> Any:
         if not self.secret_key:
             raise RuntimeError("secret_key is required for JWTAuthBackend")
 

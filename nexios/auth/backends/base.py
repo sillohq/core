@@ -26,10 +26,6 @@ class AuthenticationBackend:
         request: Annotated[
             Request, Doc("The incoming HTTP request containing authentication details.")
         ],
-        response: Annotated[
-            Response,
-            Doc("The HTTP response object that may be modified during authentication."),
-        ],
     ) -> Annotated[
         AuthResult,
         Doc("Returns an authenticated user instance or raises an AuthenticationError."),
@@ -41,8 +37,7 @@ class AuthenticationBackend:
         (e.g., headers, cookies, or tokens) and return an authenticated user instance.
 
         Args:
-            req (Request): The HTTP request object.
-            res (Response): The HTTP response object.
+            request (Request): The HTTP request object.
 
         Returns:
             AuthResult: An authenticated user object if authentication succeeds.

@@ -82,7 +82,7 @@ async def test_auth_decorator_single_scope(test_client):
     app = NexiosApp()
 
     class TestBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Auth") == "valid":
                 return AuthResult(success=True, identity="test_user", scope="test")
             return AuthResult(success=False, identity="", scope="")
@@ -106,7 +106,7 @@ async def test_auth_decorator_no_scopes(test_client):
     app = NexiosApp()
 
     class AnyBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Auth") == "any_valid":
                 return AuthResult(success=True, identity="any_user", scope="any")
             return AuthResult(success=False, identity="", scope="")
@@ -132,7 +132,7 @@ async def test_has_permission_single_permission(test_client):
     app = NexiosApp()
 
     class TestBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Auth") == "valid":
                 return AuthResult(success=True, identity="1", scope="test")
             return AuthResult(success=False, identity="", scope="")
@@ -161,7 +161,7 @@ async def test_has_permission_multiple_permissions(test_client):
     app = NexiosApp()
 
     class TestBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Auth") == "valid":
                 return AuthResult(success=True, identity="1", scope="test")
             return AuthResult(success=False, identity="", scope="")
@@ -178,7 +178,7 @@ async def test_has_permission_multiple_permissions(test_client):
         assert res.status_code == 200
 
         class GuestBackend(AuthenticationBackend):
-            async def authenticate(self, request: Request, response):
+            async def authenticate(self, request: Request):
                 if request.headers.get("X-Auth") == "guest":
                     return AuthResult(success=True, identity="3", scope="test")
                 return AuthResult(success=False, identity="", scope="")
@@ -192,7 +192,7 @@ async def test_has_permission_no_permissions(test_client):
     app = NexiosApp()
 
     class TestBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Auth") == "valid":
                 return AuthResult(success=True, identity="1", scope="test")
             return AuthResult(success=False, identity="", scope="")
