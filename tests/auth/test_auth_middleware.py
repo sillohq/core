@@ -109,13 +109,13 @@ async def test_auth_middleware_multiple_backends_success(test_client):
     client = test_client(app)
 
     class FirstBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-First-Auth") == "first_valid":
                 return AuthResult(success=True, identity="first_user", scope="first")
             return AuthResult(success=False, identity="", scope="")
 
     class SecondBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Second-Auth") == "second_valid":
                 return AuthResult(success=True, identity="second_user", scope="second")
             return AuthResult(success=False, identity="", scope="")
@@ -144,11 +144,11 @@ async def test_auth_middleware_multiple_backends_fallback(test_client):
     client = test_client(app)
 
     class FirstBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             return AuthResult(success=False, identity="", scope="")
 
     class SecondBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Second-Auth") == "second_valid":
                 return AuthResult(success=True, identity="second_user", scope="second")
             return AuthResult(success=False, identity="", scope="")
@@ -173,7 +173,7 @@ async def test_auth_middleware_no_backends_succeed(test_client):
     client = test_client(app)
 
     class FailingBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             return AuthResult(success=False, identity="", scope="")
 
     app.add_middleware(AuthenticationMiddleware(TestUser, FailingBackend()))
@@ -217,11 +217,11 @@ async def test_auth_middleware_backend_exception_handling(test_client):
     client = test_client(app)
 
     class FaultyAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             raise Exception("Backend error")
 
     class WorkingAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: Request, response):
+        async def authenticate(self, request: Request):
             if request.headers.get("X-Backup-Auth") == "backup_valid":
                 return AuthResult(success=True, identity="backup_user", scope="backup")
             return AuthResult(success=False, identity="", scope="")

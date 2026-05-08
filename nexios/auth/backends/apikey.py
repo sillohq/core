@@ -6,7 +6,7 @@ from typing_extensions import Annotated, Doc
 
 from nexios.auth.backends.base import AuthenticationBackend
 from nexios.auth.model import AuthResult
-from nexios.http import Request, Response
+from nexios.http import Request
 
 prefix = "key"
 
@@ -71,12 +71,6 @@ class APIKeyAuthBackend(AuthenticationBackend):
                 "The incoming HTTP request, containing authentication credentials in headers."
             ),
         ],
-        response: Annotated[
-            Response,
-            Doc(
-                "The HTTP response object, which may be modified for authentication-related headers."
-            ),
-        ],
     ) -> Any:
         """
         Authenticates the request by checking for an API key in the specified header.
@@ -86,13 +80,9 @@ class APIKeyAuthBackend(AuthenticationBackend):
 
         Args:
             request (Request): The incoming HTTP request.
-            response (Response): The response object (may be modified).
 
         Returns:
             Any: A user object if authentication is successful, `UnauthenticatedUser` if invalid, or `None` if no API key is provided.
-
-        Side Effects:
-            - If no API key is found, sets the `WWW-Authenticate` response header.
         """
         # Retrieve the API key from the request headers
         raw_token = request.headers.get(self.header_name)

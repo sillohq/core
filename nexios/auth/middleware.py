@@ -81,7 +81,7 @@ class AuthenticationMiddleware(BaseMiddleware):
         for backend in self.backends:
             try:
                 auth_result = await backend.authenticate(  # ty: ignore[unresolved-attribute]
-                    request, response
+                    request
                 )
 
                 if auth_result.success:

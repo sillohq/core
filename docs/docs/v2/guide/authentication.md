@@ -560,7 +560,7 @@ class CustomAuthBackend(AuthenticationBackend):
     def __init__(self, authenticate_func):
         self.authenticate_func = authenticate_func
 
-    async def authenticate(self, request: Request, response: Response) -> Any:
+    async def authenticate(self, request: Request) -> Any:
         # Extract credentials from the request
         auth_header = request.headers.get("X-Custom-Auth")
 
@@ -653,7 +653,7 @@ async def api_data(request: Request):
 ```python
 # Custom backend returns (user, "custom") on successful authentication
 class CustomAuthBackend(AuthenticationBackend):
-    async def authenticate(self, request: Request, response: Response) -> Any:
+    async def authenticate(self, request: Request) -> Any:
         # ... authentication logic ...
         return user, "custom"  # This is the auth type
 
@@ -714,7 +714,7 @@ class APIKeyBackend(AuthenticationBackend):
     def __init__(self, authenticate_func):
         self.authenticate_func = authenticate_func
 
-    async def authenticate(self, request: Request, response: Response) -> Any:
+    async def authenticate(self, request: Request) -> Any:
         api_key = request.headers.get("X-API-Key")
         if not api_key:
             return None

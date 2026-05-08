@@ -39,12 +39,9 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
         def __init__(self):
             super().__init__(header_name="X-API-Key")
 
-        async def authenticate(self, request: Request, response: Response):
+        async def authenticate(self, request: Request):
             raw_token = request.headers.get(self.header_name)
             if not raw_token:
-                response.set_header(
-                    "WWW-Authenticate", 'APIKey realm="Access to the API"'
-                )
                 return AuthResult(success=False, identity="", scope="")
 
             if verify_key(raw_token, api_key_data["hashed_key"]):
@@ -78,12 +75,9 @@ async def test_apikey_auth_backend_missing_header(test_client):
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):
-        async def authenticate(self, request: Request, response: Response):
+        async def authenticate(self, request: Request):
             raw_token = request.headers.get("X-API-Key")
             if not raw_token:
-                response.set_header(
-                    "WWW-Authenticate", 'APIKey realm="Access to the API"'
-                )
                 return AuthResult(success=False, identity="", scope="")
             return AuthResult(success=True, identity="test", scope="apikey")
 
@@ -133,12 +127,9 @@ async def test_apikey_auth_backend_custom_header(test_client):
         def __init__(self):
             super().__init__(header_name="X-Custom-API-Key")
 
-        async def authenticate(self, request: Request, response: Response):
+        async def authenticate(self, request: Request):
             raw_token = request.headers.get(self.header_name)
             if not raw_token:
-                response.set_header(
-                    "WWW-Authenticate", 'APIKey realm="Access to the API"'
-                )
                 return AuthResult(success=False, identity="", scope="")
             if raw_token == "valid_custom_key":
                 return AuthResult(success=True, identity="custom_user", scope="apikey")
