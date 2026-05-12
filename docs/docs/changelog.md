@@ -1,5 +1,61 @@
 # Changelog
 
+## v3.12.0 (2026-05-08)
+
+#### New Features
+
+* add support for Query, Header, and Cookie parameters ([#370](https://github.com/nexios-labs/nexios/issues/370))
+#### Fixes
+
+* (static): improve path safety check for static files serving ([#389](https://github.com/nexios-labs/nexios/issues/389))
+* update config docs ([#387](https://github.com/nexios-labs/nexios/issues/387))
+* (docs): fix syntax error in readme ([#371](https://github.com/nexios-labs/nexios/issues/371))
+* (headers): fix set_header multi set issues ([#369](https://github.com/nexios-labs/nexios/issues/369))
+#### Refactorings
+
+* (auth): remove unused response parameter from authenticate methods ([#392](https://github.com/nexios-labs/nexios/issues/392))
+* (auth): raise value error when auth middleware not installed  ([#391](https://github.com/nexios-labs/nexios/issues/391))
+* (application): simplify OpenAPI config ([#386](https://github.com/nexios-labs/nexios/issues/386))
+* (cors): cleanup cors config ([#385](https://github.com/nexios-labs/nexios/issues/385))
+* (auth): rewrite use of secret_keys ([#384](https://github.com/nexios-labs/nexios/issues/384))
+* redesign session system with pluggable persistence and custom config support ([#380](https://github.com/nexios-labs/nexios/issues/380))
+* remove depricated config style ([#379](https://github.com/nexios-labs/nexios/issues/379))
+* (context): Moved context logic into a dedicated module ([#376](https://github.com/nexios-labs/nexios/issues/376))
+* fix debug issues in server error handler ([#375](https://github.com/nexios-labs/nexios/issues/375))
+* (routing): improve parameter injection in route handler ([#373](https://github.com/nexios-labs/nexios/issues/373))
+* (dependencies): fix import issues ([#372](https://github.com/nexios-labs/nexios/issues/372))
+#### Docs
+
+* update configuration and authentication examples ([#388](https://github.com/nexios-labs/nexios/issues/388))
+* (nexios): add docstrings to public APIs ([#374](https://github.com/nexios-labs/nexios/issues/374))
+#### Others
+
+* bump version from 3.12.0rc2 to 3.12.0
+* bump version to 3.12.0rc2
+* (release): bump version to 3.12.0rc1
+* update NexiosApp initialization in CSRF tests ([#382](https://github.com/nexios-labs/nexios/issues/382))
+* (csrf): enable and fix CSRF middleware tests ([#381](https://github.com/nexios-labs/nexios/issues/381))
+
+Full set of changes: [`v3.11.4...v3.12.0`](https://github.com/nexios-labs/nexios/compare/v3.11.4...v3.12.0)
+
+## v3.11.4 (2026-04-13)
+
+#### Fixes
+
+* remove type ignores due to fixes on [#363](https://github.com/nexios-labs/nexios/issues/363) ([#364](https://github.com/nexios-labs/nexios/issues/364))
+#### Refactorings
+
+* (openapi): rename schema to spec to avoid issues with ty ([#368](https://github.com/nexios-labs/nexios/issues/368))
+* (nexios): allow lifespan to yield any ([#363](https://github.com/nexios-labs/nexios/issues/363))
+#### Docs
+
+* (changelog): update changelog with recent releases ([#362](https://github.com/nexios-labs/nexios/issues/362))
+#### Others
+
+* (release): bump version to 3.11.4
+
+Full set of changes: [`v3.11.3...v3.11.4`](https://github.com/nexios-labs/nexios/compare/v3.11.3...v3.11.4)
+
 ## v3.11.3 (2026-04-10)
 
 #### New Features
