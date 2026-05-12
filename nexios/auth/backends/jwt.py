@@ -4,7 +4,7 @@ import typing
 try:
     import jwt
 except ImportError:
-    jwt = None  # ty:ignore[invalid-assignment]
+    jwt = None
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
