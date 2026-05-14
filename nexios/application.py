@@ -2084,7 +2084,7 @@ class NexiosApp:
         try:
             import uvicorn
 
-            print(f"Starting server with uvicorn: {host}:{port}")
+            logger.info(f"Starting server with uvicorn: {host}:{port}")
             uvicorn.run(self, host=host, port=port, reload=reload)
         except ImportError:
             raise RuntimeError(
