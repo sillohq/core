@@ -261,7 +261,26 @@ class APIDocumentation:
         Build request body specification for the route.
         """
         if route.request_model:
-            schema_dict = route.request_model.model_json_schema()
+            if isinstance(route.request_model, dict):
+                # Extract the first model from the dict for schema generation
+                first_val = next(iter(route.request_model.values()), None)
+                if isinstance(first_val, dict):
+                    # Nested dict — use the first inner dict value
+                    inner_first = next(iter(first_val.values()), None)
+                    if inner_first is None or not isinstance(inner_first, type):
+                        return None
+                    if isinstance(inner_first, type) and issubclass(inner_first, BaseModel):
+                        schema_dict = inner_first.model_json_schema()
+                    else:
+                        return None
+                elif isinstance(first_val, type) and issubclass(first_val, BaseModel):
+                    schema_dict = first_val.model_json_schema()
+                else:
+                    return None
+            elif isinstance(route.request_model, type) and issubclass(route.request_model, BaseModel):
+                schema_dict = route.request_model.model_json_schema()
+            else:
+                return None
             processed_schema = self._extract_and_add_nested_schemas(schema_dict)
             return RequestBody(
                 content={

@@ -53,7 +53,7 @@ from nexios.http import Request, Response
 from nexios.http.response import JSONResponse
 from nexios.objects import RouteParam, URLPath
 from nexios.openapi.models import Parameter
-from nexios.types import ASGIApp, HandlerType, MiddlewareType, Receive, Scope, Send
+from nexios.types import ASGIApp, ArgsType, HandlerType, MiddlewareType, Receive, Scope, Send
 from nexios.utils.async_helpers import is_async_callable
 from nexios.utils.concurrency import run_in_threadpool
 
@@ -144,15 +144,15 @@ class Route(BaseRoute):
             ),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc(
                 "A dictionary mapping HTTP status codes to response schemas or descriptions. Keys are HTTP status codes (e.g., 200, 400), and values define the response format."
             ),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc(
-                "A Pydantic model representing the expected request payload. Defines the structure and validation rules for incoming request data."
+                "A Pydantic model representing the expected request payload, a dict of status codes to models, or a nested dict. Defines the structure and validation rules for incoming request data."
             ),
         ] = None,
         request_content_type: Annotated[
@@ -514,7 +514,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -524,7 +524,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request validation.
                 Example:
@@ -710,7 +710,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response models by status code.
                 Example: 
@@ -722,9 +722,10 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
-                Pydantic model for request validation (query params).
+                Pydantic model or model mapping for request validation.
+                Can be a single model, a dict of status codes to models, or a nested dict.
                 Example:
                 class UserQuery(BaseModel):
                     active_only: bool = True
@@ -896,7 +897,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -907,7 +908,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1077,7 +1078,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1088,7 +1089,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request validation.
                 Example:
@@ -1244,7 +1245,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1255,7 +1256,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1428,7 +1429,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1439,7 +1440,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1610,7 +1611,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1620,7 +1621,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request validation.
                 Example:
@@ -1775,7 +1776,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1785,7 +1786,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request validation.
                 Example:
@@ -1941,14 +1942,14 @@ class Router(BaseRouter):
             Optional[str], Doc("Detailed description of the route for OpenAPI docs")
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Union[Type[BaseModel], Dict[str, Any]]]],
+            Optional[ArgsType],
             Doc("""
                 Response models by status code for OpenAPI docs.
                 Example: {200: UserModel, 404: ErrorModel}
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("Pydantic model for request body validation and OpenAPI docs"),
         ] = None,
         request_content_type: Annotated[
