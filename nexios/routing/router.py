@@ -21,7 +21,6 @@ from typing import (
     cast,
 )
 
-from pydantic import BaseModel
 from typing_extensions import Doc
 
 from nexios._internals._middleware import (
@@ -53,7 +52,15 @@ from nexios.http import Request, Response
 from nexios.http.response import JSONResponse
 from nexios.objects import RouteParam, URLPath
 from nexios.openapi.models import Parameter
-from nexios.types import ASGIApp, ArgsType, HandlerType, MiddlewareType, Receive, Scope, Send
+from nexios.types import (
+    ASGIApp,
+    ArgsType,
+    HandlerType,
+    MiddlewareType,
+    Receive,
+    Scope,
+    Send,
+)
 from nexios.utils.async_helpers import is_async_callable
 from nexios.utils.concurrency import run_in_threadpool
 

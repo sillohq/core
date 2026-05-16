@@ -17,7 +17,6 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseModel
 from typing_extensions import Annotated, Doc
 
 from nexios._internals._middleware import (

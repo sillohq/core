@@ -269,7 +269,9 @@ class APIDocumentation:
                     inner_first = next(iter(first_val.values()), None)
                     if inner_first is None or not isinstance(inner_first, type):
                         return None
-                    if isinstance(inner_first, type) and issubclass(inner_first, BaseModel):
+                    if isinstance(inner_first, type) and issubclass(
+                        inner_first, BaseModel
+                    ):
                         schema_dict = inner_first.model_json_schema()
                     else:
                         return None
@@ -277,7 +279,9 @@ class APIDocumentation:
                     schema_dict = first_val.model_json_schema()
                 else:
                     return None
-            elif isinstance(route.request_model, type) and issubclass(route.request_model, BaseModel):
+            elif isinstance(route.request_model, type) and issubclass(
+                route.request_model, BaseModel
+            ):
                 schema_dict = route.request_model.model_json_schema()
             else:
                 return None
