@@ -17,7 +17,6 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseModel
 from typing_extensions import Annotated, Doc
 
 from nexios._internals._middleware import (
@@ -41,6 +40,7 @@ from nexios.routing.base import BaseRoute
 from .routing import Route, Router, WebsocketRoute
 from .types import (
     ASGIApp,
+    ArgsType,
     HandlerType,
     Message,
     MiddlewareType,
@@ -571,7 +571,7 @@ class NexiosApp:
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response models by status code.
                 Example: 
@@ -583,7 +583,7 @@ class NexiosApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Pydantic model for request validation (query params).
                 Example:
@@ -750,7 +750,7 @@ class NexiosApp:
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -761,7 +761,7 @@ class NexiosApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request body validation.
                 Example:
@@ -931,7 +931,7 @@ class NexiosApp:
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -942,7 +942,7 @@ class NexiosApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request validation.
                 Example:
@@ -1098,7 +1098,7 @@ class NexiosApp:
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1109,7 +1109,7 @@ class NexiosApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1282,7 +1282,7 @@ class NexiosApp:
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1293,7 +1293,7 @@ class NexiosApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1465,7 +1465,7 @@ class NexiosApp:
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1475,7 +1475,7 @@ class NexiosApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request validation.
                 Example:
@@ -1630,7 +1630,7 @@ class NexiosApp:
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1640,7 +1640,7 @@ class NexiosApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request validation.
                 Example:
@@ -1806,7 +1806,7 @@ class NexiosApp:
             """),
         ] = None,
         responses: Annotated[
-            Optional[Dict[int, Any]],
+            Optional[ArgsType],
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1816,7 +1816,7 @@ class NexiosApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[Type[BaseModel]],
+            Optional[ArgsType],
             Doc("""
                 Model for request validation.
                 Example:
