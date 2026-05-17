@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Callable, Dict, Type, Union
+from typing import Any, Callable
 
 from pydantic import BaseModel
 
@@ -11,18 +11,15 @@ from .http.request import Request
 from .http.response import NexiosResponse as Response
 from .websockets import WebSocket
 
-AppType = typing.TypeVar("AppType")
 
 # Type alias for route model arguments — accepts any of:
 #   - a single Pydantic model class
 #   - a dict mapping int keys (e.g. status codes) to Pydantic model classes
 #   - a nested dict mapping int keys to another dict of int -> dict
-ArgsType = Union[
-    Type[BaseModel],
-    Dict[int, Type[BaseModel]],
-    Dict[int, Dict[int, Any]],
-]
 
+Schema = type[BaseModel] | type[list[BaseModel]]
+
+ArgsType = Any
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
 

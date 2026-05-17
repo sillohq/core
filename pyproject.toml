@@ -215,6 +215,7 @@ update_changelog_on_bump = true
 [tool.ty.rules]
 unresolved-import = "ignore"
 invalid-parameter-default = "ignore"
+unused-ignore-comment  = "ignore"
 
 [dependency-groups]
 dev = [
