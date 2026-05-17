@@ -19,7 +19,7 @@ from .websockets import WebSocket
 
 Schema = type[BaseModel] | type[list[BaseModel]]
 
-ArgsType: Any
+ArgsType = Any
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
 
