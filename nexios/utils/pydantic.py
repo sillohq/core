@@ -44,7 +44,7 @@ def _make_pydantic_error_handler(
                 elif len(loc) == 2:
                     if loc[0] not in error_dict:
                         error_dict[loc[0]] = {}
-                    error_dict[loc[0]][loc[1]] = msg
+                    error_dict[loc[0]][loc[1]] = msg  # ty :ignore[invalid-assignment]
                 else:
                     error_dict[".".join(map(str, loc))] = msg
             return response.json(
