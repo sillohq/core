@@ -32,6 +32,7 @@ export const sidebarCommunity = [
       { text: 'JSON-RPC', link: '/community/integrations/jrpc' },
       { text: 'GraphQL', link: '/community/integrations/graphql' },
       { text: 'Background Tasks', link: '/community/integrations/tasks' },
+      { text: 'Scheduler', link: '/community/integrations/scheduler' },
       { text: 'Tortoise ORM', link: '/community/integrations/tortoise' },
       { text: 'Mail', link: '/community/integrations/mail' },
     ]

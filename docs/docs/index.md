@@ -461,7 +461,7 @@ Nexios embraces the Zen of Python, particularly the second principle: "Explicit 
 - Plugin system for adding custom functionality 
 - Support for WebSockets and HTTP/2 
 - Custom middleware support 
-- Background tasks and scheduled jobs 
+      - Background tasks and job scheduling
 
 ### Security First 
 - Built-in CSRF protection 

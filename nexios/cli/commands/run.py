@@ -3,7 +3,6 @@
 Nexios CLI - Run server command.
 """
 
-import os
 import subprocess
 import sys
 import traceback
@@ -123,7 +122,7 @@ def run(
             port = int(options.get("port", 8000))
             app_path = str(options.get("app_path", "main:app"))
             cmd = f"gunicorn -w {workers} -b {host}:{port} {app_path}"
-            os.system(cmd)
+            subprocess.run(cmd, check=True)
             return
 
         # Prepare the command based on server choice
