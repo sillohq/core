@@ -31,6 +31,7 @@ The **nexios-contrib** package is our community-driven collection of extensions,
 - **ETag Middleware** - Automatic ETag generation and conditional requests
 - **JSON-RPC Support** - Full JSON-RPC 2.0 server and client implementation
 - **Tortoise ORM Integration** - Complete async ORM integration with automatic lifecycle management
+- **Scheduler** - Interval-based, cron-based, and one-time job scheduling with lifecycle integration
 
 Install all contrib packages at once:
 ```bash
