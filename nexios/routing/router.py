@@ -664,8 +664,7 @@ class Router(BaseRouter):
         ]
 
         self.routes.append(route)
-        if getattr(route, "exclude_from_schema", False):
-            return
+        
 
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
