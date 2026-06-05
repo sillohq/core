@@ -664,7 +664,6 @@ class Router(BaseRouter):
         ]
 
         self.routes.append(route)
-        
 
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
