@@ -445,8 +445,8 @@ class TestClientTransport(httpx.BaseTransport):
 
         response = httpx.Response(**raw_kwargs, request=request)
         if template is not None:
-            response.template = template
-            response.context = context
+            response.template = template #ty :ignore[unresolved-attribute]
+            response.context = context #ty : ignore[unresolved-attribute]
         return response
 
 
@@ -678,6 +678,6 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
 
         response = httpx.Response(**raw_kwargs, request=request)
         if template is not None:
-            response.template = template
-            response.context = context
+            response.template = template #ty :ignore[unresolved-attribute]
+            response.context = context   #ty :ignore[unresolved-attribute]
         return response
