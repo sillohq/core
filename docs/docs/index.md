@@ -96,6 +96,14 @@ features:
       - Database integrations
 ---
 
+## 🚀 Try Broadcasta
+
+**Broadcasta** is a powerful real time messaging and event broadcasting service from Nexios Labs.  
+Seamlessly integrate real time features into your applications with WebSocket management, event broadcasting,  
+channel based messaging, and more without the infrastructure headache.
+
+👉 **[Get started with Broadcasta →](https://bd.nexioslabs.com)**
+
 ##  Quick Start
 
 ::: code-group
