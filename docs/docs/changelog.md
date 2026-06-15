@@ -1,5 +1,23 @@
 # Changelog
 
+## v3.12.1 (2026-05-17)
+
+#### New Features
+
+* (types): introduce ArgsType for route model arguments ([#396](https://github.com/nexios-labs/nexios/issues/396))
+#### Refactorings
+
+* remove unused imports and simplify types ([#397](https://github.com/nexios-labs/nexios/issues/397))
+* replace print with logger.info for server start message ([#395](https://github.com/nexios-labs/nexios/issues/395))
+#### Docs
+
+* (changelog): update changelog with recent releases ([#393](https://github.com/nexios-labs/nexios/issues/393))
+#### Others
+
+* bump version to 3.12.1
+
+Full set of changes: [`v3.12.0...v3.12.1`](https://github.com/nexios-labs/nexios/compare/v3.12.0...v3.12.1)
+
 ## v3.12.0 (2026-05-08)
 
 #### New Features
