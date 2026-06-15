@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, Optional, Union
 import jinja2
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from nexios.config import MakeConfig, get_config
+from nexios.config import MakeConfig
 from nexios.http.response import HTMLResponse
 from nexios.types import Request
 
@@ -50,12 +50,10 @@ class TemplateConfig(MakeConfig):
 class TemplateEngine:
     """Template engine for rendering Jinja2 templates."""
 
-    def setup_environment(self, config: Optional[TemplateConfig] = None):
+    def setup_environment(self, config: TemplateConfig = TemplateConfig()):
         """Initialize Jinja2 environment."""
         global engine
-        self.config: TemplateConfig = (
-            config or get_config().templating or TemplateConfig()
-        )
+        self.config: TemplateConfig = config
         template_dir = Path(self.config.template_dir)
         template_dir.mkdir(parents=True, exist_ok=True)
 
