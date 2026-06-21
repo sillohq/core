@@ -68,6 +68,7 @@ from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
 from .grouping import Group
 from .websocket import WebsocketRoute
+from pathlib import Path
 
 if TYPE_CHECKING:
     from nexios.types import WsHandlerType
@@ -2251,6 +2252,57 @@ class Router(BaseRouter):
         raise ValueError(
             f"Router '{current_part}' not found while building URL for '{full_name}'"
         )
+
+    def frontend(
+        self,
+        path: str = "/",
+        directory: Union[str, "Path"] = "dist",
+        fallback: "Optional[Union[str, bool]]" = "auto",
+        name: Optional[str] = None,
+        cache_control: Optional[str] = None,
+    ) -> None:
+        """Mount a frontend SPA build directory with fallback routing.
+
+        Registers a :class:`FrontendApp` as a :class:`Group` at *path*, so that
+        static files from *directory* are served and unknown paths fall back to
+        a fallback HTML file (typically ``index.html``).
+
+        Because this adds a route to the router's route list, any API routes
+        registered *before* calling ``frontend()`` are matched first. This
+        guarantees that API endpoints take precedence over the frontend catch-all.
+
+        Args:
+            path: URL path prefix to mount the frontend at (default ``"/"``).
+            directory: Path to the directory containing the built frontend files.
+            fallback: Fallback behaviour. ``"auto"`` (default) tries ``404.html``
+                      then ``index.html``. Pass an explicit filename or ``None``
+                      (or ``False``) to disable fallback.
+            name: Optional name for the route group (used with ``url_for``).
+            cache_control: Optional ``Cache-Control`` header value.
+
+        Example::
+
+            from nexios import NexiosApp
+
+            app = NexiosApp()
+
+            @app.get("/api/health")
+            async def health(request, response):
+                return response.json({"status": "ok"})
+
+            # Frontend routes are checked *after* API routes
+            app.frontend("/", directory="./frontend/dist")
+        """
+        from nexios.frontend import FrontendApp
+        from nexios.routing.grouping import Group
+
+        frontend_app = FrontendApp(
+            directory=directory,
+            fallback=fallback,
+            cache_control=cache_control,
+        )
+        group = Group(path=path, app=frontend_app, name=name)
+        self.add_route(group)
 
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"

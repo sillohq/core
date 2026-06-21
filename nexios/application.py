@@ -471,6 +471,45 @@ class NexiosApp:
 
         self.router.add_ws_route(WebsocketRoute(path, handler))
 
+    def frontend(
+        self,
+        path: str = "/",
+        directory: Union[str, "Path"] = "dist",
+        fallback: "Optional[Union[str, bool]]" = "auto",
+        name: Optional[str] = None,
+        cache_control: Optional[str] = None,
+    ) -> None:
+        """Mount a frontend SPA build directory with fallback routing.
+
+        Convenience wrapper that delegates to ``self.router.frontend()``.
+        API routes registered *before* this call take precedence.
+
+        Args:
+            path: URL path prefix (default ``"/"``).
+            directory: Path to the built frontend directory.
+            fallback: ``"auto"`` (default), an explicit filename, or ``None``/``False``.
+            name: Optional route group name.
+            cache_control: Optional ``Cache-Control`` header.
+
+        Example::
+
+            app = NexiosApp()
+
+            @app.get("/api/health")
+            async def health(request, response):
+                return response.json({"status": "ok"})
+
+            # Serve the SPA at the root — API routes take precedence
+            app.frontend("/", directory="./frontend/dist")
+        """
+        self.router.frontend(
+            path=path,
+            directory=directory,
+            fallback=fallback,
+            name=name,
+            cache_control=cache_control,
+        )
+
     def mount_router(self, router: Router, name: Optional[str] = None) -> None:
         """
         Mounts a router and all its routes to the application using the router's prefix.
