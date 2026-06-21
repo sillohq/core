@@ -34,7 +34,7 @@ keywords = [
 requires-python = ">=3.10"
 dependencies = [
     "uvicorn>=0.27.0",
-    "anyio==4.13.0",
+    "anyio==4.14.0",
     "itsdangerous>=2.1.2",
     "python-multipart>=0.0.6",
     "pydantic>=2.0,<3.0",
@@ -51,14 +51,14 @@ cli = ["click>=8.1.3"]
 # Feature groups
 http = [
     "uvicorn>=0.27.0",
-    "anyio>=4.0.0",
+    "anyio>=4.13.0",
     "itsdangerous>=2.1.2",
     "python-multipart>=0.0.6"
 ]
 
 all = [
     "uvicorn>=0.27.0",
-    "anyio>=4.0.0",
+    "anyio>=4.13.0",
     "itsdangerous>=2.1.2",
     "python-multipart>=0.0.6",
     "jinja2>=3.1.6",
@@ -67,7 +67,7 @@ all = [
 ]
 dev = [
     "uvicorn>=0.27.0",
-    "anyio>=4.0.0",
+    "anyio>=4.13.0",
     "itsdangerous>=2.1.2",
     "python-multipart>=0.0.6",
     "jinja2>=3.1.6",
