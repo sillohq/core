@@ -85,6 +85,7 @@ while providing additional features and a more intuitive API design.
 from nexios.routing import Route, Router
 
 from .application import NexiosApp
+from .frontend import FrontendApp
 from .config import set_config
 from .config.base import MakeConfig
 from .dependencies import Depend
@@ -98,6 +99,7 @@ __all__ = [
     "MakeConfig",
     "Router",
     "Route",
+    "FrontendApp",
     "Query",
     "Header",
     "Cookie",
