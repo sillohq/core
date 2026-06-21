@@ -23,7 +23,6 @@ keywords = [
     "async",
     "asynchronous",
     "uvicorn",
-    "granian",
     "web server",
     "API",
     "scalable",
