@@ -68,6 +68,7 @@ from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
 from .grouping import Group
 from .websocket import WebsocketRoute
+from pathlib import Path
 
 if TYPE_CHECKING:
     from nexios.types import WsHandlerType
