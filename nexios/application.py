@@ -180,7 +180,6 @@ class NexiosApp:
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
         self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
         self.server_error_handler = server_error_handler
-        self._background_tasks = set()
 
         self.route_class = route_class
         self.app = Router(

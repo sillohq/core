@@ -188,6 +188,7 @@ def calculate_daily_stats():
     }).to_dict()
 
 # Reset cache every day
+tasks = {}
 @app.on_startup
 async def setup_cache_reset():
     async def reset_daily():
@@ -196,8 +197,8 @@ async def setup_cache_reset():
             daily_stats.reset()
     
     task = asyncio.create_task(reset_daily())
-    app._background_tasks.add(task)
-    task.add_done_callback(app._background_tasks.discard)
+    tasks.add(task)
+    task.add_done_callback(tasks.discard)
 ```
 
 ## Error Handling Best Practices
