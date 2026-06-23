@@ -82,9 +82,7 @@ class FrontendApp(BaseRouter):
                 response = result  # type: ignore[assignment]
             await response(scope, receive, send)
 
-    async def _handle(
-        self, request: Request, response: Response
-    ) -> Optional[Response]:
+    async def _handle(self, request: Request, response: Response) -> Optional[Response]:
         raw_path: str = request.scope.get("path", "")
         relative_path: str = raw_path.lstrip("/")
 

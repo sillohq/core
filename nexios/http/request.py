@@ -357,7 +357,7 @@ class Request(HTTPConnection):
         content_type_header = self.headers.get("Content-Type")
         if content_type_header is None:
             return None
-        content_type, _ = parse_options_header(content_type_header) #ty: ignore
+        content_type, _ = parse_options_header(content_type_header)  # ty: ignore
         return content_type.decode("utf-8") if content_type else None
 
     async def stream(self) -> typing.AsyncGenerator[bytes, None]:
