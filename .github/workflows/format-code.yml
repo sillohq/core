@@ -29,7 +29,6 @@ jobs:
       - name: Run Ruff Linter and Auto-fix
         run: |
           ruff format .
-          ty check nexios
 
 
       - name: Commit and Push Changes

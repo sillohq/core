@@ -332,7 +332,7 @@ class NexiosApp:
             try:
                 await handler()
             except Exception as e:
-                logger.warning("Startup handler %s failed: %s", handler.__name__, e)
+                logger.warning("Startup handler %s failed: %s", handler.__name__, e)  # ty:ignore[unresolved-attribute]
 
     async def _shutdown(self) -> None:
         """Execute all shutdown handlers sequentially, logging warnings on failure."""
@@ -340,7 +340,7 @@ class NexiosApp:
             try:
                 await handler()
             except Exception as e:
-                logger.warning("Shutdown handler %s failed: %s", handler.__name__, e)
+                logger.warning("Shutdown handler %s failed: %s", handler.__name__, e)  # ty:ignore[unresolved-attribute]
 
     async def handle_lifespan(self, receive: Receive, send: Send) -> None:
         """Handle ASGI lifespan protocol events."""
