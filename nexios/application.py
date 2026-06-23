@@ -327,20 +327,20 @@ class NexiosApp:
         self.shutdown_handlers.append(handler)
 
     async def _startup(self) -> None:
-        """Execute all startup handlers sequentially"""
+        """Execute all startup handlers sequentially, logging warnings on failure."""
         for handler in self.startup_handlers:
             try:
                 await handler()
             except Exception as e:
-                raise e
+                logger.warning("Startup handler %s failed: %s", handler.__name__, e)
 
     async def _shutdown(self) -> None:
-        """Execute all shutdown handlers sequentially with error handling"""
+        """Execute all shutdown handlers sequentially, logging warnings on failure."""
         for handler in self.shutdown_handlers:
             try:
                 await handler()
             except Exception as e:
-                raise e
+                logger.warning("Shutdown handler %s failed: %s", handler.__name__, e)
 
     async def handle_lifespan(self, receive: Receive, send: Send) -> None:
         """Handle ASGI lifespan protocol events."""
