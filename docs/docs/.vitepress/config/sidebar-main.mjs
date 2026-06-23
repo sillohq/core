@@ -102,6 +102,7 @@ export const sidebarGuide = [
       { text: 'Request Parameters', link: '/guide/request-parameters' },
       { text: "Templating", link: "/guide/templating/index" },
       { text: 'Static Files', link: '/guide/static-files' },
+      { text: 'Frontend (SPA)', link: '/guide/frontend' },
       { text: 'File Upload', link: '/guide/file-upload' },
       { text: 'Cors', link: '/guide/cors' },
       { text: 'CSRF', link: '/guide/csrf' },
