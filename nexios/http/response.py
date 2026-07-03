@@ -329,8 +329,16 @@ class JSONResponse(BaseResponse):
         headers: Optional[Dict[str, str]] = None,
         indent: Optional[int] = None,
         ensure_ascii: bool = True,
+        use_encoder: bool = True,
     ):
         try:
+            # Pre-process content through jsonable_encoder when requested
+            # to handle complex types (datetimes, UUIDs, Decimals, models, …)
+            if use_encoder:
+                from nexios.encoding import jsonable_encoder
+
+                content = jsonable_encoder(content)
+
             body = json.dumps(
                 content,
                 indent=indent,
