@@ -5,7 +5,7 @@ import typing
 
 from nexios import logging
 from nexios._internals._response_transformer import (
-    _process_response,  # type: ignore[import] #
+    serialize_response,  # type: ignore[import] #
 )
 from nexios.auth.exceptions import AuthenticationFailed, AuthErrorHandler
 from nexios.config import get_config
@@ -49,8 +49,8 @@ async def wrap_http_exceptions(
                 exc.status_code
             )
             if handler:
-                return _process_response(
-                    response, await handler(request, response, exc)
+                return serialize_response(
+                    await handler(request, response, exc)
                 )
 
         if handler is None:
@@ -59,7 +59,7 @@ async def wrap_http_exceptions(
                 error = traceback.format_exc()
                 logger.error(error)
                 raise exc
-            return _process_response(response, await handler(request, response, exc))
+            return serialize_response(await handler(request, response, exc))
 
 
 class ExceptionMiddleware:
