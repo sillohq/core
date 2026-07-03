@@ -68,7 +68,9 @@ ENCODERS_BY_TYPE: dict[type[typing.Any], typing.Callable[[typing.Any], typing.An
 def generate_encoders_by_class_tuples(
     type_encoder_map: dict[typing.Any, typing.Callable[[typing.Any], typing.Any]],
 ) -> dict[typing.Callable[[typing.Any], typing.Any], tuple[typing.Any, ...]]:
-    encoders_by_class_tuples: dict[typing.Callable[[typing.Any], typing.Any], tuple[typing.Any, ...]] = defaultdict(tuple)
+    encoders_by_class_tuples: dict[
+        typing.Callable[[typing.Any], typing.Any], tuple[typing.Any, ...]
+    ] = defaultdict(tuple)
     for type_, encoder in type_encoder_map.items():
         encoders_by_class_tuples[encoder] += (type_,)
     return encoders_by_class_tuples
@@ -85,7 +87,9 @@ def jsonable_encoder(
     exclude_unset: bool = False,
     exclude_defaults: bool = False,
     exclude_none: bool = False,
-    custom_encoder: typing.Optional[typing.Dict[type, typing.Callable[[typing.Any], typing.Any]]] = None,
+    custom_encoder: typing.Optional[
+        typing.Dict[type, typing.Callable[[typing.Any], typing.Any]]
+    ] = None,
 ) -> typing.Any:
     """Convert any object to something that can be encoded in JSON."""
     custom_encoder = custom_encoder or {}

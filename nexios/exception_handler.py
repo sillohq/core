@@ -49,9 +49,7 @@ async def wrap_http_exceptions(
                 exc.status_code
             )
             if handler:
-                return serialize_response(
-                    await handler(request, response, exc)
-                )
+                return serialize_response(await handler(request, response, exc))
 
         if handler is None:
             handler = _lookup_exception_handler(exception_handlers, exc)
