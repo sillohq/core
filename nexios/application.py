@@ -1,4 +1,5 @@
 from __future__ import annotations
+from nexios.utils.async_helpers import is_async_callable
 from nexios.openapi import License
 from nexios.openapi import Contact
 
@@ -8,6 +9,7 @@ from typing import (
     AsyncContextManager,
     Awaitable,
     Callable,
+    ContextManager,
     Dict,
     List,
     Literal,
@@ -55,7 +57,9 @@ if TYPE_CHECKING:
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 logger = create_logger("nexios")
-lifespan_manager = Callable[["NexiosApp"], AsyncContextManager[Any]]
+lifespan_manager = Callable[
+    ["NexiosApp"], Union[AsyncContextManager[Any], ContextManager[Any]]
+]
 
 
 class NexiosApp:
@@ -239,7 +243,9 @@ class NexiosApp:
             openapi_url = root_path + self.openapi.openapi_url
             return response.html(self.openapi._generate_redoc_ui(openapi_url))
 
-    def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
+    def on_startup(
+        self, handler: Callable[[], Awaitable[None]]
+    ) -> Callable[[], Awaitable[None]]:
         """
         Registers a startup handler that executes when the application starts.
 
@@ -281,8 +287,11 @@ class NexiosApp:
         application starts.
         """
         self.startup_handlers.append(handler)
+        return handler
 
-    def on_shutdown(self, handler: Callable[[], Awaitable[None]]) -> None:
+    def on_shutdown(
+        self, handler: Callable[[], Awaitable[None]]
+    ) -> Callable[[], Awaitable[None]]:
         """
         Registers a shutdown handler that executes when the application is shutting down.
 
@@ -325,69 +334,68 @@ class NexiosApp:
         application is shutting down.
         """
         self.shutdown_handlers.append(handler)
+        return handler
 
     async def _startup(self) -> None:
         """Execute all startup handlers sequentially, logging warnings on failure."""
         for handler in self.startup_handlers:
-            try:
+            if is_async_callable(handler):
                 await handler()
-            except Exception as e:
-                logger.warning("Startup handler %s failed: %s", handler.__name__, e)  # ty:ignore[unresolved-attribute]
+            else:
+                handler()
 
     async def _shutdown(self) -> None:
         """Execute all shutdown handlers sequentially, logging warnings on failure."""
         for handler in self.shutdown_handlers:
-            try:
+            if is_async_callable(handler):
                 await handler()
-            except Exception as e:
-                logger.warning("Shutdown handler %s failed: %s", handler.__name__, e)  # ty:ignore[unresolved-attribute]
+            else:
+                handler()
+
+    @staticmethod
+    def _is_async_context_manager(obj: Any) -> bool:
+        return hasattr(obj, "__aenter__") and hasattr(obj, "__aexit__")
 
     async def handle_lifespan(self, receive: Receive, send: Send) -> None:
         """Handle ASGI lifespan protocol events."""
-        # self._setup_openapi()
-        try:
-            while True:
-                message: Message = await receive()
-                if message["type"] == "lifespan.startup":
-                    try:
-                        if self.lifespan_context:
-                            # If a lifespan context manager is provided, use it
-                            self.lifespan_manager: Any = self.lifespan_context(self)
-                            returned_state = await self.lifespan_manager.__aenter__()
-                            if returned_state:
-                                self.state.update(returned_state)
-                        else:
-                            # Otherwise, fall back to the default startup handlers
-                            await self._startup()
-                        await send({"type": "lifespan.startup.complete"})
-                    except Exception as e:
-                        await send(
-                            {"type": "lifespan.startup.failed", "message": str(e)}
-                        )
-                        return
 
-                elif message["type"] == "lifespan.shutdown":
-                    try:
-                        if self.lifespan_context:
-                            # If a lifespan context manager is provided, use it
+        while True:
+            message: Message = await receive()
+            if message["type"] == "lifespan.startup":
+                try:
+                    if self.lifespan_context:
+                        # If a lifespan context manager is provided, use it
+                        self.lifespan_manager: Any = self.lifespan_context(self)
+                        if self._is_async_context_manager(self.lifespan_manager):
+                            returned_state = await self.lifespan_manager.__aenter__()
+                        else:
+                            returned_state = self.lifespan_manager.__enter__()
+                        if returned_state:
+                            self.state.update(returned_state)
+                    else:
+                        # Otherwise, fall back to the default startup handlers
+                        await self._startup()
+                    await send({"type": "lifespan.startup.complete"})
+                except Exception as e:
+                    await send({"type": "lifespan.startup.failed", "message": str(e)})
+                    return
+
+            elif message["type"] == "lifespan.shutdown":
+                try:
+                    if self.lifespan_context:
+                        # If a lifespan context manager is provided, use it
+                        if self._is_async_context_manager(self.lifespan_manager):
                             await self.lifespan_manager.__aexit__(None, None, None)
                         else:
-                            # Otherwise, fall back to the default shutdown handlers
-                            await self._shutdown()
-                        await send({"type": "lifespan.shutdown.complete"})
-                        return
-                    except Exception as e:
-                        await send(
-                            {"type": "lifespan.shutdown.failed", "message": str(e)}
-                        )
-                        return
-
-        except Exception as e:
-            logger.debug(f"Error handling lifespan event: {e}")
-            if message["type"].startswith("lifespan.startup"):
-                await send({"type": "lifespan.startup.failed", "message": str(e)})
-            else:
-                await send({"type": "lifespan.shutdown.failed", "message": str(e)})
+                            self.lifespan_manager.__exit__(None, None, None)
+                    else:
+                        # Otherwise, fall back to the default shutdown handlers
+                        await self._shutdown()
+                    await send({"type": "lifespan.shutdown.complete"})
+                    return
+                except Exception as e:
+                    await send({"type": "lifespan.shutdown.failed", "message": str(e)})
+                    return
 
     def add_middleware(
         self,
