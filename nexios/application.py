@@ -57,7 +57,9 @@ if TYPE_CHECKING:
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 logger = create_logger("nexios")
-lifespan_manager = Callable[["NexiosApp"], Union[AsyncContextManager[Any], ContextManager[Any]]]
+lifespan_manager = Callable[
+    ["NexiosApp"], Union[AsyncContextManager[Any], ContextManager[Any]]
+]
 
 
 class NexiosApp:
@@ -349,7 +351,6 @@ class NexiosApp:
                 await handler()
             else:
                 handler()
-            
 
     @staticmethod
     def _is_async_context_manager(obj: Any) -> bool:
@@ -357,7 +358,7 @@ class NexiosApp:
 
     async def handle_lifespan(self, receive: Receive, send: Send) -> None:
         """Handle ASGI lifespan protocol events."""
-       
+
         while True:
             message: Message = await receive()
             if message["type"] == "lifespan.startup":
@@ -376,9 +377,7 @@ class NexiosApp:
                         await self._startup()
                     await send({"type": "lifespan.startup.complete"})
                 except Exception as e:
-                    await send(
-                        {"type": "lifespan.startup.failed", "message": str(e)}
-                    )
+                    await send({"type": "lifespan.startup.failed", "message": str(e)})
                     return
 
             elif message["type"] == "lifespan.shutdown":
@@ -395,12 +394,8 @@ class NexiosApp:
                     await send({"type": "lifespan.shutdown.complete"})
                     return
                 except Exception as e:
-                    await send(
-                        {"type": "lifespan.shutdown.failed", "message": str(e)}
-                    )
+                    await send({"type": "lifespan.shutdown.failed", "message": str(e)})
                     return
-
-       
 
     def add_middleware(
         self,
