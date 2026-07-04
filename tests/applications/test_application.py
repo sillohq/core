@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from typing import Callable
 
 import pytest
@@ -567,3 +567,114 @@ def test_app_state_persistence():
         resp3 = client.post("/track")
         assert resp3.json()["counter"] == 3
         assert resp3.json()["total_requests"] == 3
+
+
+# ========== Sync Context Manager Lifespan Tests ==========
+
+
+def test_sync_lifespan_context_manager():
+    """Test that a sync context manager works for lifespan"""
+    state = {"startup": False, "shutdown": False}
+
+    @contextmanager
+    def lifespan(app: NexiosApp):
+        state["startup"] = True
+        app.state["data"] = "from-sync"
+        yield {"initialized": True}
+        state["shutdown"] = True
+
+    test_app = NexiosApp(lifespan=lifespan)
+
+    @test_app.get("/status")
+    async def status(request: Request, response: Response):
+        return response.json(
+            {
+                "data": request.scope.get("global_state", {}).get("data"),
+                "initialized": request.scope.get("global_state", {}).get("initialized"),
+            }
+        )
+
+    with TestClient(test_app) as client:
+        assert state["startup"] is True
+
+        resp = client.get("/status")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["data"] == "from-sync"
+        assert data["initialized"] is True
+
+    assert state["shutdown"] is True
+
+
+def test_sync_lifespan_state_persistence():
+    """Test that sync lifespan state persists across requests"""
+
+    @contextmanager
+    def lifespan(app: NexiosApp):
+        app.state["counter"] = 0
+        yield
+
+    test_app = NexiosApp(lifespan=lifespan)
+
+    @test_app.post("/inc")
+    async def increment(request: Request, response: Response):
+        global_state = request.scope.get("global_state", {})
+        global_state["counter"] = global_state.get("counter", 0) + 1
+        return response.json({"counter": global_state["counter"]})
+
+    with TestClient(test_app) as client:
+        resp1 = client.post("/inc")
+        assert resp1.json()["counter"] == 1
+
+        resp2 = client.post("/inc")
+        assert resp2.json()["counter"] == 2
+
+
+def test_sync_lifespan_with_yield_value():
+    """Test that sync lifespan can pass state via yield"""
+
+    @contextmanager
+    def lifespan(app: NexiosApp):
+        yield {"db": "connected", "cache": "warm"}
+
+    test_app = NexiosApp(lifespan=lifespan)
+
+    @test_app.get("/state")
+    async def get_state(request: Request, response: Response):
+        gs = request.scope.get("global_state", {})
+        return response.json(gs)
+
+    with TestClient(test_app) as client:
+        resp = client.get("/state")
+        assert resp.json()["db"] == "connected"
+        assert resp.json()["cache"] == "warm"
+
+
+def test_sync_lifespan_and_async_lifespan_both_work():
+    """Test that both sync and async lifespan work correctly"""
+
+    # Sync
+    sync_state = {"ran": False}
+
+    @contextmanager
+    def sync_lifespan(app: NexiosApp):
+        sync_state["ran"] = True
+        yield
+
+    sync_app = NexiosApp(lifespan=sync_lifespan)
+
+    with TestClient(sync_app) as client:
+        assert sync_state["ran"] is True
+
+    # Async
+    async_state = {"ran": False}
+
+    @asynccontextmanager
+    async def async_lifespan(app: NexiosApp):
+        async_state["ran"] = True
+        yield
+
+    async_app = NexiosApp(lifespan=async_lifespan)
+
+    with TestClient(async_app) as client:
+        assert async_state["ran"] is True
