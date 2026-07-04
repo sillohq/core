@@ -35,17 +35,13 @@ from nexios._internals._route_builder import RouteBuilder
 from nexios.dependencies import (
     Context,
     Depend,
-    SolvedDependency,
-    resolve_dependency,
+    Dependant,
+    _execute_dependency,
+    get_dependant,
     solve_dependencies,
-    solve_handler_dependencies,
 )
 from nexios.context import get_current_context
-from nexios.parameters import (
-    solve_params,
-    resolve_param,
-    SolvedParamDependency,
-)
+from nexios.parameters import SolvedParamDependency
 from nexios.events import EventEmitter
 from nexios.exceptions import NotFoundException
 from nexios.http import Request, Response
@@ -209,21 +205,8 @@ class Route(BaseRoute):
         self.handler = handler
         self.handler_signature = inspect.signature(handler)
         self.name = name
-        self._own_resolved_dependencies = list(solve_handler_dependencies(handler))
-        self.resolved_dependencies: List[SolvedDependency] = list(
-            self._own_resolved_dependencies
-        )
-        self._own_resolved_params = solve_params(handler)
-        self.resolved_params: List[SolvedParamDependency] = list(
-            self._own_resolved_params
-        )
-        self._params_to_inject: List[str] = []
-        for dep in self._own_resolved_dependencies:
-            if dep.parameter_name:
-                self._params_to_inject.append(dep.parameter_name)
-        for param in self._own_resolved_params:
-            if param.param_name not in self._params_to_inject:
-                self._params_to_inject.append(param.param_name)
+        self.dependant = get_dependant(handler)
+        self._router_dependants: List[Dependant] = []
 
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
@@ -261,6 +244,16 @@ class Route(BaseRoute):
             return app
 
         self.app = apply_middleware(route_handler_as_asgi_app)
+
+    @property
+    def resolved_params(self) -> List[SolvedParamDependency]:
+        """Backward-compat: expose param extractors for OpenAPI doc generation."""
+        return list(self.dependant.param_extractors)
+
+    @property
+    def _own_resolved_dependencies(self) -> List[Dependant]:
+        """Backward-compat: the handler's own dependency sub-tree."""
+        return list(self.dependant.dependencies)
 
     def match(self, scope: Scope) -> typing.Tuple[MatchStatus, Any]:
         """
@@ -344,17 +337,26 @@ class Route(BaseRoute):
 
         cleanup_callbacks: List[Callable[[], Any]] = []
         injected: Dict[str, Any] = {}
+        dependency_cache: Dict[Any, Any] = {}
 
-        for dependency in self.resolved_dependencies:
-            resolved_value = await resolve_dependency(
-                dependency, ctx, cleanup_callbacks
+        # Resolve router-level dependants first (with shared cache).
+        # These have call != None and no handler parameter name, so we
+        # resolve their sub-dependencies, call the function, cache the
+        # result, but do NOT inject into the handler.
+        for rd in self._router_dependants:
+            sub_values = await solve_dependencies(
+                rd, ctx, dependency_cache, cleanup_callbacks
             )
-            if dependency.parameter_name:
-                injected[dependency.parameter_name] = resolved_value
+            if rd.call is not None:
+                result = await _execute_dependency(rd, sub_values, cleanup_callbacks)
+                if rd.use_cache and rd.cache_key:
+                    dependency_cache[rd.cache_key] = result
 
-        for param_dep in self.resolved_params:
-            resolved_value = await resolve_param(param_dep, ctx)
-            injected[param_dep.param_name] = resolved_value
+        # Resolve handler-level dependants (same shared cache)
+        handler_values = await solve_dependencies(
+            self.dependant, ctx, dependency_cache, cleanup_callbacks
+        )
+        injected.update(handler_values)
 
         try:
             if is_async_callable(self.handler):
@@ -420,10 +422,10 @@ class Router(BaseRouter):
         self.exclude_from_schema = exclude_from_schema
         self.name = name
         self.event = EventEmitter()
-        self.dependencies: List[SolvedDependency] = solve_dependencies(
-            dependencies or []
-        )
-        self._inherited_dependencies: List[SolvedDependency] = []
+        self.dependencies: List[Dependant] = [
+            get_dependant(d.dependency) for d in (dependencies or [])
+        ]
+        self._inherited_dependencies: List[Dependant] = []
         self.root_path = ""
 
         if self.prefix and not self.prefix.startswith("/"):
@@ -432,24 +434,21 @@ class Router(BaseRouter):
 
         self._refresh_route_dependencies()
 
-    def _get_combined_dependencies(self) -> List[SolvedDependency]:
+    def _get_combined_dependencies(self) -> List[Dependant]:
         return [*self._inherited_dependencies, *self.dependencies]
 
     def _refresh_route_dependencies(self) -> None:
         combined_dependencies = self._get_combined_dependencies()
         for route in self.routes:
             if isinstance(route, Route):
-                route.resolved_dependencies = [
-                    *combined_dependencies,
-                    *route._own_resolved_dependencies,
-                ]
+                route._router_dependants = list(combined_dependencies)
             elif isinstance(route, Group):
                 mounted_router = getattr(route, "_base_app", None)
                 if isinstance(mounted_router, Router):
                     mounted_router._set_inherited_dependencies(combined_dependencies)
 
     def _set_inherited_dependencies(
-        self, inherited_dependencies: Sequence[SolvedDependency]
+        self, inherited_dependencies: Sequence[Dependant]
     ) -> None:
         self._inherited_dependencies = list(inherited_dependencies)
         self._refresh_route_dependencies()
@@ -659,10 +658,7 @@ class Router(BaseRouter):
             route.tags = self.tags
         if self.exclude_from_schema:
             route.exclude_from_schema = True
-        route.resolved_dependencies = [
-            *self._get_combined_dependencies(),
-            *route._own_resolved_dependencies,
-        ]
+        route._router_dependants = list(self._get_combined_dependencies())
 
         self.routes.append(route)
 
