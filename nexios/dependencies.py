@@ -237,7 +237,7 @@ async def _execute_dependency(
     kwargs: Dict[str, Any],
     cleanup_callbacks: List[Callable[[], Any]],
 ) -> Any:
-    """Invoke *dependant*\ .call with *kwargs*, handling generators."""
+    """Invoke *dependant*  .call with *kwargs*, handling generators."""
     func = dependant.call
     if func is None:
         raise RuntimeError("Dependant node has no callable to execute")
