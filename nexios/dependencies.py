@@ -6,7 +6,12 @@ from dataclasses import dataclass, field
 from inspect import Parameter, signature
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Tuple
 
-from nexios.parameters import Header, ParameterExtractor, SolvedParamDependency, resolve_param
+from nexios.parameters import (
+    Header,
+    ParameterExtractor,
+    SolvedParamDependency,
+    resolve_param,
+)
 
 if TYPE_CHECKING:
     from nexios import NexiosApp, Router
@@ -34,7 +39,7 @@ class Depend:
     def __init__(self, dependency: Callable[..., Any] = None) -> None:
         self.dependency = dependency
 
-    def __class_getitem__(cls, item: Any) :
+    def __class_getitem__(cls, item: Any):
         return cls
 
 
@@ -185,9 +190,7 @@ async def solve_dependencies(
 
     Returns a ``{name: value}`` dict suitable for unpacking into the handler.
     """
-    cache: DependencyCache = (
-        dependency_cache if dependency_cache is not None else {}
-    )
+    cache: DependencyCache = dependency_cache if dependency_cache is not None else {}
     cleanups: List[Callable[[], Any]] = (
         cleanup_callbacks if cleanup_callbacks is not None else []
     )
