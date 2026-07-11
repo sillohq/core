@@ -30,17 +30,15 @@ from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo._internals._middleware import (
     wrap_middleware,
 )
-from sillo._internals._response_transformer import request_response
-from sillo._internals._route_builder import RouteBuilder
+from sillo._internals._response_transformer import serialize_response
+from sillo.route_builder import RouteBuilder
 from sillo.dependencies import (
-    Context,
     Depend,
     Dependant,
     _execute_dependency,
     get_dependant,
     solve_dependencies,
 )
-from sillo.context import get_current_context
 from sillo.parameters import SolvedParamDependency
 from sillo.events import EventEmitter
 from sillo.exceptions import NotFoundException
@@ -231,9 +229,16 @@ class Route(BaseRoute):
         if "GET" in self.methods:
             self.methods.add("HEAD")
 
-        route_handler_as_asgi_app = request_response(
-            self.get_route_handler
-        )  # threat route handlers as ASGI apps
+        async def _route_asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
+            request = Request(scope, receive, send)
+            response_manager = Response(request)
+            func_result = await self.get_route_handler(
+                request, response_manager, **request.path_params
+            )
+            response = serialize_response(func_result)
+            return await response(scope, receive, send)
+
+        route_handler_as_asgi_app = _route_asgi_app
 
         def apply_middleware(app: ASGIApp) -> ASGIApp:
             middleware: typing.List[Middleware] = []
@@ -333,28 +338,21 @@ class Route(BaseRoute):
         Returns:
             Any: The response from the handler.
         """
-        ctx: Optional[Context] = get_current_context()
-
         cleanup_callbacks: List[Callable[[], Any]] = []
         injected: Dict[str, Any] = {}
         dependency_cache: Dict[Any, Any] = {}
 
-        # Resolve router-level dependants first (with shared cache).
-        # These have call != None and no handler parameter name, so we
-        # resolve their sub-dependencies, call the function, cache the
-        # result, but do NOT inject into the handler.
         for rd in self._router_dependants:
             sub_values = await solve_dependencies(
-                rd, ctx, dependency_cache, cleanup_callbacks
+                rd, request, dependency_cache, cleanup_callbacks
             )
             if rd.call is not None:
                 result = await _execute_dependency(rd, sub_values, cleanup_callbacks)
                 if rd.use_cache and rd.cache_key:
                     dependency_cache[rd.cache_key] = result
 
-        # Resolve handler-level dependants (same shared cache)
         handler_values = await solve_dependencies(
-            self.dependant, ctx, dependency_cache, cleanup_callbacks
+            self.dependant, request, dependency_cache, cleanup_callbacks
         )
         injected.update(handler_values)
 

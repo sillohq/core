@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from typing_extensions import Annotated, Doc
 
-from sillo._internals._route_builder import RouteBuilder
+from sillo.route_builder import RouteBuilder
 from sillo.objects.routing import URLPath
 from sillo.types import (
     Receive,

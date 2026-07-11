@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any, TypeVar, List, Optional
 
 if typing.TYPE_CHECKING:
-    from sillo.context import Context
+    from sillo.http import Request
 
 
 T = TypeVar("T")
@@ -41,7 +41,7 @@ class ParameterExtractor:
         self.required = required
         self.param_name: str | None = None
 
-    def extract(self, ctx: Context | None) -> Any:
+    def extract(self, request: Request | None) -> Any:
         """Extract the parameter value from context.
 
         Args:
@@ -107,23 +107,15 @@ class Query(ParameterExtractor):
 
     location = ParameterLocation.QUERY
 
-    def extract(self, ctx: Context | None) -> Any:
-        """Extract query parameter from request.
-
-        Args:
-            ctx: The dependency injection context.
-
-        Returns:
-            The query parameter value.
-        """
-        if ctx is None or ctx.request is None:
+    def extract(self, request: Request | None) -> Any:
+        if request is None:
             return self.default
 
         param_name = self._get_param_name()
         if not param_name:
             return self.default
 
-        value = ctx.request.query_params.get(param_name)
+        value = request.query_params.get(param_name)
 
         if value is None:
             if self.required:
@@ -140,23 +132,23 @@ class Header(ParameterExtractor):
 
     location = ParameterLocation.HEADER
 
-    def extract(self, ctx: Context | None) -> Any:
+    def extract(self, request: Request | None) -> Any:
         """Extract header parameter from request.
 
         Args:
-            ctx: The dependency injection context.
+            request: The incoming HTTP request.
 
         Returns:
             The header parameter value.
         """
-        if ctx is None or ctx.request is None:
+        if request is None:
             return self.default
 
         param_name = self._get_param_name()
         if not param_name:
             return self.default
 
-        value = ctx.request.headers.get(param_name)
+        value = request.headers.get(param_name)
 
         if value is None:
             if self.required:
@@ -173,23 +165,23 @@ class Cookie(ParameterExtractor):
 
     location = ParameterLocation.COOKIE
 
-    def extract(self, ctx: Context | None) -> Any:
+    def extract(self, request: Request | None) -> Any:
         """Extract cookie parameter from request.
 
         Args:
-            ctx: The dependency injection context.
+            request: The incoming HTTP request.
 
         Returns:
             The cookie parameter value.
         """
-        if ctx is None or ctx.request is None:
+        if request is None:
             return self.default
 
         param_name = self._get_param_name()
         if not param_name:
             return self.default
 
-        value = ctx.request.cookies.get(param_name)
+        value = request.cookies.get(param_name)
 
         if value is None:
             if self.required:
@@ -240,18 +232,9 @@ def solve_params(handler: Any) -> List["SolvedParamDependency"]:
 
 async def resolve_param(
     param_dep: SolvedParamDependency,
-    ctx: Optional["Context"] = None,
+    request: Optional["Request"] = None,
 ) -> Any:
-    """Resolve a parameter dependency.
-
-    Args:
-        param_dep: The solved parameter dependency.
-        ctx: The dependency injection context.
-
-    Returns:
-        The resolved parameter value.
-    """
-    return param_dep.extractor.extract(ctx)
+    return param_dep.extractor.extract(request)
 
 
 __all__ = [

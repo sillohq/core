@@ -90,7 +90,7 @@ from .config import set_config
 from .config.base import MakeConfig
 from .dependencies import Depend
 from .parameters import Query, Header, Cookie
-from .context import Context, get_current_context, set_context, reset_context
+from .context import get_current_context, set_context, reset_context
 
 __all__ = [
     "silloApp",
@@ -103,7 +103,6 @@ __all__ = [
     "Query",
     "Header",
     "Cookie",
-    "Context",
     "get_current_context",
     "set_context",
     "reset_context",

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import contextvars
 import inspect
 from dataclasses import dataclass, field
-from inspect import Parameter, signature
+from inspect import signature
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from sillo.parameters import (
@@ -14,11 +13,10 @@ from sillo.parameters import (
 )
 
 if TYPE_CHECKING:
-    from sillo import silloApp, Router
     from sillo.http import Request
 
 # =============================================================================
-# User-facing API (unchanged)
+# User-facing API
 # =============================================================================
 
 
@@ -43,37 +41,6 @@ class Depend:
         return cls
 
 
-class Context:
-    """
-    Request-scoped context injectable as a dependency.
-
-    Provides access to the current request, app, and router instances.
-    """
-
-    def __init__(
-        self,
-        request: Optional["Request"] = None,
-        base_app: Optional["silloApp"] = None,
-        app: Optional["Router"] = None,
-        **kwargs: Any,
-    ) -> None:
-        self.request = request
-        self.base_app = base_app
-        self.app = app
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
-
-current_context: contextvars.ContextVar[Context] = contextvars.ContextVar(
-    "current_context"
-)
-
-
-# =============================================================================
-# Internal DI tree node — mirrors FastAPI's Dependant
-# =============================================================================
-
-
 @dataclass
 class Dependant:
     """A node in the dependency resolution tree.
@@ -85,7 +52,6 @@ class Dependant:
         call: The dependency callable to invoke (``None`` for the root/handler).
         name: Parameter name this node fills in its parent.
         dependencies: Sub-dependencies (child ``Dependant`` nodes).
-        context_params: Parameter names that receive the ``Context`` object.
         param_extractors: Query/Header/Cookie extractors.
         is_coroutine: ``True`` if ``call`` is an ``async def``.
         is_generator: ``True`` if ``call`` is a sync generator.
@@ -97,7 +63,6 @@ class Dependant:
     call: Optional[Callable[..., Any]] = None
     name: Optional[str] = None
     dependencies: List["Dependant"] = field(default_factory=list)
-    context_params: List[str] = field(default_factory=list)
     param_extractors: List[SolvedParamDependency] = field(default_factory=list)
     is_coroutine: bool = False
     is_generator: bool = False
@@ -115,20 +80,8 @@ def get_dependant(
     call: Callable[..., Any],
     name: Optional[str] = None,
 ) -> Dependant:
-    """Analyse *call* and return a ``Dependant`` tree.
-
-    Every parameter of *call* is classified:
-
-    * ``Depend(...)`` default → recursive sub-dependency.
-    * ``Context()`` default       → injected from the current context.
-    * ``ParameterExtractor`` subclass default (e.g. ``Query``, ``Header``)
-                                   → extracted from the request.
-    * Anything else                → ignored (expected to be ``request``,
-                                     ``response`` or path params).
-    """
     sig = signature(call)
     deps: List[Dependant] = []
-    context_params: List[str] = []
     extractors: List[SolvedParamDependency] = []
     cache_key_parts: List[str] = []
 
@@ -139,9 +92,6 @@ def get_dependant(
             sub = get_dependant(default.dependency, param_name)
             deps.append(sub)
             cache_key_parts.append(param_name)
-
-        elif isinstance(default, Context):
-            context_params.append(param_name)
 
         elif isinstance(default, ParameterExtractor):
             extractor = default
@@ -163,7 +113,6 @@ def get_dependant(
         call=call,
         name=name,
         dependencies=deps,
-        context_params=context_params,
         param_extractors=extractors,
         is_coroutine=inspect.iscoroutinefunction(call),
         is_generator=inspect.isgeneratorfunction(call),
@@ -173,23 +122,19 @@ def get_dependant(
     )
 
 
-# =============================================================================
-# Resolution phase — recursively walk the Dependant tree
-# =============================================================================
+# ==========================================================================
+# Resolution — recursively walk the Dependant tree
+# ==========================================================================
 
 DependencyCache = Dict[Tuple[Callable[..., Any], Tuple[str, ...]], Any]
 
 
 async def solve_dependencies(
     dependant: Dependant,
-    ctx: Optional[Context] = None,
+    request: Optional["Request"] = None,
     dependency_cache: Optional[DependencyCache] = None,
     cleanup_callbacks: Optional[List[Callable[[], Any]]] = None,
 ) -> Dict[str, Any]:
-    """Recursively resolve all dependencies in the ``Dependant`` tree.
-
-    Returns a ``{name: value}`` dict suitable for unpacking into the handler.
-    """
     cache: DependencyCache = dependency_cache if dependency_cache is not None else {}
     cleanups: List[Callable[[], Any]] = (
         cleanup_callbacks if cleanup_callbacks is not None else []
@@ -198,16 +143,13 @@ async def solve_dependencies(
 
     for sub in dependant.dependencies:
         if sub.use_cache and sub.cache_key and sub.cache_key in cache:
-            values[sub.name] = cache[sub.cache_key]  # ty:ignore[invalid-assignment]
+            values[sub.name] = cache[sub.cache_key]
             continue
 
-        sub_kwargs = await solve_dependencies(sub, ctx, cache, cleanups)
-
-        for cparam in sub.context_params:
-            sub_kwargs[cparam] = ctx
+        sub_kwargs = await solve_dependencies(sub, request, cache, cleanups)
 
         for ext in sub.param_extractors:
-            sub_kwargs[ext.param_name] = await resolve_param(ext, ctx)
+            sub_kwargs[ext.param_name] = await resolve_param(ext, request)
 
         result = await _execute_dependency(sub, sub_kwargs, cleanups)
 
@@ -217,12 +159,8 @@ async def solve_dependencies(
         if sub.name:
             values[sub.name] = result
 
-    # Resolve the root node's own Context and ParameterExtractor params.
-    # These correspond to the handler's own parameters (not sub-dependencies).
-    for cparam in dependant.context_params:
-        values[cparam] = ctx
     for ext in dependant.param_extractors:
-        values[ext.param_name] = await resolve_param(ext, ctx)
+        values[ext.param_name] = await resolve_param(ext, request)
 
     return values
 

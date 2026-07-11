@@ -4,7 +4,7 @@ import pytest
 
 from sillo import silloApp
 from sillo.http import Request, Response
-from sillo.http.formparsers import FormParser, MultiPartException, MultiPartParser
+from sillo.formparser import FormParser, MultiPartException, MultiPartParser
 from sillo.objects import FormData, Headers, UploadedFile
 from sillo.testclient import TestClient
 

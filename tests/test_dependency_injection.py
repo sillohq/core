@@ -1,6 +1,6 @@
 """
 Comprehensive tests for dependency injection in sillo.
-Tests basic, nested, deeply nested dependencies, with context, app-level, router-level, and nested router-level dependencies.
+Tests basic, nested, deeply nested dependencies, app-level, router-level, and nested router-level dependencies.
 """
 
 from typing import Callable
@@ -8,7 +8,7 @@ from typing import Callable
 import pytest
 
 from sillo import silloApp
-from sillo.dependencies import Context, Depend
+from sillo.dependencies import Depend
 from sillo.http import Request, Response
 from sillo.routing import Router
 from sillo.testclient import TestClient
@@ -182,70 +182,69 @@ def test_async_deeply_nested_dependencies(
         assert data["level"] == "async_deep"
 
 
-# ========== Dependencies with Context Tests ==========
+# ========== Dependencies with Query Parameter Extractor Tests ==========
 
 
-def test_dependency_with_context(
+def test_dependency_with_query_extractor(
     test_client_factory: Callable[[silloApp], TestClient],
 ):
-    """Test dependency that uses Context object"""
+    """Test dependency uses Query extractor (exercises request tunnelling through DI)."""
+    from sillo import Query
+
     app = silloApp()
 
-    def get_user_from_context(ctx: Context = Context()):
-        return {
-            "user_id": "context_user",
-            "request_path": ctx.request.url.path if ctx.request else None,
-        }
+    def get_filtered_user(limit: str = Query(default="10")):
+        return {"user_id": "query_user", "limit": limit}
 
-    @app.get("/context-user")
-    async def get_context_user(
+    @app.get("/query-user")
+    async def get_query_user(
         request: Request,
         response: Response,
-        user_data: dict = Depend(get_user_from_context),
+        user_data: dict = Depend(get_filtered_user),
     ):
         return response.json({"user_data": user_data})
 
     with test_client_factory(app) as client:
-        resp = client.get("/context-user")
+        resp = client.get("/query-user?limit=25")
         assert resp.status_code == 200
         data = resp.json()["user_data"]
-        assert data["user_id"] == "context_user"
-        assert data["request_path"] == "/context-user"
+        assert data["user_id"] == "query_user"
+        assert data["limit"] == "25"
 
 
-def test_dependency_with_mixed_context_and_dependencies(
+def test_dependency_with_mixed_extractor_and_dependencies(
     test_client_factory: Callable[[silloApp], TestClient],
 ):
-    """Test dependency that uses both Context and other dependencies"""
+    """Test dependency uses both Query extractor and other DI dependencies."""
+    from sillo import Query
+
     app = silloApp()
 
     def get_user_id():
         return "mixed_user_123"
 
-    def get_user_with_context(
-        ctx: Context = Context(), user_id: str = Depend(get_user_id)
+    def get_user_with_extractor(
+        limit: str = Query(default="20"), user_id: str = Depend(get_user_id)
     ):
         return {
             "user_id": user_id,
-            "request_method": ctx.request.method if ctx.request else None,
-            "context_available": ctx is not None,
+            "limit": limit,
         }
 
-    @app.post("/mixed-context")
-    async def get_mixed_context(
+    @app.get("/mixed-extractor")
+    async def get_mixed_extractor(
         request: Request,
         response: Response,
-        user_data: dict = Depend(get_user_with_context),
+        user_data: dict = Depend(get_user_with_extractor),
     ):
         return response.json({"user_data": user_data})
 
     with test_client_factory(app) as client:
-        resp = client.post("/mixed-context")
+        resp = client.get("/mixed-extractor?limit=5")
         assert resp.status_code == 200
         data = resp.json()["user_data"]
         assert data["user_id"] == "mixed_user_123"
-        assert data["request_method"] == "POST"
-        assert data["context_available"] is True
+        assert data["limit"] == "5"
 
 
 # ========== App-Level Dependency Tests ==========
