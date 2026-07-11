@@ -10,7 +10,7 @@ from sillo.http.request import ClientDisconnect, Request
 from sillo.http.response import (
     BaseResponse,
 )
-from sillo.http.response import silloResponse as Response
+from sillo.http.response import Responder as Response
 from sillo.types import ASGIApp, Message, MiddlewareType, Receive, Scope, Send
 from sillo.utils.async_helpers import collapse_excgroups
 from sillo.websockets import WebSocket

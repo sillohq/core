@@ -83,7 +83,7 @@ class StaticFiles(BaseRouter):
         # If handler returned a custom response, use it directly
         if handler_result is not None:
             if hasattr(handler_result, "get_response"):
-                # It's a silloResponse, get the BaseResponse
+                # It's a Responder, get the BaseResponse
                 final_response = handler_result.get_response()
                 await final_response(scope, receive, send)
             else:

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sillo.http.response import StreamingResponse
 
 from .http.request import Request
-from .http.response import silloResponse as Response
+from .http.response import Responder as Response
 from .websockets import WebSocket
 
 

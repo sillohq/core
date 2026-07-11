@@ -1,4 +1,4 @@
 from .request import Request
-from .response import silloResponse as Response
+from .response import Responder as Response
 
 __all__ = ["Request", "Response"]

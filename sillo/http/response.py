@@ -695,11 +695,11 @@ class RedirectResponse(BaseResponse):
         super().__init__(body="", status_code=status_code, headers=headers)
 
 
-class silloResponse:
+class Responder:
     """
     Fluent HTTP response builder for sillo framework.
 
-    silloResponse provides a chainable, fluent interface for building HTTP responses
+    Responder provides a chainable, fluent interface for building HTTP responses
     with support for various content types, headers, cookies, caching, and more.
     It acts as a wrapper around the lower-level BaseResponse classes while providing
     a more convenient and intuitive API.
@@ -914,7 +914,7 @@ class silloResponse:
         handles various Python data types automatically.
 
         Returns:
-            silloResponse: Self for method chaining
+            Responder: Self for method chaining
 
         Examples:
             1. Simple JSON response:
@@ -951,13 +951,13 @@ class silloResponse:
         self._response = new_response
         return self
 
-    def download(self, path: str, filename: Optional[str] = None) -> "silloResponse":
+    def download(self, path: str, filename: Optional[str] = None) -> "Responder":
         """Set a response to force a file download."""
         return self.file(path, filename, content_disposition_type="attachment")
 
     def set_permanent_cookie(
         self, key: str, value: str, **kwargs: Any
-    ) -> "silloResponse":
+    ) -> "Responder":
         """Set a permanent cookie with a far-future expiration date."""
         expires = datetime.now(timezone.utc) + timedelta(days=365 * 10)
         self.set_cookie(key, value, expires=expires, **kwargs)
@@ -1172,7 +1172,7 @@ class silloResponse:
         control over cookie attributes for security and functionality.
 
         Returns:
-            silloResponse: Self for method chaining
+            Responder: Self for method chaining
 
         Examples:
             1. Simple session cookie:
@@ -1296,12 +1296,12 @@ class silloResponse:
         """Make the response ASGI-compatible."""
         return self._response
 
-    def add_csp_header(self, policy: str) -> "silloResponse":
+    def add_csp_header(self, policy: str) -> "Responder":
         """Add a Content Security Policy header."""
         self.set_header("Content-Security-Policy", policy)
         return self
 
-    def make_response(self, response_class: BaseResponse) -> "silloResponse":
+    def make_response(self, response_class: BaseResponse) -> "Responder":
         """
         Create a response using a custom response class.
 
@@ -1311,7 +1311,7 @@ class silloResponse:
             **kwargs: Keyword arguments to pass to the custom response class.
 
         Returns:
-            silloResponse: The current instance for method chaining.
+            Responder: The current instance for method chaining.
         """
 
         self._response = response_class
@@ -1327,7 +1327,7 @@ class silloResponse:
         strategy: Union[str, BasePaginationStrategy] = "page_number",
         data_handler: type[SyncListDataHandler] = SyncListDataHandler,
         **kwargs: Any,
-    ) -> "silloResponse":
+    ) -> "Responder":
         """
         Paginate the response data.
 
@@ -1382,7 +1382,7 @@ class silloResponse:
         strategy: Union[str, BasePaginationStrategy] = "page_number",
         data_handler: type[AsyncListDataHandler] = AsyncListDataHandler,
         **kwargs: Any,
-    ) -> "silloResponse":
+    ) -> "Responder":
         """
         Paginate the response data asynchronously.
 
