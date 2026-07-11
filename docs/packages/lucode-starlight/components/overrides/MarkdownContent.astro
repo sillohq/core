@@ -1,0 +1,17 @@
+---
+import '@astrojs/starlight/style/markdown.css';
+---
+
+<div class="markdown-wrapper">
+    <div class="sl-markdown-content">
+        <slot />
+    </div>
+</div>
+
+<style>
+    .markdown-wrapper {
+        --foreground: var(--markdown-foreground, var(--foreground));
+
+        color: var(--foreground);
+    }
+</style>

@@ -6,18 +6,18 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== Path Parameters Tests ==========
 
 
 def test_request_path_params_single(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test single path parameter"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users/{user_id}")
     async def handler(request: Request, response: Response, user_id: str):
@@ -30,10 +30,10 @@ def test_request_path_params_single(
 
 
 def test_request_path_params_multiple(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test multiple path parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users/{user_id}/posts/{post_id}")
     async def handler(request: Request, response: Response, user_id: str, post_id: str):
@@ -47,10 +47,10 @@ def test_request_path_params_multiple(
 
 
 def test_request_path_params_numeric(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test path parameters with numeric values"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/products/{product_id}")
     async def handler(request: Request, response: Response, product_id: str):
@@ -69,10 +69,10 @@ def test_request_path_params_numeric(
 
 
 def test_request_path_params_with_special_chars(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test path parameters with special characters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/files/{filename}")
     async def handler(request: Request, response: Response, filename: str):
@@ -84,10 +84,10 @@ def test_request_path_params_with_special_chars(
 
 
 def test_request_path_params_uuid_like(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test path parameters with UUID-like values"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/resources/{resource_id}")
     async def handler(request: Request, response: Response, resource_id: str):
@@ -100,10 +100,10 @@ def test_request_path_params_uuid_like(
 
 
 def test_request_path_params_with_hyphens(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test path parameters with hyphens"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/posts/{post_slug}")
     async def handler(request: Request, response: Response, post_slug: str):
@@ -115,10 +115,10 @@ def test_request_path_params_with_hyphens(
 
 
 def test_request_path_params_with_underscores(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test path parameters with underscores"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/files/{file_name}")
     async def handler(request: Request, response: Response, file_name: str):
@@ -130,10 +130,10 @@ def test_request_path_params_with_underscores(
 
 
 def test_request_path_params_nested_resources(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test path parameters for nested resources"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users/{user_id}/posts/{post_id}/comments/{comment_id}")
     async def handler(

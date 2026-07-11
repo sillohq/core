@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from nexios import NexiosApp
-from nexios.templating import TemplateConfig, render
+from sillo import silloApp
+from sillo.templating import TemplateConfig, render
 
-app = NexiosApp()
+app = silloApp()
 
 # Configure templating with inheritance support
 template_config = TemplateConfig(
@@ -37,9 +37,9 @@ async def blog_post(request, response, post_id: int):
     """Demonstrate filter usage in templates."""
     post = {
         "id": post_id,
-        "title": "Understanding Nexios Templates",
+        "title": "Understanding sillo Templates",
         "content": "This is a **markdown** post about templates.",
-        "author": "nexios team",
+        "author": "sillo team",
         "published": "2024-03-15T10:30:00",
         "tags": ["python", "web", "templates"],
     }
@@ -68,7 +68,7 @@ Example base.html:
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{ title }} - Nexios</title>
+    <title>{{ title }} - sillo</title>
 </head>
 <body>
     {% include 'components/header.html' %}

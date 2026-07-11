@@ -1,6 +1,6 @@
-# Nexios Responses Reference
+# sillo Responses Reference
 
-Use this reference when the request is mainly about how Nexios sends HTTP responses.
+Use this reference when the request is mainly about how sillo sends HTTP responses.
 
 ## Table of Contents
 
@@ -13,7 +13,7 @@ Use this reference when the request is mainly about how Nexios sends HTTP respon
 
 ## Plain Return Values
 
-Nexios can serialize simple JSON-compatible return values:
+sillo can serialize simple JSON-compatible return values:
 
 ```python
 @app.get("/users")

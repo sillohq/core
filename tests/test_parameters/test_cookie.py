@@ -3,14 +3,14 @@ Tests for Cookie parameter extractor.
 """
 
 import pytest
-from nexios import NexiosApp, Cookie
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp, Cookie
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 
 @pytest.fixture
 def app():
-    return NexiosApp()
+    return silloApp()
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 """
-Enhanced Nexios API Demo - Showcasing Comprehensive Documentation
+Enhanced sillo API Demo - Showcasing Comprehensive Documentation
 
-This example demonstrates the enhanced Nexios framework with comprehensive
+This example demonstrates the enhanced sillo framework with comprehensive
 docstrings, type annotations, and user-friendly API design.
 """
 
@@ -10,11 +10,11 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
-from nexios import Depend, MakeConfig, NexiosApp
-from nexios.http import Request, Response
-from nexios.routing import Router
-from nexios.views import APIView
-from nexios.websockets import WebSocket, WebSocketDisconnect
+from sillo import Depend, MakeConfig, silloApp
+from sillo.http import Request, Response
+from sillo.routing import Router
+from sillo.views import APIView
+from sillo.websockets import WebSocket, WebSocketDisconnect
 
 
 # Pydantic models for request/response validation
@@ -265,9 +265,9 @@ async def chat_websocket(websocket: WebSocket):
 
 
 # Create application with enhanced configuration
-def create_app() -> NexiosApp:
+def create_app() -> silloApp:
     """
-    Create and configure the Nexios application.
+    Create and configure the sillo application.
 
     This function demonstrates:
     - Application configuration
@@ -280,17 +280,17 @@ def create_app() -> NexiosApp:
     config = MakeConfig(
         {
             "debug": True,
-            "database": {"url": "postgresql://localhost/nexios_demo", "pool_size": 10},
+            "database": {"url": "postgresql://localhost/sillo_demo", "pool_size": 10},
             "redis": {"url": "redis://localhost:6379", "max_connections": 20},
         }
     )
 
     # Create application with OpenAPI documentation
-    app = NexiosApp(
+    app = silloApp(
         config=config,
-        title="Enhanced Nexios API Demo",
+        title="Enhanced sillo API Demo",
         version="1.0.0",
-        description="Demonstration of Nexios framework with comprehensive documentation",
+        description="Demonstration of sillo framework with comprehensive documentation",
     )
 
     # Register class-based view
@@ -360,7 +360,7 @@ app = create_app()
 
 if __name__ == "__main__":
     # Run the application
-    print("Starting Enhanced Nexios API Demo...")
+    print("Starting Enhanced sillo API Demo...")
     print("Visit http://localhost:8000/docs for interactive API documentation")
     print("WebSocket chat available at ws://localhost:8000/ws/chat/general")
 

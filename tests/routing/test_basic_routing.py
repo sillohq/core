@@ -6,10 +6,10 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.routing import Route, Router
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.routing import Route, Router
+from sillo.testclient import TestClient
 
 # ========== Basic Router Tests ==========
 
@@ -181,9 +181,9 @@ def test_router_add_multiple_routes():
 # ========== Integration Tests ==========
 
 
-def test_basic_route_with_app(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_basic_route_with_app(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic route integration with app"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/hello")
     async def hello(request: Request, response: Response):
@@ -195,9 +195,9 @@ def test_basic_route_with_app(test_client_factory: Callable[[NexiosApp], TestCli
         assert resp.text == "Hello, World!"
 
 
-def test_router_mounted_to_app(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_router_mounted_to_app(test_client_factory: Callable[[silloApp], TestClient]):
     """Test router mounted to application"""
-    app = NexiosApp()
+    app = silloApp()
     router = Router(prefix="/api")
 
     @router.get("/users")
@@ -229,10 +229,10 @@ def test_route_handler_must_be_callable():
 
 
 def test_router_with_multiple_prefixes(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test multiple routers with different prefixes"""
-    app = NexiosApp()
+    app = silloApp()
 
     api_v1 = Router(prefix="/api/v1")
     api_v2 = Router(prefix="/api/v2")

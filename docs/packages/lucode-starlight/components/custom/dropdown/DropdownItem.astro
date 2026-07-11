@@ -1,0 +1,72 @@
+---
+import type { HTMLTag, Polymorphic } from 'astro/types';
+
+type Props<Tag extends HTMLTag> = Polymorphic<{ as: Tag }> & {
+    /**
+     * Whether the item is inset (has left padding)
+     */
+    inset?: boolean;
+    /**
+     * Whether the item is disabled
+     */
+    disabled?: boolean;
+};
+
+const { class: className, inset = false, disabled = false, as: Tag = 'div', ...rest } = Astro.props;
+---
+
+<Tag
+    class:list={['starwind-dropdown-item', className]}
+    role="menuitem"
+    tabindex={disabled ? '-1' : '0'}
+    data-disabled={disabled ? 'true' : undefined}
+    data-inset={inset ? 'true' : undefined}
+    data-slot="dropdown-item"
+    clas
+    {...rest}
+>
+    <slot />
+</Tag>
+
+<style>
+    .starwind-dropdown-item {
+        position: relative;
+        display: flex;
+        cursor: default;
+        align-items: center;
+        gap: calc(var(--spacing) * 2);
+        border-radius: calc(var(--radius) * 0.75);
+        padding-inline: calc(var(--spacing) * 2);
+        padding-block: calc(var(--spacing) * 1.5);
+        transition-property: background-color, color;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 100ms;
+        outline: none;
+        user-select: none;
+        text-decoration: none;
+        color: inherit;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+
+        &:focus {
+            background-color: var(--accent);
+            color: var(--accent-foreground);
+        }
+
+        > svg {
+            width: 1rem;
+            height: 1rem;
+            flex-shrink: 0;
+            color: var(--muted-foreground);
+        }
+
+        &[data-disabled='true'] {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        &[data-inset='true'] {
+            padding-left: calc(var(--spacing) * 4);
+        }
+    }
+</style>

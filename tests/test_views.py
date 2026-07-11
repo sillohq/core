@@ -1,5 +1,5 @@
 """
-Tests for nexios.views module (APIView class-based views).
+Tests for sillo.views module (APIView class-based views).
 
 Covers:
 - HTTP method dispatch (GET, POST, PUT, DELETE, PATCH)
@@ -16,10 +16,10 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
-from nexios.views import APIView
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
+from sillo.views import APIView
 
 # ==================== View Definitions ====================
 
@@ -108,13 +108,13 @@ class JsonView(APIView):
 @pytest.fixture
 def item_app():
     """App with full CRUD ItemView."""
-    app = NexiosApp()
+    app = silloApp()
     app.add_route(ItemView.as_route("/items"))
     return app
 
 
 @pytest.fixture
-def item_client(item_app, test_client_factory: Callable[[NexiosApp], TestClient]):
+def item_client(item_app, test_client_factory: Callable[[silloApp], TestClient]):
     with test_client_factory(item_app) as client:
         yield client
 
@@ -122,13 +122,13 @@ def item_client(item_app, test_client_factory: Callable[[NexiosApp], TestClient]
 @pytest.fixture
 def detail_app():
     """App with DetailView using path params."""
-    app = NexiosApp()
+    app = silloApp()
     app.add_route(DetailView.as_route("/items/{id}"))
     return app
 
 
 @pytest.fixture
-def detail_client(detail_app, test_client_factory: Callable[[NexiosApp], TestClient]):
+def detail_client(detail_app, test_client_factory: Callable[[silloApp], TestClient]):
     with test_client_factory(detail_app) as client:
         yield client
 
@@ -136,7 +136,7 @@ def detail_client(detail_app, test_client_factory: Callable[[NexiosApp], TestCli
 @pytest.fixture
 def error_app():
     """App with ErrorView that has custom error handlers."""
-    app = NexiosApp()
+    app = silloApp()
 
     async def handle_value_error(request, response, exc):
         return response.json(
@@ -149,7 +149,7 @@ def error_app():
 
 
 @pytest.fixture
-def error_client(error_app, test_client_factory: Callable[[NexiosApp], TestClient]):
+def error_client(error_app, test_client_factory: Callable[[silloApp], TestClient]):
     with test_client_factory(error_app) as client:
         yield client
 
@@ -157,14 +157,14 @@ def error_client(error_app, test_client_factory: Callable[[NexiosApp], TestClien
 @pytest.fixture
 def get_only_app():
     """App with GetOnlyView."""
-    app = NexiosApp()
+    app = silloApp()
     app.add_route(GetOnlyView.as_route("/readonly"))
     return app
 
 
 @pytest.fixture
 def get_only_client(
-    get_only_app, test_client_factory: Callable[[NexiosApp], TestClient]
+    get_only_app, test_client_factory: Callable[[silloApp], TestClient]
 ):
     with test_client_factory(get_only_app) as client:
         yield client
@@ -272,7 +272,7 @@ def test_custom_error_handler(error_client: TestClient):
 
 def test_unhandled_error_propagates():
     """Exceptions without a matching handler propagate up (500 error)."""
-    app = NexiosApp()
+    app = silloApp()
     app.add_route(UnhandledErrorView.as_route("/crash"))
 
     with TestClient(app, raise_server_exceptions=False) as client:
@@ -285,7 +285,7 @@ def test_unhandled_error_propagates():
 
 def test_default_methods_return_not_found_body():
     """Base APIView methods return a 'Not Found' error body by default."""
-    app = NexiosApp()
+    app = silloApp()
     # EmptyView has no overrides, but base APIView defines get/post/put/delete/patch
     # that return a "Not Found" JSON body. as_route auto-detect won't include them
     # since they're on the parent class, so we explicitly pass methods.
@@ -302,7 +302,7 @@ def test_default_methods_return_not_found_body():
 
 def test_json_response():
     """APIView can return rich JSON responses."""
-    app = NexiosApp()
+    app = silloApp()
     app.add_route(JsonView.as_route("/users"))
 
     with TestClient(app) as client:
@@ -334,7 +334,7 @@ def test_view_with_middleware():
         async def get(self, request: Request, response: Response):
             return response.json({"message": "with middleware"})
 
-    app = NexiosApp()
+    app = silloApp()
     app.add_route(MiddlewareView.as_route("/mw"))
 
     with TestClient(app) as client:

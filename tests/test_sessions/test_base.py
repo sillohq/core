@@ -7,8 +7,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from nexios.session.base import BaseSessionInterface
-from nexios.session.session_objects import Session
+from sillo.session.base import BaseSessionInterface
+from sillo.session.session_objects import Session
 
 
 class MockSessionManager(BaseSessionInterface):

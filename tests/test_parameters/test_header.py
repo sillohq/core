@@ -3,14 +3,14 @@ Tests for Header parameter extractor.
 """
 
 import pytest
-from nexios import NexiosApp, Header
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp, Header
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 
 @pytest.fixture
 def app():
-    return NexiosApp()
+    return silloApp()
 
 
 @pytest.fixture

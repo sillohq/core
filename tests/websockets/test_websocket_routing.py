@@ -6,15 +6,15 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.routing import Router
-from nexios.testclient import TestClient
-from nexios.websockets import WebSocket
+from sillo import silloApp
+from sillo.routing import Router
+from sillo.testclient import TestClient
+from sillo.websockets import WebSocket
 
 
-def test_basic_websocket_route(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_basic_websocket_route(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic WebSocket route"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.ws_route("/ws")
     async def websocket_endpoint(websocket: WebSocket):
@@ -31,10 +31,10 @@ def test_basic_websocket_route(test_client_factory: Callable[[NexiosApp], TestCl
 
 
 def test_websocket_json_communication(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test WebSocket JSON message exchange"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.ws_route("/ws/json")
     async def websocket_json(websocket: WebSocket):
@@ -53,10 +53,10 @@ def test_websocket_json_communication(
 
 
 def test_websocket_bytes_communication(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test WebSocket binary message exchange"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.ws_route("/ws/bytes")
     async def websocket_bytes(websocket: WebSocket):
@@ -73,10 +73,10 @@ def test_websocket_bytes_communication(
 
 
 def test_websocket_with_path_parameters(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test WebSocket route with path parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.ws_route("/ws/room/{room_id}")
     async def websocket_room(websocket: WebSocket):
@@ -93,10 +93,10 @@ def test_websocket_with_path_parameters(
 
 
 def test_websocket_multiple_messages(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test WebSocket with multiple message exchanges"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.ws_route("/ws/chat")
     async def websocket_chat(websocket: WebSocket):
@@ -119,10 +119,10 @@ def test_websocket_multiple_messages(
 
 
 def test_websocket_router_mounting(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test WebSocket router mounting"""
-    app = NexiosApp()
+    app = silloApp()
     ws_router = Router(prefix="/api/ws")
 
     @ws_router.ws_route("/echo")
@@ -142,10 +142,10 @@ def test_websocket_router_mounting(
 
 
 def test_websocket_multiple_routers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test multiple WebSocket routers"""
-    app = NexiosApp()
+    app = silloApp()
 
     chat_router = Router(prefix="/chat")
 
@@ -176,10 +176,10 @@ def test_websocket_multiple_routers(
 
 
 def test_websocket_nested_routers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test nested WebSocket routers"""
-    app = NexiosApp()
+    app = silloApp()
 
     inner_router = Router(prefix="/v1")
 
@@ -201,10 +201,10 @@ def test_websocket_nested_routers(
 
 
 def test_websocket_with_query_parameters(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test WebSocket with query parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.ws_route("/ws/query")
     async def websocket_query(websocket: WebSocket):
@@ -220,9 +220,9 @@ def test_websocket_with_query_parameters(
             assert data["value"] == "123"
 
 
-def test_websocket_isolation(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_websocket_isolation(test_client_factory: Callable[[silloApp], TestClient]):
     """Test that WebSocket routes are isolated"""
-    app = NexiosApp()
+    app = silloApp()
 
     router1 = Router(prefix="/ws1")
 

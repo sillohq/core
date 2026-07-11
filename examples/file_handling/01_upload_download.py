@@ -5,11 +5,11 @@ from pathlib import Path
 
 import aiofiles
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.responses import FileResponse, StreamingResponse
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.responses import FileResponse, StreamingResponse
 
-app = NexiosApp()
+app = silloApp()
 
 # Configure upload directory
 UPLOAD_DIR = Path("uploads")

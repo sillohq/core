@@ -6,20 +6,20 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.exceptions import HTTPException
-from nexios.http import Request, Response
-from nexios.routing import Router
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.exceptions import HTTPException
+from sillo.http import Request, Response
+from sillo.routing import Router
+from sillo.testclient import TestClient
 
 # ========== Exception Handler with Middleware Integration ==========
 
 
 def test_exception_handler_with_middleware(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler working with middleware"""
-    app = NexiosApp()
+    app = silloApp()
 
     execution_log = []
 
@@ -58,10 +58,10 @@ def test_exception_handler_with_middleware(
 
 
 def test_exception_handler_middleware_order(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler execution order with multiple middleware"""
-    app = NexiosApp()
+    app = silloApp()
 
     execution_order = []
 
@@ -99,10 +99,10 @@ def test_exception_handler_middleware_order(
 
 
 def test_exception_handler_middleware_state_access(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler accessing state set by middleware"""
-    app = NexiosApp()
+    app = silloApp()
 
     class AuthError(Exception):
         pass
@@ -133,10 +133,10 @@ def test_exception_handler_middleware_state_access(
 
 
 def test_exception_handler_with_nested_routers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler with nested routers"""
-    app = NexiosApp()
+    app = silloApp()
     parent_router = Router(prefix="/api")
     child_router = Router(prefix="/child")
 
@@ -166,10 +166,10 @@ def test_exception_handler_with_nested_routers(
 
 
 def test_exception_handler_different_methods(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler works with different HTTP methods"""
-    app = NexiosApp()
+    app = silloApp()
 
     class MethodError(Exception):
         pass
@@ -208,10 +208,10 @@ def test_exception_handler_different_methods(
 
 
 def test_exception_handler_with_query_params(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler accessing query parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     class QueryError(Exception):
         pass
@@ -237,10 +237,10 @@ def test_exception_handler_with_query_params(
 
 
 def test_exception_handler_with_path_params(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler accessing path parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ItemNotFoundError(Exception):
         pass
@@ -268,10 +268,10 @@ def test_exception_handler_with_path_params(
 
 
 def test_exception_handler_with_request_body(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler that can access request body"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ValidationError(Exception):
         pass
@@ -301,10 +301,10 @@ def test_exception_handler_with_request_body(
 
 
 def test_exception_handler_with_request_headers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler accessing request headers"""
-    app = NexiosApp()
+    app = silloApp()
 
     class HeaderError(Exception):
         pass
@@ -330,10 +330,10 @@ def test_exception_handler_with_request_headers(
 
 
 def test_exception_handler_with_cookies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler accessing cookies"""
-    app = NexiosApp()
+    app = silloApp()
 
     class SessionError(Exception):
         pass
@@ -360,10 +360,10 @@ def test_exception_handler_with_cookies(
 
 
 def test_exception_handler_priority_specific_over_general(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test that specific exception handlers take priority"""
-    app = NexiosApp()
+    app = silloApp()
 
     class BaseError(Exception):
         pass
@@ -402,10 +402,10 @@ def test_exception_handler_priority_specific_over_general(
 
 
 def test_exception_handler_complex_scenario(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler in complex scenario with middleware and routers"""
-    app = NexiosApp()
+    app = silloApp()
     router = Router(prefix="/api")
 
     execution_log = []
@@ -449,10 +449,10 @@ def test_exception_handler_complex_scenario(
 
 
 def test_exception_handler_no_handler_defined(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test behavior when no exception handler is defined for an error"""
-    app = NexiosApp()
+    app = silloApp()
 
     class UnhandledError(Exception):
         pass
@@ -467,10 +467,10 @@ def test_exception_handler_no_handler_defined(
 
 
 def test_exception_handler_with_successful_request(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test that exception handler doesn't interfere with successful requests"""
-    app = NexiosApp()
+    app = silloApp()
 
     class TestError(Exception):
         pass

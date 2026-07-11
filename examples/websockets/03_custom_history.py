@@ -1,7 +1,7 @@
 """
-Custom History Manager Examples for Nexios WebSocket Channels
+Custom History Manager Examples for sillo WebSocket Channels
 
-This file demonstrates how to create custom history managers for Nexios
+This file demonstrates how to create custom history managers for sillo
 WebSocket channels. You can implement any storage backend (Redis, database,
 file system, etc.) by extending the BaseHistoryManager class.
 """
@@ -10,8 +10,8 @@ import json
 import typing
 from pathlib import Path
 
-from nexios.websockets import BaseHistoryManager, ChannelBox
-from nexios.websockets.utils import ChannelMessageDC
+from sillo.websockets import BaseHistoryManager, ChannelBox
+from sillo.websockets.utils import ChannelMessageDC
 
 # =============================================================================
 # Example 1: File-Based History Manager
@@ -229,7 +229,7 @@ class RedisHistoryManager(BaseHistoryManager):
 
 def example_file_based_history():
     """Example: Using file-based history manager."""
-    from nexios.websockets import ChannelBox
+    from sillo.websockets import ChannelBox
 
     # Set up file-based history
     file_manager = FileHistoryManager(
@@ -244,7 +244,7 @@ def example_file_based_history():
 
 def example_no_history():
     """Example: Disable history to save memory."""
-    from nexios.websockets import ChannelBox, NoOpHistoryManager
+    from sillo.websockets import ChannelBox, NoOpHistoryManager
 
     # Disable history completely
     ChannelBox.set_history_manager(NoOpHistoryManager())
@@ -254,7 +254,7 @@ def example_no_history():
 
 def example_custom_inmemory_size():
     """Example: Custom in-memory history with different size limit."""
-    from nexios.websockets import ChannelBox, InMemoryHistoryManager
+    from sillo.websockets import ChannelBox, InMemoryHistoryManager
 
     # Use in-memory with 5MB limit
     memory_manager = InMemoryHistoryManager(history_size=5_242_880)  # 5MB
@@ -264,7 +264,7 @@ def example_custom_inmemory_size():
 
 
 if __name__ == "__main__":
-    print("Nexios Custom History Manager Examples\n")
+    print("sillo Custom History Manager Examples\n")
     print("=" * 60)
 
     print("\n1. File-Based History Manager:")
@@ -278,7 +278,7 @@ if __name__ == "__main__":
 
     print("\n" + "=" * 60)
     print("\nTo use in your app:")
-    print("  1. Import: from nexios.websockets import ChannelBox")
+    print("  1. Import: from sillo.websockets import ChannelBox")
     print("  2. Import your custom manager")
     print("  3. Call: ChannelBox.set_history_manager(your_manager)")
     print("  4. Use channels normally - history is handled automatically!")

@@ -1,1 +1,1 @@
-# Tests for Nexios session functionality
+# Tests for sillo session functionality

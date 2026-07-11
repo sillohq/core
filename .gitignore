@@ -11,7 +11,7 @@ poetry.lock
 # ==============================
 build/
 dist/
-nexios.egg-info/
+sillo.egg-info/
 
 # ==============================
 #  Caches & Temporary Files

@@ -1,0 +1,61 @@
+name: Publish package to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: npm-publish-lucode-starlight
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish lucode-starlight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build docs against package
+        run: bun run docs:build
+
+      - name: Read package version
+        id: package
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./packages/lucode-starlight/package.json').version")"
+          echo "version=${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Check npm version
+        id: npm
+        run: |
+          if npm view "lucode-starlight@${{ steps.package.outputs.version }}" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "lucode-starlight@${{ steps.package.outputs.version }} is already published."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "lucode-starlight@${{ steps.package.outputs.version }} is not published yet."
+          fi
+
+      - name: Publish to npm
+        if: steps.npm.outputs.published == 'false'
+        working-directory: packages/lucode-starlight
+        run: npm publish

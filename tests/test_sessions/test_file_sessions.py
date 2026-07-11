@@ -2,21 +2,21 @@
 Tests for file-based session manager
 """
 
-from nexios.http import Response
-from nexios.http import Request
+from sillo.http import Response
+from sillo.http import Request
 import json
 import os
 import tempfile
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.session import SessionConfig
-from nexios.session.base import BaseSessionInterface
-from nexios.session.file import FileSessionManager
-from nexios.session.middleware import SessionMiddleware
-from nexios.session.session_objects import Session
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.session import SessionConfig
+from sillo.session.base import BaseSessionInterface
+from sillo.session.file import FileSessionManager
+from sillo.session.middleware import SessionMiddleware
+from sillo.session.session_objects import Session
+from sillo.testclient import TestClient
 
 
 class TestFileSessionManager:
@@ -210,7 +210,7 @@ class TestFileSessionIntegration:
 
     def test_file_session_integration(self):
         """Test file session with middleware integration"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/file-session-test")
         async def file_session_test(request: Request, response: Response):

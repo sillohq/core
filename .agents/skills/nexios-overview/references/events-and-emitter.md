@@ -1,6 +1,6 @@
-# Nexios Events And Emitters
+# sillo Events And Emitters
 
-Use this reference when the request is about the Nexios event system itself rather than general app lifecycle.
+Use this reference when the request is about the sillo event system itself rather than general app lifecycle.
 
 ## Table of Contents
 
@@ -14,12 +14,12 @@ Use this reference when the request is about the Nexios event system itself rath
 
 ## Pub Sub Basics
 
-Nexios events follow a publish-subscribe model:
+sillo events follow a publish-subscribe model:
 
 ```python
-from nexios import NexiosApp
+from sillo import silloApp
 
-app = NexiosApp()
+app = silloApp()
 
 @app.events.on("user.created")
 async def handle_user_created(user):
@@ -56,10 +56,10 @@ This is useful for analytics, email, logging, and follow-up work.
 
 ## Custom Emitters
 
-Nexios also documents stand-alone emitters:
+sillo also documents stand-alone emitters:
 
 ```python
-from nexios.events import EventEmitter
+from sillo.events import EventEmitter
 
 emitter = EventEmitter("custom")
 
@@ -87,7 +87,7 @@ This matters when teaching lifecycle cleanup or temporary subscriptions.
 ### Priority
 
 ```python
-from nexios.events import EventPriority
+from sillo.events import EventPriority
 
 events.on("data.received", temporary_handler, priority=EventPriority.HIGH)
 ```

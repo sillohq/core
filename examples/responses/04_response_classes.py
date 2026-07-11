@@ -1,5 +1,5 @@
-from nexios import NexiosApp
-from nexios.http.response import (
+from sillo import silloApp
+from sillo.http.response import (
     BaseResponse,
     FileResponse,
     HTMLResponse,
@@ -7,7 +7,7 @@ from nexios.http.response import (
     PlainTextResponse,
 )
 
-app = NexiosApp()
+app = silloApp()
 
 
 @app.get("/json")

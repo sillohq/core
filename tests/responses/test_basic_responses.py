@@ -6,16 +6,16 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== Text Response Tests ==========
 
 
-def test_text_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_text_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic text response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/text")
     async def text_handler(request: Request, response: Response):
@@ -29,10 +29,10 @@ def test_text_response(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_text_response_with_status_code(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test text response with custom status code"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/text-created")
     async def text_created(request: Request, response: Response):
@@ -45,10 +45,10 @@ def test_text_response_with_status_code(
 
 
 def test_text_response_with_headers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test text response with custom headers"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/text-headers")
     async def text_headers(request: Request, response: Response):
@@ -63,9 +63,9 @@ def test_text_response_with_headers(
 # ========== JSON Response Tests ==========
 
 
-def test_json_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_json_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic JSON response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/json")
     async def json_handler(request: Request, response: Response):
@@ -79,10 +79,10 @@ def test_json_response(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_json_response_with_list(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test JSON response with list data"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/items")
     async def get_items(request: Request, response: Response):
@@ -97,10 +97,10 @@ def test_json_response_with_list(
 
 
 def test_json_response_with_status_code(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test JSON response with custom status code"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/create")
     async def create_resource(request: Request, response: Response):
@@ -113,10 +113,10 @@ def test_json_response_with_status_code(
 
 
 def test_json_response_with_indent(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test JSON response with indentation"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/pretty")
     async def pretty_json(request: Request, response: Response):
@@ -130,10 +130,10 @@ def test_json_response_with_indent(
 
 
 def test_json_response_with_nested_data(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test JSON response with nested data structures"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/nested")
     async def nested_json(request: Request, response: Response):
@@ -152,9 +152,9 @@ def test_json_response_with_nested_data(
 # ========== HTML Response Tests ==========
 
 
-def test_html_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_html_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic HTML response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/html")
     async def html_handler(request: Request, response: Response):
@@ -168,10 +168,10 @@ def test_html_response(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_html_response_with_full_page(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test HTML response with full HTML page"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/page")
     async def html_page(request: Request, response: Response):
@@ -192,10 +192,10 @@ def test_html_response_with_full_page(
 
 
 def test_html_response_with_status_code(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test HTML response with custom status code"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/error")
     async def html_error(request: Request, response: Response):
@@ -210,9 +210,9 @@ def test_html_response_with_status_code(
 # ========== Empty Response Tests ==========
 
 
-def test_empty_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_empty_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test empty response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/empty")
     async def empty_handler(request: Request, response: Response):
@@ -225,10 +225,10 @@ def test_empty_response(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_empty_response_with_status_code(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test empty response with custom status code"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.delete("/resource/{id}")
     async def delete_resource(request: Request, response: Response, id: str):
@@ -243,9 +243,9 @@ def test_empty_response_with_status_code(
 # ========== Status Code Tests ==========
 
 
-def test_response_status_method(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_status_method(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting status code using status() method"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/custom-status")
     async def custom_status(request: Request, response: Response):
@@ -257,9 +257,9 @@ def test_response_status_method(test_client_factory: Callable[[NexiosApp], TestC
         assert resp.text == "I'm a teapot"
 
 
-def test_response_chaining(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_chaining(test_client_factory: Callable[[silloApp], TestClient]):
     """Test method chaining on response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/chain")
     async def chain_methods(request: Request, response: Response):
@@ -275,10 +275,10 @@ def test_response_chaining(test_client_factory: Callable[[NexiosApp], TestClient
 
 
 def test_response_content_type_text(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test content-type header for text response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/text")
     async def text_response(request: Request, response: Response):
@@ -291,10 +291,10 @@ def test_response_content_type_text(
 
 
 def test_response_content_type_json(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test content-type header for JSON response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/json")
     async def json_response(request: Request, response: Response):
@@ -307,10 +307,10 @@ def test_response_content_type_json(
 
 
 def test_response_content_type_html(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test content-type header for HTML response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/html")
     async def html_response(request: Request, response: Response):

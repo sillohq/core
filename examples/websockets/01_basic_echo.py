@@ -1,7 +1,7 @@
-from nexios import NexiosApp
-from nexios.websockets import WebSocket
+from sillo import silloApp
+from sillo.websockets import WebSocket
 
-app = NexiosApp()
+app = silloApp()
 
 
 @app.ws_route("/ws")

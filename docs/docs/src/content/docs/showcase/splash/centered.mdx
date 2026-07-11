@@ -1,0 +1,37 @@
+---
+title: Centered Splash
+description: A focused landing page layout for documentation homepages and small product docs.
+template: splash
+hero:
+  layout: centered
+  announcement:
+    text: Centered layout
+    link: /lucode-starlight-theme/showcase/splash-pages/
+  image:
+    file: ../../../../assets/placeholder169.svg
+  actions:
+    - text: Install the Theme
+      link: /lucode-starlight-theme/guides/getting-started/
+      icon: right-arrow
+    - text: Compare Layouts
+      link: /lucode-starlight-theme/showcase/splash-pages/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { ContainerSection } from 'lucode-starlight/components';
+
+<ContainerSection>
+
+## Best For
+
+<CardGrid>
+  <Card title="Library docs" icon="open-book">
+    Use centered pages when the docs themselves are the product and the first decision is simply where to start.
+  </Card>
+  <Card title="Small teams" icon="heart">
+    The layout keeps the homepage direct, readable, and easy to maintain.
+  </Card>
+</CardGrid>
+
+</ContainerSection>

@@ -6,16 +6,16 @@ from typing import AsyncIterator, Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== Redirect Response Tests ==========
 
 
-def test_redirect_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_redirect_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic redirect response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/old-path")
     async def old_path(request: Request, response: Response):
@@ -31,9 +31,9 @@ def test_redirect_response(test_client_factory: Callable[[NexiosApp], TestClient
         assert resp.headers.get("location") == "/new-path"
 
 
-def test_redirect_with_follow(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_redirect_with_follow(test_client_factory: Callable[[silloApp], TestClient]):
     """Test redirect with automatic following"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/redirect-me")
     async def redirect_me(request: Request, response: Response):
@@ -49,9 +49,9 @@ def test_redirect_with_follow(test_client_factory: Callable[[NexiosApp], TestCli
         assert resp.json()["arrived"] is True
 
 
-def test_redirect_301_permanent(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_redirect_301_permanent(test_client_factory: Callable[[silloApp], TestClient]):
     """Test permanent redirect (301)"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/old")
     async def old_endpoint(request: Request, response: Response):
@@ -67,9 +67,9 @@ def test_redirect_301_permanent(test_client_factory: Callable[[NexiosApp], TestC
         assert resp.headers.get("location") == "/new"
 
 
-def test_redirect_303_see_other(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_redirect_303_see_other(test_client_factory: Callable[[silloApp], TestClient]):
     """Test see other redirect (303)"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/submit")
     async def submit_form(request: Request, response: Response):
@@ -85,9 +85,9 @@ def test_redirect_303_see_other(test_client_factory: Callable[[NexiosApp], TestC
         assert resp.headers.get("location") == "/success"
 
 
-def test_redirect_307_temporary(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_redirect_307_temporary(test_client_factory: Callable[[silloApp], TestClient]):
     """Test temporary redirect (307)"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/temp")
     async def temp_redirect(request: Request, response: Response):
@@ -103,10 +103,10 @@ def test_redirect_307_temporary(test_client_factory: Callable[[NexiosApp], TestC
 
 
 def test_redirect_308_permanent_redirect(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test permanent redirect (308)"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/old-api")
     async def old_api(request: Request, response: Response):
@@ -121,9 +121,9 @@ def test_redirect_308_permanent_redirect(
         assert resp.status_code == 308
 
 
-def test_redirect_external_url(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_redirect_external_url(test_client_factory: Callable[[silloApp], TestClient]):
     """Test redirect to external URL"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/external")
     async def external_redirect(request: Request, response: Response):
@@ -136,10 +136,10 @@ def test_redirect_external_url(test_client_factory: Callable[[NexiosApp], TestCl
 
 
 def test_redirect_with_query_params(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test redirect preserving query parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/search")
     async def search_redirect(request: Request, response: Response):
@@ -158,9 +158,9 @@ def test_redirect_with_query_params(
         assert data["page"] == "1"
 
 
-def test_redirect_by_route_name(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_redirect_by_route_name(test_client_factory: Callable[[silloApp], TestClient]):
     """Test redirect using route name instead of URL"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/user/{user_id}", name="user_profile")
     async def get_user(request: Request, response: Response):
@@ -178,10 +178,10 @@ def test_redirect_by_route_name(test_client_factory: Callable[[NexiosApp], TestC
 
 
 def test_redirect_by_route_name_absolute_url(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test redirect by name generates absolute URL"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/profile/{user_id}", name="profile")
     async def profile(request: Request, response: Response):
@@ -199,10 +199,10 @@ def test_redirect_by_route_name_absolute_url(
 
 
 def test_redirect_name_and_url_error(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test redirect raises error when both url and name provided"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def test_route(request: Request, response: Response):
@@ -216,9 +216,9 @@ def test_redirect_name_and_url_error(
 # ========== Streaming Response Tests ==========
 
 
-def test_streaming_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_streaming_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic streaming response"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def generate_data():
         for i in range(5):
@@ -237,10 +237,10 @@ def test_streaming_response(test_client_factory: Callable[[NexiosApp], TestClien
 
 
 def test_streaming_response_bytes(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test streaming response with bytes"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def generate_bytes():
         for i in range(3):
@@ -259,10 +259,10 @@ def test_streaming_response_bytes(
 
 
 def test_streaming_response_with_content_type(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test streaming response with custom content type"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def generate_json_lines():
         yield '{"id": 1}\n'
@@ -283,10 +283,10 @@ def test_streaming_response_with_content_type(
 
 
 def test_streaming_response_with_status_code(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test streaming response with custom status code"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def generate_partial():
         yield "partial content"
@@ -300,9 +300,9 @@ def test_streaming_response_with_status_code(
         assert resp.status_code == 206
 
 
-def test_streaming_large_data(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_streaming_large_data(test_client_factory: Callable[[silloApp], TestClient]):
     """Test streaming large amounts of data"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def generate_large_data():
         for i in range(100):
@@ -320,9 +320,9 @@ def test_streaming_large_data(test_client_factory: Callable[[NexiosApp], TestCli
         assert len([l for l in lines if l]) == 100
 
 
-def test_streaming_csv_data(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_streaming_csv_data(test_client_factory: Callable[[silloApp], TestClient]):
     """Test streaming CSV data"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def generate_csv():
         yield "id,name,value\n"
@@ -343,9 +343,9 @@ def test_streaming_csv_data(test_client_factory: Callable[[NexiosApp], TestClien
         assert "Charlie" in content
 
 
-def test_streaming_empty(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_streaming_empty(test_client_factory: Callable[[silloApp], TestClient]):
     """Test streaming response with no data"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def generate_empty():
         return
@@ -363,9 +363,9 @@ def test_streaming_empty(test_client_factory: Callable[[NexiosApp], TestClient])
 # ========== Combined Tests ==========
 
 
-def test_redirect_chain(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_redirect_chain(test_client_factory: Callable[[silloApp], TestClient]):
     """Test multiple redirects in a chain"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/start")
     async def start(request: Request, response: Response):
@@ -385,9 +385,9 @@ def test_redirect_chain(test_client_factory: Callable[[NexiosApp], TestClient]):
         assert resp.text == "Final destination"
 
 
-def test_conditional_redirect(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_conditional_redirect(test_client_factory: Callable[[silloApp], TestClient]):
     """Test conditional redirect based on request"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/conditional")
     async def conditional_redirect(request: Request, response: Response):

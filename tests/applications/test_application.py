@@ -3,15 +3,15 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.config.base import MakeConfig
-from nexios.http import Request, Response
-from nexios.routing import Group, Route, Router
-from nexios.testclient import TestClient
-from nexios.websockets import WebSocket
+from sillo import silloApp
+from sillo.config.base import MakeConfig
+from sillo.http import Request, Response
+from sillo.routing import Group, Route, Router
+from sillo.testclient import TestClient
+from sillo.websockets import WebSocket
 
-app = NexiosApp()
-nested_app = NexiosApp()
+app = silloApp()
+nested_app = silloApp()
 mounted_router = Router(prefix="/mounted_router")
 ws_router = Router(prefix="/ws_router")
 
@@ -126,7 +126,7 @@ app.add_route(nested_group)
 
 
 @pytest.fixture
-def client(test_client_factory: Callable[[NexiosApp], TestClient]):
+def client(test_client_factory: Callable[[silloApp], TestClient]):
     with test_client_factory(app) as client:
         yield client
 
@@ -238,7 +238,7 @@ def test_app_init():
         Route(path="/", handler=index1, methods=["GET"]),
         Route(path="/index2", handler=index2, methods=["GET"]),
     ]
-    app = NexiosApp(routes=routes)
+    app = silloApp(routes=routes)
     for route in routes:
         assert route in app.router.routes
     assert len(app.router.routes) >= len(routes)
@@ -252,7 +252,7 @@ def test_on_startup_handler():
     """Test that on_startup handlers are executed during application startup"""
     startup_called = {"value": False}
 
-    test_app = NexiosApp()
+    test_app = silloApp()
 
     @test_app.on_startup
     async def startup_handler():
@@ -276,7 +276,7 @@ def test_on_shutdown_handler():
     """Test that on_shutdown handlers are executed during application shutdown"""
     shutdown_called = {"value": False}
 
-    test_app = NexiosApp()
+    test_app = silloApp()
 
     @test_app.on_shutdown
     async def shutdown_handler():
@@ -302,7 +302,7 @@ def test_multiple_startup_handlers():
     """Test that multiple on_startup handlers are executed in order"""
     execution_order = []
 
-    test_app = NexiosApp()
+    test_app = silloApp()
 
     @test_app.on_startup
     async def startup_handler_1():
@@ -324,7 +324,7 @@ def test_multiple_shutdown_handlers():
     """Test that multiple on_shutdown handlers are executed in order"""
     execution_order = []
 
-    test_app = NexiosApp()
+    test_app = silloApp()
 
     @test_app.on_shutdown
     async def shutdown_handler_1():
@@ -348,7 +348,7 @@ def test_startup_and_shutdown_together():
     """Test that both startup and shutdown handlers work together"""
     state = {"started": False, "stopped": False, "counter": 0}
 
-    test_app = NexiosApp()
+    test_app = silloApp()
 
     @test_app.on_startup
     async def startup_handler():
@@ -382,7 +382,7 @@ def test_lifespan_context_manager():
     state = {"db_connected": False, "cache_loaded": False}
 
     @asynccontextmanager
-    async def lifespan(app: NexiosApp):
+    async def lifespan(app: silloApp):
         # Startup
         state["db_connected"] = True
         state["cache_loaded"] = True
@@ -394,7 +394,7 @@ def test_lifespan_context_manager():
         state["db_connected"] = False
         state["cache_loaded"] = False
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.get("/status")
     async def status(request: Request, response: Response):
@@ -427,7 +427,7 @@ def test_lifespan_with_state():
     """Test that lifespan context manager can update app state"""
 
     @asynccontextmanager
-    async def lifespan(app: NexiosApp):
+    async def lifespan(app: silloApp):
         # Startup - populate state
         app.state["database"] = "postgresql://localhost"
         app.state["api_key"] = "secret-key-123"
@@ -437,7 +437,7 @@ def test_lifespan_with_state():
         # Shutdown - cleanup state
         app.state.clear()
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.get("/config")
     async def get_config(request: Request, response: Response):
@@ -464,11 +464,11 @@ def test_startup_handlers_not_called_with_lifespan():
     startup_called = {"value": False}
 
     @asynccontextmanager
-    async def lifespan(app: NexiosApp):
+    async def lifespan(app: silloApp):
         # Custom lifespan logic
         yield
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.on_startup
     async def startup_handler():
@@ -484,10 +484,10 @@ def test_shutdown_handlers_not_called_with_lifespan():
     shutdown_called = {"value": False}
 
     @asynccontextmanager
-    async def lifespan(app: NexiosApp):
+    async def lifespan(app: silloApp):
         yield
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.on_shutdown
     async def shutdown_handler():
@@ -505,12 +505,12 @@ def test_lifespan_with_routes():
     request_count = {"value": 0}
 
     @asynccontextmanager
-    async def lifespan(app: NexiosApp):
+    async def lifespan(app: silloApp):
         app.state["service"] = "active"
         yield
         app.state["service"] = "inactive"
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.get("/increment")
     async def increment(request: Request, response: Response):
@@ -536,12 +536,12 @@ def test_app_state_persistence():
     """Test that app state persists across requests during lifespan"""
 
     @asynccontextmanager
-    async def lifespan(app: NexiosApp):
+    async def lifespan(app: silloApp):
         app.state["counter"] = 0
         app.state["requests"] = []
         yield
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.post("/track")
     async def track(request: Request, response: Response):
@@ -577,13 +577,13 @@ def test_sync_lifespan_context_manager():
     state = {"startup": False, "shutdown": False}
 
     @contextmanager
-    def lifespan(app: NexiosApp):
+    def lifespan(app: silloApp):
         state["startup"] = True
         app.state["data"] = "from-sync"
         yield {"initialized": True}
         state["shutdown"] = True
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.get("/status")
     async def status(request: Request, response: Response):
@@ -610,11 +610,11 @@ def test_sync_lifespan_state_persistence():
     """Test that sync lifespan state persists across requests"""
 
     @contextmanager
-    def lifespan(app: NexiosApp):
+    def lifespan(app: silloApp):
         app.state["counter"] = 0
         yield
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.post("/inc")
     async def increment(request: Request, response: Response):
@@ -634,10 +634,10 @@ def test_sync_lifespan_with_yield_value():
     """Test that sync lifespan can pass state via yield"""
 
     @contextmanager
-    def lifespan(app: NexiosApp):
+    def lifespan(app: silloApp):
         yield {"db": "connected", "cache": "warm"}
 
-    test_app = NexiosApp(lifespan=lifespan)
+    test_app = silloApp(lifespan=lifespan)
 
     @test_app.get("/state")
     async def get_state(request: Request, response: Response):
@@ -657,11 +657,11 @@ def test_sync_lifespan_and_async_lifespan_both_work():
     sync_state = {"ran": False}
 
     @contextmanager
-    def sync_lifespan(app: NexiosApp):
+    def sync_lifespan(app: silloApp):
         sync_state["ran"] = True
         yield
 
-    sync_app = NexiosApp(lifespan=sync_lifespan)
+    sync_app = silloApp(lifespan=sync_lifespan)
 
     with TestClient(sync_app) as client:
         assert sync_state["ran"] is True
@@ -670,11 +670,11 @@ def test_sync_lifespan_and_async_lifespan_both_work():
     async_state = {"ran": False}
 
     @asynccontextmanager
-    async def async_lifespan(app: NexiosApp):
+    async def async_lifespan(app: silloApp):
         async_state["ran"] = True
         yield
 
-    async_app = NexiosApp(lifespan=async_lifespan)
+    async_app = silloApp(lifespan=async_lifespan)
 
     with TestClient(async_app) as client:
         assert async_state["ran"] is True

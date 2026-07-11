@@ -6,14 +6,14 @@ import tempfile
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.config import MakeConfig, set_config
-from nexios.http import Request, Response
-from nexios.session import SessionConfig
-from nexios.session.file import FileSessionManager
-from nexios.session.middleware import SessionMiddleware
-from nexios.session.signed_cookies import SignedSessionManager
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.config import MakeConfig, set_config
+from sillo.http import Request, Response
+from sillo.session import SessionConfig
+from sillo.session.file import FileSessionManager
+from sillo.session.middleware import SessionMiddleware
+from sillo.session.signed_cookies import SignedSessionManager
+from sillo.testclient import TestClient
 
 
 class TestSessionMiddleware:
@@ -38,7 +38,7 @@ class TestSessionMiddleware:
 
     def test_signed_cookie_session_middleware(self):
         """Test session middleware with signed cookie backend"""
-        app = NexiosApp()
+        app = silloApp()
 
         app.add_middleware(
             SessionMiddleware(
@@ -80,7 +80,7 @@ class TestSessionMiddleware:
         temp_dir = tempfile.mkdtemp()
 
         try:
-            app = NexiosApp()
+            app = silloApp()
 
             file_manager = FileSessionManager(
                 SessionConfig(session_file_storage_path=temp_dir)
@@ -121,7 +121,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_with_instance_manager(self):
         """Test middleware with manager instance passed directly"""
-        app = NexiosApp()
+        app = silloApp()
 
         signed_manager = SignedSessionManager(secret_key="test-secret-key-instance")
 
@@ -145,7 +145,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_with_existing_cookie(self):
         """Test middleware with existing session cookie"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/existing-cookie-test")
         async def existing_cookie_test(request: Request, response: Response):
@@ -170,7 +170,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_session_clear(self):
         """Test clearing session via middleware"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/clear-session-test")
         async def clear_session_test(request: Request, response: Response):
@@ -203,7 +203,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_configuration_options(self):
         """Test session middleware with various configuration options"""
-        app = NexiosApp()
+        app = silloApp()
 
         app.add_middleware(
             SessionMiddleware(
@@ -239,7 +239,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_error_handling(self):
         """Test middleware error handling"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/error-test")
         async def error_test(request: Request, response: Response):
@@ -262,7 +262,7 @@ class TestSessionMiddleware:
 
     def test_session_cookie_deletion_on_empty_session(self):
         """Test that cookies are deleted when session is accessed but empty"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/delete-test")
         async def delete_test(request: Request, response: Response):

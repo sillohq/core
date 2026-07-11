@@ -12,13 +12,13 @@ from functools import partial
 
 import pytest
 
-from nexios.application import NexiosApp
-from nexios.auth import AuthenticationMiddleware, BaseUser, auth
-from nexios.auth.backends.base import AuthenticationBackend
-from nexios.auth.model import AuthResult
-from nexios.auth.users.simple import SimpleUser, UnauthenticatedUser
-from nexios.http import Request, Response
-from nexios.testclient import AsyncTestClient
+from sillo.application import silloApp
+from sillo.auth import AuthenticationMiddleware, BaseUser, auth
+from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.model import AuthResult
+from sillo.auth.users.simple import SimpleUser, UnauthenticatedUser
+from sillo.http import Request, Response
+from sillo.testclient import AsyncTestClient
 
 
 # -------------------------
@@ -105,7 +105,7 @@ class CustomUser(BaseUser):
 
 
 async def test_auth_middleware_multiple_backends_success(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class FirstBackend(AuthenticationBackend):
@@ -140,7 +140,7 @@ async def test_auth_middleware_multiple_backends_success(test_client):
 
 
 async def test_auth_middleware_multiple_backends_fallback(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class FirstBackend(AuthenticationBackend):
@@ -169,7 +169,7 @@ async def test_auth_middleware_multiple_backends_fallback(test_client):
 
 
 async def test_auth_middleware_no_backends_succeed(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class FailingBackend(AuthenticationBackend):
@@ -189,10 +189,10 @@ async def test_auth_middleware_no_backends_succeed(test_client):
 
 
 async def test_auth_middleware_user_loading_failure(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
-    from nexios.auth import JWTAuthBackend, create_jwt
+    from sillo.auth import JWTAuthBackend, create_jwt
 
     jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
     app.add_middleware(AuthenticationMiddleware(CustomUser, jwt_backend))
@@ -213,7 +213,7 @@ async def test_auth_middleware_user_loading_failure(test_client):
 
 
 async def test_auth_middleware_backend_exception_handling(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class FaultyAuthBackend(AuthenticationBackend):

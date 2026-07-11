@@ -1,6 +1,6 @@
-# Nexios Composition And Lifecycle
+# sillo Composition And Lifecycle
 
-Use this reference for the structural concepts that shape larger Nexios apps.
+Use this reference for the structural concepts that shape larger sillo apps.
 
 ## Table of Contents
 
@@ -46,7 +46,7 @@ async def require_session(request, response, next):
 Use class-based middleware when the logic has clear pre/post stages:
 
 ```python
-from nexios.middleware import BaseMiddleware
+from sillo.middleware import BaseMiddleware
 
 class RequestLogger(BaseMiddleware):
     async def process_request(self, request, response, cnext):
@@ -63,7 +63,7 @@ class RequestLogger(BaseMiddleware):
 Use `Depend(...)` to keep handlers clean:
 
 ```python
-from nexios import Depend
+from sillo import Depend
 
 def get_settings():
     return {"debug": True, "version": "1.0.0"}
@@ -105,23 +105,23 @@ This is a good pattern for sessions, connections, or temporary resources.
 
 ## Shared Dependencies
 
-Nexios documents app-level and router-level dependencies.
+sillo documents app-level and router-level dependencies.
 
 ### App-Level
 
 ```python
-from nexios import NexiosApp, Depend
+from sillo import silloApp, Depend
 
 def global_dep():
     return "global-value"
 
-app = NexiosApp(dependencies=[Depend(global_dep)])
+app = silloApp(dependencies=[Depend(global_dep)])
 ```
 
 ### Router-Level
 
 ```python
-from nexios.routing import Router
+from sillo.routing import Router
 
 def router_dep():
     return "router-value"
@@ -160,7 +160,7 @@ When the user wants one place for startup and shutdown:
 
 ```python
 from contextlib import asynccontextmanager
-from nexios import NexiosApp
+from sillo import silloApp
 
 @asynccontextmanager
 async def app_lifespan(app):
@@ -168,14 +168,14 @@ async def app_lifespan(app):
     yield
     print("App shutting down")
 
-app = NexiosApp(lifespan=app_lifespan)
+app = silloApp(lifespan=app_lifespan)
 ```
 
 Teach lifespan as the structured alternative to separate startup/shutdown decorators.
 
 ## Events
 
-Nexios documents an event system for side effects and loose coupling:
+sillo documents an event system for side effects and loose coupling:
 
 ```python
 @app.events.on("user.created")

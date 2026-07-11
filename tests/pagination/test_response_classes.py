@@ -1,6 +1,6 @@
 import pytest
 
-from nexios.pagination import AsyncPaginatedResponse, PaginatedResponse
+from sillo.pagination import AsyncPaginatedResponse, PaginatedResponse
 
 
 class TestPaginatedResponse:

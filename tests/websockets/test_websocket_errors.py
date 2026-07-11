@@ -8,13 +8,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.exceptions import WebSocketException
-from nexios.routing import Router
-from nexios.testclient import TestClient
-from nexios.types import ASGIApp, Receive, Scope, Send
-from nexios.websockets.base import WebSocket
-from nexios.websockets.errors import (
+from sillo import silloApp
+from sillo.exceptions import WebSocketException
+from sillo.routing import Router
+from sillo.testclient import TestClient
+from sillo.types import ASGIApp, Receive, Scope, Send
+from sillo.websockets.base import WebSocket
+from sillo.websockets.errors import (
     WebSocketErrorMiddleware,
     websocket_exception_handler,
 )
@@ -112,7 +112,7 @@ class TestWebSocketErrorMiddleware:
         receive = AsyncMock()
         send = AsyncMock()
 
-        with patch("nexios.websockets.errors.logger") as mock_logger:
+        with patch("sillo.websockets.errors.logger") as mock_logger:
             asyncio.run(middleware(scope, receive, send))
 
             # Verify error was logged
@@ -138,7 +138,7 @@ class TestWebSocketErrorMiddleware:
         receive = AsyncMock()
         send = AsyncMock()
 
-        with patch("nexios.websockets.errors.logger") as mock_logger:
+        with patch("sillo.websockets.errors.logger") as mock_logger:
             asyncio.run(middleware(scope, receive, send))
 
             # Verify error was logged
@@ -154,7 +154,7 @@ class TestWebSocketErrorIntegration:
         self, test_client_factory: pytest.FixtureRequest
     ):
         """Test websocket route that raises WebSocketException"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.ws_route("/ws/error")
         async def error_endpoint(websocket: WebSocket):
@@ -170,7 +170,7 @@ class TestWebSocketErrorIntegration:
         self, test_client_factory: pytest.FixtureRequest
     ):
         """Test websocket route that raises general exception"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.ws_route("/ws/general-error")
         async def general_error_endpoint(websocket: WebSocket):
@@ -184,7 +184,7 @@ class TestWebSocketErrorIntegration:
 
     def test_websocket_route_normal_operation(self, test_client_factory):
         """Test that normal websocket operation still works"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.ws_route("/ws/normal")
         async def normal_endpoint(websocket: WebSocket):
@@ -207,7 +207,7 @@ class TestWebSocketErrorIntegration:
         async def router_error_endpoint(websocket: WebSocket):
             raise WebSocketException(code=1009, reason="Router error")
 
-        app = NexiosApp()
+        app = silloApp()
         app.mount_router(router)
 
         with test_client_factory(app) as client:

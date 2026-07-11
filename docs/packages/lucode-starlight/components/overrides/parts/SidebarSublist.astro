@@ -1,0 +1,115 @@
+---
+import type { StarlightRouteData } from '@astrojs/starlight/route-data';
+
+interface Props {
+    sublist: StarlightRouteData['sidebar'];
+    nested?: boolean;
+}
+
+const { sublist } = Astro.props;
+---
+
+{
+    sublist.map((entry) =>
+        entry.type === 'link' ? (
+            <a
+                href={entry.href}
+                aria-current={entry.isCurrent && 'page'}
+                class:list={['entry-link', entry.attrs.class]}
+                {...entry.attrs}
+            >
+                <span class="entry-link-inner">
+                    {entry.label}
+                    {entry.badge && <span class="entry-badge">{entry.badge.text}</span>}
+                </span>
+            </a>
+        ) : (
+            <div class="container-sidebar-entry">
+                <h4 class="entry-title">{entry.label}</h4>
+                <div class="container-group-link">
+                    <Astro.self sublist={entry.entries} nested />
+                </div>
+            </div>
+        )
+    )
+}
+
+<style>
+    .container-sidebar-entry {
+        gap: 0.25rem;
+        flex-direction: column;
+        display: flex;
+    }
+
+    .entry-title {
+        font-weight: 600;
+        font-size: 0.75rem;
+        line-height: 1rem;
+        padding-top: calc(var(--spacing) * 1);
+        padding-bottom: calc(var(--spacing) * 1);
+        padding-left: calc(var(--spacing) * 2);
+        padding-right: calc(var(--spacing) * 2);
+        border-radius: calc(var(--radius) - 2px);
+        color: var(--muted-foreground);
+    }
+
+    .container-group-link {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        gap: 2px;
+        grid-auto-rows: max-content;
+        grid-auto-flow: row;
+        display: grid;
+    }
+
+    .entry-link {
+        color: var(--foreground);
+        font-weight: 400;
+        align-items: center;
+        width: 100%;
+        height: 1.875rem;
+        display: flex;
+        text-decoration: none;
+        font-size: 0.8rem;
+        line-height: 1.125rem;
+    }
+
+    .entry-link-inner {
+        display: flex;
+        align-items: center;
+        padding-left: calc(var(--spacing) * 2);
+        padding-right: calc(var(--spacing) * 2);
+        border-radius: calc(var(--radius) - 2px);
+        height: 100%;
+        transition:
+            color 0.15s,
+            background-color 0.15s;
+    }
+
+    .entry-link[aria-current='page'] {
+        font-weight: 500;
+    }
+
+    .entry-link[aria-current='page'] .entry-link-inner {
+        background-color: var(--accent);
+        color: var(--accent-foreground);
+    }
+
+    .entry-link:hover:not([aria-current='page']) .entry-link-inner {
+        background-color: var(--secondary);
+        color: var(--secondary-foreground);
+    }
+
+    .entry-badge {
+        color: rgb(0 0 0);
+        line-height: 1;
+        font-size: 0.75rem;
+        padding-top: calc(var(--spacing) * 0.5);
+        padding-bottom: calc(var(--spacing) * 0.5);
+        padding-left: calc(var(--spacing) * 1.5);
+        padding-right: calc(var(--spacing) * 1.5);
+        background-color: rgb(173 250 29);
+        border-radius: calc(var(--radius) - 2px);
+        margin-left: calc(var(--spacing) * 2);
+    }
+</style>

@@ -1,0 +1,20 @@
+---
+import TableOfContents from './TableOfContents.astro';
+---
+
+{
+    Astro.locals.starlightRoute.toc && (
+        <div>
+            <TableOfContents />
+        </div>
+    )
+}
+
+<style>
+    div {
+        padding-top: calc(var(--spacing) * 4);
+        max-height: calc(100vh - var(--header-height) - 1px);
+        top: calc(var(--header-height) + 1px);
+        position: sticky;
+    }
+</style>

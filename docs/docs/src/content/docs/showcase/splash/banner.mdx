@@ -1,0 +1,37 @@
+---
+title: Banner Splash
+description: A wide splash layout for editorial docs pages, launch pages, and major feature hubs.
+template: splash
+hero:
+  layout: banner
+  announcement:
+    text: Banner layout
+    link: /lucode-starlight-theme/showcase/splash-pages/
+  image:
+    file: ../../../../assets/placeholder.svg
+  actions:
+    - text: Read the Guide
+      link: /lucode-starlight-theme/guides/configuration/
+      icon: right-arrow
+    - text: See Typography
+      link: /lucode-starlight-theme/showcase/typography/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { ContainerSection } from 'lucode-starlight/components';
+
+<ContainerSection>
+
+## Best For
+
+<CardGrid>
+  <Card title="Editorial entries" icon="open-book">
+    Banner pages work well when the copy and the supporting visual both need room.
+  </Card>
+  <Card title="Launch moments" icon="rocket">
+    Use it for major releases, migration guides, or top-level pages that deserve a broader opening.
+  </Card>
+</CardGrid>
+
+</ContainerSection>

@@ -1,0 +1,67 @@
+---
+import config from 'virtual:starlight/user-config';
+import { logos } from 'virtual:starlight/user-images';
+
+const {  siteTitleHref } = Astro.locals.starlightRoute;
+---
+
+<a href={siteTitleHref} class="site-title">
+    {
+        config.logo && logos.dark && (
+            <>
+                <img
+                    class:list={[{ 'light:sl-hidden': !('src' in config.logo) }, 'logo']}
+                    alt={config.logo.alt}
+                    src={logos.dark.src}
+                    width={800}
+                    height={logos.dark.height}
+                />
+                {/* Show light alternate if a user configure both light and dark logos. */}
+                {!('src' in config.logo) && (
+                    <img
+                        class="dark:sl-hidden logo"
+                        alt={config.logo.alt}
+                        src={logos.light?.src}
+                        width={800}
+                        height={logos.light?.height}
+                    />
+                )}
+            </>
+        )
+    }
+    <span class:list={[ 'title-text']}>
+        Sillo Docs
+    </span>
+</a>
+
+<style>
+    .logo {
+        max-height: 75px;
+        max-width: 75px;
+    }
+
+    .site-title {
+        gap: 0.75rem;
+        align-items: center;
+        display: flex;
+        margin-right: calc(var(--spacing) * 3);
+    }
+
+    .title-text {
+        font-weight: 400;
+        font-size: 1.25rem;
+        letter-spacing: -0.02em;
+        display: none;
+    }
+
+    @media (min-width: 1024px) {
+        .title-text {
+            display: inline-block;
+        }
+    }
+
+    a {
+        color: inherit;
+        text-decoration: inherit;
+    }
+</style>

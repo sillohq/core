@@ -6,10 +6,10 @@ import warnings
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.middleware.cors import CorsConfig, CORSMiddleware
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.middleware.cors import CorsConfig, CORSMiddleware
+from sillo.testclient import TestClient
 
 
 class TestCORSConfiguration:
@@ -23,7 +23,7 @@ class TestCORSConfiguration:
             allow_credentials=False,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/wildcard")
         async def wildcard_route(request: Request, response: Response):
@@ -48,7 +48,7 @@ class TestCORSConfiguration:
             allow_methods=["GET", "POST"],
         )
 
-        app = NexiosApp()
+        app = silloApp()
         app.add_middleware(CORSMiddleware(config=cors_config))
 
         @app.get("/test")
@@ -67,7 +67,7 @@ class TestCORSConfiguration:
             allow_credentials=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/regex-test")
         async def regex_route(request: Request, response: Response):
@@ -109,7 +109,7 @@ class TestCORSConfiguration:
             allow_methods=["GET"],
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/regex-case-test")
         async def regex_case_route(request: Request, response: Response):
@@ -143,7 +143,7 @@ class TestCORSConfiguration:
             allow_methods=["GET"],
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/regex-port-test")
         async def regex_port_route(request: Request, response: Response):
@@ -185,7 +185,7 @@ class TestCORSConfiguration:
             allow_credentials=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/dynamic-test")
         async def dynamic_route(request: Request, response: Response):
@@ -221,7 +221,7 @@ class TestCORSConfiguration:
             allow_credentials=False,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/blacklist-test")
         async def blacklist_route(request: Request, response: Response):
@@ -253,7 +253,7 @@ class TestCORSConfiguration:
             allow_methods=["GET"],
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/blacklist-regex-test")
         async def blacklist_regex_route(request: Request, response: Response):
@@ -289,7 +289,7 @@ class TestCORSConfiguration:
             expose_headers=["X-Custom-Header"],
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/no-creds-test")
         async def no_creds_route(request: Request, response: Response):
@@ -322,7 +322,7 @@ class TestCORSConfiguration:
             ],
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/expose-headers-test")
         async def expose_headers_route(request: Request, response: Response):
@@ -353,7 +353,7 @@ class TestCORSConfiguration:
             expose_headers=[],
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/empty-expose-test")
         async def empty_expose_route(request: Request, response: Response):
@@ -381,7 +381,7 @@ class TestCORSConfiguration:
             max_age=86400,  # 24 hours
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/max-age-test")
         async def max_age_route(request: Request, response: Response):
@@ -415,7 +415,7 @@ class TestCORSConfiguration:
             strict_origin_checking=False,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/non-strict-test")
         async def non_strict_route(request: Request, response: Response):
@@ -438,7 +438,7 @@ class TestCORSConfiguration:
             debug=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/debug-test")
         async def debug_route(request: Request, response: Response):

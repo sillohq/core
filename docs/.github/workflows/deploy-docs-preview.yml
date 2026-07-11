@@ -1,0 +1,133 @@
+name: Deploy PR docs previews
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - docs/**
+      - packages/lucode-starlight/**
+      - .github/workflows/deploy-docs-preview.yml
+      - .github/workflows/deploy-docs.yml
+      - docs/astro.config.mjs
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: docs-preview-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy PR preview
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      PREVIEW_PATH: previews/pr-${{ github.event.pull_request.number }}
+      PREVIEW_URL: https://lucas-labs.github.io/lucode-starlight-theme/previews/pr-${{ github.event.pull_request.number }}/
+    steps:
+      - name: Checkout pull request head
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build preview docs
+        env:
+          DOCS_BASE_PATH: /lucode-starlight-theme/${{ env.PREVIEW_PATH }}
+        run: bun run docs:build
+
+      - name: Add Pages marker
+        shell: bash
+        run: touch docs/dist/.nojekyll
+
+      - name: Publish preview docs
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs/dist
+          target-folder: ${{ env.PREVIEW_PATH }}
+          clean: true
+          force: false
+          git-config-name: github-actions[bot]
+          git-config-email: 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Comment preview URL
+        uses: actions/github-script@v9
+        env:
+          PREVIEW_URL: ${{ env.PREVIEW_URL }}
+        with:
+          script: |
+            const marker = '<!-- docs-preview-comment -->';
+            const body = `${marker}\nDocs preview: ${process.env.PREVIEW_URL}`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  cleanup:
+    name: Remove PR preview
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Remove preview directory
+        shell: bash
+        run: |
+          if ! git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            exit 0
+          fi
+
+          git fetch origin gh-pages:gh-pages
+          git switch gh-pages
+
+          PREVIEW_DIR="previews/pr-${{ github.event.pull_request.number }}"
+          if [ -d "$PREVIEW_DIR" ]; then
+            rm -rf "$PREVIEW_DIR"
+          fi
+
+      - name: Commit preview cleanup
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: remove docs preview for pr #${{ github.event.pull_request.number }}"
+          git push origin gh-pages

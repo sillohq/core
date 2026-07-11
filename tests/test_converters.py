@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from nexios.converters import (
+from sillo.converters import (
     CONVERTOR_TYPES,
     FloatConvertor,
     IntegerConvertor,

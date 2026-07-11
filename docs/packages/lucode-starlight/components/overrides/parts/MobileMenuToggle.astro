@@ -1,0 +1,42 @@
+<button class="show-modal" popovertargetaction="toggle" popovertarget="drawer">
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+    >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5"
+        ></path>
+    </svg>
+    <span class="sr-only">Toggle Menu</span>
+</button>
+
+<style>
+    button {
+        all: unset;
+
+        display: inline-flex;
+        margin-right: calc(var(--spacing) * 2);
+        margin-left: calc(var(--spacing) * -2);
+        height: 2rem;
+        width: 2rem;
+        align-items: center;
+        justify-content: center;
+        padding-bottom: calc(var(--spacing) * 2);
+        padding-top: calc(var(--spacing) * 2);
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+        button {
+            display: none;
+        }
+    }
+
+    button > svg {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+</style>

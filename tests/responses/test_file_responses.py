@@ -9,16 +9,16 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== File Response Tests ==========
 
 
-def test_file_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_file_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test serving a file"""
-    app = NexiosApp()
+    app = silloApp()
 
     # Create a temporary file
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
@@ -40,10 +40,10 @@ def test_file_response(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_file_response_with_custom_filename(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test serving a file with custom filename"""
-    app = NexiosApp()
+    app = silloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
         f.write("Custom filename test")
@@ -65,10 +65,10 @@ def test_file_response_with_custom_filename(
 
 
 def test_file_response_content_type(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test file response content type detection"""
-    app = NexiosApp()
+    app = silloApp()
 
     # Create a JSON file
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
@@ -93,10 +93,10 @@ def test_file_response_content_type(
 
 
 def test_file_response_inline_disposition(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test file response with inline disposition"""
-    app = NexiosApp()
+    app = silloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
         f.write("Inline content")
@@ -120,9 +120,9 @@ def test_file_response_inline_disposition(
 # ========== Download Response Tests ==========
 
 
-def test_download_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_download_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test forcing file download"""
-    app = NexiosApp()
+    app = silloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".pdf") as f:
         f.write("PDF content")
@@ -144,10 +144,10 @@ def test_download_response(test_client_factory: Callable[[NexiosApp], TestClient
 
 
 def test_download_with_custom_filename(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test download with custom filename"""
-    app = NexiosApp()
+    app = silloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
         f.write("col1,col2\nval1,val2")
@@ -172,9 +172,9 @@ def test_download_with_custom_filename(
 # ========== Large File Tests ==========
 
 
-def test_large_file_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_large_file_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test serving a larger file"""
-    app = NexiosApp()
+    app = silloApp()
 
     # Create a larger temporary file (1MB)
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
@@ -199,9 +199,9 @@ def test_large_file_response(test_client_factory: Callable[[NexiosApp], TestClie
 # ========== Binary File Tests ==========
 
 
-def test_binary_file_response(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_binary_file_response(test_client_factory: Callable[[silloApp], TestClient]):
     """Test serving a binary file"""
-    app = NexiosApp()
+    app = silloApp()
 
     # Create a binary file
     with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".bin") as f:
@@ -226,9 +226,9 @@ def test_binary_file_response(test_client_factory: Callable[[NexiosApp], TestCli
 # ========== File Not Found Tests ==========
 
 
-def test_file_not_found(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_file_not_found(test_client_factory: Callable[[silloApp], TestClient]):
     """Test handling of non-existent file"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/missing-file")
     async def serve_missing_file(request: Request, response: Response):
@@ -249,10 +249,10 @@ def test_file_not_found(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_file_content_length_header(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test that content-length header is set correctly for files"""
-    app = NexiosApp()
+    app = silloApp()
 
     content = "Test content for length check"
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
@@ -279,10 +279,10 @@ def test_file_content_length_header(
 
 
 def test_file_accept_ranges_header(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test that accept-ranges header is set for file responses"""
-    app = NexiosApp()
+    app = silloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
         f.write("Range test content")

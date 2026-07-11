@@ -6,19 +6,19 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.exceptions import HTTPException, NotFoundException
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.exceptions import HTTPException, NotFoundException
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== Basic Exception Handler Tests ==========
 
 
 def test_exception_handler_custom_exception(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling custom exception"""
-    app = NexiosApp()
+    app = silloApp()
 
     class CustomError(Exception):
         pass
@@ -43,10 +43,10 @@ def test_exception_handler_custom_exception(
 
 
 def test_exception_handler_http_exception(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling HTTPException"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -58,10 +58,10 @@ def test_exception_handler_http_exception(
 
 
 def test_exception_handler_not_found_exception(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling NotFoundException"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -73,10 +73,10 @@ def test_exception_handler_not_found_exception(
 
 
 def test_exception_handler_value_error(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling ValueError"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def value_error_handler(
         request: Request, response: Response, exc: ValueError
@@ -96,10 +96,10 @@ def test_exception_handler_value_error(
 
 
 def test_exception_handler_type_error(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling TypeError"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def type_error_handler(request: Request, response: Response, exc: TypeError):
         return response.json({"error": "TypeError", "message": "Type mismatch"}).status(
@@ -119,10 +119,10 @@ def test_exception_handler_type_error(
 
 
 def test_exception_handler_multiple_exceptions(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling multiple exception types"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ErrorA(Exception):
         pass
@@ -158,10 +158,10 @@ def test_exception_handler_multiple_exceptions(
 
 
 def test_exception_handler_decorator_style(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler using decorator style"""
-    app = NexiosApp()
+    app = silloApp()
 
     class CustomException(Exception):
         pass
@@ -186,10 +186,10 @@ def test_exception_handler_decorator_style(
 
 
 def test_exception_handler_status_code_404(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling 404 status code"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def custom_404_handler(
         request: Request, response: Response, exc: HTTPException
@@ -213,10 +213,10 @@ def test_exception_handler_status_code_404(
 
 
 def test_exception_handler_status_code_500(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling 500 status code"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def custom_500_handler(
         request: Request, response: Response, exc: HTTPException
@@ -241,10 +241,10 @@ def test_exception_handler_status_code_500(
 
 
 def test_exception_handler_status_code_401(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test handling 401 status code"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def custom_401_handler(
         request: Request, response: Response, exc: HTTPException
@@ -269,10 +269,10 @@ def test_exception_handler_status_code_401(
 
 
 def test_exception_handler_with_custom_headers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler adding custom headers"""
-    app = NexiosApp()
+    app = silloApp()
 
     class RateLimitError(Exception):
         pass
@@ -299,10 +299,10 @@ def test_exception_handler_with_custom_headers(
 
 
 def test_exception_handler_http_exception_with_headers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test HTTPException with custom headers"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -322,10 +322,10 @@ def test_exception_handler_http_exception_with_headers(
 
 
 def test_exception_handler_inheritance(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler with inheritance"""
-    app = NexiosApp()
+    app = silloApp()
 
     class BaseError(Exception):
         pass
@@ -349,10 +349,10 @@ def test_exception_handler_inheritance(
 
 
 def test_exception_handler_specific_over_base(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test that specific exception handler takes precedence over base"""
-    app = NexiosApp()
+    app = silloApp()
 
     class BaseError(Exception):
         pass
@@ -385,10 +385,10 @@ def test_exception_handler_specific_over_base(
 
 
 def test_exception_handler_access_request_data(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler accessing request data"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ValidationError(Exception):
         pass
@@ -420,10 +420,10 @@ def test_exception_handler_access_request_data(
 
 
 def test_exception_handler_with_exception_details(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test exception handler with detailed exception info"""
-    app = NexiosApp()
+    app = silloApp()
 
     class DetailedError(Exception):
         def __init__(self, message: str, code: int):

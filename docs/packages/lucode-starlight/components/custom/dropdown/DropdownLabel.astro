@@ -1,0 +1,31 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'div'> & {
+    /**
+     * Whether the label is inset (has left padding)
+     */
+    inset?: boolean;
+};
+
+const { class: className, inset = false, ...rest } = Astro.props;
+---
+
+<div {...rest} data-slot="dropdown-label" data-inset={inset ? 'true' : undefined}>
+    <slot />
+</div>
+
+<style>
+    [data-slot='dropdown-label'] {
+        color: var(--muted-foreground);
+        padding-inline: calc(var(--spacing) * 2);
+        padding-block: calc(var(--spacing) * 1.5);
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        font-weight: 500;
+    }
+
+    [data-slot='dropdown-label'][data-inset='true'] {
+        padding-left: calc(var(--spacing) * 8);
+    }
+</style>

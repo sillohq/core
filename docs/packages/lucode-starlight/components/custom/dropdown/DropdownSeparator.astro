@@ -1,0 +1,18 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'div'>;
+
+const { class: className, ...rest } = Astro.props;
+---
+
+<div role="separator" aria-orientation="horizontal" {...rest} data-slot="dropdown-separator"></div>
+
+<style>
+    div[data-slot='dropdown-separator'] {
+        background-color: var(--border);
+        margin-inline: calc(var(--spacing) * -1);
+        margin-block: var(--spacing);
+        height: 1px;
+    }
+</style>

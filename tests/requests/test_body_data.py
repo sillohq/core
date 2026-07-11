@@ -6,16 +6,16 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== JSON Body Tests ==========
 
 
-def test_request_json_body(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_json_body(test_client_factory: Callable[[silloApp], TestClient]):
     """Test parsing JSON request body"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -30,9 +30,9 @@ def test_request_json_body(test_client_factory: Callable[[NexiosApp], TestClient
         assert data["age"] == 30
 
 
-def test_request_json_nested(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_json_nested(test_client_factory: Callable[[silloApp], TestClient]):
     """Test parsing nested JSON"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -46,9 +46,9 @@ def test_request_json_nested(test_client_factory: Callable[[NexiosApp], TestClie
         assert data["user"]["profile"]["city"] == "NYC"
 
 
-def test_request_json_array(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_json_array(test_client_factory: Callable[[silloApp], TestClient]):
     """Test parsing JSON array"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -63,10 +63,10 @@ def test_request_json_array(test_client_factory: Callable[[NexiosApp], TestClien
 
 
 def test_request_json_empty_object(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test parsing empty JSON object"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -80,9 +80,9 @@ def test_request_json_empty_object(
         assert data["is_dict"] is True
 
 
-def test_request_json_with_null(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_json_with_null(test_client_factory: Callable[[silloApp], TestClient]):
     """Test JSON with null values"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -97,10 +97,10 @@ def test_request_json_with_null(test_client_factory: Callable[[NexiosApp], TestC
 
 
 def test_request_json_with_boolean(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test JSON with boolean values"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -115,10 +115,10 @@ def test_request_json_with_boolean(
 
 
 def test_request_json_with_numbers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test JSON with various number types"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -138,9 +138,9 @@ def test_request_json_with_numbers(
 # ========== Text Body Tests ==========
 
 
-def test_request_text_body(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_text_body(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading text request body"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -154,9 +154,9 @@ def test_request_text_body(test_client_factory: Callable[[NexiosApp], TestClient
         assert data["length"] == 13
 
 
-def test_request_text_multiline(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_text_multiline(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading multiline text"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -169,9 +169,9 @@ def test_request_text_multiline(test_client_factory: Callable[[NexiosApp], TestC
         assert resp.json()["text"] == content
 
 
-def test_request_text_unicode(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_text_unicode(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading unicode text"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -184,9 +184,9 @@ def test_request_text_unicode(test_client_factory: Callable[[NexiosApp], TestCli
         assert resp.json()["text"] == content
 
 
-def test_request_text_empty(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_text_empty(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading empty text body"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -203,9 +203,9 @@ def test_request_text_empty(test_client_factory: Callable[[NexiosApp], TestClien
 # ========== Raw Body Tests ==========
 
 
-def test_request_raw_body(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_raw_body(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading raw bytes body"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -219,9 +219,9 @@ def test_request_raw_body(test_client_factory: Callable[[NexiosApp], TestClient]
         assert data["is_bytes"] is True
 
 
-def test_request_body_binary(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_body_binary(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading binary body"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/upload")
     async def handler(request: Request, response: Response):
@@ -234,9 +234,9 @@ def test_request_body_binary(test_client_factory: Callable[[NexiosApp], TestClie
         assert resp.json()["size"] == 1000
 
 
-def test_request_body_empty(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_body_empty(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading empty body"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -252,10 +252,10 @@ def test_request_body_empty(test_client_factory: Callable[[NexiosApp], TestClien
 
 
 def test_request_form_data_urlencoded(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test parsing URL-encoded form data"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/form")
     async def handler(request: Request, response: Response):
@@ -274,10 +274,10 @@ def test_request_form_data_urlencoded(
 
 
 def test_request_form_data_multiple_values(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test form data with multiple values"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/form")
     async def handler(request: Request, response: Response):
@@ -292,10 +292,10 @@ def test_request_form_data_multiple_values(
 
 
 def test_request_form_data_empty(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test empty form data"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/form")
     async def handler(request: Request, response: Response):
@@ -310,9 +310,9 @@ def test_request_form_data_empty(
 # ========== Content Type Detection Tests ==========
 
 
-def test_request_accepts_json(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_accepts_json(test_client_factory: Callable[[silloApp], TestClient]):
     """Test accepts_json property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -324,10 +324,10 @@ def test_request_accepts_json(test_client_factory: Callable[[NexiosApp], TestCli
 
 
 def test_request_accepts_json_wildcard(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test accepts_json with wildcard accept header"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -338,9 +338,9 @@ def test_request_accepts_json_wildcard(
         assert resp.json()["accepts_json"] is True
 
 
-def test_request_accepts_html(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_accepts_html(test_client_factory: Callable[[silloApp], TestClient]):
     """Test accepts_html property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -352,10 +352,10 @@ def test_request_accepts_html(test_client_factory: Callable[[NexiosApp], TestCli
 
 
 def test_request_accepts_html_wildcard(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test accepts_html with wildcard"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -369,9 +369,9 @@ def test_request_accepts_html_wildcard(
 # ========== Large Body Tests ==========
 
 
-def test_request_large_json(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_large_json(test_client_factory: Callable[[silloApp], TestClient]):
     """Test parsing large JSON payload"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):
@@ -384,9 +384,9 @@ def test_request_large_json(test_client_factory: Callable[[NexiosApp], TestClien
         assert resp.json()["count"] == 1000
 
 
-def test_request_large_text(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_large_text(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading large text body"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def handler(request: Request, response: Response):

@@ -1,6 +1,6 @@
-# Nexios Templating Examples
+# sillo Templating Examples
 
-This directory contains examples demonstrating various features of the Nexios templating system, which is built on top of Jinja2.
+This directory contains examples demonstrating various features of the sillo templating system, which is built on top of Jinja2.
 
 ## Setup
 

@@ -1,0 +1,307 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import { PAGE_TITLE_ID } from '../../core/config/constants';
+import type { HeroLayout } from '../../schema';
+import LinkButton from '../custom/LinkButton.astro';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline: heroTagline, image, actions = [] } = data.hero || {};
+const heroLayout = ((data.hero as any)?.layout as HeroLayout) ?? 'centered';
+const announcement =
+    ((data.hero as any)?.announcement as { text: string; link: string }) ?? undefined;
+const hasImage = !!image;
+const tagline = heroTagline || data.description;
+
+const imageAttrs = {
+    loading: 'eager' as const,
+    decoding: 'async' as const,
+    alt: image?.alt || '',
+};
+
+let darkImage: ImageMetadata | undefined;
+let lightImage: ImageMetadata | undefined;
+let rawHtml: string | undefined;
+
+if (image) {
+    if ('file' in image) {
+        darkImage = image.file;
+    } else if ('dark' in image) {
+        darkImage = image.dark;
+        lightImage = image.light;
+    } else {
+        rawHtml = image.html;
+    }
+}
+
+const isSplit =
+    heroLayout === 'split-left' || heroLayout === 'split-right' || heroLayout === 'banner';
+---
+
+<section class="hero" data-layout={heroLayout} data-has-image={hasImage ? '' : undefined}>
+    <div class="hero-grid">
+        <div class="hero-text">
+            {
+                announcement && (
+                    <LinkButton
+                        href={announcement.link}
+                        variant="secondary"
+                        size="2xs"
+                        class="announcement-badge"
+                    >
+                        {announcement.text}
+                        <Icon name="right-arrow" size="14px" />
+                    </LinkButton>
+                )
+            }
+
+            <h1 id={PAGE_TITLE_ID} class="hero-heading" data-page-title set:html={title} />
+
+            {tagline && <p class="hero-description" set:html={tagline} />}
+
+            {
+                actions.length > 0 && (
+                    <div class="hero-actions">
+                        {
+                            actions.map((action, i) => (
+                                <LinkButton
+                                    href={action.link}
+                                    variant={action.variant || (i === 0 ? 'primary' : 'secondary')}
+                                    size="lg"
+                                    class:list={[action.attrs?.class]}
+                                    {...action.attrs}
+                                >
+                                    {action.text}
+                                    {action.icon?.html && <Fragment set:html={action.icon.html} />}
+                                </LinkButton>
+                            ))
+                        }
+                    </div>
+                )
+            }
+        </div>
+
+        {
+            hasImage && (
+                <div class="hero-image">
+                    {darkImage && (
+                        <Image
+                            src={darkImage}
+                            {...imageAttrs}
+                            class:list={{
+                                'light:sl-hidden': Boolean(lightImage),
+                                'hero-img': true,
+                            }}
+                        />
+                    )}
+                    {lightImage && (
+                        <Image
+                            src={lightImage}
+                            {...imageAttrs}
+                            class="dark:sl-hidden hero-img"
+                        />
+                    )}
+                    {rawHtml && <div class="hero-html sl-flex" set:html={rawHtml} />}
+                </div>
+            )
+        }
+    </div>
+</section>
+
+<style>
+    .hero {
+        padding-block: calc(var(--spacing) * 32);
+    }
+
+    @media (min-width: 640px) {
+        .hero {
+            padding-block: calc(var(--spacing) * 40);
+        }
+    }
+
+    .hero-grid {
+        width: 100%;
+        max-width: var(--container-max-width, 1280px);
+        margin-inline: auto;
+        padding-inline: calc(var(--spacing) * 4);
+        display: grid;
+        align-items: center;
+        gap: calc(var(--spacing) * 12);
+    }
+
+    @media (min-width: 768px) {
+        .hero-grid {
+            padding-inline: calc(var(--spacing) * 8);
+            gap: calc(var(--spacing) * 16);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .hero-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: calc(var(--spacing) * 16);
+            padding-inline: calc(var(--spacing) * 12);
+        }
+    }
+
+    .hero-text {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: calc(var(--spacing) * 5);
+    }
+
+    @media (min-width: 1024px) {
+        .hero-text {
+            align-items: flex-start;
+            text-align: left;
+        }
+    }
+
+    .announcement-badge {
+        --button-radius: 9999px;
+        display: inline-flex;
+        gap: calc(var(--spacing) * 1);
+    }
+
+    .hero-heading {
+        max-width: 36rem;
+        font-size: 2.25rem;
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        text-wrap: balance;
+        margin: 0;
+    }
+
+    @media (min-width: 768px) {
+        .hero-heading {
+            font-size: 3rem;
+            line-height: 1;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .hero-heading {
+            max-width: none;
+            font-size: 3.75rem;
+            line-height: 1;
+        }
+    }
+
+    .hero-description {
+        max-width: 40rem;
+        font-size: 1.125rem;
+        line-height: 1.75;
+        text-wrap: balance;
+        color: var(--muted-foreground);
+        margin: 0;
+    }
+
+    @media (min-width: 1024px) {
+        .hero-description {
+            font-size: 1.25rem;
+        }
+    }
+
+    .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: calc(var(--spacing) * 2);
+        width: 100%;
+        justify-content: center;
+    }
+
+    @media (min-width: 1024px) {
+        .hero-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    .hero-actions :global([data-slot='button']) {
+        width: 100%;
+    }
+
+    @media (min-width: 640px) {
+        .hero-actions :global([data-slot='button']) {
+            width: auto;
+        }
+    }
+
+    .hero-image {
+        width: 100%;
+    }
+
+    .hero-image img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        object-fit: cover;
+        object-position: top;
+    }
+
+    /* Layout overrides for existing configurations */
+
+    .hero[data-layout='centered'] .hero-grid {
+        grid-template-columns: 1fr;
+        max-width: 48rem;
+    }
+
+    .hero[data-layout='centered'] .hero-text {
+        align-items: center;
+        text-align: center;
+    }
+
+    .hero[data-layout='centered'] .hero-heading {
+        max-width: none;
+    }
+
+    .hero[data-layout='centered'] .hero-description {
+        max-width: none;
+    }
+
+    .hero[data-layout='centered'] .hero-actions {
+        justify-content: center;
+    }
+
+    .hero[data-layout='centered-top'] .hero-grid {
+        display: flex;
+        flex-direction: column-reverse;
+        gap: calc(var(--spacing) * 20);
+        max-width: 48rem;
+    }
+
+    .hero[data-layout='centered-top'] .hero-text {
+        align-items: center;
+        text-align: center;
+    }
+
+    .hero[data-layout='centered-top'] .hero-heading {
+        max-width: none;
+    }
+
+    .hero[data-layout='centered-top'] .hero-actions {
+        justify-content: center;
+    }
+
+    .hero[data-layout='banner'] .hero-grid {
+        max-width: none;
+    }
+
+    .hero[data-layout='split-right'] .hero-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .hero[data-layout='split-right'] .hero-image {
+        order: -1;
+    }
+
+    /* No image state */
+    .hero:not([data-has-image]) .hero-grid {
+        grid-template-columns: 1fr;
+        max-width: 48rem;
+    }
+</style>

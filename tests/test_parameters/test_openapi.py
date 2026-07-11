@@ -3,13 +3,13 @@ Tests for OpenAPI integration with Query, Header, Cookie parameters.
 """
 
 import pytest
-from nexios import NexiosApp, Query, Header, Cookie
-from nexios.http import Request, Response
+from sillo import silloApp, Query, Header, Cookie
+from sillo.http import Request, Response
 
 
 @pytest.fixture
 def app():
-    return NexiosApp()
+    return silloApp()
 
 
 def test_query_params_in_openapi(app):

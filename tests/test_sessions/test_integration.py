@@ -1,16 +1,16 @@
 """
-Integration tests for Nexios session functionality
+Integration tests for sillo session functionality
 """
 
 import time
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.session import SessionConfig
-from nexios.session.middleware import SessionMiddleware
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.session import SessionConfig
+from sillo.session.middleware import SessionMiddleware
+from sillo.testclient import TestClient
 
 
 class TestSessionIntegration:
@@ -18,7 +18,7 @@ class TestSessionIntegration:
 
     def test_signed_cookie_integration_flow(self):
         """Test complete signed cookie session flow"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.post("/login")
         async def login(request: Request, response: Response):
@@ -80,7 +80,7 @@ class TestSessionIntegration:
 
     def test_session_persistence_across_requests(self):
         """Test session persistence across multiple requests"""
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/counter")
         async def counter(request: Request, response: Response):

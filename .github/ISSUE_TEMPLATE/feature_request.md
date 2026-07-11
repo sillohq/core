@@ -1,19 +1,19 @@
 ---
 name: Feature Request
-about: Suggest new features that would make Nexios even better!
+about: Suggest new features that would make sillo even better!
 labels: enhancement
 ---
 
 ##  **Feature Request**
 
-We’re so glad you have an idea to make Nexios better! Your feedback is incredibly valuable, and we want to hear from you.
+We’re so glad you have an idea to make sillo better! Your feedback is incredibly valuable, and we want to hear from you.
 
 Please help us understand exactly what you're looking for by answering the questions below.
 
-### 1. **What feature would you like to see in Nexios?**  
-Please describe the feature you want to see added to Nexios. The more detail, the better!
+### 1. **What feature would you like to see in sillo?**  
+Please describe the feature you want to see added to sillo. The more detail, the better!
 
-Example: *“It would be awesome if we could add a built-in command to easily connect Nexios with PostgreSQL.”*
+Example: *“It would be awesome if we could add a built-in command to easily connect sillo with PostgreSQL.”*
 
 ---
 
@@ -27,7 +27,7 @@ Example: *“Currently, I have to manually configure the PostgreSQL connection, 
 ### 3. **How would you like this feature to work?**  
 Describe how you envision the feature working or what kind of user experience you’d expect.
 
-Example: *“I’d like a command like `nexios connect --db=postgres` that sets up the connection with a few simple questions (database name, user, password, etc.).”*
+Example: *“I’d like a command like `sillo connect --db=postgres` that sets up the connection with a few simple questions (database name, user, password, etc.).”*
 
 ---
 
@@ -53,4 +53,4 @@ Do you have any mockups, examples, or other details to help us understand your r
 
 ---
 
-Thank you for taking the time to submit your feature request! We appreciate your input and will consider it as we continue to improve Nexios. 
+Thank you for taking the time to submit your feature request! We appreciate your input and will consider it as we continue to improve sillo. 

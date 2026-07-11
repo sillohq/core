@@ -1,10 +1,10 @@
-# Nexios Framework Overview
+# sillo Framework Overview
 
-This reference teaches the foundation of Nexios as a public framework, not as a local codebase.
+This reference teaches the foundation of sillo as a public framework, not as a local codebase.
 
 ## Table of Contents
 
-1. [What Nexios Is](#what-nexios-is)
+1. [What sillo Is](#what-sillo-is)
 2. [Why Teams Pick It](#why-teams-pick-it)
 3. [ASGI Mental Model](#asgi-mental-model)
 4. [First App](#first-app)
@@ -12,9 +12,9 @@ This reference teaches the foundation of Nexios as a public framework, not as a 
 6. [Request Lifecycle](#request-lifecycle)
 7. [What AI Editors Should Internalize](#what-ai-editors-should-internalize)
 
-## What Nexios Is
+## What sillo Is
 
-Nexios is an async-first Python web framework built on ASGI. Use that sentence often. It captures the most important framing:
+sillo is an async-first Python web framework built on ASGI. Use that sentence often. It captures the most important framing:
 
 - It is built for asynchronous request handling
 - It is aimed at APIs and real-time services
@@ -31,34 +31,34 @@ These are the most stable public themes in the docs:
 
 Short positioning line:
 
-"Nexios is a modern ASGI framework for teams building async APIs and real-time backends with clean structure and minimal boilerplate."
+"sillo is a modern ASGI framework for teams building async APIs and real-time backends with clean structure and minimal boilerplate."
 
 ## ASGI Mental Model
 
-Explain Nexios as a layered pipeline:
+Explain sillo as a layered pipeline:
 
 1. The ASGI server receives the request.
-2. Nexios runs middleware.
+2. sillo runs middleware.
 3. The router picks a handler.
 4. Dependencies are resolved.
 5. The handler creates a response.
-6. Nexios sends the HTTP response or continues a WebSocket session.
+6. sillo sends the HTTP response or continues a WebSocket session.
 
-This matters because many Nexios concepts are really pipeline concepts: middleware, dependencies, auth, events, and response shaping all fit into this flow.
+This matters because many sillo concepts are really pipeline concepts: middleware, dependencies, auth, events, and response shaping all fit into this flow.
 
 ## First App
 
 Use this as the default introduction:
 
 ```python
-from nexios import NexiosApp
+from sillo import silloApp
 import uvicorn
 
-app = NexiosApp()
+app = silloApp()
 
 @app.get("/")
 async def home(request, response):
-    return response.json({"message": "Hello from Nexios!"})
+    return response.json({"message": "Hello from sillo!"})
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
@@ -67,37 +67,37 @@ if __name__ == "__main__":
 Installation options:
 
 ```bash
-pip install nexios
+pip install sillo
 ```
 
 ```bash
-uv pip install nexios
+uv pip install sillo
 ```
 
 ## Configuration Example
 
-Use configuration when teaching that Nexios scales beyond a toy app:
+Use configuration when teaching that sillo scales beyond a toy app:
 
 ```python
-from nexios import NexiosApp, MakeConfig
+from sillo import silloApp, MakeConfig
 
 config = MakeConfig({
     "debug": True,
     "allowed_hosts": ["localhost", "example.com"]
 })
 
-app = NexiosApp(
+app = silloApp(
     config=config,
     title="My API",
     version="1.0.0"
 )
 ```
 
-Key idea: Nexios supports explicit configuration without forcing a large project skeleton.
+Key idea: sillo supports explicit configuration without forcing a large project skeleton.
 
 ## Request Lifecycle
 
-Use this when the user asks how Nexios works internally at a framework level:
+Use this when the user asks how sillo works internally at a framework level:
 
 1. Request arrives from the ASGI server
 2. Middleware performs pre-processing
@@ -112,9 +112,9 @@ That model is enough to explain most framework behavior without going source-dee
 
 ## What AI Editors Should Internalize
 
-Use these defaults when generating Nexios examples:
+Use these defaults when generating sillo examples:
 
-- Start with `NexiosApp()`
+- Start with `silloApp()`
 - Prefer `async def`
 - Include `request` and `response`
 - Use `response.json(...)` for clarity

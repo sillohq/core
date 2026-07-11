@@ -1,0 +1,150 @@
+---
+title: Introduction to the Event System
+description: The sillo event system provides a powerful way to implement loosely coupled, event-driven architectures in your applications. It allows components to communicate without direct dependencies, making your code more maintainable and flexible.
+head:
+  - - meta
+    - property: og:title
+      content: Introduction to the Event System
+  - - meta
+    - property: og:description
+      content: The sillo event system provides a powerful way to implement loosely coupled, event-driven architectures in your applications. It allows components to communicate without direct dependencies, making your code more maintainable and flexible.
+---
+# Introduction to the Event System
+
+The sillo event system provides a powerful way to implement loosely coupled, event-driven architectures in your applications. It allows components to communicate without direct dependencies, making your code more maintainable and flexible.
+
+##  Basic Event Usage
+
+```python
+from sillo import silloApp
+
+app = silloApp()
+
+@app.events.on("user.created")
+async def handle_user_created(user):
+    print(f"User created: {user['name']}")
+
+# Trigger the event
+app.events.emit("user.created", {"name": "Bob"})
+```
+At its core, sillo events implement the publish-subscribe (pub-sub) pattern .
+
+##  Subscribing to Events
+
+To subscribe to an event, use the `on` method:
+
+```python{3}
+from sillo import silloApp
+app = silloApp()
+@app.events.on("user.created")
+async def handle_user_created(user):
+    print(f"User created: {user['name']}")
+```
+
+This allows you to register a function that will be called when the "user.created" event is emitted.
+
+## Emitting Events
+
+To emit an event, use the `emit` method:
+
+```python{3}
+@app.post("/users")
+async def create_user(req, res):
+    await app.events.emit("user.created", {"name": "Bob"})
+    ...
+```
+This Endpoint will emit the "user.created" event when a new user is created
+And the `handle_user_created` function will be called with the user data
+
+## Managing Event Instances
+
+Each event is associated with a specific event emitter instance. This means that you can create multiple event emitters and manage their events independently
+
+the `silloApp` and `Router` class provides a default event emitter instance called `events` but you can also create your own event emitters
+
+
+```python{3}
+from sillo import silloApp
+from sillo.events import EventEmitter
+
+app = silloApp()
+
+emitter = EventEmitter("custom")
+
+emitter.on("user.created")
+async def handle_user_created(user):
+    print(f"User created: {user['name']}")
+
+emitter.emit("user.created", {"name": "Bob"})
+```
+## Removing Event Listeners
+
+You can remove event listeners when they're no longer needed:
+
+```python
+# Define handler
+async def temporary_handler(data):
+    print(f"Processing data: {data}")
+
+# Add handler
+app.events.on("data.received", temporary_handler)
+
+# Later, remove the handler
+app.events.off("data.received", temporary_handler)
+
+# Or remove all handlers for an event
+app.events.off("data.received")
+```
+
+## Priority Listeners
+
+You can set a priority for event listeners. The higher the priority, the earlier the listener is called. By default, listeners are called in the order they are added
+
+```python
+from sillo.events import EventPriority
+events.on("data.received", temporary_handler, priority=EventPriority.LOW)
+events.on("data.received", temporary_handler, priority=EventPriority.MEDIUM)
+events.on("data.received", temporary_handler, priority=EventPriority.HIGH)
+```
+
+## One-time Listeners
+
+```python
+@emitter.once('first.login')  # Special decorator
+def first_login(user):
+    print(f" Welcome {user}")
+
+emitter.emit('first.login', 'Alice')  # Fires
+emitter.emit('first.login', 'Alice')  # Doesn't fire
+```
+
+## Namespaces
+
+For more complex applications, you can create separate event namespaces:
+
+```python
+from sillo.events import EventEmitter
+app = EventEmitter()
+ui = app.namespace('ui')  # Creates 'ui' namespace
+
+@ui.on('button.click')  # Actually listens to 'ui:button.click'
+def handle_click(btn):
+    print(f"{btn} clicked!")
+
+# All these work:
+ui.emit('button.click', 'submit')
+app.emit('ui:button.click', 'submit')  # Same as above
+
+```
+
+## sync Events
+sillo Supports Async Events
+
+```python
+from sillo.events import AsyncEventEmitter
+
+events = AsyncEventEmitter()
+@events.on('user.created')
+async def handle_user_created(user):
+    print(f"User created: {user['name']}")
+```

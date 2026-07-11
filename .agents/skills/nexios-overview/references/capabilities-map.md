@@ -1,4 +1,4 @@
-# Nexios Concept Map
+# sillo Concept Map
 
 Use this file first. It is the routing table for the rest of the skill.
 
@@ -23,9 +23,9 @@ If the request is narrow, jump straight to the matching section below.
 
 ## Full Topic Coverage
 
-This skill is meant to cover the main public Nexios concepts that an AI editor should know how to explain and generate code for:
+This skill is meant to cover the main public sillo concepts that an AI editor should know how to explain and generate code for:
 
-- What Nexios is and where it fits
+- What sillo is and where it fits
 - ASGI basics and the request lifecycle
 - App setup and configuration
 - Handlers and request or response flow
@@ -54,7 +54,7 @@ This skill is meant to cover the main public Nexios concepts that an AI editor s
 
 Read [framework-overview.md](framework-overview.md) for:
 
-- Positioning Nexios
+- Positioning sillo
 - ASGI mental model
 - First app example
 - Config and app setup
@@ -154,9 +154,9 @@ Read [adoption-guide.md](adoption-guide.md) for:
 
 ## Teaching Defaults for AI Editors
 
-When generating or explaining Nexios code:
+When generating or explaining sillo code:
 
-- Use `NexiosApp()` as the default app entry point.
+- Use `silloApp()` as the default app entry point.
 - Use `async def` handlers unless the docs explicitly suggest another pattern.
 - Include both `request` and `response` parameters in teaching examples.
 - Pass typed path params directly into the handler signature.

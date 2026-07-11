@@ -1,0 +1,54 @@
+{
+    "name": "lucode-starlight",
+    "version": "0.1.6",
+    "type": "module",
+    "description": "Lucode's theme for Starlight (the Astro native documentation site generator)",
+    "author": "lucas-labs",
+    "license": "MIT",
+    "readme": "README.md",
+    "funding": "https://github.com/sponsors/lucas-labs",
+    "homepage": "https://lucas-labs.github.io/lucode-starlight-theme/",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lucas-labs/lucode-starlight-theme.git",
+        "directory": "packages/lucode-starlight"
+    },
+    "bugs": {
+        "url": "https://github.com/lucas-labs/lucode-starlight-theme/issues"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "exports": {
+        ".": "./index.ts",
+        "./schema": "./schema.ts",
+        "./styles/base": "./styles/base.css",
+        "./styles/layers": "./styles/layers.css",
+        "./styles/theme": "./styles/theme.css",
+        "./components": "./user-components.ts",
+        "./components/overrides/ContentPanel.astro": "./components/overrides/ContentPanel.astro",
+        "./components/overrides/Footer.astro": "./components/overrides/Footer.astro",
+        "./components/overrides/Header.astro": "./components/overrides/Header.astro",
+        "./components/overrides/ThemeSelect.astro": "./components/overrides/ThemeSelect.astro",
+        "./components/overrides/SiteTitle.astro": "./components/overrides/SiteTitle.astro",
+        "./components/overrides/Search.astro": "./components/overrides/Search.astro",
+        "./components/overrides/SocialIcons.astro": "./components/overrides/SocialIcons.astro",
+        "./components/overrides/PageFrame.astro": "./components/overrides/PageFrame.astro",
+        "./components/overrides/TwoColumnContent.astro": "./components/overrides/TwoColumnContent.astro",
+        "./components/overrides/PageTitle.astro": "./components/overrides/PageTitle.astro",
+        "./components/overrides/TableOfContents.astro": "./components/overrides/TableOfContents.astro",
+        "./components/overrides/PageSidebar.astro": "./components/overrides/PageSidebar.astro",
+        "./components/overrides/Sidebar.astro": "./components/overrides/Sidebar.astro",
+        "./components/overrides/MarkdownContent.astro": "./components/overrides/MarkdownContent.astro",
+        "./components/overrides/Hero.astro": "./components/overrides/Hero.astro",
+        "./components/overrides/Pagination.astro": "./components/overrides/Pagination.astro",
+        "./package.json": "./package.json"
+    },
+    "peerDependencies": {
+        "@astrojs/starlight": ">=0.38.3"
+    },
+    "dependencies": {
+        "@pagefind/default-ui": "^1.5.2",
+        "marked": "^18.0.2"
+    }
+}

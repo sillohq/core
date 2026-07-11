@@ -4,10 +4,10 @@ Example of getting and processing JSON data
 
 from pydantic import BaseModel, ValidationError
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
+from sillo import silloApp
+from sillo.http import Request, Response
 
-app = NexiosApp()
+app = silloApp()
 
 
 class User(BaseModel):

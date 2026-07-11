@@ -2,8 +2,8 @@ import sqlite3
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
 
-from nexios import Depends, NexiosApp
-from nexios.types import Request, Response, State
+from sillo import Depends, silloApp
+from sillo.types import Request, Response, State
 
 # Database setup
 DB_PATH = "example.db"
@@ -45,7 +45,7 @@ class Database:
 
 # Application lifespan
 @asynccontextmanager
-async def lifespan(app: NexiosApp) -> AsyncGenerator[State, None]:
+async def lifespan(app: silloApp) -> AsyncGenerator[State, None]:
     # Startup: Initialize database connection
     db = Database(DB_PATH)
     await db.connect()
@@ -60,7 +60,7 @@ async def lifespan(app: NexiosApp) -> AsyncGenerator[State, None]:
     await db.close()
 
 
-app = NexiosApp(lifespan=lifespan)
+app = silloApp(lifespan=lifespan)
 
 
 # Dependency to get database connection

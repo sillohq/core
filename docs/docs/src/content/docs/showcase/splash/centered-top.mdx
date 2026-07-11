@@ -1,0 +1,37 @@
+---
+title: Centered Top Splash
+description: A splash layout where the visual appears before the headline and actions.
+template: splash
+hero:
+  layout: centered-top
+  announcement:
+    text: Centered top layout
+    link: /lucode-starlight-theme/showcase/splash-pages/
+  image:
+    file: ../../../../assets/placeholder169.svg
+  actions:
+    - text: View Components
+      link: /lucode-starlight-theme/showcase/starlight-components/
+      icon: right-arrow
+    - text: Theme Tokens
+      link: /lucode-starlight-theme/guides/theming/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { ContainerSection } from 'lucode-starlight/components';
+
+<ContainerSection>
+
+## Best For
+
+<CardGrid>
+  <Card title="Recognizable products" icon="starlight">
+    Lead with the visual when a screenshot, diagram, or brand asset helps readers orient immediately.
+  </Card>
+  <Card title="Release pages" icon="rocket">
+    Put a release image or feature preview above the copy, then guide readers into the documentation.
+  </Card>
+</CardGrid>
+
+</ContainerSection>

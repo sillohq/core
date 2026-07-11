@@ -1,6 +1,6 @@
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.middleware.base import BaseMiddleware
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.middleware.base import BaseMiddleware
 
 
 async def logging_middleware(req: Request, res: Response, cnext) -> Response:
@@ -19,7 +19,7 @@ class LoggingMiddleware(BaseMiddleware):
         return response
 
 
-app = NexiosApp()
+app = silloApp()
 app.add_middleware(LoggingMiddleware())
 app.add_middleware(logging_middleware)
 

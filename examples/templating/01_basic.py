@@ -1,8 +1,8 @@
-from nexios import NexiosApp
-from nexios.templating import TemplateConfig, render
-from nexios.templating.middleware import template_context
+from sillo import silloApp
+from sillo.templating import TemplateConfig, render
+from sillo.templating.middleware import template_context
 
-app = NexiosApp()
+app = silloApp()
 
 # Configure templating with custom settings
 template_config = TemplateConfig(
@@ -22,7 +22,7 @@ async def user_context(request: Request) -> dict:
 
 app.add_middleware(
     template_context(
-        default_context={"site_name": "Nexios Demo"}, context_processor=user_context
+        default_context={"site_name": "sillo Demo"}, context_processor=user_context
     )
 )
 
@@ -32,7 +32,7 @@ async def index(request: Request, response: Response) -> Response:
     # Simple template rendering with context
     return await render(
         "index.html",
-        {"title": "Welcome to Nexios", "message": "Hello from the template engine!"},
+        {"title": "Welcome to sillo", "message": "Hello from the template engine!"},
         request=request,
     )
 

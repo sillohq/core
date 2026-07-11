@@ -1,0 +1,904 @@
+@layer lucode {
+    /* theme */
+    :root {
+        --tracking-tight: -0.025em;
+        --tracking-tighter: -0.05em;
+        --tracking-normal: 0em;
+        --tracking-wide: 0.025em;
+        --tracking-wider: 0.05em;
+        --spacing: 0.25rem;
+        --radius: 0.625rem;
+        --header-height: calc(var(--spacing) * 14);
+        --sidebar-width: 18rem;
+        --container-max-width: 1280px;
+        --content-max-width: 720px;
+
+        /* starlight color mappings */
+        --sl-color-text-accent: var(--foreground);
+        --sl-color-banner-text: var(--foreground);
+        --sl-color-bg: var(--background);
+        --sl-color-text: var(--foreground);
+        --sl-color-accent-low: var(--muted);
+        --sl-color-accent: var(--border);
+        --sl-color-accent-high: var(--foreground);
+        --sl-color-gray-1: var(--gray-1);
+        --sl-color-gray-2: var(--gray-2);
+        --sl-color-gray-3: var(--gray-3);
+        --sl-color-gray-4: var(--gray-4);
+        --sl-color-gray-5: var(--gray-5);
+        --sl-color-gray-6: var(--gray-6);
+        --sl-color-gray-7: var(--gray-7);
+
+        /* colors */
+        --sl-color-orange-low: var(--orange-low);
+        --sl-color-orange: var(--orange);
+        --sl-color-orange-high: var(--orange-high);
+        --sl-color-green-low: var(--green-low);
+        --sl-color-green: var(--green);
+        --sl-color-green-high: var(--green-high);
+        --sl-color-blue-low: var(--blue-low);
+        --sl-color-blue: var(--blue);
+        --sl-color-blue-high: var(--blue-high);
+        --sl-color-purple-low: var(--purple-low);
+        --sl-color-purple: var(--purple);
+        --sl-color-purple-high: var(--purple-high);
+        --sl-color-red-low: var(--red-low);
+        --sl-color-red: var(--red);
+        --sl-color-red-high: var(--red-high);
+
+        /* theme tokens */
+        --primary: var(--foreground);
+        --primary-foreground: var(--gray-7);
+        --secondary: var(--gray-6);
+        --secondary-foreground: var(--foreground);
+        --muted: var(--gray-6);
+        --muted-foreground: var(--gray-3);
+        --accent: var(--gray-5);
+        --accent-foreground: var(--foreground);
+        --border: var(--gray-6);
+        --input: var(--gray-8);
+        --ring: var(--gray-4);
+        --card: var(--background);
+        --card-foreground: var(--foreground);
+        --code-background: var(--gray-7);
+        --mark-background: var(--gray-8);
+        --popover-background: var(--gray-7);
+        --popover-foreground: var(--foreground);
+        --markdown-foreground: var(--gray-2);
+
+        /* backdrop */
+        ::backdrop {
+            --sl-color-backdrop-overlay: color-mix(in oklab, var(--background) 80%, transparent);
+        }
+    }
+
+    .container-wrapper {
+        width: 100%;
+        padding-inline: calc(var(--spacing) * 2);
+        margin-inline: auto;
+    }
+
+    .container {
+        max-width: var(--container-max-width);
+        margin-inline: auto;
+        width: 100%;
+    }
+
+    .container-wrapper-main {
+        display: flex;
+        flex-direction: column;
+        max-width: none;
+    }
+
+    @media (min-width: 1024px) {
+        .container-wrapper-main {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+        }
+    }
+
+    :global([data-slot='docs'] .sl-markdown-content) {
+        max-width: var(--content-max-width);
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .aside {
+        display: none;
+        height: calc(100vh - var(--header-height) - 1px);
+        position: sticky;
+        top: calc(var(--header-height) + 1px);
+        overflow: hidden;
+    }
+
+    @media (min-width: 1024px) {
+        .aside {
+            display: block;
+        }
+    }
+
+    /* global typography refinements */
+    * {
+        border-color: var(--border);
+    }
+
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* link styles for markdown content */
+    .sl-markdown-content a:not([class]) {
+        text-decoration: underline;
+        text-underline-offset: calc(var(--spacing) * 1);
+        text-decoration-color: var(--muted-foreground);
+        color: var(--foreground);
+        font-weight: 500;
+    }
+
+    .sl-markdown-content a:not([class]):hover {
+        text-decoration-color: var(--foreground);
+    }
+
+    /* paragraph styles */
+    .sl-markdown-content * {
+        @media (min-width: 40rem) {
+            font-size: 15px;
+        }
+    }
+
+    .sl-markdown-content :is(h1, h2, h3, h4, h5, h6) {
+        font-weight: 500;
+        letter-spacing: var(--tracking-tight);
+        color: var(--foreground);
+    }
+
+    .sl-markdown-content h1 {
+        font-size: 1.875rem;
+        line-height: 2.25rem;
+        font-weight: 600;
+    }
+
+    .sl-markdown-content h2 {
+        font-size: 1.25rem;
+        line-height: 1.75rem;
+        padding-top: calc(var(--spacing) * 6);
+        margin-top: calc(var(--spacing) * 12);
+    }
+
+    .sl-markdown-content h3 {
+        font-size: 1.125rem;
+        line-height: 1.75rem;
+    }
+
+    .sl-markdown-content h4 {
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+
+    .sl-markdown-content h5 {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+    }
+
+    .sl-markdown-content h6 {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+    }
+
+    .sl-markdown-content .sl-heading-wrapper {
+        --sl-anchor-icon-gap: 0.375rem;
+    }
+
+    .sl-markdown-content
+        :not(h1, h2, h3, h4, h5, h6, .sl-heading-wrapper)
+        + :is(.sl-heading-wrapper) {
+        margin-top: calc(var(--spacing) * 12);
+    }
+
+    .sl-markdown-content a[data-slot='button'] {
+        margin-top: var(--sl-content-gap-y);
+    }
+
+    .sl-markdown-content
+        a[data-slot='button']
+        + :not(a, strong, em, del, span, input, code, br, :where(.not-content *)) {
+        margin-top: var(--sl-content-gap-y);
+    }
+
+    .sl-markdown-content .sl-heading-wrapper.level-h1 {
+        --sl-anchor-icon-size: 1.125rem;
+        --sl-anchor-icon-space: calc(var(--sl-anchor-icon-size) + var(--sl-anchor-icon-gap));
+        line-height: 2.25rem;
+    }
+
+    .sl-markdown-content .sl-heading-wrapper.level-h2 {
+        --sl-anchor-icon-size: calc(var(--spacing) * 5);
+        --sl-anchor-icon-space: calc(var(--sl-anchor-icon-size) + var(--sl-anchor-icon-gap));
+        line-height: 1.75rem;
+    }
+
+    .sl-markdown-content .sl-heading-wrapper.level-h3 {
+        --sl-anchor-icon-size: 0.875rem;
+        --sl-anchor-icon-space: calc(var(--sl-anchor-icon-size) + var(--sl-anchor-icon-gap));
+        line-height: 1.75rem;
+    }
+
+    .sl-markdown-content .sl-heading-wrapper.level-h4 {
+        --sl-anchor-icon-size: 0.875rem;
+        --sl-anchor-icon-space: calc(var(--sl-anchor-icon-size) + var(--sl-anchor-icon-gap));
+        line-height: 1.5rem;
+    }
+
+    .sl-markdown-content .sl-heading-wrapper:is(.level-h5, .level-h6) {
+        --sl-anchor-icon-size: 0.75rem;
+        --sl-anchor-icon-space: calc(var(--sl-anchor-icon-size) + var(--sl-anchor-icon-gap));
+        line-height: 1.25rem;
+    }
+
+    .sl-markdown-content .sl-anchor-link {
+        color: color-mix(in oklab, var(--foreground) 40%, transparent);
+    }
+
+    /* code inline */
+    .sl-markdown-content :not(pre) > code {
+        background: var(--muted);
+        border-radius: calc(var(--radius) - 4px);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875em;
+    }
+
+    /* code blocks */
+    .expressive-code .ec-line :where(span[style^='--']:not([class])),
+    :root:not([data-theme='dark'])
+        .expressive-code[data-theme='dark']
+        .ec-line
+        :where(span[style^='--']:not([class])) {
+        font-size: 0.933em;
+    }
+
+    /* kbd styles */
+    .sl-markdown-content kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: inherit;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1;
+        min-width: 1.25rem;
+        min-height: 1.25rem;
+        padding: 0.15rem 0.35rem;
+        border-radius: calc(var(--radius) - 4px);
+        border: 1px solid var(--border);
+        background: var(--secondary);
+        color: var(--foreground);
+    }
+
+    /* built-in Starlight FileTree */
+    .sl-markdown-content starlight-file-tree {
+        border: 0;
+        border-radius: var(--radius);
+        background-color: var(--code-background);
+    }
+
+    .sl-markdown-content starlight-file-tree :is(.directory > details > summary, .file) {
+        color: var(--foreground);
+    }
+
+    .sl-markdown-content starlight-file-tree :is(.empty, .comment) {
+        color: var(--muted-foreground);
+    }
+
+    .sl-markdown-content starlight-file-tree ul {
+        border-inline-start-color: var(--border);
+    }
+
+    .sl-markdown-content
+        starlight-file-tree
+        :is(
+            .directory > details > summary::marker,
+            .directory > details > summary::-webkit-details-marker
+        ) {
+        color: var(--muted-foreground);
+    }
+
+    .sl-markdown-content starlight-file-tree svg {
+        fill: var(--muted-foreground);
+    }
+
+    .sl-markdown-content starlight-file-tree .directory > details > summary:hover {
+        border-radius: calc(var(--radius) - 4px);
+        background-color: color-mix(in oklab, var(--accent) 60%, transparent);
+    }
+
+    .sl-markdown-content
+        starlight-file-tree
+        :is(.directory > details > summary:hover, .directory > details > summary:hover .tree-icon) {
+        color: var(--foreground);
+        fill: currentColor;
+    }
+
+    .sl-markdown-content starlight-file-tree .directory > details > summary:hover ~ ul {
+        border-inline-start-color: var(--ring);
+    }
+
+    .sl-markdown-content starlight-file-tree .highlight {
+        border-radius: calc(var(--radius) - 4px);
+        padding-inline: calc(var(--spacing) * 1.5);
+        color: var(--foreground);
+        background-color: var(--secondary);
+    }
+
+    .sl-markdown-content starlight-file-tree .highlight svg.tree-icon {
+        fill: currentColor;
+    }
+
+    /* built-in Starlight Cards and LinkCards */
+    .sl-markdown-content .card-grid {
+        gap: 1rem;
+    }
+
+    .sl-markdown-content :is(.card, .sl-link-card) {
+        border: 0;
+        border-radius: calc(var(--radius) + 0.25rem);
+        padding: 1.5rem;
+        background-color: var(--code-background);
+        box-shadow: none;
+        transition: background-color 0.15s;
+    }
+
+    .sl-markdown-content :is(.card, .sl-link-card):hover {
+        background-color: color-mix(in oklab, var(--code-background) 75%, var(--secondary));
+    }
+
+    .sl-markdown-content .card {
+        --card-icon-background: var(--secondary);
+        gap: 0.75rem;
+    }
+
+    .sl-markdown-content .card:nth-child(4n + 1) {
+        --card-icon-background: color-mix(in oklab, var(--sl-color-orange) 18%, var(--secondary));
+    }
+
+    .sl-markdown-content .card:nth-child(4n + 2) {
+        --card-icon-background: color-mix(in oklab, var(--sl-color-purple) 18%, var(--secondary));
+    }
+
+    .sl-markdown-content .card:nth-child(4n + 3) {
+        --card-icon-background: color-mix(in oklab, var(--sl-color-green) 18%, var(--secondary));
+    }
+
+    .sl-markdown-content .card:nth-child(4n + 4) {
+        --card-icon-background: color-mix(in oklab, var(--sl-color-red) 18%, var(--secondary));
+    }
+
+    .sl-markdown-content .card .title {
+        gap: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        color: var(--foreground);
+    }
+
+    .sl-markdown-content .card .icon {
+        border: 0;
+        box-sizing: content-box;
+        width: 1rem;
+        height: 1rem;
+        padding: 0.5rem;
+        border-radius: calc(var(--radius) - 2px);
+        color: var(--foreground);
+        background-color: var(--card-icon-background);
+    }
+
+    .sl-markdown-content .card:nth-child(n) {
+        --sl-card-border: var(--border);
+        --sl-card-bg: var(--secondary);
+    }
+
+    .sl-markdown-content .card .body {
+        font-size: 0.875rem;
+        line-height: 1.625rem;
+        color: var(--muted-foreground);
+    }
+
+    .sl-markdown-content .sl-link-card {
+        gap: 0.75rem;
+        align-items: start;
+    }
+
+    .sl-markdown-content .sl-link-card .stack {
+        gap: 0.25rem;
+    }
+
+    .sl-markdown-content .sl-link-card .title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        color: var(--foreground);
+    }
+
+    .sl-markdown-content .sl-link-card .description {
+        font-size: 0.875rem;
+        line-height: 1.625rem;
+        color: var(--muted-foreground);
+    }
+
+    .sl-markdown-content .sl-link-card .icon {
+        color: var(--muted-foreground);
+    }
+
+    .sl-markdown-content .sl-link-card:hover .icon {
+        color: var(--foreground);
+    }
+
+    /* built-in Starlight Asides */
+    .sl-markdown-content .starlight-aside {
+        --aside-background: var(--code-background);
+        --aside-border: var(--border);
+        --aside-title: var(--foreground);
+        --aside-content: var(--muted-foreground);
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--aside-border);
+        border-inline-start: 1px solid var(--aside-border);
+        border-radius: var(--radius);
+        background-color: var(--aside-background);
+        color: var(--aside-content);
+    }
+
+    .sl-markdown-content .starlight-aside--note {
+        --aside-background: color-mix(
+            in oklab,
+            var(--sl-color-blue-low) 78%,
+            var(--code-background)
+        );
+        --aside-border: color-mix(in oklab, var(--sl-color-blue) 45%, var(--border));
+        --aside-title: var(--sl-color-blue-high);
+        --aside-content: color-mix(in oklab, var(--sl-color-blue-high) 72%, var(--foreground));
+    }
+
+    .sl-markdown-content .starlight-aside--tip {
+        --aside-background: color-mix(
+            in oklab,
+            var(--sl-color-purple-low) 78%,
+            var(--code-background)
+        );
+        --aside-border: color-mix(in oklab, var(--sl-color-purple) 45%, var(--border));
+        --aside-title: var(--sl-color-purple-high);
+        --aside-content: color-mix(in oklab, var(--sl-color-purple-high) 72%, var(--foreground));
+    }
+
+    .sl-markdown-content .starlight-aside--caution {
+        --aside-background: color-mix(
+            in oklab,
+            var(--sl-color-orange-low) 82%,
+            var(--code-background)
+        );
+        --aside-border: color-mix(in oklab, var(--sl-color-orange) 48%, var(--border));
+        --aside-title: var(--sl-color-orange-high);
+        --aside-content: color-mix(in oklab, var(--sl-color-orange-high) 72%, var(--foreground));
+    }
+
+    .sl-markdown-content .starlight-aside--danger {
+        --aside-background: color-mix(
+            in oklab,
+            var(--sl-color-red-low) 80%,
+            var(--code-background)
+        );
+        --aside-border: color-mix(in oklab, var(--sl-color-red) 48%, var(--border));
+        --aside-title: var(--sl-color-red-high);
+        --aside-content: color-mix(in oklab, var(--sl-color-red-high) 72%, var(--foreground));
+    }
+
+    .sl-markdown-content .starlight-aside__title {
+        gap: 0.625rem;
+        align-items: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        color: var(--aside-title);
+    }
+
+    .sl-markdown-content .starlight-aside__icon {
+        width: 1rem;
+        height: 1rem;
+        font-size: 1rem;
+        flex-shrink: 0;
+        color: var(--aside-title);
+    }
+
+    .sl-markdown-content .starlight-aside__title + .starlight-aside__content {
+        margin-top: calc(var(--spacing) * 1.5);
+    }
+
+    .sl-markdown-content .starlight-aside__content {
+        font-size: 0.875rem;
+        line-height: 1.625rem;
+        color: var(--aside-content);
+    }
+
+    .sl-markdown-content .starlight-aside__content a {
+        color: var(--aside-title);
+        text-decoration-color: color-mix(in oklab, var(--aside-title) 45%, transparent);
+    }
+
+    .sl-markdown-content .starlight-aside__content a:hover {
+        text-decoration-color: currentColor;
+    }
+
+    /* built-in Starlight Badges */
+    .sl-markdown-content .sl-badge {
+        --badge-background: var(--secondary);
+        --badge-foreground: var(--secondary-foreground);
+        --badge-border: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        min-height: 1.25rem;
+        padding: 0.125rem 0.5rem;
+        border: 1px solid var(--badge-border);
+        border-radius: 9999px;
+        font-family: inherit;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1;
+        color: var(--badge-foreground);
+        background-color: var(--badge-background);
+        vertical-align: middle;
+    }
+
+    .sl-markdown-content .sl-badge.default {
+        --badge-background: var(--secondary);
+        --badge-foreground: var(--secondary-foreground);
+    }
+
+    .sl-markdown-content .sl-badge.note {
+        --badge-background: color-mix(
+            in oklab,
+            var(--sl-color-blue-low) 88%,
+            var(--code-background)
+        );
+        --badge-foreground: var(--sl-color-blue-high);
+    }
+
+    .sl-markdown-content .sl-badge.success {
+        --badge-background: color-mix(
+            in oklab,
+            var(--sl-color-green-low) 88%,
+            var(--code-background)
+        );
+        --badge-foreground: var(--sl-color-green-high);
+    }
+
+    .sl-markdown-content .sl-badge.tip {
+        --badge-background: color-mix(
+            in oklab,
+            var(--sl-color-purple-low) 88%,
+            var(--code-background)
+        );
+        --badge-foreground: var(--sl-color-purple-high);
+    }
+
+    .sl-markdown-content .sl-badge.caution {
+        --badge-background: color-mix(
+            in oklab,
+            var(--sl-color-orange-low) 90%,
+            var(--code-background)
+        );
+        --badge-foreground: var(--sl-color-orange-high);
+    }
+
+    .sl-markdown-content .sl-badge.danger {
+        --badge-background: color-mix(
+            in oklab,
+            var(--sl-color-red-low) 90%,
+            var(--code-background)
+        );
+        --badge-foreground: var(--sl-color-red-high);
+    }
+
+    .sl-markdown-content .sl-badge.small {
+        min-height: 1.25rem;
+        padding-inline: calc(var(--spacing) * 2);
+        font-size: 0.75rem;
+    }
+
+    .sl-markdown-content .sl-badge.medium {
+        min-height: 1.375rem;
+        padding-inline: calc(var(--spacing) * 2.5);
+        font-size: 0.75rem;
+    }
+
+    .sl-markdown-content .sl-badge.large {
+        min-height: 1.5rem;
+        padding-inline: calc(var(--spacing) * 3);
+        font-size: 0.8125rem;
+    }
+
+    .sidebar-content .sl-badge {
+        font-family: inherit;
+        font-size: 0.6875rem;
+        font-weight: 500;
+        line-height: 1;
+        min-height: 1.125rem;
+        padding: 0.125rem 0.4375rem;
+        border-radius: 9999px;
+    }
+
+    .sidebar-content a[aria-current='page'] > .sl-badge {
+        background-color: color-mix(in oklab, currentColor 12%, transparent);
+        border-color: transparent;
+        color: inherit;
+    }
+
+    /* built-in Starlight LinkButtons */
+    .sl-link-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        height: 2rem;
+        padding: 0 0.75rem;
+        border: 1px solid transparent;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+        text-decoration: none;
+        transition-property: color, background-color, border-color, box-shadow;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 0.15s;
+        outline: none;
+        outline-offset: 0.25rem;
+        box-shadow: none;
+    }
+
+    .sl-link-button:hover {
+        text-decoration: none;
+    }
+
+    .sl-link-button:focus-visible {
+        border-color: var(--ring);
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+    }
+
+    .sl-link-button svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+    }
+
+    .sl-link-button.primary {
+        color: var(--primary-foreground);
+        background-color: var(--primary);
+        border-color: transparent;
+    }
+
+    .sl-link-button.primary:hover {
+        color: var(--primary-foreground);
+        background-color: color-mix(in oklab, var(--primary) 88%, var(--background));
+    }
+
+    .sl-link-button.secondary {
+        color: var(--foreground);
+        background-color: color-mix(in oklab, var(--background) 82%, var(--secondary));
+        border-color: var(--border);
+    }
+
+    .sl-link-button.secondary:hover {
+        color: var(--foreground);
+        background-color: var(--accent);
+    }
+
+    .sl-link-button.minimal {
+        color: var(--foreground);
+        background-color: transparent;
+        border-color: transparent;
+    }
+
+    .sl-link-button.minimal:hover {
+        color: var(--accent-foreground);
+        background-color: var(--accent);
+    }
+
+    /* built-in Starlight Steps */
+    .sl-markdown-content .sl-steps {
+        --bullet-size: 1.75rem;
+        --bullet-margin: 0.25rem;
+        margin-block: calc(var(--spacing) * 6) calc(var(--spacing) * 8);
+    }
+
+    .sl-markdown-content .sl-steps > li {
+        padding-inline-start: calc(var(--bullet-size) + 1rem);
+        padding-bottom: calc(var(--spacing) * 4);
+        min-height: calc(var(--bullet-size) + var(--bullet-margin));
+    }
+
+    .sl-markdown-content .sl-steps > li::before {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--muted-foreground);
+        background-color: var(--muted);
+        box-shadow: none;
+    }
+
+    .sl-markdown-content .sl-steps > li::after {
+        background-color: var(--border);
+    }
+
+    .sl-markdown-content .sl-steps > li:last-child {
+        padding-bottom: 0;
+    }
+
+    .sl-markdown-content .sl-steps > li:last-child::after {
+        display: none;
+    }
+
+    .sl-markdown-content .sl-steps > li > .sl-heading-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        height: var(--bullet-size);
+        min-height: var(--bullet-size);
+        transform: none;
+        margin-bottom: 0;
+    }
+
+    .sl-markdown-content .sl-steps > li > .sl-heading-wrapper :is(h3, h4) {
+        font-size: 1rem;
+        line-height: 1.75rem;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .sl-markdown-content .sl-steps > li > .sl-heading-wrapper .sl-anchor-link {
+        height: var(--bullet-size);
+        line-height: var(--bullet-size);
+        align-items: center;
+    }
+
+    .sl-markdown-content .sl-steps > li > .sl-heading-wrapper .sl-anchor-icon > svg {
+        vertical-align: middle;
+        transform: none;
+    }
+
+    .sl-markdown-content .sl-steps > li > p {
+        color: var(--muted-foreground);
+    }
+
+    .sl-markdown-content .sl-steps > li > .sl-heading-wrapper + p {
+        margin-top: 0;
+    }
+
+    /* built-in Starlight Tabs */
+    .sl-markdown-content starlight-tabs {
+        display: block;
+        margin-block: calc(var(--spacing) * 6) calc(var(--spacing) * 8);
+    }
+
+    .sl-markdown-content starlight-tabs .tablist-wrapper {
+        overflow-x: auto;
+        padding: 0.25rem 0.75rem;
+        border-radius: calc(var(--radius) + 0.25rem) calc(var(--radius) + 0.25rem) 0 0;
+        background-color: var(--code-background);
+        box-shadow: inset 0 -1px 0 color-mix(in oklab, var(--border) 85%, transparent);
+    }
+
+    .sl-markdown-content starlight-tabs [role='tablist'] {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        min-width: max-content;
+        border-bottom: 0;
+        padding: 0;
+    }
+
+    .sl-markdown-content starlight-tabs .tab > [role='tab'] {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        min-height: 1.75rem;
+        padding: 0.125rem 0.5rem 0.25rem;
+        border-radius: calc(var(--radius) - 2px);
+        color: color-mix(in oklab, var(--foreground) 60%, transparent);
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        box-shadow: none;
+        transition-property: color, background-color, box-shadow;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 0.15s;
+    }
+
+    .sl-markdown-content starlight-tabs .tab > [role='tab']:hover {
+        color: var(--foreground);
+        background-color: color-mix(in oklab, var(--background) 35%, transparent);
+    }
+
+    .sl-markdown-content starlight-tabs .tab > [role='tab']:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+    }
+
+    .sl-markdown-content starlight-tabs .tab [role='tab'][aria-selected='true'] {
+        color: var(--foreground);
+        background-color: var(--background);
+        box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--border) 70%, transparent);
+    }
+
+    .sl-markdown-content starlight-tabs .tab > [role='tab'] svg {
+        width: 0.875rem;
+        height: 0.875rem;
+        color: currentColor;
+    }
+
+    .sl-markdown-content starlight-tabs .tablist-wrapper ~ [role='tabpanel'] {
+        margin-top: 0;
+        padding: 1rem;
+        border-radius: 0 0 calc(var(--radius) + 0.25rem) calc(var(--radius) + 0.25rem);
+        background-color: var(--code-background);
+    }
+
+    .sl-markdown-content starlight-tabs .tablist-wrapper ~ [role='tabpanel'] > :first-child {
+        margin-top: 0;
+    }
+
+    .sl-markdown-content starlight-tabs .tablist-wrapper ~ [role='tabpanel'] > :last-child {
+        margin-bottom: 0;
+    }
+
+    .sl-markdown-content starlight-tabs .tablist-wrapper ~ [role='tabpanel'] :is(pre, figure) {
+        margin: 0;
+    }
+
+    .sl-markdown-content starlight-tabs .tablist-wrapper ~ [role='tabpanel'] > .expressive-code {
+        margin: -1rem;
+    }
+
+    .sl-markdown-content
+        starlight-tabs
+        .tablist-wrapper
+        ~ [role='tabpanel']
+        > .expressive-code
+        .frame {
+        --button-spacing: 0.4rem;
+        border: 0;
+        border-radius: 0 0 calc(var(--radius) + 0.25rem) calc(var(--radius) + 0.25rem);
+    }
+
+    .sl-markdown-content
+        starlight-tabs
+        .tablist-wrapper
+        ~ [role='tabpanel']
+        > .expressive-code
+        .header {
+        display: none;
+    }
+
+    .sl-markdown-content
+        starlight-tabs
+        .tablist-wrapper
+        ~ [role='tabpanel']
+        > .expressive-code
+        pre {
+        border-radius: 0 0 calc(var(--radius) + 0.25rem) calc(var(--radius) + 0.25rem);
+    }
+
+    .sl-markdown-content starlight-tabs .tablist-wrapper ~ [role='tabpanel'] p {
+        color: color-mix(in oklab, var(--foreground) 72%, var(--muted-foreground));
+    }
+
+    /* footer link styles */
+    [data-slot='footer-text'] a {
+        text-decoration: underline;
+        text-underline-offset: calc(var(--spacing) * 1);
+        color: var(--muted-foreground);
+    }
+
+    [data-slot='footer-text'] a:hover {
+        color: var(--foreground);
+    }
+}

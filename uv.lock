@@ -389,7 +389,7 @@ wheels = [
 ]
 
 [[package]]
-name = "nexios"
+name = "sillo"
 version = "3.12.0"
 source = { editable = "." }
 dependencies = [

@@ -4,10 +4,10 @@ Tests for signed cookie session manager
 
 import pytest
 
-from nexios.config import MakeConfig, set_config
-from nexios.session.base import BaseSessionInterface
-from nexios.session.session_objects import Session
-from nexios.session.signed_cookies import SignedSessionManager
+from sillo.config import MakeConfig, set_config
+from sillo.session.base import BaseSessionInterface
+from sillo.session.session_objects import Session
+from sillo.session.signed_cookies import SignedSessionManager
 
 
 class TestSignedSessionManager:

@@ -1,8 +1,8 @@
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.pagination import (
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.pagination import (
     AsyncListDataHandler,
     AsyncPaginator,
     CursorPagination,
@@ -10,22 +10,22 @@ from nexios.pagination import (
     PageNumberPagination,
     PaginationError,
 )
-from nexios.testclient import TestClient
+from sillo.testclient import TestClient
 
 
 @pytest.fixture
 def test_client(test_client_factory):
     """Create a test client for integration testing"""
-    app = NexiosApp()
+    app = silloApp()
     with test_client_factory(app) as client:
         yield client, app
 
 
 class TestPaginationIntegration:
-    """Integration tests for pagination with Nexios app and TestClient"""
+    """Integration tests for pagination with sillo app and TestClient"""
 
     async def test_page_number_pagination_integration(self, test_client):
-        """Test page number pagination integration with Nexios app"""
+        """Test page number pagination integration with sillo app"""
         client, app = test_client
 
         # Sample test data
@@ -59,7 +59,7 @@ class TestPaginationIntegration:
         assert "prev" in data["pagination"]["links"]
 
     async def test_limit_offset_pagination_integration(self, test_client):
-        """Test limit offset pagination integration with Nexios app"""
+        """Test limit offset pagination integration with sillo app"""
         client, app = test_client
 
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
@@ -91,7 +91,7 @@ class TestPaginationIntegration:
         assert data["pagination"]["limit"] == 15
 
     async def test_cursor_pagination_integration(self, test_client):
-        """Test cursor pagination integration with Nexios app"""
+        """Test cursor pagination integration with sillo app"""
         client, app = test_client
 
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]

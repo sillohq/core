@@ -4,10 +4,10 @@ Tests for CORS preflight requests (OPTIONS)
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.middleware.cors import CorsConfig, CORSMiddleware
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.middleware.cors import CorsConfig, CORSMiddleware
+from sillo.testclient import TestClient
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def cors_app():
         debug=True,
     )
 
-    app = NexiosApp()
+    app = silloApp()
 
     # Add test routes
     @app.get("/test")
@@ -102,7 +102,7 @@ class TestPreflightRequests:
             allow_credentials=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/wildcard-headers")
         async def wildcard_headers_route(request: Request, response: Response):
@@ -258,7 +258,7 @@ class TestPreflightRequests:
             allow_credentials=False,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/no-creds-preflight")
         async def no_creds_preflight_route(request: Request, response: Response):
@@ -290,7 +290,7 @@ class TestPreflightRequests:
             max_age=86400,  # 24 hours
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/max-age-test")
         async def max_age_route(request: Request, response: Response):
@@ -321,7 +321,7 @@ class TestPreflightRequests:
             allow_credentials=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/blacklist-preflight")
         async def blacklist_preflight_route(request: Request, response: Response):

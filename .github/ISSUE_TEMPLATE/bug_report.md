@@ -1,16 +1,16 @@
 ---
 name: Bug Report
-about: Help us make Nexios better by reporting bugs
+about: Help us make sillo better by reporting bugs
 labels: bug
 ---
 
 ##  **Bug Report**
 
-Thank you for helping us improve Nexios! We're sorry you've encountered a bug, and we’ll do our best to get it fixed quickly.
+Thank you for helping us improve sillo! We're sorry you've encountered a bug, and we’ll do our best to get it fixed quickly.
 
 Please provide as much detail as you can. This will help us identify the issue faster. If you can, attach any error logs or screenshots — they make all the difference!
 
-### 1. **What version of Nexios are you using?**  
+### 1. **What version of sillo are you using?**  
 Include the version number or commit hash that you’re currently working with.  
 Example: `v0.1.0`, `commit abc123`.
 
@@ -18,7 +18,7 @@ Example: `v0.1.0`, `commit abc123`.
 
 ### 2. **Describe the bug**  
 Give a clear and concise description of the issue you’ve run into.  
-Example: *"When I run `nexios create`, it gives me a `ModuleNotFoundError`."*
+Example: *"When I run `sillo create`, it gives me a `ModuleNotFoundError`."*
 
 ---
 
@@ -34,7 +34,7 @@ Please provide detailed steps to reproduce the bug. The more specific, the bette
 ### 4. **What did you expect to happen?**  
 Tell us what you expected the outcome to be after following the steps.
 
-Example: *“I expected the command to run successfully and create a new Nexios project.”*
+Example: *“I expected the command to run successfully and create a new sillo project.”*
 
 ---
 

@@ -3,10 +3,10 @@ from datetime import datetime
 import humanize
 import markdown2
 
-from nexios import NexiosApp
-from nexios.templating import TemplateConfig, render
+from sillo import silloApp
+from sillo.templating import TemplateConfig, render
 
-app = NexiosApp()
+app = silloApp()
 
 
 def format_datetime(value, format="%Y-%m-%d %H:%M"):
@@ -35,7 +35,7 @@ template_config = TemplateConfig(
         "markdown": markdown_to_html,
     },
     custom_globals={
-        "site_name": "Nexios Demo",
+        "site_name": "sillo Demo",
         "current_year": datetime.now().year,
         "version": "1.0.0",
     },
@@ -49,10 +49,10 @@ async def blog_list(request, response):
     """Example using custom filters and globals."""
     posts = [
         {
-            "title": "Getting Started with Nexios",
+            "title": "Getting Started with sillo",
             "content": """
 # Getting Started
-Nexios is a modern web framework that makes it easy to build web applications.
+sillo is a modern web framework that makes it easy to build web applications.
 - Fast
 - Secure
 - Easy to use

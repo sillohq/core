@@ -1,6 +1,6 @@
-from nexios import NexiosApp
+from sillo import silloApp
 
-app = NexiosApp()
+app = silloApp()
 
 
 @app.route("/")
@@ -8,5 +8,5 @@ async def index(req, res):
     return res.json(
         {"message": "Hello, World!"},
         status_code=200,
-        headers={"X-Custom-Header": "nexios"},
+        headers={"X-Custom-Header": "sillo"},
     )

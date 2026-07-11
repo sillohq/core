@@ -1,7 +1,7 @@
-from nexios import NexiosApp
-from nexios.routing import Routes
+from sillo import silloApp
+from sillo.routing import Routes
 
-app = NexiosApp()
+app = silloApp()
 
 
 # GET /users

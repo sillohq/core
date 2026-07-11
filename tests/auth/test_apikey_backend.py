@@ -11,13 +11,13 @@ from functools import partial
 
 import pytest
 
-from nexios.application import NexiosApp
-from nexios.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, auth
-from nexios.auth.backends.apikey import create_api_key, verify_key
-from nexios.auth.model import AuthResult
-from nexios.auth.users.simple import SimpleUser
-from nexios.http import Request, Response
-from nexios.testclient import AsyncTestClient
+from sillo.application import silloApp
+from sillo.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, auth
+from sillo.auth.backends.apikey import create_api_key, verify_key
+from sillo.auth.model import AuthResult
+from sillo.auth.users.simple import SimpleUser
+from sillo.http import Request, Response
+from sillo.testclient import AsyncTestClient
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def api_key_data():
 
 
 async def test_apikey_auth_backend_success(test_client, api_key_data):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):
@@ -71,7 +71,7 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
 
 
 async def test_apikey_auth_backend_missing_header(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):
@@ -94,7 +94,7 @@ async def test_apikey_auth_backend_missing_header(test_client):
 
 
 async def test_apikey_auth_backend_invalid_key(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class Store(SimpleUser):
@@ -120,7 +120,7 @@ async def test_apikey_auth_backend_invalid_key(test_client):
 
 
 async def test_apikey_auth_backend_custom_header(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):

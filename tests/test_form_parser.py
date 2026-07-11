@@ -2,11 +2,11 @@ from typing import AsyncGenerator
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.http.formparsers import FormParser, MultiPartException, MultiPartParser
-from nexios.objects import FormData, Headers, UploadedFile
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.http.formparsers import FormParser, MultiPartException, MultiPartParser
+from sillo.objects import FormData, Headers, UploadedFile
+from sillo.testclient import TestClient
 
 # Set default limits for MultiPartParser if they don't exist
 if not hasattr(MultiPartParser, "max_file_size"):
@@ -17,7 +17,7 @@ if not hasattr(MultiPartParser, "max_files"):
     MultiPartParser.max_files = 1000
 
 # Create an application instance for testing
-app = NexiosApp()
+app = silloApp()
 
 
 # Define test endpoints for form submission

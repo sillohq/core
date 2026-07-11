@@ -11,13 +11,13 @@ from functools import partial
 
 import pytest
 
-from nexios.application import NexiosApp
-from nexios.auth import AuthenticationMiddleware, BaseUser, auth, has_permission
-from nexios.auth.backends.base import AuthenticationBackend
-from nexios.auth.model import AuthResult
-from nexios.auth.users.simple import SimpleUser, UnauthenticatedUser
-from nexios.http import Request, Response
-from nexios.testclient import AsyncTestClient
+from sillo.application import silloApp
+from sillo.auth import AuthenticationMiddleware, BaseUser, auth, has_permission
+from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.model import AuthResult
+from sillo.auth.users.simple import SimpleUser, UnauthenticatedUser
+from sillo.http import Request, Response
+from sillo.testclient import AsyncTestClient
 
 # --------------------------------------------------------------------------
 # Test User Model
@@ -79,7 +79,7 @@ def test_client():
 
 
 async def test_auth_decorator_single_scope(test_client):
-    app = NexiosApp()
+    app = silloApp()
 
     class TestBackend(AuthenticationBackend):
         async def authenticate(self, request: Request):
@@ -103,7 +103,7 @@ async def test_auth_decorator_single_scope(test_client):
 
 
 async def test_auth_decorator_no_scopes(test_client):
-    app = NexiosApp()
+    app = silloApp()
 
     class AnyBackend(AuthenticationBackend):
         async def authenticate(self, request: Request):
@@ -129,7 +129,7 @@ async def test_auth_decorator_no_scopes(test_client):
 
 
 async def test_has_permission_single_permission(test_client):
-    app = NexiosApp()
+    app = silloApp()
 
     class TestBackend(AuthenticationBackend):
         async def authenticate(self, request: Request):
@@ -158,7 +158,7 @@ async def test_has_permission_single_permission(test_client):
 
 
 async def test_has_permission_multiple_permissions(test_client):
-    app = NexiosApp()
+    app = silloApp()
 
     class TestBackend(AuthenticationBackend):
         async def authenticate(self, request: Request):
@@ -189,7 +189,7 @@ async def test_has_permission_multiple_permissions(test_client):
 
 
 async def test_has_permission_no_permissions(test_client):
-    app = NexiosApp()
+    app = silloApp()
 
     class TestBackend(AuthenticationBackend):
         async def authenticate(self, request: Request):
@@ -210,7 +210,7 @@ async def test_has_permission_no_permissions(test_client):
 
 
 async def test_has_permission_unauthenticated_user(test_client):
-    app = NexiosApp()
+    app = silloApp()
 
     class DummyMiddleware(AuthenticationMiddleware):
         def __init__(self):

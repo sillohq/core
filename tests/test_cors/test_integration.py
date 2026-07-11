@@ -4,10 +4,10 @@ Integration tests for CORS middleware with realistic scenarios
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.middleware.cors import CorsConfig, CORSMiddleware
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.middleware.cors import CorsConfig, CORSMiddleware
+from sillo.testclient import TestClient
 
 
 class TestCORSIntegration:
@@ -35,7 +35,7 @@ class TestCORSIntegration:
             max_age=86400,  # 24 hours
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         # API routes like a real web app
         @app.get("/api/users")
@@ -100,7 +100,7 @@ class TestCORSIntegration:
             allow_credentials=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         # Middleware execution order tracking
         execution_order = []
@@ -168,7 +168,7 @@ class TestCORSIntegration:
             max_age=3600,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.post("/api/upload")
         async def upload_file(request: Request, response: Response):
@@ -219,7 +219,7 @@ class TestCORSIntegration:
             allow_credentials=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.post("/api/login")
         async def login(request: Request, response: Response):
@@ -292,7 +292,7 @@ class TestCORSIntegration:
             allow_credentials=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.post("/api/json")
         async def json_endpoint(request: Request, response: Response):
@@ -340,7 +340,7 @@ class TestCORSIntegration:
             expose_headers=["X-Subdomain"],
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/api/data")
         async def subdomain_data(request: Request, response: Response):
@@ -378,7 +378,7 @@ class TestCORSIntegration:
             allow_credentials=False,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/performance-test")
         async def performance_route(request: Request, response: Response):
@@ -404,7 +404,7 @@ class TestCORSIntegration:
             expose_headers=["X-Request-ID", "X-Trace-ID"],
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         # Request ID middleware
         async def request_id_middleware(

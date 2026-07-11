@@ -1,0 +1,24 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'span'>;
+
+const { ...props } = Astro.props;
+---
+
+<span {...props}>
+    <slot />
+</span>
+
+<style>
+    span {
+        color: var(--muted-foreground);
+        margin-left: auto;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        letter-spacing: 0.05em;
+        transition-property: background-color, color;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 100ms;
+    }
+</style>

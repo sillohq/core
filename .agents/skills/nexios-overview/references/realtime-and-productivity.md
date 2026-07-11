@@ -1,4 +1,4 @@
-# Nexios Realtime And Productivity
+# sillo Realtime And Productivity
 
 Use this reference for features beyond the basic HTTP request path.
 
@@ -15,14 +15,14 @@ Use this reference for features beyond the basic HTTP request path.
 
 ## WebSockets
 
-Nexios documents WebSockets as a first-class real-time feature.
+sillo documents WebSockets as a first-class real-time feature.
 
 ### Basic WebSocket Route
 
 ```python
-from nexios import NexiosApp
+from sillo import silloApp
 
-app = NexiosApp()
+app = silloApp()
 
 @app.ws_route("/ws")
 async def ws_handler(ws):
@@ -34,7 +34,7 @@ async def ws_handler(ws):
 ### Router-Based WebSocket Organization
 
 ```python
-from nexios.routing import Router
+from sillo.routing import Router
 
 router = Router(prefix="/ws")
 async def chat_socket(ws):
@@ -55,12 +55,12 @@ Teach this lifecycle:
 
 ## OpenAPI
 
-Nexios documents automatic API docs with `/docs`, `/redoc`, and `/openapi.json`.
+sillo documents automatic API docs with `/docs`, `/redoc`, and `/openapi.json`.
 
 ```python
-from nexios import NexiosApp
+from sillo import silloApp
 
-app = NexiosApp(
+app = silloApp(
     title="My API",
     version="1.0.0",
     description="A documented API"
@@ -80,7 +80,7 @@ Use this concept for:
 
 ## Pydantic
 
-Nexios documents both manual validation and request-model-based validation patterns.
+sillo documents both manual validation and request-model-based validation patterns.
 
 ### Manual Validation
 
@@ -110,17 +110,17 @@ async def create_user(request, response):
     return response.json(request.validated_data, status_code=201)
 ```
 
-Teach Pydantic in Nexios as optional structure, not mandatory ceremony.
+Teach Pydantic in sillo as optional structure, not mandatory ceremony.
 
 ## Testing
 
 Use the documented test client when teaching endpoint tests:
 
 ```python
-from nexios import NexiosApp
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.testclient import TestClient
 
-app = NexiosApp()
+app = silloApp()
 
 @app.get("/")
 async def home(request, response):
@@ -138,16 +138,16 @@ This is the right reference when the user asks for test examples or a testing st
 
 ## CLI
 
-Nexios also documents a CLI workflow:
+sillo also documents a CLI workflow:
 
 ```bash
-pip install nexios[cli]
-nexios --help
-nexios run
-nexios dev
-nexios urls
-nexios ping /health
-nexios shell
+pip install sillo[cli]
+sillo --help
+sillo run
+sillo dev
+sillo urls
+sillo ping /health
+sillo shell
 ```
 
 Teach the CLI as the productivity layer around app execution, route inspection, and development mode.
@@ -155,7 +155,7 @@ Teach the CLI as the productivity layer around app execution, route inspection, 
 ## Static Files
 
 ```python
-from nexios.static import StaticFiles
+from sillo.static import StaticFiles
 
 static_files = StaticFiles(directory="static")
 app.register(static_files, prefix="/static")
@@ -165,10 +165,10 @@ This is useful when the app needs to serve CSS, JS, images, or uploaded assets.
 
 ## Templating
 
-Nexios documents a Jinja2-based templating workflow:
+sillo documents a Jinja2-based templating workflow:
 
 ```python
-from nexios.templating import TemplateEngine, render
+from sillo.templating import TemplateEngine, render
 
 engine = TemplateEngine()
 engine.setup_environment()
@@ -182,7 +182,7 @@ Teach templating as the HTML-rendering path for apps that are not API-only.
 
 ## Other Common Concepts
 
-These topics also appear in the Nexios docs and should be mentioned when relevant:
+These topics also appear in the sillo docs and should be mentioned when relevant:
 
 - Request info and request metadata access
 - Handler hooks and class-based extension points

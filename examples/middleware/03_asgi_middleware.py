@@ -1,4 +1,4 @@
-from nexios import NexiosApp
+from sillo import silloApp
 
 
 # Define raw ASGI middleware
@@ -25,10 +25,10 @@ def another_asgi_middleware(app):
     return middleware
 
 
-# Create NexiosApp instance
-app = NexiosApp()
+# Create silloApp instance
+app = silloApp()
 
-# Wrap ASGI middleware using Nexios' wrap_middleware
+# Wrap ASGI middleware using sillo' wrap_middleware
 app.wrap_asgi(my_asgi_middleware)
 app.wrap_asgi(another_asgi_middleware)
 
@@ -36,4 +36,4 @@ app.wrap_asgi(another_asgi_middleware)
 # Define a simple route
 @app.route("/")
 async def homepage(req: Request, res: Response) -> Response:
-    return res.text("Hello from Nexios!")
+    return res.text("Hello from sillo!")

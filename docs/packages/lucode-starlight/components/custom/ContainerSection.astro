@@ -1,0 +1,58 @@
+---
+type Props = {
+    width?: 'sm' | 'md' | 'lg' | 'xl';
+};
+
+const { width = 'lg' } = Astro.props;
+---
+
+<div class="container-section" data-width={width}>
+    <div class="container-wrapper">
+        <div class="container">
+            <slot />
+        </div>
+    </div>
+</div>
+
+<style>
+    .container-section {
+        padding-inline: calc(var(--spacing) * 2);
+
+        /* higher padding on larger screens */
+        @media (min-width: 640px) {
+            padding-inline: calc(var(--spacing) * 4);
+        }
+
+        @media (min-width: 1024px) {
+            padding-inline: calc(var(--spacing) * 12);
+        }
+
+        .container-wrapper {
+            max-width: var(--section-max-width);
+        }
+
+        &:last-of-type {
+            padding-bottom: 0;
+        }
+
+        + .container-section {
+            margin-top: calc(var(--spacing) * 12);
+        }
+
+        &[data-width='sm'] {
+            --section-max-width: 640px;
+        }
+
+        &[data-width='md'] {
+            --section-max-width: 768px;
+        }
+
+        &[data-width='lg'] {
+            --section-max-width: 1024px;
+        }
+
+        &[data-width='xl'] {
+            --section-max-width: 1280px;
+        }
+    }
+</style>

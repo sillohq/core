@@ -1,0 +1,75 @@
+---
+const { toc } = Astro.locals.starlightRoute;
+---
+
+{!toc && <slot />}
+
+{
+    toc && (
+        <main class="container-main" data-slot="docs">
+            <div class="main">
+                <slot />
+            </div>
+
+            <div class="toc">
+                <slot name="right-sidebar" />
+            </div>
+        </main>
+    )
+}
+
+<style>
+    .container-main {
+        padding-top: calc(var(--spacing) * 2);
+        padding-bottom: calc(var(--spacing) * 6);
+        position: relative;
+    }
+
+    @media (min-width: 1024px) {
+        .container-main {
+            padding-left: calc(var(--spacing) * 8);
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .container-main {
+            grid-template-columns: 1fr 240px;
+            display: grid;
+            gap: 2.5rem;
+            padding-top: calc(var(--spacing) * 8);
+            padding-bottom: calc(var(--spacing) * 8);
+        }
+    }
+
+    .main {
+        max-width: 40rem;
+        min-width: 0;
+        width: 100%;
+        margin-inline: auto;
+        padding-inline: calc(var(--spacing) * 4);
+        padding-top: calc(var(--spacing) * 4);
+
+        main {
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--spacing) * 6);
+        }
+    }
+
+    @media (min-width: 768px) {
+        .main {
+            padding-inline: 0;
+        }
+    }
+
+    .toc {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        display: none;
+    }
+    @media (min-width: 1280px) {
+        .toc {
+            display: block;
+        }
+    }
+</style>

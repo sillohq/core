@@ -2,8 +2,8 @@ import functools
 
 import pytest
 
-from nexios.config import set_config
-from nexios.testclient import TestClient
+from sillo.config import set_config
+from sillo.testclient import TestClient
 
 
 @pytest.fixture

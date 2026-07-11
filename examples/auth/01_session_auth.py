@@ -1,7 +1,7 @@
-from nexios import NexiosApp
-from nexios.auth.backends.session import SessionAuthBackend, login
-from nexios.auth.middleware import AuthenticationMiddleware
-from nexios.auth.users.base import BaseUser
+from sillo import silloApp
+from sillo.auth.backends.session import SessionAuthBackend, login
+from sillo.auth.middleware import AuthenticationMiddleware
+from sillo.auth.users.base import BaseUser
 
 
 class User(BaseUser):
@@ -49,7 +49,7 @@ class db:
         return {"id": "123", "username": "user", "password": "password"}
 
 
-app = NexiosApp()
+app = silloApp()
 
 # Session backend - no authenticate_func needed
 session_backend = SessionAuthBackend()
@@ -91,7 +91,7 @@ async def protected(req, res):
 
 @app.get("/logout")
 async def logout(req, res):
-    from nexios.auth.backends.session import logout
+    from sillo.auth.backends.session import logout
 
     logout(req)
     return res.redirect("/login")

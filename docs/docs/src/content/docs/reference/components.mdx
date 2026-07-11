@@ -1,0 +1,180 @@
+---
+title: Theme Components
+description: Reference for the user-facing components exported by lucode-starlight.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { ContainerSection, Dropdown, LinkButton } from 'lucode-starlight/components';
+
+The theme exports a small component surface for docs authors. Most UI comes from Starlight component overrides installed by the plugin.
+
+## Imports
+
+```astro
+---
+import { ContainerSection, Dropdown, LinkButton } from 'lucode-starlight/components';
+---
+```
+
+## LinkButton
+
+A compact anchor styled like the theme's buttons. Use it for calls to action inside custom MDX sections.
+
+<LinkButton href="/lucode-starlight-theme/guides/getting-started/" variant="primary">
+  Get Started
+</LinkButton>
+{' '}
+<LinkButton href="/lucode-starlight-theme/guides/theming/" variant="secondary">
+  Customize
+</LinkButton>
+{' '}
+<LinkButton href="/lucode-starlight-theme/showcase/starlight-components/" variant="minimal">
+  Showcase
+</LinkButton>
+
+```astro
+---
+import { LinkButton } from 'lucode-starlight/components';
+---
+
+<LinkButton href="/lucode-starlight-theme/guides/getting-started/" variant="primary" size="md">
+  Get Started
+</LinkButton>
+```
+
+| Prop | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `href` | `string`, `URL`, `null`, or `undefined` | Required | Passed to the underlying anchor. |
+| `variant` | `'primary'`, `'secondary'`, or `'minimal'` | `'primary'` | Controls color and hover treatment. |
+| `size` | `'2xs'`, `'xs'`, `'sm'`, `'md'`, or `'lg'` | `'md'` | Controls height, font size, and padding. |
+| Other anchor attributes | Astro `HTMLAttributes<'a'>` | - | `target`, `rel`, `aria-*`, `class`, and similar attributes are forwarded. |
+
+## ContainerSection
+
+A layout wrapper that constrains content and adds responsive horizontal padding. It is useful on splash pages where you want full-width page sections that still align to the theme container.
+
+<ContainerSection width="md">
+  <CardGrid>
+    <Card title="Inside a section" icon="open-book">
+      This card grid is wrapped in a medium-width ContainerSection.
+    </Card>
+    <Card title="Responsive padding" icon="setting">
+      The section increases inline padding across mobile, tablet, and desktop breakpoints.
+    </Card>
+  </CardGrid>
+</ContainerSection>
+
+```astro
+---
+import { ContainerSection } from 'lucode-starlight/components';
+---
+
+<ContainerSection width="lg">
+  <h2>Section Title</h2>
+  <p>Content goes here within a centered container.</p>
+</ContainerSection>
+```
+
+| Prop | Type | Default | Max width |
+| --- | --- | --- | --- |
+| `width` | `'sm'`, `'md'`, `'lg'`, or `'xl'` | `'lg'` | `640px`, `768px`, `1024px`, or `1280px` |
+
+## Dropdown
+
+A compound menu component for compact action lists, navigation groups, and small command menus. It supports click, keyboard navigation, and optional hover opening.
+
+<Dropdown.Root>
+  <Dropdown.Trigger variant="secondary">Theme actions</Dropdown.Trigger>
+  <Dropdown.Content align="start">
+    <Dropdown.Label>Documentation</Dropdown.Label>
+    <Dropdown.Item as="a" href="/lucode-starlight-theme/guides/getting-started/">
+      Getting Started
+    </Dropdown.Item>
+    <Dropdown.Item as="a" href="/lucode-starlight-theme/guides/theming/">
+      Customize Theme
+      <Dropdown.Shortcut>CSS</Dropdown.Shortcut>
+    </Dropdown.Item>
+    <Dropdown.Separator />
+    <Dropdown.Item disabled>Coming Soon</Dropdown.Item>
+  </Dropdown.Content>
+</Dropdown.Root>
+
+```astro
+---
+import { Dropdown } from 'lucode-starlight/components';
+---
+
+<Dropdown.Root>
+  <Dropdown.Trigger variant="secondary">Theme actions</Dropdown.Trigger>
+  <Dropdown.Content align="start">
+    <Dropdown.Label>Documentation</Dropdown.Label>
+    <Dropdown.Item as="a" href="/guides/getting-started/">
+      Getting Started
+    </Dropdown.Item>
+    <Dropdown.Item as="a" href="/guides/theming/">
+      Customize Theme
+      <Dropdown.Shortcut>CSS</Dropdown.Shortcut>
+    </Dropdown.Item>
+    <Dropdown.Separator />
+    <Dropdown.Item disabled>Coming Soon</Dropdown.Item>
+  </Dropdown.Content>
+</Dropdown.Root>
+```
+
+### Dropdown Parts
+
+| Part | Purpose |
+| --- | --- |
+| `Dropdown.Root` | Owns dropdown state and wraps trigger plus content. |
+| `Dropdown.Trigger` | Renders the button that opens the menu. |
+| `Dropdown.Content` | Renders the positioned menu panel. |
+| `Dropdown.Item` | Renders an actionable menu row. |
+| `Dropdown.Label` | Renders non-interactive group text. |
+| `Dropdown.Separator` | Renders a horizontal separator. |
+| `Dropdown.Shortcut` | Renders right-aligned shortcut or metadata text inside an item. |
+
+### Dropdown Props
+
+| Component | Prop | Type | Default |
+| --- | --- | --- | --- |
+| `Dropdown.Root` | `openOnHover` | `boolean` | `false` |
+| `Dropdown.Root` | `closeDelay` | `number` | `200` |
+| `Dropdown.Trigger` | `asChild` | `boolean` | `false` |
+| `Dropdown.Trigger` | `variant` | `'primary'`, `'secondary'`, or `'minimal'` | `'secondary'` |
+| `Dropdown.Trigger` | `size` | `'2xs'`, `'xs'`, `'sm'`, `'md'`, `'lg'`, `'icon-sm'`, `'icon-md'`, or `'icon-lg'` | `'sm'` |
+| `Dropdown.Content` | `side` | `'top'`, `'bottom'`, `'left'`, or `'right'` | `'bottom'` |
+| `Dropdown.Content` | `align` | `'start'`, `'center'`, or `'end'` | `'start'` |
+| `Dropdown.Content` | `sideOffset` | `number` | `4` |
+| `Dropdown.Content` | `animationDuration` | `number` | `150` |
+| `Dropdown.Item` | `as` | Astro `HTMLTag` | `'div'` |
+| `Dropdown.Item` | `inset` | `boolean` | `false` |
+| `Dropdown.Item` | `disabled` | `boolean` | `false` |
+| `Dropdown.Label` | `inset` | `boolean` | `false` |
+
+## Starlight Overrides
+
+The plugin also provides component overrides for:
+
+- `ThemeSelect`
+- `PageFrame`
+- `Header`
+- `SiteTitle`
+- `Sidebar`
+- `TwoColumnContent`
+- `ContentPanel`
+- `PageTitle`
+- `MarkdownContent`
+- `Hero`
+- `Footer`
+- `SocialIcons`
+- `Pagination`
+- `Search`
+- `TableOfContents`
+- `PageSidebar`
+
+You do not import these directly for normal use. Add the plugin and Starlight renders them for you.
+
+## Related Pages
+
+- [Configuration](/lucode-starlight-theme/guides/configuration/) explains how overrides are registered.
+- [Starlight Components](/lucode-starlight-theme/showcase/starlight-components/) previews the built-in Starlight components after Lucode styling.

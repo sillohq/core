@@ -1,0 +1,121 @@
+---
+import { marked } from 'marked';
+import userConfig from 'virtual:lucode-starlight-config';
+import Drawer from './parts/Drawer.astro';
+
+const { hasSidebar } = Astro.locals.starlightRoute;
+---
+
+<div data-slot="layout">
+    <header>
+        <div class="container-wrapper px-6">
+            <div class="container">
+                <slot name="header" />
+            </div>
+        </div>
+    </header>
+
+    <main>
+        {!hasSidebar && <slot />}
+
+        {
+            hasSidebar && (
+                <div class="container-wrapper">
+                    <div class="container container-wrapper-main">
+                        <aside class="aside">
+                            <slot name="sidebar" />
+                        </aside>
+
+                        <slot />
+                    </div>
+                </div>
+            )
+        }
+    </main>
+
+    <footer>
+        <div data-slot="footer-text" set:html={marked.parseInline(userConfig.footerText)} />
+    </footer>
+</div>
+
+<Drawer />
+
+<style>
+    [data-slot='layout'] {
+        /* group/layout relative z-10 flex min-h-svh flex-col bg-background */
+        position: relative;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        min-height: 100svh;
+        background: var(--background);
+
+        header {
+            /* sticky top-0 z-50 w-full bg-background */
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            width: 100%;
+            background: var(--background);
+
+            .container-wrapper {
+                padding-inline: calc(var(--spacing) * 6);
+
+                .container {
+                    /* flex h-(--header-height) items-center **:data-[slot=separator]:h-4! group-has-data-[slot=designer]/layout:fixed:max-w-none 3xl:fixed:container */
+                    display: flex;
+                    height: var(--header-height);
+                    align-items: center;
+                    max-width: none;
+                }
+            }
+        }
+
+        > main {
+            /* flex min-h-0 flex-1 flex-col */
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+
+        > footer {
+            border-top: none;
+            height: 6rem;
+            display: flex;
+            align-items: center;
+
+            [data-slot='footer-text'] {
+                width: 100%;
+                max-width: var(--container-max-width);
+                margin-inline: auto;
+                padding-inline: calc(var(--spacing) * 6);
+                font-size: 0.875rem;
+                line-height: 1.25rem;
+                color: var(--muted-foreground);
+                text-wrap: balance;
+                text-align: center;
+            }
+
+            &:is(:where(body):has(*[data-slot='docs']) *) {
+                display: none;
+            }
+
+            &:is(:where(body):has(.docs-nav)) {
+                padding-bottom: calc(var(--spacing) * 20);
+
+                @media (min-width: 640px) {
+                    padding-bottom: 0;
+                }
+            }
+
+            &:is(:where(body):has(.section-soft)) {
+                background: var(--surface-40);
+            }
+
+            &:is(:where(body):has(*[data-slot='designer']) *) {
+                display: none;
+            }
+        }
+    }
+</style>

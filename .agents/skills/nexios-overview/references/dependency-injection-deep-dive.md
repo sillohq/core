@@ -1,4 +1,4 @@
-# Nexios Dependency Injection Deep Dive
+# sillo Dependency Injection Deep Dive
 
 Use this reference when the request is specifically about `Depend(...)`, dependency trees, cleanup, or context-aware injection.
 
@@ -14,20 +14,20 @@ Use this reference when the request is specifically about `Depend(...)`, depende
 
 ## Mental Model
 
-Nexios DI is explicit and function-centered. Teach it as:
+sillo DI is explicit and function-centered. Teach it as:
 
 - Declare what the handler needs
 - Wrap reusable providers with `Depend(...)`
-- Let Nexios resolve the dependency tree per request
+- Let sillo resolve the dependency tree per request
 
 That framing is better than describing it as a large container system.
 
 ## Basic Dependency
 
 ```python
-from nexios import NexiosApp, Depend
+from sillo import silloApp, Depend
 
-app = NexiosApp()
+app = silloApp()
 
 def get_settings():
     return {"debug": True, "version": "1.0.0"}
@@ -37,7 +37,7 @@ async def show_config(request, response, settings: dict = Depend(get_settings)):
     return response.json(settings)
 ```
 
-Teach this as the default entry point for DI in Nexios.
+Teach this as the default entry point for DI in sillo.
 
 ## Sub-Dependencies
 
@@ -84,11 +84,11 @@ Teaching point:
 
 ## Context-Aware Injection
 
-Nexios docs also describe injecting request-aware context.
+sillo docs also describe injecting request-aware context.
 
 ```python
 
-from nexios.dependencies import Context
+from sillo.dependencies import Context
 
 def get_user(ctx = Context()):
     request = ctx.request
@@ -126,13 +126,13 @@ Teach this as the clean way to access request-specific state without global vari
 def global_dep():
     return "global-value"
 
-app = NexiosApp(dependencies=[Depend(global_dep)])
+app = silloApp(dependencies=[Depend(global_dep)])
 ```
 
 ### Router-Level
 
 ```python
-from nexios.routing import Router
+from sillo.routing import Router
 
 def router_dep():
     return "router-value"

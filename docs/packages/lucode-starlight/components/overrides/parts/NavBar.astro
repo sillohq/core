@@ -1,0 +1,111 @@
+---
+import { AstroError } from 'astro/errors';
+import userConfig from 'virtual:lucode-starlight-config';
+import starlightConfig from 'virtual:starlight/user-config';
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+const currentPath = Astro.url.pathname;
+
+const defaultLang =
+    starlightConfig.defaultLocale?.lang || starlightConfig.defaultLocale?.locale || 'en';
+
+export function getTranslation(
+    translations: Record<string, string>,
+    link: string,
+    description: string
+) {
+    const defaultTranslation = translations[defaultLang];
+
+    if (!defaultTranslation) {
+        throw new AstroError(
+            `The ${description} for "${link}" must have a key for the default language "${defaultLang}".`,
+            'Update the Starlight config to include a topic label for the default language.'
+        );
+    }
+
+    let translation = defaultTranslation;
+
+    if (Astro.currentLocale) {
+        translation = translations[Astro.currentLocale] ?? defaultTranslation;
+    }
+
+    return translation;
+}
+---
+
+<nav class="nav-bar">
+    {
+        userConfig.navLinks?.map((nav) => {
+            const absoluteLinkRegex = /^https?:\/\//;
+
+            const link =
+                !absoluteLinkRegex.test(nav.link) && Astro.currentLocale
+                    ? getRelativeLocaleUrl(Astro.currentLocale, nav.link)
+                    : nav.link;
+            const label =
+                typeof nav.label === 'string'
+                    ? nav.label
+                    : getTranslation(nav.label, nav.link, 'label');
+
+            return (
+                <a class:list={[{ active: currentPath === link }]} href={link} {...nav.attrs}>
+                    {label}
+                    {nav.badge && <span class="badge">{nav.badge}</span>}
+                </a>
+            );
+        })
+    }
+</nav>
+
+<style>
+    .nav-bar {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        align-items: center;
+        justify-content: center;
+        display: flex;
+    }
+
+    @media (min-width: 1280px) {
+        .nav-bar {
+            gap: 0.375rem;
+        }
+    }
+
+    .nav-bar a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        min-height: 2rem;
+        padding: 0 0.625rem;
+        border-radius: calc(var(--radius) - 2px);
+        text-decoration: none;
+        transition-property:
+            color, background-color, border-color, text-decoration-color, fill, stroke;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 0.15s;
+        color: var(--foreground);
+    }
+
+    .nav-bar a:hover {
+        color: var(--accent-foreground);
+        background-color: color-mix(in oklab, var(--accent) 80%, transparent);
+    }
+
+    .badge {
+        padding-top: calc(var(--spacing) * 0.5);
+        padding-bottom: calc(var(--spacing) * 0.5);
+        padding-left: calc(var(--spacing) * 1.5);
+        padding-right: calc(var(--spacing) * 1.5);
+        margin-left: calc(var(--spacing) * 2);
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        line-height: 1rem;
+        font-weight: 400;
+        line-height: 1;
+        text-decoration: none;
+        background: #adfa1d;
+        color: #000000;
+    }
+</style>

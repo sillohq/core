@@ -12,12 +12,12 @@ from functools import partial
 
 import pytest
 
-from nexios.application import NexiosApp
-from nexios.auth import AuthenticationMiddleware, BaseUser, auth
-from nexios.auth.backends.session import SessionAuthBackend, login, logout
-from nexios.http import Request, Response
-from nexios.session.middleware import SessionMiddleware
-from nexios.testclient import AsyncTestClient
+from sillo.application import silloApp
+from sillo.auth import AuthenticationMiddleware, BaseUser, auth
+from sillo.auth.backends.session import SessionAuthBackend, login, logout
+from sillo.http import Request, Response
+from sillo.session.middleware import SessionMiddleware
+from sillo.testclient import AsyncTestClient
 
 
 class TestUser(BaseUser):
@@ -65,7 +65,7 @@ def test_client():
 
 
 async def test_session_auth_backend_success(test_client):
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(AuthenticationMiddleware(TestUser, [SessionAuthBackend()]))
     app.add_middleware(SessionMiddleware(secret_key="secret"))
 
@@ -95,7 +95,7 @@ async def test_session_auth_backend_success(test_client):
 
 
 async def test_session_auth_backend_no_session(test_client):
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
     app.add_middleware(SessionMiddleware(secret_key="secret"))
 
@@ -111,7 +111,7 @@ async def test_session_auth_backend_no_session(test_client):
 
 
 async def test_session_auth_backend_missing_session_middleware(test_client):
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
 
     @app.get("/protected")
@@ -126,7 +126,7 @@ async def test_session_auth_backend_missing_session_middleware(test_client):
 
 
 async def test_session_auth_backend_logout(test_client):
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
     app.add_middleware(SessionMiddleware(secret_key="secret"))
 
@@ -167,7 +167,7 @@ async def test_session_auth_backend_logout(test_client):
 
 
 async def test_session_auth_backend_custom_session_key(test_client):
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(
         AuthenticationMiddleware(
             TestUser, SessionAuthBackend(session_key="custom_user")

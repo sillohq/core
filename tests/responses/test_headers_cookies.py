@@ -7,16 +7,16 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== Header Tests ==========
 
 
-def test_set_header(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_header(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting custom headers"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/headers")
     async def with_headers(request: Request, response: Response):
@@ -28,9 +28,9 @@ def test_set_header(test_client_factory: Callable[[NexiosApp], TestClient]):
         assert resp.headers.get("x-custom-header") == "custom-value"
 
 
-def test_set_multiple_headers(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_multiple_headers(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting multiple headers"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/multi-headers")
     async def multi_headers(request: Request, response: Response):
@@ -50,9 +50,9 @@ def test_set_multiple_headers(test_client_factory: Callable[[NexiosApp], TestCli
         assert resp.headers.get("x-header-3") == "value3"
 
 
-def test_set_headers_method(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_headers_method(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting headers using set_headers method"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/batch-headers")
     async def batch_headers(request: Request, response: Response):
@@ -70,9 +70,9 @@ def test_set_headers_method(test_client_factory: Callable[[NexiosApp], TestClien
         assert resp.headers.get("x-rate-limit") == "100"
 
 
-def test_override_header(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_override_header(test_client_factory: Callable[[silloApp], TestClient]):
     """Test overriding existing header"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/override")
     async def override_header(request: Request, response: Response):
@@ -83,9 +83,9 @@ def test_override_header(test_client_factory: Callable[[NexiosApp], TestClient])
         assert resp.headers.get("x-value") == "second"
 
 
-def test_has_header(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_has_header(test_client_factory: Callable[[silloApp], TestClient]):
     """Test checking if header exists"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/check-header")
     async def check_header(request: Request, response: Response):
@@ -104,9 +104,9 @@ def test_has_header(test_client_factory: Callable[[NexiosApp], TestClient]):
         assert data["has_missing"] is False
 
 
-def test_remove_header(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_remove_header(test_client_factory: Callable[[silloApp], TestClient]):
     """Test removing a header"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/remove-header")
     async def remove_header(request: Request, response: Response):
@@ -125,9 +125,9 @@ def test_remove_header(test_client_factory: Callable[[NexiosApp], TestClient]):
 # ========== Cookie Tests ==========
 
 
-def test_set_cookie(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_cookie(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting a basic cookie"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/set-cookie")
     async def set_cookie(request: Request, response: Response):
@@ -146,10 +146,10 @@ def test_set_cookie(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_set_cookie_with_max_age(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test setting cookie with max_age"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/cookie-max-age")
     async def cookie_max_age(request: Request, response: Response):
@@ -164,9 +164,9 @@ def test_set_cookie_with_max_age(
         assert "token" in resp.cookies
 
 
-def test_set_cookie_with_path(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_cookie_with_path(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting cookie with path"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/cookie-path")
     async def cookie_path(request: Request, response: Response):
@@ -181,9 +181,9 @@ def test_set_cookie_with_path(test_client_factory: Callable[[NexiosApp], TestCli
         assert "user" in resp.cookies
 
 
-def test_set_cookie_with_domain(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_cookie_with_domain(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting cookie with domain"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/cookie-domain")
     async def cookie_domain(request: Request, response: Response):
@@ -198,9 +198,9 @@ def test_set_cookie_with_domain(test_client_factory: Callable[[NexiosApp], TestC
         assert "tracking" in resp.cookies
 
 
-def test_set_cookie_secure(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_cookie_secure(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting secure cookie"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/cookie-secure")
     async def cookie_secure(request: Request, response: Response):
@@ -215,9 +215,9 @@ def test_set_cookie_secure(test_client_factory: Callable[[NexiosApp], TestClient
         assert "secure_token" in resp.cookies
 
 
-def test_set_cookie_httponly(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_cookie_httponly(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting httponly cookie"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/cookie-httponly")
     async def cookie_httponly(request: Request, response: Response):
@@ -232,9 +232,9 @@ def test_set_cookie_httponly(test_client_factory: Callable[[NexiosApp], TestClie
         assert "session" in resp.cookies
 
 
-def test_set_cookie_samesite(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_cookie_samesite(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting cookie with samesite attribute"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/cookie-samesite")
     async def cookie_samesite(request: Request, response: Response):
@@ -249,9 +249,9 @@ def test_set_cookie_samesite(test_client_factory: Callable[[NexiosApp], TestClie
         assert "csrf" in resp.cookies
 
 
-def test_set_multiple_cookies(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_multiple_cookies(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting multiple cookies"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/multi-cookies")
     async def multi_cookies(request: Request, response: Response):
@@ -271,9 +271,9 @@ def test_set_multiple_cookies(test_client_factory: Callable[[NexiosApp], TestCli
         assert "cookie3" in cookies
 
 
-def test_set_cookies_batch(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_cookies_batch(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting cookies in batch"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/batch-cookies")
     async def batch_cookies(request: Request, response: Response):
@@ -296,9 +296,9 @@ def test_set_cookies_batch(test_client_factory: Callable[[NexiosApp], TestClient
         assert "preferences" in cookies
 
 
-def test_delete_cookie(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_delete_cookie(test_client_factory: Callable[[silloApp], TestClient]):
     """Test deleting a cookie"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/delete-cookie")
     async def delete_cookie(request: Request, response: Response):
@@ -313,9 +313,9 @@ def test_delete_cookie(test_client_factory: Callable[[NexiosApp], TestClient]):
         assert resp.status_code == 200
 
 
-def test_set_permanent_cookie(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_permanent_cookie(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting a permanent cookie"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/permanent-cookie")
     async def permanent_cookie(request: Request, response: Response):
@@ -333,9 +333,9 @@ def test_set_permanent_cookie(test_client_factory: Callable[[NexiosApp], TestCli
 # ========== Cache Control Tests ==========
 
 
-def test_enable_caching(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_enable_caching(test_client_factory: Callable[[silloApp], TestClient]):
     """Test enabling response caching"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/cached")
     async def cached_response(request: Request, response: Response):
@@ -351,9 +351,9 @@ def test_enable_caching(test_client_factory: Callable[[NexiosApp], TestClient]):
         assert "max-age=3600" in resp.headers.get("cache-control", "")
 
 
-def test_enable_caching_private(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_enable_caching_private(test_client_factory: Callable[[silloApp], TestClient]):
     """Test enabling private caching"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/private-cache")
     async def private_cache(request: Request, response: Response):
@@ -370,9 +370,9 @@ def test_enable_caching_private(test_client_factory: Callable[[NexiosApp], TestC
         assert "max-age=1800" in cache_control
 
 
-def test_disable_caching(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_disable_caching(test_client_factory: Callable[[silloApp], TestClient]):
     """Test disabling response caching"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/no-cache")
     async def no_cache_response(request: Request, response: Response):
@@ -391,9 +391,9 @@ def test_disable_caching(test_client_factory: Callable[[NexiosApp], TestClient])
 # ========== CSP Header Tests ==========
 
 
-def test_add_csp_header(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_add_csp_header(test_client_factory: Callable[[silloApp], TestClient]):
     """Test adding Content Security Policy header"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/csp")
     async def with_csp(request: Request, response: Response):
@@ -415,10 +415,10 @@ def test_add_csp_header(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_headers_and_cookies_together(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test setting both headers and cookies"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/combined")
     async def combined(request: Request, response: Response):
@@ -435,9 +435,9 @@ def test_headers_and_cookies_together(
         assert "session" in resp.cookies
 
 
-def test_complex_response_chain(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_complex_response_chain(test_client_factory: Callable[[silloApp], TestClient]):
     """Test complex response with multiple operations"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/complex")
     async def complex_response(request: Request, response: Response):

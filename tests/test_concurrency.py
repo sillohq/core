@@ -3,7 +3,7 @@ import time
 
 import pytest
 
-from nexios.utils.concurrency import (
+from sillo.utils.concurrency import (
     AsyncLazy,
     TaskGroup,
     create_background_task,

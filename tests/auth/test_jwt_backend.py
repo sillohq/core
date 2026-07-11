@@ -13,8 +13,8 @@ from functools import partial
 
 import pytest
 
-from nexios.application import NexiosApp
-from nexios.auth import (
+from sillo.application import silloApp
+from sillo.auth import (
     AuthenticationMiddleware,
     BaseUser,
     JWTAuthBackend,
@@ -22,9 +22,9 @@ from nexios.auth import (
     create_jwt,
     decode_jwt,
 )
-from nexios.auth.users.simple import SimpleUser
-from nexios.http import Request, Response
-from nexios.testclient import AsyncTestClient
+from sillo.auth.users.simple import SimpleUser
+from sillo.http import Request, Response
+from sillo.testclient import AsyncTestClient
 
 
 # Test User Model for authentication
@@ -97,7 +97,7 @@ def invalid_jwt_token():
 
 
 async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
-    app = NexiosApp()
+    app = silloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -120,7 +120,7 @@ async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
 
 
 async def test_jwt_auth_backend_missing_header(test_client):
-    app = NexiosApp()
+    app = silloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -143,7 +143,7 @@ async def test_jwt_auth_backend_missing_header(test_client):
 
 
 async def test_jwt_auth_backend_missing_header(test_client):
-    app = NexiosApp()
+    app = silloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -159,7 +159,7 @@ async def test_jwt_auth_backend_missing_header(test_client):
 
 
 async def test_jwt_auth_backend_invalid_header_format(test_client):
-    app = NexiosApp()
+    app = silloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -175,7 +175,7 @@ async def test_jwt_auth_backend_invalid_header_format(test_client):
 
 
 async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
-    app = NexiosApp()
+    app = silloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -193,7 +193,7 @@ async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
 
 
 async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
-    app = NexiosApp()
+    app = silloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -211,7 +211,7 @@ async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
 
 
 async def test_jwt_auth_backend_user_not_found(test_client):
-    app = NexiosApp()
+    app = silloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -232,7 +232,7 @@ async def test_jwt_auth_backend_user_not_found(test_client):
 
 
 async def test_jwt_auth_backend_wrong_identifier_field(test_client):
-    app = NexiosApp()
+    app = silloApp()
     jwt_backend = JWTAuthBackend(identifier="user_id", secret_key=SECRET)
     app.add_middleware(AuthenticationMiddleware(TestUser, jwt_backend))
 

@@ -1,5 +1,5 @@
 """
-Example application demonstrating Nexios lifespan handling with Granian.
+Example application demonstrating sillo lifespan handling with Granian.
 
 This example shows:
 1. Regular startup/shutdown handlers
@@ -14,9 +14,9 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from nexios import NexiosApp
-from nexios.http.request import Request
-from nexios.http.response import Response
+from sillo import silloApp
+from sillo.http.request import Request
+from sillo.http.response import Response
 
 # Configure logging
 logging.basicConfig(
@@ -98,7 +98,7 @@ async def lifespan_context(app):
 # Create application instances to demonstrate different approaches
 
 # 1. Application with regular startup/shutdown handlers
-regular_app = NexiosApp(title="Regular Handlers Example")
+regular_app = silloApp(title="Regular Handlers Example")
 
 
 @regular_app.on_startup()
@@ -130,11 +130,11 @@ async def shutdown_handler2():
 
 
 # 2. Application with custom lifespan context manager
-custom_app = NexiosApp(title="Custom Lifespan Example", lifespan=lifespan_context)
+custom_app = silloApp(title="Custom Lifespan Example", lifespan=lifespan_context)
 
 
 # 3. Application demonstrating error handling
-error_app = NexiosApp(title="Error Handling Example")
+error_app = silloApp(title="Error Handling Example")
 
 
 @error_app.on_startup()
@@ -153,7 +153,7 @@ async def error_cleanup():
 
 
 # Main application that combines regular handlers and custom lifespan
-app = NexiosApp(title="Nexios Lifespan Demo", lifespan=lifespan_context)
+app = silloApp(title="sillo Lifespan Demo", lifespan=lifespan_context)
 
 
 # Add some regular handlers too (these won't run when custom lifespan is used)
@@ -171,7 +171,7 @@ async def additional_shutdown():
 @app.get("/")
 async def home(request: Request, response: Response):
     """Simple endpoint to verify the app is running"""
-    return response.json({"status": "ok", "message": "Nexios lifespan demo is running"})
+    return response.json({"status": "ok", "message": "sillo lifespan demo is running"})
 
 
 @app.get("/db-status")
@@ -195,7 +195,7 @@ async def trigger_error(request: Request, response: Response):
 if __name__ == "__main__":
     # Instructions for running with different servers
     print("""
-Nexios Lifespan Demo Application
+sillo Lifespan Demo Application
 --------------------------------
 
 Run with Granian:

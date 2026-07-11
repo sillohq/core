@@ -6,19 +6,19 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
-from nexios.types import ASGIApp, Receive, Scope, Send
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
+from sillo.types import ASGIApp, Receive, Scope, Send
 
 # ========== Pure ASGI Middleware Tests ==========
 
 
 def test_pure_asgi_middleware_basic(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test basic pure ASGI middleware"""
-    app = NexiosApp()
+    app = silloApp()
 
     executed = []
 
@@ -47,10 +47,10 @@ def test_pure_asgi_middleware_basic(
 
 
 def test_pure_asgi_middleware_modifies_scope(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test ASGI middleware modifying scope"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ScopeModifierMiddleware:
         def __init__(self, app: ASGIApp):
@@ -74,10 +74,10 @@ def test_pure_asgi_middleware_modifies_scope(
 
 
 def test_pure_asgi_middleware_intercepts_send(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test ASGI middleware intercepting send"""
-    app = NexiosApp()
+    app = silloApp()
 
     class HeaderInjectorMiddleware:
         def __init__(self, app: ASGIApp):
@@ -105,10 +105,10 @@ def test_pure_asgi_middleware_intercepts_send(
 
 
 def test_pure_asgi_middleware_multiple_layers(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test multiple pure ASGI middleware layers"""
-    app = NexiosApp()
+    app = silloApp()
 
     execution_order = []
 
@@ -145,10 +145,10 @@ def test_pure_asgi_middleware_multiple_layers(
 
 
 def test_pure_asgi_middleware_request_logging(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test ASGI middleware for request logging"""
-    app = NexiosApp()
+    app = silloApp()
 
     logs = []
 
@@ -182,10 +182,10 @@ def test_pure_asgi_middleware_request_logging(
 
 
 def test_pure_asgi_middleware_handles_websocket(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test ASGI middleware handling different connection types"""
-    app = NexiosApp()
+    app = silloApp()
 
     handled_types = []
 
@@ -209,10 +209,10 @@ def test_pure_asgi_middleware_handles_websocket(
 
 
 def test_pure_asgi_middleware_timing(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test ASGI middleware for request timing"""
-    app = NexiosApp()
+    app = silloApp()
 
     import time
 
@@ -246,11 +246,11 @@ def test_pure_asgi_middleware_timing(
         assert process_time >= 0
 
 
-def test_pure_asgi_middleware_with_nexios_middleware(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+def test_pure_asgi_middleware_with_sillo_middleware(
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
-    """Test combining pure ASGI middleware with Nexios middleware"""
-    app = NexiosApp()
+    """Test combining pure ASGI middleware with sillo middleware"""
+    app = silloApp()
 
     execution_order = []
 
@@ -263,12 +263,12 @@ def test_pure_asgi_middleware_with_nexios_middleware(
                 execution_order.append("asgi")
             await self.app(scope, receive, send)
 
-    async def nexios_middleware(request: Request, response: Response, call_next):
-        execution_order.append("nexios")
+    async def sillo_middleware(request: Request, response: Response, call_next):
+        execution_order.append("sillo")
         await call_next()
         return response
 
-    app.add_middleware(nexios_middleware)
+    app.add_middleware(sillo_middleware)
     wrapped_app = ASGIMiddleware(app)
 
     @app.get("/test")
@@ -279,18 +279,18 @@ def test_pure_asgi_middleware_with_nexios_middleware(
     with test_client_factory(wrapped_app) as client:
         resp = client.get("/test")
         assert resp.status_code == 200
-        # ASGI middleware executes before Nexios middleware
-        assert execution_order.index("asgi") < execution_order.index("nexios")
+        # ASGI middleware executes before sillo middleware
+        assert execution_order.index("asgi") < execution_order.index("sillo")
 
 
 # ========== ASGI Middleware Error Handling Tests ==========
 
 
 def test_pure_asgi_middleware_error_handling(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test ASGI middleware handling errors"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ErrorHandlerMiddleware:
         def __init__(self, app: ASGIApp):
@@ -328,10 +328,10 @@ def test_pure_asgi_middleware_error_handling(
 
 
 def test_pure_asgi_middleware_conditional_processing(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test ASGI middleware with conditional processing"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ConditionalMiddleware:
         def __init__(self, app: ASGIApp):
@@ -363,10 +363,10 @@ def test_pure_asgi_middleware_conditional_processing(
 
 
 def test_pure_asgi_middleware_request_id(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test ASGI middleware adding request ID"""
-    app = NexiosApp()
+    app = silloApp()
 
     import uuid
 
@@ -409,10 +409,10 @@ def test_pure_asgi_middleware_request_id(
 
 
 def test_wrap_asgi_basic(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test basic wrap_asgi() method usage"""
-    app = NexiosApp()
+    app = silloApp()
 
     executed = []
 
@@ -441,10 +441,10 @@ def test_wrap_asgi_basic(
 
 
 def test_wrap_asgi_with_kwargs(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test wrap_asgi() with keyword arguments"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ConfigurableMiddleware:
         def __init__(self, app: ASGIApp, prefix: str = "", suffix: str = ""):
@@ -471,10 +471,10 @@ def test_wrap_asgi_with_kwargs(
 
 
 def test_wrap_asgi_multiple_times(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test calling wrap_asgi() multiple times"""
-    app = NexiosApp()
+    app = silloApp()
 
     execution_order = []
 
@@ -523,10 +523,10 @@ def test_wrap_asgi_multiple_times(
 
 
 def test_wrap_asgi_returns_none(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test that wrap_asgi() returns None (not chainable)"""
-    app = NexiosApp()
+    app = silloApp()
 
     class DummyMiddleware:
         def __init__(self, app: ASGIApp):
@@ -539,11 +539,11 @@ def test_wrap_asgi_returns_none(
     assert result is None
 
 
-def test_wrap_asgi_with_nexios_middleware(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+def test_wrap_asgi_with_sillo_middleware(
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test wrap_asgi() combined with add_middleware()"""
-    app = NexiosApp()
+    app = silloApp()
 
     execution_order = []
 
@@ -556,8 +556,8 @@ def test_wrap_asgi_with_nexios_middleware(
                 execution_order.append("asgi")
             await self.app(scope, receive, send)
 
-    async def nexios_middleware(request: Request, response: Response, call_next):
-        execution_order.append("nexios")
+    async def sillo_middleware(request: Request, response: Response, call_next):
+        execution_order.append("sillo")
         await call_next()
         return response
 
@@ -566,24 +566,24 @@ def test_wrap_asgi_with_nexios_middleware(
         execution_order.append("handler")
         return response.json({"message": "ok"})
 
-    # Add Nexios middleware first
-    app.add_middleware(nexios_middleware)
+    # Add sillo middleware first
+    app.add_middleware(sillo_middleware)
     # Then wrap with ASGI middleware
     app.wrap_asgi(ASGIMiddleware)
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
         assert resp.status_code == 200
-        # Nexios middleware (HTTP level) executes before ASGI middleware (wraps core app)
-        assert execution_order.index("nexios") < execution_order.index("asgi")
+        # sillo middleware (HTTP level) executes before ASGI middleware (wraps core app)
+        assert execution_order.index("sillo") < execution_order.index("asgi")
         assert execution_order.index("asgi") < execution_order.index("handler")
 
 
 def test_wrap_asgi_header_injection(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test wrap_asgi() with header injection middleware"""
-    app = NexiosApp()
+    app = silloApp()
 
     class HeaderMiddleware:
         def __init__(
@@ -610,18 +610,18 @@ def test_wrap_asgi_header_injection(
     async def handler(request: Request, response: Response):
         return response.json({"message": "ok"})
 
-    app.wrap_asgi(HeaderMiddleware, header_name="x-powered-by", header_value="nexios")
+    app.wrap_asgi(HeaderMiddleware, header_name="x-powered-by", header_value="sillo")
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
-        assert resp.headers.get("x-powered-by") == "nexios"
+        assert resp.headers.get("x-powered-by") == "sillo"
 
 
 def test_wrap_asgi_scope_modification(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test wrap_asgi() modifying scope"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ScopeMiddleware:
         def __init__(self, app: ASGIApp, key: str = "custom", value: str = "default"):
@@ -639,18 +639,18 @@ def test_wrap_asgi_scope_modification(
         custom_value = request.scope.get("app_name", "unknown")
         return response.json({"app_name": custom_value})
 
-    app.wrap_asgi(ScopeMiddleware, key="app_name", value="nexios-app")
+    app.wrap_asgi(ScopeMiddleware, key="app_name", value="sillo-app")
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
-        assert resp.json()["app_name"] == "nexios-app"
+        assert resp.json()["app_name"] == "sillo-app"
 
 
 def test_wrap_asgi_error_handling(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test wrap_asgi() with error handling middleware"""
-    app = NexiosApp()
+    app = silloApp()
 
     class ErrorHandlerMiddleware:
         def __init__(self, app: ASGIApp):

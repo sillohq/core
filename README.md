@@ -1,13 +1,13 @@
-## `NEXIOS`
+## `sillo`
 
 <div align="left">
 
-<a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=4CAF50&center=true&width=435&lines=Nexios+ASGI+Framework;Fast%2C+Simple%2C+Flexible" alt="Typing SVG" /></a>
+<a href="https://git.io/typing-svg"><img src="https://readme-typing-svg.demolab.com?font=Fira+Code&pause=1000&color=4CAF50&center=true&width=435&lines=sillo+ASGI+Framework;Fast%2C+Simple%2C+Flexible" alt="Typing SVG" /></a>
 
 <p align="center">
-    <img alt=Support height="350" src="https://nexioslabs.com/logo.png">
+    <img alt=Support height="350" src="https://sillolabs.com/logo.png">
     </p>
-    <h1 align="center">Nexios 3.x.x</h1>
+    <h1 align="center">sillo 3.x.x</h1>
 
    </a>
 </p>
@@ -21,16 +21,16 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/nexios-labs/Nexios?tab=followers"><img title="Followers" src="https://img.shields.io/github/followers/nexios-labs?label=Followers&style=social"></a>
-<a href="https://github.com/nexios-labs/Nexios/stargazers/"><img title="Stars" src="https://img.shields.io/github/stars/nexios-labs/Nexios?&style=social"></a>
-<a href="https://github.com/nexios-labs/Nexios/network/members"><img title="Fork" src="https://img.shields.io/github/forks/nexios-labs/Nexios?style=social"></a>
-<a href="https://github.com/nexios-labs/Nexios/watchers"><img title="Watching" src="https://img.shields.io/github/watchers/nexios-labs/Nexios?label=Watching&style=social"></a>
+<a href="https://github.com/sillo-labs/sillo?tab=followers"><img title="Followers" src="https://img.shields.io/github/followers/sillo-labs?label=Followers&style=social"></a>
+<a href="https://github.com/sillo-labs/sillo/stargazers/"><img title="Stars" src="https://img.shields.io/github/stars/sillo-labs/sillo?&style=social"></a>
+<a href="https://github.com/sillo-labs/sillo/network/members"><img title="Fork" src="https://img.shields.io/github/forks/sillo-labs/sillo?style=social"></a>
+<a href="https://github.com/sillo-labs/sillo/watchers"><img title="Watching" src="https://img.shields.io/github/watchers/sillo-labs/sillo?label=Watching&style=social"></a>
 
 </br>
 
 <h2 align="center"> Star the repo if u like it🌟</h2>
 
-Nexios is a utility-first Python web framework designed for developers who need powerful tooling and extensibility. Built with a modular architecture, Nexios provides a comprehensive toolkit for building everything from simple APIs to complex distributed systems. The framework emphasizes developer productivity through its rich ecosystem of utilities, middleware, and community-contributed extensions. Whether you're building microservices, real-time applications, or enterprise-grade backends, Nexios gives you the tools and flexibility to craft solutions that scale with your needs.
+sillo is a utility-first Python web framework designed for developers who need powerful tooling and extensibility. Built with a modular architecture, sillo provides a comprehensive toolkit for building everything from simple APIs to complex distributed systems. The framework emphasizes developer productivity through its rich ecosystem of utilities, middleware, and community-contributed extensions. Whether you're building microservices, real-time applications, or enterprise-grade backends, sillo gives you the tools and flexibility to craft solutions that scale with your needs.
 
 ---
 
@@ -41,7 +41,7 @@ Nexios is a utility-first Python web framework designed for developers who need 
 - Python 3.9 or higher
 - pip (Python package manager)
 
-To install **Nexios**, you can use several methods depending on your environment and preferred package manager. Below are the instructions for different package managers:
+To install **sillo**, you can use several methods depending on your environment and preferred package manager. Below are the instructions for different package managers:
 
 ### 1. **From `pip`** (Standard Python Package Manager)
 
@@ -49,11 +49,11 @@ To install **Nexios**, you can use several methods depending on your environment
 # Ensure you have Python 3.9+
 python --version
 
-# Install Nexios
-pip install nexios
+# Install sillo
+pip install sillo
 
 # Or install with specific version
-pip install nexios == 3.4.0
+pip install sillo == 3.4.0
 ```
 
 ## Utility-First Features ✨
@@ -77,7 +77,7 @@ pip install nexios == 3.4.0
 
 ### Community & Extensibility
 
-- [x] **Community Contrib Package** - nexios-contrib with community extensions
+- [x] **Community Contrib Package** - sillo-contrib with community extensions
 - [x] **Custom Middleware Support** - Build and share your own middleware
 - [x] **Event System** - Hook into framework events and signals
 - [x] **Dependency Injection** - Clean, testable code architecture
@@ -86,26 +86,26 @@ pip install nexios == 3.4.0
 ### Quick Start - Utility-First Approach
 
 ```py
-from nexios import NexiosApp
-from nexios.http import Request, Response
+from sillo import silloApp
+from sillo.http import Request, Response
 
 # Create app with built-in utilities
-app = NexiosApp(title="My Utility API")
+app = silloApp(title="My Utility API")
 
 @app.get("/")
 async def basic(request: Request, response: Response):
-    return {"message": "Hello from Nexios utilities!"}
+    return {"message": "Hello from sillo utilities!"}
 ```
 
 ### Using Community Extensions
 
 ```py
-from nexios import NexiosApp, Depend
-from nexios_contrib.etag import ETagMiddleware
-from nexios_contrib.trusted import TrustedHostMiddleware
-from nexios.http import Request, Response
+from sillo import silloApp, Depend
+from sillo_contrib.etag import ETagMiddleware
+from sillo_contrib.trusted import TrustedHostMiddleware
+from sillo.http import Request, Response
 
-app = NexiosApp()
+app = silloApp()
 
 # Add community-contributed middleware
 app.add_middleware(ETagMiddleware())
@@ -125,36 +125,36 @@ Visit <http://localhost:8000/docs> to view the Swagger API documentation.
 
 ## See the full docs
 
-👉 <a href="https://nexioslabs.com">https://nexioslabs.com</a>
+👉 <a href="https://sillolabs.com">https://sillolabs.com</a>
 
 ## Contributors
 
-<a href="https://github.com/nexios-labs/nexios/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=nexios-labs/nexios" />
+<a href="https://github.com/sillo-labs/sillo/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=sillo-labs/sillo" />
 </a>
 
 ---
 
 ## 🌟 Community-Driven Development
 
-Nexios thrives on community contributions and collaboration. We believe the best tools are built by developers, for developers.
+sillo thrives on community contributions and collaboration. We believe the best tools are built by developers, for developers.
 
 ### Get Involved
 
-- **Contribute Code**: Submit PRs to the main framework or [nexios-contrib](https://github.com/nexios-labs/contrib)
+- **Contribute Code**: Submit PRs to the main framework or [sillo-contrib](https://github.com/sillo-labs/contrib)
 - **Share Utilities**: Create and share your own middleware, plugins, and tools
-- **Join Discussions**: Participate in [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
+- **Join Discussions**: Participate in [GitHub Discussions](https://github.com/sillo-labs/sillo/discussions)
 - **Help Others**: Answer questions and help fellow developers
 
 ### Community Resources
 
-- 📚 **Documentation**: [https://nexioslabs.com](https://nexioslabs.com)
-- 🛠️ **Community Extensions**: [nexios-contrib package](https://github.com/nexios-labs/contrib)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/nexios-labs/nexios/discussions)
-- 🐛 **Issues**: [Report bugs and request features](https://github.com/nexios-labs/nexios/issues)
+- 📚 **Documentation**: [https://sillolabs.com](https://sillolabs.com)
+- 🛠️ **Community Extensions**: [sillo-contrib package](https://github.com/sillo-labs/contrib)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/sillo-labs/sillo/discussions)
+- 🐛 **Issues**: [Report bugs and request features](https://github.com/sillo-labs/sillo/issues)
 
 ### Support the Project
 
-If Nexios has helped you build something awesome, consider supporting its continued development:
+If sillo has helped you build something awesome, consider supporting its continued development:
 
-👉 [**Buy Me a Coffee**](https://www.buymeacoffee.com/techwithdul) and help fuel the community-driven future of Nexios.
+👉 [**Buy Me a Coffee**](https://www.buymeacoffee.com/techwithdul) and help fuel the community-driven future of sillo.

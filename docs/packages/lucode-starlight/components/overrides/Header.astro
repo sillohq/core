@@ -1,0 +1,96 @@
+---
+import config from 'virtual:starlight/user-config';
+import Search from './Search.astro';
+import SocialIcons from './SocialIcons.astro';
+import LanguageSelect from '@astrojs/starlight/components/LanguageSelect.astro';
+
+import ThemeSelect from './ThemeSelect.astro';
+import SiteTitle from './SiteTitle.astro';
+import NavBar from './parts/NavBar.astro';
+import MobileMenuToggle from './parts/MobileMenuToggle.astro';
+
+/** render the `Search` component if Pagefind is enabled or the default search component has been overridden. */
+const shouldRenderSearch =
+    config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
+---
+
+<MobileMenuToggle />
+
+<div class="site-title-wrapper">
+    <SiteTitle />
+    <NavBar />
+</div>
+
+<div class="header-right">
+    {shouldRenderSearch && <Search />}
+
+    <nav class="header-nav">
+        <div>
+            <SocialIcons />
+        </div>
+        <div>
+            <ThemeSelect />
+        </div>
+        <div>
+            <LanguageSelect />
+        </div>
+    </nav>
+</div>
+
+<style>
+    .site-title-wrapper {
+        display: none;
+        margin-right: calc(var(--spacing) * 4);
+    }
+
+    @media (min-width: 768px) {
+        .site-title-wrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            gap: 50px;
+        }
+    }
+
+    .header-right {
+        gap: 0.5rem;
+        justify-content: space-between;
+        align-items: center;
+        flex: 1 1 0%;
+        display: flex;
+    }
+
+    @media (min-width: 768px) {
+        .header-right {
+            justify-content: flex-end;
+        }
+    }
+
+    .header-nav {
+        gap: 0.125rem;
+        align-items: center;
+        display: flex;
+    }
+
+    .header-nav > div:has(> :not(script)) {
+        display: flex;
+        align-items: center;
+    }
+
+    .header-nav > div:has(> :not(script)) + div:has(> :not(script)) {
+        position: relative;
+        margin-left: calc(var(--spacing) * 1);
+        padding-left: calc(var(--spacing) * 3);
+    }
+
+    .header-nav > div:has(> :not(script)) + div:has(> :not(script))::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 1px;
+        height: 1rem;
+        background-color: color-mix(in oklab, var(--border) 85%, transparent);
+        transform: translateY(-50%);
+    }
+</style>

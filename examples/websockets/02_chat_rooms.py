@@ -1,10 +1,10 @@
 from typing import Dict, Set
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.websockets import WebSocket
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.websockets import WebSocket
 
-app = NexiosApp()
+app = silloApp()
 
 # Store chat rooms and their connected clients
 chat_rooms: Dict[str, Set[WebSocket]] = {}
@@ -55,7 +55,7 @@ async def index(request, response):
     <!DOCTYPE html>
     <html>
         <head>
-            <title>Nexios Chat Rooms</title>
+            <title>sillo Chat Rooms</title>
         </head>
         <body>
             <h1>Chat Room Example</h1>

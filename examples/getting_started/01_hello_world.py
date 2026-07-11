@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-Simple Nexios application example.
+Simple sillo application example.
 
 This demonstrates the correct way to use app.run() when deployed to PyPI.
 The app.run() method now uses uvicorn.run(app, ...) directly instead of
 creating temporary files, which fixes the import error.
 """
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
+from sillo import silloApp
+from sillo.http import Request, Response
 
 # Create the application
-app = NexiosApp(
-    title="Simple Nexios App",
+app = silloApp(
+    title="Simple sillo App",
     version="1.0.0",
-    description="A simple example of Nexios usage",
+    description="A simple example of sillo usage",
 )
 
 
@@ -22,7 +22,7 @@ app = NexiosApp(
 async def home(request: Request, response: Response):
     """Home endpoint"""
     return response.json(
-        {"message": "Welcome to Nexios!", "framework": "Nexios", "version": "1.0.0"}
+        {"message": "Welcome to sillo!", "framework": "sillo", "version": "1.0.0"}
     )
 
 
@@ -49,7 +49,7 @@ async def create_user(request: Request, response: Response):
 
 
 if __name__ == "__main__":
-    print("Starting Simple Nexios App...")
+    print("Starting Simple sillo App...")
     print("This app demonstrates the correct usage of app.run()")
     print("The method now uses uvicorn.run(app, ...) directly")
     print("This fixes the import error when deployed to PyPI")

@@ -1,10 +1,10 @@
-from nexios import NexiosApp
-from nexios.auth import BaseUser
-from nexios.auth.backends.jwt import JWTAuthBackend, create_jwt
-from nexios.auth.backends.session import SessionAuthBackend, login
-from nexios.auth.decorator import auth
-from nexios.auth.middleware import AuthenticationMiddleware
-from nexios.http import Request, Response
+from sillo import silloApp
+from sillo.auth import BaseUser
+from sillo.auth.backends.jwt import JWTAuthBackend, create_jwt
+from sillo.auth.backends.session import SessionAuthBackend, login
+from sillo.auth.decorator import auth
+from sillo.auth.middleware import AuthenticationMiddleware
+from sillo.http import Request, Response
 
 
 class User(BaseUser):
@@ -40,7 +40,7 @@ class db:
         return {"id": user_id, "username": "admin"}
 
 
-app = NexiosApp()
+app = silloApp()
 
 # Multiple backends - JWT and Session
 jwt_backend = JWTAuthBackend()
@@ -161,7 +161,7 @@ async def session_only(req: Request, res: Response):
 
 @app.get("/logout")
 async def logout(req: Request, res: Response):
-    from nexios.auth.backends.session import logout
+    from sillo.auth.backends.session import logout
 
     logout(req)
     return res.redirect("/login")

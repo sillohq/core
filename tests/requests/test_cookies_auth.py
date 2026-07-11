@@ -7,16 +7,16 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== Cookies Tests ==========
 
 
-def test_request_cookies(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_cookies(test_client_factory: Callable[[silloApp], TestClient]):
     """Test reading request cookies"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -33,9 +33,9 @@ def test_request_cookies(test_client_factory: Callable[[NexiosApp], TestClient])
         assert data["user_id"] == "user456"
 
 
-def test_request_cookies_empty(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_cookies_empty(test_client_factory: Callable[[silloApp], TestClient]):
     """Test request with no cookies"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -50,10 +50,10 @@ def test_request_cookies_empty(test_client_factory: Callable[[NexiosApp], TestCl
 
 
 def test_request_cookies_multiple(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test multiple cookies"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -72,10 +72,10 @@ def test_request_cookies_multiple(
 
 
 def test_request_cookies_special_characters(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test cookies with special characters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -89,10 +89,10 @@ def test_request_cookies_special_characters(
 
 
 def test_request_cookies_contains(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test checking if cookie exists"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -109,10 +109,10 @@ def test_request_cookies_contains(
 
 
 def test_request_cookies_iteration(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test iterating over cookies"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -131,9 +131,9 @@ def test_request_cookies_iteration(
 # ========== Basic Authentication Tests ==========
 
 
-def test_request_is_ajax(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_request_is_ajax(test_client_factory: Callable[[silloApp], TestClient]):
     """Test AJAX request detection"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -145,10 +145,10 @@ def test_request_is_ajax(test_client_factory: Callable[[NexiosApp], TestClient])
 
 
 def test_request_is_ajax_case_insensitive(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test AJAX detection is case insensitive"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):

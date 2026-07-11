@@ -1,9 +1,9 @@
 from typing import Any, Dict
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
+from sillo import silloApp
+from sillo.http import Request, Response
 
-app = NexiosApp()
+app = silloApp()
 
 
 @app.get("/")

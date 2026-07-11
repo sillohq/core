@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.templating import TemplateConfig, TemplateEngine, render
-from nexios.templating.middleware import TemplateContextMiddleware
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.templating import TemplateConfig, TemplateEngine, render
+from sillo.templating.middleware import TemplateContextMiddleware
+from sillo.testclient import TestClient
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def template_engine():
 
 @pytest.fixture
 def app():
-    app = NexiosApp()
+    app = silloApp()
 
     async def user_context(request):
         return {"user": {"name": "Test User"}}

@@ -6,17 +6,17 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.routing import Route, Router
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.routing import Route, Router
+from sillo.testclient import TestClient
 
 # ========== Basic Path Parameters Tests ==========
 
 
-def test_single_path_parameter(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_single_path_parameter(test_client_factory: Callable[[silloApp], TestClient]):
     """Test route with single path parameter"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users/{user_id}")
     async def get_user(request: Request, response: Response, user_id: str):
@@ -29,10 +29,10 @@ def test_single_path_parameter(test_client_factory: Callable[[NexiosApp], TestCl
 
 
 def test_multiple_path_parameters(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test route with multiple path parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users/{user_id}/posts/{post_id}")
     async def get_user_post(
@@ -48,10 +48,10 @@ def test_multiple_path_parameters(
 
 
 def test_path_parameter_with_router(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test path parameters on mounted router"""
-    app = NexiosApp()
+    app = silloApp()
     router = Router(prefix="/api")
 
     @router.get("/products/{product_id}")
@@ -69,9 +69,9 @@ def test_path_parameter_with_router(
 # ========== Path Parameter Types Tests ==========
 
 
-def test_integer_path_parameter(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_integer_path_parameter(test_client_factory: Callable[[silloApp], TestClient]):
     """Test path parameter with integer type"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/items/{item_id:int}")
     async def get_item(request: Request, response: Response, item_id: int):
@@ -83,9 +83,9 @@ def test_integer_path_parameter(test_client_factory: Callable[[NexiosApp], TestC
         assert resp.json()["item_id"] == 123
 
 
-def test_float_path_parameter(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_float_path_parameter(test_client_factory: Callable[[silloApp], TestClient]):
     """Test path parameter with float type"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/prices/{price:float}")
     async def get_price(request: Request, response: Response, price: float):
@@ -97,9 +97,9 @@ def test_float_path_parameter(test_client_factory: Callable[[NexiosApp], TestCli
         assert resp.json()["price"] == 19.99
 
 
-def test_path_path_parameter(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_path_path_parameter(test_client_factory: Callable[[silloApp], TestClient]):
     """Test path parameter with path type (captures slashes)"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/files/{filepath:path}")
     async def get_file(request: Request, response: Response, filepath: str):
@@ -114,9 +114,9 @@ def test_path_path_parameter(test_client_factory: Callable[[NexiosApp], TestClie
 # ========== URL Generation Tests ==========
 
 
-def test_url_for_basic(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_url_for_basic(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic URL generation with url_for"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users", name="list-users")
     async def list_users(request: Request, response: Response):
@@ -128,10 +128,10 @@ def test_url_for_basic(test_client_factory: Callable[[NexiosApp], TestClient]):
 
 
 def test_url_for_with_path_parameter(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test URL generation with path parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users/{user_id}", name="get-user")
     async def get_user(request: Request, response: Response, user_id: str):
@@ -143,10 +143,10 @@ def test_url_for_with_path_parameter(
 
 
 def test_url_for_with_multiple_parameters(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test URL generation with multiple path parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users/{user_id}/posts/{post_id}", name="get-user-post")
     async def get_user_post(
@@ -159,9 +159,9 @@ def test_url_for_with_multiple_parameters(
         assert url == "/users/456/posts/789"
 
 
-def test_url_for_on_router(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_url_for_on_router(test_client_factory: Callable[[silloApp], TestClient]):
     """Test URL generation on router"""
-    app = NexiosApp()
+    app = silloApp()
     router = Router(prefix="/api")
 
     @router.get("/products/{product_id}", name="get-product")
@@ -177,7 +177,7 @@ def test_url_for_on_router(test_client_factory: Callable[[NexiosApp], TestClient
 
 def test_url_for_missing_parameter():
     """Test that url_for raises error when parameter is missing"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/users/{user_id}", name="get-user")
     async def get_user(request: Request, response: Response, user_id: str):
@@ -189,7 +189,7 @@ def test_url_for_missing_parameter():
 
 def test_url_for_nonexistent_route():
     """Test that url_for raises error for nonexistent route"""
-    app = NexiosApp()
+    app = silloApp()
 
     with pytest.raises(Exception):
         app.url_for("nonexistent-route")
@@ -198,9 +198,9 @@ def test_url_for_nonexistent_route():
 # ========== Complex Path Patterns Tests ==========
 
 
-def test_nested_path_parameters(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_nested_path_parameters(test_client_factory: Callable[[silloApp], TestClient]):
     """Test deeply nested path parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/orgs/{org_id}/teams/{team_id}/members/{member_id}")
     async def get_member(
@@ -220,10 +220,10 @@ def test_nested_path_parameters(test_client_factory: Callable[[NexiosApp], TestC
 
 
 def test_path_parameter_with_special_characters(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test path parameters with special characters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/search/{query}")
     async def search(request: Request, response: Response, query: str):
@@ -236,10 +236,10 @@ def test_path_parameter_with_special_characters(
 
 
 def test_optional_trailing_slash(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test routes with and without trailing slashes"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/items/{item_id}")
     async def get_item(request: Request, response: Response, item_id: str):
@@ -255,10 +255,10 @@ def test_optional_trailing_slash(
 
 
 def test_path_params_in_request_object(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test that path params are accessible in request.path_params"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/api/{version}/users/{user_id}")
     async def get_user(request: Request, response: Response, *args, **kwargs):
@@ -280,10 +280,10 @@ def test_path_params_in_request_object(
 
 
 def test_mixed_static_and_dynamic_segments(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test routes with mixed static and dynamic segments"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/api/v1/users/{user_id}/profile")
     async def get_profile(request: Request, response: Response, user_id: str):
@@ -296,9 +296,9 @@ def test_mixed_static_and_dynamic_segments(
         assert resp.json()["endpoint"] == "profile"
 
 
-def test_uuid_path_parameter(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_uuid_path_parameter(test_client_factory: Callable[[silloApp], TestClient]):
     """Test path parameter with UUID format"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/resources/{resource_id}")
     async def get_resource(request: Request, response: Response, resource_id: str):

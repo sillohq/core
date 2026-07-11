@@ -1,6 +1,6 @@
-# Contributing to Nexios
+# Contributing to sillo
 
-Thank you for your interest in contributing to Nexios! We're excited to have you on board. This guide will help you get started with contributing to the project.
+Thank you for your interest in contributing to sillo! We're excited to have you on board. This guide will help you get started with contributing to the project.
 
 ## Table of Contents
 
@@ -38,8 +38,8 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 1. **Fork the repository** on GitHub.
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/your-username/nexios.git
-   cd nexios
+   git clone https://github.com/your-username/sillo.git
+   cd sillo
    ```
 3. **Set up a virtual environment** and install dependencies:
    ```bash
@@ -71,7 +71,7 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 
 ### Code Style and Formatting
 
-Nexios follows strict code style guidelines. We use:
+sillo follows strict code style guidelines. We use:
 
 - **Black** for code formatting
 - **isort** for import sorting
@@ -166,7 +166,7 @@ feat(router): add support for dynamic route parameters
 
 ## Reporting Issues
 
-If you find a bug or have a feature request, please [open an issue](https://github.com/nexios-labs/nexios/issues/new/choose). Be sure to include:
+If you find a bug or have a feature request, please [open an issue](https://github.com/sillo-labs/sillo/issues/new/choose). Be sure to include:
 
 - A clear title and description
 - Steps to reproduce the issue
@@ -178,13 +178,13 @@ If you find a bug or have a feature request, please [open an issue](https://gith
 
 For questions and discussions, please:
 
-1. Check the [documentation](https://nexios-labs.github.io/nexios/)
-2. Search the [existing issues](https://github.com/nexios-labs/nexios/issues)
+1. Check the [documentation](https://sillo-labs.github.io/sillo/)
+2. Search the [existing issues](https://github.com/sillo-labs/sillo/issues)
 3. If you still can't find an answer, open a new discussion or issue
 
 ## Development Tips
 
-- **Using UV**: Nexios recommends using UV for faster dependency management. After installing UV, you can use it as a drop-in replacement for pip:
+- **Using UV**: sillo recommends using UV for faster dependency management. After installing UV, you can use it as a drop-in replacement for pip:
   ```bash
   uv pip install -e ".[dev]"
   ```
@@ -204,4 +204,4 @@ For questions and discussions, please:
 
 ---
 
-Thank you for contributing to Nexios! Your help makes the project better for everyone. 
+Thank you for contributing to sillo! Your help makes the project better for everyone. 

@@ -1,5 +1,5 @@
 """
-Comprehensive tests for dependency injection in Nexios.
+Comprehensive tests for dependency injection in sillo.
 Tests basic, nested, deeply nested dependencies, with context, app-level, router-level, and nested router-level dependencies.
 """
 
@@ -7,20 +7,20 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.dependencies import Context, Depend
-from nexios.http import Request, Response
-from nexios.routing import Router
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.dependencies import Context, Depend
+from sillo.http import Request, Response
+from sillo.routing import Router
+from sillo.testclient import TestClient
 
 # ========== Basic Dependency Tests ==========
 
 
 def test_basic_dependency_injection(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test basic dependency injection with a simple function"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_user_id():
         return "user_123"
@@ -38,10 +38,10 @@ def test_basic_dependency_injection(
 
 
 def test_async_dependency_injection(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test async dependency injection"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def async_get_user_id():
         return "async_user_456"
@@ -61,9 +61,9 @@ def test_async_dependency_injection(
 # ========== Nested Dependency Tests ==========
 
 
-def test_nested_dependencies(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_nested_dependencies(test_client_factory: Callable[[silloApp], TestClient]):
     """Test nested dependencies where one dependency depends on another"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_user_id():
         return "user_123"
@@ -87,10 +87,10 @@ def test_nested_dependencies(test_client_factory: Callable[[NexiosApp], TestClie
 
 
 def test_async_nested_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test nested dependencies with async functions"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def async_get_user_id():
         return "async_user_789"
@@ -117,10 +117,10 @@ def test_async_nested_dependencies(
 
 
 def test_deeply_nested_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test deeply nested dependencies (3+ levels)"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_base_value():
         return "base_value"
@@ -150,10 +150,10 @@ def test_deeply_nested_dependencies(
 
 
 def test_async_deeply_nested_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test deeply nested dependencies with mixed sync/async functions"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def async_get_base_value():
         return "async_base"
@@ -186,10 +186,10 @@ def test_async_deeply_nested_dependencies(
 
 
 def test_dependency_with_context(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test dependency that uses Context object"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_user_from_context(ctx: Context = Context()):
         return {
@@ -214,10 +214,10 @@ def test_dependency_with_context(
 
 
 def test_dependency_with_mixed_context_and_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test dependency that uses both Context and other dependencies"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_user_id():
         return "mixed_user_123"
@@ -251,13 +251,13 @@ def test_dependency_with_mixed_context_and_dependencies(
 # ========== App-Level Dependency Tests ==========
 
 
-def test_app_level_dependencies(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_app_level_dependencies(test_client_factory: Callable[[silloApp], TestClient]):
     """Test dependencies defined at the app level"""
 
     def get_app_config():
         return {"app_name": "test_app", "version": "1.0"}
 
-    app = NexiosApp(dependencies=[Depend(get_app_config)])
+    app = silloApp(dependencies=[Depend(get_app_config)])
 
     @app.get("/app-config")
     async def get_app_config_endpoint(
@@ -273,14 +273,14 @@ def test_app_level_dependencies(test_client_factory: Callable[[NexiosApp], TestC
 
 
 def test_app_level_async_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test async dependencies at the app level"""
 
     async def async_get_app_config():
         return {"app_name": "async_app", "version": "2.0", "async": True}
 
-    app = NexiosApp(dependencies=[Depend(async_get_app_config)])
+    app = silloApp(dependencies=[Depend(async_get_app_config)])
 
     @app.get("/async-app-config")
     async def get_async_app_config(
@@ -303,10 +303,10 @@ def test_app_level_async_dependencies(
 
 
 def test_router_level_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test dependencies defined at the router level"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_router_config():
         return {"router_name": "test_router", "prefix": "/api"}
@@ -329,7 +329,7 @@ def test_router_level_dependencies(
 
 
 def test_router_level_dependencies_with_app_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test router-level dependencies combined with app-level dependencies"""
 
@@ -345,7 +345,7 @@ def test_router_level_dependencies_with_app_dependencies(
     ):
         return {**app_config, **router_config, "combined": True}
 
-    app = NexiosApp(dependencies=[Depend(get_app_config)])
+    app = silloApp(dependencies=[Depend(get_app_config)])
     router = Router(prefix="/api", dependencies=[Depend(get_router_config)])
 
     @router.get("/combined-config")
@@ -369,10 +369,10 @@ def test_router_level_dependencies_with_app_dependencies(
 
 
 def test_nested_router_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test dependencies in nested routers"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_api_config():
         return {"api_version": "v1"}
@@ -413,10 +413,10 @@ def test_nested_router_dependencies(
 
 
 def test_deeply_nested_router_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test dependencies in deeply nested routers (3+ levels)"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_app_config():
         return {"app": "main"}
@@ -450,7 +450,7 @@ def test_deeply_nested_router_dependencies(
         }
 
     # App level
-    app = NexiosApp(dependencies=[Depend(get_app_config)])
+    app = silloApp(dependencies=[Depend(get_app_config)])
 
     # API router
     api_router = Router(prefix="/api", dependencies=[Depend(get_api_config)])
@@ -495,10 +495,10 @@ def test_deeply_nested_router_dependencies(
 
 
 def test_mixed_app_router_nested_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test complex scenario with app, router, and nested dependencies"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_database_connection():
         return {"db": "connected", "pool": "active"}
@@ -521,7 +521,7 @@ def test_mixed_app_router_nested_dependencies(
         return {"handler": "user_handler", "auth": auth, "api": api}
 
     # App-level dependencies
-    app = NexiosApp(dependencies=[Depend(get_database_connection)])
+    app = silloApp(dependencies=[Depend(get_database_connection)])
 
     # API router with dependencies
     api_router = Router(prefix="/api", dependencies=[Depend(get_api_config)])
@@ -553,9 +553,9 @@ def test_mixed_app_router_nested_dependencies(
         assert data["api"]["api"] == "v1"
 
 
-def test_generator_dependencies(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_generator_dependencies(test_client_factory: Callable[[silloApp], TestClient]):
     """Test generator-based dependencies"""
-    app = NexiosApp()
+    app = silloApp()
 
     def get_database_connection():
         db_pool = {"connections": []}
@@ -582,10 +582,10 @@ def test_generator_dependencies(test_client_factory: Callable[[NexiosApp], TestC
 
 
 def test_async_generator_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test async generator-based dependencies"""
-    app = NexiosApp()
+    app = silloApp()
 
     async def async_get_database_connection():
         db_pool = {"connections": []}
@@ -614,10 +614,10 @@ def test_async_generator_dependencies(
 
 
 def test_generator_dependency_cleanup(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Ensure generator dependencies run cleanup after request."""
-    app = NexiosApp()
+    app = silloApp()
     cleanup_state = {"closed": False}
 
     def get_resource():
@@ -641,10 +641,10 @@ def test_generator_dependency_cleanup(
 
 
 def test_nested_yield_dependencies(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test nested dependencies that both use yield."""
-    app = NexiosApp()
+    app = silloApp()
     flags = {"inner_closed": False, "outer_closed": False}
 
     def outer_dep():
@@ -676,10 +676,10 @@ def test_nested_yield_dependencies(
 
 
 def test_async_yield_dependencies_cleanup(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Ensure async generator dependencies properly cleanup."""
-    app = NexiosApp()
+    app = silloApp()
     state = {"closed": False}
 
     async def async_dep():
@@ -702,10 +702,10 @@ def test_async_yield_dependencies_cleanup(
 
 
 def test_deep_yield_dependency_chain(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Deep chain of async+sync yield dependencies ensuring teardown order."""
-    app = NexiosApp()
+    app = silloApp()
     order = []
 
     def dep_a():

@@ -6,10 +6,10 @@ from typing import Any, Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.routing import Router
-from nexios.testclient import TestClient
-from nexios.websockets import WebSocket, WebSocketConsumer
+from sillo import silloApp
+from sillo.routing import Router
+from sillo.testclient import TestClient
+from sillo.websockets import WebSocket, WebSocketConsumer
 
 
 class EchoConsumer(WebSocketConsumer):
@@ -73,9 +73,9 @@ class StatefulConsumer(WebSocketConsumer):
         pass
 
 
-def test_echo_consumer(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_echo_consumer(test_client_factory: Callable[[silloApp], TestClient]):
     """Test basic echo consumer"""
-    app = NexiosApp()
+    app = silloApp()
 
     route = EchoConsumer.as_route("/ws/echo")
     app.add_ws_route(route)
@@ -87,9 +87,9 @@ def test_echo_consumer(test_client_factory: Callable[[NexiosApp], TestClient]):
             assert data == "Echo: Hello Consumer"
 
 
-def test_json_consumer(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_json_consumer(test_client_factory: Callable[[silloApp], TestClient]):
     """Test JSON consumer"""
-    app = NexiosApp()
+    app = silloApp()
 
     route = JsonConsumer.as_route("/ws/json")
     app.add_ws_route(route)
@@ -103,9 +103,9 @@ def test_json_consumer(test_client_factory: Callable[[NexiosApp], TestClient]):
             assert response["received"]["value"] == 42
 
 
-def test_bytes_consumer(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_bytes_consumer(test_client_factory: Callable[[silloApp], TestClient]):
     """Test bytes consumer"""
-    app = NexiosApp()
+    app = silloApp()
 
     route = BytesConsumer.as_route("/ws/bytes")
     app.add_ws_route(route)
@@ -117,9 +117,9 @@ def test_bytes_consumer(test_client_factory: Callable[[NexiosApp], TestClient]):
             assert response == b"Received: binary data"
 
 
-def test_counter_consumer(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_counter_consumer(test_client_factory: Callable[[silloApp], TestClient]):
     """Test consumer with state"""
-    app = NexiosApp()
+    app = silloApp()
 
     route = CounterConsumer.as_route("/ws/counter")
     app.add_ws_route(route)
@@ -136,9 +136,9 @@ def test_counter_consumer(test_client_factory: Callable[[NexiosApp], TestClient]
             assert websocket.receive_text() == "Message #3: Third"
 
 
-def test_stateful_consumer(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_stateful_consumer(test_client_factory: Callable[[silloApp], TestClient]):
     """Test consumer with connection lifecycle"""
-    app = NexiosApp()
+    app = silloApp()
 
     route = StatefulConsumer.as_route("/ws/stateful")
     app.add_ws_route(route)
@@ -161,9 +161,9 @@ def test_stateful_consumer(test_client_factory: Callable[[NexiosApp], TestClient
             assert response["response"] == "Hello"
 
 
-def test_consumer_with_router(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_consumer_with_router(test_client_factory: Callable[[silloApp], TestClient]):
     """Test consumer mounted on router"""
-    app = NexiosApp()
+    app = silloApp()
     router = Router(prefix="/api")
 
     route = EchoConsumer.as_route("/echo")
@@ -178,9 +178,9 @@ def test_consumer_with_router(test_client_factory: Callable[[NexiosApp], TestCli
             assert data == "Echo: Router Consumer"
 
 
-def test_multiple_consumers(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_multiple_consumers(test_client_factory: Callable[[silloApp], TestClient]):
     """Test multiple consumers on different routes"""
-    app = NexiosApp()
+    app = silloApp()
 
     echo_route = EchoConsumer.as_route("/ws/echo")
     json_route = JsonConsumer.as_route("/ws/json")
@@ -203,10 +203,10 @@ def test_multiple_consumers(test_client_factory: Callable[[NexiosApp], TestClien
 
 
 def test_consumer_with_path_parameters(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test consumer with path parameters"""
-    app = NexiosApp()
+    app = silloApp()
 
     class RoomConsumer(WebSocketConsumer):
         encoding = "json"
@@ -236,9 +236,9 @@ def test_consumer_with_path_parameters(
             assert response["message"]["text"] == "Hello room"
 
 
-def test_consumer_isolation(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_consumer_isolation(test_client_factory: Callable[[silloApp], TestClient]):
     """Test that consumer instances are isolated"""
-    app = NexiosApp()
+    app = silloApp()
 
     route = CounterConsumer.as_route("/ws/counter")
     app.add_ws_route(route)

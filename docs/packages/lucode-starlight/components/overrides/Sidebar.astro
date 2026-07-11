@@ -1,0 +1,141 @@
+---
+import SidebarSublist from './parts/SidebarSublist.astro';
+import type { StarlightRouteData } from '@astrojs/starlight/route-data';
+
+const { sidebar } = Astro.locals.starlightRoute;
+
+/** Filter sidebar groups to only show entries relevant to the current URL section. */
+function filterSidebar(sidebar: StarlightRouteData['sidebar'], pathname: string) {
+    const locale = Astro.currentLocale;
+    // Strip Astro base path so route-aware filtering uses the actual content path
+    const base = import.meta.env.BASE_URL;
+    const pathWithoutBase = pathname.startsWith(base) ? pathname.slice(base.length) : pathname;
+    const pathWithoutLocale = locale
+        ? pathWithoutBase.replace(new RegExp(`^/${locale}`), '') || '/'
+        : pathWithoutBase;
+    const section = pathWithoutLocale.split('/').filter(Boolean)[0];
+    const sectionPrefix = `/${section}/`;
+
+    return sidebar.filter((entry) => {
+        if (entry.type === 'link') {
+            return entry.href.startsWith(sectionPrefix);
+        }
+        // Group: show if any child link matches the current section
+        return entry.entries.some(
+            (link) => link.type === 'link' && link.href.startsWith(sectionPrefix)
+        );
+    });
+}
+
+const currentPath = Astro.url.pathname;
+const base = import.meta.env.BASE_URL;
+const pathWithoutBase = currentPath.startsWith(base) ? currentPath.slice(base.length) : currentPath;
+const isRoot = pathWithoutBase === '/' || pathWithoutBase === '';
+const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
+---
+
+<div class="sidebar">
+    <div class="sidebar-border-gradient"></div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-fade-top"></div>
+    <div class="container-sidebar">
+        <div class="sidebar-entries">
+            <SidebarSublist sublist={filteredSidebar} />
+        </div>
+        <div class="sidebar-fade-bottom"></div>
+    </div>
+</div>
+
+<style>
+    .sidebar {
+        scrollbar-width: none;
+        overflow: hidden;
+        height: 100%;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar-spacer {
+        height: 2.25rem;
+        flex-shrink: 0;
+    }
+
+    .sidebar-border-gradient {
+        position: absolute;
+        top: 0rem;
+        right: 0.5rem;
+        bottom: 0;
+        width: 1px;
+        background: linear-gradient(to bottom, transparent 0%, var(--border) 50%, transparent 100%);
+        display: none;
+        z-index: 1;
+    }
+
+    @media (min-width: 1024px) {
+        .sidebar-border-gradient {
+            display: flex;
+        }
+    }
+
+    .sidebar-fade-top {
+        position: absolute;
+        top: 2rem;
+        left: 0;
+        z-index: 10;
+        height: 2rem;
+        width: calc(100% - 1rem);
+        flex-shrink: 0;
+        pointer-events: none;
+        background-image: linear-gradient(
+            to bottom,
+            var(--background) 0%,
+            color-mix(in srgb, var(--background) 80%, transparent) 50%,
+            color-mix(in srgb, var(--background) 50%, transparent) 100%
+        );
+        filter: blur(2px);
+    }
+
+    .sidebar-fade-bottom {
+        position: sticky;
+        bottom: -2px;
+        z-index: 10;
+        height: 4rem;
+        flex-shrink: 0;
+        margin-top: calc(var(--spacing) * -16);
+        pointer-events: none;
+        background-image: linear-gradient(
+            to top,
+            var(--background) 0%,
+            color-mix(in srgb, var(--background) 80%, transparent) 50%,
+            color-mix(in srgb, var(--background) 50%, transparent) 100%
+        );
+        filter: blur(2px);
+    }
+
+    .container-sidebar {
+        flex-direction: column;
+        display: flex;
+        overflow: auto;
+        scrollbar-width: none;
+        flex: 1;
+        min-height: 0;
+        padding-top: calc(var(--spacing) * 6);
+        padding-right: calc(var(--spacing) * 6);
+        padding-left: calc(var(--spacing) * 2);
+        margin: 0 2rem;
+    }
+
+    .sidebar-entries {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing) * 6);
+        padding-bottom: calc(var(--spacing) * 16);
+    }
+
+    @media (min-width: 1024px) {
+        .container-sidebar {
+            max-height: calc(100svh - 10rem - 2.25rem);
+        }
+    }
+</style>

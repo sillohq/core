@@ -1,10 +1,10 @@
-from nexios import NexiosApp
-from nexios.auth import BaseUser
-from nexios.auth.backends.jwt import JWTAuthBackend, create_jwt
-from nexios.auth.decorator import auth
-from nexios.auth.middleware import AuthenticationMiddleware
-from nexios.http import Request, Response
-from nexios.routing import Router
+from sillo import silloApp
+from sillo.auth import BaseUser
+from sillo.auth.backends.jwt import JWTAuthBackend, create_jwt
+from sillo.auth.decorator import auth
+from sillo.auth.middleware import AuthenticationMiddleware
+from sillo.http import Request, Response
+from sillo.routing import Router
 
 
 class User(BaseUser):
@@ -42,7 +42,7 @@ class db:
 
 # Set up authentication
 jwt_backend = JWTAuthBackend()
-app = NexiosApp()
+app = silloApp()
 app.add_middleware(AuthenticationMiddleware(user_model=User, backend=jwt_backend))
 
 auth_router = Router()

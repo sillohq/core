@@ -4,14 +4,14 @@ Tests the actual /openapi.json endpoint with various configurations.
 """
 
 import pytest
-from nexios import NexiosApp, Query, Header, Cookie, Depend, Router
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp, Query, Header, Cookie, Depend, Router
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 
 @pytest.fixture
 def app():
-    return NexiosApp()
+    return silloApp()
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
-# Nexios HTTP And Routing
+# sillo HTTP And Routing
 
-Use this reference for day-to-day endpoint authoring in Nexios.
+Use this reference for day-to-day endpoint authoring in sillo.
 
 ## Table of Contents
 
@@ -16,12 +16,12 @@ Use this reference for day-to-day endpoint authoring in Nexios.
 
 ## Basic Handlers
 
-The most common Nexios shape is:
+The most common sillo shape is:
 
 ```python
-from nexios import NexiosApp
+from sillo import silloApp
 
-app = NexiosApp()
+app = silloApp()
 
 @app.get("/health")
 async def health(request, response):
@@ -76,7 +76,7 @@ async def stream_input(request, response):
 
 ## Response Patterns
 
-Nexios can serialize simple return values, but for teaching clarity prefer the response object.
+sillo can serialize simple return values, but for teaching clarity prefer the response object.
 
 ### JSON
 
@@ -133,7 +133,7 @@ Important documented rule:
 
 ## Routing Decorators
 
-The decorator API is the default way to teach Nexios routing:
+The decorator API is the default way to teach sillo routing:
 
 ```python
 @app.get("/")
@@ -157,7 +157,7 @@ async def delete_item(request, response, item_id: str):
 
 ## Typed Path Parameters
 
-Nexios documents typed parameters such as `int`, `float`, `uuid`, `path`, and `slug`.
+sillo documents typed parameters such as `int`, `float`, `uuid`, `path`, and `slug`.
 
 Use direct handler arguments:
 
@@ -176,7 +176,7 @@ Important teaching note:
 Use `Route` when teaching explicit route objects:
 
 ```python
-from nexios.routing import Route
+from sillo.routing import Route
 
 async def get_user_handler(request, response, user_id: int):
     return response.json({"user_id": user_id})
@@ -193,7 +193,7 @@ app.add_route(Route(
 Use `Router` when teaching organization:
 
 ```python
-from nexios.routing import Router
+from sillo.routing import Router
 
 api = Router(prefix="/api", tags=["API"])
 
@@ -209,7 +209,7 @@ app.mount_router(api)
 Use class-based handlers when the user wants a structured, reusable endpoint surface:
 
 ```python
-from nexios.views import APIHandler
+from sillo.views import APIHandler
 
 class UserView(APIHandler):
     async def get(self, request, response):
@@ -274,7 +274,7 @@ Documented pagination strategies:
 Example with a custom strategy:
 
 ```python
-from nexios.pagination import PageNumberPagination
+from sillo.pagination import PageNumberPagination
 
 @app.get("/products")
 async def products(request, response):

@@ -1,14 +1,14 @@
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.routing import Router
-from nexios.testclient import TestClient
-from nexios.types import ASGIApp, Receive, Scope, Send
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.routing import Router
+from sillo.testclient import TestClient
+from sillo.types import ASGIApp, Receive, Scope, Send
 
 
 def test_router_wrap_asgi_basic(test_client_factory):
-    app = NexiosApp()
+    app = silloApp()
     router = Router(prefix="/api")
 
     executed = []
@@ -39,7 +39,7 @@ def test_router_wrap_asgi_basic(test_client_factory):
 
 
 def test_router_wrap_asgi_websocket(test_client_factory):
-    app = NexiosApp()
+    app = silloApp()
     router = Router(prefix="/ws")
 
     executed = []

@@ -2,14 +2,14 @@
 Tests for SecurityMiddleware
 """
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.middleware.security import SecurityMiddleware
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.middleware.security import SecurityMiddleware
+from sillo.testclient import TestClient
 
 
 def create_app():
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(SecurityMiddleware(csp_enabled=True))
 
     @app.get("/test")

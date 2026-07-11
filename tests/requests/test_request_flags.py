@@ -4,14 +4,14 @@ Tests for new Request utility flags and methods
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 
 def test_request_is_json_flag(test_client_factory):
     """Test is_json property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/json")
     async def json_endpoint(request: Request, response: Response):
@@ -39,7 +39,7 @@ def test_request_is_json_flag(test_client_factory):
 
 def test_request_is_form_flag(test_client_factory):
     """Test is_form property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/form")
     async def form_endpoint(request: Request, response: Response):
@@ -65,7 +65,7 @@ def test_request_is_form_flag(test_client_factory):
 
 def test_request_is_multipart_flag(test_client_factory):
     """Test is_multipart property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/upload")
     async def upload_endpoint(request: Request, response: Response):
@@ -86,7 +86,7 @@ def test_request_is_multipart_flag(test_client_factory):
 
 def test_request_is_urlencoded_flag(test_client_factory):
     """Test is_urlencoded property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/form")
     async def form_endpoint(request: Request, response: Response):
@@ -112,7 +112,7 @@ def test_request_is_urlencoded_flag(test_client_factory):
 
 def test_request_has_cookie_flag(test_client_factory):
     """Test has_cookie property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/cookies")
     async def cookies_endpoint(request: Request, response: Response):
@@ -134,7 +134,7 @@ def test_request_has_cookie_flag(test_client_factory):
 
 def test_request_has_body_flag(test_client_factory):
     """Test has_body property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/data")
     async def data_endpoint(request: Request, response: Response):
@@ -160,7 +160,7 @@ def test_request_has_body_flag(test_client_factory):
 
 def test_request_is_authenticated_flag(test_client_factory):
     """Test is_authenticated property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/auth")
     async def auth_endpoint(request: Request, response: Response):
@@ -176,7 +176,7 @@ def test_request_is_authenticated_flag(test_client_factory):
 
 def test_request_has_session_flag(test_client_factory):
     """Test has_session property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/session")
     async def session_endpoint(request: Request, response: Response):
@@ -192,7 +192,7 @@ def test_request_has_session_flag(test_client_factory):
 
 def test_request_has_files_flag(test_client_factory):
     """Test has_files property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/upload")
     async def upload_endpoint(request: Request, response: Response):
@@ -208,7 +208,7 @@ def test_request_has_files_flag(test_client_factory):
 
 def test_request_flags_with_different_content_types(test_client_factory):
     """Test various flags with different content types"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.post("/check")
     async def check_endpoint(request: Request, response: Response):
@@ -249,7 +249,7 @@ def test_request_flags_with_different_content_types(test_client_factory):
 
 def test_request_has_header_method(test_client_factory):
     """Test has_header method"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/headers")
     async def headers_endpoint(request: Request, response: Response):
@@ -273,7 +273,7 @@ def test_request_has_header_method(test_client_factory):
 
 def test_request_get_header_method(test_client_factory):
     """Test get_header method"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/headers")
     async def headers_endpoint(request: Request, response: Response):

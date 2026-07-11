@@ -1,0 +1,71 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface TocItem extends MarkdownHeading {
+    children: TocItem[];
+}
+
+interface Props {
+    toc: TocItem[];
+    depth?: number;
+    isMobile?: boolean;
+}
+
+const { toc, depth = 0 } = Astro.props;
+---
+
+<ul>
+    {
+        toc.map((heading) => (
+            <li>
+                <a href={'#' + heading.slug}>{heading.text}</a>
+                {heading.children.length > 0 && (
+                    <Astro.self toc={heading.children} depth={depth + 1} />
+                )}
+            </li>
+        ))
+    }
+</ul>
+
+<style define:vars={{ depth }}>
+    ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+    }
+    li {
+        line-height: 1;
+        padding-top: 0;
+        margin-top: 0;
+    }
+
+    li + li {
+        margin-top: calc(var(--spacing) * 2);
+    }
+
+    a {
+        text-decoration-line: none;
+        color: var(--muted-foreground);
+        display: inline-block;
+        text-decoration: inherit;
+        font-size: 0.8rem;
+        font-weight: 400;
+        line-height: 1.125rem;
+    }
+
+    a:hover {
+        color: color-mix(in oklab, var(--foreground) 72%, var(--muted-foreground));
+    }
+
+    a[aria-current] {
+        color: var(--foreground);
+        font-weight: 500;
+    }
+
+    ul > li > ul {
+        --pad-inline: calc(var(--spacing) * 2);
+        margin-top: calc(var(--spacing) * 2);
+        padding-inline: calc((1rem - var(--pad-inline)) / var(--depth) + var(--pad-inline))
+            var(--pad-inline);
+    }
+</style>

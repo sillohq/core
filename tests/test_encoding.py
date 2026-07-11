@@ -18,7 +18,7 @@ from pydantic.networks import AnyUrl, NameEmail
 from pydantic.types import SecretBytes, SecretStr
 from pydantic_core import PydanticUndefined, PydanticUndefinedType
 
-from nexios.encoding import (
+from sillo.encoding import (
     ENCODERS_BY_TYPE,
     decimal_encoder,
     encoders_by_class_tuples,

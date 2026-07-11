@@ -4,7 +4,7 @@ import tempfile
 
 import pytest
 
-from nexios.objects.http import UploadedFile
+from sillo.objects.http import UploadedFile
 
 
 @pytest.mark.asyncio

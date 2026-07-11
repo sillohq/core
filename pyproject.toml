@@ -3,16 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "nexios"
-version = "3.12.3"
+name = "sillo"
+version = "0.0.1"
 description = "A modern ASGI web framework for Python focused on simplicity, clean architecture, and a great developer experience."
 authors = [
     {name = "Chidebele Dunamis", email = "techwithdunamix@gmail.com"}
 ]
 license = "BSD-3-Clause"
-homepage = "https://github.com/nexios-labs/nexios"
-repository = "https://github.com/nexios-labs/nexios"
-documentation = "https://nexioslabs.com"
+homepage = "https://github.com/sillo-labs/sillo"
+repository = "https://github.com/sillo-labs/sillo"
+documentation = "https://sillolabs.com"
 readme = "README.md"
 keywords = [
     "ASGI",
@@ -85,7 +85,7 @@ dev = [
 ]
 
 [project.scripts]
-nexios = "nexios.cli:cli"
+sillo = "sillo.cli:cli"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -99,8 +99,8 @@ warn_redundant_casts = true
 warn_return_any = false
 disallow_untyped_calls = false
 disallow_untyped_defs = false
-files = ["nexios"]
-exclude = "(nexios/templates/.*)"
+files = ["sillo"]
+exclude = "(sillo/templates/.*)"
 
 [tool.black]
 line-length = 88
@@ -169,7 +169,7 @@ exclude = [
     "examples",
     "tests",
     "test",
-    "nexios/templates",
+    "sillo/templates",
     "docs",
     "benchmarks",
     "**/test_*.py",
@@ -191,7 +191,7 @@ target-version = "py38"
 max-complexity = 10
 
 [tool.ruff.isort]
-known-first-party = ["nexios"]
+known-first-party = ["sillo"]
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
@@ -205,7 +205,7 @@ name = "cz_conventional_commits"
 version = "3.0.0-0"
 version_files = [
     "pyproject.toml:version",
-    "nexios/__main__.py:__version__"
+    "sillo/__main__.py:__version__"
 ]
 tag_format = "v$version"
 update_changelog_on_bump = true

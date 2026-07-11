@@ -1,0 +1,37 @@
+---
+title: Split Left Splash
+description: A product-docs splash layout with text on the left and media on the right.
+template: splash
+hero:
+  layout: split-left
+  announcement:
+    text: Split-left layout
+    link: /lucode-starlight-theme/showcase/splash-pages/
+  image:
+    file: ../../../../assets/placeholder.svg
+  actions:
+    - text: Start Building
+      link: /lucode-starlight-theme/guides/getting-started/
+      icon: right-arrow
+    - text: Plugin API
+      link: /lucode-starlight-theme/reference/plugin-api/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { ContainerSection } from 'lucode-starlight/components';
+
+<ContainerSection>
+
+## Best For
+
+<CardGrid>
+  <Card title="Product docs" icon="setting">
+    This layout feels familiar for developer tools, SaaS documentation, and internal platform portals.
+  </Card>
+  <Card title="Clear calls to action" icon="right-arrow">
+    The text leads the page, making the primary action easy to find.
+  </Card>
+</CardGrid>
+
+</ContainerSection>

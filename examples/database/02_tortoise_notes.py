@@ -4,8 +4,8 @@ from typing import AsyncGenerator, List, Optional
 
 from tortoise import Tortoise, fields, models
 
-from nexios import NexiosApp
-from nexios.types import Request, Response, State
+from sillo import silloApp
+from sillo.types import Request, Response, State
 
 # Database configuration
 DATABASE_URL = "sqlite://./example_tortoise.db"
@@ -26,7 +26,7 @@ class Note(models.Model):
 
 # Application lifespan
 @asynccontextmanager
-async def lifespan(app: NexiosApp) -> AsyncGenerator[State, None]:
+async def lifespan(app: silloApp) -> AsyncGenerator[State, None]:
     # Startup: Initialize database connection
     await Tortoise.init(
         db_url=DATABASE_URL,
@@ -42,7 +42,7 @@ async def lifespan(app: NexiosApp) -> AsyncGenerator[State, None]:
 
 
 # Initialize app with lifespan
-app = NexiosApp(lifespan=lifespan)
+app = silloApp(lifespan=lifespan)
 
 
 @app.post("/notes")

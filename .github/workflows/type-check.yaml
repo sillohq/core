@@ -35,4 +35,4 @@ jobs:
         run: uv pip install -e ".[dev]"
 
       - name: Run ty
-        run: uv run ty check nexios
+        run: uv run ty check sillo

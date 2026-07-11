@@ -1,4 +1,4 @@
-# Nexios Auth, State, And Security
+# sillo Auth, State, And Security
 
 Use this reference for login flows, protected routes, session state, cookie handling, and response hardening.
 
@@ -17,13 +17,13 @@ Use this reference for login flows, protected routes, session state, cookie hand
 The docs present authentication as middleware plus protected handlers.
 
 ```python
-from nexios import NexiosApp
-from nexios.auth import SimpleUser
-from nexios.auth.decorators import auth
-from nexios.auth.backends.jwt import JWTAuthBackend
-from nexios.auth.middleware import AuthenticationMiddleware
+from sillo import silloApp
+from sillo.auth import SimpleUser
+from sillo.auth.decorators import auth
+from sillo.auth.backends.jwt import JWTAuthBackend
+from sillo.auth.middleware import AuthenticationMiddleware
 
-app = NexiosApp()
+app = silloApp()
 
 app.add_middleware(AuthenticationMiddleware(
     user_model=SimpleUser,
@@ -64,9 +64,9 @@ async def profile(request, response):
 ## Auth Backends
 
 ```python
-from nexios.auth.backends.session import SessionAuthBackend
-from nexios.session import SessionConfig
-from nexios.session.middleware import SessionMiddleware
+from sillo.auth.backends.session import SessionAuthBackend
+from sillo.session import SessionConfig
+from sillo.session.middleware import SessionMiddleware
 
 app.add_middleware(AuthenticationMiddleware(
     user_model=SimpleUser,
@@ -131,13 +131,13 @@ app.add_middleware(AuthenticationMiddleware(
 ))
 ```
 
-The above code snippet demonstrates how to add a custom authentication backend to Nexios. It defines a custom authentication backend by subclassing `BaseAuthBackend` and implementing the `authenticate` method. The `authenticate` method is responsible for verifying the user's credentials and returning a `BaseUser` subclass instance if authentication is successful. In the example, the custom authentication backend checks for the presence of a specific API key in the request headers. If the API key is present and matches a hard-coded value, a `CustomUser` instance is returned.
+The above code snippet demonstrates how to add a custom authentication backend to sillo. It defines a custom authentication backend by subclassing `BaseAuthBackend` and implementing the `authenticate` method. The `authenticate` method is responsible for verifying the user's credentials and returning a `BaseUser` subclass instance if authentication is successful. In the example, the custom authentication backend checks for the presence of a specific API key in the request headers. If the API key is present and matches a hard-coded value, a `CustomUser` instance is returned.
 
-The `CustomUser` class is a subclass of `BaseUser` and implements the user properties required by Nexios. It stores a reference to the request and the user's name. The `display_name` property returns the user's name, the `is_authenticated` property returns `True` to indicate that the user is authenticated, and the `auth_type` property returns the string "custom" to indicate the type of authentication.
+The `CustomUser` class is a subclass of `BaseUser` and implements the user properties required by sillo. It stores a reference to the request and the user's name. The `display_name` property returns the user's name, the `is_authenticated` property returns `True` to indicate that the user is authenticated, and the `auth_type` property returns the string "custom" to indicate the type of authentication.
 
-Finally, the custom authentication backend is added as middleware to the Nexios app using the `add_middleware` method.
+Finally, the custom authentication backend is added as middleware to the sillo app using the `add_middleware` method.
 
-This code is provided as a starting point for implementing custom authentication in Nexios.
+This code is provided as a starting point for implementing custom authentication in sillo.
 
 
 Teach this as the default secured-endpoint shape.
@@ -147,13 +147,13 @@ Teach this as the default secured-endpoint shape.
 Basic documented setup:
 
 ```python
-from nexios.session import SessionConfig
-from nexios.session.middleware import SessionMiddleware
+from sillo.session import SessionConfig
+from sillo.session.middleware import SessionMiddleware
 
 app.config.secret_key = "your-secure-secret-key"
 
 session_config = SessionConfig(
-    session_cookie_name="nexios_session",
+    session_cookie_name="sillo_session",
     cookie_secure=True,
     cookie_httponly=True,
     cookie_samesite="lax",
@@ -270,10 +270,10 @@ app.add_middleware(set_headers_after_middleware)
 
 ## CORS And Request Hardening
 
-Nexios docs also cover cross-origin and browser-safety concerns.
+sillo docs also cover cross-origin and browser-safety concerns.
 
 ```python
-from nexios.middleware import CORSMiddleware
+from sillo.middleware import CORSMiddleware
 
 app.add_middleware(CORSMiddleware())
 ```
@@ -290,7 +290,7 @@ Use this concept bucket for:
 The docs present a configurable security middleware:
 
 ```python
-from nexios.middleware.security import SecurityMiddleware
+from sillo.middleware.security import SecurityMiddleware
 
 app.add_middleware(SecurityMiddleware(
     csp_enabled=True,
@@ -311,4 +311,4 @@ This is the right concept cluster for:
 
 Good teaching summary:
 
-"Nexios treats security as middleware-driven response hardening plus authentication and session management. Use dedicated middleware for broad protections, and route-level logic for application-specific access control."
+"sillo treats security as middleware-driven response hardening plus authentication and session management. Use dedicated middleware for broad protections, and route-level logic for application-specific access control."

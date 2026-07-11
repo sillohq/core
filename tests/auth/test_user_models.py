@@ -9,8 +9,8 @@ This module tests user models including:
 
 import pytest
 
-from nexios.auth.users.base import BaseUser
-from nexios.auth.users.simple import SimpleUser, UnauthenticatedUser
+from sillo.auth.users.base import BaseUser
+from sillo.auth.users.simple import SimpleUser, UnauthenticatedUser
 
 
 def test_simple_user_creation():

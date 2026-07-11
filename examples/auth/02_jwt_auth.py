@@ -1,8 +1,8 @@
-from nexios import NexiosApp
-from nexios.auth.backends.jwt import JWTAuthBackend, create_jwt
-from nexios.auth.base import BaseUser
-from nexios.auth.middleware import AuthenticationMiddleware
-from nexios.http import Request, Response
+from sillo import silloApp
+from sillo.auth.backends.jwt import JWTAuthBackend, create_jwt
+from sillo.auth.base import BaseUser
+from sillo.auth.middleware import AuthenticationMiddleware
+from sillo.http import Request, Response
 
 
 class User(BaseUser):
@@ -43,7 +43,7 @@ class db:
         return {"id": user_id, "username": "admin", "email": "admin@example.com"}
 
 
-app = NexiosApp()
+app = silloApp()
 
 # JWT backend - no authenticate_func needed
 jwt_backend = JWTAuthBackend()

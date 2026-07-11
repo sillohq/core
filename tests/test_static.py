@@ -1,18 +1,18 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.routing import Group
-from nexios.static import StaticFiles
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.routing import Group
+from sillo.static import StaticFiles
+from sillo.testclient import TestClient
 
 if TYPE_CHECKING:
-    from nexios.http import Request, Response
+    from sillo.http import Request, Response
 
 
 def test_static_file_serving():
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
@@ -21,14 +21,14 @@ def test_static_file_serving():
     with TestClient(app) as client:
         resp = client.get("/static/example.txt")
         assert resp.status_code == 200
-        assert b"welcome to nexios" in resp.content
+        assert b"welcome to sillo" in resp.content
 
         resp = client.get("/static/doesnotexist.txt")
         assert resp.status_code == 404
 
 
 def test_static_file_types():
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
@@ -52,7 +52,7 @@ def test_static_file_types():
 
 
 def test_static_file_subdirectories():
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
@@ -68,7 +68,7 @@ def test_static_file_subdirectories():
 
 
 def test_static_file_http_methods():
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
@@ -86,7 +86,7 @@ def test_static_file_http_methods():
 
 
 def test_static_file_cache_headers():
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
@@ -99,7 +99,7 @@ def test_static_file_cache_headers():
 
 
 def test_static_file_range_requests():
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
@@ -116,7 +116,7 @@ def test_static_file_range_requests():
 
 
 def test_static_file_error_cases():
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
@@ -131,7 +131,7 @@ def test_static_file_error_cases():
 
 
 def test_static_file_query_params():
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
@@ -140,16 +140,16 @@ def test_static_file_query_params():
     with TestClient(app) as client:
         resp = client.get("/static/example.txt?v=1")
         assert resp.status_code == 200
-        assert b"welcome to nexios" in resp.content
+        assert b"welcome to sillo" in resp.content
 
         resp = client.get("/static/example.txt#section")
         assert resp.status_code == 200
-        assert b"welcome to nexios" in resp.content
+        assert b"welcome to sillo" in resp.content
 
 
 def test_static_file_allowed_extensions():
     """Test allowed extensions filtering"""
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir, allowed_extensions=["txt", "css"])
     static_group = Group(path="/static", app=static_files)
@@ -173,7 +173,7 @@ def test_static_file_allowed_extensions():
 
 def test_static_file_forbidden_extensions():
     """Test that dangerous extensions are blocked"""
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(
         directory=static_dir, allowed_extensions=["txt", "css", "html"]
@@ -203,7 +203,7 @@ def test_static_file_custom_404_handler():
             "<html><body><h1>Custom Not Found</h1></body></html>", status_code=404
         )
 
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir, custom_404_handler=custom_404)
     static_group = Group(path="/static", app=static_files)
@@ -218,7 +218,7 @@ def test_static_file_custom_404_handler():
 
 def test_static_file_cache_control():
     """Test cache control headers"""
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(
         directory=static_dir, cache_control="public, max-age=3600"
@@ -234,7 +234,7 @@ def test_static_file_cache_control():
 
 def test_static_file_multiple_directories():
     """Test serving from multiple directories"""
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_dir2 = Path(__file__).parent / "static" / "subfolder"
 
@@ -246,7 +246,7 @@ def test_static_file_multiple_directories():
         # File from first directory
         resp = client.get("/static/example.txt")
         assert resp.status_code == 200
-        assert b"welcome to nexios" in resp.content
+        assert b"welcome to sillo" in resp.content
 
         # File from second directory (subfolder)
         resp = client.get("/static/subfile.txt")
@@ -256,7 +256,7 @@ def test_static_file_multiple_directories():
 
 def test_static_file_extension_case_insensitive():
     """Test that extension filtering is case insensitive"""
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
 
     # Create test files with different cases
@@ -286,7 +286,7 @@ def test_static_file_extension_case_insensitive():
 
 def test_static_file_empty_extension_list():
     """Test that empty extension list allows all files"""
-    app = NexiosApp()
+    app = silloApp()
     static_dir = Path(__file__).parent / "static"
     static_files = StaticFiles(directory=static_dir, allowed_extensions=[])
     static_group = Group(path="/static", app=static_files)

@@ -1,6 +1,6 @@
-from nexios import NexiosApp
+from sillo import silloApp
 
-app = NexiosApp()
+app = silloApp()
 
 
 @app.post("/upload")

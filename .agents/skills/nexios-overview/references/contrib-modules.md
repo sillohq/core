@@ -1,6 +1,6 @@
-# Nexios Contrib Modules
+# sillo Contrib Modules
 
-Use this reference when the request is about `nexios-contrib` or related integrations rather than the core framework alone.
+Use this reference when the request is about `sillo-contrib` or related integrations rather than the core framework alone.
 
 ## Table of Contents
 
@@ -15,18 +15,18 @@ Use this reference when the request is about `nexios-contrib` or related integra
 Basic setup:
 
 ```python
-from nexios import NexiosApp
-from nexios_contrib.redis import init_redis
+from sillo import silloApp
+from sillo_contrib.redis import init_redis
 
-app = NexiosApp()
+app = silloApp()
 init_redis(app)
 ```
 
 Dependency injection pattern:
 
 ```python
-from nexios import Depend
-from nexios_contrib.redis import get_redis
+from sillo import Depend
+from sillo_contrib.redis import get_redis
 
 @app.get("/user/{user_id}")
 async def get_user(request, response, user_id: str, redis = Depend(get_redis)):
@@ -48,10 +48,10 @@ Teach Redis as the caching and data-store integration layer, especially when the
 Basic setup:
 
 ```python
-from nexios import NexiosApp
-from nexios_contrib.tasks import setup_tasks, create_task
+from sillo import silloApp
+from sillo_contrib.tasks import setup_tasks, create_task
 
-app = NexiosApp()
+app = silloApp()
 task_manager = setup_tasks(app)
 ```
 
@@ -71,7 +71,7 @@ async def start_processing(request, response):
 Dependency injection variant:
 
 ```python
-from nexios_contrib.tasks import TaskDependency
+from sillo_contrib.tasks import TaskDependency
 
 @app.post("/process-with-deps")
 async def process_with_deps(request, response, task_dep: TaskDependency = TaskDependency()):
@@ -85,10 +85,10 @@ async def process_with_deps(request, response, task_dep: TaskDependency = TaskDe
 Application setup:
 
 ```python
-from nexios import NexiosApp
-from nexios_contrib.mail import setup_mail, MailConfig
+from sillo import silloApp
+from sillo_contrib.mail import setup_mail, MailConfig
 
-app = NexiosApp()
+app = silloApp()
 mail_client = setup_mail(app, config=MailConfig(
     smtp_host="smtp.gmail.com",
     smtp_port=587,
@@ -116,10 +116,10 @@ Teach mail as the email delivery layer, often paired with background tasks or ev
 Basic initialization:
 
 ```python
-from nexios import NexiosApp
-from nexios_contrib.tortoise import init_tortoise
+from sillo import silloApp
+from sillo_contrib.tortoise import init_tortoise
 
-app = NexiosApp()
+app = silloApp()
 
 init_tortoise(
     app,
@@ -145,8 +145,8 @@ Teach this integration as the ORM bridge for async model-based persistence.
 
 ## How To Teach Contrib Modules
 
-- Start with what the module adds to core Nexios
+- Start with what the module adds to core sillo
 - Show the one-line or one-function setup
 - Give one practical route example
 - Mention whether DI support exists
-- Keep core Nexios concepts separate from contrib-specific helpers
+- Keep core sillo concepts separate from contrib-specific helpers

@@ -11,13 +11,13 @@ from functools import partial
 
 import pytest
 
-from nexios.application import NexiosApp
-from nexios.auth import AuthenticationMiddleware, BaseUser, auth
-from nexios.auth.backends.base import AuthenticationBackend
-from nexios.auth.model import AuthResult
-from nexios.auth.users.simple import SimpleUser
-from nexios.http import Request, Response
-from nexios.testclient import AsyncTestClient
+from sillo.application import silloApp
+from sillo.auth import AuthenticationMiddleware, BaseUser, auth
+from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.model import AuthResult
+from sillo.auth.users.simple import SimpleUser
+from sillo.http import Request, Response
+from sillo.testclient import AsyncTestClient
 
 
 # -------------------------
@@ -71,7 +71,7 @@ class CustomTestUser(BaseUser):
 
 
 async def test_custom_auth_backend_success(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class CustomAuthBackend(AuthenticationBackend):
@@ -101,7 +101,7 @@ async def test_custom_auth_backend_success(test_client):
 
 
 async def test_custom_auth_backend_failure(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class CustomAuthBackend(AuthenticationBackend):
@@ -124,7 +124,7 @@ async def test_custom_auth_backend_failure(test_client):
 
 
 async def test_custom_auth_backend_exception_handling(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class FaultyAuthBackend(AuthenticationBackend):
@@ -155,7 +155,7 @@ async def test_custom_auth_backend_exception_handling(test_client):
 
 
 async def test_custom_auth_backend_complex_logic(test_client):
-    app = NexiosApp()
+    app = silloApp()
     client = test_client(app)
 
     class ComplexAuthBackend(AuthenticationBackend):

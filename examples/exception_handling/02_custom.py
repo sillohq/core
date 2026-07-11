@@ -1,6 +1,6 @@
-from nexios import NexiosApp
-from nexios.exceptions import HTTPException
-from nexios.http import Request, Response
+from sillo import silloApp
+from sillo.exceptions import HTTPException
+from sillo.http import Request, Response
 
 
 class CustomException(HTTPException):
@@ -8,7 +8,7 @@ class CustomException(HTTPException):
         super().__init__(status_code=400, detail="Custom Exception")
 
 
-app = NexiosApp()
+app = silloApp()
 
 
 @app.get("/test-custom-exception")

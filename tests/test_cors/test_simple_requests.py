@@ -4,10 +4,10 @@ Tests for simple CORS requests (GET, POST, PUT, DELETE)
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.middleware.cors import CorsConfig, CORSMiddleware
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.middleware.cors import CorsConfig, CORSMiddleware
+from sillo.testclient import TestClient
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def cors_app():
         debug=True,
     )
 
-    app = NexiosApp()
+    app = silloApp()
 
     # Add test routes
     @app.get("/test")
@@ -167,7 +167,7 @@ class TestSimpleRequests:
             allow_credentials=True,
         )
 
-        app = NexiosApp()
+        app = silloApp()
 
         @app.get("/port-test")
         async def port_route(request: Request, response: Response):

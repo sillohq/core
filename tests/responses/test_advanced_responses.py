@@ -6,22 +6,22 @@ from typing import Any, Callable, Dict, List
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.http.response import (
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.http.response import (
     BaseResponse,
     HTMLResponse,
     JSONResponse,
     PlainTextResponse,
 )
-from nexios.testclient import TestClient
+from sillo.testclient import TestClient
 
 # ========== Custom Response Class Tests ==========
 
 
-def test_custom_response_class(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_custom_response_class(test_client_factory: Callable[[silloApp], TestClient]):
     """Test using custom response class with make_response"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/custom")
     async def custom_response(request: Request, response: Response):
@@ -35,10 +35,10 @@ def test_custom_response_class(test_client_factory: Callable[[NexiosApp], TestCl
 
 
 def test_custom_json_response_class(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test using JSONResponse class directly"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/custom-json")
     async def custom_json(request: Request, response: Response):
@@ -52,10 +52,10 @@ def test_custom_json_response_class(
 
 
 def test_custom_html_response_class(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test using HTMLResponse class directly"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/custom-html")
     async def custom_html(request: Request, response: Response):
@@ -71,9 +71,9 @@ def test_custom_html_response_class(
 # ========== Response with Different Data Types Tests ==========
 
 
-def test_response_with_none(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_with_none(test_client_factory: Callable[[silloApp], TestClient]):
     """Test response with None values"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/with-none")
     async def with_none(request: Request, response: Response):
@@ -87,9 +87,9 @@ def test_response_with_none(test_client_factory: Callable[[NexiosApp], TestClien
         assert data["exists"] is True
 
 
-def test_response_with_boolean(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_with_boolean(test_client_factory: Callable[[silloApp], TestClient]):
     """Test response with boolean values"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/with-boolean")
     async def with_boolean(request: Request, response: Response):
@@ -103,9 +103,9 @@ def test_response_with_boolean(test_client_factory: Callable[[NexiosApp], TestCl
         assert data["failed"] is False
 
 
-def test_response_with_numbers(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_with_numbers(test_client_factory: Callable[[silloApp], TestClient]):
     """Test response with various number types"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/with-numbers")
     async def with_numbers(request: Request, response: Response):
@@ -123,9 +123,9 @@ def test_response_with_numbers(test_client_factory: Callable[[NexiosApp], TestCl
         assert data["zero"] == 0
 
 
-def test_response_with_unicode(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_with_unicode(test_client_factory: Callable[[silloApp], TestClient]):
     """Test response with unicode characters"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/with-unicode")
     async def with_unicode(request: Request, response: Response):
@@ -142,10 +142,10 @@ def test_response_with_unicode(test_client_factory: Callable[[NexiosApp], TestCl
 
 
 def test_response_with_empty_string(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test response with empty string"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/empty-string")
     async def empty_string(request: Request, response: Response):
@@ -162,10 +162,10 @@ def test_response_with_empty_string(
 
 
 def test_response_ensure_ascii_false(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test JSON response with ensure_ascii=False"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/no-ascii")
     async def no_ascii(request: Request, response: Response):
@@ -177,10 +177,10 @@ def test_response_ensure_ascii_false(
 
 
 def test_response_ensure_ascii_true(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test JSON response with ensure_ascii=True"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/with-ascii")
     async def with_ascii(request: Request, response: Response):
@@ -194,9 +194,9 @@ def test_response_ensure_ascii_true(
 # ========== Response Size Tests ==========
 
 
-def test_response_large_json(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_large_json(test_client_factory: Callable[[silloApp], TestClient]):
     """Test response with large JSON payload"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/large-json")
     async def large_json(request: Request, response: Response):
@@ -211,9 +211,9 @@ def test_response_large_json(test_client_factory: Callable[[NexiosApp], TestClie
         assert len(data["items"]) == 1000
 
 
-def test_response_large_text(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_large_text(test_client_factory: Callable[[silloApp], TestClient]):
     """Test response with large text payload"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/large-text")
     async def large_text(request: Request, response: Response):
@@ -231,10 +231,10 @@ def test_response_large_text(test_client_factory: Callable[[NexiosApp], TestClie
 
 
 def test_conditional_response_type(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test conditional response based on accept header"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/conditional")
     async def conditional_response(request: Request, response: Response):
@@ -262,10 +262,10 @@ def test_conditional_response_type(
 
 
 def test_response_based_on_method(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test different responses based on HTTP method"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.route("/resource", methods=["GET", "POST", "PUT", "DELETE"])
     async def resource_handler(request: Request, response: Response):

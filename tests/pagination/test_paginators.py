@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 import pytest
 
-from nexios.pagination import (
+from sillo.pagination import (
     AsyncListDataHandler,
     AsyncPaginator,
     CursorPagination,

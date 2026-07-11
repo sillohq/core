@@ -1,7 +1,7 @@
-from nexios import NexiosApp
-from nexios.routing import Router
+from sillo import silloApp
+from sillo.routing import Router
 
-app = NexiosApp()
+app = silloApp()
 
 v1_router = Router(prefix="/v1")
 v2_router = Router(prefix="/v2")

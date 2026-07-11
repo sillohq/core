@@ -6,16 +6,16 @@ from typing import Callable
 
 import pytest
 
-from nexios import NexiosApp
-from nexios.http import Request, Response
-from nexios.testclient import TestClient
+from sillo import silloApp
+from sillo.http import Request, Response
+from sillo.testclient import TestClient
 
 # ========== Response Body Tests ==========
 
 
-def test_response_body_property(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_body_property(test_client_factory: Callable[[silloApp], TestClient]):
     """Test accessing response body property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/body")
     async def get_body(request: Request, response: Response):
@@ -30,9 +30,9 @@ def test_response_body_property(test_client_factory: Callable[[NexiosApp], TestC
         assert resp.status_code == 200
 
 
-def test_set_body_method(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_set_body_method(test_client_factory: Callable[[silloApp], TestClient]):
     """Test setting response body directly"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/set-body")
     async def set_body(request: Request, response: Response):
@@ -47,9 +47,9 @@ def test_set_body_method(test_client_factory: Callable[[NexiosApp], TestClient])
 # ========== Response Status Tests ==========
 
 
-def test_response_status_codes(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_status_codes(test_client_factory: Callable[[silloApp], TestClient]):
     """Test various HTTP status codes"""
-    app = NexiosApp()
+    app = silloApp()
 
     status_codes = [200, 201, 204, 400, 401, 403, 404, 500, 502, 503]
 
@@ -69,10 +69,10 @@ def test_response_status_codes(test_client_factory: Callable[[NexiosApp], TestCl
 
 
 def test_response_content_type_property(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test accessing response content type property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/content-type-check")
     async def check_content_type(request: Request, response: Response):
@@ -86,10 +86,10 @@ def test_response_content_type_property(
 
 
 def test_response_content_length_property(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test accessing response content length property"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/content-length-check")
     async def check_content_length(request: Request, response: Response):
@@ -109,10 +109,10 @@ def test_response_content_length_property(
 
 
 def test_method_chaining_all_methods(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test chaining multiple response methods"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/chain-all")
     async def chain_all(request: Request, response: Response):
@@ -135,10 +135,10 @@ def test_method_chaining_all_methods(
 
 
 def test_method_chaining_order_independence(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test that method chaining works regardless of order"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/chain-order-1")
     async def chain_order_1(request: Request, response: Response):
@@ -162,10 +162,10 @@ def test_method_chaining_order_independence(
 
 
 def test_response_type_switching(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test switching between different response types"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/switch-type")
     async def switch_type(request: Request, response: Response):
@@ -199,9 +199,9 @@ def test_response_type_switching(
         assert "text/html" in resp_html.headers.get("content-type", "")
 
 
-def test_response_resp_method(test_client_factory: Callable[[NexiosApp], TestClient]):
+def test_response_resp_method(test_client_factory: Callable[[silloApp], TestClient]):
     """Test using the base resp() method"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/base-resp")
     async def base_resp(request: Request, response: Response):
@@ -220,10 +220,10 @@ def test_response_resp_method(test_client_factory: Callable[[NexiosApp], TestCli
 
 
 def test_response_get_response_method(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test getting the underlying response object"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/get-response")
     async def get_response_obj(request: Request, response: Response):
@@ -242,10 +242,10 @@ def test_response_get_response_method(
 
 
 def test_response_with_error_status(
-    test_client_factory: Callable[[NexiosApp], TestClient],
+    test_client_factory: Callable[[silloApp], TestClient],
 ):
     """Test response with error status codes"""
-    app = NexiosApp()
+    app = silloApp()
 
     @app.get("/bad-request")
     async def bad_request(request: Request, response: Response):

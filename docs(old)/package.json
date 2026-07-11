@@ -1,0 +1,20 @@
+{
+  "devDependencies": {
+    "gh-pages": "^6.3.0",
+    "release-it": "^19.0.1",
+    "vitepress": "2.0.0-alpha.5",
+    "vitepress-export-pdf": "^1.0.0"
+  },
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "deploy": "gh-pages -d docs/.vitepress/dist",
+    "dev": "vitepress dev docs",
+    "export-pdf": "press-export-pdf export docs"
+  },
+  "dependencies": {
+    "vitepress-plugin-comment-with-giscus": "^1.1.15",
+    "vitepress-plugin-group-icons": "^1.5.2"
+  }
+}

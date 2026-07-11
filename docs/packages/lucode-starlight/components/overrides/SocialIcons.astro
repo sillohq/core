@@ -1,0 +1,47 @@
+---
+import config from 'virtual:starlight/user-config';
+
+import { Icon } from '@astrojs/starlight/components';
+
+const links = config.social || [];
+---
+
+{
+    links.length > 0 && (
+        <>
+            {links.map(({ label, href, icon }) => (
+                <a href={href} rel="me" class="sl-flex button" data-variant="ghost">
+                    <span class="sr-only">{label}</span>
+                    <Icon name={icon} />
+                </a>
+            ))}
+        </>
+    )
+}
+
+<style>
+    a {
+        all: unset;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border-radius: calc(var(--radius) - 2px);
+        cursor: pointer;
+        color: color-mix(in oklab, var(--foreground) 76%, var(--muted-foreground));
+        background-color: transparent;
+        transition: color 0.15s, background-color 0.15s;
+        text-decoration: none;
+    }
+    a:hover {
+        color: var(--accent-foreground);
+        background-color: color-mix(in oklab, var(--accent) 80%, transparent);
+    }
+
+    a :global(svg) {
+        width: 1rem;
+        height: 1rem;
+    }
+</style>

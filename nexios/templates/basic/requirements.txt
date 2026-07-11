@@ -1,4 +1,0 @@
-# Nexios framework and dependencies
-nexios>=2.3.2
-uvicorn>=0.22.0
-python-dotenv>=0.19.0

@@ -1,9 +1,9 @@
-from nexios import NexiosApp
-from nexios.auth.base import AuthenticationBackend
-from nexios.auth.middleware import AuthenticationMiddleware
-from nexios.auth.users.base import BaseUser
-from nexios.auth.users.simple import UnauthenticatedUser
-from nexios.http import Request, Response
+from sillo import silloApp
+from sillo.auth.base import AuthenticationBackend
+from sillo.auth.middleware import AuthenticationMiddleware
+from sillo.auth.users.base import BaseUser
+from sillo.auth.users.simple import UnauthenticatedUser
+from sillo.http import Request, Response
 
 
 class CustomUser(BaseUser):
@@ -56,7 +56,7 @@ class CustomAuthBackend(AuthenticationBackend):
         return UnauthenticatedUser(), "no-auth"
 
 
-app = NexiosApp()
+app = silloApp()
 
 # Custom backend
 custom_backend = CustomAuthBackend()

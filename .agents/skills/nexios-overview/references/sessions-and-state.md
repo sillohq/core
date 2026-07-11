@@ -1,4 +1,4 @@
-# Nexios Sessions And State
+# sillo Sessions And State
 
 Use this reference for a deeper view of session storage and session-backed state patterns.
 
@@ -13,15 +13,15 @@ Use this reference for a deeper view of session storage and session-backed state
 ## Basic Session Setup
 
 ```python
-from nexios import NexiosApp
-from nexios.session import SessionConfig
-from nexios.session.middleware import SessionMiddleware
+from sillo import silloApp
+from sillo.session import SessionConfig
+from sillo.session.middleware import SessionMiddleware
 
-app = NexiosApp()
+app = silloApp()
 app.config.secret_key = "your-secure-secret-key"
 
 session_config = SessionConfig(
-    session_cookie_name="nexios_session",
+    session_cookie_name="sillo_session",
     cookie_secure=True,
     cookie_httponly=True,
     cookie_samesite="lax",
@@ -86,7 +86,7 @@ Use this when explaining browser state lifetimes and login flows.
 ### Signed Cookie Sessions
 
 ```python
-from nexios.session.signed_cookies import SignedSessionManager
+from sillo.session.signed_cookies import SignedSessionManager
 
 session_config = SessionConfig(
     manager=SignedSessionManager
@@ -105,7 +105,7 @@ Tradeoff:
 ### File-Based Sessions
 
 ```python
-from nexios.session.file import FileSessionManager
+from sillo.session.file import FileSessionManager
 
 session_config = SessionConfig(
     manager=FileSessionManager,

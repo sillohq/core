@@ -1,5 +1,5 @@
 """
-Comprehensive tests for Nexios event system.
+Comprehensive tests for sillo event system.
 
 Tests cover:
 - Basic event registration and triggering
@@ -25,7 +25,7 @@ from unittest.mock import Mock, call, patch
 
 import pytest
 
-from nexios.events import (
+from sillo.events import (
     AsyncEventEmitter,
     Event,
     EventCancelledError,

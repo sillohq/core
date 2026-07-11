@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from nexios.http import Request, Response
-from nexios.middleware.base import BaseMiddleware
+from sillo.http import Request, Response
+from sillo.middleware.base import BaseMiddleware
 
 
 class ComplexMiddleware(BaseMiddleware):

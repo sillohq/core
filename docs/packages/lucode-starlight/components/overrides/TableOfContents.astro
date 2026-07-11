@@ -1,0 +1,36 @@
+---
+import TableOfContentsList from './parts/toc/TableOfContentsList.astro';
+
+const { toc } = Astro.locals.starlightRoute;
+---
+
+{
+    toc && (
+        <starlight-toc data-min-h={toc.minHeadingLevel} data-max-h={toc.maxHeadingLevel}>
+            <nav aria-labelledby="starlight__on-this-page">
+                <p id="starlight__on-this-page">{Astro.locals.t('tableOfContents.onThisPage')}</p>
+                <TableOfContentsList toc={toc.items} />
+            </nav>
+        </starlight-toc>
+    )
+}
+
+<script src="./parts/toc/starlight-toc"></script>
+
+<style>
+    starlight-toc {
+        scrollbar-width: none;
+        padding-bottom: calc(var(--spacing) * 10);
+        overflow: auto;
+        height: 100%;
+    }
+    nav {
+    }
+    p {
+        font-weight: 400;
+        font-size: 0.75rem;
+        line-height: 1rem;
+        margin-bottom: calc(var(--spacing) * 3.5);
+        color: var(--muted-foreground);
+    }
+</style>

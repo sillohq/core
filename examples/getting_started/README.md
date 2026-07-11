@@ -1,6 +1,6 @@
 # Getting Started Examples
 
-These examples will help you get up and running with Nexios quickly.
+These examples will help you get up and running with sillo quickly.
 
 ## Examples
 

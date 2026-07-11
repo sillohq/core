@@ -12,13 +12,13 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from nexios.application import NexiosApp
-from nexios.auth import create_jwt, decode_jwt
-from nexios.auth.backends.apikey import create_api_key, verify_key
-from nexios.auth.backends.session import login, logout
-from nexios.auth.users.simple import SimpleUser
-from nexios.config import MakeConfig
-from nexios.session.middleware import SessionMiddleware
+from sillo.application import silloApp
+from sillo.auth import create_jwt, decode_jwt
+from sillo.auth.backends.apikey import create_api_key, verify_key
+from sillo.auth.backends.session import login, logout
+from sillo.auth.users.simple import SimpleUser
+from sillo.config import MakeConfig
+from sillo.session.middleware import SessionMiddleware
 
 
 def test_create_jwt_basic():
@@ -128,7 +128,7 @@ def test_verify_key_timing_attack_protection():
 
 async def test_session_login_logout():
     """Test session login and logout utilities."""
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request with session
@@ -155,7 +155,7 @@ async def test_session_login_logout():
 
 def test_session_login_without_session_middleware():
     """Test session login without session middleware raises error."""
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session
@@ -172,7 +172,7 @@ def test_session_login_without_session_middleware():
 
 def test_session_logout_without_session_middleware():
     """Test session logout without session middleware raises error."""
-    app = NexiosApp()
+    app = silloApp()
     app.add_middleware(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session

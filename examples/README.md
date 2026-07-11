@@ -1,6 +1,6 @@
-# Nexios Examples
+# sillo Examples
 
-Welcome to the Nexios examples directory! This folder contains comprehensive examples demonstrating various features of the Nexios web framework.
+Welcome to the sillo examples directory! This folder contains comprehensive examples demonstrating various features of the sillo web framework.
 
 ## Directory Structure
 
@@ -62,5 +62,5 @@ Some examples require additional dependencies:
 
 Install extras:
 ```bash
-pip install nexios[all]
+pip install sillo[all]
 ```
