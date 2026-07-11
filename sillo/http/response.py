@@ -841,8 +841,6 @@ class silloResponse:
         headers: Dict[str, Any] = {},
     ):
         """Send plain text or HTML content."""
-        # if status_code is None:
-        # status_code = self._status_code
         new_response = PlainTextResponse(
             body=content, status_code=status_code, headers=headers
         )
@@ -1016,7 +1014,7 @@ class silloResponse:
 
         new_response = StreamingResponse(
             content=iterator,
-            status_code=status_code or self._status_code,
+            status_code=status_code,
             headers=headers,
             content_type=content_type,
         )
@@ -1077,7 +1075,6 @@ class silloResponse:
         if not self._response:
             self.empty()
         self._response.status_code = status_code
-        self._status_code = status_code
         return self
 
     def set_header(self, key: str, value: str, overide: bool = False):
