@@ -128,9 +128,7 @@ def _collect_kwargs(
     request: Optional["Request"],
 ) -> Dict[str, Any]:
     kwargs: Dict[str, Any] = {
-        dep.name: values[dep.name]
-        for dep in node.dependencies
-        if dep.name
+        dep.name: values[dep.name] for dep in node.dependencies if dep.name
     }
     for ext in node.param_extractors:
         kwargs[ext.param_name] = ext.extractor.extract(request)
