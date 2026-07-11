@@ -21,21 +21,9 @@ if TYPE_CHECKING:
 
 
 class Depend:
-    """
-    Dependency injection marker for sillo framework.
-
-    Usage::
-
-        def get_db():
-            return Database()
-
-        @app.get("/users")
-        async def get_users(request, response, db=Depend(get_db)):
-            ...
-    """
-
-    def __init__(self, dependency: Callable[..., Any] = None) -> None:
+    def __init__(self, dependency: Callable[..., Any] = None, *, get_request: bool = False) -> None:
         self.dependency = dependency
+        self.get_request = get_request
 
     def __class_getitem__(cls, item: Any):
         return cls
@@ -63,6 +51,7 @@ class Dependant:
     call: Optional[Callable[..., Any]] = None
     name: Optional[str] = None
     dependencies: List["Dependant"] = field(default_factory=list)
+    request_param_names: List[str] = field(default_factory=list)
     param_extractors: List[SolvedParamDependency] = field(default_factory=list)
     is_coroutine: bool = False
     is_generator: bool = False
@@ -82,6 +71,7 @@ def get_dependant(
 ) -> Dependant:
     sig = signature(call)
     deps: List[Dependant] = []
+    request_params: List[str] = []
     extractors: List[SolvedParamDependency] = []
     cache_key_parts: List[str] = []
 
@@ -89,9 +79,12 @@ def get_dependant(
         default = param.default
 
         if isinstance(default, Depend):
-            sub = get_dependant(default.dependency, param_name)
-            deps.append(sub)
-            cache_key_parts.append(param_name)
+            if default.get_request and default.dependency is None:
+                request_params.append(param_name)
+            else:
+                sub = get_dependant(default.dependency, param_name)
+                deps.append(sub)
+                cache_key_parts.append(param_name)
 
         elif isinstance(default, ParameterExtractor):
             extractor = default
@@ -113,6 +106,7 @@ def get_dependant(
         call=call,
         name=name,
         dependencies=deps,
+        request_param_names=request_params,
         param_extractors=extractors,
         is_coroutine=inspect.iscoroutinefunction(call),
         is_generator=inspect.isgeneratorfunction(call),
@@ -161,6 +155,9 @@ async def solve_dependencies(
 
     for ext in dependant.param_extractors:
         values[ext.param_name] = await resolve_param(ext, request)
+
+    for rparam in dependant.request_param_names:
+        values[rparam] = request
 
     return values
 

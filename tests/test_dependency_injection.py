@@ -748,3 +748,116 @@ def test_deep_yield_dependency_chain(
             "cleanup_b",
             "cleanup_a",
         ]
+
+
+# ========== Depend(get_request=True) Tests ==========
+
+
+def test_depend_get_request_in_handler(
+    test_client_factory: Callable[[silloApp], TestClient],
+):
+    """Depend(get_request=True) in handler injects raw Request."""
+    app = silloApp()
+
+    @app.get("/request-injected")
+    async def handler(
+        request: Request,
+        response: Response,
+        req: Request = Depend(get_request=True),
+    ):
+        return response.json({"path": req.url.path, "method": req.method})
+
+    with test_client_factory(app) as client:
+        resp = client.get("/request-injected")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["path"] == "/request-injected"
+        assert data["method"] == "GET"
+
+
+def test_depend_get_request_in_subdependency(
+    test_client_factory: Callable[[silloApp], TestClient],
+):
+    """Depend(get_request=True) in a sub-dependency receives Request."""
+    app = silloApp()
+
+    def get_auth_info(req: Request = Depend(get_request=True)):
+        return {"token": req.headers.get("authorization", "none")}
+
+    @app.get("/auth-info")
+    async def handler(
+        request: Request,
+        response: Response,
+        auth: dict = Depend(get_auth_info),
+    ):
+        return response.json({"auth": auth})
+
+    with test_client_factory(app) as client:
+        resp = client.get("/auth-info", headers={"Authorization": "Bearer abc123"})
+        assert resp.status_code == 200
+        assert resp.json()["auth"]["token"] == "Bearer abc123"
+
+
+def test_depend_get_request_with_other_deps(
+    test_client_factory: Callable[[silloApp], TestClient],
+):
+    """Depend(get_request=True) combined with other Depend deps."""
+    app = silloApp()
+
+    def get_user_id():
+        return "user_42"
+
+    def get_full_context(
+        req: Request = Depend(get_request=True),
+        user_id: str = Depend(get_user_id),
+    ):
+        return {
+            "user_id": user_id,
+            "path": req.url.path,
+            "method": req.method,
+        }
+
+    @app.post("/full-context")
+    async def handler(
+        request: Request,
+        response: Response,
+        ctx: dict = Depend(get_full_context),
+    ):
+        return response.json({"ctx": ctx})
+
+    with test_client_factory(app) as client:
+        resp = client.post("/full-context")
+        assert resp.status_code == 200
+        data = resp.json()["ctx"]
+        assert data["user_id"] == "user_42"
+        assert data["path"] == "/full-context"
+        assert data["method"] == "POST"
+
+
+def test_depend_get_request_and_normal_dep_in_handler(
+    test_client_factory: Callable[[silloApp], TestClient],
+):
+    """Mix Depend(get_request=True) and Depend(callable) in same handler."""
+    app = silloApp()
+
+    def get_db():
+        return "db_connected"
+
+    @app.get("/mixed-handler")
+    async def handler(
+        request: Request,
+        response: Response,
+        req: Request = Depend(get_request=True),
+        db: str = Depend(get_db),
+    ):
+        return response.json({
+            "path": req.url.path,
+            "db": db,
+        })
+
+    with test_client_factory(app) as client:
+        resp = client.get("/mixed-handler")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["path"] == "/mixed-handler"
+        assert data["db"] == "db_connected"
