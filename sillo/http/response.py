@@ -802,37 +802,9 @@ class silloResponse:
         ```
     """
 
-    def __new__(cls, request: Request):
-        """
-        Create or retrieve request-scoped response instance.
-        Each request gets its own instance stored in request.state.
-        """
-        # Check if response already exists for this request
-        # Use _state dict directly to avoid State.__getattr__ returning None
-        existing = request.state._state.get("_response_instance")
-        if existing is not None:
-            return existing
-
-        # Create new instance and store in request state
-        instance = super(silloResponse, cls).__new__(cls)
-        request.state._response_instance = instance
-        instance._initialized = False
-        return instance
-
-    def get_response_manager_intance(self, request: Request) -> "silloResponse":
-        return request.state._response_instance
-
     def __init__(self, request: Request):
-        """
-        Initialize response instance. Only runs once per request.
-        """
-        # Only initialize once per request
-        if hasattr(self, "_initialized") and self._initialized:
-            return
-
         self._response: BaseResponse | Any = None
         self._request = request
-        self._initialized = True
 
     @property
     def headers(self):
