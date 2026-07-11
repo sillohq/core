@@ -858,13 +858,6 @@ class silloResponse:
     def status_code(self):
         return self._response.status_code
 
-    def _preserve_headers_and_cookies(self, new_response: BaseResponse) -> BaseResponse:
-        """Preserve headers and cookies when switching to a new response."""
-        # for key, value in self.headers.items():
-        #     new_response.set_header(key, value)
-
-        return new_response
-
     def has_header(self, key: str) -> bool:
         """Check if a header is present in the response."""
         return key.lower() in (k.lower() for k in self.headers.keys())
@@ -881,7 +874,7 @@ class silloResponse:
         new_response = PlainTextResponse(
             body=content, status_code=status_code, headers=headers
         )
-        self._response = self._preserve_headers_and_cookies(new_response)
+        self._response = new_response
         return self
 
     def json(
@@ -985,7 +978,6 @@ class silloResponse:
             indent=indent,
             ensure_ascii=ensure_ascii,
         )
-        # self._response = self._preserve_headers_and_cookies(new_response)
         self._response = new_response
         return self
 
@@ -1005,7 +997,7 @@ class silloResponse:
         """Send an empty response."""
 
         new_response = BaseResponse(status_code=status_code, headers=headers)
-        self._response = self._preserve_headers_and_cookies(new_response)
+        self._response = new_response
         return self
 
     def html(
@@ -1019,7 +1011,7 @@ class silloResponse:
         new_response = HTMLResponse(
             content=content, status_code=status_code, headers=headers
         )
-        self._response = self._preserve_headers_and_cookies(new_response)
+        self._response = new_response
         return self
 
     def file(
@@ -1038,7 +1030,7 @@ class silloResponse:
             headers=headers,
             content_disposition_type=content_disposition_type,
         )
-        self._response = self._preserve_headers_and_cookies(new_response)
+        self._response = new_response
         return self
 
     def stream(
@@ -1056,7 +1048,7 @@ class silloResponse:
             headers=headers,
             content_type=content_type,
         )
-        self._response = self._preserve_headers_and_cookies(new_response)
+        self._response = new_response
         return self
 
     def redirect(
@@ -1097,7 +1089,7 @@ class silloResponse:
         new_response = RedirectResponse(
             url=url, status_code=status_code, headers=headers
         )
-        self._response = self._preserve_headers_and_cookies(new_response)
+        self._response = new_response
         return self
 
     def _get_base_app(self) -> typing.Any:
@@ -1307,7 +1299,7 @@ class silloResponse:
             headers=headers,
             content_type=content_type,
         )
-        self._response = self._preserve_headers_and_cookies(new_response)
+        self._response = new_response
         return self
 
     def set_cookies(self, cookies: List[Dict[str, Any]]):
@@ -1353,7 +1345,7 @@ class silloResponse:
             silloResponse: The current instance for method chaining.
         """
 
-        self._response = self._preserve_headers_and_cookies(response_class)
+        self._response = response_class
         return self
 
     def remove_header(self, key: str):
@@ -1476,6 +1468,3 @@ class silloResponse:
 
     def __str__(self):
         return f"Response [{self.status_code} {self.body}]"
-
-
-Response = BaseResponse
