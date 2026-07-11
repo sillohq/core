@@ -955,9 +955,7 @@ class Responder:
         """Set a response to force a file download."""
         return self.file(path, filename, content_disposition_type="attachment")
 
-    def set_permanent_cookie(
-        self, key: str, value: str, **kwargs: Any
-    ) -> "Responder":
+    def set_permanent_cookie(self, key: str, value: str, **kwargs: Any) -> "Responder":
         """Set a permanent cookie with a far-future expiration date."""
         expires = datetime.now(timezone.utc) + timedelta(days=365 * 10)
         self.set_cookie(key, value, expires=expires, **kwargs)
