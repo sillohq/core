@@ -9,8 +9,8 @@ import contextvars
 from typing import Optional, Any
 
 # The context variable storing the current request context
-_current_context_var: contextvars.ContextVar[Optional[Any]] = (
-    contextvars.ContextVar("sillo_current_context", default=None)
+_current_context_var: contextvars.ContextVar[Optional[Any]] = contextvars.ContextVar(
+    "sillo_current_context", default=None
 )
 
 
