@@ -4,9 +4,6 @@ import traceback
 import typing
 
 from sillo import logging
-from sillo._internals._response_transformer import (
-    serialize_response,  # type: ignore[import] #
-)
 from sillo.auth.exceptions import AuthenticationFailed, AuthErrorHandler
 from sillo.config import get_config
 from sillo.exceptions import HTTPException, NotFoundException
@@ -49,7 +46,7 @@ async def wrap_http_exceptions(
                 exc.status_code
             )
             if handler:
-                return serialize_response(await handler(request, response, exc))
+                return await handler(request, response, exc)
 
         if handler is None:
             handler = _lookup_exception_handler(exception_handlers, exc)
@@ -57,7 +54,7 @@ async def wrap_http_exceptions(
                 error = traceback.format_exc()
                 logger.error(error)
                 raise exc
-            return serialize_response(await handler(request, response, exc))
+            return await handler(request, response, exc)
 
 
 class ExceptionMiddleware:
