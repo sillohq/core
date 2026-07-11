@@ -21,7 +21,9 @@ if TYPE_CHECKING:
 
 
 class Depend:
-    def __init__(self, dependency: Callable[..., Any] = None, *, get_request: bool = False) -> None:
+    def __init__(
+        self, dependency: Callable[..., Any] = None, *, get_request: bool = False
+    ) -> None:
         self.dependency = dependency
         self.get_request = get_request
 
