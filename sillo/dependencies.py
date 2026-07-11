@@ -9,7 +9,6 @@ from sillo.parameters import (
     Header,
     ParameterExtractor,
     SolvedParamDependency,
-    resolve_param,
 )
 
 if TYPE_CHECKING:
@@ -31,25 +30,14 @@ class Depend:
         return cls
 
 
-@dataclass
+@dataclass(slots=True)
+class ExecutionStep:
+    dependant: Dependant
+    is_root: bool = False
+
+
+@dataclass(slots=True)
 class Dependant:
-    """A node in the dependency resolution tree.
-
-    Built at registration time (analysis phase) and walked at request time
-    (resolution phase).
-
-    Attributes:
-        call: The dependency callable to invoke (``None`` for the root/handler).
-        name: Parameter name this node fills in its parent.
-        dependencies: Sub-dependencies (child ``Dependant`` nodes).
-        param_extractors: Query/Header/Cookie extractors.
-        is_coroutine: ``True`` if ``call`` is an ``async def``.
-        is_generator: ``True`` if ``call`` is a sync generator.
-        is_async_generator: ``True`` if ``call`` is an async generator.
-        cache_key: Opaque key for result caching ``(callable, *param_names)``.
-        use_cache: Whether the result should be cached for the request.
-    """
-
     call: Optional[Callable[..., Any]] = None
     name: Optional[str] = None
     dependencies: List["Dependant"] = field(default_factory=list)
@@ -60,6 +48,7 @@ class Dependant:
     is_async_generator: bool = False
     cache_key: Optional[Tuple[Callable[..., Any], Tuple[str, ...]]] = None
     use_cache: bool = True
+    _execution_plan: List[ExecutionStep] = field(default_factory=list)
 
 
 # =============================================================================
@@ -104,7 +93,7 @@ def get_dependant(
     if cache_key_parts:
         cache_key = (call, tuple(cache_key_parts))
 
-    return Dependant(
+    dependant = Dependant(
         call=call,
         name=name,
         dependencies=deps,
@@ -116,11 +105,39 @@ def get_dependant(
         cache_key=cache_key,
         use_cache=True,
     )
+    dependant._execution_plan = _build_execution_plan(dependant)
+    return dependant
 
 
-# ==========================================================================
-# Resolution — recursively walk the Dependant tree
-# ==========================================================================
+def _build_execution_plan(root: Dependant) -> List[ExecutionStep]:
+    steps: List[ExecutionStep] = []
+
+    def _collect(node: Dependant) -> None:
+        for sub in node.dependencies:
+            _collect(sub)
+            steps.append(ExecutionStep(dependant=sub))
+
+    _collect(root)
+    steps.append(ExecutionStep(dependant=root, is_root=True))
+    return steps
+
+
+def _collect_kwargs(
+    node: Dependant,
+    values: Dict[str, Any],
+    request: Optional["Request"],
+) -> Dict[str, Any]:
+    kwargs: Dict[str, Any] = {
+        dep.name: values[dep.name]
+        for dep in node.dependencies
+        if dep.name
+    }
+    for ext in node.param_extractors:
+        kwargs[ext.param_name] = ext.extractor.extract(request)
+    for rp in node.request_param_names:
+        kwargs[rp] = request
+    return kwargs
+
 
 DependencyCache = Dict[Tuple[Callable[..., Any], Tuple[str, ...]], Any]
 
@@ -137,17 +154,20 @@ async def solve_dependencies(
     )
     values: Dict[str, Any] = {}
 
-    for sub in dependant.dependencies:
+    for step in dependant._execution_plan:
+        sub = step.dependant
+
         if sub.use_cache and sub.cache_key and sub.cache_key in cache:
-            values[sub.name] = cache[sub.cache_key]
+            if sub.name:
+                values[sub.name] = cache[sub.cache_key]
             continue
 
-        sub_kwargs = await solve_dependencies(sub, request, cache, cleanups)
+        kwargs = _collect_kwargs(sub, values, request)
 
-        for ext in sub.param_extractors:
-            sub_kwargs[ext.param_name] = await resolve_param(ext, request)
+        if step.is_root:
+            return kwargs
 
-        result = await _execute_dependency(sub, sub_kwargs, cleanups)
+        result = await _execute_dependency(sub, kwargs, cleanups)
 
         if sub.use_cache and sub.cache_key:
             cache[sub.cache_key] = result
@@ -155,18 +175,7 @@ async def solve_dependencies(
         if sub.name:
             values[sub.name] = result
 
-    for ext in dependant.param_extractors:
-        values[ext.param_name] = await resolve_param(ext, request)
-
-    for rparam in dependant.request_param_names:
-        values[rparam] = request
-
-    return values
-
-
-# =============================================================================
-# Internal helpers
-# =============================================================================
+    return {}
 
 
 async def _execute_dependency(
@@ -174,7 +183,6 @@ async def _execute_dependency(
     kwargs: Dict[str, Any],
     cleanup_callbacks: List[Callable[[], Any]],
 ) -> Any:
-    """Invoke *dependant*  .call with *kwargs*, handling generators."""
     func = dependant.call
     if func is None:
         raise RuntimeError("Dependant node has no callable to execute")
