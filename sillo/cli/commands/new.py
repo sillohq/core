@@ -95,9 +95,7 @@ def new(
             _echo_error(
                 f"Template directory for '{template}' not found: {template_dir}"
             )
-            _echo_error(
-                "Please ensure you have the latest version of sillo installed."
-            )
+            _echo_error("Please ensure you have the latest version of sillo installed.")
             available_templates = [
                 p.name
                 for p in (Path(__file__).parent.parent.parent / "templates").glob("*")
