@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 import strawberry
 from sillo.application import silloApp
@@ -54,10 +54,10 @@ class GraphQL:
             context = {"request": req, "response": res}
 
             result: ExecutionResult = await self.schema.execute(
-                query,
-                variable_values=variables,
+                cast(str,query),
+                variable_values=cast(dict,variables),
                 context_value=context,
-                operation_name=operation_name,
+                operation_name=cast(str,operation_name),
             )
 
             response_data: dict[str, Any] = {}
