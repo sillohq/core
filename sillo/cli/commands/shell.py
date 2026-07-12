@@ -99,9 +99,7 @@ def _try_start_ipython_shell(shell_vars: dict[str, Any]) -> bool:
         from IPython.terminal.embed import InteractiveShellEmbed
 
         _echo_info("Starting IPython shell...")
-        _echo_info(
-            "Available variables: app, Client, Request, Response"
-        )
+        _echo_info("Available variables: app, Client, Request, Response")
         _echo_info("Type 'exit' or press Ctrl+D to exit")
 
         banner = """
@@ -139,9 +137,7 @@ def _try_start_regular_shell(shell_vars: dict[str, Any]) -> bool:
         import code
 
         _echo_info("Starting Python shell...")
-        _echo_info(
-            "Available variables: app, Client, Request, Response"
-        )
+        _echo_info("Available variables: app, Client, Request, Response")
         _echo_info("Type 'exit()' or press Ctrl+D to exit")
 
         banner = """
