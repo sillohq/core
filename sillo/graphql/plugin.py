@@ -54,10 +54,10 @@ class GraphQL:
             context = {"request": req, "response": res}
 
             result: ExecutionResult = await self.schema.execute(
-                cast(str,query),
-                variable_values=cast(dict,variables),
+                cast(str, query),
+                variable_values=cast(dict, variables),
                 context_value=context,
-                operation_name=cast(str,operation_name),
+                operation_name=cast(str, operation_name),
             )
 
             response_data: dict[str, Any] = {}
