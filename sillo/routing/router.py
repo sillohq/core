@@ -39,9 +39,9 @@ from sillo.dependencies import (
     get_dependant,
     solve_dependencies,
 )
-from sillo.parameters import SolvedParamDependency
+from sillo.parameters import ParameterExtractor, SolvedParamDependency
 from sillo.events import EventEmitter
-from sillo.exceptions import NotFoundException
+from sillo.exceptions import NotFoundException, HTTPException
 from sillo.http import Request, Response
 from sillo.http.response import JSONResponse
 from sillo.objects import RouteParam, URLPath
@@ -57,6 +57,8 @@ from sillo.types import (
 )
 from sillo.utils.async_helpers import is_async_callable
 from sillo.utils.concurrency import run_in_threadpool
+
+from pydantic import ValidationError
 
 from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
@@ -229,6 +231,14 @@ class Route(BaseRoute):
         if "GET" in self.methods:
             self.methods.add("HEAD")
 
+        self._validated_param_name: Optional[str] = None
+        if self.request_model is not None:
+            params = list(self.handler_signature.parameters.keys())
+            if len(params) >= 3:
+                third_param = self.handler_signature.parameters[params[2]]
+                if not isinstance(third_param.default, (Depend, ParameterExtractor)):
+                    self._validated_param_name = params[2]
+
         async def _route_asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
             request = Request(scope, receive, send)
             response_manager = Response(request)
@@ -355,6 +365,16 @@ class Route(BaseRoute):
             self.dependant, request, dependency_cache, cleanup_callbacks
         )
         injected.update(handler_values)
+
+        if self.request_model is not None:
+            body = await request.json
+            try:
+                validated = self.request_model(**body)
+            except ValidationError as e:
+                raise HTTPException(status_code=422, detail=e.errors())
+            request._validated_data = validated
+            if self._validated_param_name:
+                injected[self._validated_param_name] = validated
 
         try:
             if is_async_callable(self.handler):

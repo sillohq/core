@@ -340,6 +340,7 @@ class Request(HTTPConnection):
         self._stream_consumed = False
         self._is_disconnected = False
         self._form: FormData | Any = None
+        self._validated_data = None
 
     @property
     def method(self) -> str:
@@ -401,6 +402,11 @@ class Request(HTTPConnection):
             _body = await self.body
             self._json = json.loads(_body)
         return self._json
+
+    @property
+    def validated_data(self) -> typing.Any:
+        """The request body validated against the route's request_model, if set."""
+        return self._validated_data
 
     @property
     async def text(self) -> str:
