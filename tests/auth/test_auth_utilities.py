@@ -23,13 +23,13 @@ from sillo.session.middleware import SessionMiddleware
 def test_create_jwt_basic():
     """Test basic JWT creation."""
     payload = {"user_id": 1, "username": "test"}
-    token = create_jwt(payload, "test_secret")
+    token = create_jwt(payload, "a-test-jwt-secret-key-for-hs256")
 
     assert isinstance(token, str)
     assert len(token) > 0
 
     # Verify it can be decoded
-    decoded = decode_jwt(token, "test_secret")
+    decoded = decode_jwt(token, "a-test-jwt-secret-key-for-hs256")
     assert decoded["user_id"] == 1
     assert decoded["username"] == "test"
 
@@ -38,9 +38,9 @@ def test_create_jwt_with_expiration():
     """Test JWT creation with expiration."""
     payload = {"user_id": 1, "username": "test"}
     expires_in = timedelta(hours=1)
-    token = create_jwt(payload, "test_secret", expires_in=expires_in)
+    token = create_jwt(payload, "a-test-jwt-secret-key-for-hs256", expires_in=expires_in)
 
-    decoded = decode_jwt(token, "test_secret")
+    decoded = decode_jwt(token, "a-test-jwt-secret-key-for-hs256")
     assert "exp" in decoded
 
     # Check expiration is approximately correct (within 1 second)
@@ -52,16 +52,16 @@ def test_create_jwt_with_expiration():
 def test_create_jwt_custom_algorithm():
     """Test JWT creation with custom algorithm."""
     payload = {"user_id": 1, "username": "test"}
-    token = create_jwt(payload, "test_secret", algorithm="HS256")
+    token = create_jwt(payload, "a-test-jwt-secret-key-for-hs256", algorithm="HS256")
 
-    decoded = decode_jwt(token, "test_secret", ["HS256"])
+    decoded = decode_jwt(token, "a-test-jwt-secret-key-for-hs256", ["HS256"])
     assert decoded["user_id"] == 1
 
 
 def test_decode_jwt_invalid_signature():
     """Test JWT decoding with invalid signature."""
     payload = {"user_id": 1, "username": "test"}
-    token = create_jwt(payload, "test_secret")
+    token = create_jwt(payload, "a-test-jwt-secret-key-for-hs256")
 
     with pytest.raises(ValueError, match="Invalid token"):
         decode_jwt(token, "wrong_secret")
@@ -70,16 +70,16 @@ def test_decode_jwt_invalid_signature():
 def test_decode_jwt_expired():
     """Test JWT decoding of expired token."""
     payload = {"user_id": 1, "username": "test", "exp": 1}
-    token = create_jwt(payload, "test_secret")
+    token = create_jwt(payload, "a-test-jwt-secret-key-for-hs256")
 
     with pytest.raises(ValueError, match="Token has expired"):
-        decode_jwt(token, "test_secret")
+        decode_jwt(token, "a-test-jwt-secret-key-for-hs256")
 
 
 def test_decode_jwt_malformed():
     """Test JWT decoding of malformed token."""
     with pytest.raises(ValueError, match="Invalid token"):
-        decode_jwt("not.a.valid.token", "test_secret")
+        decode_jwt("not.a.valid.token", "a-test-jwt-secret-key-for-hs256")
 
 
 def test_create_api_key():
@@ -188,9 +188,9 @@ def test_session_logout_without_session_middleware():
 def test_create_jwt_with_payload_modification():
     """Test JWT creation preserves payload integrity."""
     original_payload = {"user_id": 123, "role": "admin", "active": True}
-    token = create_jwt(original_payload, "secret", expires_in=timedelta(minutes=10))
+    token = create_jwt(original_payload, "a-test-jwt-secret-key-for-hs256", expires_in=timedelta(minutes=10))
 
-    decoded = decode_jwt(token, "secret")
+    decoded = decode_jwt(token, "a-test-jwt-secret-key-for-hs256")
     assert decoded["user_id"] == 123
     assert decoded["role"] == "admin"
     assert decoded["active"] is True

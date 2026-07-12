@@ -29,6 +29,7 @@ from sillo.testclient import AsyncTestClient
 
 # Test User Model for authentication
 class TestUser(BaseUser):
+    __test__ = False
     def __init__(
         self,
         user_id: str,
@@ -67,7 +68,7 @@ class TestUser(BaseUser):
         return users_db.get(str(identity))
 
 
-SECRET = "test_secret_12345"
+SECRET = "test_secret_key_1234567890123456"
 
 
 @pytest.fixture

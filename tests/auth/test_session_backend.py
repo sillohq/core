@@ -21,6 +21,7 @@ from sillo.testclient import AsyncTestClient
 
 
 class TestUser(BaseUser):
+    __test__ = False
     def __init__(
         self,
         user_id: str,

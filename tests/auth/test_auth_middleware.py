@@ -33,6 +33,7 @@ def test_client():
 # Mock Users
 # -------------------------
 class TestUser(BaseUser):
+    __test__ = False
     def __init__(
         self,
         user_id: str,
@@ -194,7 +195,7 @@ async def test_auth_middleware_user_loading_failure(test_client):
 
     from sillo.auth import JWTAuthBackend, create_jwt
 
-    jwt_backend = JWTAuthBackend(secret_key="test_secret_12345")
+    jwt_backend = JWTAuthBackend(secret_key="a-test-jwt-secret-key-for-hs256")
     app.add_middleware(AuthenticationMiddleware(CustomUser, jwt_backend))
 
     @app.get("/protected")
@@ -203,7 +204,7 @@ async def test_auth_middleware_user_loading_failure(test_client):
         return res.json({"user": req.user})
 
     payload = {"id": "fail_user"}
-    token = create_jwt(payload, "test_secret_12345")
+    token = create_jwt(payload, "a-test-jwt-secret-key-for-hs256")
 
     async with client:
         res = await client.get(
