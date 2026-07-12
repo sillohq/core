@@ -46,7 +46,8 @@ dependencies = [
 templating = ["jinja2>=3.1.6"]
 jwt = ["pyjwt>=2.7.0"]
 granian = ["granian>=1.2.0"]
-cli = ["click>=8.1.3"]  
+cli = ["click>=8.1.3"]
+graphql = ["strawberry-graphql>=0.219.0"]
 
 # Feature groups
 http = [
