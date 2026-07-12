@@ -4,7 +4,6 @@ Tests for signed cookie session manager
 
 import pytest
 
-from sillo.config import MakeConfig, set_config
 from sillo.session.base import BaseSessionInterface
 from sillo.session.session_objects import Session
 from sillo.session.signed_cookies import SignedSessionManager

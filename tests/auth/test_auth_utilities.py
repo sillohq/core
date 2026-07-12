@@ -17,7 +17,6 @@ from sillo.auth import create_jwt, decode_jwt
 from sillo.auth.backends.apikey import create_api_key, verify_key
 from sillo.auth.backends.session import login, logout
 from sillo.auth.users.simple import SimpleUser
-from sillo.config import MakeConfig
 from sillo.session.middleware import SessionMiddleware
 
 

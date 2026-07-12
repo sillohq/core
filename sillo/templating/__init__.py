@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, Optional, Union
 import jinja2
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from sillo.config import MakeConfig
+from sillo.config import ConfigBase
 from sillo.http.response import HTMLResponse
 from sillo.types import Request
 
@@ -17,7 +17,7 @@ from .middleware import template_context
 engine: Union["TemplateEngine", None] = None
 
 
-class TemplateConfig(MakeConfig):
+class TemplateConfig(ConfigBase):
     """Template configuration settings."""
 
     def __init__(

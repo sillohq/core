@@ -4,7 +4,7 @@ Helper functions for creating sync and async test clients for sillo applications
 
 from typing import Any, Dict, List, Optional, Sequence
 
-from sillo import MakeConfig, silloApp
+from sillo import silloApp
 from sillo.dependencies import Depend
 from sillo.routing import Route
 from sillo.routing.base import BaseRoute
@@ -13,7 +13,6 @@ from sillo.types import ExceptionHandlerType
 
 
 def create_client(
-    config: Optional[MakeConfig] = None,
     title: Optional[str] = None,
     version: Optional[str] = None,
     description: Optional[str] = None,
@@ -66,7 +65,6 @@ def create_client(
 
 
 def create_async_client(
-    config: Optional[MakeConfig] = None,
     title: Optional[str] = None,
     version: Optional[str] = None,
     description: Optional[str] = None,

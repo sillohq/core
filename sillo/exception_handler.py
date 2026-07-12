@@ -5,7 +5,6 @@ import typing
 
 from sillo import logging
 from sillo.auth.exceptions import AuthenticationFailed, AuthErrorHandler
-from sillo.config import get_config
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.handlers.not_found import handle_404_error
 from sillo.http import Request, Response
@@ -59,12 +58,7 @@ async def wrap_http_exceptions(
 
 class ExceptionMiddleware:
     def __init__(self) -> None:
-        try:
-            self.debug = (
-                get_config().debug or False
-            )  # TODO: We ought to handle 404 cases if debug is set.
-        except Exception:
-            self.debug = True
+        self.debug = False
         self._status_handlers: typing.Dict[int, ExceptionHandlerType] = {}
         self._exception_handlers = {
             HTTPException: self.http_exception,

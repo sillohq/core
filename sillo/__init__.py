@@ -16,10 +16,9 @@ Key Features:
 - Extensive testing utilities
 
 Quick Start:
-    from sillo import silloApp, MakeConfig
+    from sillo import silloApp
 
     app = silloApp(
-        config=MakeConfig({"debug": True}),
         title="My API",
         version="1.0.0"
     )
@@ -86,24 +85,16 @@ from sillo.routing import Route, Router
 
 from .application import silloApp
 from .frontend import FrontendApp
-from .config import set_config
-from .config.base import MakeConfig
 from .dependencies import Depend
 from .parameters import Query, Header, Cookie
-from .context import get_current_context, set_context, reset_context
 
 __all__ = [
     "silloApp",
-    "set_config",
     "Depend",
-    "MakeConfig",
     "Router",
     "Route",
     "FrontendApp",
     "Query",
     "Header",
     "Cookie",
-    "get_current_context",
-    "set_context",
-    "reset_context",
 ]

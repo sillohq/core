@@ -1,10 +1,10 @@
 from typing import Literal
 from typing import Any, Optional
 
-from sillo.config.base import MakeConfig
+from sillo.config.base import ConfigBase
 
 
-class SessionConfig(MakeConfig):
+class SessionConfig(ConfigBase):
     """
     Typed configuration for Session middleware.
     All session settings should be passed here - only secret_key comes from app-level config.

@@ -1,12 +1,10 @@
 import re
 import secrets
 import typing
-import warnings
 from typing import Any, Optional
 
 from itsdangerous import BadSignature, URLSafeSerializer
 
-from sillo.config import get_config
 from sillo.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 
@@ -29,12 +27,6 @@ class CSRFMiddleware(BaseMiddleware):
                 raise TypeError("config must be a CSRFConfig instance")
             self.csrf_config = config
         else:
-            warnings.warn(
-                "Using get_config() for CSRF middleware is deprecated. "
-                "Please pass CSRFConfig directly to CSRFMiddleware constructor.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
             self.csrf_config = None
 
         self.use_csrf = False
@@ -68,57 +60,8 @@ class CSRFMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
-        """
-        Process the incoming request to validate the CSRF token for unsafe HTTP methods.
-        """
-        if not hasattr(self, "csrf_config") or self.csrf_config is None:
-            warnings.warn(
-                "Using get_config() for CSRF middleware is deprecated. "
-                "Please pass CSRFConfig directly to CSRFMiddleware constructor.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            try:
-                app_config = get_config()
-                self.use_csrf = app_config.csrf_enabled or False
-                if self.use_csrf:
-                    assert app_config.secret_key is not None, (
-                        "Secret key is required for CSRF protection"
-                    )
-                    self.secret = app_config.secret_key
-                    self.serializer = URLSafeSerializer(self.secret, "csrftoken")
-                    self.required_urls = app_config.csrf_required_urls or ["*"]
-                    self.exempt_urls = app_config.csrf_exempt_urls
-                    self.sensitive_cookies = app_config.csrf_sensitive_cookies
-                    self.safe_methods = set(
-                        app_config.csrf_safe_methods
-                        or [
-                            "GET",
-                            "HEAD",
-                            "OPTIONS",
-                            "TRACE",
-                        ]
-                    )
-                    self.cookie_name = app_config.csrf_cookie_name or "csrftoken"
-                    self.cookie_path = app_config.csrf_cookie_path or "/"
-                    self.cookie_domain = app_config.csrf_cookie_domain
-                    self.cookie_secure = app_config.csrf_cookie_secure or False
-                    self.cookie_httponly = app_config.csrf_cookie_httponly or True
-                    self.cookie_samesite = app_config.csrf_cookie_samesite or "lax"
-                    self.header_name = app_config.csrf_header_name or "X-CSRFToken"
-            except (RuntimeError, AssertionError):
-                self.use_csrf = False
-        elif self.use_csrf:
-            if not self.secret:
-                try:
-                    app_config = get_config()
-                    self.secret = app_config.secret_key
-                except RuntimeError:
-                    self.use_csrf = False
-            if self.secret:
-                self.serializer = URLSafeSerializer(self.secret, "csrftoken")
-            else:
-                self.use_csrf = False
+        if not self.csrf_config or not self.use_csrf:
+            return await call_next()
 
         if not self.use_csrf:
             return await call_next()

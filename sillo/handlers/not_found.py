@@ -2,7 +2,6 @@ import http
 import traceback
 import typing
 
-from sillo.config import get_config
 from sillo.exceptions import NotFoundException
 from sillo.http import Request, Response
 
@@ -57,14 +56,13 @@ async def handle_404_error(
         A response based on the settings.
     """
     try:
-        settings = get_config()
+        settings = None
     except Exception:
         settings = None
 
     if settings:
         debug = settings.debug
         not_found_config = settings.not_found
-
     else:
         debug = True
         not_found_config = None

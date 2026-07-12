@@ -1,9 +1,9 @@
 from typing import Any, Callable, Dict, List, Optional
 
-from sillo.config.base import MakeConfig
+from sillo.config.base import ConfigBase
 
 
-class CorsConfig(MakeConfig):
+class CorsConfig(ConfigBase):
     """
     Typed configuration for CORS middleware.
     """

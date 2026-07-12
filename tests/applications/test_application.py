@@ -4,7 +4,6 @@ from typing import Callable
 import pytest
 
 from sillo import silloApp
-from sillo.config.base import MakeConfig
 from sillo.http import Request, Response
 from sillo.routing import Group, Route, Router
 from sillo.testclient import TestClient

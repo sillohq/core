@@ -77,14 +77,6 @@ def shell(app_path: str, ipython: bool = False):
         except ImportError:
             pass
 
-        try:
-            from sillo.config import MakeConfig
-
-            shell_vars["MakeConfig"] = MakeConfig
-            _echo_info("MakeConfig available for configuration")
-        except ImportError:
-            pass
-
         # Try to start IPython if available or requested
         if ipython:
             if not _try_start_ipython_shell(shell_vars):
@@ -108,7 +100,7 @@ def _try_start_ipython_shell(shell_vars: dict[str, Any]) -> bool:
 
         _echo_info("Starting IPython shell...")
         _echo_info(
-            "Available variables: app, config, Client, Request, Response, MakeConfig"
+            "Available variables: app, Client, Request, Response"
         )
         _echo_info("Type 'exit' or press Ctrl+D to exit")
 
@@ -121,7 +113,6 @@ Available variables:
 - Client: Test client for making requests
 - Request: Request class
 - Response: Response class
-- MakeConfig: Configuration class
 
 Examples:
   # Test a route
@@ -149,7 +140,7 @@ def _try_start_regular_shell(shell_vars: dict[str, Any]) -> bool:
 
         _echo_info("Starting Python shell...")
         _echo_info(
-            "Available variables: app, config, Client, Request, Response, MakeConfig"
+            "Available variables: app, Client, Request, Response"
         )
         _echo_info("Type 'exit()' or press Ctrl+D to exit")
 
@@ -162,7 +153,6 @@ Available variables:
 - Client: Test client for making requests
 - Request: Request class
 - Response: Response class
-- MakeConfig: Configuration class
 """
 
         console = code.InteractiveConsole(shell_vars)

@@ -7,7 +7,6 @@ import tempfile
 import pytest
 
 from sillo import silloApp
-from sillo.config import MakeConfig, set_config
 from sillo.http import Request, Response
 from sillo.session import SessionConfig
 from sillo.session.file import FileSessionManager

@@ -1,10 +1,10 @@
 import typing
 from typing import Any, List, Optional
 
-from sillo.config.base import MakeConfig
+from sillo.config.base import ConfigBase
 
 
-class CSRFConfig(MakeConfig):
+class CSRFConfig(ConfigBase):
     """
     Typed configuration for CSRF middleware.
     """

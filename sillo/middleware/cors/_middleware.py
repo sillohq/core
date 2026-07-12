@@ -1,9 +1,7 @@
 import re
 import typing
-import warnings
 from typing import Any, Callable, Dict, List, Optional
 
-from sillo.config import get_config
 from sillo.http import Request, Response
 from sillo.logging import getLogger
 
@@ -82,21 +80,7 @@ class CORSMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
-        # Only use get_config() as fallback if config wasn't provided in __init__
-        if not hasattr(self, "config") or self.config is None:
-            warnings.warn(
-                "Using get_config() for CORS middleware is deprecated. "
-                "Please pass config directly to CORSMiddleware constructor.",
-                DeprecationWarning,
-                stacklevel=3,
-            )
-            try:
-                config = get_config().cors
-            except RuntimeError:
-                config = None
-        else:
-            config = self.config
-
+        config = getattr(self, "config", None)
         if not config:
             return await call_next()
 
@@ -124,7 +108,6 @@ class CORSMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
-        # Only use get_config() as fallback if config wasn't provided in __init__
 
         origin = request.origin
         server_error_headers = request.scope.get("server_error_headers", {})

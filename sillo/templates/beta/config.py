@@ -1,8 +1,4 @@
-from sillo.config import MakeConfig
-
-app_config = MakeConfig(
-    {
-        "debug": True,
-        "title": "{{project_name_title}}",
-    },
-)
+app_config = {
+    "debug": True,
+    "title": "{{project_name_title}}",
+}
