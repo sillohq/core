@@ -12,6 +12,7 @@ sillo ships with a collection of helper modules. Import from `sillo.helpers.*`.
 | [JWT](/guides/helpers/jwt) | Encode, decode, sign, verify JWTs | `pyjwt` |
 | [Network](/guides/helpers/network) | IP normalization, private detection, trusted proxies | stdlib |
 | [Text](/guides/helpers/text) | Truncate, excerpt, strip HTML, pluralize | stdlib |
+| [Retry](/guides/helpers/retry) | Decorator and functions with exponential backoff | stdlib |
 | [Strings](/guides/helpers/strings) | Slugify, camel/snake, masking, random generation | stdlib |
 | [HTML](/guides/helpers/html) | Escape, sanitize, safe attributes, linkify | stdlib |
 | [Files](/guides/helpers/files) | Size formatting, extension detection, safe filenames | stdlib |

@@ -115,6 +115,7 @@ export default defineConfig({
                     { label: 'Overview', link: '/guides/helpers/' },
                     { label: 'JWT', link: '/guides/helpers/jwt/' },
                     { label: 'Network', link: '/guides/helpers/network/' },
+                    { label: 'Retry', link: '/guides/helpers/retry/' },
                     { label: 'Strings', link: '/guides/helpers/strings/' },
                     { label: 'Text', link: '/guides/helpers/text/' },
                     { label: 'HTML', link: '/guides/helpers/html/' },
