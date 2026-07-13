@@ -18,8 +18,7 @@ def warn_deprecated(
     stacklevel: int = 3,
 ) -> None:
     warnings.warn(
-        f"[sillo {version}] {message} "
-        f"(will be removed in {removed_in})",
+        f"[sillo {version}] {message} (will be removed in {removed_in})",
         DeprecatedError,
         stacklevel=stacklevel,
     )
@@ -47,6 +46,7 @@ def deprecated(
             return await func(*args, **kwargs)
 
         import inspect
+
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
         return wrapper  # type: ignore[return-value]
@@ -78,6 +78,7 @@ def deprecate_parameter(
             return await func(*args, **kwargs)
 
         import inspect
+
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
         return wrapper  # type: ignore[return-value]

@@ -12,6 +12,7 @@ try:
         InvalidTokenError,
         DecodeError,
     )
+
     _jwt_available = True
 except ImportError:
     _jwt_available = False
@@ -122,8 +123,12 @@ def create_access_token(
     if expires_delta:
         expire = datetime.datetime.now(datetime.timezone.utc) + expires_delta
     else:
-        expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=15)
-    to_encode.update({"exp": expire, "iat": datetime.datetime.now(datetime.timezone.utc)})
+        expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+            minutes=15
+        )
+    to_encode.update(
+        {"exp": expire, "iat": datetime.datetime.now(datetime.timezone.utc)}
+    )
     if issuer:
         to_encode["iss"] = issuer
     return pyjwt.encode(to_encode, secret, algorithm=algorithm)
@@ -140,8 +145,12 @@ def create_refresh_token(
     if expires_delta:
         expire = datetime.datetime.now(datetime.timezone.utc) + expires_delta
     else:
-        expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
-    to_encode.update({"exp": expire, "iat": datetime.datetime.now(datetime.timezone.utc)})
+        expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+            days=7
+        )
+    to_encode.update(
+        {"exp": expire, "iat": datetime.datetime.now(datetime.timezone.utc)}
+    )
     return pyjwt.encode(to_encode, secret, algorithm=algorithm)
 
 

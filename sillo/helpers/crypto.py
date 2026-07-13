@@ -10,6 +10,7 @@ try:
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+
     _crypto_available = True
 except ImportError:
     _crypto_available = False
@@ -72,7 +73,9 @@ def sign_value(value: str, secret: str, algorithm: str = "sha256") -> str:
     return f"{payload}.{signature}"
 
 
-def unsign_value(signed: str, secret: str, algorithm: str = "sha256", max_age: Optional[int] = None) -> str:
+def unsign_value(
+    signed: str, secret: str, algorithm: str = "sha256", max_age: Optional[int] = None
+) -> str:
     if isinstance(secret, str):
         secret = secret.encode()
 

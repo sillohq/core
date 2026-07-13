@@ -87,9 +87,7 @@ def random_token(length: int = 64) -> str:
 
 def strip_accents(text: str) -> str:
     return "".join(
-        c
-        for c in unicodedata.normalize("NFKD", text)
-        if not unicodedata.combining(c)
+        c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c)
     )
 
 

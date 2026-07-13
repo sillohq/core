@@ -67,7 +67,11 @@ def sanitize_html(
                     break
                 tag_content = html[i + 1 : end]
                 space_idx = tag_content.find(" ")
-                tag_name = (tag_content[:space_idx] if space_idx != -1 else tag_content).lower().rstrip("/")
+                tag_name = (
+                    (tag_content[:space_idx] if space_idx != -1 else tag_content)
+                    .lower()
+                    .rstrip("/")
+                )
 
                 if tag_name in allowed_tags:
                     attrs = _ATTR_RE.findall(tag_content)
@@ -77,7 +81,9 @@ def sanitize_html(
                         if k.lower() in allowed_attrs
                         and not any(p.search(v) for p in _XSS_PATTERNS)
                     )
-                    result.append(f"<{tag_name} {safe_attrs}>" if safe_attrs else f"<{tag_name}>")
+                    result.append(
+                        f"<{tag_name} {safe_attrs}>" if safe_attrs else f"<{tag_name}>"
+                    )
                 else:
                     result.append("")
                 i = end + 1

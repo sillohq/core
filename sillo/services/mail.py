@@ -17,6 +17,7 @@ logger = logging.getLogger("sillo.services.mail")
 
 try:
     import jinja2
+
     _JINJA2 = True
 except ImportError:
     _JINJA2 = False
@@ -29,20 +30,44 @@ except ImportError:
 class MailConfig:
     smtp_host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", "localhost"))
     smtp_port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))
-    smtp_username: Optional[str] = field(default_factory=lambda: os.getenv("SMTP_USERNAME"))
-    smtp_password: Optional[str] = field(default_factory=lambda: os.getenv("SMTP_PASSWORD"))
-    use_tls: bool = field(default_factory=lambda: os.getenv("SMTP_USE_TLS", "true").lower() == "true")
-    use_ssl: bool = field(default_factory=lambda: os.getenv("SMTP_USE_SSL", "false").lower() == "true")
-    default_from: Optional[str] = field(default_factory=lambda: os.getenv("MAIL_DEFAULT_FROM"))
-    default_reply_to: Optional[str] = field(default_factory=lambda: os.getenv("MAIL_DEFAULT_REPLY_TO"))
+    smtp_username: Optional[str] = field(
+        default_factory=lambda: os.getenv("SMTP_USERNAME")
+    )
+    smtp_password: Optional[str] = field(
+        default_factory=lambda: os.getenv("SMTP_PASSWORD")
+    )
+    use_tls: bool = field(
+        default_factory=lambda: os.getenv("SMTP_USE_TLS", "true").lower() == "true"
+    )
+    use_ssl: bool = field(
+        default_factory=lambda: os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+    )
+    default_from: Optional[str] = field(
+        default_factory=lambda: os.getenv("MAIL_DEFAULT_FROM")
+    )
+    default_reply_to: Optional[str] = field(
+        default_factory=lambda: os.getenv("MAIL_DEFAULT_REPLY_TO")
+    )
     default_cc: Optional[List[str]] = None
     default_bcc: Optional[List[str]] = None
-    smtp_timeout: float = field(default_factory=lambda: float(os.getenv("SMTP_TIMEOUT", "30")))
-    max_connections: int = field(default_factory=lambda: int(os.getenv("SMTP_MAX_CONNECTIONS", "10")))
-    template_directory: Optional[str] = field(default_factory=lambda: os.getenv("MAIL_TEMPLATE_DIR"))
+    smtp_timeout: float = field(
+        default_factory=lambda: float(os.getenv("SMTP_TIMEOUT", "30"))
+    )
+    max_connections: int = field(
+        default_factory=lambda: int(os.getenv("SMTP_MAX_CONNECTIONS", "10"))
+    )
+    template_directory: Optional[str] = field(
+        default_factory=lambda: os.getenv("MAIL_TEMPLATE_DIR")
+    )
     template_auto_escape: bool = True
-    debug: bool = field(default_factory=lambda: os.getenv("MAIL_DEBUG", "false").lower() == "true")
-    suppress_send: bool = field(default_factory=lambda: os.getenv("MAIL_SUPPRESS_SEND", "false").lower() == "true")
+    debug: bool = field(
+        default_factory=lambda: os.getenv("MAIL_DEBUG", "false").lower() == "true"
+    )
+    suppress_send: bool = field(
+        default_factory=lambda: (
+            os.getenv("MAIL_SUPPRESS_SEND", "false").lower() == "true"
+        )
+    )
 
     def __post_init__(self) -> None:
         if self.use_ssl and self.use_tls:
@@ -60,15 +85,36 @@ class MailConfig:
 
     @classmethod
     def for_gmail(cls, username: str, password: str, **kwargs: Any) -> MailConfig:
-        return cls(smtp_host="smtp.gmail.com", smtp_port=587, smtp_username=username, smtp_password=password, use_tls=True, **kwargs)
+        return cls(
+            smtp_host="smtp.gmail.com",
+            smtp_port=587,
+            smtp_username=username,
+            smtp_password=password,
+            use_tls=True,
+            **kwargs,
+        )
 
     @classmethod
     def for_outlook(cls, username: str, password: str, **kwargs: Any) -> MailConfig:
-        return cls(smtp_host="smtp-mail.outlook.com", smtp_port=587, smtp_username=username, smtp_password=password, use_tls=True, **kwargs)
+        return cls(
+            smtp_host="smtp-mail.outlook.com",
+            smtp_port=587,
+            smtp_username=username,
+            smtp_password=password,
+            use_tls=True,
+            **kwargs,
+        )
 
     @classmethod
     def for_sendgrid(cls, api_key: str, **kwargs: Any) -> MailConfig:
-        return cls(smtp_host="smtp.sendgrid.net", smtp_port=587, smtp_username="apikey", smtp_password=api_key, use_tls=True, **kwargs)
+        return cls(
+            smtp_host="smtp.sendgrid.net",
+            smtp_port=587,
+            smtp_username="apikey",
+            smtp_password=api_key,
+            use_tls=True,
+            **kwargs,
+        )
 
 
 # ── Models ───────────────────────────────────────────────────────────────────
@@ -88,6 +134,7 @@ class EmailAttachment:
                 self.content = path.read_bytes()
                 if not self.content_type:
                     import mimetypes
+
                     self.content_type, _ = mimetypes.guess_type(str(path))
         if not self.content_type:
             self.content_type = "application/octet-stream"
@@ -124,8 +171,21 @@ class EmailMessage:
         if self.template_context is None:
             self.template_context = {}
 
-    def add_attachment(self, filename: str, content: Union[bytes, str], content_type: Optional[str] = None, content_id: Optional[str] = None) -> None:
-        self.attachments.append(EmailAttachment(filename=filename, content=content, content_type=content_type, content_id=content_id))
+    def add_attachment(
+        self,
+        filename: str,
+        content: Union[bytes, str],
+        content_type: Optional[str] = None,
+        content_id: Optional[str] = None,
+    ) -> None:
+        self.attachments.append(
+            EmailAttachment(
+                filename=filename,
+                content=content,
+                content_type=content_type,
+                content_id=content_id,
+            )
+        )
 
     def add_header(self, name: str, value: str) -> None:
         self.headers[name] = value
@@ -154,8 +214,11 @@ class EmailMessage:
             part = MIMEBase(*att.content_type.split("/", 1))
             part.set_payload(att.content)
             import email.encoders
+
             email.encoders.encode_base64(part)
-            part.add_header("Content-Disposition", f"attachment; filename={att.filename}")
+            part.add_header(
+                "Content-Disposition", f"attachment; filename={att.filename}"
+            )
             if att.content_id:
                 part.add_header("Content-ID", f"<{att.content_id}>")
             msg.attach(part)
@@ -173,7 +236,15 @@ class EmailResult:
     provider_response: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"success": self.success, "message_id": self.message_id, "to": self.to, "subject": self.subject, "sent_at": self.sent_at.isoformat(), "error": self.error, "provider_response": self.provider_response}
+        return {
+            "success": self.success,
+            "message_id": self.message_id,
+            "to": self.to,
+            "subject": self.subject,
+            "sent_at": self.sent_at.isoformat(),
+            "error": self.error,
+            "provider_response": self.provider_response,
+        }
 
 
 # ── Client ───────────────────────────────────────────────────────────────────
@@ -205,9 +276,17 @@ class MailClient:
             self._started = True
             return
         if self.config.use_ssl:
-            self._smtp = smtplib.SMTP_SSL(self.config.smtp_host, self.config.smtp_port, timeout=self.config.smtp_timeout)
+            self._smtp = smtplib.SMTP_SSL(
+                self.config.smtp_host,
+                self.config.smtp_port,
+                timeout=self.config.smtp_timeout,
+            )
         else:
-            self._smtp = smtplib.SMTP(self.config.smtp_host, self.config.smtp_port, timeout=self.config.smtp_timeout)
+            self._smtp = smtplib.SMTP(
+                self.config.smtp_host,
+                self.config.smtp_port,
+                timeout=self.config.smtp_timeout,
+            )
             if self.config.use_tls:
                 self._smtp.starttls()
         if self.config.debug:
@@ -241,7 +320,19 @@ class MailClient:
         template_context: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> EmailResult:
-        message = EmailMessage(to=to, subject=subject, body=body, html_body=html_body, from_email=from_email, reply_to=reply_to, cc=cc, bcc=bcc, template_name=template_name, template_context=template_context, **kwargs)
+        message = EmailMessage(
+            to=to,
+            subject=subject,
+            body=body,
+            html_body=html_body,
+            from_email=from_email,
+            reply_to=reply_to,
+            cc=cc,
+            bcc=bcc,
+            template_name=template_name,
+            template_context=template_context,
+            **kwargs,
+        )
         if attachments:
             for att in attachments:
                 if isinstance(att, dict):
@@ -250,8 +341,23 @@ class MailClient:
                     message.add_attachment(att)
         return await self.send_message(message)
 
-    async def send_template_email(self, to: Union[str, List[str]], subject: str, template_name: str, context: Optional[Dict[str, Any]] = None, from_email: Optional[str] = None, **kwargs: Any) -> EmailResult:
-        return await self.send_email(to=to, subject=subject, template_name=template_name, template_context=context, from_email=from_email, **kwargs)
+    async def send_template_email(
+        self,
+        to: Union[str, List[str]],
+        subject: str,
+        template_name: str,
+        context: Optional[Dict[str, Any]] = None,
+        from_email: Optional[str] = None,
+        **kwargs: Any,
+    ) -> EmailResult:
+        return await self.send_email(
+            to=to,
+            subject=subject,
+            template_name=template_name,
+            template_context=context,
+            from_email=from_email,
+            **kwargs,
+        )
 
     async def send_message(self, message: EmailMessage) -> EmailResult:
         try:
@@ -273,14 +379,31 @@ class MailClient:
                 recipients.extend(message.bcc)
             if self.config.suppress_send:
                 logger.info(f"Suppressed: {message.subject} to {recipients}")
-                return EmailResult(success=True, message_id=message.message_id, to=recipients, subject=message.subject, provider_response={"suppressed": True})
+                return EmailResult(
+                    success=True,
+                    message_id=message.message_id,
+                    to=recipients,
+                    subject=message.subject,
+                    provider_response={"suppressed": True},
+                )
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, self._send_mime, mime_message, recipients)
             logger.info(f"Sent: {message.message_id} to {recipients}")
-            return EmailResult(success=True, message_id=message.message_id, to=recipients, subject=message.subject)
+            return EmailResult(
+                success=True,
+                message_id=message.message_id,
+                to=recipients,
+                subject=message.subject,
+            )
         except Exception as e:
             logger.error(f"Failed: {e}")
-            return EmailResult(success=False, message_id=message.message_id, to=list(message.to), subject=message.subject, error=str(e))
+            return EmailResult(
+                success=False,
+                message_id=message.message_id,
+                to=list(message.to),
+                subject=message.subject,
+                error=str(e),
+            )
 
     def _send_mime(self, mime_message: MIMEMultipart, recipients: List[str]) -> None:
         if not self._smtp:
@@ -322,5 +445,7 @@ def setup_mail(app, config: Optional[MailConfig] = None) -> MailClient:
 def get_mail_client(request) -> MailClient:
     client = getattr(request.app, "mail_client", None)
     if client is None:
-        raise RuntimeError("Mail client not initialized. Call setup_mail(app) during startup.")
+        raise RuntimeError(
+            "Mail client not initialized. Call setup_mail(app) during startup."
+        )
     return client

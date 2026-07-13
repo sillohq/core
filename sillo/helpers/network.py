@@ -98,7 +98,13 @@ def get_client_ip(
 def is_public_ip(ip: str) -> bool:
     try:
         addr = ipaddress.ip_address(ip.strip())
-        return not (addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved or addr.is_unspecified)
+        return not (
+            addr.is_private
+            or addr.is_loopback
+            or addr.is_link_local
+            or addr.is_reserved
+            or addr.is_unspecified
+        )
     except ValueError:
         return False
 

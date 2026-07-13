@@ -98,12 +98,10 @@ def wrap_text(text: str, width: int = 80) -> str:
 
 
 def extract_urls(text: str) -> typing.List[str]:
-    pattern = re.compile(
-        r'https?://[^\s<>"\'\)\[\]{}|\\^`]+'
-    )
+    pattern = re.compile(r'https?://[^\s<>"\'\)\[\]{}|\\^`]+')
     return pattern.findall(text)
 
 
 def extract_emails(text: str) -> typing.List[str]:
-    pattern = re.compile(r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}')
+    pattern = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
     return pattern.findall(text)

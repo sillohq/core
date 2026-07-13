@@ -9,6 +9,7 @@ from typing import Optional, Union
 def _ensure_bcrypt():
     try:
         import bcrypt
+
         return bcrypt
     except ImportError:
         raise ImportError(
