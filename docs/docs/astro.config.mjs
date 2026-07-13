@@ -104,6 +104,12 @@ export default defineConfig({
                     ],
             },
             {
+                label: 'Work',
+                items: [
+                    { label: 'Tasks & Scheduling', link: '/guides/work/' },
+                ],
+            },
+            {
                 label: 'Services',
                 items: [
                     { label: 'Mail', link: '/guides/services/mail/' },
