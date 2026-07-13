@@ -20,7 +20,9 @@ def create_jwt(
 
 
 def decode_jwt(
-    token: str, secret: str, algorithms: Optional[List[str]] = None,
+    token: str,
+    secret: str,
+    algorithms: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     try:
         return jwt_helpers.decode(token, secret, algorithms=algorithms or ["HS256"])
