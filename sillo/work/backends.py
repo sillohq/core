@@ -92,7 +92,9 @@ class MemoryBackend:
             self._created_timestamps[task.queue_name].append(task.created_at)
             self._events[task.queue_name].set()
 
-    async def dequeue(self, queue_name: str, timeout: Optional[float] = None) -> Optional[Task]:
+    async def dequeue(
+        self, queue_name: str, timeout: Optional[float] = None
+    ) -> Optional[Task]:
         self._ensure(queue_name)
         deadline = time.monotonic() + timeout if timeout else None
 
@@ -110,7 +112,9 @@ class MemoryBackend:
                 return None
 
             try:
-                await asyncio.wait_for(self._events[queue_name].wait(), timeout=remaining)
+                await asyncio.wait_for(
+                    self._events[queue_name].wait(), timeout=remaining
+                )
             except asyncio.TimeoutError:
                 return None
 
@@ -206,7 +210,9 @@ class RedisBackend:
             import redis.asyncio as aioredis
 
             self._redis = aioredis.from_url(
-                self.url, decode_responses=True, socket_timeout=DEFAULT_REDIS_TIMEOUT,
+                self.url,
+                decode_responses=True,
+                socket_timeout=DEFAULT_REDIS_TIMEOUT,
             )
             await self._redis.ping()
         except ImportError:
@@ -224,7 +230,9 @@ class RedisBackend:
         payload = task.serialize()
         await r.zadd(key, {payload: score})
 
-    async def dequeue(self, queue_name: str, timeout: Optional[float] = None) -> Optional[Task]:
+    async def dequeue(
+        self, queue_name: str, timeout: Optional[float] = None
+    ) -> Optional[Task]:
         r = await self._r()
         key = f"{self.prefix}q:{queue_name}"
         effective_timeout = timeout or 0
@@ -278,7 +286,8 @@ class RedisBackend:
             return None
         d = json.loads(data)
         return TaskResult(
-            task_id=d["task_id"], name=d["name"],
+            task_id=d["task_id"],
+            name=d["name"],
             status=TaskStatus(d.get("status", "completed")),
         )
 

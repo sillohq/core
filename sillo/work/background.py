@@ -22,7 +22,14 @@ logger = logging.getLogger("sillo.work.background")
 class BackgroundTask:
     _instances: set = set()
 
-    def __init__(self, func: Callable[..., Awaitable[Any]], *args: Any, name: Optional[str] = None, on_done: Optional[Callable[[TaskResult], Awaitable[None]]] = None, **kwargs: Any):
+    def __init__(
+        self,
+        func: Callable[..., Awaitable[Any]],
+        *args: Any,
+        name: Optional[str] = None,
+        on_done: Optional[Callable[[TaskResult], Awaitable[None]]] = None,
+        **kwargs: Any,
+    ):
         self._task_obj = Task(func, *args, name=name or func.__name__, **kwargs)
         if on_done:
             self._task_obj.on_success(on_done).on_failure(on_done)
@@ -46,7 +53,9 @@ class BackgroundTask:
         return self._task_obj.result
 
     @classmethod
-    def run(cls, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> "BackgroundTask":
+    def run(
+        cls, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
+    ) -> "BackgroundTask":
         try:
             asyncio.get_running_loop()
         except RuntimeError:

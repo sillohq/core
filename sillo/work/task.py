@@ -78,10 +78,25 @@ class Task:
     """
 
     __slots__ = (
-        "id", "name", "func", "args", "kwargs", "status", "priority",
-        "max_attempts", "queue_name", "metadata", "timeout",
-        "result", "_task", "_done", "created_at", "started_at",
-        "completed_at", "attempt", "_hooks",
+        "id",
+        "name",
+        "func",
+        "args",
+        "kwargs",
+        "status",
+        "priority",
+        "max_attempts",
+        "queue_name",
+        "metadata",
+        "timeout",
+        "result",
+        "_task",
+        "_done",
+        "created_at",
+        "started_at",
+        "completed_at",
+        "attempt",
+        "_hooks",
     )
 
     def __init__(
@@ -130,7 +145,9 @@ class Task:
     @property
     def is_done(self) -> bool:
         return self.status in (
-            TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED,
+            TaskStatus.COMPLETED,
+            TaskStatus.FAILED,
+            TaskStatus.CANCELLED,
         )
 
     @property
@@ -193,7 +210,8 @@ class Task:
         if self.status not in (TaskStatus.PENDING, TaskStatus.RETRYING):
             raise TaskError(
                 f"Cannot run task in state '{self.status.value}'",
-                task_id=self.id, queue_name=self.queue_name,
+                task_id=self.id,
+                queue_name=self.queue_name,
             )
 
         # Fire before-hooks
@@ -220,7 +238,8 @@ class Task:
             return self._complete_failure(
                 TaskTimeout(
                     f"Task '{self.name}' timed out after {effective_timeout:.0f}s",
-                    task_id=self.id, queue_name=self.queue_name,
+                    task_id=self.id,
+                    queue_name=self.queue_name,
                 )
             )
         except asyncio.CancelledError:
@@ -241,7 +260,11 @@ class Task:
         return value
 
     def _complete_failure(self, exc: Exception) -> None:
-        self.status = TaskStatus.FAILED if self.attempt >= self.max_attempts else TaskStatus.RETRYING
+        self.status = (
+            TaskStatus.FAILED
+            if self.attempt >= self.max_attempts
+            else TaskStatus.RETRYING
+        )
         self.completed_at = time.time()
         self.result = self._make_result(
             status=self.status,
@@ -257,9 +280,7 @@ class Task:
         self.status = TaskStatus.CANCELLED
         self.completed_at = time.time()
         self.result = self._make_result(status=TaskStatus.CANCELLED)
-        raise asyncio.CancelledError(
-            f"Task '{self.name}' was cancelled"
-        ) from None
+        raise asyncio.CancelledError(f"Task '{self.name}' was cancelled") from None
 
     # ── result construction ────────────────────────────────────────────────
 
@@ -318,12 +339,15 @@ class Task:
             return None
         if self.result.status == TaskStatus.FAILED and self.result.error:
             raise TaskError(
-                self.result.error, task_id=self.id, queue_name=self.queue_name,
+                self.result.error,
+                task_id=self.id,
+                queue_name=self.queue_name,
             )
         if self.result.status == TaskStatus.CANCELLED:
             raise TaskCancelled(
                 f"Task '{self.name}' was cancelled",
-                task_id=self.id, queue_name=self.queue_name,
+                task_id=self.id,
+                queue_name=self.queue_name,
             )
         return self.result.result
 
@@ -335,17 +359,19 @@ class Task:
     # ── serialisation ──────────────────────────────────────────────────────
 
     def serialize(self) -> str:
-        return json.dumps({
-            "id": self.id,
-            "name": self.name,
-            "args": [str(a) for a in self.args],
-            "kwargs": {k: str(v) for k, v in self.kwargs.items()},
-            "priority": self.priority.value,
-            "max_attempts": self.max_attempts,
-            "queue_name": self.queue_name,
-            "metadata": self.metadata,
-            "timeout": self.timeout,
-        })
+        return json.dumps(
+            {
+                "id": self.id,
+                "name": self.name,
+                "args": [str(a) for a in self.args],
+                "kwargs": {k: str(v) for k, v in self.kwargs.items()},
+                "priority": self.priority.value,
+                "max_attempts": self.max_attempts,
+                "queue_name": self.queue_name,
+                "metadata": self.metadata,
+                "timeout": self.timeout,
+            }
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {

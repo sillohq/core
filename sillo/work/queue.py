@@ -56,7 +56,14 @@ class Queue:
         result = await queue.get_result(task.id)
     """
 
-    def __init__(self, name: str = "default", *, backend: Optional[Any] = None, dedup: bool = False, default_priority: TaskPriority = TaskPriority.NORMAL):
+    def __init__(
+        self,
+        name: str = "default",
+        *,
+        backend: Optional[Any] = None,
+        dedup: bool = False,
+        default_priority: TaskPriority = TaskPriority.NORMAL,
+    ):
         self.name = name
         self._backend = backend or MemoryBackend()
         self._dedup = dedup

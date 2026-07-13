@@ -31,6 +31,7 @@ class IntervalTrigger:
 
     def next_fire(self, last_fire: float) -> float:
         import random
+
         j = random.uniform(0, self.jitter) if self.jitter else 0
         return time.time() + self.seconds + j
 
@@ -72,15 +73,21 @@ class CronTrigger:
 
     def next_fire(self, last_fire: float) -> float:
         from datetime import datetime, timedelta
+
         base = last_fire if last_fire > 0 else time.time()
         dt = datetime.fromtimestamp(base)
         for _ in range(366 * 24 * 60):
             dt += timedelta(minutes=1)
-            if dt.minute not in self._mins: continue
-            if dt.hour not in self._hrs: continue
-            if dt.day not in self._days: continue
-            if dt.month not in self._mons: continue
-            if dt.weekday() not in self._wdays: continue
+            if dt.minute not in self._mins:
+                continue
+            if dt.hour not in self._hrs:
+                continue
+            if dt.day not in self._days:
+                continue
+            if dt.month not in self._mons:
+                continue
+            if dt.weekday() not in self._wdays:
+                continue
             return dt.timestamp()
         return time.time() + 366 * 86400
 
@@ -94,7 +101,17 @@ class DateTrigger:
 
 
 class ScheduledJob:
-    def __init__(self, func, trigger, *, name=None, args=(), kwargs=None, max_instances=1, id=None):
+    def __init__(
+        self,
+        func,
+        trigger,
+        *,
+        name=None,
+        args=(),
+        kwargs=None,
+        max_instances=1,
+        id=None,
+    ):
         self.id = id or str(uuid4())
         self.name = name or func.__name__
         self.func = func
@@ -144,7 +161,14 @@ class ScheduledJob:
                 self.status = JobStatus.COMPLETED
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name, "status": self.status.value, "runs": self._runs, "errors": self._errors, "next_run": self.next_run_time}
+        return {
+            "id": self.id,
+            "name": self.name,
+            "status": self.status.value,
+            "runs": self._runs,
+            "errors": self._errors,
+            "next_run": self.next_run_time,
+        }
 
 
 class Scheduler:
@@ -161,32 +185,44 @@ class Scheduler:
         return job
 
     def every(self, seconds, *, name=None):
-        def d(f): return self.schedule(f, IntervalTrigger(seconds), name=name or f.__name__)
+        def d(f):
+            return self.schedule(f, IntervalTrigger(seconds), name=name or f.__name__)
+
         return d
 
     def cron(self, expression, *, name=None):
-        def d(f): return self.schedule(f, CronTrigger(expression), name=name or f.__name__)
+        def d(f):
+            return self.schedule(f, CronTrigger(expression), name=name or f.__name__)
+
         return d
 
     def remove(self, job_id):
         j = self._jobs.pop(job_id, None)
-        if j: j.cancel()
+        if j:
+            j.cancel()
         return j is not None
 
-    def get(self, job_id): return self._jobs.get(job_id)
+    def get(self, job_id):
+        return self._jobs.get(job_id)
 
     def list(self, status=None):
-        if status is None: return list(self._jobs.values())
+        if status is None:
+            return list(self._jobs.values())
         return [j for j in self._jobs.values() if j.status == status]
 
     def pause(self, job_id):
         j = self._jobs.get(job_id)
-        if j: j.pause(); return True
+        if j:
+            j.pause()
+            return True
         return False
 
     def resume(self, job_id):
         j = self._jobs.get(job_id)
-        if j: j.resume(); j.compute_next(); return True
+        if j:
+            j.resume()
+            j.compute_next()
+            return True
         return False
 
     @property
@@ -209,9 +245,12 @@ class Scheduler:
         self._running = False
         if self._ticker:
             self._ticker.cancel()
-            try: await self._ticker
-            except asyncio.CancelledError: pass
-        for j in self._jobs.values(): j.cancel()
+            try:
+                await self._ticker
+            except asyncio.CancelledError:
+                pass
+        for j in self._jobs.values():
+            j.cancel()
         logger.info("Scheduler stopped")
 
     async def _loop(self):
@@ -219,18 +258,24 @@ class Scheduler:
             try:
                 now = time.time()
                 for job in list(self._jobs.values()):
-                    if job.status != JobStatus.ACTIVE: continue
+                    if job.status != JobStatus.ACTIVE:
+                        continue
                     if job.next_run_time and job.next_run_time <= now:
-                        if job.current_instances >= job.max_instances: continue
+                        if job.current_instances >= job.max_instances:
+                            continue
                         job.compute_next(now)
                         asyncio.create_task(self._execute(job))
                 await asyncio.sleep(1)
-            except asyncio.CancelledError: break
+            except asyncio.CancelledError:
+                break
             except Exception:
                 logger.exception("Scheduler loop")
                 await asyncio.sleep(1)
 
     async def _execute(self, job):
-        try: await job.run()
-        except asyncio.CancelledError: pass
-        except Exception: logger.exception(f"Job {job.name} failed")
+        try:
+            await job.run()
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            logger.exception(f"Job {job.name} failed")

@@ -46,13 +46,13 @@ class TaskPriority(enum.IntEnum):
 class TaskStatus(enum.Enum):
     """Lifecycle of a single task."""
 
-    PENDING = "pending"          # enqueued, not yet attempted
-    SCHEDULED = "scheduled"      # registered with scheduler, awaiting trigger
-    RUNNING = "running"          # currently executing
-    COMPLETED = "completed"      # finished successfully
-    FAILED = "failed"            # exhausted all retries or fatal error
-    CANCELLED = "cancelled"      # explicitly cancelled before completion
-    RETRYING = "retrying"        # between attempts, waiting for backoff
+    PENDING = "pending"  # enqueued, not yet attempted
+    SCHEDULED = "scheduled"  # registered with scheduler, awaiting trigger
+    RUNNING = "running"  # currently executing
+    COMPLETED = "completed"  # finished successfully
+    FAILED = "failed"  # exhausted all retries or fatal error
+    CANCELLED = "cancelled"  # explicitly cancelled before completion
+    RETRYING = "retrying"  # between attempts, waiting for backoff
 
 
 class TriggerType(enum.Enum):
@@ -69,15 +69,15 @@ class JobStatus(enum.Enum):
 
 
 class CircuitState(enum.Enum):
-    CLOSED = "closed"       # normal operation
-    OPEN = "open"           # failures exceeded threshold
-    HALF_OPEN = "half_open" # testing recovery
+    CLOSED = "closed"  # normal operation
+    OPEN = "open"  # failures exceeded threshold
+    HALF_OPEN = "half_open"  # testing recovery
 
 
 class QueueHealth(enum.Enum):
     HEALTHY = "healthy"
-    DEGRADED = "degraded"   # high backlog
-    STALLED = "stalled"     # no consumers
+    DEGRADED = "degraded"  # high backlog
+    STALLED = "stalled"  # no consumers
 
 
 # ──────────────────────────────────────────────────────────────── Exceptions ──

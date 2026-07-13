@@ -73,8 +73,7 @@ class Worker:
         self._running = True
         self._started_at = time.time()
         self._workers = [
-            asyncio.create_task(self._run(worker_id=i))
-            for i in range(self.concurrency)
+            asyncio.create_task(self._run(worker_id=i)) for i in range(self.concurrency)
         ]
         logger.info(
             "Worker started — concurrency=%d queue='%s'",
@@ -166,7 +165,10 @@ class Worker:
                         task.status = TaskStatus.FAILED
                         logger.error(
                             "[worker-%d] %s — exhausted %d attempts: %s",
-                            worker_id, task.name, task.max_attempts, exc,
+                            worker_id,
+                            task.name,
+                            task.max_attempts,
+                            exc,
                         )
                         await self.queue.mark_done(task)
 
@@ -186,7 +188,12 @@ class Worker:
                     delay = self._backoff_delay(attempt)
                     logger.warning(
                         "[worker-%d] %s — retry %d/%d in %.0fs: %s",
-                        worker_id, task.name, attempt, task.max_attempts, delay, exc,
+                        worker_id,
+                        task.name,
+                        attempt,
+                        task.max_attempts,
+                        delay,
+                        exc,
                     )
                     await asyncio.sleep(delay)
         finally:
