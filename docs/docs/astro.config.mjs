@@ -7,22 +7,35 @@ import lucode from 'lucode-starlight';
 const docsBasePath = process.env.DOCS_BASE_PATH ?? '/lucode-starlight-theme';
 
 export default defineConfig({
-    site: 'https://lucas-labs.github.io',
+    site: 'https://sillo.build',
     redirects: {
         '/': '/guides/getting-started/',
     },
 
     integrations: [
         starlight({
-            title: 'Lucode Starlight',
+            title: 'sillo',
             logo: {
-                src: './src/assets/logo.svg',
-                alt: 'Lucode logo',
+                light: './src/assets/logo-black.svg',
+                dark: './src/assets/logo-white.svg',
+                alt: 'sillo logo',
                 replacesTitle: true,
             },
+            head: [
+                {
+                    tag: 'link',
+                    attrs: {
+                        rel: 'icon',
+                        href: '/favicon.svg',
+                        type: 'image/svg+xml',
+                        size:"132x132"
+                    },
+                },
+            ],
+            favicon: '/favicon.svg',
             customCss: ['./src/styles/global.css'],
             editLink: {
-                baseUrl: 'https://github.com/lucas-labs/lucode-starlight-theme/edit/master/docs',
+                baseUrl: 'https://github.com/sillo-labs/sillo/edit/main/docs',
             },
             lastUpdated: true,
             plugins: [
@@ -42,7 +55,7 @@ export default defineConfig({
                 {
                     icon: 'github',
                     label: 'GitHub',
-                    href: 'https://github.com/lucas-labs/lucode-starlight-theme',
+                    href: 'https://github.com/sillo-labs/sillo',
                 },
             ],
             sidebar: [
@@ -105,8 +118,14 @@ export default defineConfig({
             },
             {
                 label: 'Work',
+                collapsed: false,
                 items: [
-                    { label: 'Tasks & Scheduling', link: '/guides/work/' },
+                    { label: 'Overview', link: '/guides/work/' },
+                    { label: 'Background Tasks', link: '/guides/work/background/' },
+                    { label: 'Queue', link: '/guides/work/queue/' },
+                    { label: 'Scheduler', link: '/guides/work/scheduler/' },
+                    { label: 'Events', link: '/guides/work/events/' },
+                    { label: 'Jobs', link: '/guides/work/jobs/' },
                 ],
             },
             {
