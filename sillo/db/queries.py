@@ -23,7 +23,11 @@ class PaginatedResult:
 
     @property
     def pages(self) -> int:
-        return max(1, (self.total + self.page_size - 1) // self.page_size) if self.total else 1
+        return (
+            max(1, (self.total + self.page_size - 1) // self.page_size)
+            if self.total
+            else 1
+        )
 
     @property
     def has_next(self) -> bool:
@@ -35,7 +39,10 @@ class PaginatedResult:
 
     def to_dict(self) -> dict:
         return {
-            "items": [item.to_dict() if hasattr(item, "to_dict") else str(item) for item in self.items],
+            "items": [
+                item.to_dict() if hasattr(item, "to_dict") else str(item)
+                for item in self.items
+            ],
             "total": self.total,
             "page": self.page,
             "page_size": self.page_size,
@@ -83,6 +90,7 @@ async def explain(queryset) -> str:
     try:
         sql, params = queryset.sql()
         from tortoise import connections
+
         conn = connections.get("default")
         if hasattr(conn, "execute_query"):
             result = await conn.execute_query(f"EXPLAIN {sql}", params)

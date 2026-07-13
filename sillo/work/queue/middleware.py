@@ -62,7 +62,9 @@ class RetryMiddleware:
                     if attempt >= max_attempts:
                         raise
                     delay = min(base_delay * (2 ** (attempt - 1)), max_delay)
-                    logger.warning("Retry %d/%d in %.1fs: %s", attempt, max_attempts, delay, exc)
+                    logger.warning(
+                        "Retry %d/%d in %.1fs: %s", attempt, max_attempts, delay, exc
+                    )
                     await asyncio.sleep(delay)
             raise last_exc or RuntimeError("RetryMiddleware: unreachable")
 

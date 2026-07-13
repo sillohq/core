@@ -36,9 +36,16 @@ class Batch:
         self,
         name: Annotated[str, Doc("Human-readable batch name.")],
         *,
-        on_complete: Annotated[Optional[Callable[["Batch"], Awaitable[None]]], Doc("Callback when all jobs finish.")] = None,
-        allow_failures: Annotated[bool, Doc("If True, individual failures don't fail the batch.")] = False,
-        timeout: Annotated[Optional[float], Doc("Max seconds before timing out the batch.")] = None,
+        on_complete: Annotated[
+            Optional[Callable[["Batch"], Awaitable[None]]],
+            Doc("Callback when all jobs finish."),
+        ] = None,
+        allow_failures: Annotated[
+            bool, Doc("If True, individual failures don't fail the batch.")
+        ] = False,
+        timeout: Annotated[
+            Optional[float], Doc("Max seconds before timing out the batch.")
+        ] = None,
     ):
         self.id = str(uuid.uuid4())
         self.name = name
@@ -52,17 +59,25 @@ class Batch:
         self._done = asyncio.Event()
         self._finished = False
 
-    def add(self, job_id: Annotated[str, Doc("Job ID returned by dispatch().")]) -> "Batch":
+    def add(
+        self, job_id: Annotated[str, Doc("Job ID returned by dispatch().")]
+    ) -> "Batch":
         """Add a job to the batch. Returns self for chaining."""
         self._jobs.append(job_id)
         return self
 
-    def mark_complete(self, job_id: Annotated[str, Doc("Job ID that completed successfully.")]) -> None:
+    def mark_complete(
+        self, job_id: Annotated[str, Doc("Job ID that completed successfully.")]
+    ) -> None:
         """Mark a single job as done."""
         self._completed.add(job_id)
         self._check_done()
 
-    def mark_failed(self, job_id: Annotated[str, Doc("Job ID that failed.")], error: Annotated[str, Doc("Error message.")]) -> None:
+    def mark_failed(
+        self,
+        job_id: Annotated[str, Doc("Job ID that failed.")],
+        error: Annotated[str, Doc("Error message.")],
+    ) -> None:
         """Mark a single job as failed."""
         self._failed[job_id] = error
         if not self._allow_failures:
@@ -118,7 +133,13 @@ class JobChain:
     def __init__(self):
         self._jobs: List[Callable[[], Awaitable[Any]]] = []
 
-    def then(self, job: Annotated[Callable[[], Awaitable[Any]], Doc("Async callable (usually a job dispatch).")]) -> "JobChain":
+    def then(
+        self,
+        job: Annotated[
+            Callable[[], Awaitable[Any]],
+            Doc("Async callable (usually a job dispatch)."),
+        ],
+    ) -> "JobChain":
         """Append a job to the chain."""
         self._jobs.append(job)
         return self

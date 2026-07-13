@@ -28,7 +28,17 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
+from typing import (
+    Annotated,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from typing_extensions import Doc
 
@@ -61,10 +71,12 @@ def listen(*events: Type[Event], priority: int = 0) -> Callable:
         async def handle(event):
             ...
     """
+
     def decorator(func: ListenerCallback) -> ListenerCallback:
         func._listens_to = events
         func._listener_priority = priority
         return func
+
     return decorator
 
 
@@ -100,13 +112,20 @@ class EventDispatcher:
     def register(
         self,
         event_type: Annotated[Type[Event], Doc("Event class to listen for.")],
-        callback: Annotated[ListenerCallback, Doc("Async callable receiving the event instance.")],
+        callback: Annotated[
+            ListenerCallback, Doc("Async callable receiving the event instance.")
+        ],
         *,
         priority: Annotated[int, Doc("Higher values fire first.")] = 0,
         name: Annotated[str, Doc("Optional label for debugging.")] = "",
     ) -> None:
         """Register a listener for *event_type*."""
-        reg = ListenerRegistration(callback=callback, event_type=event_type, priority=priority, name=name or callback.__name__)
+        reg = ListenerRegistration(
+            callback=callback,
+            event_type=event_type,
+            priority=priority,
+            name=name or callback.__name__,
+        )
         if event_type not in self._listeners:
             self._listeners[event_type] = []
         self._listeners[event_type].append(reg)
@@ -119,7 +138,14 @@ class EventDispatcher:
         priority: Annotated[int, Doc("Higher = earlier.")] = 0,
     ) -> None:
         """Register a listener that receives ALL events (wildcard)."""
-        self._wildcards.append(ListenerRegistration(callback=callback, event_type=Event, priority=priority, name=callback.__name__))
+        self._wildcards.append(
+            ListenerRegistration(
+                callback=callback,
+                event_type=Event,
+                priority=priority,
+                name=callback.__name__,
+            )
+        )
         self._wildcards.sort(key=lambda r: -r.priority)
 
     def forget(
@@ -131,14 +157,18 @@ class EventDispatcher:
         if event_type not in self._listeners:
             return False
         before = len(self._listeners[event_type])
-        self._listeners[event_type] = [r for r in self._listeners[event_type] if r.callback is not callback]
+        self._listeners[event_type] = [
+            r for r in self._listeners[event_type] if r.callback is not callback
+        ]
         return len(self._listeners[event_type]) < before
 
     def has_listeners(self, event_type: Type[Event]) -> bool:
         """Check if any listeners are registered for *event_type*."""
         return bool(self._listeners.get(event_type)) or bool(self._wildcards)
 
-    async def dispatch(self, event: Annotated[E, Doc("Event instance to dispatch.")]) -> E:
+    async def dispatch(
+        self, event: Annotated[E, Doc("Event instance to dispatch.")]
+    ) -> E:
         """Fire *event* to all matching listeners.
 
         Listeners are called sequentially (not concurrently) to enable
@@ -165,7 +195,9 @@ class EventDispatcher:
         try:
             await reg.callback(event)
         except Exception:
-            logger.exception(f"Listener '{reg.name}' for {reg.event_type.__name__} raised")
+            logger.exception(
+                f"Listener '{reg.name}' for {reg.event_type.__name__} raised"
+            )
 
     def clear(self) -> None:
         """Remove all registered listeners."""

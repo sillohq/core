@@ -40,8 +40,12 @@ class Supervisor:
 
     def __init__(
         self,
-        func: Annotated[Callable[..., Awaitable[Any]], Doc("Async callable to supervise.")],
-        policy: Annotated[RestartPolicy, Doc("Restart behaviour.")] = RestartPolicy.ON_FAILURE,
+        func: Annotated[
+            Callable[..., Awaitable[Any]], Doc("Async callable to supervise.")
+        ],
+        policy: Annotated[
+            RestartPolicy, Doc("Restart behaviour.")
+        ] = RestartPolicy.ON_FAILURE,
         *,
         max_restarts: Annotated[int, Doc("Max total restarts before giving up.")] = 3,
         base_delay: Annotated[float, Doc("Initial backoff seconds.")] = 1.0,
@@ -66,7 +70,9 @@ class Supervisor:
         self._stopped.clear()
 
         while self._running:
-            self._current_task = BackgroundTask.run(self.func, *args, name=self.name, **kwargs)
+            self._current_task = BackgroundTask.run(
+                self.func, *args, name=self.name, **kwargs
+            )
             try:
                 await self._current_task.wait()
             except asyncio.CancelledError:
@@ -74,14 +80,26 @@ class Supervisor:
             except Exception as exc:
                 logger.warning("Supervised task %s failed: %s", self.name, exc)
                 if not self._should_restart():
-                    logger.error("Supervised task %s exhausted restarts (%d)", self.name, self.max_restarts)
+                    logger.error(
+                        "Supervised task %s exhausted restarts (%d)",
+                        self.name,
+                        self.max_restarts,
+                    )
                     break
-                delay = min(self.base_delay * (2 ** self._restarts), self.max_delay)
-                logger.info("Restarting %s in %.1fs (attempt %d)", self.name, delay, self._restarts + 1)
+                delay = min(self.base_delay * (2**self._restarts), self.max_delay)
+                logger.info(
+                    "Restarting %s in %.1fs (attempt %d)",
+                    self.name,
+                    delay,
+                    self._restarts + 1,
+                )
                 await asyncio.sleep(delay)
                 self._restarts += 1
             else:
-                if self.policy == RestartPolicy.NEVER or self.policy == RestartPolicy.ON_FAILURE:
+                if (
+                    self.policy == RestartPolicy.NEVER
+                    or self.policy == RestartPolicy.ON_FAILURE
+                ):
                     break
 
         self._stopped.set()
@@ -107,7 +125,9 @@ class Supervisor:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "name": self.name, "policy": self.policy.value,
-            "restarts": self._restarts, "max_restarts": self.max_restarts,
+            "name": self.name,
+            "policy": self.policy.value,
+            "restarts": self._restarts,
+            "max_restarts": self.max_restarts,
             "running": self._running,
         }

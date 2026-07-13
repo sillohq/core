@@ -25,12 +25,23 @@ class QueueConnection(ABC):
     """Abstract queue connection — push / pop / size / clear."""
 
     @abstractmethod
-    async def push(self, queue_name: Annotated[str, Doc("Target queue name.")], payload: Annotated[str, Doc("Serialised job payload.")], *, delay: Annotated[int, Doc("Seconds to delay before the job is available.")] = 0) -> str:
+    async def push(
+        self,
+        queue_name: Annotated[str, Doc("Target queue name.")],
+        payload: Annotated[str, Doc("Serialised job payload.")],
+        *,
+        delay: Annotated[int, Doc("Seconds to delay before the job is available.")] = 0,
+    ) -> str:
         """Push a job onto the queue. Returns a job ID."""
         ...
 
     @abstractmethod
-    async def pop(self, queue_name: Annotated[str, Doc("Queue to pop from.")], *, timeout: Annotated[float, Doc("Seconds to block waiting for a job.")] = 0) -> Optional[tuple[str, str]]:
+    async def pop(
+        self,
+        queue_name: Annotated[str, Doc("Queue to pop from.")],
+        *,
+        timeout: Annotated[float, Doc("Seconds to block waiting for a job.")] = 0,
+    ) -> Optional[tuple[str, str]]:
         """Pop the next available job. Returns (job_id, payload) or None."""
         ...
 
@@ -43,11 +54,23 @@ class QueueConnection(ABC):
         """Remove all pending jobs from *queue_name*."""
         ...
 
-    async def ack(self, queue_name: Annotated[str, Doc("Queue name.")], job_id: Annotated[str, Doc("Job ID to acknowledge.")]) -> None:
+    async def ack(
+        self,
+        queue_name: Annotated[str, Doc("Queue name.")],
+        job_id: Annotated[str, Doc("Job ID to acknowledge.")],
+    ) -> None:
         """Mark a job as successfully processed."""
         ...
 
-    async def fail(self, queue_name: Annotated[str, Doc("Queue name.")], job_id: Annotated[str, Doc("Job ID that failed.")], payload: Annotated[str, Doc("Serialised job payload for the failed repository.")], exception: Annotated[str, Doc("Exception message.")]) -> None:
+    async def fail(
+        self,
+        queue_name: Annotated[str, Doc("Queue name.")],
+        job_id: Annotated[str, Doc("Job ID that failed.")],
+        payload: Annotated[
+            str, Doc("Serialised job payload for the failed repository.")
+        ],
+        exception: Annotated[str, Doc("Exception message.")],
+    ) -> None:
         """Record a permanently failed job."""
         ...
 
@@ -75,13 +98,17 @@ class SyncConnection(QueueConnection):
         self._ensure(queue_name)
         job_id = f"{int(time.time() * 1e6)}-{id(payload)}"
         if delay > 0:
-            self._delayed[queue_name].append((time.monotonic() + delay, job_id, payload))
+            self._delayed[queue_name].append(
+                (time.monotonic() + delay, job_id, payload)
+            )
         else:
             await self._queues[queue_name].put((0, job_id, payload))
         self._pending[queue_name][job_id] = payload
         return job_id
 
-    async def pop(self, queue_name: str, *, timeout: float = 0) -> Optional[tuple[str, str]]:
+    async def pop(
+        self, queue_name: str, *, timeout: float = 0
+    ) -> Optional[tuple[str, str]]:
         self._ensure(queue_name)
 
         self._release_delayed(queue_name)
@@ -122,7 +149,12 @@ class RedisConnection(QueueConnection):
     Uses sorted sets for pending/delayed jobs and lists for active work.
     """
 
-    def __init__(self, url: Annotated[str, Doc("Redis connection URL.")] = "redis://localhost:6379", *, prefix: Annotated[str, Doc("Key prefix.")] = "sillo:queue:"):
+    def __init__(
+        self,
+        url: Annotated[str, Doc("Redis connection URL.")] = "redis://localhost:6379",
+        *,
+        prefix: Annotated[str, Doc("Key prefix.")] = "sillo:queue:",
+    ):
         self.url = url
         self.prefix = prefix
         self._redis: Any = None
@@ -131,6 +163,7 @@ class RedisConnection(QueueConnection):
         if self._redis is not None:
             return self._redis
         import redis.asyncio as aioredis
+
         self._redis = aioredis.from_url(self.url, decode_responses=True)
         return self._redis
 
@@ -145,7 +178,9 @@ class RedisConnection(QueueConnection):
             await r.lpush(key, f"{job_id}:{payload}")
         return job_id
 
-    async def pop(self, queue_name: str, *, timeout: float = 0) -> Optional[tuple[str, str]]:
+    async def pop(
+        self, queue_name: str, *, timeout: float = 0
+    ) -> Optional[tuple[str, str]]:
         r = await self._r()
         key = f"{self.prefix}{queue_name}"
         await self._migrate_delayed(r, key)
@@ -195,13 +230,21 @@ class ConnectionManager:
     def __init__(self):
         self._connections: Dict[str, QueueConnection] = {}
 
-    def add(self, name: Annotated[str, Doc("Connection name (e.g. 'default', 'redis').")], connection: Annotated[QueueConnection, Doc("Connection instance.")]) -> "ConnectionManager":
+    def add(
+        self,
+        name: Annotated[str, Doc("Connection name (e.g. 'default', 'redis').")],
+        connection: Annotated[QueueConnection, Doc("Connection instance.")],
+    ) -> "ConnectionManager":
         """Register a named connection. Returns self for chaining."""
         self._connections[name] = connection
         return self
 
-    def connection(self, name: Annotated[str, Doc("Connection name.")] = "default") -> QueueConnection:
+    def connection(
+        self, name: Annotated[str, Doc("Connection name.")] = "default"
+    ) -> QueueConnection:
         """Retrieve a connection by name. Raises KeyError if not found."""
         if name not in self._connections:
-            raise KeyError(f"Queue connection '{name}' not registered. Use manager.add('{name}', ...)")
+            raise KeyError(
+                f"Queue connection '{name}' not registered. Use manager.add('{name}', ...)"
+            )
         return self._connections[name]

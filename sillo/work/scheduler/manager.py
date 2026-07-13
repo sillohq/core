@@ -34,9 +34,12 @@ class SchedulerStats:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "jobs_total": self.jobs_total, "jobs_active": self.jobs_active,
-            "jobs_paused": self.jobs_paused, "runs": self.runs_total,
-            "errors": self.errors_total, "uptime": int(self.uptime_seconds),
+            "jobs_total": self.jobs_total,
+            "jobs_active": self.jobs_active,
+            "jobs_paused": self.jobs_paused,
+            "runs": self.runs_total,
+            "errors": self.errors_total,
+            "uptime": int(self.uptime_seconds),
         }
 
 
@@ -86,8 +89,12 @@ class SchedulerManager:
         name: Annotated[Optional[str], Doc("Label.")] = None,
     ) -> Callable:
         """Decorator: run every *seconds*."""
+
         def decorator(func):
-            return self.schedule(func, IntervalTrigger(seconds), name=name or func.__name__)
+            return self.schedule(
+                func, IntervalTrigger(seconds), name=name or func.__name__
+            )
+
         return decorator
 
     def cron(
@@ -97,8 +104,12 @@ class SchedulerManager:
         name: Annotated[Optional[str], Doc("Label.")] = None,
     ) -> Callable:
         """Decorator: run on a cron schedule."""
+
         def decorator(func):
-            return self.schedule(func, CronTrigger(expression), name=name or func.__name__)
+            return self.schedule(
+                func, CronTrigger(expression), name=name or func.__name__
+            )
+
         return decorator
 
     # ── job management ────────────────────────────────────────────────────
@@ -106,7 +117,8 @@ class SchedulerManager:
     def remove(self, job_id: Annotated[str, Doc("Job ID.")]) -> bool:
         """Remove a job. Returns True if found."""
         j = self._jobs.pop(job_id, None)
-        if j: j.cancel()
+        if j:
+            j.cancel()
         return j is not None
 
     def get(self, job_id: Annotated[str, Doc("Job ID.")]) -> Optional[ScheduledJob]:
@@ -122,13 +134,18 @@ class SchedulerManager:
     def pause(self, job_id: Annotated[str, Doc("Job ID.")]) -> bool:
         """Pause a job. Returns True if found."""
         j = self._jobs.get(job_id)
-        if j: j.pause(); return True
+        if j:
+            j.pause()
+            return True
         return False
 
     def resume(self, job_id: Annotated[str, Doc("Job ID.")]) -> bool:
         """Resume a paused job. Returns True if found."""
         j = self._jobs.get(job_id)
-        if j: j.resume(); j.compute_next(); return True
+        if j:
+            j.resume()
+            j.compute_next()
+            return True
         return False
 
     # ── stats ─────────────────────────────────────────────────────────────
@@ -140,8 +157,10 @@ class SchedulerManager:
         s.uptime_seconds = time.time() - self._started_at if self._started_at else 0
         for j in self._jobs.values():
             s.jobs_total += 1
-            if j.status == JobStatus.ACTIVE: s.jobs_active += 1
-            if j.status == JobStatus.PAUSED: s.jobs_paused += 1
+            if j.status == JobStatus.ACTIVE:
+                s.jobs_active += 1
+            if j.status == JobStatus.PAUSED:
+                s.jobs_paused += 1
             s.runs_total += j._runs
             s.errors_total += j._errors
         return s
@@ -160,8 +179,10 @@ class SchedulerManager:
         self._running = False
         if self._ticker:
             self._ticker.cancel()
-            try: await self._ticker
-            except asyncio.CancelledError: pass
+            try:
+                await self._ticker
+            except asyncio.CancelledError:
+                pass
         for j in self._jobs.values():
             j.cancel()
         logger.info("Scheduler stopped")
@@ -171,24 +192,32 @@ class SchedulerManager:
             try:
                 now = time.time()
                 for job in list(self._jobs.values()):
-                    if job.status != JobStatus.ACTIVE: continue
+                    if job.status != JobStatus.ACTIVE:
+                        continue
                     if job.next_run_time and job.next_run_time <= now:
-                        if job.max_instances and job.current_instances >= job.max_instances:
+                        if (
+                            job.max_instances
+                            and job.current_instances >= job.max_instances
+                        ):
                             continue
                         if job.coalesce and job.current_instances > 0:
                             continue
                         job.compute_next(now)
                         asyncio.create_task(self._execute(job))
                 await asyncio.sleep(1)
-            except asyncio.CancelledError: break
+            except asyncio.CancelledError:
+                break
             except Exception:
                 logger.exception("Scheduler loop")
                 await asyncio.sleep(1)
 
     async def _execute(self, job: ScheduledJob) -> None:
-        try: await job.run()
-        except asyncio.CancelledError: pass
-        except Exception: logger.exception("Job %s failed", job.name)
+        try:
+            await job.run()
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            logger.exception("Job %s failed", job.name)
 
 
 def setup_scheduler(app) -> SchedulerManager:

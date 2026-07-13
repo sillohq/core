@@ -95,7 +95,11 @@ class MigrationManager:
             location=str(self.location),
         )
         result = await command.migrate(name=name)
-        migration_file = f"{self.location}/models/{result}.py" if hasattr(command, "migrate") else str(result)
+        migration_file = (
+            f"{self.location}/models/{result}.py"
+            if hasattr(command, "migrate")
+            else str(result)
+        )
         print(f"[sillo.db] Migration created: {migration_file}")
         return str(result) if result else ""
 

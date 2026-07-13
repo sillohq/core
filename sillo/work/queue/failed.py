@@ -47,12 +47,18 @@ class FailedJobRepository(ABC):
         ...
 
     @abstractmethod
-    async def all(self, limit: Annotated[int, Doc("Max records to return.")] = 50, offset: Annotated[int, Doc("Skip this many.")] = 0) -> List[FailedJob]:
+    async def all(
+        self,
+        limit: Annotated[int, Doc("Max records to return.")] = 50,
+        offset: Annotated[int, Doc("Skip this many.")] = 0,
+    ) -> List[FailedJob]:
         """List all failed jobs, newest first."""
         ...
 
     @abstractmethod
-    async def find(self, job_id: Annotated[str, Doc("Job ID to look up.")]) -> Optional[FailedJob]:
+    async def find(
+        self, job_id: Annotated[str, Doc("Job ID to look up.")]
+    ) -> Optional[FailedJob]:
         """Find a specific failed job by ID."""
         ...
 
@@ -73,11 +79,21 @@ class MemoryFailedRepository(FailedJobRepository):
     def __init__(self):
         self._failed: List[FailedJob] = []
 
-    async def log(self, queue: str, job_id: str, job_class: str, payload: str, exception: str) -> None:
-        self._failed.append(FailedJob(id=job_id, queue=queue, job_class=job_class, payload=payload, exception=exception))
+    async def log(
+        self, queue: str, job_id: str, job_class: str, payload: str, exception: str
+    ) -> None:
+        self._failed.append(
+            FailedJob(
+                id=job_id,
+                queue=queue,
+                job_class=job_class,
+                payload=payload,
+                exception=exception,
+            )
+        )
 
     async def all(self, limit: int = 50, offset: int = 0) -> List[FailedJob]:
-        return list(reversed(self._failed))[offset:offset + limit]
+        return list(reversed(self._failed))[offset : offset + limit]
 
     async def find(self, job_id: str) -> Optional[FailedJob]:
         for fj in self._failed:

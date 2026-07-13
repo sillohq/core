@@ -21,6 +21,7 @@ class AutoNowMixin:
 
 def _auto_now_default():
     from datetime import datetime, timezone
+
     return datetime.now(timezone.utc)
 
 
@@ -52,7 +53,9 @@ class SoftDeleteField(_fields.DatetimeField):
 class SlugField(_fields.CharField):
     """URL-safe slug with optional auto-generation from a source field."""
 
-    def __init__(self, max_length: int = 200, source_field: Optional[str] = None, **kwargs):
+    def __init__(
+        self, max_length: int = 200, source_field: Optional[str] = None, **kwargs
+    ):
         kwargs.setdefault("max_length", max_length)
         super().__init__(**kwargs)
         self._source_field = source_field
@@ -84,6 +87,7 @@ class ULIDField(_fields.CharField):
 
     def _generate(self):
         import ulid
+
         return str(ulid.new())
 
 

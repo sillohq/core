@@ -93,12 +93,36 @@ class DatabaseConfig:
         return cls(url=f"sqlite://{path}", backend=DatabaseBackend.SQLITE, **kwargs)
 
     @classmethod
-    def postgres(cls, user: str, password: str, host: str = "localhost", port: int = 5432, database: str = "postgres", **kwargs) -> "DatabaseConfig":
-        return cls(url=f"postgres://{user}:{password}@{host}:{port}/{database}", backend=DatabaseBackend.POSTGRES, **kwargs)
+    def postgres(
+        cls,
+        user: str,
+        password: str,
+        host: str = "localhost",
+        port: int = 5432,
+        database: str = "postgres",
+        **kwargs,
+    ) -> "DatabaseConfig":
+        return cls(
+            url=f"postgres://{user}:{password}@{host}:{port}/{database}",
+            backend=DatabaseBackend.POSTGRES,
+            **kwargs,
+        )
 
     @classmethod
-    def mysql(cls, user: str, password: str, host: str = "localhost", port: int = 3306, database: str = "mysql", **kwargs) -> "DatabaseConfig":
-        return cls(url=f"mysql://{user}:{password}@{host}:{port}/{database}", backend=DatabaseBackend.MYSQL, **kwargs)
+    def mysql(
+        cls,
+        user: str,
+        password: str,
+        host: str = "localhost",
+        port: int = 3306,
+        database: str = "mysql",
+        **kwargs,
+    ) -> "DatabaseConfig":
+        return cls(
+            url=f"mysql://{user}:{password}@{host}:{port}/{database}",
+            backend=DatabaseBackend.MYSQL,
+            **kwargs,
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {k: v for k, v in dataclasses.asdict(self).items()}

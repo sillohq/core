@@ -33,12 +33,21 @@ class WorkerOptions:
         self,
         *,
         concurrency: Annotated[int, Doc("Number of simultaneous workers.")] = 4,
-        memory_limit: Annotated[int, Doc("Max memory in MB before restarting worker.")] = 128,
+        memory_limit: Annotated[
+            int, Doc("Max memory in MB before restarting worker.")
+        ] = 128,
         timeout: Annotated[float, Doc("Max seconds a job may run.")] = 60.0,
         sleep: Annotated[float, Doc("Seconds to sleep when queue is empty.")] = 3.0,
-        max_jobs: Annotated[int, Doc("Process this many jobs before restarting. 0 = unlimited.")] = 0,
-        max_exec_time: Annotated[float, Doc("Max seconds the worker runs before restarting. 0 = unlimited.")] = 0,
-        queues: Annotated[List[str], Doc("Queue names to listen on. First queue has highest priority.")] = ["default"],
+        max_jobs: Annotated[
+            int, Doc("Process this many jobs before restarting. 0 = unlimited.")
+        ] = 0,
+        max_exec_time: Annotated[
+            float, Doc("Max seconds the worker runs before restarting. 0 = unlimited.")
+        ] = 0,
+        queues: Annotated[
+            List[str],
+            Doc("Queue names to listen on. First queue has highest priority."),
+        ] = ["default"],
         backoff: Annotated[float, Doc("Base backoff seconds for retries.")] = 0.0,
     ):
         self.concurrency = concurrency
@@ -66,7 +75,9 @@ class QueueWorker:
         serializer: Annotated[PayloadSerializer, Doc("Payload codec.")],
         failed_repo: Annotated[FailedJobRepository, Doc("Failed job storage.")],
         *,
-        options: Annotated[Optional[WorkerOptions], Doc("Worker configuration.")] = None,
+        options: Annotated[
+            Optional[WorkerOptions], Doc("Worker configuration.")
+        ] = None,
     ):
         self.manager = manager
         self.serializer = serializer
@@ -85,8 +96,15 @@ class QueueWorker:
         self._started_at = time.time()
         self._register_signals()
 
-        workers = [asyncio.create_task(self._run_worker(i)) for i in range(self.options.concurrency)]
-        logger.info("QueueWorker started — concurrency=%d queues=%s", self.options.concurrency, self.options.queues)
+        workers = [
+            asyncio.create_task(self._run_worker(i))
+            for i in range(self.options.concurrency)
+        ]
+        logger.info(
+            "QueueWorker started — concurrency=%d queues=%s",
+            self.options.concurrency,
+            self.options.queues,
+        )
 
         await asyncio.gather(*workers, return_exceptions=True)
         logger.info("QueueWorker stopped — processed=%d", self._jobs_processed)
@@ -143,7 +161,13 @@ class QueueWorker:
             except Exception:
                 logger.exception("[worker-%d] loop crash", worker_id)
 
-    async def _process_job(self, conn: QueueConnection, queue_name: str, job_data: Dict[str, Any], worker_id: int) -> None:
+    async def _process_job(
+        self,
+        conn: QueueConnection,
+        queue_name: str,
+        job_data: Dict[str, Any],
+        worker_id: int,
+    ) -> None:
         job_id = job_data.get("_job_id", "unknown")
         job_class_name = job_data.get("job", "unknown")
 
@@ -174,6 +198,7 @@ class QueueWorker:
 
     def _resolve_job_class(self, name: str) -> type:
         import importlib
+
         parts = name.rsplit(".", 1)
         if len(parts) == 2:
             mod = importlib.import_module(parts[0])

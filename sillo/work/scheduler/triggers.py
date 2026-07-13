@@ -47,7 +47,9 @@ class IntervalTrigger:
     seconds: Annotated[float, Doc("Interval in seconds.")]
     jitter: Annotated[float, Doc("Max random jitter in seconds.")] = 0.0
 
-    def next_fire(self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]) -> float:
+    def next_fire(
+        self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]
+    ) -> float:
         """Calculate the next fire timestamp."""
         j = random.uniform(0, self.jitter) if self.jitter else 0
         return time.time() + self.seconds + j
@@ -74,10 +76,13 @@ class CronTrigger:
 
     def __post_init__(self):
         from .cron import CronParser
+
         parser = CronParser(self.expression)
         self._parser = parser
 
-    def next_fire(self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]) -> float:
+    def next_fire(
+        self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]
+    ) -> float:
         """Calculate the next fire timestamp from the cron schedule."""
         base = last_fire if last_fire > 0 else time.time()
         return self._parser.next(base, tz=self.timezone)
@@ -95,7 +100,9 @@ class DateTrigger:
 
     at: Annotated[float, Doc("Epoch timestamp for one-shot execution.")]
 
-    def next_fire(self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]) -> Optional[float]:
+    def next_fire(
+        self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]
+    ) -> Optional[float]:
         """Return the fire time. Returns None after first fire."""
         return None if last_fire > 0 else self.at
 
@@ -115,10 +122,14 @@ class CompoundTrigger:
         ``CompoundLogic.OR`` (default) or ``CompoundLogic.AND``.
     """
 
-    triggers: Annotated[List[object], Doc("Child triggers.")] = field(default_factory=list)
+    triggers: Annotated[List[object], Doc("Child triggers.")] = field(
+        default_factory=list
+    )
     logic: Annotated[CompoundLogic, Doc("OR or AND logic.")] = CompoundLogic.OR
 
-    def next_fire(self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]) -> Optional[float]:
+    def next_fire(
+        self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]
+    ) -> Optional[float]:
         """Calculate the next fire time based on the compound logic."""
         candidates = []
         for t in self.triggers:

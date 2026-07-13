@@ -28,12 +28,16 @@ class WildcardListener:
 
     def __init__(
         self,
-        pattern: Annotated[str, Doc("Glob pattern — e.g. 'order.shipped' or 'order.*'.")],
+        pattern: Annotated[
+            str, Doc("Glob pattern — e.g. 'order.shipped' or 'order.*'.")
+        ],
         callback: Annotated[ListenerCallback, Doc("Async callable.")],
         *,
         priority: Annotated[int, Doc("Higher = earlier.")] = 0,
         once: Annotated[bool, Doc("Auto-unsubscribe after first fire.")] = False,
-        guard: Annotated[Optional[Callable[[Event], bool]], Doc("Only fire if this returns True.")] = None,
+        guard: Annotated[
+            Optional[Callable[[Event], bool]], Doc("Only fire if this returns True.")
+        ] = None,
     ):
         self.pattern = pattern
         self.callback = callback
@@ -92,9 +96,11 @@ class ListenerRegistry:
         if isinstance(event, str):
             self._wildcards.append(WildcardListener(event, callback, once=True))
         else:
+
             async def _once(evt):
                 self.dispatcher.forget(event, callback)
                 await callback(evt)
+
             self.dispatcher.register(event, _once)
 
     async def dispatch_wildcards(self, event: Event) -> None:

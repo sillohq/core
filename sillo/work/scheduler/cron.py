@@ -31,7 +31,10 @@ class CronParser:
         next_run = parser.next(time.time(), tz="America/New_York")
     """
 
-    def __init__(self, expression: Annotated[str, Doc("5-field cron: 'min hour day month weekday'.")]):
+    def __init__(
+        self,
+        expression: Annotated[str, Doc("5-field cron: 'min hour day month weekday'.")],
+    ):
         fields = expression.strip().split()
         if len(fields) != 5:
             raise ValueError(f"Cron requires 5 fields, got {len(fields)}: {expression}")
@@ -74,15 +77,25 @@ class CronParser:
                     result.add(-1)
         return result
 
-    def next(self, after: Annotated[float, Doc("Epoch timestamp to start searching from.")], *, tz: Annotated[Optional[str], Doc("Timezone name.")] = None) -> float:
+    def next(
+        self,
+        after: Annotated[float, Doc("Epoch timestamp to start searching from.")],
+        *,
+        tz: Annotated[Optional[str], Doc("Timezone name.")] = None,
+    ) -> float:
         """Find the next timestamp matching the cron schedule after *after*."""
         dt = datetime.fromtimestamp(after)
         for _ in range(366 * 24 * 60):
             dt += timedelta(minutes=1)
-            if dt.minute not in self._minute: continue
-            if dt.hour not in self._hour: continue
-            if dt.day not in self._day: continue
-            if dt.month not in self._month: continue
-            if dt.weekday() not in self._weekday: continue
+            if dt.minute not in self._minute:
+                continue
+            if dt.hour not in self._hour:
+                continue
+            if dt.day not in self._day:
+                continue
+            if dt.month not in self._month:
+                continue
+            if dt.weekday() not in self._weekday:
+                continue
             return dt.timestamp()
         return time.time() + 366 * 86400

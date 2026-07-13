@@ -19,7 +19,18 @@ import json
 import logging
 import time
 import traceback
-from typing import Annotated, Any, Awaitable, Callable, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import (
+    Annotated,
+    Any,
+    Awaitable,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from typing_extensions import Doc
 
@@ -41,23 +52,33 @@ class Dispatchable:
         return cls.dispatch_after(0, *args, **kwargs)
 
     @classmethod
-    def dispatch_after(cls, delay: Annotated[int, Doc("Seconds to delay.")], *args: Any, **kwargs: Any) -> str:
+    def dispatch_after(
+        cls, delay: Annotated[int, Doc("Seconds to delay.")], *args: Any, **kwargs: Any
+    ) -> str:
         """Push the job onto its queue after *delay* seconds."""
         if cls._connection is None:
-            raise RuntimeError(f"No queue connection configured for {cls.__name__}. Call Job.set_connection() first.")
-        payload = json.dumps({"job": cls.__name__, "args": args, "kwargs": kwargs}, default=str)
+            raise RuntimeError(
+                f"No queue connection configured for {cls.__name__}. Call Job.set_connection() first."
+            )
+        payload = json.dumps(
+            {"job": cls.__name__, "args": args, "kwargs": kwargs}, default=str
+        )
         return asyncio.get_event_loop().run_until_complete(
             cls._connection.push(cls._queue_name, payload, delay=delay)
         )
 
     @classmethod
-    def on_queue(cls, queue: Annotated[str, Doc("Queue name.")]) -> Type["Dispatchable"]:
+    def on_queue(
+        cls, queue: Annotated[str, Doc("Queue name.")]
+    ) -> Type["Dispatchable"]:
         """Set the queue name for this job class."""
         cls._queue_name = queue
         return cls
 
     @classmethod
-    def on_connection(cls, connection: Annotated[Any, Doc("QueueConnection instance.")]) -> Type["Dispatchable"]:
+    def on_connection(
+        cls, connection: Annotated[Any, Doc("QueueConnection instance.")]
+    ) -> Type["Dispatchable"]:
         """Set the connection for this job class."""
         cls._connection = connection
         return cls

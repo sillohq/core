@@ -45,8 +45,12 @@ class PayloadSerializer:
 
     def serialize(
         self,
-        job_class: Annotated[str, Doc("Fully qualified job class name (e.g. 'mymodule.MyJob').")],
-        data: Annotated[Dict[str, Any], Doc("Keyword arguments for the job constructor.")],
+        job_class: Annotated[
+            str, Doc("Fully qualified job class name (e.g. 'mymodule.MyJob').")
+        ],
+        data: Annotated[
+            Dict[str, Any], Doc("Keyword arguments for the job constructor.")
+        ],
         *,
         max_tries: Annotated[int, Doc("Maximum execution attempts.")] = 1,
         timeout: Annotated[Optional[float], Doc("Per-job timeout.")] = None,
@@ -55,11 +59,17 @@ class PayloadSerializer:
     ) -> str:
         """Encode a job into a queue-ready JSON string."""
         payload = JobPayload(
-            job_class=job_class, data=data, max_tries=max_tries,
-            timeout=timeout, delay=delay, queue=queue,
+            job_class=job_class,
+            data=data,
+            max_tries=max_tries,
+            timeout=timeout,
+            delay=delay,
+            queue=queue,
         )
         return payload.to_json()
 
-    def deserialize(self, payload_str: Annotated[str, Doc("JSON string from the queue.")]) -> Dict[str, Any]:
+    def deserialize(
+        self, payload_str: Annotated[str, Doc("JSON string from the queue.")]
+    ) -> Dict[str, Any]:
         """Decode a queue payload back into a dict ready for job construction."""
         return json.loads(payload_str)

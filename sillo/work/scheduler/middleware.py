@@ -23,8 +23,10 @@ async def timeout_middleware(
     seconds: Annotated[float, Doc("Max execution time in seconds.")] = 30.0,
 ) -> Callable[[], Awaitable[Any]]:
     """Enforce a hard deadline on the scheduled job."""
+
     async def wrapper():
         return await asyncio.wait_for(handler(), timeout=seconds)
+
     return wrapper
 
 
@@ -32,7 +34,9 @@ async def rate_limit_middleware(
     handler: Callable[[], Awaitable[Any]],
     job: Any,
     *,
-    max_per_second: Annotated[float, Doc("Max executions per second across all instances of this job.")] = 10,
+    max_per_second: Annotated[
+        float, Doc("Max executions per second across all instances of this job.")
+    ] = 10,
 ) -> Callable[[], Awaitable[Any]]:
     """Rate-limit execution using a token bucket shared across job instances."""
     tokens = float(max_per_second)
@@ -52,6 +56,7 @@ async def rate_limit_middleware(
         else:
             tokens -= 1
         return await handler()
+
     return wrapper
 
 
@@ -63,6 +68,7 @@ async def retry_middleware(
     base_delay: Annotated[float, Doc("Initial backoff seconds.")] = 1.0,
 ) -> Callable[[], Awaitable[Any]]:
     """Retry on failure with exponential backoff."""
+
     async def wrapper():
         for attempt in range(1, max_attempts + 1):
             try:
@@ -73,7 +79,15 @@ async def retry_middleware(
                 if attempt >= max_attempts:
                     raise
                 delay = base_delay * (2 ** (attempt - 1))
-                logger.warning("Scheduler retry %d/%d for %s in %.1fs: %s", attempt, max_attempts, job.name, delay, exc)
+                logger.warning(
+                    "Scheduler retry %d/%d for %s in %.1fs: %s",
+                    attempt,
+                    max_attempts,
+                    job.name,
+                    delay,
+                    exc,
+                )
                 await asyncio.sleep(delay)
         return None
+
     return wrapper

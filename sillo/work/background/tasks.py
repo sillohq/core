@@ -43,17 +43,41 @@ class BackgroundTask:
 
     def __init__(
         self,
-        func: Annotated[Callable[..., Awaitable[Any]], Doc("Async callable to execute.")],
+        func: Annotated[
+            Callable[..., Awaitable[Any]], Doc("Async callable to execute.")
+        ],
         *args: Annotated[Any, Doc("Positional arguments forwarded to *func*.")],
-        name: Annotated[Optional[str], Doc("Human-readable label. Defaults to func.__name__.")] = None,
-        on_done: Annotated[Optional[Callable[[TaskResult], Awaitable[None]]], Doc("Callback on completion (success or failure).")] = None,
-        on_success: Annotated[Optional[Callable[[TaskResult], Awaitable[None]]], Doc("Callback on success only.")] = None,
-        on_failure: Annotated[Optional[Callable[[TaskResult], Awaitable[None]]], Doc("Callback on failure only.")] = None,
-        timeout: Annotated[Optional[float], Doc("Per-task execution timeout in seconds.")] = None,
-        metadata: Annotated[Optional[Dict[str, Any]], Doc("Arbitrary metadata for observability.")] = None,
+        name: Annotated[
+            Optional[str], Doc("Human-readable label. Defaults to func.__name__.")
+        ] = None,
+        on_done: Annotated[
+            Optional[Callable[[TaskResult], Awaitable[None]]],
+            Doc("Callback on completion (success or failure)."),
+        ] = None,
+        on_success: Annotated[
+            Optional[Callable[[TaskResult], Awaitable[None]]],
+            Doc("Callback on success only."),
+        ] = None,
+        on_failure: Annotated[
+            Optional[Callable[[TaskResult], Awaitable[None]]],
+            Doc("Callback on failure only."),
+        ] = None,
+        timeout: Annotated[
+            Optional[float], Doc("Per-task execution timeout in seconds.")
+        ] = None,
+        metadata: Annotated[
+            Optional[Dict[str, Any]], Doc("Arbitrary metadata for observability.")
+        ] = None,
         **kwargs: Annotated[Any, Doc("Keyword arguments forwarded to *func*.")],
     ) -> None:
-        self._task_obj = Task(func, *args, name=name or func.__name__, metadata=metadata, timeout=timeout, **kwargs)
+        self._task_obj = Task(
+            func,
+            *args,
+            name=name or func.__name__,
+            metadata=metadata,
+            timeout=timeout,
+            **kwargs,
+        )
         if on_done:
             self._task_obj.on_success(on_done).on_failure(on_done)
         if on_success:
@@ -66,7 +90,9 @@ class BackgroundTask:
 
     async def wait(
         self,
-        timeout: Annotated[Optional[float], Doc("Max seconds to wait. None = forever.")] = None,
+        timeout: Annotated[
+            Optional[float], Doc("Max seconds to wait. None = forever.")
+        ] = None,
     ) -> Any:
         """Block until the task completes and return its result.
 
@@ -113,8 +139,11 @@ class BackgroundTask:
     def to_dict(self) -> Dict[str, Any]:
         """Serialise task metadata for monitoring."""
         return {
-            "id": self.id, "name": self.name, "done": self.done,
-            "running": self.running, "elapsed": self.elapsed,
+            "id": self.id,
+            "name": self.name,
+            "done": self.done,
+            "running": self.running,
+            "elapsed": self.elapsed,
             "status": self._task_obj.status.value,
             "result": self.result.to_dict() if self.result else None,
         }
@@ -146,9 +175,12 @@ class BackgroundTask:
     ) -> "BackgroundTask":
         """Create a background task, auto-wrapping sync functions."""
         import inspect
+
         if not inspect.iscoroutinefunction(func):
+
             async def _wrapper(*a, **kw):
                 return func(*a, **kw)
+
             return cls(_wrapper, *args, **kwargs)
         return cls(func, *args, **kwargs)
 
@@ -156,7 +188,9 @@ class BackgroundTask:
     async def drain(
         cls,
         timeout: Annotated[float, Doc("Max seconds to wait for all tasks.")] = 10.0,
-        cancel_remaining: Annotated[bool, Doc("Cancel tasks that don't finish in time.")] = True,
+        cancel_remaining: Annotated[
+            bool, Doc("Cancel tasks that don't finish in time.")
+        ] = True,
     ) -> Dict[str, Any]:
         """Wait for all tracked background tasks to complete.
 
@@ -187,7 +221,12 @@ class BackgroundTask:
         total = len(cls._instances)
         running = sum(1 for t in cls._instances if t.running)
         done = sum(1 for t in cls._instances if t.done)
-        return {"total": total, "running": running, "done": done, "pending": total - running - done}
+        return {
+            "total": total,
+            "running": running,
+            "done": done,
+            "pending": total - running - done,
+        }
 
     def __repr__(self) -> str:
         return f"BackgroundTask({self.name}, done={self.done})"

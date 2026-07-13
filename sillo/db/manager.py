@@ -64,12 +64,14 @@ class DatabaseManager:
         cfg = self.config
         conn_extra: Dict[str, Any] = {}
         if cfg.ssl:
-            conn_extra.update({
-                "ssl": True,
-                "ssl_ca": cfg.ssl_ca,
-                "ssl_cert": cfg.ssl_cert,
-                "ssl_key": cfg.ssl_key,
-            })
+            conn_extra.update(
+                {
+                    "ssl": True,
+                    "ssl_ca": cfg.ssl_ca,
+                    "ssl_cert": cfg.ssl_cert,
+                    "ssl_key": cfg.ssl_key,
+                }
+            )
 
         return {
             "connections": {

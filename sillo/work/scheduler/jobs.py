@@ -51,16 +51,22 @@ class ScheduledJob:
 
     def __init__(
         self,
-        func: Annotated[Callable[..., Awaitable[Any]], Doc("Async callable to schedule.")],
+        func: Annotated[
+            Callable[..., Awaitable[Any]], Doc("Async callable to schedule.")
+        ],
         trigger: Annotated[Any, Doc("Trigger instance.")],
         *,
         name: Annotated[Optional[str], Doc("Human-readable label.")] = None,
         args: Annotated[tuple, Doc("Positional arguments for func.")] = (),
-        kwargs: Annotated[Optional[Dict[str, Any]], Doc("Keyword arguments for func.")] = None,
+        kwargs: Annotated[
+            Optional[Dict[str, Any]], Doc("Keyword arguments for func.")
+        ] = None,
         max_instances: Annotated[int, Doc("Max concurrent runs. 0 = unlimited.")] = 1,
         coalesce: Annotated[bool, Doc("Skip if previous run still active.")] = True,
         middleware: Annotated[Optional[List[Any]], Doc("Middleware factories.")] = None,
-        id: Annotated[Optional[str], Doc("Explicit job ID. Auto-generated if omitted.")] = None,
+        id: Annotated[
+            Optional[str], Doc("Explicit job ID. Auto-generated if omitted.")
+        ] = None,
     ):
         self.id = id or str(uuid4())
         self.name = name or func.__name__
@@ -121,14 +127,18 @@ class ScheduledJob:
         finally:
             self.current_instances -= 1
             from .triggers import DateTrigger
+
             if isinstance(self.trigger, DateTrigger):
                 self.status = JobStatus.COMPLETED
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialise job metadata for monitoring."""
         return {
-            "id": self.id, "name": self.name, "status": self.status.value,
-            "runs": self._runs, "errors": self._errors,
+            "id": self.id,
+            "name": self.name,
+            "status": self.status.value,
+            "runs": self._runs,
+            "errors": self._errors,
             "next_run": self.next_run_time,
             "active_instances": self.current_instances,
             "created_at": self.created_at,
