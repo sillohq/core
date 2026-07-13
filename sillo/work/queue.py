@@ -1,32 +1,22 @@
 """
 sillo.work.queue — Multi-backend, priority-aware task queue.
 
-A ``Queue`` is the entry point for submitting work.  It wraps a backend
-(Memory or Redis), adds deduplication, priority routing, middleware,
-and completion callbacks.
-
-Usage::
-
-    queue = Queue("emails", backend=MemoryBackend(), dedup=True)
-    await queue.put(send_email, "user@ex.com", priority=TaskPriority.HIGH)
-    result = await queue.get_result(task.id)
+A ``Queue`` is the entry point for submitting background work.  It wraps
+a storage backend, adds deduplication, priority routing, and middleware
+composition.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Annotated, Any, Awaitable, Callable, Dict, List, Optional
+
+from typing_extensions import Doc
 
 from .backends import MemoryBackend
 from .task import Task
-from .types import (
-    QueueFull,
-    QueueStats,
-    TaskPriority,
-    TaskResult,
-    TaskRejected,
-)
+from .types import QueueStats, TaskPriority, TaskResult, TaskRejected
 
 logger = logging.getLogger("sillo.work.queue")
 
@@ -34,35 +24,30 @@ logger = logging.getLogger("sillo.work.queue")
 class Queue:
     """Priority-aware, multi-backend task queue.
 
-    The entry point for all background work. Accepts async callables, wraps
-    them in :class:`Task` objects, and stores them until a :class:`Worker`
-    dequeues and executes them.
+    Accepts async callables, wraps them in :class:`Task` objects, and
+    stores them until a :class:`Worker` dequeues and executes them.
 
-    Parameters
-    ----------
-    name:
-        Logical queue name used as a namespace in the backend.
-    backend:
-        Storage backend. ``MemoryBackend`` for dev, ``RedisBackend`` for prod.
-    dedup:
-        If True, reject tasks whose ``dedup_key`` was already seen.
-    default_priority:
-        Priority assigned to tasks that don't specify one explicitly.
+    Usage::
 
-    Example::
-
-        queue = Queue("emails", backend=MemoryBackend(), dedup=True)
+        queue = Queue("emails", backend=MemoryBackend())
         task = await queue.put(send_email, "user@ex.com")
-        result = await queue.get_result(task.id)
     """
 
     def __init__(
         self,
+<<<<<<< Updated upstream
         name: str = "default",
         *,
         backend: Optional[Any] = None,
         dedup: bool = False,
         default_priority: TaskPriority = TaskPriority.NORMAL,
+=======
+        name: Annotated[str, Doc("Logical queue name used as a namespace in the backend.")] = "default",
+        *,
+        backend: Annotated[Optional[Any], Doc("Storage backend. ``MemoryBackend`` for dev, ``RedisBackend`` for prod.")] = None,
+        dedup: Annotated[bool, Doc("If True, reject tasks whose ``dedup_key`` was already seen.")] = False,
+        default_priority: Annotated[TaskPriority, Doc("Priority for tasks without explicit priority.")] = TaskPriority.NORMAL,
+>>>>>>> Stashed changes
     ):
         self.name = name
         self._backend = backend or MemoryBackend()
@@ -72,29 +57,44 @@ class Queue:
         self._on_complete: List[Callable[[TaskResult], Awaitable[None]]] = []
         self._closed = False
 
-    # ── configuration ──────────────────────────────────────────────────
+    def use(
+        self,
+        middleware: Annotated[Any, Doc("Middleware object with before_enqueue / before_execute / after_execute / on_error hooks.")],
+    ) -> "Queue":
+        """Attach middleware that wraps every task execution on this queue.
 
-    def use(self, middleware) -> "Queue":
+        Returns self for chaining: ``queue.use(TimeoutMiddleware(30)).use(RateLimitMiddleware(10))``.
+        """
         self._middleware.append(middleware)
         return self
 
-    def on_complete(self, callback: Callable[[TaskResult], Awaitable[None]]) -> None:
+    def on_complete(
+        self,
+        callback: Annotated[Callable[[TaskResult], Awaitable[None]], Doc("Async callback receiving the final TaskResult.")],
+    ) -> None:
+        """Register a callback fired every time a task completes (success or failure)."""
         self._on_complete.append(callback)
-
-    # ── enqueue ────────────────────────────────────────────────────────
 
     async def put(
         self,
-        func: Callable[..., Awaitable[Any]],
-        *args: Any,
-        name: Optional[str] = None,
-        priority: Optional[TaskPriority] = None,
-        max_attempts: int = 1,
-        dedup_key: Optional[str] = None,
-        timeout: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        **kwargs: Any,
+        func: Annotated[Callable[..., Awaitable[Any]], Doc("Async callable to execute.")],
+        *args: Annotated[Any, Doc("Positional arguments forwarded to *func*.")],
+        name: Annotated[Optional[str], Doc("Human-readable task name. Defaults to ``func.__name__``.")] = None,
+        priority: Annotated[Optional[TaskPriority], Doc("Dequeue priority. Higher values dequeue first.")] = None,
+        max_attempts: Annotated[int, Doc("How many times to retry on failure. 1 = no retry.")] = 1,
+        dedup_key: Annotated[Optional[str], Doc("If ``dedup=True`` on the queue, reject tasks with a duplicate key.")] = None,
+        timeout: Annotated[Optional[float], Doc("Per-task execution timeout in seconds.")] = None,
+        metadata: Annotated[Optional[Dict[str, Any]], Doc("Arbitrary dict attached to TaskResult for observability.")] = None,
+        **kwargs: Annotated[Any, Doc("Additional keyword arguments forwarded to *func*.")],
     ) -> Task:
+        """Enqueue an async callable for later execution.
+
+        Returns a :class:`Task` handle immediately.  The task has NOT
+        executed — a :class:`Worker` must pull and run it.
+
+        Raises :exc:`TaskRejected` if the queue is closed or the dedup
+        key has already been seen.
+        """
         if self._closed:
             raise RuntimeError(f"Queue '{self.name}' is closed")
 
@@ -102,25 +102,17 @@ class Queue:
             try:
                 dup = await self._backend.is_duplicate(self.name, dedup_key)
                 if dup:
-                    raise TaskRejected(
-                        f"Duplicate task '{dedup_key}' rejected",
-                        queue_name=self.name,
-                    )
+                    raise TaskRejected(f"Duplicate task '{dedup_key}' rejected", queue_name=self.name)
             except Exception as exc:
                 if isinstance(exc, TaskRejected):
                     raise
                 logger.warning(f"Dedup check failed: {exc}")
 
         task = Task(
-            func,
-            *args,
-            name=name,
+            func, *args, name=name,
             priority=priority if priority is not None else self._default_priority,
-            max_attempts=max_attempts,
-            queue_name=self.name,
-            metadata=metadata,
-            timeout=timeout,
-            **kwargs,
+            max_attempts=max_attempts, queue_name=self.name,
+            metadata=metadata, timeout=timeout, **kwargs,
         )
 
         for mw in self._middleware:
@@ -133,14 +125,18 @@ class Queue:
         logger.debug(f"Enqueued: {task.name} [{task.id[:8]}] queue={self.name}")
         return task
 
-    # ── dequeue ────────────────────────────────────────────────────────
-
-    async def get(self, timeout: Optional[float] = None) -> Optional[Task]:
+    async def get(
+        self,
+        timeout: Annotated[Optional[float], Doc("Seconds to block waiting for a task. None = block indefinitely.")] = None,
+    ) -> Optional[Task]:
+        """Dequeue the next task, blocking up to *timeout* seconds."""
         return await self._backend.dequeue(self.name, timeout=timeout)
 
-    # ── result management ──────────────────────────────────────────────
-
-    async def mark_done(self, task: Task) -> None:
+    async def mark_done(
+        self,
+        task: Annotated[Task, Doc("The completed task to finalise.")],
+    ) -> None:
+        """Store the task result, fire completion callbacks, and persist to backend."""
         if task.result is None:
             return
         for cb in self._on_complete:
@@ -150,21 +146,27 @@ class Queue:
                 logger.exception("on_complete callback failed")
         await self._backend.store_result(task.result)
 
-    async def get_result(self, task_id: str) -> Optional[TaskResult]:
+    async def get_result(
+        self,
+        task_id: Annotated[str, Doc("The task UUID to look up.")],
+    ) -> Optional[TaskResult]:
+        """Retrieve a previously stored TaskResult by ID."""
         return await self._backend.get_result(task_id)
-
-    # ── stats / lifecycle ──────────────────────────────────────────────
 
     @property
     async def size(self) -> int:
+        """Number of pending tasks in the queue."""
         return await self._backend.queue_size(self.name)
 
     async def stats(self) -> QueueStats:
+        """Return current :class:`QueueStats` snapshot."""
         return await self._backend.queue_stats(self.name)
 
     async def close(self) -> None:
+        """Reject all future ``put()`` calls."""
         self._closed = True
 
     async def flush(self) -> None:
+        """Discard all pending tasks (Redis backend only)."""
         if hasattr(self._backend, "flush"):
             await self._backend.flush(self.name)
