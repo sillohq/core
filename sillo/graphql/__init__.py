@@ -1,3 +1,3 @@
-from .plugin import GraphQL
+from .handler import GraphQL
 
 __all__ = ["GraphQL"]
