@@ -24,7 +24,7 @@ import sillo_contrib.trusted as trusted
 app = silloApp()
 
 # Add the Trusted Host middleware
-app.add_middleware(
+app.use(
     trusted.TrustedHost(
         allowed_hosts=[
             "example.com",
@@ -193,7 +193,7 @@ from sillo_contrib.trusted import TrustedHost
 # Load allowed hosts from environment
 allowed_hosts = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
-app.add_middleware(
+app.use(
     TrustedHost(
         allowed_hosts=allowed_hosts,
         allowed_ports=[80, 443] if os.getenv("PRODUCTION") else None
@@ -218,7 +218,7 @@ class HealthCheckTrustedHost(TrustedHostMiddleware):
         
         return await super().__call__(request, response, call_next)
 
-app.add_middleware(
+app.use(
     HealthCheckTrustedHost(
         allowed_hosts=["example.com"],
         health_check_path="/health"

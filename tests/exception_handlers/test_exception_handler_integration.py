@@ -41,7 +41,7 @@ def test_exception_handler_with_middleware(
         execution_log.append("error_handler")
         return response.json({"error": str(exc)}).status(400)
 
-    app.add_middleware(logging_middleware)
+    app.use(logging_middleware)
     app.add_exception_handler(CustomError, error_handler)
 
     @app.get("/test")
@@ -84,8 +84,8 @@ def test_exception_handler_middleware_order(
         execution_order.append("error_handler")
         return response.status(500).json({"error": "handled"})
 
-    app.add_middleware(middleware_1)
-    app.add_middleware(middleware_2)
+    app.use(middleware_1)
+    app.use(middleware_2)
     app.add_exception_handler(TestError, error_handler)
 
     @app.get("/test")
@@ -117,7 +117,7 @@ def test_exception_handler_middleware_state_access(
         user_id = getattr(request.state, "user_id", None)
         return response.status(403).json({"error": str(exc), "user_id": user_id})
 
-    app.add_middleware(auth_middleware)
+    app.use(auth_middleware)
     app.add_exception_handler(AuthError, auth_error_handler)
 
     @app.get("/test")
@@ -428,7 +428,7 @@ def test_exception_handler_complex_scenario(
             {"error": str(exc), "request_id": request_id}, status_code=500
         )
 
-    app.add_middleware(logging_middleware)
+    app.use(logging_middleware)
     app.add_exception_handler(ComplexError, complex_error_handler)
 
     @router.get("/test")

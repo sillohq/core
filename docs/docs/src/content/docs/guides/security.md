@@ -20,10 +20,10 @@ from sillo.middleware.security import SecurityMiddleware
 app = silloApp()
 
 # Basic usage with defaults
-app.add_middleware(SecurityMiddleware())
+app.use(SecurityMiddleware())
 
 # Advanced configuration
-app.add_middleware(
+app.use(
     SecurityMiddleware(
         csp_enabled=True,
         hsts_enabled=True,
@@ -219,7 +219,7 @@ security = SecurityMiddleware(
     hide_server=True
 )
 
-app.add_middleware(security)
+app.use(security)
 ```
 
 </details>

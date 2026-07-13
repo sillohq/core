@@ -28,7 +28,7 @@ def test_app_level_middleware_basic(
         executed.append("after")
         return response
 
-    app.add_middleware(logging_middleware)
+    app.use(logging_middleware)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -54,7 +54,7 @@ def test_app_level_middleware_modifies_request(
         await call_next()
         return response
 
-    app.add_middleware(add_custom_header_middleware)
+    app.use(add_custom_header_middleware)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -79,7 +79,7 @@ def test_app_level_middleware_modifies_response(
         response.set_header("X-Custom-Header", "middleware-added")
         return response
 
-    app.add_middleware(add_response_header_middleware)
+    app.use(add_response_header_middleware)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -116,9 +116,9 @@ def test_app_level_middleware_multiple(
         execution_order.append("m3_after")
         return response
 
-    app.add_middleware(middleware_1)
-    app.add_middleware(middleware_2)
-    app.add_middleware(middleware_3)
+    app.use(middleware_1)
+    app.use(middleware_2)
+    app.use(middleware_3)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -152,7 +152,7 @@ def test_app_level_middleware_early_return(
         await call_next()
         return response
 
-    app.add_middleware(auth_middleware)
+    app.use(auth_middleware)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -183,7 +183,7 @@ def test_app_level_middleware_exception_handling(
             return response.json({"error": str(e)}).status(400)
         return response
 
-    app.add_middleware(error_handler_middleware)
+    app.use(error_handler_middleware)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -208,7 +208,7 @@ def test_app_level_middleware_applies_to_all_routes(
         await call_next()
         return response
 
-    app.add_middleware(counter_middleware)
+    app.use(counter_middleware)
 
     @app.get("/route1")
     async def handler1(request: Request, response: Response):
@@ -248,7 +248,7 @@ def test_base_middleware_class(test_client_factory: Callable[[silloApp], TestCli
             return response
 
     middleware_instance = CustomMiddleware()
-    app.add_middleware(middleware_instance)
+    app.use(middleware_instance)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -282,7 +282,7 @@ def test_base_middleware_with_config(
             return response
 
     middleware_instance = ConfigurableMiddleware(prefix="Custom-")
-    app.add_middleware(middleware_instance)
+    app.use(middleware_instance)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -308,7 +308,7 @@ def test_middleware_request_state(
         await call_next()
         return response
 
-    app.add_middleware(state_middleware)
+    app.use(state_middleware)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -336,7 +336,7 @@ def test_middleware_timing(test_client_factory: Callable[[silloApp], TestClient]
         response.set_header("X-Process-Time", str(process_time))
         return response
 
-    app.add_middleware(timing_middleware)
+    app.use(timing_middleware)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -362,7 +362,7 @@ def test_middleware_request_id(test_client_factory: Callable[[silloApp], TestCli
         response.set_header("X-Request-ID", request_id)
         return response
 
-    app.add_middleware(request_id_middleware)
+    app.use(request_id_middleware)
 
     @app.get("/test")
     async def handler(request: Request, response: Response):

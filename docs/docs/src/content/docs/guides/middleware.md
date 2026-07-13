@@ -92,9 +92,9 @@ async def validate_cookies(req, res, next):
     # If you return a response before calling next(), the pipeline is short-circuited and no further middleware or handlers will run. This is useful for early exits, such as authentication failures.
 
 # Add middleware to the application
-app.add_middleware(my_logger)
-app.add_middleware(request_time)
-app.add_middleware(validate_cookies)
+app.use(my_logger)
+app.use(request_time)
+app.use(validate_cookies)
 
 # Route Handler
 @app.get("/")
@@ -152,7 +152,7 @@ async def log_time(req, res, next):
     print(f"Request {req.method} {req.url} took {end_time - start_time} seconds")
     return result
 
-app.add_middleware(log_time)
+app.use(log_time)
 ```
 You can also modify the request and response object before and after handler
 
@@ -168,7 +168,7 @@ async def modify_request(req, res, next):
     res.set_header("X-Custom-Header", "Custom Value") # Set header after handler
     return result
 
-app.add_middleware(modify_request)
+app.use(modify_request)
 
 @app.get("/")
 async def index(req, res):
@@ -354,7 +354,7 @@ async def admin_auth(req, res, cnext):
     return result
     # Returning a response before calling cnext will stop further processing for this request.
 
-admin_router.add_middleware(admin_auth)  # Applies to all routes inside admin_router
+admin_router.use(admin_auth)  # Applies to all routes inside admin_router
 
 @admin_router.route("/dashboard", "GET")
 async def dashboard(req, res):
@@ -370,13 +370,13 @@ app.mount_router(admin_router)  # Mount router at "/admin"
 
 ##  sillo Middleware vs. ASGI Middleware
 
-sillo offers two ways to add middleware to your application: `app.add_middleware()` and `app.wrap_asgi()`. While both are used to hook into the request/response lifecycle, they serve different purposes and are designed for different types of middleware.
+sillo offers two ways to add middleware to your application: `app.use()` and `app.wrap_asgi()`. While both are used to hook into the request/response lifecycle, they serve different purposes and are designed for different types of middleware.
 
-### **`add_middleware`: For sillo-Specific Middleware**
+### **`use`: For sillo-Specific Middleware**
 
-The `app.add_middleware()` method is designed for middleware that is tightly integrated with the sillo framework. This type of middleware operates on sillo's `Request` and `Response` objects, giving you access to the rich features and abstractions that sillo provides.
+The `app.use()` method is designed for middleware that is tightly integrated with the sillo framework. This type of middleware operates on sillo's `Request` and `Response` objects, giving you access to the rich features and abstractions that sillo provides.
 
-**When to use `add_middleware`:**
+**When to use `use`:**
 
 - You want to interact with sillo-specific objects like `Request` and `Response`.
 - Your middleware needs to access path parameters, parsed query parameters, or the request body in a convenient way.
@@ -398,7 +398,7 @@ async def sillo_style_middleware(req: Request, res: Response, next_call):
     res.set_header("X-sillo-Middleware", "true")
     return result
 
-app.add_middleware(sillo_style_middleware)
+app.use(sillo_style_middleware)
 
 @app.get("/")
 async def home(req: Request, res: Response):
@@ -438,7 +438,7 @@ async def home(req, res):
 
 ### **When to Use Which?**
 
-| Feature                | `add_middleware`                                       | `wrap_asgi`                                             |
+| Feature                | `use`                                       | `wrap_asgi`                                             |
 | ---------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
 | **Abstraction Level**  | High-level (sillo `Request`/`Response`)               | Low-level (ASGI `scope`, `receive`, `send`)             |
 | **Framework Specific** | sillo-specific                                        | Framework-agnostic (standard ASGI)                      |

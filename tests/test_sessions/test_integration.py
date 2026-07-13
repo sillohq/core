@@ -44,7 +44,7 @@ class TestSessionIntegration:
             request.session.clear()
             return response.json({"logged_out": True})
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(
                 config=SessionConfig(session_cookie_name="test_session"),
                 secret_key="test-secret-key-integration",
@@ -94,7 +94,7 @@ class TestSessionIntegration:
             request.session.clear()
             return response.json({"reset": True})
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(
                 config=SessionConfig(), secret_key="test-secret-key-integration"
             )

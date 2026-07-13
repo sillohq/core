@@ -17,7 +17,7 @@ class BaseRouter(ABC):
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         raise NotImplementedError("Subclasses must implement this method")
 
-    def add_middleware(self, middleware: Any) -> None:
+    def use(self, middleware: Any) -> None:
         """Add middleware to the router.
 
         Args:

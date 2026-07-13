@@ -268,7 +268,7 @@ def test_pure_asgi_middleware_with_sillo_middleware(
         await call_next()
         return response
 
-    app.add_middleware(sillo_middleware)
+    app.use(sillo_middleware)
     wrapped_app = ASGIMiddleware(app)
 
     @app.get("/test")
@@ -542,7 +542,7 @@ def test_wrap_asgi_returns_none(
 def test_wrap_asgi_with_sillo_middleware(
     test_client_factory: Callable[[silloApp], TestClient],
 ):
-    """Test wrap_asgi() combined with add_middleware()"""
+    """Test wrap_asgi() combined with use()"""
     app = silloApp()
 
     execution_order = []
@@ -567,7 +567,7 @@ def test_wrap_asgi_with_sillo_middleware(
         return response.json({"message": "ok"})
 
     # Add sillo middleware first
-    app.add_middleware(sillo_middleware)
+    app.use(sillo_middleware)
     # Then wrap with ASGI middleware
     app.wrap_asgi(ASGIMiddleware)
 

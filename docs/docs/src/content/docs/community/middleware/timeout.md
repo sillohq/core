@@ -37,7 +37,7 @@ from sillo.http import Request, Response
 app = silloApp()
 
 # Add timeout middleware with default 30s timeout
-app.add_middleware(Timeout(default_timeout=30.0))
+app.use(Timeout(default_timeout=30.0))
 
 @app.get("/slow-endpoint")
 async def slow_endpoint(request :Request, response:Response):
@@ -54,7 +54,7 @@ from sillo.http import Request,Response
 from sillo_contrib.timeout import Timeout, get_timeout_from_request
 
 app = silloApp()
-app.add_middleware(Timeout())
+app.use(Timeout())
 
 @app.get("/api/data")
 async def get_data(request: Request,  response: Response):
@@ -76,7 +76,7 @@ async def get_data(request: Request,  response: Response):
 The `Timeout` middleware accepts the following parameters:
 
 ```python
-app.add_middleware(
+app.use(
     Timeout(
         default_timeout=30.0,      # Default timeout in seconds
         max_timeout=300.0,         # Maximum allowed timeout (None for no limit)
@@ -196,7 +196,7 @@ from sillo.http import Request, Response
 app = silloApp()
 
 # Global timeout middleware
-app.add_middleware(
+app.use(
     Timeout(
         default_timeout=30.0,
         max_timeout=120.0,
@@ -310,7 +310,7 @@ import logging
 app = silloApp()
 
 # Configure timeout middleware for production
-app.add_middleware(
+app.use(
     Timeout(
         default_timeout=30.0,      # 30 second default
         max_timeout=300.0,         # 5 minute maximum

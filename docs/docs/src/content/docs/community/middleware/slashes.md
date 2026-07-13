@@ -24,7 +24,7 @@ import sillo_contrib.slashes as slashes
 app = silloApp()
 
 # Add URL normalization middleware
-app.add_middleware(slashes.Slashes(
+app.use(slashes.Slashes(
     slash_action=slashes.SlashAction.REDIRECT_REMOVE,  # Redirect to remove trailing slashes
     auto_remove_double_slashes=True,                   # Clean up double slashes
     redirect_status_code=301                           # Use permanent redirects
@@ -64,7 +64,7 @@ The middleware supports several modes for handling trailing slashes:
 ### SEO-Friendly Setup (Remove Trailing Slashes)
 
 ```python
-app.add_middleware(slashes.Slashes(
+app.use(slashes.Slashes(
     slash_action=slashes.SlashAction.REDIRECT_REMOVE,
     redirect_status_code=301  # SEO-friendly permanent redirect
 ))
@@ -77,7 +77,7 @@ app.add_middleware(slashes.Slashes(
 ### Directory-Style URLs (Add Trailing Slashes)
 
 ```python
-app.add_middleware(slashes.Slashes(
+app.use(slashes.Slashes(
     slash_action=slashes.SlashAction.REDIRECT_ADD,
     redirect_status_code=301
 ))
@@ -90,7 +90,7 @@ app.add_middleware(slashes.Slashes(
 ### Silent Normalization (No Redirects)
 
 ```python
-app.add_middleware(slashes.Slashes(
+app.use(slashes.Slashes(
     slash_action=slashes.SlashAction.REMOVE,  # Just remove, no redirect
     auto_remove_double_slashes=True
 ))
@@ -103,7 +103,7 @@ app.add_middleware(slashes.Slashes(
 ### Minimal Processing
 
 ```python
-app.add_middleware(slashes.Slashes(
+app.use(slashes.Slashes(
     slash_action=slashes.SlashAction.IGNORE,  # Don't touch slashes
     auto_remove_double_slashes=True           # Only clean double slashes
 ))
@@ -217,7 +217,7 @@ class CustomSlashesMiddleware(slashes.SlashesMiddleware):
 
         return False
 
-app.add_middleware(CustomSlashesMiddleware(
+app.use(CustomSlashesMiddleware(
     slash_action=slashes.SlashAction.REDIRECT_REMOVE
 ))
 ```
@@ -265,7 +265,7 @@ class ConditionalSlashesMiddleware(SlashesMiddleware):
         
         return await super().__call__(request, response, call_next)
 
-app.add_middleware(ConditionalSlashesMiddleware())
+app.use(ConditionalSlashesMiddleware())
 ```
 
 ## Best Practices
@@ -303,7 +303,7 @@ class AuditSlashesMiddleware(slashes.SlashesMiddleware):
         return result
 
 # Phase 2: Implement with redirects
-app.add_middleware(slashes.Slashes(
+app.use(slashes.Slashes(
     slash_action=slashes.SlashAction.REDIRECT_REMOVE,
     redirect_status_code=301
 ))

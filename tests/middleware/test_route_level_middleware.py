@@ -212,7 +212,7 @@ def test_route_with_app_middleware(
         execution_order.append("route_after")
         return response
 
-    app.add_middleware(app_middleware)
+    app.use(app_middleware)
 
     async def handler(request: Request, response: Response):
         execution_order.append("handler")
@@ -255,8 +255,8 @@ def test_route_with_router_and_app_middleware(
         await call_next()
         return response
 
-    app.add_middleware(app_middleware)
-    router.add_middleware(router_middleware)
+    app.use(app_middleware)
+    router.use(router_middleware)
 
     async def handler(request: Request, response: Response):
         execution_order.append("handler")

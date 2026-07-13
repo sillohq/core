@@ -69,10 +69,8 @@ engine.setup_environment(template_config)
 You can also sillo app config optionally
 
 ```python
-from sillo import silloApp,MakeConfig
 from sillo.templating import  TemplateConfig
 
-config = MakeConfig(
     {
         "templating" : TemplateConfig(
             template_dir = "templates"
@@ -80,8 +78,7 @@ config = MakeConfig(
     }
 )
 
-
-app = silloApp(config = config)
+app = silloApp()
 ```
 
 ### 3. Runtime Configuration Updates
@@ -94,7 +91,6 @@ from pathlib import Path
 
 engine = TemplateEngine()
 engine.setup_environment()
-
 
 engine.env.filters["custom"] = my_custom_filter
 
@@ -164,7 +160,7 @@ async def user_context(request):
         "messages": await get_flash_messages(request)
     }
 
-app.add_middleware(template_context(
+app.use(template_context(
     default_context={
         "version": "1.0.0",
         "nav_links": [...]
@@ -384,7 +380,7 @@ context_builder = (
     .add(get_user_data)
 )
 
-app.add_middleware(template_context(
+app.use(template_context(
     context_processor=context_builder.build
 ))
 ```
@@ -437,7 +433,6 @@ Usage in templates:
     {{ content }}
 {% endif %}
 ```
-
 
 ## ⚠️ Error Handling
 

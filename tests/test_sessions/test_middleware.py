@@ -39,7 +39,7 @@ class TestSessionMiddleware:
         """Test session middleware with signed cookie backend"""
         app = silloApp()
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(
                 config=SessionConfig(
                     session_cookie_name="test_session",
@@ -85,7 +85,7 @@ class TestSessionMiddleware:
                 SessionConfig(session_file_storage_path=temp_dir)
             )
 
-            app.add_middleware(
+            app.use(
                 SessionMiddleware(
                     config=SessionConfig(
                         session_cookie_name="file_session",
@@ -124,7 +124,7 @@ class TestSessionMiddleware:
 
         signed_manager = SignedSessionManager(secret_key="test-secret-key-instance")
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(
                 config=SessionConfig(session_cookie_name="instance_session"),
                 manager=signed_manager,
@@ -151,7 +151,7 @@ class TestSessionMiddleware:
             request.session["existing"] = "data"
             return response.json({"existing": request.session["existing"]})
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(config=SessionConfig(), secret_key="test-secret-key")
         )
 
@@ -181,7 +181,7 @@ class TestSessionMiddleware:
                 request.session["clear"] = True
                 return response.json({"set": True})
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(
                 config=SessionConfig(session_cookie_name="clear_session"),
                 secret_key="test-secret-key-clear",
@@ -204,7 +204,7 @@ class TestSessionMiddleware:
         """Test session middleware with various configuration options"""
         app = silloApp()
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(
                 config=SessionConfig(
                     session_cookie_name="custom_session",
@@ -248,7 +248,7 @@ class TestSessionMiddleware:
             except Exception as e:
                 return response.json({"error": str(e)})
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(config=SessionConfig(), secret_key="test-secret-key")
         )
 
@@ -267,7 +267,7 @@ class TestSessionMiddleware:
         async def delete_test(request: Request, response: Response):
             return response.json({"status": "ok"})
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(
                 config=SessionConfig(), secret_key="test-secret-key-delete"
             )

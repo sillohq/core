@@ -142,7 +142,7 @@ context_builder = (
     .add(get_user_data)
 )
 
-app.add_middleware(template_context(
+app.use(template_context(
     context_processor=context_builder.build
 ))
 ```

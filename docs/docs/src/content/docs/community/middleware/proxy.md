@@ -31,7 +31,7 @@ from sillo_contrib.proxy import Proxy
 app = silloApp()
 
 # Add basic proxy middleware
-app.add_middleware(
+app.use(
     Proxy(
         trusted_proxies=["192.168.1.0/24", "10.0.0.1"],
         trust_forwarded_headers=True
@@ -62,7 +62,7 @@ from sillo_contrib.proxy import Proxy
 app = silloApp()
 
 # Nginx typically sets X-Forwarded-* headers
-app.add_middleware(
+app.use(
     Proxy(
         trusted_proxies=["127.0.0.1", "::1"],  # Trust local proxy
         trust_forwarded_headers=True
@@ -79,7 +79,7 @@ from sillo_contrib.proxy import Proxy
 app = silloApp()
 
 # AWS load balancers use specific IP ranges
-app.add_middleware(
+app.use(
     Proxy(
         trusted_proxies=[
             "10.0.0.0/8",      # Private IP range
@@ -99,7 +99,7 @@ from sillo_contrib.proxy import Proxy
 app = silloApp()
 
 # Cloudflare IPs are dynamic, use their ranges
-app.add_middleware(
+app.use(
     Proxy(
         trusted_proxies=[
             "173.245.48.0/20",
@@ -152,7 +152,7 @@ from sillo_contrib.proxy import Proxy
 
 app = silloApp()
 
-app.add_middleware(Proxy())
+app.use(Proxy())
 ```
 
 ### Trusted Proxy Configuration
@@ -163,7 +163,7 @@ from sillo_contrib.proxy import Proxy
 
 app = silloApp()
 
-app.add_middleware(
+app.use(
     Proxy(
         trusted_proxies=[
             "192.168.1.0/24",  # Local network
@@ -184,7 +184,7 @@ from sillo_contrib.proxy import TrustedProxyMiddleware
 
 app = silloApp()
 
-app.add_middleware(
+app.use(
     TrustedProxyMiddleware(
         trusted_proxies=["192.168.1.0/24"],
         require_https=True,      # Require HTTPS when behind proxy
@@ -233,10 +233,10 @@ Always specify your trusted proxies explicitly:
 
 ```python
 # Good - explicit trusted proxies
-app.add_middleware(Proxy(trusted_proxies=["192.168.1.0/24"]))
+app.use(Proxy(trusted_proxies=["192.168.1.0/24"]))
 
 # Bad - trusts all proxies (security risk)
-app.add_middleware(Proxy(trusted_proxies=[]))  # Don't do this!
+app.use(Proxy(trusted_proxies=[]))  # Don't do this!
 ```
 
 ### Header Spoofing Prevention
@@ -254,7 +254,7 @@ The middleware only processes proxy headers when the request comes from a truste
 
 ```python
 # Enforce HTTPS when behind proxy
-app.add_middleware(
+app.use(
     TrustedProxyMiddleware(
         trusted_proxies=["10.0.0.0/8"],
         require_https=True
@@ -317,7 +317,7 @@ class CustomProxyMiddleware(ProxyMiddleware):
         
         return super().extract_client_ip(request)
 
-app.add_middleware(CustomProxyMiddleware(
+app.use(CustomProxyMiddleware(
     trusted_proxies=["192.168.1.0/24"]
 ))
 ```
@@ -357,7 +357,7 @@ from sillo_contrib.proxy import TrustedProxyMiddleware
 
 app = silloApp()
 
-app.add_middleware(
+app.use(
     TrustedProxyMiddleware(
         trusted_proxies=[
             "10.0.0.0/8",      # Private networks

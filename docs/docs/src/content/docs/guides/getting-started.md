@@ -337,7 +337,7 @@ async def failing_middleware(self, request, response, call_next):
     except Exception as exc:
         return response.json({"error": str(exc)}, status_code=500)
 
-app.add_middleware(failing_middleware)
+app.use(failing_middleware)
 ```
 
 ### What if I try to dynamically import a handler that doesn't exist?

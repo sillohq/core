@@ -88,7 +88,7 @@ async def get_user_from_payload(**payload):
         [payload["sub"]]
     )
 
-app.add_middleware(
+app.use(
     AuthenticationMiddleware(
         backend=JWTAuthBackend(get_user_from_payload)
     )
@@ -117,7 +117,7 @@ from sillo.middleware.cors import CorsConfig, CORSMiddleware
 app = silloApp()
 
 # Middleware with direct config
-app.add_middleware(
+app.use(
     CORSMiddleware(
         config=CorsConfig(
             debug=True,
@@ -177,7 +177,7 @@ app = silloApp()
 # Production middleware
 from sillo.middleware.security import SecurityMiddleware
 
-app.add_middleware(
+app.use(
     SecurityMiddleware(
         ssl_redirect=True,
         hsts_enabled=True
@@ -185,7 +185,7 @@ app.add_middleware(
 )
 
 # Production middleware stack
-app.add_middleware(SecurityMiddleware())
+app.use(SecurityMiddleware())
 
 ```
 

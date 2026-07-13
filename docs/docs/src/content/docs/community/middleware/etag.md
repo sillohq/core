@@ -27,7 +27,7 @@ import sillo_contrib.etag as etag
 app = silloApp()
 
 # Add the ETag middleware (defaults shown)
-app.add_middleware(
+app.use(
     etag.ETag(
         weak=True,                 # Generate weak validators (W/ prefixes)
         methods=("GET", "HEAD"),  # Methods to apply to
@@ -69,7 +69,7 @@ from sillo import silloApp
 import sillo_contrib.etag as etag
 
 app = silloApp()
-app.add_middleware(etag.ETag())
+app.use(etag.ETag())
 
 @app.get("/api/data")
 async def get_data(request, response):
@@ -83,7 +83,7 @@ async def get_data(request, response):
 ### Strong ETags
 
 ```python
-app.add_middleware(
+app.use(
     etag.ETag(
         weak=False,  # Use strong validators
         methods=("GET", "HEAD")
@@ -99,7 +99,7 @@ async def get_file(request, response):
 ### Custom Methods
 
 ```python
-app.add_middleware(
+app.use(
     etag.ETag(
         methods=("GET", "HEAD", "POST"),  # Include POST (not recommended)
         override=True  # Override existing ETags

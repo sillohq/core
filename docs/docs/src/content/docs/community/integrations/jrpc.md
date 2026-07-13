@@ -1032,7 +1032,7 @@ async def logging_middleware(request, response, call_next):
     logger.info(f"Response: {response.status_code} ({duration:.3f}s)")
     return response
 
-app.add_middleware(logging_middleware)
+app.use(logging_middleware)
 JsonRpcPlugin(app, {"path_prefix": "/rpc"})
 ```
 
@@ -1171,9 +1171,9 @@ async def cors_middleware(request, response, call_next):
 rate_limit_middleware = RateLimitingMiddleware(max_requests=50, window_seconds=60)
 
 # Add middleware to app (order matters!)
-app.add_middleware(cors_middleware)  # First - handle CORS
-app.add_middleware(comprehensive_logging_middleware)  # Second - log everything
-app.add_middleware(rate_limit_middleware)  # Third - rate limiting
+app.use(cors_middleware)  # First - handle CORS
+app.use(comprehensive_logging_middleware)  # Second - log everything
+app.use(rate_limit_middleware)  # Third - rate limiting
 
 # JSON-RPC will automatically use all sillo middleware
 JsonRpcPlugin(app, {"path_prefix": "/rpc"})

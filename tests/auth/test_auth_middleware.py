@@ -121,7 +121,7 @@ async def test_auth_middleware_multiple_backends_success(test_client):
                 return AuthResult(success=True, identity="second_user", scope="second")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(
+    app.use(
         AuthenticationMiddleware(SimpleUser, [FirstBackend(), SecondBackend()])
     )
 
@@ -154,7 +154,7 @@ async def test_auth_middleware_multiple_backends_fallback(test_client):
                 return AuthResult(success=True, identity="second_user", scope="second")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(
+    app.use(
         AuthenticationMiddleware(SimpleUser, [FirstBackend(), SecondBackend()])
     )
 
@@ -177,7 +177,7 @@ async def test_auth_middleware_no_backends_succeed(test_client):
         async def authenticate(self, request: Request):
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(TestUser, FailingBackend()))
+    app.use(AuthenticationMiddleware(TestUser, FailingBackend()))
 
     @app.get("/protected")
     @auth("jwt")
@@ -196,7 +196,7 @@ async def test_auth_middleware_user_loading_failure(test_client):
     from sillo.auth import JWTAuthBackend, create_jwt
 
     jwt_backend = JWTAuthBackend(secret_key="a-test-jwt-secret-key-for-hs256")
-    app.add_middleware(AuthenticationMiddleware(CustomUser, jwt_backend))
+    app.use(AuthenticationMiddleware(CustomUser, jwt_backend))
 
     @app.get("/protected")
     @auth("jwt")
@@ -227,7 +227,7 @@ async def test_auth_middleware_backend_exception_handling(test_client):
                 return AuthResult(success=True, identity="backup_user", scope="backup")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(
+    app.use(
         AuthenticationMiddleware(
             SimpleUser, [FaultyAuthBackend(), WorkingAuthBackend()]
         )

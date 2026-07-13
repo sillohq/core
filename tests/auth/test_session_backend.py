@@ -67,8 +67,8 @@ def test_client():
 
 async def test_session_auth_backend_success(test_client):
     app = silloApp()
-    app.add_middleware(AuthenticationMiddleware(TestUser, [SessionAuthBackend()]))
-    app.add_middleware(SessionMiddleware(secret_key="secret"))
+    app.use(AuthenticationMiddleware(TestUser, [SessionAuthBackend()]))
+    app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
     async def login_route(req: Request, res: Response):
@@ -97,8 +97,8 @@ async def test_session_auth_backend_success(test_client):
 
 async def test_session_auth_backend_no_session(test_client):
     app = silloApp()
-    app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
-    app.add_middleware(SessionMiddleware(secret_key="secret"))
+    app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
+    app.use(SessionMiddleware(secret_key="secret"))
 
     @app.get("/protected")
     @auth("session")
@@ -113,7 +113,7 @@ async def test_session_auth_backend_no_session(test_client):
 
 async def test_session_auth_backend_missing_session_middleware(test_client):
     app = silloApp()
-    app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
+    app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
 
     @app.get("/protected")
     @auth("session")
@@ -128,8 +128,8 @@ async def test_session_auth_backend_missing_session_middleware(test_client):
 
 async def test_session_auth_backend_logout(test_client):
     app = silloApp()
-    app.add_middleware(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
-    app.add_middleware(SessionMiddleware(secret_key="secret"))
+    app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
+    app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
     async def login_route(req: Request, res: Response):
@@ -169,12 +169,12 @@ async def test_session_auth_backend_logout(test_client):
 
 async def test_session_auth_backend_custom_session_key(test_client):
     app = silloApp()
-    app.add_middleware(
+    app.use(
         AuthenticationMiddleware(
             TestUser, SessionAuthBackend(session_key="custom_user")
         )
     )
-    app.add_middleware(SessionMiddleware(secret_key="secret"))
+    app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
     async def login_route(req: Request, res: Response):

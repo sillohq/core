@@ -128,7 +128,7 @@ def test_verify_key_timing_attack_protection():
 async def test_session_login_logout():
     """Test session login and logout utilities."""
     app = silloApp()
-    app.add_middleware(SessionMiddleware(secret_key="secret"))
+    app.use(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request with session
     class MockRequest:
@@ -155,7 +155,7 @@ async def test_session_login_logout():
 def test_session_login_without_session_middleware():
     """Test session login without session middleware raises error."""
     app = silloApp()
-    app.add_middleware(SessionMiddleware(secret_key="secret"))
+    app.use(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session
     class MockRequest:
@@ -172,7 +172,7 @@ def test_session_login_without_session_middleware():
 def test_session_logout_without_session_middleware():
     """Test session logout without session middleware raises error."""
     app = silloApp()
-    app.add_middleware(SessionMiddleware(secret_key="secret"))
+    app.use(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session
     class MockRequest:

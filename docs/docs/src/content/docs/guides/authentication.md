@@ -30,7 +30,7 @@ from sillo.auth.backends.jwt import JWTAuthBackend
 from sillo.auth import SimpleUser
 
 app = silloApp()
-app.add_middleware(
+app.use(
     AuthenticationMiddleware(
         user_model=SimpleUser,
         backend=JWTAuthBackend(secret_key="your-secret-key")
@@ -100,7 +100,7 @@ class User(BaseUser):
             )
         return None
 
-app.add_middleware(AuthenticationMiddleware(
+app.use(AuthenticationMiddleware(
     user_model=User,
     backend=JWTAuthBackend(secret_key="your-secret-key")
 ))
@@ -192,7 +192,7 @@ from sillo.auth.backends.jwt import JWTAuthBackend
 
 backend = JWTAuthBackend(secret_key="your-secret-key", identifier="id")
 
-app.add_middleware(AuthenticationMiddleware(
+app.use(AuthenticationMiddleware(
     user_model=User,
     backend=backend
 ))
@@ -226,7 +226,7 @@ from sillo import silloApp
 app = silloApp()
 backend = JWTAuthBackend(secret_key="your-secret-key", jwt_algorithms=["HS256"])
 
-app.add_middleware(AuthenticationMiddleware(
+app.use(AuthenticationMiddleware(
     user_model=User,
     backend=backend
 ))
@@ -243,11 +243,11 @@ from sillo.auth.backends.session import SessionAuthBackend
 from sillo.session.middleware import SessionMiddleware
 
 app = silloApp()
-app.add_middleware(SessionMiddleware(secret_key="your-secret-key"))
+app.use(SessionMiddleware(secret_key="your-secret-key"))
 
 backend = SessionAuthBackend()
 
-app.add_middleware(AuthenticationMiddleware(
+app.use(AuthenticationMiddleware(
     user_model=User,
     backend=backend
 ))
@@ -316,7 +316,7 @@ class APIKeyUser(SimpleUser):
 
 backend = APIKeyAuthBackend()
 
-app.add_middleware(AuthenticationMiddleware(
+app.use(AuthenticationMiddleware(
     user_model=APIKeyUser,
     backend=backend
 ))
@@ -394,7 +394,7 @@ class APIKeyUser(SimpleUser):
 # Set up the backend
 backend = APIKeyAuthBackend(header_name="X-API-Key")
 
-app.add_middleware(AuthenticationMiddleware(
+app.use(AuthenticationMiddleware(
     user_model=APIKeyUser,
     backend=backend
 ))
@@ -517,7 +517,7 @@ class APIKeyUser(SimpleUser):
             return cls(identity=identity, display_name="API Key")
         return None
 
-app.add_middleware(AuthenticationMiddleware(
+app.use(AuthenticationMiddleware(
     user_model=APIKeyUser,
     backend=DatabaseAuthBackend()
 ))

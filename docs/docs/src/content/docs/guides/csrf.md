@@ -54,7 +54,7 @@ csrf_config = CSRFConfig(
 )
 
 app = silloApp()
-app.add_middleware(CSRFMiddleware(config=csrf_config))
+app.use(CSRFMiddleware(config=csrf_config))
 ```
 
 ## Configuration Options
@@ -197,7 +197,7 @@ For better organization, use the `TemplateContextMiddleware` to automatically in
 from sillo.templating.middleware import TemplateContextMiddleware
 
 # Add this before your route definitions
-app.add_middleware(TemplateContextMiddleware())
+app.use(TemplateContextMiddleware())
 
 # Now all templates will have access to the CSRF token as `{{ csrf_token }}`
 ```
@@ -236,7 +236,7 @@ csrf_config = CSRFConfig(
     # ... other config
     form_field="custom_csrf_field",  # Default is "csrftoken"
 )
-app.add_middleware(CSRFMiddleware(config=csrf_config))
+app.use(CSRFMiddleware(config=csrf_config))
 ```
 
 Then update your form to use the custom field name:

@@ -15,7 +15,7 @@ def test_protected_request_missing_token(test_client_factory):
     """POST to protected route without CSRF should fail."""
     csrf_config = CSRFConfig(enabled=True, secret_key="secret")
     app = silloApp()
-    app.add_middleware(CSRFMiddleware(config=csrf_config))
+    app.use(CSRFMiddleware(config=csrf_config))
 
     @app.post("/protected")
     async def protected(request: Request, response: Response):
@@ -31,7 +31,7 @@ def test_protected_request_valid_token(test_client_factory):
     """POST to protected route with valid CSRF token should pass."""
     csrf_config = CSRFConfig(enabled=True, secret_key="secret")
     app = silloApp()
-    app.add_middleware(CSRFMiddleware(config=csrf_config))
+    app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
     async def get_token(request: Request, response: Response):
@@ -64,7 +64,7 @@ def test_protected_request_invalid_token(test_client_factory):
     """POST to protected route with wrong CSRF token should fail."""
     csrf_config = CSRFConfig(enabled=True, secret_key="secret")
     app = silloApp()
-    app.add_middleware(CSRFMiddleware(config=csrf_config))
+    app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
     async def get_token(request: Request, response: Response):
@@ -95,7 +95,7 @@ def test_cookie_is_reset_on_response(test_client_factory):
     """Every response should set or refresh CSRF cookie."""
     csrf_config = CSRFConfig(enabled=True, secret_key="secret")
     app = silloApp()
-    app.add_middleware(CSRFMiddleware(config=csrf_config))
+    app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
     async def get_token(request: Request, response: Response):
@@ -124,7 +124,7 @@ def test_csrf_custom_configuration(test_client_factory):
         httponly=False,
     )
     app = silloApp()
-    app.add_middleware(CSRFMiddleware(config=csrf_config))
+    app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
     async def get_token(request: Request, response: Response):

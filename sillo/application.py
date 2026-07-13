@@ -397,7 +397,7 @@ class silloApp:
                     await send({"type": "lifespan.shutdown.failed", "message": str(e)})
                     return
 
-    def add_middleware(
+    def use(
         self,
         middleware: Annotated[
             MiddlewareType,
@@ -426,7 +426,7 @@ class silloApp:
                 print(f"Request received: {request.method} {request.url}")
                 return next_call()
 
-            app.add_middleware(logging_middleware)
+            app.use(logging_middleware)
             ```
         """
 

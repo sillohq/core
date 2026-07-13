@@ -10,7 +10,7 @@ from sillo.testclient import TestClient
 
 def create_app():
     app = silloApp()
-    app.add_middleware(SecurityMiddleware(csp_enabled=True))
+    app.use(SecurityMiddleware(csp_enabled=True))
 
     @app.get("/test")
     async def test_route(request: Request, response: Response):
@@ -25,7 +25,7 @@ def create_app():
 
 def test_security_middleware_basic():
     app = create_app()
-    app.add_middleware(SecurityMiddleware())
+    app.use(SecurityMiddleware())
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -38,7 +38,7 @@ def test_security_middleware_basic():
 
 def test_csp_headers_enabled():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(csp_enabled=True))
+    app.use(SecurityMiddleware(csp_enabled=True))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -53,7 +53,7 @@ def test_csp_headers_enabled():
 def test_csp_headers_disabled():
     app = create_app()
     app.http_middleware = []
-    app.add_middleware(SecurityMiddleware(csp_enabled=False))
+    app.use(SecurityMiddleware(csp_enabled=False))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -63,7 +63,7 @@ def test_csp_headers_disabled():
 def test_csp_report_only():
     app = create_app()
     app.http_middleware = []
-    app.add_middleware(SecurityMiddleware(csp_enabled=True, csp_report_only=True))
+    app.use(SecurityMiddleware(csp_enabled=True, csp_report_only=True))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -78,7 +78,7 @@ def test_custom_csp_policy():
         "script-src": ["'self'", "'unsafe-inline'"],
         "img-src": ["'self'", "data:", "https:"],
     }
-    app.add_middleware(SecurityMiddleware(csp_policy=custom_csp))
+    app.use(SecurityMiddleware(csp_policy=custom_csp))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -90,7 +90,7 @@ def test_custom_csp_policy():
 
 def test_hsts_headers_enabled():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(hsts_enabled=True))
+    app.use(SecurityMiddleware(hsts_enabled=True))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -102,7 +102,7 @@ def test_hsts_headers_enabled():
 def test_hsts_headers_disabled():
     app = create_app()
     app.http_middleware = []
-    app.add_middleware(SecurityMiddleware(hsts_enabled=False))
+    app.use(SecurityMiddleware(hsts_enabled=False))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -111,7 +111,7 @@ def test_hsts_headers_disabled():
 
 def test_hsts_custom_max_age():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(hsts_enabled=True, hsts_max_age=86400))
+    app.use(SecurityMiddleware(hsts_enabled=True, hsts_max_age=86400))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -120,7 +120,7 @@ def test_hsts_custom_max_age():
 
 def test_hsts_preload():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(hsts_enabled=True, hsts_preload=True))
+    app.use(SecurityMiddleware(hsts_enabled=True, hsts_preload=True))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -129,7 +129,7 @@ def test_hsts_preload():
 
 def test_xss_protection_enabled():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(xss_protection=True))
+    app.use(SecurityMiddleware(xss_protection=True))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -139,7 +139,7 @@ def test_xss_protection_enabled():
 def test_xss_protection_disabled():
     app = create_app()
     app.http_middleware = []
-    app.add_middleware(SecurityMiddleware(xss_protection=False))
+    app.use(SecurityMiddleware(xss_protection=False))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -149,7 +149,7 @@ def test_xss_protection_disabled():
 def test_xss_protection_custom_mode():
     app = create_app()
     app.http_middleware = []
-    app.add_middleware(SecurityMiddleware(xss_protection=True, xss_mode="sanitize"))
+    app.use(SecurityMiddleware(xss_protection=True, xss_mode="sanitize"))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -158,7 +158,7 @@ def test_xss_protection_custom_mode():
 
 def test_frame_options_deny():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(frame_options="DENY"))
+    app.use(SecurityMiddleware(frame_options="DENY"))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -167,7 +167,7 @@ def test_frame_options_deny():
 
 def test_frame_options_sameorigin():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(frame_options="SAMEORIGIN"))
+    app.use(SecurityMiddleware(frame_options="SAMEORIGIN"))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -176,7 +176,7 @@ def test_frame_options_sameorigin():
 
 def test_frame_options_allow_from():
     app = create_app()
-    app.add_middleware(
+    app.use(
         SecurityMiddleware(frame_options_allow_from="https://example.com")
     )
 
@@ -187,7 +187,7 @@ def test_frame_options_allow_from():
 
 def test_content_type_options_enabled():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(content_type_options=True))
+    app.use(SecurityMiddleware(content_type_options=True))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -197,7 +197,7 @@ def test_content_type_options_enabled():
 def test_content_type_options_disabled():
     app = create_app()
     app.http_middleware = []
-    app.add_middleware(SecurityMiddleware(content_type_options=False))
+    app.use(SecurityMiddleware(content_type_options=False))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -206,7 +206,7 @@ def test_content_type_options_disabled():
 
 def test_referrer_policy():
     app = create_app()
-    app.add_middleware(
+    app.use(
         SecurityMiddleware(referrer_policy="strict-origin-when-cross-origin")
     )
 
@@ -217,7 +217,7 @@ def test_referrer_policy():
 
 def test_cache_control():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(cache_control="no-cache, no-store"))
+    app.use(SecurityMiddleware(cache_control="no-cache, no-store"))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -226,7 +226,7 @@ def test_cache_control():
 
 def test_clear_site_data():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(clear_site_data=["cookies", "storage"]))
+    app.use(SecurityMiddleware(clear_site_data=["cookies", "storage"]))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -235,7 +235,7 @@ def test_clear_site_data():
 
 def test_dns_prefetch_control():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(dns_prefetch_control="off"))
+    app.use(SecurityMiddleware(dns_prefetch_control="off"))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -244,7 +244,7 @@ def test_dns_prefetch_control():
 
 def test_download_options():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(download_options="noopen"))
+    app.use(SecurityMiddleware(download_options="noopen"))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -253,7 +253,7 @@ def test_download_options():
 
 def test_cross_origin_policies():
     app = create_app()
-    app.add_middleware(
+    app.use(
         SecurityMiddleware(
             cross_origin_opener_policy="same-origin",
             cross_origin_embedder_policy="require-corp",
@@ -269,7 +269,7 @@ def test_cross_origin_policies():
 
 def test_expect_ct_enabled():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(expect_ct=True, expect_ct_max_age=86400))
+    app.use(SecurityMiddleware(expect_ct=True, expect_ct_max_age=86400))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -279,7 +279,7 @@ def test_expect_ct_enabled():
 
 def test_expect_ct_disabled():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(expect_ct=False))
+    app.use(SecurityMiddleware(expect_ct=False))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -289,7 +289,7 @@ def test_expect_ct_disabled():
 def test_permissions_policy():
     app = create_app()
     policy = {"camera": "none", "microphone": "none", "geolocation": "self"}
-    app.add_middleware(SecurityMiddleware(permissions_policy=policy))
+    app.use(SecurityMiddleware(permissions_policy=policy))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -301,7 +301,7 @@ def test_permissions_policy():
 
 def test_server_header_hidden():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(hide_server=True))
+    app.use(SecurityMiddleware(hide_server=True))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -310,7 +310,7 @@ def test_server_header_hidden():
 
 def test_server_header_custom():
     app = create_app()
-    app.add_middleware(
+    app.use(
         SecurityMiddleware(server_header="Custom-Server/1.0", hide_server=False)
     )
 
@@ -321,7 +321,7 @@ def test_server_header_custom():
 
 def test_trusted_types_enabled():
     app = create_app()
-    app.add_middleware(SecurityMiddleware(trusted_types=True))
+    app.use(SecurityMiddleware(trusted_types=True))
 
     with TestClient(app) as client:
         resp = client.get("/test")
@@ -331,7 +331,7 @@ def test_trusted_types_enabled():
 
 def test_trusted_types_with_policies():
     app = create_app()
-    app.add_middleware(
+    app.use(
         SecurityMiddleware(
             trusted_types=True, trusted_types_policies=["policy1", "policy2"]
         )
@@ -345,7 +345,7 @@ def test_trusted_types_with_policies():
 
 def test_all_security_headers_present():
     app = create_app()
-    app.add_middleware(SecurityMiddleware())
+    app.use(SecurityMiddleware())
 
     with TestClient(app) as client:
         resp = client.get("/test")

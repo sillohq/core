@@ -27,7 +27,7 @@ from sillo.session.middleware import SessionMiddleware
 app = silloApp()
 
 # Add the session middleware with secret_key passed directly
-app.add_middleware(
+app.use(
     SessionMiddleware(
         secret_key="your-secure-secret-key",
         session_cookie_name="sillo_session",
@@ -79,38 +79,9 @@ session_config = SessionConfig(
     session_file_name="session_"
 )
 
-app.add_middleware(SessionMiddleware(config=session_config))
+app.use(SessionMiddleware(config=session_config))
 
 ```
-
-```py title="Legacy Approach [Deprecated"]
-from sillo import silloApp, MakeConfig
-from sillo.session import SessionConfig
-from sillo.session.middleware import SessionMiddleware
-from sillo.session.file import FileSessionInterface
-
-session_config = SessionConfig(
-    session_cookie_name="sillo_session",
-    cookie_path="/",
-    cookie_domain=None,
-    cookie_secure=True,
-    cookie_httponly=True,
-    cookie_samesite="lax",
-    session_expiration_time=86400,  # 24 hours
-    manager=FileSessionInterface,
-    session_file_storage_path="sessions",
-    session_file_name="session_"
-)
-
-config = MakeConfig(
-    secret_key="your-secure-secret-key",
-    session=session_config
-)
-
-app = silloApp(config=config)
-app.add_middleware(SessionMiddleware())
-```
-
 
 ##  Configuration Options Reference
 
@@ -179,9 +150,7 @@ By default, sessions expire after 24 hours (86400 seconds). You can customize th
 session_config = SessionConfig(
     session_expiration_time=3600  # 1 hour
 )
-app.add_middleware(SessionMiddleware(config=session_config))
-
-
+app.use(SessionMiddleware(config=session_config))
 
 # Or set per-session expiration time
 @app.post("/login")
@@ -208,7 +177,7 @@ The simplest session backend, storing the session data directly in a signed cook
 session_config = SessionConfig(
     manager=SignedSessionManager
 )
-app.add_middleware(SessionMiddleware(config=session_config))
+app.use(SessionMiddleware(config=session_config))
 ```
 
 **Pros**:
@@ -234,7 +203,7 @@ session_config = SessionConfig(
     session_file_storage_path="sessions",  # Directory to store session files
     session_file_name="session_"           # Prefix for session files
 )
-app.add_middleware(SessionMiddleware(config=session_config))
+app.use(SessionMiddleware(config=session_config))
 ```
 
 **Pros**:
@@ -315,7 +284,7 @@ session_config = SessionConfig(
     cookie_httponly=True,    # Prevent JavaScript access
     cookie_samesite="lax"    # Mitigate CSRF attacks
 )
-app.add_middleware(SessionMiddleware(config=session_config))
+app.use(SessionMiddleware(config=session_config))
 ```
 
 #### Use Appropriate Session Expiration

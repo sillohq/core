@@ -51,7 +51,7 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
 
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
+    app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected")
     @auth("apikey")
@@ -81,7 +81,7 @@ async def test_apikey_auth_backend_missing_header(test_client):
                 return AuthResult(success=False, identity="", scope="")
             return AuthResult(success=True, identity="test", scope="apikey")
 
-    app.add_middleware(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
+    app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected")
     @auth("apikey")
@@ -107,7 +107,7 @@ async def test_apikey_auth_backend_invalid_key(test_client):
                 return cls("test_api_user", "test_api_user")
             return None
 
-    app.add_middleware(AuthenticationMiddleware(Store, APIKeyAuthBackend()))
+    app.use(AuthenticationMiddleware(Store, APIKeyAuthBackend()))
 
     @app.get("/protected")
     @auth("apikey")
@@ -135,7 +135,7 @@ async def test_apikey_auth_backend_custom_header(test_client):
                 return AuthResult(success=True, identity="custom_user", scope="apikey")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
+    app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected")
     @auth("apikey")

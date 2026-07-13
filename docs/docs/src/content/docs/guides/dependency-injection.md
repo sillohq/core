@@ -98,26 +98,32 @@ async def dashboard(
 - Works in deeply nested dependencies
 - Self-documenting parameters
 
-### Legacy: Context (Not Recommended)
+### Accessing the Raw Request
+
+When you need the full `Request` object inside a dependency, use `Depend(get_request=True)`:
 
 ```python
 from sillo import Depend
-from sillo.dependencies import Context
 
-def get_pagination(context: Context = None):
-    page = context.request.query_params.get("page", "1")
-    limit = context.request.query_params.get("limit", "10")
-    return {"page": int(page), "limit": int(limit)}
+def get_auth_info(req = Depend(get_request=True)):
+    token = req.headers.get("Authorization")
+    user_agent = req.headers.get("User-Agent")
+    return {"token": token, "user_agent": user_agent}
+
+@app.get("/profile")
+async def profile(request, response, auth = Depend(get_auth_info)):
+    return response.json(auth)
 ```
 
-**Why not Context for request data?**
-- Manual type conversion required
-- More verbose code
-- Less maintainable
+You can also inject the request directly into the handler:
 
-::: tip
-For request data (query, headers, cookies), use `Query`, `Header`, and `Cookie` parameter extractors. Reserve `Context` for advanced cases where you need direct access to the full request object.
-:::
+```python
+@app.get("/debug")
+async def debug(request, response, req = Depend(get_request=True)):
+    return response.json({"method": req.method, "path": req.url.path})
+```
+
+The DI system resolves all dependencies using a pre-flattened execution plan built at registration time — no recursion overhead at request time.
 
 ---
 

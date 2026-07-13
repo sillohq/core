@@ -26,7 +26,7 @@ def app():
     async def user_context(request):
         return {"user": {"name": "Test User"}}
 
-    app.add_middleware(
+    app.use(
         TemplateContextMiddleware(
             default_context={"app_name": "Test App"}, context_processor=user_context
         )

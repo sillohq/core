@@ -126,7 +126,7 @@ async def file_upload_middleware(request: Request, response: Response, call_next
     
     return await call_next(request, response)
 
-app.add_middleware(file_upload_middleware)
+app.use(file_upload_middleware)
 ```
 
 ### Streaming Large Files

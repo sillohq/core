@@ -29,7 +29,7 @@ def test_router_level_middleware_basic(
         await call_next()
         return response
 
-    router.add_middleware(router_middleware)
+    router.use(router_middleware)
 
     @router.get("/test")
     async def handler(request: Request, response: Response):
@@ -60,7 +60,7 @@ def test_router_level_middleware_isolated(
         await call_next()
         return response
 
-    router1.add_middleware(router1_middleware)
+    router1.use(router1_middleware)
 
     @router1.get("/route1")
     async def handler1(request: Request, response: Response):
@@ -108,8 +108,8 @@ def test_router_level_middleware_multiple(
         execution_order.append("m2_after")
         return response
 
-    router.add_middleware(middleware_1)
-    router.add_middleware(middleware_2)
+    router.use(middleware_1)
+    router.use(middleware_2)
 
     @router.get("/test")
     async def handler(request: Request, response: Response):
@@ -141,7 +141,7 @@ def test_router_level_middleware_with_prefix(
         response.set_header("X-Router-Prefix", "api")
         return response
 
-    router.add_middleware(add_prefix_header)
+    router.use(add_prefix_header)
 
     @router.get("/users")
     async def get_users(request: Request, response: Response):
@@ -176,7 +176,7 @@ def test_router_level_middleware_auth(
         await call_next()
         return response
 
-    protected_router.add_middleware(auth_middleware)
+    protected_router.use(auth_middleware)
 
     @protected_router.get("/protected")
     async def protected_handler(request: Request, response: Response):
@@ -216,7 +216,7 @@ def test_router_level_middleware_modifies_response(
         response.set_header("X-Wrapped", "true")
         return response
 
-    router.add_middleware(json_wrapper_middleware)
+    router.use(json_wrapper_middleware)
 
     @router.get("/data")
     async def get_data(request: Request, response: Response):
@@ -254,8 +254,8 @@ def test_router_and_app_middleware_combined(
         execution_order.append("router_after")
         return response
 
-    app.add_middleware(app_middleware)
-    router.add_middleware(router_middleware)
+    app.use(app_middleware)
+    router.use(router_middleware)
 
     @router.get("/test")
     async def handler(request: Request, response: Response):
@@ -294,8 +294,8 @@ def test_multiple_routers_different_middleware(
         response.set_header("X-Router", "2")
         return response
 
-    router1.add_middleware(router1_middleware)
-    router2.add_middleware(router2_middleware)
+    router1.use(router1_middleware)
+    router2.use(router2_middleware)
 
     @router1.get("/route")
     async def handler1(request: Request, response: Response):
@@ -337,8 +337,8 @@ def test_router_middleware_state_isolation(
         await call_next()
         return response
 
-    router1.add_middleware(router1_state_middleware)
-    router2.add_middleware(router2_state_middleware)
+    router1.use(router1_state_middleware)
+    router2.use(router2_state_middleware)
 
     @router1.get("/test")
     async def handler1(request: Request, response: Response):
@@ -373,7 +373,7 @@ def test_router_middleware_error_handling(
             return response.json({"error": str(e), "router": "api"}).status(400)
         return response
 
-    router.add_middleware(error_handler_middleware)
+    router.use(error_handler_middleware)
 
     @router.get("/error")
     async def error_handler(request: Request, response: Response):
@@ -407,8 +407,8 @@ def test_router_middleware_with_nested_routers(
         await call_next()
         return response
 
-    parent_router.add_middleware(parent_middleware)
-    child_router.add_middleware(child_middleware)
+    parent_router.use(parent_middleware)
+    child_router.use(child_middleware)
 
     @child_router.get("/test")
     async def handler(request: Request, response: Response):

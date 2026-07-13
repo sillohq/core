@@ -43,7 +43,7 @@ def cors_app():
     async def update_route(request: Request, response: Response):
         return response.json({"updated": True})
 
-    app.add_middleware(CORSMiddleware(config=cors_config))
+    app.use(CORSMiddleware(config=cors_config))
     return app
 
 
@@ -108,7 +108,7 @@ class TestPreflightRequests:
         async def wildcard_headers_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         wildcard_client = TestClient(app)
 
@@ -264,7 +264,7 @@ class TestPreflightRequests:
         async def no_creds_preflight_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         no_creds_client = TestClient(app)
 
@@ -296,7 +296,7 @@ class TestPreflightRequests:
         async def max_age_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         max_age_client = TestClient(app)
 
@@ -327,7 +327,7 @@ class TestPreflightRequests:
         async def blacklist_preflight_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         blacklist_client = TestClient(app)
 

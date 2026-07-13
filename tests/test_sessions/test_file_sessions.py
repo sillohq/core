@@ -223,7 +223,7 @@ class TestFileSessionIntegration:
             SessionConfig(session_file_storage_path=self.temp_dir)
         )
 
-        app.add_middleware(
+        app.use(
             SessionMiddleware(
                 config=SessionConfig(session_file_storage_path=self.temp_dir),
                 manager=file_manager,

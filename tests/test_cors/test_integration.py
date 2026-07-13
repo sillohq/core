@@ -62,7 +62,7 @@ class TestCORSIntegration:
         async def get_posts(request: Request, response: Response):
             return response.json({"posts": []})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -130,10 +130,10 @@ class TestCORSIntegration:
             return response.json({"message": "OK"})
 
         # Add middleware in specific order
-        app.add_middleware(logging_middleware)
-        app.add_middleware(auth_middleware)
-        app.add_middleware(CORSMiddleware(config=cors_config))
-        app.add_middleware(timing_middleware)
+        app.use(logging_middleware)
+        app.use(auth_middleware)
+        app.use(CORSMiddleware(config=cors_config))
+        app.use(timing_middleware)
 
         client = TestClient(app)
 
@@ -174,7 +174,7 @@ class TestCORSIntegration:
         async def upload_file(request: Request, response: Response):
             return response.json({"uploaded": True, "filename": "test.jpg"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -243,7 +243,7 @@ class TestCORSIntegration:
 
             return response.json({"deleted": True})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -302,7 +302,7 @@ class TestCORSIntegration:
         async def text_endpoint(request: Request, response: Response):
             return response.text("text response")
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -351,7 +351,7 @@ class TestCORSIntegration:
                 response.set_header("X-Subdomain", subdomain)
             return response
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -384,7 +384,7 @@ class TestCORSIntegration:
         async def performance_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -428,8 +428,8 @@ class TestCORSIntegration:
             return response.json({"request_id": request_id, "message": "OK"})
 
         # Add middleware
-        app.add_middleware(request_id_middleware)
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(request_id_middleware)
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 

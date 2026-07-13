@@ -92,7 +92,7 @@ static_group = Group(path="/static", app=static_files)
 app.add_route(static_group)
 
 # Add middleware for logging
-app.add_middleware(StaticFileLogger())
+app.use(StaticFileLogger())
 ```
 
 ##  Security & Extension Filtering

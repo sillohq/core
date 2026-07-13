@@ -30,7 +30,7 @@ from sillo_contrib.accepts import Accepts
 app = silloApp()
 
 # Add accepts middleware
-app.add_middleware(Accepts())
+app.use(Accepts())
 
 @app.get("/")
 async def home(request, response):
@@ -54,7 +54,7 @@ from sillo_contrib.accepts import Accepts
 
 app = silloApp()
 
-app.add_middleware(Accepts())
+app.use(Accepts())
 
 @app.get("/api/data")
 async def get_data(request, response):
@@ -77,7 +77,7 @@ from sillo_contrib.accepts import ContentNegotiationMiddleware, negotiate_conten
 
 app = silloApp()
 
-app.add_middleware(ContentNegotiationMiddleware())
+app.use(ContentNegotiationMiddleware())
 
 @app.get("/api/content")
 async def get_content(request, response):
@@ -106,7 +106,7 @@ from sillo_contrib.accepts import ContentNegotiationMiddleware, negotiate_langua
 
 app = silloApp()
 
-app.add_middleware(ContentNegotiationMiddleware())
+app.use(ContentNegotiationMiddleware())
 
 @app.get("/greetings")
 async def get_greetings(request, response):
@@ -137,7 +137,7 @@ from sillo_contrib.accepts import StrictContentNegotiationMiddleware
 
 app = silloApp()
 
-app.add_middleware(
+app.use(
     StrictContentNegotiationMiddleware(
         available_types=["application/json", "application/xml"],
         available_languages=["en", "es"]
@@ -188,7 +188,7 @@ from sillo_contrib.accepts import Accepts
 
 app = silloApp()
 
-app.add_middleware(Accepts())
+app.use(Accepts())
 ```
 
 ### Custom Configuration
@@ -199,7 +199,7 @@ from sillo_contrib.accepts import Accepts
 
 app = silloApp()
 
-app.add_middleware(
+app.use(
     Accepts(
         default_content_type="application/json",
         default_language="en",
@@ -366,7 +366,7 @@ class CustomNegotiationMiddleware(ContentNegotiationMiddleware):
         return super().negotiate_content_type(request, available_types, default_type)
 
 app = silloApp()
-app.add_middleware(CustomNegotiationMiddleware())
+app.use(CustomNegotiationMiddleware())
 ```
 
 ### API Versioning with Content Negotiation
@@ -376,7 +376,7 @@ from sillo import silloApp
 from sillo_contrib.accepts import ContentNegotiationMiddleware
 
 app = silloApp()
-app.add_middleware(ContentNegotiationMiddleware())
+app.use(ContentNegotiationMiddleware())
 
 @app.get("/api/users")
 async def get_users(request, response):
@@ -398,7 +398,7 @@ from sillo import silloApp
 from sillo_contrib.accepts import ContentNegotiationMiddleware, negotiate_language
 
 app = silloApp()
-app.add_middleware(ContentNegotiationMiddleware())
+app.use(ContentNegotiationMiddleware())
 
 @app.get("/messages")
 async def get_messages(request, response):
@@ -436,7 +436,7 @@ from sillo_contrib.accepts import StrictContentNegotiationMiddleware
 
 app = silloApp()
 
-app.add_middleware(
+app.use(
     StrictContentNegotiationMiddleware(
         available_types=[
             "application/json",

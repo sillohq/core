@@ -508,7 +508,7 @@ async def auth_middleware(request, response, next_call):
     return await next_call()
 
 # Apply middleware
-app.add_middleware(auth_middleware)
+app.use(auth_middleware)
 ```
 
 ##  Documentation Best Practices

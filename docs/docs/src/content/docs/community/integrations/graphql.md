@@ -19,17 +19,13 @@ This contrib provides:
 
 ## Installation
 
-The GraphQL contrib is included with the main `sillo_contrib` package.
+GraphQL support ships with sillo as a first-party module. Install with the graphql extra:
 
 ```bash
-pip install sillo_contrib
+pip install sillo[graphql]
 ```
 
-You will also need to install `strawberry-graphql`:
-
-```bash
-pip install strawberry-graphql
-```
+This installs `strawberry-graphql` alongside sillo.
 
 ## Quick Start
 
@@ -40,7 +36,7 @@ Here is a simple example of how to set up a GraphQL server with sillo:
 ```python
 import strawberry
 from sillo import silloApp
-from sillo_contrib.graphql import GraphQL
+from sillo.graphql import GraphQL
 
 # 1. Define your schema using Strawberry
 @strawberry.type

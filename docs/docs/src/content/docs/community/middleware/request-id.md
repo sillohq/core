@@ -30,7 +30,7 @@ import sillo_contrib.request_id as request_id
 app = silloApp()
 
 # Add the Request ID middleware (defaults shown)
-app.add_middleware(
+app.use(
     request_id.RequestId(
         header_name="X-Request-ID",    # Header name for request ID
         force_generate=False,          # Use existing request ID if provided
@@ -69,7 +69,7 @@ from sillo_contrib.request_id import RequestId
 app = silloApp()
 
 # Add middleware with default settings
-app.add_middleware(RequestId())
+app.use(RequestId())
 ```
 
 ### Custom Configuration
@@ -81,7 +81,7 @@ from sillo_contrib.request_id import RequestId
 app = silloApp()
 
 # Custom configuration
-app.add_middleware(
+app.use(
     RequestId(
         header_name="X-Correlation-ID",  # Use different header name
         force_generate=True,             # Always generate new request ID
@@ -148,7 +148,7 @@ import logging
 from sillo_contrib.request_id import RequestId
 
 app = silloApp()
-app.add_middleware(RequestId())
+app.use(RequestId())
 
 # Configure logging to include request ID
 logging.basicConfig(
@@ -194,7 +194,7 @@ class CustomRequestIdMiddleware(RequestIdMiddleware):
         import uuid
         return f"{self.prefix}-{uuid.uuid4().hex[:8]}"
 
-app.add_middleware(CustomRequestIdMiddleware(prefix="api"))
+app.use(CustomRequestIdMiddleware(prefix="api"))
 ```
 
 ### Distributed Tracing Integration
@@ -204,7 +204,7 @@ from sillo_contrib.request_id import RequestId
 import opentelemetry.trace as trace
 
 app = silloApp()
-app.add_middleware(RequestId())
+app.use(RequestId())
 
 @app.middleware
 async def tracing_middleware(request, response, call_next):
@@ -260,7 +260,7 @@ import logging
 app = silloApp()
 
 # Configure request ID middleware
-app.add_middleware(
+app.use(
     RequestId(
         header_name="X-Request-ID",
         force_generate=False,  # Use client-provided IDs when available

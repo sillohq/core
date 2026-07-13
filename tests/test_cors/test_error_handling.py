@@ -26,7 +26,7 @@ class TestCORSErrorHandling:
         async def malformed_origin_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -51,7 +51,7 @@ class TestCORSErrorHandling:
         async def invalid_origin_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -83,7 +83,7 @@ class TestCORSErrorHandling:
         async def empty_cors_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -105,7 +105,7 @@ class TestCORSErrorHandling:
         async def no_cors_config_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -131,7 +131,7 @@ class TestCORSErrorHandling:
         async def non_callable_validator_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -157,7 +157,7 @@ class TestCORSErrorHandling:
         async def multiple_origins_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -185,7 +185,7 @@ class TestCORSErrorHandling:
         async def long_origin_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -210,7 +210,7 @@ class TestCORSErrorHandling:
         async def null_byte_origin_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -235,7 +235,7 @@ class TestCORSErrorHandling:
         async def exception_route(request: Request, response: Response):
             raise ValueError("Route error")
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -260,7 +260,7 @@ class TestCORSErrorHandling:
         async def invalid_method_preflight_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -289,7 +289,7 @@ class TestCORSErrorHandling:
         async def empty_method_preflight_route(request: Request, response: Response):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 
@@ -320,7 +320,7 @@ class TestCORSErrorHandling:
         ):
             return response.json({"message": "OK"})
 
-        app.add_middleware(CORSMiddleware(config=cors_config))
+        app.use(CORSMiddleware(config=cors_config))
 
         client = TestClient(app)
 

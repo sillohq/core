@@ -30,11 +30,7 @@ async def get_user(request, response, user_id: int):
 
 ```
 
-
 If you raise a non-HTTPException (e.g., raise ValueError("fail")), sillo will return a 500 Internal Server Error unless you register a handler for that exception type.
-
-
-
 
 ##  HTTP Exceptions
 
@@ -130,9 +126,7 @@ async def get_premium_content(request, response):
     return response.json({"message": "Premium content available"})      
 ```
 
-
 In the provided example, we demonstrate how to create a custom exception handler for handling specific exceptions in a sillo application. We define a custom exception handler `handle_payment_required_exception`, which returns a JSON response with an error message and a status code when a `PaymentRequiredException` is raised. This handler is registered with the application using `app.add_exception_handler()`. This approach allows for granular control over error responses, improving the user experience by providing clear feedback for specific scenarios, such as when a user tries to access premium content without a subscription.
-
 
 ## 🖥️ Server Error Handler
 sillo provides a way to register a custom server error handler using the `server_error_handler` parameter from `silloApp`. This allows you to define custom error handling behavior for server errors.
@@ -152,10 +146,6 @@ Enable debug mode for detailed error responses:
 
 ```python
 
-from sillo import MakeConfig
-
-config = MakeConfig({"debug": True})
-app = silloApp(config=config)
 ```
 
 ::: tip 🥹Tip
@@ -195,9 +185,7 @@ You can add a `not_found` section to your application config. This controls the 
 #### Example: Custom 404 Config
 ```python
 from sillo import silloApp
-from sillo.config import MakeConfig
 
-config = MakeConfig({
     # ... other config options ...
     "not_found": {
         "return_json": True,  # Set to False for HTML/plain text
@@ -207,7 +195,6 @@ config = MakeConfig({
     }
 })
 
-app = silloApp(config=config)
 ```
 
 #### How it Works
@@ -223,7 +210,6 @@ app = silloApp(config=config)
 **A. API-First Project**
 You want all errors, including 404s, to be JSON so your frontend or mobile app can handle them consistently.
 ```python
-config = MakeConfig({
     "not_found": {
         "return_json": True,
         "custom_message": "Resource not found.",
@@ -236,7 +222,6 @@ config = MakeConfig({
 **B. Marketing Website**
 You want a pretty, branded HTML error page for users who mistype a URL.
 ```python
-config = MakeConfig({
     "not_found": {
         "return_json": False,
         "custom_message": "Oops! We couldn't find that page.",
@@ -249,7 +234,6 @@ config = MakeConfig({
 **C. Developer Debugging**
 You want to see tracebacks for 404s while developing, but not in production.
 ```python
-config = MakeConfig({
     "debug": True,
     "not_found": {
         "return_json": True,
@@ -266,7 +250,5 @@ config = MakeConfig({
 | API              | True        | False    | False         | "Resource not found."         |
 | Website          | False       | True     | False         | "Sorry, this page does not exist." |
 | Debugging        | True/False  | Any      | True          | Any                           |
-
-
 
 > **Tip:** You can change these settings at runtime by updating your config and calling `set_config()`.

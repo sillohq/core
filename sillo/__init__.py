@@ -1,39 +1,46 @@
 """
-sillo - A Modern, High-Performance Python Web Framework
+sillo — The Platform for Python Backends
 
-sillo is a powerful ASGI web framework that combines high performance with developer-friendly features.
-Built on proven design patterns while introducing modern capabilities like dependency injection,
-automatic OpenAPI documentation, and comprehensive middleware support.
+A modern ASGI web framework. Async-native. Zero boilerplate validation.
+Built-in DI with pre-flattened execution plans. Everything you need — routing,
+middleware, auth, CORS, CSRF, sessions, caching, GraphQL — ships as first-party.
 
 Key Features:
-- ASGI-based for high performance and async/await support
-- Built-in dependency injection system
-- Automatic OpenAPI/Swagger documentation
-- Comprehensive middleware system (CORS, CSRF, Sessions)
+- ASGI-based, async/await throughout
+- Dependency injection with pre-flattened execution plan (zero recursion at runtime)
+- Pydantic request validation via request_model — no type annotations needed
+- Fluent Responder for building HTTP responses (json, html, file, stream, redirect)
+- Middleware system: CORS, CSRF, sessions, auth, rate limiting, compression
+- Depend(get_request=True) to inject the raw Request into any dependency
+- GraphQL support via Strawberry (sillo.graphql)
 - WebSocket support with type safety
-- Pydantic integration for request/response validation
 - Flexible routing with path parameters and type conversion
-- Extensive testing utilities
+- OpenAPI documentation generation
+- Testing utilities with TestClient
 
 Quick Start:
     from sillo import silloApp
+    from pydantic import BaseModel
 
-    app = silloApp(
-        title="My API",
-        version="1.0.0"
-    )
+    app = silloApp(title="My API", version="1.0.0")
 
     @app.get("/hello/{name}")
     async def hello(request, response, name: str):
         return response.json({"message": f"Hello, {name}!"})
 
-    if __name__ == "__main__":
-        import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8000)
-
 Common Patterns:
 
-1. Dependency Injection:
+1. Request Validation (zero annotations):
+    class UserCreate(BaseModel):
+        name: str
+        email: str
+
+    @app.post("/users", request_model=UserCreate)
+    async def create_user(request, response):
+        user = request.validated_data   # already a Pydantic model
+        return response.json(user.model_dump(), status_code=201)
+
+2. Dependency Injection:
     from sillo import Depend
 
     async def get_db():
@@ -41,44 +48,34 @@ Common Patterns:
 
     @app.get("/items")
     async def list_items(request, response, db=Depend(get_db)):
-        items = await db.query("SELECT * FROM items")
-        return response.json(items)
+        return response.json(await db.query("SELECT * FROM items"))
 
-2. Request Validation:
-    from pydantic import BaseModel
+    # Inject Request into any dependency:
+    def get_auth(req=Depend(get_request=True)):
+        return req.headers.get("Authorization")
 
-    class Item(BaseModel):
-        name: str
-        price: float
+3. Middleware:
+    app.use(CORSMiddleware(config=CorsConfig(allow_origins=["*"])))
+    app.use(RateLimitMiddleware(rate=100))
+    app.use(SessionMiddleware(config=SessionConfig()))
 
-    @app.post("/items")
-    async def create_item(request, response):
-        item = Item(**await request.json)
-        return response.json(item)
+4. Responses:
+    return response.json(data, status_code=201)
+    return response.html("<h1>Hello</h1>")
+    return response.file("downloads/report.pdf")
+    return response.stream(async_generator(), content_type="text/plain")
+    return response.redirect("/dashboard", status_code=302)
 
-3. Custom Middleware:
-    from sillo.middleware import BaseMiddleware
+5. Exception Handlers:
+    async def custom_handler(request, response, exc):
+        return response.json({"error": str(exc)}).status(400)
 
-    class LoggingMiddleware(BaseMiddleware):
-        async def __call__(self, request, response, call_next):
-            print(f"Request to {request.url}")
-            return await call_next()
+    app.add_exception_handler(CustomError, custom_handler)
 
-4. WebSocket Handling:
-    @app.ws_route("/ws")
-    async def websocket_handler(websocket):
-        try:
-            while True:
-                data = await websocket.receive_text()
-                await websocket.send_text(f"Echo: {data}")
-        except Exception:
-            await websocket.close()
+6. GraphQL:
+    from sillo.graphql import GraphQL
 
-For more examples and detailed documentation, visit:
-https://sillo.readthedocs.io/
-
-Note: This framework builds upon concepts from Starlette and other ASGI frameworks
-while providing additional features and a more intuitive API design.
+    GraphQL(app, schema, path="/graphql", graphiql=True)
 """
 
 from sillo.routing import Route, Router

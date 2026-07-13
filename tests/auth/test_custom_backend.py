@@ -81,7 +81,7 @@ async def test_custom_auth_backend_success(test_client):
                 return AuthResult(success=True, identity="custom1", scope="custom")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(CustomTestUser, CustomAuthBackend()))
+    app.use(AuthenticationMiddleware(CustomTestUser, CustomAuthBackend()))
 
     @app.get("/protected")
     @auth("custom")
@@ -111,7 +111,7 @@ async def test_custom_auth_backend_failure(test_client):
                 return AuthResult(success=True, identity="custom1", scope="custom")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(CustomTestUser, CustomAuthBackend()))
+    app.use(AuthenticationMiddleware(CustomTestUser, CustomAuthBackend()))
 
     @app.get("/protected")
     @auth("custom")
@@ -137,7 +137,7 @@ async def test_custom_auth_backend_exception_handling(test_client):
                 return AuthResult(success=True, identity="backup_user", scope="backup")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(
+    app.use(
         AuthenticationMiddleware(
             SimpleUser, [FaultyAuthBackend(), WorkingAuthBackend()]
         )
@@ -174,7 +174,7 @@ async def test_custom_auth_backend_complex_logic(test_client):
                 )
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(SimpleUser, ComplexAuthBackend()))
+    app.use(AuthenticationMiddleware(SimpleUser, ComplexAuthBackend()))
 
     @app.get("/protected")
     @auth("complex")

@@ -88,7 +88,7 @@ async def test_auth_decorator_single_scope(test_client):
                 return AuthResult(success=True, identity="test_user", scope="test")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(SimpleUser, TestBackend()))
+    app.use(AuthenticationMiddleware(SimpleUser, TestBackend()))
 
     @app.get("/protected")
     @auth("test")
@@ -112,7 +112,7 @@ async def test_auth_decorator_no_scopes(test_client):
                 return AuthResult(success=True, identity="any_user", scope="any")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(SimpleUser, AnyBackend()))
+    app.use(AuthenticationMiddleware(SimpleUser, AnyBackend()))
 
     @app.get("/protected")
     @auth()
@@ -138,7 +138,7 @@ async def test_has_permission_single_permission(test_client):
                 return AuthResult(success=True, identity="1", scope="test")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(TestUser, TestBackend()))
+    app.use(AuthenticationMiddleware(TestUser, TestBackend()))
 
     @app.get("/read")
     @has_permission("read")
@@ -167,7 +167,7 @@ async def test_has_permission_multiple_permissions(test_client):
                 return AuthResult(success=True, identity="1", scope="test")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(TestUser, TestBackend()))
+    app.use(AuthenticationMiddleware(TestUser, TestBackend()))
 
     @app.get("/multi")
     @has_permission(["read", "write"])
@@ -184,7 +184,7 @@ async def test_has_permission_multiple_permissions(test_client):
                     return AuthResult(success=True, identity="3", scope="test")
                 return AuthResult(success=False, identity="", scope="")
 
-        app.add_middleware(AuthenticationMiddleware(TestUser, GuestBackend()))
+        app.use(AuthenticationMiddleware(TestUser, GuestBackend()))
         res = await client.get("/multi", headers={"X-Auth": "guest"})
         assert res.status_code == 403
 
@@ -198,7 +198,7 @@ async def test_has_permission_no_permissions(test_client):
                 return AuthResult(success=True, identity="1", scope="test")
             return AuthResult(success=False, identity="", scope="")
 
-    app.add_middleware(AuthenticationMiddleware(TestUser, TestBackend()))
+    app.use(AuthenticationMiddleware(TestUser, TestBackend()))
 
     @app.get("/any")
     @has_permission()
@@ -224,7 +224,7 @@ async def test_has_permission_unauthenticated_user(test_client):
             request.scope["auth"] = None
             return await call_next()
 
-    app.add_middleware(DummyMiddleware())
+    app.use(DummyMiddleware())
 
     @app.get("/protected")
     @has_permission("read")
