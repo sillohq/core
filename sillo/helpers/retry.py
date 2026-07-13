@@ -15,8 +15,10 @@ class RetryError(Exception):
         self.last_exception = last_exception
 
 
-def _compute_delay(attempt: int, base: float, factor: float, cap: float, jitter: bool) -> float:
-    delay = min(base * (factor ** attempt), cap)
+def _compute_delay(
+    attempt: int, base: float, factor: float, cap: float, jitter: bool
+) -> float:
+    delay = min(base * (factor**attempt), cap)
     if jitter:
         delay = random.uniform(0, delay)
     return delay
@@ -28,7 +30,9 @@ def retry(
     max_delay: float = 60.0,
     backoff_factor: float = 2.0,
     jitter: bool = True,
-    retryable_exceptions: Union[Type[Exception], Tuple[Type[Exception], ...]] = Exception,
+    retryable_exceptions: Union[
+        Type[Exception], Tuple[Type[Exception], ...]
+    ] = Exception,
 ):
     def decorator(func: F) -> F:
         @functools.wraps(func)
@@ -43,7 +47,9 @@ def retry(
                         raise RetryError(
                             f"Retry failed after {max_attempts} attempts", last_exc
                         )
-                    delay = _compute_delay(attempt, base_delay, backoff_factor, max_delay, jitter)
+                    delay = _compute_delay(
+                        attempt, base_delay, backoff_factor, max_delay, jitter
+                    )
                     time.sleep(delay)
             raise RetryError("Unexpected retry exit", last_exc)
 
@@ -59,11 +65,14 @@ def retry(
                         raise RetryError(
                             f"Retry failed after {max_attempts} attempts", last_exc
                         )
-                    delay = _compute_delay(attempt, base_delay, backoff_factor, max_delay, jitter)
+                    delay = _compute_delay(
+                        attempt, base_delay, backoff_factor, max_delay, jitter
+                    )
                     await asyncio.sleep(delay)
             raise RetryError("Unexpected retry exit", last_exc)
 
         import inspect
+
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
         return wrapper  # type: ignore[return-value]
@@ -79,7 +88,9 @@ async def async_retry(
     max_delay: float = 60.0,
     backoff_factor: float = 2.0,
     jitter: bool = True,
-    retryable_exceptions: Union[Type[Exception], Tuple[Type[Exception], ...]] = Exception,
+    retryable_exceptions: Union[
+        Type[Exception], Tuple[Type[Exception], ...]
+    ] = Exception,
     **kwargs: Any,
 ) -> Any:
     last_exc = None
@@ -92,7 +103,9 @@ async def async_retry(
                 raise RetryError(
                     f"Retry failed after {max_attempts} attempts", last_exc
                 )
-            delay = _compute_delay(attempt, base_delay, backoff_factor, max_delay, jitter)
+            delay = _compute_delay(
+                attempt, base_delay, backoff_factor, max_delay, jitter
+            )
             await asyncio.sleep(delay)
     raise RetryError("Unexpected retry exit", last_exc)
 
@@ -105,7 +118,9 @@ def sync_retry(
     max_delay: float = 60.0,
     backoff_factor: float = 2.0,
     jitter: bool = True,
-    retryable_exceptions: Union[Type[Exception], Tuple[Type[Exception], ...]] = Exception,
+    retryable_exceptions: Union[
+        Type[Exception], Tuple[Type[Exception], ...]
+    ] = Exception,
     **kwargs: Any,
 ) -> Any:
     last_exc = None
@@ -118,6 +133,8 @@ def sync_retry(
                 raise RetryError(
                     f"Retry failed after {max_attempts} attempts", last_exc
                 )
-            delay = _compute_delay(attempt, base_delay, backoff_factor, max_delay, jitter)
+            delay = _compute_delay(
+                attempt, base_delay, backoff_factor, max_delay, jitter
+            )
             time.sleep(delay)
     raise RetryError("Unexpected retry exit", last_exc)
