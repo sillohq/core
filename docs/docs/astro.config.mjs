@@ -49,7 +49,7 @@ export default defineConfig({
                 {
                     label: 'Getting Started',
                     items: [
-                        { label: 'Why sillo?', link: '/guides/why-sillo/' },
+                        { label: 'Why sillo?', link: '/guides/why-nexios/' },
                         { label: 'Getting Started', link: '/guides/getting-started/' },
                         { label: 'Configuration', link: '/guides/configuration/' },
                         { label: 'sillo CLI Guide', link: '/guides/cli/' },
@@ -102,9 +102,30 @@ export default defineConfig({
                         { label: 'Frontend (SPA)', link: '/guides/frontend/' },
                         { label: 'Startup & Shutdown', link: '/guides/startups-and-shutdowns/' },
                     ],
-                },
-                {
-                    label: 'OpenAPI',
+            },
+            {
+                label: 'Services',
+                items: [
+                    { label: 'Mail', link: '/guides/services/mail/' },
+                ],
+            },
+            {
+                label: 'Helpers',
+                items: [
+                    { label: 'Overview', link: '/guides/helpers/' },
+                    { label: 'JWT', link: '/guides/helpers/jwt/' },
+                    { label: 'Network', link: '/guides/helpers/network/' },
+                    { label: 'Strings', link: '/guides/helpers/strings/' },
+                    { label: 'Text', link: '/guides/helpers/text/' },
+                    { label: 'HTML', link: '/guides/helpers/html/' },
+                    { label: 'Files', link: '/guides/helpers/files/' },
+                    { label: 'Hashing', link: '/guides/helpers/hashing/' },
+                    { label: 'Crypto', link: '/guides/helpers/crypto/' },
+                    { label: 'Deprecation', link: '/guides/helpers/deprecation/' },
+                ],
+            },
+            {
+                label: 'OpenAPI',
                     items: [
                         { label: 'Overview', link: '/guides/openapi/' },
                         { label: 'Request Parameters', link: '/guides/openapi/request-parameters/' },
