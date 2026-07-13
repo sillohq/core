@@ -24,6 +24,7 @@ class EmailAttachment:
                 self.content = path.read_bytes()
                 if not self.content_type:
                     import mimetypes
+
                     self.content_type, _ = mimetypes.guess_type(str(path))
         if not self.content_type:
             self.content_type = "application/octet-stream"
@@ -60,8 +61,21 @@ class EmailMessage:
         if self.template_context is None:
             self.template_context = {}
 
-    def add_attachment(self, filename: str, content: Union[bytes, str], content_type: Optional[str] = None, content_id: Optional[str] = None) -> None:
-        self.attachments.append(EmailAttachment(filename=filename, content=content, content_type=content_type, content_id=content_id))
+    def add_attachment(
+        self,
+        filename: str,
+        content: Union[bytes, str],
+        content_type: Optional[str] = None,
+        content_id: Optional[str] = None,
+    ) -> None:
+        self.attachments.append(
+            EmailAttachment(
+                filename=filename,
+                content=content,
+                content_type=content_type,
+                content_id=content_id,
+            )
+        )
 
     def add_header(self, name: str, value: str) -> None:
         self.headers[name] = value
@@ -90,8 +104,11 @@ class EmailMessage:
             part = MIMEBase(*att.content_type.split("/", 1))
             part.set_payload(att.content)
             import email.encoders
+
             email.encoders.encode_base64(part)
-            part.add_header("Content-Disposition", f"attachment; filename={att.filename}")
+            part.add_header(
+                "Content-Disposition", f"attachment; filename={att.filename}"
+            )
             if att.content_id:
                 part.add_header("Content-ID", f"<{att.content_id}>")
             msg.attach(part)
@@ -109,4 +126,12 @@ class EmailResult:
     provider_response: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"success": self.success, "message_id": self.message_id, "to": self.to, "subject": self.subject, "sent_at": self.sent_at.isoformat(), "error": self.error, "provider_response": self.provider_response}
+        return {
+            "success": self.success,
+            "message_id": self.message_id,
+            "to": self.to,
+            "subject": self.subject,
+            "sent_at": self.sent_at.isoformat(),
+            "error": self.error,
+            "provider_response": self.provider_response,
+        }

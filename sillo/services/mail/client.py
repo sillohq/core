@@ -13,6 +13,7 @@ logger = logging.getLogger("sillo.services.mail")
 
 try:
     import jinja2
+
     _JINJA2 = True
 except ImportError:
     _JINJA2 = False
@@ -65,9 +66,17 @@ class MailClient:
 
     def _connect_sync(self) -> None:
         if self.config.use_ssl:
-            self._smtp = smtplib.SMTP_SSL(self.config.smtp_host, self.config.smtp_port, timeout=self.config.smtp_timeout)
+            self._smtp = smtplib.SMTP_SSL(
+                self.config.smtp_host,
+                self.config.smtp_port,
+                timeout=self.config.smtp_timeout,
+            )
         else:
-            self._smtp = smtplib.SMTP(self.config.smtp_host, self.config.smtp_port, timeout=self.config.smtp_timeout)
+            self._smtp = smtplib.SMTP(
+                self.config.smtp_host,
+                self.config.smtp_port,
+                timeout=self.config.smtp_timeout,
+            )
             if self.config.use_tls:
                 self._smtp.starttls()
         if self.config.debug:
@@ -104,7 +113,19 @@ class MailClient:
         template_context: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> EmailResult:
-        message = EmailMessage(to=to, subject=subject, body=body, html_body=html_body, from_email=from_email, reply_to=reply_to, cc=cc, bcc=bcc, template_name=template_name, template_context=template_context, **kwargs)
+        message = EmailMessage(
+            to=to,
+            subject=subject,
+            body=body,
+            html_body=html_body,
+            from_email=from_email,
+            reply_to=reply_to,
+            cc=cc,
+            bcc=bcc,
+            template_name=template_name,
+            template_context=template_context,
+            **kwargs,
+        )
         if attachments:
             for att in attachments:
                 if isinstance(att, dict):
@@ -113,8 +134,23 @@ class MailClient:
                     message.add_attachment(att)
         return await self.send_message(message)
 
-    async def send_template_email(self, to: Union[str, List[str]], subject: str, template_name: str, context: Optional[Dict[str, Any]] = None, from_email: Optional[str] = None, **kwargs: Any) -> EmailResult:
-        return await self.send_email(to=to, subject=subject, template_name=template_name, template_context=context, from_email=from_email, **kwargs)
+    async def send_template_email(
+        self,
+        to: Union[str, List[str]],
+        subject: str,
+        template_name: str,
+        context: Optional[Dict[str, Any]] = None,
+        from_email: Optional[str] = None,
+        **kwargs: Any,
+    ) -> EmailResult:
+        return await self.send_email(
+            to=to,
+            subject=subject,
+            template_name=template_name,
+            template_context=context,
+            from_email=from_email,
+            **kwargs,
+        )
 
     async def send_message(self, message: EmailMessage) -> EmailResult:
         try:
@@ -136,16 +172,33 @@ class MailClient:
                 recipients.extend(message.bcc)
             if self.config.suppress_send:
                 logger.info(f"Suppressed: {message.subject} to {recipients}")
-                return EmailResult(success=True, message_id=message.message_id, to=recipients, subject=message.subject, provider_response={"suppressed": True})
+                return EmailResult(
+                    success=True,
+                    message_id=message.message_id,
+                    to=recipients,
+                    subject=message.subject,
+                    provider_response={"suppressed": True},
+                )
 
             await self._ensure_connected()
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, self._send_mime, mime_message, recipients)
             logger.info(f"Sent: {message.message_id} to {recipients}")
-            return EmailResult(success=True, message_id=message.message_id, to=recipients, subject=message.subject)
+            return EmailResult(
+                success=True,
+                message_id=message.message_id,
+                to=recipients,
+                subject=message.subject,
+            )
         except Exception as e:
             logger.error(f"Failed: {e}")
-            return EmailResult(success=False, message_id=message.message_id, to=list(message.to), subject=message.subject, error=str(e))
+            return EmailResult(
+                success=False,
+                message_id=message.message_id,
+                to=list(message.to),
+                subject=message.subject,
+                error=str(e),
+            )
 
     def _send_mime(self, mime_message, recipients: List[str]) -> None:
         if not self._smtp:
@@ -184,5 +237,7 @@ def setup_mail(app, config: Optional[MailConfig] = None) -> MailClient:
 def get_mail_client(request) -> MailClient:
     client = request.state._state.get("mail_client")
     if client is None:
-        raise RuntimeError("Mail client not initialized. Call setup_mail(app) during startup.")
+        raise RuntimeError(
+            "Mail client not initialized. Call setup_mail(app) during startup."
+        )
     return client
