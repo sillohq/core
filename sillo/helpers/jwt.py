@@ -61,15 +61,20 @@ def decode(
     leeway: int = 0,
 ) -> Dict[str, Any]:
     _ensure_jwt()
-    return pyjwt.decode(
-        token,
-        secret,
-        algorithms=algorithms or ["HS256"],
-        options=options,
-        audience=audience,
-        issuer=issuer,
-        leeway=leeway,
-    )
+    try:
+        return pyjwt.decode(
+            token,
+            secret,
+            algorithms=algorithms or ["HS256"],
+            options=options,
+            audience=audience,
+            issuer=issuer,
+            leeway=leeway,
+        )
+    except ExpiredSignatureError:
+        raise ExpiredTokenError("Token has expired")
+    except (InvalidTokenError, DecodeError) as e:
+        raise InvalidTokenError_(str(e))
 
 
 def sign(

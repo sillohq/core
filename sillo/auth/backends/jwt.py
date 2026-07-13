@@ -1,14 +1,8 @@
-from typing import Optional
-import typing
-
-try:
-    import jwt
-except ImportError:
-    jwt = None  # ty: ignore[invalid-assignment]
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from sillo.auth.model import AuthResult
+from sillo.helpers import jwt as jwt_helpers
 from sillo.http import Request
 
 from .base import AuthenticationBackend
@@ -20,47 +14,24 @@ def create_jwt(
     algorithm: str = "HS256",
     expires_in: Optional[timedelta] = None,
 ) -> str:
-    """
-    Create a JWT token.
-    Args:
-        payload (dict): Data to include in the token.
-        secret (str): Secret key to sign the token.
-        algorithm (str): Algorithm to use for signing the token.
-    Returns:
-        str: Encoded JWT token.
-    """
-    if jwt is None:
-        raise ImportError("JWT support is not installed.")
-
-    if expires_in and not payload.get("exp"):
-        payload["exp"] = datetime.now(timezone.utc) + expires_in
-    return jwt.encode(payload, secret, algorithm=algorithm)
+    if expires_in and "exp" not in payload:
+        payload = {**payload, "exp": datetime.now(timezone.utc) + expires_in}
+    return jwt_helpers.encode(payload, secret, algorithm)
 
 
 def decode_jwt(
-    token: str, secret: str, algorithms: List[str] = ["HS256"]
+    token: str, secret: str, algorithms: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """
-    Decode a JWT token.
-    Args:
-        token (str): Encoded JWT token.
-        secret (str): Secret key used to sign the token.
-        algorithms (list): List of algorithms to decode the token.
-    Returns:
-        dict: Decoded token payload.
-    """
-    if jwt is None:
-        raise ImportError("JWT support is not installed.")
     try:
-        return jwt.decode(token, secret, algorithms=algorithms)
-    except jwt.ExpiredSignatureError:
+        return jwt_helpers.decode(token, secret, algorithms=algorithms or ["HS256"])
+    except jwt_helpers.ExpiredTokenError:
         raise ValueError("Token has expired")
-    except jwt.InvalidTokenError:
+    except jwt_helpers.InvalidTokenError_:
         raise ValueError("Invalid token")
 
 
 class JWTAuthBackend(AuthenticationBackend):
-    def __init__(self, identifier: str = "id", secret_key: typing.Optional[str] = None):
+    def __init__(self, identifier: str = "id", secret_key: Optional[str] = None):
         self.identifier = identifier
         self.secret_key = secret_key
 
@@ -75,7 +46,7 @@ class JWTAuthBackend(AuthenticationBackend):
         token = auth_header.split(" ")[1]
         try:
             payload = decode_jwt(token, self.secret_key)
-        except ValueError as _:
+        except ValueError:
             return AuthResult(success=False, identity="", scope="")
 
         return AuthResult(
