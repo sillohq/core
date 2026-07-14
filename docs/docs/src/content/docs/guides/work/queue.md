@@ -30,12 +30,10 @@ and typing conventions.
 
 ## System Architecture
 
-The system has six core components.  Understanding how they relate is
-essential before diving into each one individually.
-
 ### The Dispatch Path (Handler → Queue)
 
-```
+### The Worker Path (Queue → Execution)
+
 ┌─────────────────┐
 │  HTTP Handler   │
 │                 │

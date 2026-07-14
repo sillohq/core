@@ -47,16 +47,24 @@ __all__ = [
 
 
 def setup_work(app, *, queue_backend=None, queue_name: str = "default") -> dict:
-    """Wire up work subsystems into app.state."""
+    """Wire up work subsystems into app.state and register DI providers."""
     state = app.state
     if "work" in state:
         return state["work"]
     from .queue import SyncConnection
     from .scheduler.manager import SchedulerManager
+<<<<<<< Updated upstream
 
+=======
+    from .queue.events import EventDispatcher
+>>>>>>> Stashed changes
     conn = SyncConnection()
     s = SchedulerManager()
+    dispatcher = EventDispatcher()
     state["work"] = {"connection": conn, "scheduler": s}
+    state["scheduler"] = s
+    state["queue_connection"] = conn
+    state["events"] = dispatcher
     app.on_startup(s.start)
     app.on_shutdown(s.stop)
     return state["work"]

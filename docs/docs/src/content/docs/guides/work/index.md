@@ -21,14 +21,6 @@ operation that should not block an HTTP response lives here.
 
 ## Architecture
 
-```
-HTTP Handler → Job.dispatch() → Connection (Sync/Redis) → QueueWorker → Job.handle()
-                                                              ↓
-SchedulerManager → ScheduledJob → trigger.next_fire() → func()
-EventDispatcher → Event → listeners (priority ordered)
-BackgroundTask.run() → asyncio task (fire-and-forget)
-```
-
 ## Quick Start
 
 ```python

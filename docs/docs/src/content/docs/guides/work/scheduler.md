@@ -22,18 +22,8 @@ The scheduler has three layers:
 3. **SchedulerManager** — owns all jobs, runs the ticker loop, integrates
    with the app lifecycle via `app.state["scheduler"]`
 
-```
-SchedulerManager._loop()    ← 1-second ticker
-        │
-        ├── for each ScheduledJob:
-        │       if next_run_time <= now:
-        │           asyncio.create_task(job.run())
-        │
-        └── job.run():
-                ├── trigger.next_fire(last_run)
-                ├── middleware pipeline
-                └── func(*args, **kwargs)
-```
+The ticker never blocks — `create_task` spawns execution and returns
+immediately.  Resolution is 1 second.
 
 ---
 
