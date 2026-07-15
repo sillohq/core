@@ -37,7 +37,10 @@ class PaginatedResult:
 
     def to_dict(self) -> dict:
         return {
-            "items": [item.to_dict() if hasattr(item, "to_dict") else str(item) for item in self.items],
+            "items": [
+                item.to_dict() if hasattr(item, "to_dict") else str(item)
+                for item in self.items
+            ],
             "total": self.total,
             "page": self.page,
             "page_size": self.page_size,
@@ -52,7 +55,9 @@ async def paginate(
     page: Annotated[int, Doc("1-based page number.")] = 1,
     page_size: Annotated[int, Doc("Items per page.")] = 20,
     *,
-    ordering: Annotated[Optional[str], Doc("Field name with optional '-' prefix for descending.")] = None,
+    ordering: Annotated[
+        Optional[str], Doc("Field name with optional '-' prefix for descending.")
+    ] = None,
 ) -> PaginatedResult:
     """Paginate any Tortoise queryset."""
     if ordering:
@@ -83,6 +88,7 @@ async def explain(queryset) -> str:
     try:
         sql, params = queryset.sql()
         from tortoise import connections
+
         conn = connections.get("default")
         result = await conn.execute_query(f"EXPLAIN {sql}", params)
         return str(result)

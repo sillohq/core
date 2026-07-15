@@ -49,7 +49,9 @@ class AdminUser(Model):
     is_active = fields.BooleanField(default=True)
     is_superuser = fields.BooleanField(default=False)
     last_login = fields.DatetimeField(null=True)
-    role: fields.ForeignKeyRelation[AdminRole] = fields.ForeignKeyField("models.AdminRole", null=True)
+    role: fields.ForeignKeyRelation[AdminRole] = fields.ForeignKeyField(
+        "models.AdminRole", null=True
+    )
 
     class Meta:
         table = "admin_users"

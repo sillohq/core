@@ -57,7 +57,9 @@ def pydantic_model_from_tortoise(
         else:
             fields[field_name] = (py_type, Field(default=default))
 
-    return create_model(name or f"{model_class.__name__}Schema", __base__=BaseModel, **fields)
+    return create_model(
+        name or f"{model_class.__name__}Schema", __base__=BaseModel, **fields
+    )
 
 
 def _tortoise_to_python_type(field_obj) -> type:
@@ -65,11 +67,17 @@ def _tortoise_to_python_type(field_obj) -> type:
     from tortoise import fields as f
 
     mapping = {
-        f.IntField: int, f.SmallIntField: int, f.BigIntField: int,
-        f.FloatField: float, f.DecimalField: float,
+        f.IntField: int,
+        f.SmallIntField: int,
+        f.BigIntField: int,
+        f.FloatField: float,
+        f.DecimalField: float,
         f.BooleanField: bool,
-        f.CharField: str, f.TextField: str,
-        f.DatetimeField: str, f.DateField: str, f.TimeDeltaField: float,
+        f.CharField: str,
+        f.TextField: str,
+        f.DatetimeField: str,
+        f.DateField: str,
+        f.TimeDeltaField: float,
         f.JSONField: dict,
     }
     for tf, pt in mapping.items():

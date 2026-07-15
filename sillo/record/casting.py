@@ -55,6 +55,7 @@ def _datetime_decoder(value: str) -> Optional[datetime]:
 
 def _encrypted_factory(key: str):
     """Create an encrypted caster with a symmetric key."""
+
     def encoder(value: str) -> str:
         # Simple XOR + base64 for demo. Use cryptography.fernet in production.
         encoded = bytes([ord(c) ^ ord(key[i % len(key)]) for i, c in enumerate(value)])
@@ -70,8 +71,12 @@ def _encrypted_factory(key: str):
 CastRegistry.register("json", _json_encoder, _json_decoder)
 CastRegistry.register("datetime", _datetime_encoder, _datetime_decoder)
 CastRegistry.register("bool", lambda v: bool(v), lambda v: bool(v))
-CastRegistry.register("int", lambda v: int(v), lambda v: int(v) if v is not None else None)
-CastRegistry.register("float", lambda v: float(v), lambda v: float(v) if v is not None else None)
+CastRegistry.register(
+    "int", lambda v: int(v), lambda v: int(v) if v is not None else None
+)
+CastRegistry.register(
+    "float", lambda v: float(v), lambda v: float(v) if v is not None else None
+)
 
 
 class HasCasts:

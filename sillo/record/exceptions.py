@@ -9,7 +9,12 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from tortoise.exceptions import DoesNotExist, IntegrityError, OperationalError, ValidationError
+from tortoise.exceptions import (
+    DoesNotExist,
+    IntegrityError,
+    OperationalError,
+    ValidationError,
+)
 from typing_extensions import Doc
 
 
@@ -25,12 +30,17 @@ async def handle_integrity_error(request, response, exc: IntegrityError):
 
 async def handle_validation_error(request, response, exc: ValidationError):
     """Return 422 when model validation fails."""
-    return response.json({"error": "Validation Error", "detail": str(exc)}, status_code=422)
+    return response.json(
+        {"error": "Validation Error", "detail": str(exc)}, status_code=422
+    )
 
 
 async def handle_operational_error(request, response, exc: OperationalError):
     """Return 503 when the database is unreachable."""
-    return response.json({"error": "Service Unavailable", "detail": "Database unavailable"}, status_code=503)
+    return response.json(
+        {"error": "Service Unavailable", "detail": "Database unavailable"},
+        status_code=503,
+    )
 
 
 def register_db_exception_handlers(app) -> None:

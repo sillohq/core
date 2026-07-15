@@ -43,7 +43,9 @@ class Seeder:
     def seed(
         self,
         model: type,
-        records: Annotated[List[Dict[str, Any]], Doc("List of field dicts for the model.")],
+        records: Annotated[
+            List[Dict[str, Any]], Doc("List of field dicts for the model.")
+        ],
     ) -> "Seeder":
         """Register records for a model. Call :meth:`run` to execute."""
         for record in records:
@@ -79,7 +81,9 @@ class FixtureLoader:
             count += await self._load_file(file_path)
         return count
 
-    async def load(self, name: Annotated[str, Doc("Fixture name without extension.")]) -> int:
+    async def load(
+        self, name: Annotated[str, Doc("Fixture name without extension.")]
+    ) -> int:
         """Load a specific fixture file by name."""
         for ext in (".json", ".jsonl"):
             path = self._dir / f"{name}{ext}"
@@ -90,7 +94,9 @@ class FixtureLoader:
     async def _load_file(self, path: Path) -> int:
         content = path.read_text()
         if path.suffix == ".jsonl":
-            records = [json.loads(line) for line in content.splitlines() if line.strip()]
+            records = [
+                json.loads(line) for line in content.splitlines() if line.strip()
+            ]
         else:
             records = json.loads(content)
         if not isinstance(records, list):
@@ -109,29 +115,69 @@ class MigrationHelper:
     async def init(self) -> None:
         """Initialize migration tracking."""
         from aerich import Command
-        cmd = Command(tortoise_config={"connections": {"default": self._app}, "apps": {"models": {"models": ["aerich.models"]}}}, app="models", location=self._location)
+
+        cmd = Command(
+            tortoise_config={
+                "connections": {"default": self._app},
+                "apps": {"models": {"models": ["aerich.models"]}},
+            },
+            app="models",
+            location=self._location,
+        )
         await cmd.init_db(safe=True)
 
     async def migrate(self, name: str = "auto") -> None:
         """Generate a migration."""
         from aerich import Command
-        cmd = Command(tortoise_config={"connections": {"default": self._app}, "apps": {"models": {"models": ["aerich.models"]}}}, app="models", location=self._location)
+
+        cmd = Command(
+            tortoise_config={
+                "connections": {"default": self._app},
+                "apps": {"models": {"models": ["aerich.models"]}},
+            },
+            app="models",
+            location=self._location,
+        )
         await cmd.migrate(name=name)
 
     async def upgrade(self) -> None:
         """Apply pending migrations."""
         from aerich import Command
-        cmd = Command(tortoise_config={"connections": {"default": self._app}, "apps": {"models": {"models": ["aerich.models"]}}}, app="models", location=self._location)
+
+        cmd = Command(
+            tortoise_config={
+                "connections": {"default": self._app},
+                "apps": {"models": {"models": ["aerich.models"]}},
+            },
+            app="models",
+            location=self._location,
+        )
         await cmd.upgrade()
 
     async def downgrade(self, target: str) -> None:
         """Roll back to *target*."""
         from aerich import Command
-        cmd = Command(tortoise_config={"connections": {"default": self._app}, "apps": {"models": {"models": ["aerich.models"]}}}, app="models", location=self._location)
+
+        cmd = Command(
+            tortoise_config={
+                "connections": {"default": self._app},
+                "apps": {"models": {"models": ["aerich.models"]}},
+            },
+            app="models",
+            location=self._location,
+        )
         await cmd.downgrade(target_version=target)
 
     async def history(self) -> list:
         """Show migration history."""
         from aerich import Command
-        cmd = Command(tortoise_config={"connections": {"default": self._app}, "apps": {"models": {"models": ["aerich.models"]}}}, app="models", location=self._location)
+
+        cmd = Command(
+            tortoise_config={
+                "connections": {"default": self._app},
+                "apps": {"models": {"models": ["aerich.models"]}},
+            },
+            app="models",
+            location=self._location,
+        )
         return await cmd.history()

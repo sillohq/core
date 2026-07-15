@@ -50,7 +50,9 @@ class Model(_TortoiseModel):
         self,
         *,
         exclude: Annotated[Optional[List[str]], Doc("Field names to omit.")] = None,
-        include: Annotated[Optional[List[str]], Doc("If set, ONLY include these fields.")] = None,
+        include: Annotated[
+            Optional[List[str]], Doc("If set, ONLY include these fields.")
+        ] = None,
     ) -> Dict[str, Any]:
         """Serialize the model to a plain dict."""
         data = {}
@@ -73,7 +75,9 @@ class Model(_TortoiseModel):
 
     async def update_from_dict(
         self,
-        data: Annotated[Dict[str, Any], Doc("Dict to apply, e.g. from pydantic model_dump().")],
+        data: Annotated[
+            Dict[str, Any], Doc("Dict to apply, e.g. from pydantic model_dump().")
+        ],
     ) -> None:
         """Apply a dict of field updates and save."""
         for key, value in data.items():
@@ -112,7 +116,9 @@ class Model(_TortoiseModel):
     @classmethod
     async def get_or_create(
         cls: Type[T],
-        defaults: Annotated[Optional[Dict[str, Any]], Doc("Values to use when creating.")] = None,
+        defaults: Annotated[
+            Optional[Dict[str, Any]], Doc("Values to use when creating.")
+        ] = None,
         **kwargs,
     ) -> tuple[T, bool]:
         """Return existing or create new. Returns (instance, created)."""
@@ -130,7 +136,7 @@ class Model(_TortoiseModel):
         """Insert multiple rows efficiently."""
         instances = [cls(**item) for item in items]
         for i in range(0, len(instances), batch_size):
-            await cls.bulk_create(instances[i:i + batch_size])
+            await cls.bulk_create(instances[i : i + batch_size])
         return instances
 
     @classmethod

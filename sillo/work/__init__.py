@@ -54,6 +54,7 @@ def setup_work(app, *, queue_backend=None, queue_name: str = "default") -> dict:
     from .queue import SyncConnection
     from .scheduler.manager import SchedulerManager
     from .queue.events import EventDispatcher
+
     conn = SyncConnection()
     s = SchedulerManager()
     dispatcher = EventDispatcher()

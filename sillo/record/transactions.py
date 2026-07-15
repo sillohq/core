@@ -29,7 +29,9 @@ logger = logging.getLogger("sillo.record.transactions")
 
 
 @asynccontextmanager
-async def transaction(connection_name: Annotated[str, Doc("Connection name.")] = "default"):
+async def transaction(
+    connection_name: Annotated[str, Doc("Connection name.")] = "default",
+):
     """Execute a block within a database transaction.
 
     Commits on clean exit, rolls back on exception.

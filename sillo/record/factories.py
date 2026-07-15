@@ -33,20 +33,36 @@ class Factory:
     definition: Callable[[], Dict[str, Any]] = lambda: {}
 
     @classmethod
-    def make(cls, overrides: Annotated[Optional[Dict[str, Any]], Doc("Attributes to override.")] = None) -> Any:
+    def make(
+        cls,
+        overrides: Annotated[
+            Optional[Dict[str, Any]], Doc("Attributes to override.")
+        ] = None,
+    ) -> Any:
         """Create an unsaved model instance."""
         data = {**cls.definition(), **(overrides or {})}
         return cls.model(**data)
 
     @classmethod
-    async def create(cls, overrides: Annotated[Optional[Dict[str, Any]], Doc("Attributes to override.")] = None) -> Any:
+    async def create(
+        cls,
+        overrides: Annotated[
+            Optional[Dict[str, Any]], Doc("Attributes to override.")
+        ] = None,
+    ) -> Any:
         """Create and persist a model instance."""
         instance = cls.make(overrides)
         await instance.save()
         return instance
 
     @classmethod
-    async def create_many(cls, count: Annotated[int, Doc("Number of instances.")], overrides: Annotated[Optional[Dict[str, Any]], Doc("Attributes applied to all.")] = None) -> List[Any]:
+    async def create_many(
+        cls,
+        count: Annotated[int, Doc("Number of instances.")],
+        overrides: Annotated[
+            Optional[Dict[str, Any]], Doc("Attributes applied to all.")
+        ] = None,
+    ) -> List[Any]:
         """Create and persist *count* instances."""
         instances = []
         for _ in range(count):
@@ -57,8 +73,10 @@ class Factory:
     @classmethod
     def state(cls, **kwargs) -> Callable:
         """Return a modifier that overrides definition attributes."""
+
         def modifier():
             return {**cls.definition(), **kwargs}
+
         return modifier
 
 

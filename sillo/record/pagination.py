@@ -38,7 +38,8 @@ class SyncTortoiseDataHandler(SyncDataHandler):
     def __init__(self, data: List[Any]):
         self._data = data
 
-    def get_total_items(self) -> int: return len(self._data)
+    def get_total_items(self) -> int:
+        return len(self._data)
 
     def get_items(self, offset: int, limit: int) -> List[Any]:
         return self._data[offset : offset + limit]

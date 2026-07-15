@@ -68,13 +68,13 @@ class SessionAuth(AuthBackend):
 
     async def login(self, request, username: str, password: str) -> bool:
         # Override with your own credential check
-        print(username,password)
+        print(username, password)
         if username == "admin@admin.com" and password == "admin":
             session = request.session
             print(session)
             session["admin_authenticated"] = True
             session["admin_user"] = {"id": "1", "username": "admin"}
-            
+
             return True
         return False
 
@@ -96,7 +96,11 @@ class _AuthMiddleware:
         self.backend = backend
 
     async def __call__(self, request, response, call_next):
-        path = request.url.path if hasattr(request.url, "path") else request.scope.get("path", "")
+        path = (
+            request.url.path
+            if hasattr(request.url, "path")
+            else request.scope.get("path", "")
+        )
         if not path.startswith("/admin"):
             return await call_next()
         if path.startswith("/admin/login") or path.startswith("/admin/static"):

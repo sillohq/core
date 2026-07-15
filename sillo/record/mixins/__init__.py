@@ -66,13 +66,20 @@ class HasUlidMixin:
 
     def generate_ulid(self) -> str:
         import ulid
+
         return str(ulid.new())
 
 
 class SerializesToDictMixin:
     """Adds ``to_dict()`` / ``to_json()`` with field exclusion/inclusion."""
 
-    def to_dict(self, *, exclude: Optional[List[str]] = None, include: Optional[List[str]] = None, max_depth: int = 3) -> Dict:
+    def to_dict(
+        self,
+        *,
+        exclude: Optional[List[str]] = None,
+        include: Optional[List[str]] = None,
+        max_depth: int = 3,
+    ) -> Dict:
         from datetime import datetime as dt
 
         data = {}
@@ -91,6 +98,7 @@ class SerializesToDictMixin:
 
     def to_json(self, *, indent: Optional[int] = None, **kwargs) -> str:
         import json
+
         return json.dumps(self.to_dict(**kwargs), indent=indent, default=str)
 
 

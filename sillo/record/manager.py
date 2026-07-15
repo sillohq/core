@@ -29,12 +29,19 @@ class DatabaseManager:
         await db.shutdown()
     """
 
-    def __init__(self, config: Annotated[DatabaseConfig, Doc("Connection configuration.")]):
+    def __init__(
+        self, config: Annotated[DatabaseConfig, Doc("Connection configuration.")]
+    ):
         self.config = config
         self._initialized = False
         self._model_modules: List[str] = []
 
-    def register_models(self, *modules: Annotated[str, Doc("Dotted module paths containing Tortoise models.")]) -> None:
+    def register_models(
+        self,
+        *modules: Annotated[
+            str, Doc("Dotted module paths containing Tortoise models.")
+        ],
+    ) -> None:
         """Register model modules to be discovered on init."""
         self._model_modules.extend(modules)
 
@@ -47,6 +54,7 @@ class DatabaseManager:
         await Tortoise.generate_schemas(safe=True)
 
         from tortoise.context import get_current_context
+
         self._root_context = get_current_context()
 
         self._initialized = True
@@ -55,6 +63,7 @@ class DatabaseManager:
     async def ensure_context(self, request, response, call_next):
         """Set Tortoise context for this request task."""
         from tortoise.context import _current_context
+
         if self._root_context:
             _current_context.set(self._root_context)
         return await call_next()
@@ -115,7 +124,9 @@ def setup_record(
     app,
     config: Annotated[DatabaseConfig, Doc("Database configuration.")],
     *,
-    model_modules: Annotated[Optional[List[str]], Doc("List of dotted model module paths.")] = None,
+    model_modules: Annotated[
+        Optional[List[str]], Doc("List of dotted model module paths.")
+    ] = None,
 ) -> DatabaseManager:
     """Wire database lifecycle into a sillo application.
 

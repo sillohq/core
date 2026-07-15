@@ -59,11 +59,17 @@ class Collection:
         return result
 
     def sort_by(self, key: str, *, descending: bool = False) -> "Collection":
-        return Collection(sorted(self._items, key=lambda x: getattr(x, key, None) or 0, reverse=descending))
+        return Collection(
+            sorted(
+                self._items,
+                key=lambda x: getattr(x, key, None) or 0,
+                reverse=descending,
+            )
+        )
 
     def chunk(self, size: int) -> Iterator["Collection"]:
         for i in range(0, len(self._items), size):
-            yield Collection(self._items[i:i + size])
+            yield Collection(self._items[i : i + size])
 
     def first(self, default=None) -> Any:
         return self._items[0] if self._items else default
@@ -83,7 +89,9 @@ class Collection:
         return sum(self._items)
 
     def avg(self, key: Optional[str] = None) -> float:
-        values = [getattr(item, key, 0) or 0 for item in self._items] if key else self._items
+        values = (
+            [getattr(item, key, 0) or 0 for item in self._items] if key else self._items
+        )
         return sum(values) / len(values) if values else 0.0
 
     def min(self, key: Optional[str] = None):
@@ -124,7 +132,10 @@ class Collection:
         return list(self._items)
 
     def to_dict(self) -> List[Dict[str, Any]]:
-        return [item.to_dict() if hasattr(item, "to_dict") else str(item) for item in self._items]
+        return [
+            item.to_dict() if hasattr(item, "to_dict") else str(item)
+            for item in self._items
+        ]
 
     def to_json(self, indent: Optional[int] = None) -> str:
         return json.dumps(self.to_dict(), indent=indent, default=str)

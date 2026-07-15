@@ -38,13 +38,23 @@ class DatabaseConfig:
         config = DatabaseConfig.sqlite("data/myapp.db")
     """
 
-    url: str = field(default_factory=lambda: os.getenv("DATABASE_URL", "sqlite://:memory:"))
+    url: str = field(
+        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite://:memory:")
+    )
     backend: DatabaseBackend = DatabaseBackend.SQLITE
     pool_size: int = field(default_factory=lambda: int(os.getenv("DB_POOL_SIZE", "5")))
-    max_overflow: int = field(default_factory=lambda: int(os.getenv("DB_MAX_OVERFLOW", "10")))
-    pool_recycle: int = field(default_factory=lambda: int(os.getenv("DB_POOL_RECYCLE", "3600")))
-    echo: bool = field(default_factory=lambda: os.getenv("DB_ECHO", "false").lower() == "true")
-    ssl: bool = field(default_factory=lambda: os.getenv("DB_SSL", "false").lower() == "true")
+    max_overflow: int = field(
+        default_factory=lambda: int(os.getenv("DB_MAX_OVERFLOW", "10"))
+    )
+    pool_recycle: int = field(
+        default_factory=lambda: int(os.getenv("DB_POOL_RECYCLE", "3600"))
+    )
+    echo: bool = field(
+        default_factory=lambda: os.getenv("DB_ECHO", "false").lower() == "true"
+    )
+    ssl: bool = field(
+        default_factory=lambda: os.getenv("DB_SSL", "false").lower() == "true"
+    )
     timezone: str = field(default_factory=lambda: os.getenv("DB_TIMEZONE", "UTC"))
     charset: str = "utf8mb4"
     ssl_ca: Optional[str] = field(default_factory=lambda: os.getenv("DB_SSL_CA"))
@@ -72,7 +82,9 @@ class DatabaseConfig:
         return cls(url=url)
 
     @classmethod
-    def sqlite(cls, path: Annotated[str, Doc("File path or ':memory:'.")] = ":memory:") -> "DatabaseConfig":
+    def sqlite(
+        cls, path: Annotated[str, Doc("File path or ':memory:'.")] = ":memory:"
+    ) -> "DatabaseConfig":
         """SQLite connection."""
         return cls(url=f"sqlite://{path}", backend=DatabaseBackend.SQLITE)
 
@@ -103,7 +115,11 @@ class DatabaseConfig:
         port: Annotated[int, Doc("Port.")] = 3306,
     ) -> "DatabaseConfig":
         """MySQL / MariaDB connection."""
-        backend = DatabaseBackend.MARIADB if "mariadb" in host.lower() else DatabaseBackend.MYSQL
+        backend = (
+            DatabaseBackend.MARIADB
+            if "mariadb" in host.lower()
+            else DatabaseBackend.MYSQL
+        )
         return cls(
             url=f"mysql://{user}:{password}@{host}:{port}/{database}",
             backend=backend,

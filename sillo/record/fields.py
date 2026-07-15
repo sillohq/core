@@ -41,7 +41,9 @@ class SoftDeleteField(_fields.DatetimeField):
 class SlugField(_fields.CharField):
     """URL-safe slug, optionally auto-generated from a source field."""
 
-    def __init__(self, max_length: int = 200, source_field: Optional[str] = None, **kwargs):
+    def __init__(
+        self, max_length: int = 200, source_field: Optional[str] = None, **kwargs
+    ):
         kwargs.setdefault("max_length", max_length)
         super().__init__(**kwargs)
         self._source_field = source_field

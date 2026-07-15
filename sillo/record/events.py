@@ -32,14 +32,29 @@ class ModelObserver:
         User.observe(UserObserver())
     """
 
-    async def before_create(self, instance): pass
-    async def after_create(self, instance): pass
-    async def before_save(self, instance): pass
-    async def after_save(self, instance): pass
-    async def before_update(self, instance): pass
-    async def after_update(self, instance): pass
-    async def before_delete(self, instance): pass
-    async def after_delete(self, instance): pass
+    async def before_create(self, instance):
+        pass
+
+    async def after_create(self, instance):
+        pass
+
+    async def before_save(self, instance):
+        pass
+
+    async def after_save(self, instance):
+        pass
+
+    async def before_update(self, instance):
+        pass
+
+    async def after_update(self, instance):
+        pass
+
+    async def before_delete(self, instance):
+        pass
+
+    async def after_delete(self, instance):
+        pass
 
 
 class EventDispatcher:
@@ -83,7 +98,9 @@ class EventDispatcher:
                 try:
                     await handler(instance)
                 except Exception:
-                    logger.exception(f"Observer {type(observer).__name__}.{event} failed")
+                    logger.exception(
+                        f"Observer {type(observer).__name__}.{event} failed"
+                    )
 
 
 class HasEvents:
@@ -112,9 +129,11 @@ class HasEvents:
     def on(cls, event: str):
         """Decorator: register a callback for a lifecycle event."""
         cls._ensure_events()
+
         def decorator(func):
             cls._events.on(event, func)
             return func
+
         return decorator
 
     @classmethod

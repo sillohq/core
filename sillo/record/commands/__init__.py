@@ -45,6 +45,7 @@ class RecordCLI:
         def init():
             """Initialize migration tracking."""
             from sillo.record.helpers import MigrationHelper
+
             asyncio.run(MigrationHelper(self._app, location=str(self._location)).init())
             click.echo(f"Migration tracking initialized in {self._location}/")
 
@@ -53,14 +54,20 @@ class RecordCLI:
         def migrate(name):
             """Generate a new migration."""
             from sillo.record.helpers import MigrationHelper
-            asyncio.run(MigrationHelper(self._app, location=str(self._location)).migrate(name))
+
+            asyncio.run(
+                MigrationHelper(self._app, location=str(self._location)).migrate(name)
+            )
             click.echo("Migration created.")
 
         @record_group.command()
         def upgrade():
             """Apply pending migrations."""
             from sillo.record.helpers import MigrationHelper
-            asyncio.run(MigrationHelper(self._app, location=str(self._location)).upgrade())
+
+            asyncio.run(
+                MigrationHelper(self._app, location=str(self._location)).upgrade()
+            )
             click.echo("Database upgraded.")
 
         @record_group.command()
@@ -68,13 +75,21 @@ class RecordCLI:
         def downgrade(target):
             """Roll back to a specific migration."""
             from sillo.record.helpers import MigrationHelper
-            asyncio.run(MigrationHelper(self._app, location=str(self._location)).downgrade(target))
+
+            asyncio.run(
+                MigrationHelper(self._app, location=str(self._location)).downgrade(
+                    target
+                )
+            )
             click.echo(f"Rolled back to {target}.")
 
         @record_group.command()
         def history():
             """Show migration history."""
             from sillo.record.helpers import MigrationHelper
-            result = asyncio.run(MigrationHelper(self._app, location=str(self._location)).history())
+
+            result = asyncio.run(
+                MigrationHelper(self._app, location=str(self._location)).history()
+            )
             for r in result:
                 click.echo(r)

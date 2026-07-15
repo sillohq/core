@@ -59,7 +59,9 @@ class AdminSite:
         self.router = AdminRouter(self)
         self._setup = False
 
-    def register(self, model_class: Type, admin_class: Optional[Type[ModelAdmin]] = None):
+    def register(
+        self, model_class: Type, admin_class: Optional[Type[ModelAdmin]] = None
+    ):
         """Register a model with the admin site.
 
         Can be used as a decorator or called directly::

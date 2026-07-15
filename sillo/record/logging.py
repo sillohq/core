@@ -42,7 +42,9 @@ class QueryLogger:
         report = log.report()
     """
 
-    def __init__(self, slow_threshold_ms: float = 100.0, detect_n_plus_one: bool = True):
+    def __init__(
+        self, slow_threshold_ms: float = 100.0, detect_n_plus_one: bool = True
+    ):
         self._entries: List[QueryLogEntry] = []
         self._slow_threshold = slow_threshold_ms
         self._detect_n1 = detect_n_plus_one
@@ -57,7 +59,9 @@ class QueryLogger:
     def stop(self) -> None:
         self._started = False
 
-    def log(self, sql: str, params: Any = None, duration_ms: float = 0, source: str = "") -> None:
+    def log(
+        self, sql: str, params: Any = None, duration_ms: float = 0, source: str = ""
+    ) -> None:
         if self._started:
             entry = QueryLogEntry(sql, params, duration_ms, source)
             self._entries.append(entry)
