@@ -10,7 +10,12 @@ DEFAULT_SESSION_KEY = "user"
 DEFAULT_IDENTIFIER = "id"
 
 
-def login(request: Request, user, session_key: str = DEFAULT_SESSION_KEY, identifier: str = DEFAULT_IDENTIFIER):
+def login(
+    request: Request,
+    user,
+    session_key: str = DEFAULT_SESSION_KEY,
+    identifier: str = DEFAULT_IDENTIFIER,
+):
     assert "session" in request.scope, "No Session Middleware Installed"
     if request.session.get(session_key):
         del request.session[session_key]
@@ -26,7 +31,11 @@ def logout(request: Request, session_key: str = DEFAULT_SESSION_KEY):
 
 
 class SessionAuthBackend(AuthenticationBackend):
-    def __init__(self, session_key: str = DEFAULT_SESSION_KEY, identifier: str = DEFAULT_IDENTIFIER):
+    def __init__(
+        self,
+        session_key: str = DEFAULT_SESSION_KEY,
+        identifier: str = DEFAULT_IDENTIFIER,
+    ):
         self.session_key = session_key
         self.identifier = identifier
 

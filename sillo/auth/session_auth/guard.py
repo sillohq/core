@@ -40,7 +40,9 @@ class SessionGuard:
         return True
 
     async def login(self, request: Request, user) -> None:
-        _session_login(request, user, session_key=self._session_key, identifier=self._identifier)
+        _session_login(
+            request, user, session_key=self._session_key, identifier=self._identifier
+        )
         if hasattr(user, "set_last_login"):
             await user.set_last_login()
 
@@ -49,7 +51,9 @@ class SessionGuard:
 
     async def user(self, request: Request):
         session_user = (
-            request.session.get(self._session_key) if hasattr(request, "session") else None
+            request.session.get(self._session_key)
+            if hasattr(request, "session")
+            else None
         )
         if session_user and self.user_model:
             uid = session_user.get(self._identifier)
@@ -68,7 +72,9 @@ class SessionGuard:
 
     async def id(self, request: Request) -> Optional[str]:
         session_user = (
-            request.session.get(self._session_key) if hasattr(request, "session") else None
+            request.session.get(self._session_key)
+            if hasattr(request, "session")
+            else None
         )
         return str(session_user.get(self._identifier)) if session_user else None
 
