@@ -34,15 +34,7 @@ and typing conventions.
 
 ### The Worker Path (Queue → Execution)
 
-┌─────────────────┐
-│  HTTP Handler   │
-│                 │
-│  1. Build a Job instance
-│  2. serializer.serialize(job) → JSON
-│  3. connection.push("emails", json)
-│  4. return 202 Accepted
-└─────────────────┘
-```
+
 
 The handler never waits for the work to complete.  It builds a `Job`
 object, converts it to a portable JSON string via the
@@ -51,17 +43,7 @@ immediately.  Total handler time: milliseconds.
 
 ### The Worker Path (Queue → Execution)
 
-```
-┌──────────────────┐
-│  QueueWorker     │  Long-running process
-│                  │
-│  1. connection.pop("emails") → (id, json)
-│  2. serializer.deserialize(json) → class + data
-│  3. Import class, instantiate with **data
-│  4. job.fire() → runs through middleware
-│  5. connection.ack("emails", job_id)
-└──────────────────┘
-```
+
 
 The worker loops forever: pop, decode, instantiate, execute through
 middleware, ack.  If the job fails, retry with backoff.  If all retries

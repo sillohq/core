@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="{{ site_prefix }}/{{ model_slug }}/" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to {{ model_name }}
+</a>
+<div class="toolbar" style="margin-bottom:24px;">
+    <div>
+        <h2>{{ model_name }} #{{ object_id }}</h2>
+    </div>
+    <div class="toolbar-actions">
+        <a href="{{ site_prefix }}/{{ model_slug }}/{{ object_id }}/update/" class="btn btn-primary">Edit</a>
+        <a href="{{ site_prefix }}/{{ model_slug }}/{{ object_id }}/delete/" class="btn btn-danger">Delete</a>
+    </div>
+</div>
+{% if fields %}
+<div class="detail-grid">
+    {% for field in fields %}
+    <div class="detail-label">{{ field.label }}</div>
+    <div class="detail-value">
+        {% if field.type == "fk" and field.link %}
+        <a href="{{ field.link }}" style="color:var(--accent);text-decoration:none;font-weight:600;">{{ field.value }}</a>
+        {% elif field.type == "m2m" %}
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            {% for item in field.value %}
+            {% if item[1] %}
+            <a href="{{ item[1] }}" style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;background:var(--accent-subtle);color:var(--accent);text-decoration:none;">{{ item[0] }}</a>
+            {% else %}
+            <span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;background:var(--surface2);color:var(--text2);">{{ item[0] }}</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% else %}
+        {{ field.value }}
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — {{ site_title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; --accent: #fc0345; --accent-hover: #e0023e; --radius-sm: 8px; --radius: 12px; }
+        [data-theme="dark"] { --bg: #050505; --surface: #0a0a0a; --border: #1a1a1a; --text: #fafafa; --text2: #888888; --text3: #555555; --input-bg: #080808; color-scheme: dark; }
+        [data-theme="light"] { --bg: #ffffff; --surface: #fafafa; --border: #eaeaea; --text: #0a0a0a; --text2: #666666; --text3: #999999; --input-bg: #ffffff; color-scheme: light; }
+        @media (prefers-color-scheme: dark) { html:not([data-theme]) { --bg: #050505; --surface: #0a0a0a; --border: #1a1a1a; --text: #fafafa; --text2: #888888; --text3: #555555; --input-bg: #080808; color-scheme: dark; } }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: var(--font); background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+        .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 48px; width: 400px; text-align: center; }
+        .login-box img { width: 44px; height: 44px; border-radius: var(--radius-sm); margin-bottom: 24px; }
+        .login-box h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.3px; }
+        .login-box p { color: var(--text2); font-size: 13.5px; margin-bottom: 32px; }
+        .form-group { margin-bottom: 18px; text-align: left; }
+        .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.6px; }
+        .form-group input { width: 100%; padding: 11px 15px; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 14px; font-family: var(--font); transition: border-color 0.15s; }
+        .form-group input:focus { border-color: var(--accent); outline: none; }
+        .btn { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px; font-family: var(--font); transition: background 0.15s; }
+        .btn:hover { background: var(--accent-hover); }
+        .error { color: #ef4444; font-size: 13px; margin-top: 16px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <img src="{{ site_prefix }}/static/logo.png" alt="Logo">
+        <h1>{{ site_title }}</h1>
+        <p>Sign in to access the admin panel</p>
+        <form method="POST">
+            <div class="form-group"><label>Email</label><input type="email" name="email" required autofocus></div>
+            <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
+            <button type="submit" class="btn">Sign In</button>
+        </form>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    </div>
+</body>
+</html>

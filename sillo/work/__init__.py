@@ -53,11 +53,7 @@ def setup_work(app, *, queue_backend=None, queue_name: str = "default") -> dict:
         return state["work"]
     from .queue import SyncConnection
     from .scheduler.manager import SchedulerManager
-<<<<<<< Updated upstream
-
-=======
     from .queue.events import EventDispatcher
->>>>>>> Stashed changes
     conn = SyncConnection()
     s = SchedulerManager()
     dispatcher = EventDispatcher()

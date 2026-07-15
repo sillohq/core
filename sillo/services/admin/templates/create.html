@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="{{ site_prefix }}/{{ model_slug }}/" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to {{ model_name }}
+</a>
+<div style="text-align:center;margin-bottom:28px;">
+    <h2 style="font-size:22px;font-weight:800;letter-spacing:-0.5px;">Add {{ model_name }}</h2>
+</div>
+{% if error %}
+<div class="flash flash-error">{{ error }}</div>
+{% endif %}
+<div class="form-centered">
+    <div class="card">
+        <form method="POST">
+            {% for field in fields %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+                {% if field.kind == "fk" or field.kind == "o2o" %}
+                <select name="{{ field.name }}" {% if field.required %}required{% endif %}>
+                    <option value="">-- Select {{ field.rel_name }} --</option>
+                    {% for opt in field.options %}
+                    <option value="{{ opt.pk }}" {% if opt.selected %}selected{% endif %}>{{ opt.label }}</option>
+                    {% endfor %}
+                </select>
+                {% elif field.kind == "m2m" %}
+                <div class="m2m-widget" style="border:1px solid var(--border);border-radius:var(--radius-sm);max-height:200px;overflow-y:auto;">
+                    {% for opt in field.options %}
+                    <label style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:13.5px;transition:background .1s;border-bottom:1px solid var(--border);{% if opt.selected %}background:var(--accent-subtle);{% endif %}">
+                        <input type="checkbox" name="{{ field.name }}" value="{{ opt.pk }}" {% if opt.selected %}checked{% endif %} style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+                        <span>{{ opt.label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% elif field.type == "textarea" %}
+                <textarea name="{{ field.name }}" rows="5" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+                {% elif field.type == "checkbox" %}
+                <input type="checkbox" name="{{ field.name }}" value="1" style="width:18px;height:18px;accent-color:var(--accent);">
+                {% else %}
+                <input type="{{ field.type }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                {% endif %}
+                {% if field.help %}<span style="font-size:11px;color:var(--text3);margin-top:4px;display:block;">{{ field.help }}</span>{% endif %}
+            </div>
+            {% endfor %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-lg">Save {{ model_name }}</button>
+                <a href="{{ site_prefix }}/{{ model_slug }}/" class="btn btn-secondary btn-lg">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

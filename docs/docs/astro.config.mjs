@@ -134,6 +134,20 @@ export default defineConfig({
                 ],
             },
             {
+                label: 'Record (DB)',
+                collapsed: false,
+                items: [
+                    { label: 'Overview', link: '/guides/record/' },
+                    { label: 'Models & Mixins', link: '/guides/record/models/' },
+                    { label: 'Scopes & Events', link: '/guides/record/scopes-events/' },
+                    { label: 'Casting & Collections', link: '/guides/record/casting-collections/' },
+                    { label: 'Pagination', link: '/guides/record/pagination/' },
+                    { label: 'Transactions & Factories', link: '/guides/record/transactions-factories/' },
+                    { label: 'Exception Handlers & Pydantic', link: '/guides/record/exceptions-pydantic/' },
+                    { label: 'Migrations & Seeding', link: '/guides/record/migrations/' },
+                ],
+            },
+            {
                 label: 'Helpers',
                 items: [
                     { label: 'Overview', link: '/guides/helpers/' },
