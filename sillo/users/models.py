@@ -8,7 +8,12 @@ from tortoise import fields
 from sillo.record import Model, SoftDeletesMixin, TimestampsMixin
 from sillo.users.base import AbstractBaseUser
 from sillo.users.managers import UserManager
-from sillo.users.password import UNUSABLE_PASSWORD_PREFIX, check_password, is_password_usable, make_password
+from sillo.users.password import (
+    UNUSABLE_PASSWORD_PREFIX,
+    check_password,
+    is_password_usable,
+    make_password,
+)
 
 
 class User(Model, TimestampsMixin, SoftDeletesMixin, AbstractBaseUser):

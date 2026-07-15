@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sillo.users.password import UNUSABLE_PASSWORD_PREFIX, check_password, is_password_usable, make_password
+from sillo.users.password import (
+    UNUSABLE_PASSWORD_PREFIX,
+    check_password,
+    is_password_usable,
+    make_password,
+)
 
 
 class AbstractBaseUser:

@@ -699,7 +699,6 @@ class silloApp:
             """),
         ],
     ) -> Callable[..., Any]:
-
         """
         Register a GET endpoint with comprehensive OpenAPI support.
 
@@ -1068,7 +1067,6 @@ class silloApp:
             """),
         ],
     ) -> Callable[..., Any]:
-
         """
         Register a DELETE endpoint with the application.
 

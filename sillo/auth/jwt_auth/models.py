@@ -20,7 +20,9 @@ class JWTToken(Model, TimestampsMixin):
     user_id = fields.IntField(index=True)
     token_jti = fields.CharField(max_length=255, unique=True, index=True)
     token_family = fields.CharField(max_length=64, index=True)
-    token_type: ClassVar[fields.CharField] = fields.CharField(max_length=16, default="access")
+    token_type: ClassVar[fields.CharField] = fields.CharField(
+        max_length=16, default="access"
+    )
     expires_at = fields.DatetimeField()
     consumed_at = fields.DatetimeField(null=True, default=None)
     revoked: ClassVar[fields.BooleanField] = fields.BooleanField(default=False)

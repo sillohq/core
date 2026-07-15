@@ -58,15 +58,20 @@ class ApiKeyManager:
     model = ApiKey
 
     async def create_key(
-        self, user_id: int, name: str,
+        self,
+        user_id: int,
+        name: str,
         scopes: Optional[list[str]] = None,
         expires_at: Optional[datetime] = None,
         prefix: str = "sillo",
     ) -> tuple[str, ApiKey]:
         full_key, _, key_hash = generate_api_key(prefix=prefix)
         apikey = await self.model.create(
-            user_id=user_id, name=name, key_hash=key_hash,
-            scopes=scopes or [], expires_at=expires_at,
+            user_id=user_id,
+            name=name,
+            key_hash=key_hash,
+            scopes=scopes or [],
+            expires_at=expires_at,
         )
         return full_key, apikey
 

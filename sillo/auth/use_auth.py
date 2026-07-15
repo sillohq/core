@@ -125,9 +125,7 @@ class useAuth:
             try:
                 result = await backend.authenticate(request)
                 if result.success:
-                    request.scope["user"] = await user_model.load_user(
-                        result.identity
-                    )
+                    request.scope["user"] = await user_model.load_user(result.identity)
                     request.scope["auth"] = result.scope
                     return
             except Exception:

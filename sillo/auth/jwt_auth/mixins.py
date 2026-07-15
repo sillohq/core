@@ -10,7 +10,8 @@ from sillo.auth.jwt_auth.tokens import TokenForUser
 
 class JWTUserMixin:
     async def issue_token_pair(
-        self, secret: str,
+        self,
+        secret: str,
         access_expires: Optional[timedelta] = None,
         refresh_expires: Optional[timedelta] = None,
         algorithm: str = "HS256",
@@ -23,22 +24,31 @@ class JWTUserMixin:
         refresh = tokens.refresh_token(refresh_expires or timedelta(days=7))
         now = datetime.now(timezone.utc)
         await JWTToken.create(
-            user_id=int(str(self.identity)), token_jti=access_jti,
-            token_family=family, token_type="access",
+            user_id=int(str(self.identity)),
+            token_jti=access_jti,
+            token_family=family,
+            token_type="access",
             expires_at=now + (access_expires or timedelta(minutes=15)),
         )
         await JWTToken.create(
-            user_id=int(str(self.identity)), token_jti=refresh_jti,
-            token_family=family, token_type="refresh",
+            user_id=int(str(self.identity)),
+            token_jti=refresh_jti,
+            token_family=family,
+            token_type="refresh",
             expires_at=now + (refresh_expires or timedelta(days=7)),
         )
         return {
-            "access_token": access, "refresh_token": refresh,
-            "token_type": "bearer", "token_family": family,
+            "access_token": access,
+            "refresh_token": refresh,
+            "token_type": "bearer",
+            "token_family": family,
         }
 
     async def refresh_token_pair(
-        self, refresh_token: str, secret: str, algorithm: str = "HS256",
+        self,
+        refresh_token: str,
+        secret: str,
+        algorithm: str = "HS256",
     ) -> dict:
         tokens = TokenForUser(self, secret=secret, algorithm=algorithm)
         try:
@@ -65,18 +75,24 @@ class JWTUserMixin:
         refresh = tokens.refresh_token(refresh_expires)
         now = datetime.now(timezone.utc)
         await JWTToken.create(
-            user_id=int(str(self.identity)), token_jti=access_jti,
-            token_family=family, token_type="access",
+            user_id=int(str(self.identity)),
+            token_jti=access_jti,
+            token_family=family,
+            token_type="access",
             expires_at=now + access_expires,
         )
         await JWTToken.create(
-            user_id=int(str(self.identity)), token_jti=refresh_jti,
-            token_family=family, token_type="refresh",
+            user_id=int(str(self.identity)),
+            token_jti=refresh_jti,
+            token_family=family,
+            token_type="refresh",
             expires_at=now + refresh_expires,
         )
         return {
-            "access_token": access, "refresh_token": refresh,
-            "token_type": "bearer", "token_family": family,
+            "access_token": access,
+            "refresh_token": refresh,
+            "token_type": "bearer",
+            "token_family": family,
         }
 
     async def revoke_all_tokens(self) -> int:
@@ -94,12 +110,14 @@ class JWTUserMixin:
         else:
             expires_at = datetime.now(timezone.utc) + timedelta(days=30)
         await TokenBlacklist.get_or_create(
-            token_jti=jti, defaults={"expires_at": expires_at},
+            token_jti=jti,
+            defaults={"expires_at": expires_at},
         )
         return True
 
     async def active_token_count(self) -> int:
         return await JWTToken.filter(
-            user_id=int(str(self.identity)), revoked=False,
+            user_id=int(str(self.identity)),
+            revoked=False,
             expires_at__gt=datetime.now(timezone.utc),
         ).count()

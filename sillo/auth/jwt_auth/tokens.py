@@ -65,14 +65,20 @@ class TokenForUser:
 
     def verify(self, token: str) -> dict:
         return _jwt.decode(
-            token, self.secret, algorithms=[self.algorithm],
-            audience=self.audience, issuer=self.issuer,
+            token,
+            self.secret,
+            algorithms=[self.algorithm],
+            audience=self.audience,
+            issuer=self.issuer,
         )
 
     def verify_no_expire(self, token: str) -> dict:
         return _jwt.decode(
-            token, self.secret, algorithms=[self.algorithm],
-            audience=self.audience, issuer=self.issuer,
+            token,
+            self.secret,
+            algorithms=[self.algorithm],
+            audience=self.audience,
+            issuer=self.issuer,
             options={"verify_exp": False},
         )
 

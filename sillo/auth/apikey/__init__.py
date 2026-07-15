@@ -2,7 +2,13 @@ import warnings as _warnings
 
 from sillo.auth.apikey.backend import APIKeyAuthBackend
 from sillo.auth.apikey.mixins import ApiKeyUserMixin
-from sillo.auth.apikey.models import ApiKey, ApiKeyManager, generate_api_key, hash_api_key, verify_api_key
+from sillo.auth.apikey.models import (
+    ApiKey,
+    ApiKeyManager,
+    generate_api_key,
+    hash_api_key,
+    verify_api_key,
+)
 
 
 def create_api_key(prefix: str = "key"):
