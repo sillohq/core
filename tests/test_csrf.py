@@ -8,7 +8,7 @@ import pytest
 
 from sillo import silloApp
 from sillo.http import Request, Response
-from sillo.middleware.csrf import CSRFConfig, CSRFMiddleware
+from sillo.security.csrf import CSRFConfig, CSRFMiddleware
 
 
 def test_protected_request_missing_token(test_client_factory):

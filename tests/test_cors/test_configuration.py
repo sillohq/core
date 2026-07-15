@@ -8,7 +8,7 @@ import pytest
 
 from sillo import silloApp
 from sillo.http import Request, Response
-from sillo.middleware.cors import CorsConfig, CORSMiddleware
+from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
 
 

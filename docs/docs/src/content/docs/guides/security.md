@@ -15,12 +15,12 @@ head:
 
 ```python
 from sillo import silloApp
-from sillo.middleware.security import SecurityMiddleware
+from sillo.security import Shield
 
 app = silloApp()
 
 # Basic usage with defaults
-app.use(SecurityMiddleware())
+app.use(Shield())
 
 # Advanced configuration
 app.use(
@@ -42,7 +42,7 @@ Content Security Policy is a powerful security feature that helps prevent XSS at
 :::
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     csp_enabled=True,
     csp_policy={
         'default-src': ["'self'"],
@@ -61,7 +61,7 @@ security = SecurityMiddleware(
 ### 2. HTTP Strict Transport Security (HSTS)
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     hsts_enabled=True,
     hsts_max_age=31536000,  # 1 year
     hsts_include_subdomains=True,
@@ -72,7 +72,7 @@ security = SecurityMiddleware(
 ### 3. XSS Protection
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     xss_protection=True,
     xss_mode="block"  # or "filter"
 )
@@ -81,7 +81,7 @@ security = SecurityMiddleware(
 ### 4. Frame Options
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     frame_options="DENY",  # or "SAMEORIGIN"
     # Or allow specific origin:
     frame_options_allow_from="https://trusted.com"
@@ -91,7 +91,7 @@ security = SecurityMiddleware(
 ### 5. SSL/HTTPS Redirect
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     ssl_redirect=True,
     ssl_host="secure.example.com",
     ssl_permanent=True  # 301 redirect
@@ -101,7 +101,7 @@ security = SecurityMiddleware(
 ### 6. Cross-Origin Policies
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     cross_origin_opener_policy="same-origin",
     cross_origin_embedder_policy="require-corp",
     cross_origin_resource_policy="same-origin"
@@ -111,7 +111,7 @@ security = SecurityMiddleware(
 ### 7. Permissions Policy
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     permissions_policy={
         'camera': "'none'",
         'microphone': "'self'",
@@ -124,7 +124,7 @@ security = SecurityMiddleware(
 ### 8. Cache Control
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     cache_control="no-store, no-cache, must-revalidate, proxy-revalidate",
     clear_site_data=["cache", "cookies", "storage"]
 )
@@ -133,7 +133,7 @@ security = SecurityMiddleware(
 ### 9. Expect-CT
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     expect_ct=True,
     expect_ct_max_age=86400,
     expect_ct_enforce=True,
@@ -148,11 +148,11 @@ security = SecurityMiddleware(
 
 ```python
 from sillo import silloApp
-from sillo.middleware import SecurityMiddleware
+from sillo.security import Shield
 
 app = silloApp()
 
-security = SecurityMiddleware(
+security = Shield(
     # Content Security Policy
     csp_enabled=True,
     csp_policy={
@@ -238,7 +238,7 @@ For production environments, we recommend:
 :::
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     # Force HTTPS
     ssl_redirect=True,
     ssl_permanent=True,
@@ -275,7 +275,7 @@ For development, you might want to relax some settings:
 :::
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     # Disable HTTPS redirect
     ssl_redirect=False,
     
@@ -315,7 +315,7 @@ security = SecurityMiddleware(
 ### API Server
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     cors_enabled=True,
     allowed_origins=["https://api.example.com"],
     allowed_methods=["GET", "POST", "PUT", "DELETE"],
@@ -328,7 +328,7 @@ security = SecurityMiddleware(
 ### Static Website
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     csp_policy={
         'default-src': ["'self'"],
         'img-src': ["'self'", "data:", "https:"],
@@ -343,7 +343,7 @@ security = SecurityMiddleware(
 ### WebSocket Server
 
 ```python
-security = SecurityMiddleware(
+security = Shield(
     cors_enabled=True,
     allowed_origins=["https://example.com"],
     csp_policy={

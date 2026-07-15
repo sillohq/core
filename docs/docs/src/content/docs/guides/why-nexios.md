@@ -167,25 +167,20 @@ Built for production use with:
 - Error tracking
 
 ```python
-from sillo.middleware import (
-    SecurityMiddleware
-)
+from sillo.security import Shield
 
 # Production configuration
 app = silloApp()
 
-# Production middleware
-from sillo.middleware.security import SecurityMiddleware
-
 app.use(
-    SecurityMiddleware(
+    Shield(
         ssl_redirect=True,
         hsts_enabled=True
     )
 )
 
 # Production middleware stack
-app.use(SecurityMiddleware())
+app.use(Shield())
 
 ```
 

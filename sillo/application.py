@@ -29,7 +29,7 @@ from sillo.dependencies import Depend
 from sillo.events import EventEmitter
 from sillo.exception_handler import ExceptionHandlerType, ExceptionMiddleware
 from sillo.logging import create_logger
-from sillo.middleware.errors.server_error_handler import (
+from sillo.error import (
     ServerErrHandlerType,
     ServerErrorMiddleware,
 )

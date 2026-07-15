@@ -22,8 +22,8 @@ Got it! I'll go through each CORS configuration setting in **sillo**, explaining
 Before diving into individual settings, here's a simple CORS setup using `CorsConfig`:
 ```python title="Recommended Approach"
 from sillo import silloApp
-from sillo.middleware.cors import CorsConfig
-from sillo.middleware.cors import CORSMiddleware
+from sillo.security.cors import CorsConfig
+from sillo.security.cors import CORSMiddleware
 
 cors_config = CorsConfig(
     allow_origins=["https://example.com"],

@@ -42,7 +42,7 @@ sillo implements the "Synchronizer Token Pattern":
 
 ```python
 from sillo import silloApp
-from sillo.middleware.csrf import CSRFConfig, CSRFMiddleware
+from sillo.security.csrf import CSRFConfig, CSRFMiddleware
 
 csrf_config = CSRFConfig(
     enabled=True,

@@ -7,7 +7,7 @@ from sillo.logging import getLogger
 
 # from typing_extensions import Annotated, Doc
 from sillo.middleware.base import BaseMiddleware
-from sillo.middleware.cors.config import CorsConfig
+from sillo.security.cors.config import CorsConfig
 
 logger = getLogger()
 

@@ -133,9 +133,29 @@ const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
         padding-bottom: calc(var(--spacing) * 16);
     }
 
+    :global(.sidebar) .container-sidebar {
+        scroll-behavior: auto;
+    }
+
     @media (min-width: 1024px) {
         .container-sidebar {
             max-height: calc(100svh - 10rem - 2.25rem);
         }
     }
 </style>
+
+<script>
+    function scrollSidebarToActiveLink() {
+        const container = document.querySelector('.sidebar .container-sidebar');
+        const activeLink = container?.querySelector<HTMLAnchorElement>('[aria-current="page"]');
+        if (!activeLink || !container) return;
+
+        activeLink.scrollIntoView({ block: 'center', behavior: 'instant' });
+    }
+
+    // Run on initial page load
+    scrollSidebarToActiveLink();
+
+    // Run after Astro view transitions
+    document.addEventListener('astro:after-swap', scrollSidebarToActiveLink);
+</script>
