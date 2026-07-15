@@ -1,6 +1,6 @@
 from sillo import silloApp
 from sillo.auth import BaseUser
-from sillo.auth.backends.jwt import JWTAuthBackend, create_jwt
+from sillo.auth import JWTAuthBackend, create_jwt
 from sillo.auth.backends.session import SessionAuthBackend, login
 from sillo.auth.decorator import auth
 from sillo.auth.middleware import AuthenticationMiddleware

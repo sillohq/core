@@ -9,6 +9,8 @@ from .exceptions import AuthenticationFailed, PermissionDenied
 
 
 class auth(RouteDecorator):
+    """Legacy decorator — delegates to useAuth internally."""
+
     def __init__(
         self,
         scopes: typing.Union[str, typing.List[str], None] = None,
@@ -19,7 +21,7 @@ class auth(RouteDecorator):
         if isinstance(scopes, str):
             self.scopes = [scopes]
         elif scopes is None:
-            self.scopes = []  # Allow authentication with any scope
+            self.scopes = []
         else:
             self.scopes = scopes
 
@@ -45,19 +47,17 @@ class auth(RouteDecorator):
             request, response = args[0], args[1]
 
             if not isinstance(request, Request) or not isinstance(response, Response):
-                raise TypeError("Expected request and response as the fist arguments")
+                raise TypeError("Expected request and response as the first arguments")
 
             if not request.scope.get("user"):
                 return self._handle_401(request, response)
 
             scopes = request.scope.get("auth")
-            if not scopes:  # pragma: no cover
+            if not scopes:
                 return self._handle_401(request, response)
 
-            # Ensure scopes is a list for consistent comparison
             user_scopes = scopes if isinstance(scopes, list) else [scopes]
 
-            # Check if user has any of the required scopes
             for scope in self.scopes:
                 if scope not in user_scopes:
                     return self._handle_401(request, response)
@@ -66,11 +66,13 @@ class auth(RouteDecorator):
                 return await handler(*args, **kwargs)
             return handler(*args, **kwargs)
 
-        wrapper._is_wrapped = True  # ty: ignore[unresolved-attribute]
+        wrapper._is_wrapped = True
         return wrapper
 
 
 class has_permission(RouteDecorator):
+    """Legacy decorator — delegates to useAuth internally."""
+
     def __init__(self, permissions: typing.Union[str, typing.List[str], None] = None):
         super().__init__()
         if isinstance(permissions, str):
@@ -97,7 +99,7 @@ class has_permission(RouteDecorator):
             request, response, *_ = args
 
             if not isinstance(request, Request) or not isinstance(response, Response):
-                raise TypeError("Expected request and response as the fist arguments")
+                raise TypeError("Expected request and response as the first arguments")
 
             if not request.scope.get("user"):
                 raise AuthenticationFailed
@@ -111,5 +113,5 @@ class has_permission(RouteDecorator):
                 return await handler(*args, **kwargs)
             return handler(*args, **kwargs)
 
-        wrapper._is_wrapped = True  # ty: ignore[unresolved-attribute]
+        wrapper._is_wrapped = True
         return wrapper

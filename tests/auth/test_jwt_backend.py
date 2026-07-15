@@ -22,7 +22,7 @@ from sillo.auth import (
     create_jwt,
     decode_jwt,
 )
-from sillo.auth.users.simple import SimpleUser
+from sillo.users import SimpleUser
 from sillo.http import Request, Response
 from sillo.testclient import AsyncTestClient
 

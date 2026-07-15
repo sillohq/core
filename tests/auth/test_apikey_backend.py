@@ -13,9 +13,9 @@ import pytest
 
 from sillo.application import silloApp
 from sillo.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, auth
-from sillo.auth.backends.apikey import create_api_key, verify_key
+from sillo.auth.apikey import create_api_key, verify_key
 from sillo.auth.model import AuthResult
-from sillo.auth.users.simple import SimpleUser
+from sillo.users import SimpleUser
 from sillo.http import Request, Response
 from sillo.testclient import AsyncTestClient
 

@@ -22,7 +22,7 @@ from sillo.utils.async_helpers import (
 
 if typing.TYPE_CHECKING:
     from sillo import silloApp
-    from sillo.auth.users.base import BaseUser
+    from sillo.users import BaseUser
     from sillo.session.session_objects import Session
 
 

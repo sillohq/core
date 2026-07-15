@@ -9,8 +9,8 @@ This module tests user models including:
 
 import pytest
 
-from sillo.auth.users.base import BaseUser
-from sillo.auth.users.simple import SimpleUser, UnauthenticatedUser
+from sillo.users import BaseUser
+from sillo.users import SimpleUser, UnauthenticatedUser
 
 
 def test_simple_user_creation():

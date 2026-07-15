@@ -1,9 +1,15 @@
-from .backends.apikey import APIKeyAuthBackend
-from .backends.jwt import JWTAuthBackend, create_jwt, decode_jwt
 from .decorator import auth, has_permission
 from .middleware import AuthenticationMiddleware
-from .users.base import BaseUser
-from .users.simple import SimpleUser
+from .use_auth import useAuth
+
+from . import jwt_auth, session_auth, apikey
+
+from sillo.users import BaseUser, SimpleUser
+
+APIKeyAuthBackend = apikey.APIKeyAuthBackend
+JWTAuthBackend = jwt_auth.JWTAuthBackend
+create_jwt = jwt_auth.create_jwt
+decode_jwt = jwt_auth.decode_jwt
 
 __all__ = [
     "AuthenticationMiddleware",
@@ -11,8 +17,10 @@ __all__ = [
     "JWTAuthBackend",
     "create_jwt",
     "decode_jwt",
-    "auth",
-    "has_permission",
+    "useAuth",
     "BaseUser",
     "SimpleUser",
+    "jwt_auth",
+    "session_auth",
+    "apikey",
 ]

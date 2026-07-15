@@ -176,6 +176,7 @@ class Route(BaseRoute):
         parameters: Optional[List[Parameter]] = None,
         middleware: Optional[List[Any]] = None,
         exclude_from_schema: bool = False,
+        auth: Optional[Any] = None,
         **kwargs: Dict[str, Any],
     ):
         """
@@ -192,6 +193,8 @@ class Route(BaseRoute):
             tags: Documentation categories.
             description: Comprehensive endpoint documentation.
             summary: Brief endpoint description.
+            auth: Optional :class:`sillo.auth.useAuth` instance for
+                route-level authentication and authorisation.
 
         Raises:
             AssertionError: If handler is not callable.
@@ -203,6 +206,7 @@ class Route(BaseRoute):
             path = "/"
         self.raw_path = path
         self.handler = handler
+        self.auth = auth
         self.handler_signature = inspect.signature(handler)
         self.name = name
         self.dependant = get_dependant(handler)
@@ -375,6 +379,9 @@ class Route(BaseRoute):
             request._validated_data = validated
             if self._validated_param_name:
                 injected[self._validated_param_name] = validated
+
+        if self.auth is not None:
+            await self.auth.authenticate(request)
 
         try:
             if is_async_callable(self.handler):
@@ -801,6 +808,10 @@ class Router(BaseRouter):
                 Example: True for internal endpoints
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -867,6 +878,7 @@ class Router(BaseRouter):
                 deprecated=deprecated,
                 parameters=parameters,
                 exclude_from_schema=exclude_from_schema,
+                auth=auth,
                 **kwargs,
             )
             self.add_route(route)
@@ -997,6 +1009,10 @@ class Router(BaseRouter):
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -1054,6 +1070,7 @@ class Router(BaseRouter):
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1166,6 +1183,10 @@ class Router(BaseRouter):
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -1221,6 +1242,7 @@ class Router(BaseRouter):
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1334,6 +1356,10 @@ class Router(BaseRouter):
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         request_content_type: Annotated[
             Literal[
                 "application/json",
@@ -1405,6 +1431,7 @@ class Router(BaseRouter):
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1518,6 +1545,10 @@ class Router(BaseRouter):
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         request_content_type: Annotated[
             Literal[
                 "application/json",
@@ -1587,6 +1618,7 @@ class Router(BaseRouter):
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1695,9 +1727,13 @@ class Router(BaseRouter):
             bool,
             Doc("""
                 Hide from OpenAPI docs.
-                Example: True
+                Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -1752,6 +1788,7 @@ class Router(BaseRouter):
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1863,6 +1900,10 @@ class Router(BaseRouter):
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -1916,6 +1957,7 @@ class Router(BaseRouter):
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -2027,6 +2069,14 @@ class Router(BaseRouter):
                 Useful for internal or admin routes.
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("""
+                Route-level authentication gate.  Pass a
+                :class:`sillo.auth.useAuth` instance to require
+                authentication and/or check permissions/scopes.
+            """),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -2089,6 +2139,7 @@ class Router(BaseRouter):
                 deprecated=deprecated,
                 parameters=parameters,
                 exclude_from_schema=exclude_from_schema,
+                auth=auth,
                 **kwargs,
             )
             self.add_route(route_instance)

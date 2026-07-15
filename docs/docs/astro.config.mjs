@@ -92,9 +92,20 @@ export default defineConfig({
                     ],
                 },
                 {
+                    label: 'Authentication',
+                    collapsed: true,
+                    items: [
+                        { label: 'Overview', link: '/guides/authentication/' },
+                        { label: 'Protecting Routes', link: '/guides/protecting-routes/' },
+                        { label: 'Users & User Models', link: '/guides/users/' },
+                        { label: 'JWT Authentication', link: '/guides/jwt-auth/' },
+                        { label: 'Session Authentication', link: '/guides/session-auth/' },
+                        { label: 'API Keys', link: '/guides/api-keys/' },
+                    ],
+                },
+                {
                     label: 'Security',
                     items: [
-                        { label: 'Authentication', link: '/guides/authentication/' },
                         { label: 'CORS', link: '/guides/cors/' },
                         { label: 'CSRF', link: '/guides/csrf/' },
                         { label: 'Cookies', link: '/guides/cookies/' },

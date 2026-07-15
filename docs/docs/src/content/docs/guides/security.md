@@ -362,6 +362,84 @@ security = SecurityMiddleware(
 4. **Mixed Content**: Ensure all resources use HTTPS
 :::
 
+## Hashing & Cryptography
+
+sillo provides built-in hashing utilities for passwords and general-purpose cryptographic operations.
+
+### Password Hashing
+
+The `sillo.users` module includes bcrypt-based password hashing:
+
+```python
+from sillo.users import make_password, check_password, needs_rehash
+
+hashed = make_password("my-secret-password")
+# $2b$12$LJ3m4ys3G...
+
+assert check_password("my-secret-password", hashed)
+assert not check_password("wrong-password", hashed)
+
+if needs_rehash(hashed, rounds=14):
+    user.set_password(new_password)
+```
+
+**Best practices:**
+- Never store raw passwords — always hash with bcrypt
+- bcrypt is resistant to GPU-based attacks due to its memory-hard design
+- The default work factor (12 rounds) is sufficient for most applications
+- Check `needs_rehash` on login to upgrade hashes when you increase rounds
+- Use `set_unusable_password()` for OAuth-only or deactivated accounts
+
+### Password Validation
+
+```python
+from sillo.users import validate_password, password_strength
+
+errors = validate_password("weak")
+# Requires: 8+ chars, uppercase, lowercase, digit, special char
+
+result = password_strength("StrongP@ss1")
+# {"score": 5, "strength": "strong", "feedback": []}
+```
+
+### General Hashing
+
+The `sillo.helpers.hashing` module provides SHA-family hashing and HMAC:
+
+```python
+from sillo.helpers.hashing import sha256, sha512, hmac_digest, constant_time_compare
+
+digest = sha256("data to hash")
+digest = sha512("data to hash")
+
+# HMAC — use for signed tokens and message authentication
+signature = hmac_digest(key="secret", data="payload", algorithm="sha256")
+
+# Constant-time comparison — prevents timing attacks
+assert constant_time_compare(signature, expected_signature)
+```
+
+### Encryption
+
+The `sillo.helpers.crypto` module provides Fernet symmetric encryption and key derivation:
+
+```python
+from sillo.helpers.crypto import generate_key, encrypt, decrypt, derive_key
+
+key = generate_key()
+ciphertext = encrypt("sensitive data", key)
+plaintext = decrypt(ciphertext, key)
+assert plaintext == "sensitive data"
+
+derived_key, salt = derive_key("master-password")
+```
+
+Fernet uses AES-128-CBC with HMAC-SHA256 for authenticated encryption. Use it for fields that need to be encrypted at rest (API keys, tokens, PII).
+
+**Never implement your own crypto.** Always use these vetted, standard-library or well-audited libraries.
+
+For more details, see the [Users & User Models](/guides/users/) guide for password management and the [Helpers](/guides/helpers/) section for hashing and crypto utilities.
+
 ## More Information
 
 - [MDN Web Security](https://developer.mozilla.org/en-US/docs/Web/Security)

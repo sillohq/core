@@ -687,6 +687,10 @@ class silloApp:
                 Example: True for internal endpoints
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -695,6 +699,7 @@ class silloApp:
             """),
         ],
     ) -> Callable[..., Any]:
+
         """
         Register a GET endpoint with comprehensive OpenAPI support.
 
@@ -752,6 +757,7 @@ class silloApp:
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -876,6 +882,10 @@ class silloApp:
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -933,6 +943,7 @@ class silloApp:
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1045,6 +1056,10 @@ class silloApp:
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -1053,6 +1068,7 @@ class silloApp:
             """),
         ],
     ) -> Callable[..., Any]:
+
         """
         Register a DELETE endpoint with the application.
 
@@ -1213,6 +1229,10 @@ class silloApp:
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         request_content_type: Annotated[
             Literal[
                 "application/json",
@@ -1284,6 +1304,7 @@ class silloApp:
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1397,6 +1418,10 @@ class silloApp:
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         request_content_type: Annotated[
             Literal[
                 "application/json",
@@ -1467,6 +1492,7 @@ class silloApp:
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1578,6 +1604,10 @@ class silloApp:
                 Example: True
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -1743,6 +1773,10 @@ class silloApp:
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""
@@ -1796,6 +1830,7 @@ class silloApp:
             deprecated=deprecated,
             parameters=parameters,
             exclude_from_schema=exclude_from_schema,
+            auth=auth,
             **kwargs,
         )
 
@@ -1930,6 +1965,10 @@ class silloApp:
                 Example: False
             """),
         ] = False,
+        auth: Annotated[
+            Optional[Any],
+            Doc("Route-level :class:`sillo.auth.useAuth` gate."),
+        ] = None,
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("""

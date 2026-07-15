@@ -84,6 +84,7 @@ async def run_until_first_complete(*args: tuple[Callable, dict]) -> None:  # typ
     warnings.warn(
         "run_until_first_complete is deprecated and will be removed in a future version.",
         DeprecationWarning,
+        stacklevel=2,
     )
 
     async with anyio.create_task_group() as task_group:
