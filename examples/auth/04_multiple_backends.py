@@ -1,7 +1,7 @@
 from sillo import silloApp
 from sillo.auth import BaseUser
 from sillo.auth import JWTAuthBackend, create_jwt
-from sillo.auth.backends.session import SessionAuthBackend, login
+from sillo.auth.session_auth import SessionAuthBackend, login
 from sillo.auth.decorator import auth
 from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.http import Request, Response
@@ -161,7 +161,7 @@ async def session_only(req: Request, res: Response):
 
 @app.get("/logout")
 async def logout(req: Request, res: Response):
-    from sillo.auth.backends.session import logout
+    from sillo.auth.session_auth import logout
 
     logout(req)
     return res.redirect("/login")

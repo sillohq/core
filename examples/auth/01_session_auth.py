@@ -1,5 +1,5 @@
 from sillo import silloApp
-from sillo.auth.backends.session import SessionAuthBackend, login
+from sillo.auth.session_auth import SessionAuthBackend, login
 from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.auth.users.base import BaseUser
 
@@ -91,7 +91,7 @@ async def protected(req, res):
 
 @app.get("/logout")
 async def logout(req, res):
-    from sillo.auth.backends.session import logout
+    from sillo.auth.session_auth import logout
 
     logout(req)
     return res.redirect("/login")

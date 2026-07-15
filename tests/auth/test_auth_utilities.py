@@ -15,7 +15,7 @@ import pytest
 from sillo.application import silloApp
 from sillo.auth import create_jwt, decode_jwt
 from sillo.auth.apikey import create_api_key, verify_key
-from sillo.auth.backends.session import login, logout
+from sillo.auth.session_auth import login, logout
 from sillo.users import SimpleUser
 from sillo.session.middleware import SessionMiddleware
 

@@ -49,6 +49,9 @@ class User(Model, TimestampsMixin, SoftDeletesMixin, AbstractBaseUser):
             return True
         return perm in getattr(self, "_permissions", [])
 
+    def has_permission(self, permission: str) -> bool:
+        return self.has_perm(permission)
+
     def has_perms(self, perm_list: list[str]) -> bool:
         return all(self.has_perm(p) for p in perm_list)
 

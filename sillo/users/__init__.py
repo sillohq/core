@@ -6,6 +6,7 @@ from sillo.users.password import (
     is_password_usable,
     make_password,
     needs_rehash,
+    password_strength,
     validate_password,
 )
 from sillo.users.simple import SimpleUser, UnauthenticatedUser
@@ -23,4 +24,5 @@ __all__ = [
     "is_password_usable",
     "needs_rehash",
     "validate_password",
+    "password_strength",
 ]
