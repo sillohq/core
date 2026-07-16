@@ -385,9 +385,7 @@ class AcceptsMiddleware(BaseMiddleware):
                 self.vary.append("Accept-Encoding")
         return await call_next()
 
-    async def process_response(
-        self, request: Request, response: Response
-    ) -> Any:
+    async def process_response(self, request: Request, response: Response) -> Any:
         if self.vary:
             existing_vary = response.headers.get("Vary")
             response.set_header(
