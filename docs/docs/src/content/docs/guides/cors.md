@@ -242,3 +242,105 @@ app.use(CORSMiddleware(config=cors_config))
 ```
 
 * **Use case:** When you want meaningful error messages instead of generic CORS errors.
+
+## How CORS is enforced
+
+`CORSMiddleware` runs in `process_request` for every request:
+
+1. If there is no `Origin` header, the request is same-origin — the middleware does nothing and the request proceeds.
+2. The `Origin` is checked against `allow_origins`, `allow_origin_regex`, and `blacklist_origins`. Unmatched origins are silently dropped (simple requests complete normally, just without `Access-Control-*` headers), so the browser blocks the cross-origin read.
+3. **Preflight (`OPTIONS`)** — browsers send this before a non-simple request (custom headers, `PUT`/`DELETE`, `application/json` bodies). The middleware answers the preflight directly:
+   - Reflects `Access-Control-Allow-Origin`
+   - Echoes `Access-Control-Allow-Methods` (the method from `Access-Control-Request-Method`)
+   - Echoes `Access-Control-Allow-Headers` (from `Access-Control-Request-Headers`)
+   - Sets `Access-Control-Max-Age` from `max_age`
+   - A disallowed origin, method, or header fails the preflight with a `400`/custom status and the actual handler never runs.
+4. **Actual request** — after a passing preflight, the real request carries the same `Access-Control-Allow-Origin` (and, when `allow_credentials=True`, `Access-Control-Allow-Credentials: true`) so the browser permits the response.
+
+<aside type="caution" title="Wildcard + credentials don't mix">
+When `allow_credentials=True`, `allow_origins` cannot be `["*"]` — the spec forbids `Access-Control-Allow-Origin: *` together with `Access-Control-Allow-Credentials: true`. List explicit origins, or use `allow_origin_regex` to match a trusted set dynamically.
+</aside>
+
+## Testing
+
+Drive CORS through `TestClient`. A simple request reflects the allow-list; a preflight (`OPTIONS`) echoes the method/header policy.
+
+```python
+from sillo import silloApp
+from sillo.security.cors import CorsConfig, CORSMiddleware
+from sillo.testclient import TestClient
+
+
+def test_simple_request_allowed_origin():
+    app = silloApp()
+    app.use(
+        CORSMiddleware(
+            CorsConfig(
+                allow_origins=["http://example.com"],
+                allow_methods=["GET", "POST"],
+                allow_credentials=True,
+            )
+        )
+    )
+
+    @app.get("/data")
+    async def data(request, response):
+        return {"ok": True}
+
+    resp = TestClient(app).get("/data", headers={"Origin": "http://example.com"})
+    assert resp.headers["Access-Control-Allow-Origin"] == "http://example.com"
+    assert resp.headers["Access-Control-Allow-Credentials"] == "true"
+
+
+def test_preflight_reflects_methods():
+    app = silloApp()
+    app.use(
+        CORSMiddleware(
+            CorsConfig(
+                allow_origins=["http://example.com"],
+                allow_methods=["GET", "POST"],
+                max_age=3600,
+            )
+        )
+    )
+
+    @app.post("/data")
+    async def data(request, response):
+        return {"ok": True}
+
+    resp = TestClient(app).options(
+        "/data",
+        headers={
+            "Origin": "http://example.com",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+    assert resp.status_code == 201
+    assert "POST" in resp.headers["Access-Control-Allow-Methods"]
+    assert resp.headers["Access-Control-Max-Age"] == "3600"
+
+
+def test_disallowed_origin_gets_no_header():
+    app = silloApp()
+    app.use(CORSMiddleware(CorsConfig(allow_origins=["http://example.com"])))
+
+    @app.get("/data")
+    async def data(request, response):
+        return {"ok": True}
+
+    resp = TestClient(app).get("/data", headers={"Origin": "http://evil.com"})
+    assert "Access-Control-Allow-Origin" not in resp.headers
+```
+
+## Production considerations
+
+- **List explicit origins** — never ship `allow_origins=["*"]` with cookies or auth. Use `allow_origin_regex` for subdomain sets.
+- **Keep `max_age` high** in production (e.g. `600`+) to cut preflight chatter, but lower it while the policy is still changing.
+- **Preflight is not auth** — CORS governs which origins may *read* responses in a browser. It does not authenticate the caller or stop non-browser clients. Pair it with CSRF for cookie-auth flows and with real auth for data.
+- **`custom_error_status`** — returning a non-default status on preflight failure is cosmetic (the browser blocks the read regardless). Don't rely on it for security.
+
+## Related topics
+
+- [Security Headers (Shield)](/guides/security/) — defensive response headers
+- [CSRF](/guides/csrf/) — protect cookie-auth state-changing requests from cross-site forgery
+- [Authentication](/guides/authentication/) — verifying who the caller is

@@ -313,3 +313,69 @@ async function submitForm() {
   return await response.json();
 }
 ```
+
+## How a request is checked
+
+`CSRFMiddleware.process_request` runs this sequence for every request (only when `enabled=True`):
+
+1. Generate a fresh signed token and stash it on `request.state.csrf_token`.
+2. If the method is in `safe_methods` (`GET`, `HEAD`, `OPTIONS` by default), allow the request through.
+3. Otherwise, if the path matches `required_urls` — or matches `exempt_urls` **and** carries a sensitive cookie — validation runs:
+   - The token cookie (`cookie_name`) must be present.
+   - A submitted token must be present, read from the `X-CSRFToken` header, or (for form-urlencoded bodies) the `csrftoken` form field.
+   - The submitted token must match the cookie token.
+4. Any failure (missing cookie, missing token, mismatch) returns **`403`** and clears the CSRF cookie.
+
+On the way out, `process_response` sets the `csrftoken` cookie so the next request can present a matching header. The cookie is `HttpOnly` by default, so JavaScript cannot read it — the token must travel in the header (or form field), which is what makes the pattern resistant to cross-site forgery.
+
+## Testing
+
+Drive CSRF through `TestClient`: fetch a token-bearing response, then replay the cookie + header on a `POST`.
+
+```python
+from sillo import silloApp
+from sillo.security import CSRFMiddleware, CSRFConfig
+from sillo.testclient import TestClient
+
+
+def test_valid_token_passes():
+    app = silloApp()
+    app.use(CSRFMiddleware(CSRFConfig(enabled=True, secret_key="secret")))
+
+    @app.post("/transfer")
+    async def transfer(request, response):
+        return {"ok": True}
+
+    client = TestClient(app)
+    token_resp = client.get("/")  # any GET primes the cookie
+    cookie = token_resp.cookies["csrftoken"]
+
+    resp = client.post(
+        "/transfer",
+        headers={"X-CSRFToken": cookie},
+        cookies={"csrftoken": cookie},
+    )
+    assert resp.status_code == 200
+
+
+def test_missing_token_rejected():
+    app = silloApp()
+    app.use(CSRFMiddleware(CSRFConfig(enabled=True, secret_key="secret")))
+
+    @app.post("/transfer")
+    async def transfer(request, response):
+        return {"ok": True}
+
+    resp = TestClient(app).post("/transfer")
+    assert resp.status_code == 403
+```
+
+<aside type="caution" title="secret_key is mandatory">
+`CSRFConfig(enabled=True)` without `secret_key` leaves `self.secret` as `None`, so token signing has no key and protection is broken. Set `secret_key` to a stable secret (env var, not a literal in source) and keep it identical across restarts — rotating it invalidates every outstanding token at once.
+</aside>
+
+## Related topics
+
+- [Security Headers (Shield)](/guides/security/) — defensive response headers
+- [CORS](/guides/cors/) — cross-origin access control
+- [Authentication](/guides/authentication/) — who the caller is

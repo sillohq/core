@@ -1,448 +1,155 @@
 ---
-title: Security Middleware
-description: sillo provides a comprehensive security middleware that implements various security headers and protections. This guide covers all available security options and best practices.
-head:
-- tag: meta
-  attrs:
-    property: og:title
-    content: Security Middleware
-- tag: meta
-  attrs:
-    property: og:description
-    content: sillo provides a comprehensive security middleware that implements various security headers and protections. This guide covers all available security options and best practices.
+title: Security Headers (Shield)
+description: Apply secure HTTP response headers — CSP, HSTS, frame options, and more — with the first-party sillo.security.Shield middleware.
 ---
-#  Security Middleware
+
+# Security Headers (Shield)
+
+`sillo.security.Shield` is a first-party middleware that attaches defensive HTTP response headers to every response. It is the sillo equivalent of a "secure by default" header stack: Content-Security-Policy, HSTS, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, cross-origin policies, and more.
+
+Use it to raise the browser-enforced baseline of your app without hand-writing header logic in every handler.
+
+<aside type="caution" title="Shield is headers only">
+Shield sets **response headers**. It does not handle CORS, CSRF, or authentication — those are separate middleware (`CORSMiddleware`, `CSRFMiddleware`, and the auth/session modules). Docs that put `cors_enabled`/`allowed_origins` on `Shield(...)` are wrong; configure CORS with its own middleware (see [CORS](/guides/cors/)).
+</aside>
+
+## The smallest useful form
 
 ```python
 from sillo import silloApp
 from sillo.security import Shield
 
 app = silloApp()
-
-# Basic usage with defaults
 app.use(Shield())
+```
 
-# Advanced configuration
+With no arguments, `Shield` applies a strict default policy: CSP locked to `'self'`, HSTS enabled (`max-age=31536000`, include-subdomains), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and the cross-origin policies set to `same-origin`. Every response gets these headers automatically.
+
+## How Shield applies headers
+
+`Shield` is a `BaseMiddleware`. In `process_response` it writes each configured header onto the response before it leaves the stack. Because it runs late in the chain, headers are present even on error responses and redirects — unless a later middleware overrides them.
+
+Defaults that are safe to change:
+
+- `ssl_redirect=False` — off by default because it requires TLS termination in front of sillo. Enable only when HTTPS is enforced upstream or by sillo.
+- `csp_report_only=False` — set `True` to emit CSP violations as reports without blocking, while you tune the policy.
+- `hide_server=True` — strips the `Server` header so the stack isn't advertised.
+
+## Configuring the policy
+
+```python
+from sillo import silloApp
+from sillo.security import Shield
+
+app = silloApp()
 app.use(
     Shield(
         csp_enabled=True,
+        csp_policy={
+            "default-src": ["'self'"],
+            "script-src": ["'self'"],
+            "style-src": ["'self'", "https://fonts.googleapis.com"],
+            "img-src": ["'self'", "data:", "https:"],
+            "connect-src": ["'self'", "https://api.example.com"],
+        },
         hsts_enabled=True,
-        ssl_redirect=True,
-        frame_options="DENY"
+        hsts_max_age=31536000,
+        hsts_include_subdomains=True,
+        hsts_preload=True,
+        frame_options="DENY",
+        referrer_policy="strict-origin-when-cross-origin",
     )
 )
 ```
 
-##  Security Features
+`csp_policy` accepts a dict of directive → list of sources. When omitted, Shield uses a restrictive same-origin default (`object-src: 'none'`, `frame-ancestors: 'none'`, `base-uri: 'self'`). Validate CSP in `csp_report_only=True` mode first; a too-strict policy will block legitimate assets.
 
-### 1. Content Security Policy (CSP)
+## A realistic scenario: a public API
 
-::: tip CSP
-Content Security Policy is a powerful security feature that helps prevent XSS attacks by controlling which resources can be loaded.
-:::
-
-```python
-security = Shield(
-    csp_enabled=True,
-    csp_policy={
-        'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'"],
-        'style-src': ["'self'", 'https://fonts.googleapis.com'],
-        'img-src': ["'self'", 'data:', 'https:'],
-        'font-src': ["'self'", 'https://fonts.gstatic.com'],
-        'connect-src': ["'self'", 'https://api.example.com']
-    },
-    csp_report_only=False  # Set to True for testing
-)
-```
-
-
-
-### 2. HTTP Strict Transport Security (HSTS)
-
-```python
-security = Shield(
-    hsts_enabled=True,
-    hsts_max_age=31536000,  # 1 year
-    hsts_include_subdomains=True,
-    hsts_preload=True
-)
-```
-
-### 3. XSS Protection
-
-```python
-security = Shield(
-    xss_protection=True,
-    xss_mode="block"  # or "filter"
-)
-```
-
-### 4. Frame Options
-
-```python
-security = Shield(
-    frame_options="DENY",  # or "SAMEORIGIN"
-    # Or allow specific origin:
-    frame_options_allow_from="https://trusted.com"
-)
-```
-
-### 5. SSL/HTTPS Redirect
-
-```python
-security = Shield(
-    ssl_redirect=True,
-    ssl_host="secure.example.com",
-    ssl_permanent=True  # 301 redirect
-)
-```
-
-### 6. Cross-Origin Policies
-
-```python
-security = Shield(
-    cross_origin_opener_policy="same-origin",
-    cross_origin_embedder_policy="require-corp",
-    cross_origin_resource_policy="same-origin"
-)
-```
-
-### 7. Permissions Policy
-
-```python
-security = Shield(
-    permissions_policy={
-        'camera': "'none'",
-        'microphone': "'self'",
-        'geolocation': ["'self'", "https://maps.example.com"],
-        'payment': "'self'"
-    }
-)
-```
-
-### 8. Cache Control
-
-```python
-security = Shield(
-    cache_control="no-store, no-cache, must-revalidate, proxy-revalidate",
-    clear_site_data=["cache", "cookies", "storage"]
-)
-```
-
-### 9. Expect-CT
-
-```python
-security = Shield(
-    expect_ct=True,
-    expect_ct_max_age=86400,
-    expect_ct_enforce=True,
-    expect_ct_report_uri="https://example.com/report"
-)
-```
-
-##  Complete Configuration Example
-
-<details>
-<summary>Full Configuration</summary>
+An API server wants HSTS, a tight CSP, and CORS for one trusted web origin. CORS is a **separate** middleware layered alongside Shield:
 
 ```python
 from sillo import silloApp
 from sillo.security import Shield
+from sillo.security import CORSMiddleware, CorsConfig
 
 app = silloApp()
 
-security = Shield(
-    # Content Security Policy
-    csp_enabled=True,
-    csp_policy={
-        'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'"],
-        'style-src': ["'self'", 'https://fonts.googleapis.com'],
-        'img-src': ["'self'", 'data:', 'https:'],
-        'connect-src': ["'self'", 'https://api.example.com']
-    },
-    csp_report_only=False,
+# Headers
+app.use(Shield(hsts_enabled=True, csp_enabled=True))
 
-    # CORS
-    cors_enabled=True,
-    allowed_origins=["https://example.com"],
-    allowed_methods=["GET", "POST", "PUT", "DELETE"],
-    allowed_headers=["*"],
-    expose_headers=["X-Custom-Header"],
-    max_age=3600,
-    allow_credentials=True,
-
-    # HSTS
-    hsts_enabled=True,
-    hsts_max_age=31536000,
-    hsts_include_subdomains=True,
-    hsts_preload=True,
-
-    # XSS Protection
-    xss_protection=True,
-    xss_mode="block",
-
-    # Frame Options
-    frame_options="DENY",
-
-    # Content Type Options
-    content_type_options=True,
-
-    # Referrer Policy
-    referrer_policy="strict-origin-when-cross-origin",
-
-    # SSL/HTTPS
-    ssl_redirect=True,
-    ssl_host="secure.example.com",
-    ssl_permanent=True,
-
-    # Cache Control
-    cache_control="no-store, no-cache",
-    clear_site_data=["cache", "cookies"],
-
-    # Cross-Origin Policies
-    cross_origin_opener_policy="same-origin",
-    cross_origin_embedder_policy="require-corp",
-    cross_origin_resource_policy="same-origin",
-
-    # Expect-CT
-    expect_ct=True,
-    expect_ct_max_age=86400,
-    expect_ct_enforce=True,
-
-    # Trusted Types
-    trusted_types=True,
-    trusted_types_policies=["default", "escape"],
-
-    # Server
-    hide_server=True
-)
-
-app.use(security)
-```
-
-</details>
-
-##  Best Practices
-
-### Production Settings
-
-::: tip Production Security
-For production environments, we recommend:
-1. Enable HTTPS redirect
-2. Enable HSTS
-3. Set strict CSP rules
-4. Enable all security headers
-5. Configure proper CORS settings
-:::
-
-```python
-security = Shield(
-    # Force HTTPS
-    ssl_redirect=True,
-    ssl_permanent=True,
-    
-    # Strict CSP
-    csp_enabled=True,
-    csp_policy={
-        'default-src': ["'self'"],
-        'script-src': ["'self'"],
-        'object-src': ["'none'"],
-        'base-uri': ["'self'"],
-        'frame-ancestors': ["'none'"]
-    },
-    
-    # HSTS
-    hsts_enabled=True,
-    hsts_max_age=31536000,
-    hsts_include_subdomains=True,
-    
-    # Other Security Headers
-    frame_options="DENY",
-    content_type_options=True,
-    referrer_policy="strict-origin-when-cross-origin",
-    
-    # Hide Server Info
-    hide_server=True
+# Cross-origin access — its own middleware, not a Shield argument
+app.use(
+    CORSMiddleware(
+        CorsConfig(
+            allow_origins=["https://app.example.com"],
+            allow_methods=["GET", "POST", "PUT", "DELETE"],
+            allow_headers=["Authorization", "Content-Type"],
+            expose_headers=["X-Request-ID"],
+            allow_credentials=True,
+        )
+    )
 )
 ```
 
-### Development Settings
+Shield and CORS are independent: Shield owns the security headers, `CORSMiddleware` owns the `Access-Control-*` headers. Ordering between them does not matter for the headers themselves, but both should run before routing so error responses carry them.
 
-::: tip Development Mode
-For development, you might want to relax some settings:
-:::
+## Header reference
 
-```python
-security = Shield(
-    # Disable HTTPS redirect
-    ssl_redirect=False,
-    
-    # Relaxed CSP for development tools
-    csp_policy={
-        'default-src': ["'self'"],
-        'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        'style-src': ["'self'", "'unsafe-inline'"],
-        'connect-src': ["'self'", "ws://localhost:*"]
-    },
-    
-    # Allow all origins in development
-    cors_enabled=True,
-    allowed_origins=["*"],
-    
-    # Disable HSTS in development
-    hsts_enabled=False
-)
-```
+| Header | Purpose | Shield default |
+| --- | --- | --- |
+| `Content-Security-Policy` | Controls loadable resources | `'self'` for scripts/styles/img/connect/font; `none` for object/frame |
+| `Strict-Transport-Security` | Forces HTTPS | `max-age=31536000; includeSubDomains` |
+| `X-Frame-Options` | Clickjacking protection | `DENY` |
+| `X-Content-Type-Options` | MIME sniffing protection | `nosniff` |
+| `Referrer-Policy` | Referrer leakage control | `strict-origin-when-cross-origin` |
+| `Cross-Origin-Opener-Policy` | Cross-origin isolation | `same-origin` |
+| `Cross-Origin-Embedder-Policy` | Cross-origin isolation | `require-corp` |
+| `Cross-Origin-Resource-Policy` | Resource sharing | `same-origin` |
+| `Permissions-Policy` | Browser feature gating | none unless configured |
 
-##  Header Reference
+## Errors and edge cases
 
-| Header | Purpose | Default |
-|--------|---------|---------|
-| Content-Security-Policy | Control resource loading | self only |
-| X-Frame-Options | Prevent clickjacking | DENY |
-| X-XSS-Protection | XSS filter | 1; mode=block |
-| Strict-Transport-Security | Force HTTPS | max-age=31536000 |
-| X-Content-Type-Options | Prevent MIME sniffing | nosniff |
-| Referrer-Policy | Control referrer info | strict-origin-when-cross-origin |
-| Permissions-Policy | Control browser features | Various restrictions |
-| Clear-Site-Data | Clear browser data | None |
-| Cross-Origin-*-Policy | Cross-origin isolation | same-origin |
+- **HSTS is hard to undo** — once a browser caches `max-age` + `preload`, rolling back requires users to flush HSTS state. Only set `hsts_preload=True` after the host is permanently HTTPS.
+- **CSP blocks assets** — a policy missing a needed source silently breaks scripts/styles/images in the browser console. Use `csp_report_only=True` in staging to collect violations before enforcing.
+- **`ssl_redirect=True` without TLS** — redirects every request to HTTPS; if sillo itself serves plain HTTP (no proxy), clients loop or get refused. Keep it off unless HTTPS is terminated in front of sillo.
+- **Server header** — `hide_server=True` removes `Server`; some observability stacks key on it, so disable if you rely on it.
 
-##  Common Scenarios
+## Testing
 
-### API Server
+Assert headers with `TestClient`; security headers are just response headers:
 
 ```python
-security = Shield(
-    cors_enabled=True,
-    allowed_origins=["https://api.example.com"],
-    allowed_methods=["GET", "POST", "PUT", "DELETE"],
-    allowed_headers=["Authorization", "Content-Type"],
-    expose_headers=["X-Request-ID"],
-    allow_credentials=True
-)
+from sillo import silloApp
+from sillo.security import Shield
+from sillo.testclient import TestClient
+
+
+def test_shield_sets_headers():
+    app = silloApp()
+    app.use(Shield())
+
+    @app.get("/")
+    async def home(request, response):
+        return {"ok": True}
+
+    resp = TestClient(app).get("/")
+    assert resp.headers["x-frame-options"] == "DENY"
+    assert "content-security-policy" in resp.headers
+    assert resp.headers["strict-transport-security"].startswith("max-age=")
 ```
 
-### Static Website
+## Production considerations
 
-```python
-security = Shield(
-    csp_policy={
-        'default-src': ["'self'"],
-        'img-src': ["'self'", "data:", "https:"],
-        'style-src': ["'self'", "https://fonts.googleapis.com"],
-        'font-src': ["'self'", "https://fonts.gstatic.com"]
-    },
-    frame_options="DENY",
-    cache_control="public, max-age=31536000"
-)
-```
+- **HTTPS first** — enable `ssl_redirect` only when a proxy or sillo terminates TLS; otherwise enforce HTTPS at the edge.
+- **CSP as a process** — start `csp_report_only=True`, collect violations, then enforce. A one-shot strict policy breaks real pages.
+- **Preload carefully** — `hsts_preload=True` enters the browser preload list; it is effectively permanent for that host.
+- **Layering** — Shield complements, not replaces, CSRF, CORS, and authentication. Keep each concern in its own middleware so behavior is auditable.
+- **Don't hide everything** — `hide_server=True` is fine, but if your monitoring depends on the `Server` header, turn it off rather than lose telemetry.
 
-### WebSocket Server
+## Related topics
 
-```python
-security = Shield(
-    cors_enabled=True,
-    allowed_origins=["https://example.com"],
-    csp_policy={
-        'default-src': ["'self'"],
-        'connect-src': ["'self'", "wss://ws.example.com"]
-    }
-)
-```
-
-##  Troubleshooting
-
-:::caution Common Issues
-1. **CSP Blocking Resources**: Check browser console for CSP violations
-2. **CORS Issues**: Verify allowed origins and methods
-3. **HSTS Problems**: Cannot be easily undone, use carefully
-4. **Mixed Content**: Ensure all resources use HTTPS
-:::
-
-## Hashing & Cryptography
-
-sillo provides built-in hashing utilities for passwords and general-purpose cryptographic operations.
-
-### Password Hashing
-
-The `sillo.users` module includes bcrypt-based password hashing:
-
-```python
-from sillo.users import make_password, check_password, needs_rehash
-
-hashed = make_password("my-secret-password")
-# $2b$12$LJ3m4ys3G...
-
-assert check_password("my-secret-password", hashed)
-assert not check_password("wrong-password", hashed)
-
-if needs_rehash(hashed, rounds=14):
-    user.set_password(new_password)
-```
-
-**Best practices:**
-- Never store raw passwords — always hash with bcrypt
-- bcrypt is resistant to GPU-based attacks due to its memory-hard design
-- The default work factor (12 rounds) is sufficient for most applications
-- Check `needs_rehash` on login to upgrade hashes when you increase rounds
-- Use `set_unusable_password()` for OAuth-only or deactivated accounts
-
-### Password Validation
-
-```python
-from sillo.users import validate_password, password_strength
-
-errors = validate_password("weak")
-# Requires: 8+ chars, uppercase, lowercase, digit, special char
-
-result = password_strength("StrongP@ss1")
-# {"score": 5, "strength": "strong", "feedback": []}
-```
-
-### General Hashing
-
-The `sillo.helpers.hashing` module provides SHA-family hashing and HMAC:
-
-```python
-from sillo.helpers.hashing import sha256, sha512, hmac_digest, constant_time_compare
-
-digest = sha256("data to hash")
-digest = sha512("data to hash")
-
-# HMAC — use for signed tokens and message authentication
-signature = hmac_digest(key="secret", data="payload", algorithm="sha256")
-
-# Constant-time comparison — prevents timing attacks
-assert constant_time_compare(signature, expected_signature)
-```
-
-### Encryption
-
-The `sillo.helpers.crypto` module provides Fernet symmetric encryption and key derivation:
-
-```python
-from sillo.helpers.crypto import generate_key, encrypt, decrypt, derive_key
-
-key = generate_key()
-ciphertext = encrypt("sensitive data", key)
-plaintext = decrypt(ciphertext, key)
-assert plaintext == "sensitive data"
-
-derived_key, salt = derive_key("master-password")
-```
-
-Fernet uses AES-128-CBC with HMAC-SHA256 for authenticated encryption. Use it for fields that need to be encrypted at rest (API keys, tokens, PII).
-
-**Never implement your own crypto.** Always use these vetted, standard-library or well-audited libraries.
-
-For more details, see the [Users & User Models](/guides/users/) guide for password management and the [Helpers](/guides/helpers/) section for hashing and crypto utilities.
-
-## More Information
-
-- [MDN Web Security](https://developer.mozilla.org/en-US/docs/Web/Security)
-- [OWASP Security Headers](https://owasp.org/www-project-secure-headers/)
-- [Content Security Policy](https://content-security-policy.com/)
-- [Report URI](https://report-uri.com/) 
+- [CORS](/guides/cors/) — cross-origin access as its own middleware
+- [CSRF](/guides/csrf/) — synchronizer-token protection for state-changing requests
+- [Authentication](/guides/authentication/) — verifying who the caller is
+- [Rate Limiting](/guides/rate-limiting/) — throttling abuse
