@@ -13,6 +13,8 @@
     },
     "dependencies": {
         "@astrojs/starlight": "^0.39.0",
+        "@fontsource-variable/geist-mono": "^5.2.8",
+        "@fontsource-variable/instrument-sans": "^5.2.8",
         "astro": "^6.0.1",
         "lucode-starlight": "workspace:*",
         "sharp": "^0.34.2"

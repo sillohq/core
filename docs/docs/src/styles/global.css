@@ -1,0 +1,16 @@
+/* Fontsource variable fonts: Instrument Sans (body) + Geist Mono (code) */
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource-variable/geist-mono';
+
+:root {
+	/* Body prose renders in Instrument Sans; code/mono keeps Geist Mono */
+	--sl-font: 'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+		Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--sl-font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+		'Liberation Mono', monospace;
+}
+
+/* Bump the base font size a bit (16px -> 17px) so all rem-based text scales up slightly */
+html {
+	font-size: 17px;
+}
