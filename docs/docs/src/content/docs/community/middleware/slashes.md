@@ -1,7 +1,16 @@
 ---
 title: URL Normalization Middleware
-description: A lightweight production-ready URL normalization middleware for the sillo framework.
+description: URL normalization middleware — now available as a first-party sillo.normalize module.
 ---
+
+> **First-party module:** This functionality is now available as the first-party `sillo.normalize` module. See below for usage with the first-party API — no extra install required.
+>
+> ```python
+> from sillo.normalize import NormalizeMiddleware, SlashAction, Normalize
+> app.use(Normalize(slash_action=SlashAction.REDIRECT_REMOVE))
+> ```
+>
+> The `sillo_contrib` package remains supported for backwards compatibility.
 
 # URL Normalization Middleware
 
@@ -12,10 +21,30 @@ It automatically handles trailing slashes, double slashes, and other common URL 
 ## Installation
 
 ```bash
+# First-party (sillo ≥ 3.x) — no extra install
+# Already included in sillo
+
+# Or via contrib (legacy)
 pip install sillo_contrib
 ```
 
 ## Quick Start
+
+### First-party API (recommended)
+
+```python
+from sillo import silloApp
+from sillo.normalize import Normalize, SlashAction
+
+app = silloApp()
+
+app.use(Normalize(
+    slash_action=SlashAction.REDIRECT_REMOVE,
+    redirect_status_code=301,
+))
+```
+
+### Legacy API (contrib)
 
 ```python
 from sillo import silloApp
@@ -23,11 +52,10 @@ import sillo_contrib.slashes as slashes
 
 app = silloApp()
 
-# Add URL normalization middleware
 app.use(slashes.Slashes(
-    slash_action=slashes.SlashAction.REDIRECT_REMOVE,  # Redirect to remove trailing slashes
-    auto_remove_double_slashes=True,                   # Clean up double slashes
-    redirect_status_code=301                           # Use permanent redirects
+    slash_action=slashes.SlashAction.REDIRECT_REMOVE,
+    auto_remove_double_slashes=True,
+    redirect_status_code=301
 ))
 
 @app.get("/users")
@@ -53,219 +81,101 @@ The middleware supports several modes for handling trailing slashes:
 - **`SlashAction.ADD`**: Add trailing slashes without redirect
 - **`SlashAction.IGNORE`**: Leave trailing slashes as-is (only clean double slashes)
 
-### Parameters
+### Parameters (first-party `NormalizeMiddleware`)
 
-- **`slash_action: SlashAction`** - How to handle trailing slashes (default: REDIRECT_REMOVE)
-- **`auto_remove_double_slashes: bool`** - Remove double slashes automatically (default: True)
-- **`redirect_status_code: int`** - HTTP status code for redirects (default: 301)
+- **`slash_action: SlashAction`** — How to handle trailing slashes (default: REDIRECT_REMOVE)
+- **`auto_remove_double_slashes: bool`** — Remove double slashes automatically (default: True)
+- **`redirect_status_code: int`** — HTTP status code for redirects (default: 301)
+- **`normalize_case: bool`** — Lowercase the URL path (default: False)
 
 ## Examples
 
 ### SEO-Friendly Setup (Remove Trailing Slashes)
 
 ```python
-app.use(slashes.Slashes(
-    slash_action=slashes.SlashAction.REDIRECT_REMOVE,
-    redirect_status_code=301  # SEO-friendly permanent redirect
+from sillo.normalize import Normalize, SlashAction
+
+app.use(Normalize(
+    slash_action=SlashAction.REDIRECT_REMOVE,
+    redirect_status_code=301
 ))
 ```
-
-**Result:**
-- `/api/users/` → redirects to `/api/users`
-- `/blog/posts/` → redirects to `/blog/posts`
 
 ### Directory-Style URLs (Add Trailing Slashes)
 
 ```python
-app.use(slashes.Slashes(
-    slash_action=slashes.SlashAction.REDIRECT_ADD,
+app.use(Normalize(
+    slash_action=SlashAction.REDIRECT_ADD,
     redirect_status_code=301
 ))
 ```
-
-**Result:**
-- `/api/users` → redirects to `/api/users/`
-- `/blog/posts` → redirects to `/blog/posts/`
 
 ### Silent Normalization (No Redirects)
 
 ```python
-app.use(slashes.Slashes(
-    slash_action=slashes.SlashAction.REMOVE,  # Just remove, no redirect
+app.use(Normalize(
+    slash_action=SlashAction.REMOVE,
     auto_remove_double_slashes=True
 ))
 ```
 
-**Result:**
-- `/api/users/` → internally processed as `/api/users`
-- No redirect sent to client
-
-### Minimal Processing
+### Case-Insensitive Normalization
 
 ```python
-app.use(slashes.Slashes(
-    slash_action=slashes.SlashAction.IGNORE,  # Don't touch slashes
-    auto_remove_double_slashes=True           # Only clean double slashes
-))
-```
-
-**Result:**
-- `/api//users` → cleaned to `/api/users`
-- Trailing slashes left unchanged
-
-## How It Works
-
-1. **Path Analysis**: Examines the request path for normalization issues
-2. **Skip Logic**: Intelligently skips processing for files, API paths, and query parameters
-3. **Double Slash Removal**: Cleans up double slashes (`//` becomes `/`)
-4. **Trailing Slash Handling**: Applies the configured slash action
-5. **Redirect or Modify**: Either redirects the client or modifies the request path
-
-## Skip Patterns
-
-The middleware automatically skips processing for paths containing:
-- File extensions (e.g., `.css`, `.js`, `.jpg`)
-- Query parameters (e.g., `?param=value`)
-- URL fragments (e.g., `#section`)
-
-This ensures that:
-- Static files are served correctly
-- API endpoints with parameters work properly
-- Client-side routing isn't interfered with
-
-## URL Normalization Features
-
-- **Double Slash Removal**: `//api/users` → `/api/users`
-- **Trailing Slash Handling**: Configurable add/remove/redirect behavior
-- **Smart Skipping**: Preserves file extensions and query parameters
-- **SEO Optimization**: Uses 301 redirects for permanent URL changes
-- **Proxy Compatible**: Works correctly behind reverse proxies
-- **Standards Compliant**: Follows web standards for URL normalization
-
-## Use Cases
-
-### SEO & Consistency
-```python
-# Ensure all URLs have consistent trailing slash behavior
-slashes.Slashes(slash_action=slashes.SlashAction.REDIRECT_REMOVE)
-```
-
-**Benefits:**
-- Prevents duplicate content issues
-- Consistent URL structure
-- Better search engine indexing
-
-### Clean URLs
-```python
-# Remove double slashes and normalize paths
-slashes.Slashes(auto_remove_double_slashes=True)
-```
-
-**Benefits:**
-- Cleaner logs and analytics
-- Prevents routing issues
-- Better user experience
-
-### API Design
-```python
-# API routes without trailing slashes
-slashes.Slashes(
-    slash_action=slashes.SlashAction.REMOVE,
-    auto_remove_double_slashes=True
-)
-```
-
-**Benefits:**
-- Consistent API endpoints
-- Cleaner API documentation
-- Better client integration
-
-### Legacy URL Support
-```python
-# Redirect old URLs to new format
-slashes.Slashes(
-    slash_action=slashes.SlashAction.REDIRECT_REMOVE,
-    redirect_status_code=301
-)
-```
-
-**Benefits:**
-- Maintains SEO value
-- Smooth migration path
-- User-friendly redirects
-
-## Advanced Usage
-
-### Custom Skip Logic
-
-```python
-import sillo_contrib.slashes as slashes
-
-class CustomSlashesMiddleware(slashes.SlashesMiddleware):
-    def _should_skip_processing(self, path: str) -> bool:
-        # Custom logic for skipping paths
-        if super()._should_skip_processing(path):
-            return True
-
-        # Skip specific paths
-        if path.startswith("/api/v2/"):
-            return True
-        
-        # Skip webhook endpoints
-        if "/webhook" in path:
-            return True
-
-        return False
-
-app.use(CustomSlashesMiddleware(
-    slash_action=slashes.SlashAction.REDIRECT_REMOVE
+app.use(Normalize(
+    slash_action=SlashAction.IGNORE,
+    normalize_case=True  # Lowercase all paths
 ))
 ```
 
 ### Programmatic URL Normalization
 
 ```python
-from sillo_contrib.slashes.helpers import normalize_path, clean_url_path
+from sillo.normalize import normalize_path, clean_url_path
 
-# Normalize a path
 clean_path = normalize_path("/api//users//123")  # "/api/users/123"
+clean_url = clean_url_path("https://example.com/api//users")
+```
 
-# Clean a full URL
-clean_url = clean_url_path("https://example.com/api//users")  # "https://example.com/api/users"
+## Advanced Usage
 
-# Use in your handlers
-@app.get("/redirect")
-async def redirect_handler(request, response):
-    target_path = normalize_path(request.query_params.get("url", "/"))
-    return response.redirect(target_path)
+### Custom Skip Logic
+
+```python
+from sillo.normalize import NormalizeMiddleware, SlashAction
+
+class CustomNormalizeMiddleware(NormalizeMiddleware):
+    def _should_skip_processing(self, path: str) -> bool:
+        if super()._should_skip_processing(path):
+            return True
+        if path.startswith("/api/v2/"):
+            return True
+        if "/webhook" in path:
+            return True
+        return False
+
+app.use(CustomNormalizeMiddleware(
+    slash_action=SlashAction.REDIRECT_REMOVE
+))
 ```
 
 ### Conditional Processing
 
 ```python
-from sillo_contrib.slashes import SlashesMiddleware, SlashAction
+from sillo.normalize import NormalizeMiddleware, SlashAction
 
-class ConditionalSlashesMiddleware(SlashesMiddleware):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-    
-    async def __call__(self, request, response, call_next):
-        # Different behavior for different domains
+class ConditionalNormalizeMiddleware(NormalizeMiddleware):
+    async def process_request(self, request, response, call_next):
         host = request.headers.get("host", "")
-        
         if host.startswith("api."):
-            # API subdomain: remove trailing slashes
             self.slash_action = SlashAction.REDIRECT_REMOVE
         elif host.startswith("blog."):
-            # Blog subdomain: add trailing slashes
             self.slash_action = SlashAction.REDIRECT_ADD
         else:
-            # Main domain: ignore slashes
             self.slash_action = SlashAction.IGNORE
-        
-        return await super().__call__(request, response, call_next)
+        return await super().process_request(request, response, call_next)
 
-app.use(ConditionalSlashesMiddleware())
+app.use(ConditionalNormalizeMiddleware())
 ```
 
 ## Best Practices
@@ -290,22 +200,21 @@ If you're migrating from inconsistent URLs:
 ### Example Migration
 
 ```python
+from sillo.normalize import Normalize, SlashAction
+
 # Phase 1: Log what would be changed
-class AuditSlashesMiddleware(slashes.SlashesMiddleware):
-    async def __call__(self, request, response, call_next):
+class AuditNormalizeMiddleware(NormalizeMiddleware):
+    async def process_request(self, request, response, call_next):
         original_path = request.url.path
-        # Process normally but log changes
-        result = await super().__call__(request, response, call_next)
-        
-        if hasattr(request, '_normalized_path'):
+        result = await super().process_request(request, response, call_next)
+        if hasattr(request, "_normalized_path"):
             print(f"Would normalize: {original_path} → {request._normalized_path}")
-        
         return result
 
 # Phase 2: Implement with redirects
-app.use(slashes.Slashes(
-    slash_action=slashes.SlashAction.REDIRECT_REMOVE,
-    redirect_status_code=301
+app.use(Normalize(
+    slash_action=SlashAction.REDIRECT_REMOVE,
+    redirect_status_code=301,
 ))
 ```
 

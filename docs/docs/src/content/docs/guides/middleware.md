@@ -548,3 +548,63 @@ If you raise an error in raw middleware and do not handle it, the client will re
 - Assuming access to sillo-specific objects: Raw middleware only works with ASGI primitives.
 
 By understanding and using raw ASGI middleware appropriately, you can extend your sillo application with powerful, low-level features and integrate seamlessly with the broader ASGI ecosystem.
+
+## Built-in Middleware Modules
+
+sillo ships with several first-party middleware modules organized by domain:
+
+| Module | Import | Purpose |
+|---|---|---|
+| **Security** | `sillo.security` | CSRF, CORS, Shield security headers |
+| **Error** | `sillo.error` | Server error debug middleware |
+| **Lifecycle** | `sillo.lifecycle` | Request ID, RequestContext |
+| **Normalize** | `sillo.normalize` | URL normalization (slashes, case) |
+| **Accepts** | `sillo.helpers.accepts` | Content negotiation |
+
+### Security (`sillo.security`)
+
+```python
+from sillo.security import CSRFMiddleware, CSRFConfig, CORSMiddleware, CorsConfig, Shield
+
+app.use(CSRFMiddleware(config=CSRFConfig(enabled=True, secret_key="...")))
+app.use(CORSMiddleware(config=CorsConfig(allow_origins=["*"])))
+app.use(Shield())  # Security headers (CSP, HSTS, X-Frame-Options, etc.)
+```
+
+> See [CSRF Guide](/guides/csrf), [CORS Guide](/guides/cors), and [Security Guide](/guides/security) for details.
+
+### Request Lifecycle (`sillo.lifecycle`)
+
+```python
+from sillo.lifecycle import RequestId, RequestContext
+
+app.use(RequestId())
+
+@app.get("/")
+async def home(request, response):
+    with RequestContext() as ctx:
+        ctx["user"] = "alice"
+        return {"request_id": getattr(request.state, "request_id", None)}
+```
+
+> See [Lifecycle Guide](/guides/lifecycle) for details.
+
+### URL Normalization (`sillo.normalize`)
+
+```python
+from sillo.normalize import Normalize, SlashAction
+
+app.use(Normalize(slash_action=SlashAction.REDIRECT_REMOVE))
+```
+
+> See [Normalize Guide](/guides/normalize) for details.
+
+### Content Negotiation (`sillo.helpers.accepts`)
+
+```python
+from sillo.helpers.accepts import Accepts
+
+app.use(Accepts())
+```
+
+> See [Accepts Guide](/community/middleware/accepts) for details.

@@ -1,7 +1,16 @@
 ---
 title: Accepts Middleware
-description: A comprehensive content negotiation middleware for the sillo framework.
+description: Content negotiation middleware — now available as a first-party sillo.helpers.accepts module.
 ---
+
+> **First-party module:** This functionality is now available as the first-party `sillo.helpers.accepts` module. See below for usage with the first-party API — no extra install required.
+>
+> ```python
+> from sillo.helpers.accepts import AcceptsMiddleware, Accepts
+> app.use(Accepts())
+> ```
+>
+> The `sillo_contrib` package remains supported for backwards compatibility.
 
 # Accepts Middleware
 
@@ -18,31 +27,42 @@ It automatically:
 ## Installation
 
 ```bash
+# First-party (sillo ≥ 3.x) — no extra install
+# Already included in sillo
+
+# Or via contrib (legacy)
 pip install sillo_contrib
 ```
 
 ## Quick Start
+
+### First-party API (recommended)
+
+```python
+from sillo import silloApp
+from sillo.helpers.accepts import Accepts
+
+app = silloApp()
+
+app.use(Accepts())
+
+@app.get("/")
+async def home(request, response):
+    accepts_info = getattr(request.state, "accepts", {})
+    return {
+        "message": "Hello with Content Negotiation!",
+        "accepts": accepts_info.get("raw_accept", ""),
+    }
+```
+
+### Legacy API (contrib)
 
 ```python
 from sillo import silloApp
 from sillo_contrib.accepts import Accepts
 
 app = silloApp()
-
-# Add accepts middleware
 app.use(Accepts())
-
-@app.get("/")
-async def home(request, response):
-    # Access parsed accept headers
-    accepts_info = getattr(request, 'accepts', {})
-    accept_header = accepts_info.get('raw_accept', '')
-
-    return {
-        "message": "Hello with Content Negotiation!",
-        "accepts": accept_header
-    }
-```
 
 ## Content Negotiation Examples
 

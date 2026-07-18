@@ -24,7 +24,7 @@ app.use(Shield())
 
 # Advanced configuration
 app.use(
-    SecurityMiddleware(
+    Shield(
         csp_enabled=True,
         hsts_enabled=True,
         ssl_redirect=True,

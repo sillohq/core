@@ -1,7 +1,16 @@
 ---
 title: Request ID Middleware
-description: A lightweight production-ready request ID middleware for the sillo framework.
+description: Request ID middleware — now available as a first-party sillo.lifecycle module.
 ---
+
+> **First-party module:** This functionality is now available as the first-party `sillo.lifecycle` module. See below for usage with the first-party API — no extra install required.
+>
+> ```python
+> from sillo.lifecycle import RequestIdMiddleware, RequestId
+> app.use(RequestId())
+> ```
+>
+> The `sillo_contrib` package remains supported for backwards compatibility.
 
 # Request ID Middleware
 
@@ -18,10 +27,37 @@ It automatically:
 ## Installation
 
 ```bash
+# First-party (sillo ≥ 3.x) — no extra install
+# Already included in sillo
+
+# Or via contrib (legacy)
 pip install sillo_contrib
 ```
 
 ## Quick Start
+
+### First-party API (recommended)
+
+```python
+from sillo import silloApp
+from sillo.lifecycle import RequestId
+
+app = silloApp()
+
+app.use(RequestId(
+    header_name="X-Request-ID",
+    force_generate=False,
+    store_in_request=True,
+    include_in_response=True,
+))
+
+@app.get("/")
+async def home(request, response):
+    req_id = getattr(request.state, "request_id", None)
+    return {"message": "Hello with Request ID!", "request_id": req_id}
+```
+
+### Legacy API (contrib)
 
 ```python
 from sillo import silloApp
@@ -29,22 +65,7 @@ import sillo_contrib.request_id as request_id
 
 app = silloApp()
 
-# Add the Request ID middleware (defaults shown)
-app.use(
-    request_id.RequestId(
-        header_name="X-Request-ID",    # Header name for request ID
-        force_generate=False,          # Use existing request ID if provided
-        store_in_request=True,         # Store request ID in request object
-        include_in_response=True       # Include request ID in response headers
-    )
-)
-
-@app.get("/")
-async def home(request, response):
-    # Access request ID from request object
-    req_id = getattr(request, 'request_id', None)
-    return {"message": "Hello with Request ID!", "request_id": req_id}
-```
+app.use(request_id.RequestId())
 
 That's it! Every request will now have a unique request ID that can be used for tracing and debugging.
 
