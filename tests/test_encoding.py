@@ -718,3 +718,61 @@ def test_dict_with_encoded_keys():
     # keys that are not strings get encoded
     d = {1: "a", 2: "b"}
     assert jsonable_encoder(d) == {1: "a", 2: "b"}
+
+
+# ---------------------------------------------------------------------------
+# Global custom encoder registry (CUSTOM_ENCODERS / register_encoder)
+# ---------------------------------------------------------------------------
+
+
+from sillo.encoding import CUSTOM_ENCODERS, register_encoder, get_custom_encoders
+
+
+class _RegType:
+    def __init__(self, v):
+        self.v = v
+
+
+def _cleanup_registry():
+    CUSTOM_ENCODERS.pop(_RegType, None)
+
+
+def test_register_encoder_global_application():
+    try:
+        register_encoder(_RegType, lambda o: o.v)
+        assert jsonable_encoder(_RegType(7)) == 7
+    finally:
+        _cleanup_registry()
+
+
+def test_get_custom_encoders_returns_copy():
+    try:
+        register_encoder(_RegType, lambda o: o.v)
+        snapshot = get_custom_encoders()
+        assert snapshot[_RegType](_RegType(3)) == 3
+        # mutating the snapshot must not affect the registry
+        snapshot.clear()
+        assert _RegType in CUSTOM_ENCODERS
+    finally:
+        _cleanup_registry()
+
+
+def test_registered_encoder_nested():
+    try:
+        register_encoder(_RegType, lambda o: o.v)
+        assert jsonable_encoder({"items": [_RegType(1), _RegType(2)]}) == {
+            "items": [1, 2]
+        }
+    finally:
+        _cleanup_registry()
+
+
+def test_per_call_encoder_overrides_registry():
+    try:
+        register_encoder(_RegType, lambda o: "registry")
+        result = jsonable_encoder(
+            _RegType(9), custom_encoder={_RegType: lambda o: "per-call"}
+        )
+        assert result == "per-call"
+    finally:
+        _cleanup_registry()

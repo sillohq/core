@@ -37,6 +37,35 @@ def decimal_encoder(dec_value: Decimal) -> int | float:
         return float(dec_value)
 
 
+#: Global registry of user-defined encoders. Populated via
+#: :func:`register_encoder` or ``silloApp.add_encoder`` and automatically
+#: consulted by :func:`jsonable_encoder`.
+CUSTOM_ENCODERS: dict[type[typing.Any], typing.Callable[[typing.Any], typing.Any]] = {}
+
+
+def register_encoder(
+    type_: type[typing.Any],
+    encoder: typing.Callable[[typing.Any], typing.Any],
+) -> None:
+    """Register a global custom encoder for ``type_``.
+
+    Once registered, the encoder is used automatically by
+    :func:`jsonable_encoder` (and therefore by every sillo JSON response)
+    whenever an object of ``type_`` (or a subclass) is encountered.
+
+    Args:
+        type_: The Python type (or ABC/abstract base) to encode.
+        encoder: A callable that receives an instance of ``type_`` and
+            returns a JSON-serializable value.
+    """
+    CUSTOM_ENCODERS[type_] = encoder
+
+
+def get_custom_encoders() -> dict[type[typing.Any], typing.Callable[[typing.Any], typing.Any]]:
+    """Return a copy of the currently registered global custom encoders."""
+    return dict(CUSTOM_ENCODERS)
+
+
 ENCODERS_BY_TYPE: dict[type[typing.Any], typing.Callable[[typing.Any], typing.Any]] = {
     bytes: lambda o: o.decode(),
     datetime.date: isoformat,
@@ -92,7 +121,7 @@ def jsonable_encoder(
     ] = None,
 ) -> typing.Any:
     """Convert any object to something that can be encoded in JSON."""
-    custom_encoder = custom_encoder or {}
+    custom_encoder = {**CUSTOM_ENCODERS, **(custom_encoder or {})}
     if custom_encoder:
         if type(obj) in custom_encoder:
             return custom_encoder[type(obj)](obj)

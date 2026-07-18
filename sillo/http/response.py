@@ -15,6 +15,7 @@ from typing import (
     Annotated,
     Any,
     AsyncIterator,
+    Callable,
     Dict,
     List,
     Optional,
@@ -330,6 +331,7 @@ class JSONResponse(BaseResponse):
         indent: Optional[int] = None,
         ensure_ascii: bool = True,
         use_encoder: bool = True,
+        custom_encoder: Optional[Dict[type, Callable[[Any], Any]]] = None,
     ):
         try:
             # Pre-process content through jsonable_encoder when requested
@@ -337,7 +339,7 @@ class JSONResponse(BaseResponse):
             if use_encoder:
                 from sillo.encoding import jsonable_encoder
 
-                content = jsonable_encoder(content)
+                content = jsonable_encoder(content, custom_encoder=custom_encoder)
 
             body = json.dumps(
                 content,
@@ -905,6 +907,18 @@ class Responder:
                 - False: Allow Unicode characters in output
                 """),
         ] = True,
+        custom_encoder: Annotated[
+            Optional[Dict[type, Callable[[Any], Any]]],
+            Doc("""
+                One-off custom type encoders applied only to this response.
+                
+                Mapping of Python type to a callable that converts an instance
+                of that type into a JSON-serializable value. These are merged
+                on top of any encoders registered via ``app.add_encoder``.
+                
+                Example: {Decimal: lambda d: float(d)}
+                """),
+        ] = None,
     ):
         """
         Send a JSON response with the provided data.
@@ -947,6 +961,7 @@ class Responder:
             status_code=status_code,
             indent=indent,
             ensure_ascii=ensure_ascii,
+            custom_encoder=custom_encoder,
         )
         self._response = new_response
         return self

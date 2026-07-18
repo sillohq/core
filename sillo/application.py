@@ -24,6 +24,8 @@ from typing_extensions import Annotated, Doc
 from sillo._internals._middleware import (
     ASGIRequestResponseBridge,
 )
+from sillo.encoding import CUSTOM_ENCODERS, register_encoder
+
 from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo.dependencies import Depend
 from sillo.events import EventEmitter
@@ -179,6 +181,9 @@ class silloApp:
     ):
         self.debug = debug
         self.dependencies = dependencies or []
+        self.custom_encoders: Dict[
+            type, Callable[[Any], Any]
+        ] = {}
 
         self.http_middleware: List[Middleware] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
@@ -434,6 +439,39 @@ class silloApp:
             0,
             Middleware(ASGIRequestResponseBridge, dispatch=middleware),
         )
+
+    def add_encoder(
+        self,
+        type_: type,
+        encoder: Callable[[Any], Any],
+    ) -> None:
+        """Register a custom JSON encoder for a type across the application.
+
+        Registered encoders are applied automatically whenever sillo serializes
+        a response to JSON — including values returned directly from handlers.
+        They are merged on top of the built-in type encoders and also feed the
+        global :func:`sillo.encoding.register_encoder` registry.
+
+        Args:
+            type_: The Python type (or abstract base) to encode.
+            encoder: Callable receiving an instance of ``type_`` and returning a
+                JSON-serializable value.
+
+        Example:
+            ```python
+            from decimal import Decimal
+
+            app.add_encoder(Decimal, lambda d: float(d))
+
+            @app.get("/price")
+            async def price(request, response):
+                return {"total": Decimal("19.99")}
+            ```
+        """
+
+        self.custom_encoders[type_] = encoder
+        CUSTOM_ENCODERS[type_] = encoder
+        register_encoder(type_, encoder)
 
     def add_ws_route(
         self,

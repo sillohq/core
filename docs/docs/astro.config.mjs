@@ -76,6 +76,7 @@ export default defineConfig({
                         { label: 'Handlers', link: '/guides/handlers/' },
                         { label: 'Class-Based Views', link: '/guides/class-based-handlers/' },
                         { label: 'Middleware', link: '/guides/middleware/' },
+                        { label: 'JSON Serialization', link: '/guides/serialization/' },
                         { label: 'Request Lifecycle', link: '/guides/request-lifecycle/' },
                         { label: 'URL Normalization', link: '/guides/url-normalization/' },
                         { label: 'Content Negotiation', link: '/guides/content-negotiation/' },
@@ -112,6 +113,7 @@ export default defineConfig({
                     items: [
                         { label: 'CORS', link: '/guides/cors/' },
                         { label: 'CSRF', link: '/guides/csrf/' },
+                        { label: 'Rate Limiting', link: '/guides/rate-limiting/' },
                         { label: 'Cookies', link: '/guides/cookies/' },
                         { label: 'Session Management', link: '/guides/sessions/' },
                         { label: 'Security Middleware', link: '/guides/security/' },

@@ -1,2 +1,0 @@
-sillo>={{version}}
-uvicorn[standard]
