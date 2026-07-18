@@ -133,6 +133,105 @@ Denied responses additionally include `Retry-After: <seconds>`.
 - **`fail_open=False`**: backend failure causes the request to **fail** (a
   `500` surfaces via the app error handler). Prioritizes correctness/safety.
 
+## How a request is decided
+
+For each request, the middleware runs this sequence:
+
+1. Compute the identity with `key_func` (default: client IP, falling back to `X-Forwarded-For`). If it returns `None`, the request passes with no counting.
+2. Build the backend key as `namespace + ":" + identity`.
+3. Ask the strategy + backend for a `RateLimitResult` (`allowed`, `limit`, `remaining`, `reset_at`, `retry_after`).
+4. If `allowed`, attach `X-RateLimit-Limit` / `Remaining` / `Reset` and let the handler run.
+5. If not `allowed`, call `on_exceed` — by default a `429` with `Retry-After` and the quota headers; a custom callable may return its own response.
+
+Backends store an **opaque state dict**; strategies are stateless and interpret that state. That separation is why `memory`, `redis`, and `record` are drop-in replacements for each other.
+
+## A realistic scenario: protecting a login endpoint
+
+Brute-force protection wants a tight limit keyed by the target account (or IP), strict enough to matter but `fail_open=True` so a Redis blip doesn't lock users out:
+
+```python
+from sillo import silloApp
+from sillo.security import RateLimit
+
+app = silloApp()
+
+# 5 attempts per 60s per IP, fixed window (simple, predictable resets)
+app.use(
+    RateLimit(
+        limit=5,
+        window=60,
+        strategy="fixed",
+        backend="memory",
+        fail_open=True,
+        namespace="login",
+        key_func=lambda r: r.client.host if r.client else None,
+    )
+)
+
+
+@app.post("/login")
+async def login(request, response):
+    ...
+```
+
+Keyed by IP, the limit applies across every login attempt from that address. Swap `backend="redis"` and the same counter is shared across all app instances behind a load balancer.
+
+## Works with
+
+- **`sillo.security` Shield/CSRF/CORS** — rate limiting is a sibling middleware; order them so rate limiting runs early (cheap to reject) and CSRF validation runs only on accepted requests.
+- **Authentication / sessions** — pass `key_func` that reads the authenticated identity (`request.state.user.id`) to rate-limit *per account* rather than per IP, which is harder for an attacker to rotate.
+- **Dependency injection** — a dependency can compute the identity and stash it on `request.state` for `key_func` to read, keeping route handlers free of limiting logic.
+- **`sillo.record`** — the `"record"` backend persists counters as `sillo_ratelimit_counters` rows; no Redis required, at the cost of DB round-trips per request.
+
+## Testing
+
+Drive the middleware through `TestClient` and assert status codes and headers. Memory backend state is process-local, so repeated `client.get` calls accumulate against the same counter.
+
+```python
+from sillo import silloApp
+from sillo.security import RateLimit, RateLimitConfig
+from sillo.testclient import TestClient
+
+
+def test_allows_up_to_limit_then_429():
+    app = silloApp()
+    app.use(RateLimit(limit=2, window=60, key_func=lambda r: "tester"))
+
+    @app.get("/")
+    async def home(request, response):
+        return {"ok": True}
+
+    client = TestClient(app)
+    assert client.get("/").status_code == 200
+    assert client.get("/").status_code == 200
+    denied = client.get("/")
+    assert denied.status_code == 429
+    assert denied.headers["Retry-After"].isdigit()
+
+
+def test_quota_headers():
+    app = silloApp()
+    app.use(RateLimit(limit=2, window=60, key_func=lambda r: "h"))
+
+    @app.get("/")
+    async def home(request, response):
+        return {"ok": True}
+
+    r = TestClient(app).get("/")
+    assert r.headers["X-RateLimit-Limit"] == "2"
+    assert r.headers["X-RateLimit-Remaining"] == "1"
+```
+
+To reset between cases, call `backend.clear()` (the memory backend supports it) or use a fresh `silloApp()` per test. For `fail_open=False`, assert that taking the backend down yields a `500` rather than `429`.
+
+## Production considerations
+
+- **Backend choice** — `memory` is per-process; behind multiple workers/instances it under-counts, so use `redis` or `record` for real fairness.
+- **`fail_open`** — `True` favors availability (a backend outage lets traffic through); `False` favors safety (outage denies everything). Pick based on what a flood costs you.
+- **Key design** — IP-only limits are easy to evade by rotating addresses; per-account or per-API-key keys are stronger for abuse control.
+- **`X-RateLimit-Reset`** is a Unix timestamp; clients use it to schedule retries. Keep `include_headers=True` so well-behaved clients back off instead of hammering.
+- **Cost** — set `cost > 1` on expensive routes so one heavy call consumes more of the quota.
+
 ## Design Notes
 
 - Strategies are **stateless**; backends store opaque state. This keeps

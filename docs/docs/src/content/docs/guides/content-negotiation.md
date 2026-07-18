@@ -362,6 +362,91 @@ async def get_messages(request, response):
     return messages
 ```
 
+## How negotiation resolves a type
+
+`negotiate_content_type(header, available)` walks the client's `Accept` items in order and returns the first `available` type that matches:
+
+1. Items with `q=0` are skipped — the client is explicitly rejecting that type.
+2. An **exact** match (`application/json` == `application/json`) wins immediately.
+3. A **range** match: `text/*` matches `text/html`; `*/*` matches anything.
+4. If nothing matches, the function returns `None` and the middleware falls back to `default_content_type`.
+
+Quality values (`q`) do **not** override specificity: `text/html, application/json;q=0.9` still yields `text/html` on an exact match, because the first matching item in client order is returned before quality is consulted for ordering. `matches_media_type` is the single source of truth for the match rules above.
+
+## Errors and edge cases
+
+- **No `Accept` header** — `negotiate_content_type` returns the first available type (or `default_content_type` in the middleware). Clients that omit `Accept` get your default format.
+- **No acceptable match** — with `Accepts`/`ContentNegotiationMiddleware` the response uses `default_content_type`; with `StrictContentNegotiationMiddleware` the request is short-circuited with **`406 Not Acceptable`** and a JSON body listing `available_types`. The 406 is returned before your handler runs.
+- **`q=0` rejection** — `text/html;q=0` is never selected even if `text/html` is available. Use this to test negotiation without sending an unmatched header.
+- **`*/*` wildcard** — matches any available type, so an API client sending `Accept: */*` receives your default format, not necessarily the most specific one.
+- **`Vary` header** — `Accepts` appends `Accept`, `Accept-Language`, `Accept-Charset`, `Accept-Encoding` (only those present on the request) to `Vary`. Reverse proxies and CDNs use this to cache per-negotiated variant; disabling it (`set_vary_header=False`) means negotiated responses can be served to the wrong client.
+
+## Testing
+
+Drive negotiation through `TestClient` by setting request headers. Assert both the chosen format and the `Content-Type`/`Vary` response headers.
+
+```python
+from sillo import silloApp
+from sillo.helpers.accepts import Accepts
+from sillo.testclient import TestClient
+
+
+def test_negotiates_json():
+    app = silloApp()
+    app.use(Accepts())
+
+    @app.get("/data")
+    async def data(request, response):
+        return {"ok": True}
+
+    client = TestClient(app)
+    resp = client.get("/data", headers={"Accept": "application/json"})
+    assert resp.status_code == 200
+    assert resp.headers["Content-Type"].startswith("application/json")
+
+
+def test_strict_returns_406():
+    from sillo.helpers.accepts import StrictContentNegotiationMiddleware
+
+    app = silloApp()
+    app.use(
+        StrictContentNegotiationMiddleware(available_types=["application/json"])
+    )
+
+    @app.get("/data")
+    async def data(request, response):
+        return {"ok": True}
+
+    client = TestClient(app)
+    resp = client.get("/data", headers={"Accept": "text/html"})
+    assert resp.status_code == 406
+```
+
+For handlers that read `request.state.accepts`, assert the parsed structure rather than the raw header:
+
+```python
+def test_stores_accepts_info():
+    app = silloApp()
+    app.use(Accepts())
+
+    @app.get("/debug")
+    async def debug(request, response):
+        return {"types": [i.value for i in request.state.accepts["accept"]]}
+
+    resp = TestClient(app).get(
+        "/debug", headers={"Accept": "text/html, application/json;q=0.9"}
+    )
+    assert resp.json()["types"] == ["text/html", "application/json"]
+```
+
+## Production considerations
+
+- **Caching** — keep `set_vary_header=True` so CDNs and browser caches key on the negotiated headers. Returning JSON to a client that asked for HTML (or vice versa) is a classic misconfiguration caused by a missing `Vary`.
+- **Public API boundaries** — use `StrictContentNegotiationMiddleware` when your API only serves a fixed set of types; the `406` makes unsupported `Accept` values explicit instead of silently downgrading.
+- **Defaults are responses too** — when a client sends no `Accept`, the `default_content_type` is what they get. Make it the format most clients expect.
+- **Ordering of middleware** — `Accepts` sets `Content-Type` only when the response has none, during `process_response`. Place it where downstream middleware won't overwrite `Content-Type` afterward.
+- **Language vs content type** — `negotiate_language` only *computes* a language; you must set `Content-Language` and select localized content yourself, as shown in the i18n example above.
+
 ## Best Practices
 
 1. **Always set Vary headers** when using content negotiation for proper caching

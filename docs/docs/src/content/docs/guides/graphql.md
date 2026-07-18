@@ -11,7 +11,7 @@ Add GraphQL support to your sillo application using [Strawberry](https://strawbe
 
 GraphQL is a query language for APIs and a runtime for fulfilling those queries with your existing data. It provides a complete and understandable description of the data in your API, gives clients the power to ask for exactly what they need and nothing more, makes it easier to evolve APIs over time, and enables powerful developer tools.
 
-This contrib provides:
+`sillo.graphql` provides:
 
 - **Strawberry Integration**: Seamless integration with the Strawberry GraphQL library.
 - **GraphiQL Interface**: Built-in interactive in-browser GraphQL IDE.
@@ -50,7 +50,7 @@ schema = strawberry.Schema(query=Query)
 # 2. Create your sillo app
 app = silloApp()
 
-# 3. Add the GraphQL plugin
+# 3. Instantiate the GraphQL handler
 # By default, this mounts the GraphQL endpoint at /graphql
 # and enables the GraphiQL interface.
 GraphQL(app, schema)
@@ -132,3 +132,63 @@ class Query:
         request = info.context["request"]
         return request.headers.get("user-agent", "Unknown")
 ```
+
+## How a query is handled
+
+`GraphQL(app, schema)` registers a single `Route` at `path` (default `/graphql`) accepting `GET` and `POST`:
+
+- **`GET`** — when `graphiql=True` (default) returns the GraphiQL IDE HTML; when disabled returns `404`.
+- **`POST`** — reads the JSON body, expects an object with `query`, optional `variables`, and optional `operationName`, then runs `schema.execute` with a context of `{"request", "response"}`. Invalid JSON or a non-object body returns `400` with an `errors` payload.
+
+The schema is executed asynchronously, so resolver `await`s run on the event loop like any other sillo handler.
+
+## Testing
+
+Drive queries through `TestClient` with a `POST` of a JSON `{"query": ...}` body:
+
+```python
+import strawberry
+from sillo import silloApp
+from sillo.graphql import GraphQL
+from sillo.testclient import TestClient
+
+
+@strawberry.type
+class Query:
+    @strawberry.field
+    def hello(self) -> str:
+        return "Hello World"
+
+
+schema = strawberry.Schema(query=Query)
+app = silloApp()
+GraphQL(app, schema)
+client = TestClient(app)
+
+
+def test_graphql_query():
+    resp = client.post("/graphql", json={"query": "{ hello }"})
+    assert resp.status_code == 200
+    assert resp.json()["data"] == {"hello": "Hello World"}
+
+
+def test_invalid_json_body():
+    resp = client.post("/graphql", content=b"not json", headers={"content-type": "application/json"})
+    assert resp.status_code == 400
+```
+
+For resolvers that hit the database, use your normal async fixtures in the test app — the `request`/`response` context flows through `schema.execute` unchanged.
+
+## Errors and edge cases
+
+- **Malformed body** — a non-JSON or non-object `POST` yields `400` with `{"errors": [...]}`. GraphiQL itself is unaffected (it uses `GET`).
+- **GraphiQL in production** — leaving `graphiql=True` exposes an in-browser IDE. Set `graphiql=False` for production endpoints you don't want browsable.
+- **Auth** — `GraphQL` does not enforce authentication. Protect the route by registering auth middleware or checking `info.context["request"]` inside resolvers.
+- **Extra dependency** — `strawberry-graphql` is required. Install with `pip install sillo[graphql]` (or your lockfile equivalent); importing `sillo.graphql` without it raises at runtime.
+
+## Related topics
+
+- [Request Inputs](/guides/request-inputs/) — JSON body parsing used by the `POST` handler
+- [Authentication](/guides/authentication/) — protecting the `/graphql` route
+- [Middleware](/guides/middleware/) — ordering auth before the GraphQL route
+
