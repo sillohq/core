@@ -148,7 +148,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s'
 )
 
-@app.middleware
 async def logging_middleware(request, response, call_next):
     request_id = getattr(request, "request_id", "unknown")
     logger = logging.LoggerAdapter(logging.getLogger(__name__), {"request_id": request_id})
@@ -156,6 +155,8 @@ async def logging_middleware(request, response, call_next):
     response = await call_next()
     logger.info(f"Request completed with status: {response.status_code}")
     return response
+
+app.use(logging_middleware)
 ```
 
 ### Custom Request ID Format
@@ -184,13 +185,14 @@ import opentelemetry.trace as trace
 app = silloApp()
 app.use(RequestId())
 
-@app.middleware
 async def tracing_middleware(request, response, call_next):
     request_id = getattr(request, "request_id", None)
     span = trace.get_current_span()
     if span and request_id:
         span.set_attribute("request.id", request_id)
     return await call_next()
+
+app.use(tracing_middleware)
 ```
 
 ### Request ID Propagation
@@ -242,7 +244,6 @@ logging.basicConfig(
     format='{"timestamp": "%(asctime)s", "level": "%(levelname)s", "request_id": "%(request_id)s", "message": "%(message)s"}'
 )
 
-@app.middleware
 async def structured_logging(request, response, call_next):
     request_id = getattr(request, "request_id", "unknown")
     logger = logging.LoggerAdapter(logging.getLogger(__name__), {"request_id": request_id})
@@ -257,6 +258,8 @@ async def structured_logging(request, response, call_next):
         duration = time.time() - start_time
         logger.error(f"Request failed: {str(e)} in {duration:.3f}s")
         raise
+
+app.use(structured_logging)
 ```
 
 ## Integration Examples

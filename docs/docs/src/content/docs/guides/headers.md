@@ -162,8 +162,7 @@ sillo provides several methods for working with headers:
 For enhanced security, consider these recommended headers:
 
 ```python
-@app.middleware
-async def add_security_headers(request, response, next):
+async def add_security_headers(request, response, call_next):
     response.set_headers({
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
@@ -172,7 +171,9 @@ async def add_security_headers(request, response, next):
         "Content-Security-Policy": "default-src 'self'; script-src 'self'",
         "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload"
     })
-    await next()
+    return await call_next()
+
+app.use(add_security_headers)
 ```
 
 ##  Performance Headers
@@ -180,11 +181,12 @@ async def add_security_headers(request, response, next):
 Optimize client-side caching and resource loading:
 
 ```python
-@app.middleware
-async def add_performance_headers(request, response, next):
+async def add_performance_headers(request, response, call_next):
     if request.path.endswith(('.js', '.css', '.png', '.jpg')):
         response.set_header("Cache-Control", "public, max-age=31536000, immutable")
-    await next()
+    return await call_next()
+
+app.use(add_performance_headers)
 ```
 
 ##  Cookie Headers

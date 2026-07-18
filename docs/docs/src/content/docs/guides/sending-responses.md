@@ -56,9 +56,11 @@ async def getUsers(request, response):
 ```
 
 ```py title="Enum"
+from sillo.status import HTTP_200_OK
+
 @app.get("/users")
 async def getUsers(request, response):
-    return StatusCodes.OK
+    return HTTP_200_OK
 ```
 
 
@@ -365,7 +367,7 @@ Instead of using the `res` object's methods, you can return an instance of a res
 
 *   `JSONResponse`
 *   `HTMLResponse`
-*   `TextResponse`
+*   `PlainTextResponse`
 *   `RedirectResponse`
 *   `FileResponse`
 *   `StreamingResponse`
@@ -391,21 +393,20 @@ async def welcome_html(req, res):
 
 ### Creating Custom Response Classes
 
-You can create your own custom response classes by inheriting from `sillo.http.response.Response`. This is useful when you need to send responses in a format that is not supported out of the box, such as XML.
+You can create your own custom response classes by inheriting from `sillo.http.response.BaseResponse`. This is useful when you need to send responses in a format that is not supported out of the box, such as XML.
 
 **Example: Creating an `XMLResponse` class**
 
 ```python
 from sillo import silloApp
-from sillo.http.response import Response
+from sillo.http.response import BaseResponse
 from dicttoxml import dicttoxml
 
-class XMLResponse(Response):
-    media_type = "application/xml"
-
+class XMLResponse(BaseResponse):
     def __init__(self, content, *args, **kwargs):
         xml_content = dicttoxml(content)
-        super().__init__(content=xml_content, *args, **kwargs)
+        # BaseResponse stores the already-encoded body and a content_type
+        super().__init__(body=xml_content, content_type="application/xml", *args, **kwargs)
 
 app = silloApp()
 
@@ -418,9 +419,8 @@ async def get_xml_data(req, res):
 
 In this example:
 
-1.  We create a new `XMLResponse` class that inherits from `sillo.http.response.Response`.
-2.  We set the `media_type` to `application/xml`.
-3.  In the `__init__` method, we convert the incoming `dict` to XML using the `dicttoxml` library before passing it to the parent class.
-4.  Finally, we return an instance of our `XMLResponse` from the route handler.
+1.  We create a new `XMLResponse` class that inherits from `sillo.http.response.BaseResponse`.
+2.  In the `__init__` method we convert the incoming `dict` to XML bytes with `dicttoxml`, then hand the encoded body and `content_type` to the parent class.
+3.  Finally, we return an instance of our `XMLResponse` from the route handler.
 
 By creating custom response classes, you can encapsulate response logic and reuse it across your application, leading to cleaner and more maintainable code.

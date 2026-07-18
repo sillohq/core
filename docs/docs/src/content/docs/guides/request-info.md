@@ -251,7 +251,7 @@ For handling large uploads:
 ```python
 @app.post("/stream")
 async def stream_handler(req: Request, res):
-    async for chunk in req.stream():
+    async for chunk in req.stream:
         # Process each chunk of the request body
         process_chunk(chunk)
 ```
