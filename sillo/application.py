@@ -181,9 +181,7 @@ class silloApp:
     ):
         self.debug = debug
         self.dependencies = dependencies or []
-        self.custom_encoders: Dict[
-            type, Callable[[Any], Any]
-        ] = {}
+        self.custom_encoders: Dict[type, Callable[[Any], Any]] = {}
 
         self.http_middleware: List[Middleware] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []

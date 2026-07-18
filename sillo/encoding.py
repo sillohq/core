@@ -61,7 +61,9 @@ def register_encoder(
     CUSTOM_ENCODERS[type_] = encoder
 
 
-def get_custom_encoders() -> dict[type[typing.Any], typing.Callable[[typing.Any], typing.Any]]:
+def get_custom_encoders() -> dict[
+    type[typing.Any], typing.Callable[[typing.Any], typing.Any]
+]:
     """Return a copy of the currently registered global custom encoders."""
     return dict(CUSTOM_ENCODERS)
 

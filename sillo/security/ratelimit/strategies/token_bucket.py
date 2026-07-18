@@ -50,9 +50,7 @@ class TokenBucketStrategy(RateLimitStrategy):
                 retry_after=retry_after,
             )
         tokens -= cost
-        await backend.save_state(
-            key, {"tokens": tokens, "last": now}, ttl=window * 2
-        )
+        await backend.save_state(key, {"tokens": tokens, "last": now}, ttl=window * 2)
         return RateLimitResult(
             allowed=True,
             limit=limit,
