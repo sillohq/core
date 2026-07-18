@@ -587,7 +587,7 @@ async def home(request, response):
         return {"request_id": getattr(request.state, "request_id", None)}
 ```
 
-> See [Lifecycle Guide](/guides/lifecycle) for details.
+> See [Request Lifecycle Guide](/guides/request-lifecycle) for details.
 
 ### URL Normalization (`sillo.normalize`)
 
@@ -597,7 +597,7 @@ from sillo.normalize import Normalize, SlashAction
 app.use(Normalize(slash_action=SlashAction.REDIRECT_REMOVE))
 ```
 
-> See [Normalize Guide](/guides/normalize) for details.
+> See [URL Normalization Guide](/guides/url-normalization) for details.
 
 ### Content Negotiation (`sillo.helpers.accepts`)
 
@@ -607,4 +607,4 @@ from sillo.helpers.accepts import Accepts
 app.use(Accepts())
 ```
 
-> See [Accepts Guide](/community/middleware/accepts) for details.
+> See [Content Negotiation Guide](/guides/content-negotiation) for details.

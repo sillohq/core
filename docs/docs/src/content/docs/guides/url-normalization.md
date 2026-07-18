@@ -1,36 +1,15 @@
 ---
-title: URL Normalization Middleware
-description: URL normalization middleware — now available as a first-party sillo.normalize module.
+title: URL Normalization
+description: Normalize URLs — trailing slashes, double slashes, and case — with the sillo.normalize module.
 ---
 
-> **First-party module:** This functionality is now available as the first-party `sillo.normalize` module. See below for usage with the first-party API — no extra install required.
->
-> ```python
-> from sillo.normalize import NormalizeMiddleware, SlashAction, Normalize
-> app.use(Normalize(slash_action=SlashAction.REDIRECT_REMOVE))
-> ```
->
-> The `sillo_contrib` package remains supported for backwards compatibility.
+# URL Normalization
 
-# URL Normalization Middleware
+A production‑ready URL normalization middleware for sillo, shipped as the first‑party `sillo.normalize` module.
 
-A lightweight, production‑ready URL normalization middleware for the sillo ASGI framework.
-
-It automatically handles trailing slashes, double slashes, and other common URL normalization issues to ensure consistent and clean URLs across your application.
-
-## Installation
-
-```bash
-# First-party (sillo ≥ 3.x) — no extra install
-# Already included in sillo
-
-# Or via contrib (legacy)
-pip install sillo_contrib
-```
+It automatically handles trailing slashes, double slashes, and other common URL normalization issues to keep consistent, clean URLs across your application.
 
 ## Quick Start
-
-### First-party API (recommended)
 
 ```python
 from sillo import silloApp
@@ -41,21 +20,6 @@ app = silloApp()
 app.use(Normalize(
     slash_action=SlashAction.REDIRECT_REMOVE,
     redirect_status_code=301,
-))
-```
-
-### Legacy API (contrib)
-
-```python
-from sillo import silloApp
-import sillo_contrib.slashes as slashes
-
-app = silloApp()
-
-app.use(slashes.Slashes(
-    slash_action=slashes.SlashAction.REDIRECT_REMOVE,
-    auto_remove_double_slashes=True,
-    redirect_status_code=301
 ))
 
 @app.get("/users")
@@ -81,7 +45,7 @@ The middleware supports several modes for handling trailing slashes:
 - **`SlashAction.ADD`**: Add trailing slashes without redirect
 - **`SlashAction.IGNORE`**: Leave trailing slashes as-is (only clean double slashes)
 
-### Parameters (first-party `NormalizeMiddleware`)
+### Parameters (`NormalizeMiddleware`)
 
 - **`slash_action: SlashAction`** — How to handle trailing slashes (default: REDIRECT_REMOVE)
 - **`auto_remove_double_slashes: bool`** — Remove double slashes automatically (default: True)

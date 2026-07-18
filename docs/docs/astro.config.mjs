@@ -76,6 +76,10 @@ export default defineConfig({
                         { label: 'Handlers', link: '/guides/handlers/' },
                         { label: 'Class-Based Views', link: '/guides/class-based-handlers/' },
                         { label: 'Middleware', link: '/guides/middleware/' },
+                        { label: 'Request Lifecycle', link: '/guides/request-lifecycle/' },
+                        { label: 'URL Normalization', link: '/guides/url-normalization/' },
+                        { label: 'Content Negotiation', link: '/guides/content-negotiation/' },
+                        { label: 'GraphQL', link: '/guides/graphql/' },
                         { label: 'Dependency Injection', link: '/guides/dependency-injection/' },
                     ],
                 },
@@ -213,7 +217,6 @@ export default defineConfig({
                 {
                     label: 'Community Integrations',
                     items: [
-                        { label: 'GraphQL', link: '/community/integrations/graphql/' },
                         { label: 'JSON-RPC', link: '/community/integrations/jrpc/' },
                         { label: 'Mail', link: '/community/integrations/mail/' },
                         { label: 'Redis', link: '/community/integrations/redis/' },
@@ -225,11 +228,8 @@ export default defineConfig({
                 {
                     label: 'Community Middleware',
                     items: [
-                        { label: 'Accepts', link: '/community/middleware/accepts/' },
                         { label: 'ETag', link: '/community/middleware/etag/' },
                         { label: 'Proxy', link: '/community/middleware/proxy/' },
-                        { label: 'Request ID', link: '/community/middleware/request-id/' },
-                        { label: 'Slashes', link: '/community/middleware/slashes/' },
                         { label: 'Timeout', link: '/community/middleware/timeout/' },
                         { label: 'Trusted Host', link: '/community/middleware/trusted-host/' },
                     ],
