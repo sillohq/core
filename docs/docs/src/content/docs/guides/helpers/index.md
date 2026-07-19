@@ -19,6 +19,7 @@ sillo ships with a collection of helper modules. Import from `sillo.helpers.*`.
 | [Hashing](/guides/helpers/hashing) | Password hashing (bcrypt), digests, HMAC | `bcrypt` |
 | [Crypto](/guides/helpers/crypto) | Encrypt/decrypt, key derivation, signed values | `cryptography` |
 | [Deprecation](/guides/helpers/deprecation) | Framework deprecation warnings and decorators | stdlib |
+| [Async](/guides/helpers/async) | Detect async callables, wrap coroutines as async context managers | stdlib |
 
 ## Quick Import
 

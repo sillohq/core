@@ -55,7 +55,7 @@ from sillo.types import (
     Scope,
     Send,
 )
-from sillo.utils.async_helpers import is_async_callable
+from sillo.helpers.async_helpers import is_async_callable
 from sillo.utils.concurrency import run_in_threadpool
 
 from pydantic import ValidationError

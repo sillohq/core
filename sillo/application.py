@@ -1,5 +1,5 @@
 from __future__ import annotations
-from sillo.utils.async_helpers import is_async_callable
+from sillo.helpers.async_helpers import is_async_callable
 from sillo.openapi import License
 from sillo.openapi import Contact
 

@@ -12,7 +12,7 @@ from sillo.http.response import (
 )
 from sillo.http.response import Responder as Response
 from sillo.types import ASGIApp, Message, MiddlewareType, Receive, Scope, Send
-from sillo.utils.async_helpers import collapse_excgroups
+from sillo.helpers.async_helpers import collapse_excgroups
 from sillo.websockets import WebSocket
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]

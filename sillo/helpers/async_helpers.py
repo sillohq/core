@@ -1,3 +1,10 @@
+"""sillo.helpers.async_helpers — Async introspection and awaitable utilities.
+
+Small, dependency-free helpers used across sillo to detect async callables
+and wrap coroutines so they behave as both awaitables and async context
+managers. Import from ``sillo.helpers.async_helpers``.
+"""
+
 from __future__ import annotations
 
 import asyncio

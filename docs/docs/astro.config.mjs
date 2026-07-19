@@ -178,6 +178,7 @@ export default defineConfig({
                     { label: 'Hashing', link: '/guides/helpers/hashing/' },
                     { label: 'Crypto', link: '/guides/helpers/crypto/' },
                     { label: 'Deprecation', link: '/guides/helpers/deprecation/' },
+                    { label: 'Async', link: '/guides/helpers/async/' },
                 ],
             },
             {
