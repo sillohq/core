@@ -43,6 +43,4 @@ class AuthenticationBackend:
         backend. Override to customize error handling (e.g. short-circuit with
         a 401 response).
         """
-        logger.warning(
-            "Auth backend %s failed: %s", type(self).__name__, exc
-        )
+        logger.warning("Auth backend %s failed: %s", type(self).__name__, exc)
