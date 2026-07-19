@@ -199,6 +199,79 @@ async def get_data(req, res):
 Both approaches work, but chaining is more readable and ensures the response type is set before other operations.
 In this example, we set the status code, add a cookie, and send a JSON response all in a single, chained statement.
 :::
+
+##  Aborting & Not Found
+
+Sometimes you don't want to *build* an error response — you want to **stop
+processing immediately** with an HTTP error. The response object provides two
+short-circuit helpers that **raise** instead of returning a value:
+
+- `response.abort(status_code, detail=...)` — raise a generic `HTTPException`.
+- `response.not_found(detail=...)` — raise a `NotFoundException` (HTTP 404).
+
+Because they raise, the framework's exception middleware catches them and
+renders a consistent error envelope (JSON by default; HTML for 404 when
+configured). You never call `return` after them.
+
+### `response.abort()`
+
+```python
+from sillo import silloApp
+
+app = silloApp()
+
+@app.get("/admin")
+async def admin(request, response):
+    if not request.user.is_admin:
+        response.abort(403, detail="Admins only")
+    return response.json({"ok": True})
+```
+
+Calling `response.abort(403, detail="Admins only")` raises an
+`HTTPException(status_code=403, detail="Admins only")`. The client receives a
+`403` with a JSON body of `"Admins only"` (the detail is serialized directly).
+
+You can also attach headers to the raised exception:
+
+```python
+@app.post("/login")
+async def login(request, response):
+    if not await authenticate(request):
+        response.abort(401, detail="Invalid credentials", headers={"WWW-Authenticate": "Bearer"})
+    return response.json({"ok": True})
+```
+
+### `response.not_found()`
+
+`not_found()` is a 404 shorthand. It raises `NotFoundException`, which the
+framework routes through the registered 404 handler (supporting JSON, HTML, or
+plain text based on configuration).
+
+```python
+@app.get("/items/{item_id:int}")
+async def get_item(request, response, item_id: int):
+    item = await db.get(item_id)
+    if item is None:
+        response.not_found(detail=f"Item {item_id} not found")
+    return response.json(item)
+```
+
+A request to `/items/99` when no such item exists returns `404` with a JSON
+body such as `{"status": 404, "error": "Not Found", "message": "Item 99 not found"}`.
+
+### When to use `abort` vs building a response
+
+Use `abort` / `not_found` when you want the **framework's error handling** to
+apply (consistent envelopes, the configured 404 page, and centralized
+logging). Use `response.status(404).json(...)` when you need a fully custom
+body that bypasses the exception handlers.
+
+::: warning These methods raise
+Unlike `response.json()` or `response.empty()`, `abort()` and `not_found()` do
+**not** return `self` and cannot be chained. They terminate the handler. Any
+code after them will not run.
+:::
+
 ##  Sending Different Types of Responses using the object directly 
 
 sillo provides several methods for sending different types of responses.

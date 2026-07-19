@@ -29,6 +29,7 @@ import anyio.to_thread
 from anyio import AsyncFile
 from typing_extensions import Doc
 
+from sillo.exceptions import HTTPException, NotFoundException
 from sillo.http.request import ClientDisconnect, Request
 from sillo.objects import MutableHeaders
 from sillo.pagination import (
@@ -982,6 +983,71 @@ class Responder:
         new_response = BaseResponse(status_code=status_code, headers=headers)
         self._response = new_response
         return self
+
+    def abort(
+        self,
+        status_code: int,
+        detail: typing.Optional[typing.Any] = None,
+        headers: Dict[str, Any] = {},
+    ) -> typing.NoReturn:
+        """
+        Abort the request by raising an :class:`HTTPException`.
+
+        Unlike the other builder methods, ``abort`` does **not** return a
+        response. It raises immediately so the framework's exception middleware
+        can render a consistent error envelope (JSON by default, HTML/JSON for
+        404 via the registered handlers). Use it inside a handler when you want
+        to short-circuit with an error status instead of returning a body.
+
+        Args:
+            status_code: HTTP status code for the error (e.g. 400, 401, 403).
+            detail: Optional error detail / message. Rendered by the handler.
+            headers: Optional headers attached to the raised exception.
+
+        Raises:
+            HTTPException: Always, with the given status code and detail.
+
+        Examples:
+            ```python
+            @app.get("/admin")
+            async def admin(request, response):
+                if not request.user.is_admin:
+                    response.abort(403, detail="Admins only")
+                return response.json({"ok": True})
+            ```
+        """
+        raise HTTPException(status_code=status_code, detail=detail, headers=headers)
+
+    def not_found(
+        self,
+        detail: typing.Optional[str] = None,
+        headers: Dict[str, Any] = {},
+    ) -> typing.NoReturn:
+        """
+        Abort the request with a 404 by raising a :class:`NotFoundException`.
+
+        Convenience shorthand for ``response.abort(404, detail=...)``. The
+        framework renders it through the registered 404 handler, which supports
+        JSON, HTML, and plain-text responses based on configuration.
+
+        Args:
+            detail: Optional message describing what was not found.
+            headers: Optional headers attached to the raised exception.
+
+        Raises:
+            NotFoundException: Always, with status code 404.
+
+        Examples:
+            ```python
+            @app.get("/items/{item_id}")
+            async def get_item(request, response):
+                item = await db.get(item_id)
+                if item is None:
+                    response.not_found(detail=f"Item {item_id} not found")
+                return response.json(item)
+            ```
+        """
+        raise NotFoundException(detail=detail, headers=headers)
 
     def html(
         self,
