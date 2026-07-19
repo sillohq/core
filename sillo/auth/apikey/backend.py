@@ -4,7 +4,7 @@ import hashlib
 import secrets
 from typing import Any, Optional
 
-from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.apikey.models import ApiKeyManager
 from sillo.auth.model import AuthResult
 from sillo.http import Request

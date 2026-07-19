@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
 from sillo.http import Request
 

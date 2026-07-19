@@ -5,7 +5,7 @@ import typing
 from typing_extensions import Annotated, Doc
 
 from sillo import logging
-from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.backend import AuthenticationBackend
 from sillo.users import BaseUser, SimpleUser, UnauthenticatedUser
 from sillo.http import Request, Response
 from sillo.middleware.base import BaseMiddleware

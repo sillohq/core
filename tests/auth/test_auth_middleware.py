@@ -14,7 +14,7 @@ import pytest
 
 from sillo.application import silloApp
 from sillo.auth import AuthenticationMiddleware, BaseUser, auth
-from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
 from sillo.users import SimpleUser, UnauthenticatedUser
 from sillo.http import Request, Response

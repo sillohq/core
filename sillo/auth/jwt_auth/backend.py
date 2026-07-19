@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.jwt_auth.models import TokenBlacklist
 from sillo.auth.model import AuthResult
 from sillo.helpers import jwt as jwt_helpers

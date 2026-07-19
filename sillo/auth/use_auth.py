@@ -41,7 +41,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.exceptions import AuthenticationFailed, PermissionDenied
 from sillo.users.base import AbstractBaseUser
 from sillo.users.simple import SimpleUser
