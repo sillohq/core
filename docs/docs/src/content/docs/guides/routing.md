@@ -15,12 +15,9 @@ head:
 ---
 #  Routing
 
-:::caution Important Note
-sillo now enforces that path parameters must be passed directly to handler functions as arguments. The old pattern of accessing `request.path_params` is no longer supported.
-
-:::
-
 sillo provides a powerful and flexible routing system that supports using decorators to define routes or using the `Route` class. The routing system is designed to be intuitive, performant, and extensible, making it easy to define routes and handle requests.
+
+When a path contains a `{name}` segment, the matched value is **bound to a handler parameter of the same name** — this is the recommended way to read path parameters. The same values are also available on `request.path_params` if you prefer to read them imperatively. Both styles work; binding by name keeps the handler signature explicit.
 
 ##  Using decorators
 

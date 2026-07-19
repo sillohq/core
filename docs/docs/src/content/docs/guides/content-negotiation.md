@@ -476,7 +476,7 @@ app.use(
     )
 )
 
-@app.middleware
+@app.use
 async def content_negotiation_logger(request, response, call_next):
     negotiated_type = getattr(request, "negotiated_content_type", "unknown")
     negotiated_lang = getattr(request, "negotiated_language", "unknown")

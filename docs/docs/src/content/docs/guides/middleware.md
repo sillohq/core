@@ -1,610 +1,324 @@
 ---
 title: Middleware
-icon: jsfiddle
-description: Middleware in sillo is a powerful feature that allows you to intercept, process, and modify requests and responses as they flow through your application. It acts as a pipeline, enabling you
-  to implement cross-cutting concerns such as logging, authentication, validation, and response modification in a modular and reusable way. This documentation provides a comprehensive guide to understanding
-  and using middleware in sillo.
+description: Intercept and shape requests and responses in sillo with function middleware (app.use), class-based middleware (BaseMiddleware), route- and router-scoped middleware, and raw ASGI middleware.
 head:
 - tag: meta
   attrs:
     property: og:title
-    content: Middleware
+    content: Middleware in sillo
 - tag: meta
   attrs:
     property: og:description
-    content: Middleware in sillo is a powerful feature that allows you to intercept, process, and modify requests and responses as they flow through your application. It acts as a pipeline, enabling you
-      to implement cross-cutting concerns such as logging, authentication, validation, and response modification in a modular and reusable way. This documentation provides a comprehensive guide to understanding
-      and using middleware in sillo.
+    content: Function and class-based middleware in sillo — app.use, BaseMiddleware, route/router scope, and raw ASGI middleware.
 ---
 
 # Middleware
 
-Middleware in sillo is a powerful feature that allows you to intercept, process, and modify requests and responses as they flow through your application. It acts as a pipeline, enabling you to implement cross-cutting concerns such as logging, authentication, validation, and response modification in a modular and reusable way. This documentation provides a comprehensive guide to understanding and using middleware in sillo.
+Middleware is code that runs around your handlers — before a request reaches them and after the response comes back. Use it for cross-cutting concerns that would otherwise repeat on every route: logging, timing, authentication, CORS, request-ID injection, rate limiting, response shaping.
 
-Middleware in sillo provides:
+sillo gives you three layers, from highest-level to lowest:
 
-- **Request/Response Pipeline**: Process requests before and after handlers
-- **Cross-cutting Concerns**: Implement logging, auth, CORS, etc. once
-- **Modular Design**: Each middleware has a single responsibility
-- **Reusability**: Middleware can be shared across different routes
-- **Order Control**: Middleware executes in the order they're added
-- **Error Handling**: Middleware can catch and handle exceptions
+- **Function middleware** via `app.use(fn)` — operates on sillo's `Request`/`Response`, with an `await call_next()` continuation.
+- **Class-based middleware** via `BaseMiddleware` — the same idea, organized into `process_request` / `process_response` methods.
+- **Raw ASGI middleware** via `app.wrap_asgi(...)` — operates on the raw `scope`/`receive`/`send` triple, for third-party or framework-agnostic middleware.
 
+This page covers all three, how they nest, and how to scope them to a single route or an entire router.
 
+## The smallest useful form
 
-
----
-
-##  How Middleware Works
-
-Middleware functions are executed in a sequence, forming a pipeline that processes incoming requests and outgoing responses. Each middleware function has access to the request (`req`), response (`res`), and a `next` function to pass control to the next middleware or the final route handler.
-
-### **Key Responsibilities of Middleware**
-
-- **Modify the Request** – Add headers, parse data, or inject additional context.
-- **Block or Allow Access** – Enforce authentication, rate limiting, or other access controls.
-- **Modify the Response** – Format responses, add headers, or compress data.
-- **Pass Control** – Call `next()` to continue processing the request or terminate early.
-
-::: tip Middleware Flow
-The middleware pipeline follows this pattern:
-
-1. **Pre-processing**: Execute code before the handler
-2. **Call next()**: Pass control to the next middleware or handler
-3. **Post-processing**: Execute code after the handler returns
-4. **Return response**: Send the final response back to the client
-   :::
-
-##  Basic Middleware Example
-
-:::caution ⚠️ Important Return Requirement
-**Middleware functions MUST return either `await next()` result or a Response object**
-
-Failure to return will cause the client request to hang.
-:::
-
-Below is a simple example demonstrating how to define and use middleware in a sillo application:
-
-```python
-from sillo import silloApp
-from datetime import datetime
-app = silloApp()
-
-# Middleware 1: Logging
-async def my_logger(req, res, next):
-    print(f"Received request: {req.method} {req.path}")
-    result = await next()  # MUST return this result
-    # If you forget to call await next(), the request will hang or time out and the client will not receive a response.
-    return result
-
-# Middleware 2: Request Timing
-async def request_time(req, res, next):
-    req.request_time = datetime.now()  # Store request time in context
-    result = await next()  # MUST return this result
-    return result
-
-# Middleware 3: Cookie Validation
-async def validate_cookies(req, res, next):
-    if "session_id" not in req.cookies:
-        return res.json({"error": "Missing session_id cookie"}, status_code=400)  # Return error response
-    result = await next()  # MUST return this result
-    return result
-    # If you return a response before calling next(), the pipeline is short-circuited and no further middleware or handlers will run. This is useful for early exits, such as authentication failures.
-
-# Add middleware to the application
-app.use(my_logger)
-app.use(request_time)
-app.use(validate_cookies)
-
-# Route Handler
-@app.get("/")
-async def hello_world(req, res):
-    return res.text("Hello, World!")
-
-```
-
-::: tip Tip
-All code before `await next()` is executed before the route handler.
-:::
-
-##  Order of Execution
-
-Middleware functions are executed in the order they are added. The flow of execution is as follows:
-
-1. **Pre-Processing** – Middleware functions execute before the route handler.
-2. **Route Handler** – The request is processed by the route handler.
-3. **Post-Processing** – Middleware functions execute after the route handler.
-
-```
-   Incoming request
- └──> Middleware 1 (logs)
-       └──> Middleware 2 (auth check)
-             └──> Route handler (e.g., /profile)
-                   └──> Response is built
-             ←──── Middleware 2 resumes (e.g., modify response)
-       ←──── Middleware 1 resumes
-←──── Final response sent
-
-```
-
-::: tip Tip
-Middleware functions are executed in the order they are added. Ensure that middleware with dependencies (e.g., authentication before authorization) is added in the correct sequence.
-:::
-
----
-
-##  What is `cnext`?
-
-In sillo, middleware functions rely on a continuation callback (commonly called next, cnext, or callnext) to pass control to the next stage of the request pipeline. This parameter is crucial for request flow but its name is completely flexible — you're free to call it whatever makes sense for your codebase.
-
-##  Before and after handler
-For example, let's say we want to log the time it takes for a request to complete. We can write a middleware that will log the time before and after the handler is called:
+A middleware function takes three positional arguments — `request`, `response`, and a continuation (commonly named `next`, `call_next`, or `cnext`). Call and `await` the continuation to pass control downstream; whatever it returns is the response, which you then return:
 
 ```python
 from sillo import silloApp
 
 app = silloApp()
 
-async def log_time(req, res, next):
-    start_time = time.time() #  Get current time Before handler
-    result = await next()  # MUST return this result
-    end_time = time.time() # Get current time After handler
-    print(f"Request {req.method} {req.url} took {end_time - start_time} seconds")
-    return result
+async def log_requests(request, response, call_next):
+    print(f"→ {request.method} {request.url.path}")
+    response = await call_next()      # run the rest of the pipeline
+    print(f"← {response.status_code}")
+    return response
 
-app.use(log_time)
+app.use(log_requests)
 ```
-You can also modify the request and response object before and after handler
+
+The continuation's name is yours to choose — sillo binds it by position, not by name. The rule that matters: **you must `await call_next()` and return its result**, or the client's request will hang.
+
+<aside type="tip" title="What the continuation returns">
+`await call_next()` returns the `Response` produced by the rest of the pipeline (the inner middleware plus your handler). You can modify that response before returning it, or return a different response entirely to short-circuit the request.
+</aside>
+
+## Function middleware in depth
+
+### Before and after the handler
+
+Anything before `await call_next()` runs *before* the handler; anything after runs *after* the handler returns:
 
 ```python
+import time
+
 from sillo import silloApp
 
 app = silloApp()
 
-async def modify_request(req, res, next):
-    req.state.name = "John"
-    
-    result = await next()  # MUST return this result
-    res.set_header("X-Custom-Header", "Custom Value") # Set header after handler
-    return result
+async def time_it(request, response, call_next):
+    start = time.perf_counter()
+    response = await call_next()
+    duration_ms = (time.perf_counter() - start) * 1000
+    response.set_header("X-Process-Time", f"{duration_ms:.1f}ms")
+    return response
 
-app.use(modify_request)
+app.use(time_it)
+```
+
+You can also mutate `request` (or `request.state`) before the handler and read it back inside the handler:
+
+```python
+async def attach_request_id(request, response, call_next):
+    request.state.request_id = "req_" + str(id(request))
+    return await call_next()
 
 @app.get("/")
-async def index(req, res):
-    return res.text(f"Hello, {req.state.name}")
+async def index(request, response):
+    return {"request_id": request.state.request_id}
 ```
 
+### Short-circuiting
 
-:::caution ⚠️ Warning
+If a middleware returns a `Response` *without* calling `call_next()`, the pipeline stops — no further middleware or handler runs. This is how auth and validation gates work:
 
-Modifying the response object should be done after the request is processed. It's best to use the `process_response` method of middleware or `callnext`
+```python
+from sillo.exceptions import HTTPException
 
-:::
+async def require_token(request, response, call_next):
+    if not request.headers.get("Authorization"):
+        raise HTTPException(401, "Missing Authorization header")
+    return await call_next()
 
-:::caution ⚠️ Class-Based Middleware Return Requirements
-**Class-based middleware methods MUST return appropriate values:**
-- `process_request()`: Either `await cnext()` result or a Response object
-- `process_response()`: The modified Response object
+app.use(require_token)
+```
 
-Missing returns will cause the client request to hang.
-:::
+Returning a response object directly (e.g. `return response.json({"error": ...}, status_code=401)`) works the same way. Raising `HTTPException` is cleaner when you have an exception handler registered (see [Error Handling](/guides/error-handling/)).
 
-##  Class-Based Middleware
+### Ordering
 
-sillo supports class-based middleware for better organization and reusability. A class-based middleware must inherit from `BaseMiddleware` and implement the following methods:
+`app.use(fn)` inserts the middleware at the **front** of the pipeline, so the **last** `use` call you write is the **outermost** (runs first on the way in, last on the way out):
 
-- **`process_request(req, res, cnext)`** – Executed before the request reaches the handler.
-- **`process_response(req, res)`** – Executed after the handler has processed the request.
+```python
+app.use(correlation_id)   # runs 3rd in, 1st out
+app.use(authentication)   # runs 2nd in, 2nd out
+app.use(logging)          # runs 1st in, 3rd out
+```
 
-### **Example: Class-Based Middleware**
+Add them in the order you want them to wrap *outward from the handler*: the middleware closest to the handler is written first. A practical rule: put cheap, request-early concerns (logging, IDs) last, and request-late gates (auth) first so they reject before more work happens. If in doubt, test the order with a print in each.
+
+## Class-based middleware
+
+For middleware that carries configuration or reusable logic, subclass `BaseMiddleware` from `sillo.middleware` and implement `process_request` and/or `process_response`.
 
 ```python
 from sillo.middleware import BaseMiddleware
 
-class ExampleMiddleware(BaseMiddleware):
-    async def process_request(self, req, res, cnext):
-        """Executed before the request handler."""
-        print("Processing Request:", req.method, req.url)
-        result = await cnext()  # MUST return this result
-        print("After processing request")
-        return result
-        # If you use the wrong parameter order in your methods, sillo will raise an error at startup.
-        # If you forget to call await cnext(req, res), the request will not reach the handler and the client will not receive a response.
+class TimingMiddleware(BaseMiddleware):
+    async def process_request(self, request, response, call_next):
+        request.state.start = time.perf_counter()
+        return await call_next()
 
-    async def process_response(self, req, res):
-        """Executed after the request handler."""
-        print("Processing Response:", res.status_code)
-        return res  # Must return the modified response
-        # If you forget to return the response in process_response, the client will not receive the intended response.
+    async def process_response(self, request, response):
+        if hasattr(request.state, "start"):
+            ms = (time.perf_counter() - request.state.start) * 1000
+            response.set_header("X-Process-Time", f"{ms:.1f}ms")
+        return response
+
+app.use(TimingMiddleware())
 ```
 
-### **Method Breakdown**
+Two rules, verified against the base class:
 
-1. **`process_request(req, res, cnext)`**
-   - Used for pre-processing tasks like logging, authentication, or data injection.
-   - Must call `await cnext(req, res)` AND return its result to continue processing.
-   - Can return a Response object to short-circuit the pipeline.
-2. **`process_response(req, res)`**
-   - Used for post-processing tasks like modifying the response or logging.
-   - Must return the modified `res` object.
-   - Never modify response without returning it!
+1. **`process_request` must `await call_next()` (no arguments) and return its result.** The continuation takes no arguments — `await call_next()`, not `await call_next(request, response)`.
+2. **`process_response` only runs if `process_request` actually called `call_next()`.** If you short-circuit by returning a response without calling `call_next()`, `process_response` is skipped. When it does run, return the (possibly modified) `response`.
 
- If you forget to return the response in process_response, the client will not receive the intended response.
+Both methods are optional — implement only what you need. If you only need pre-handler logic, a plain `process_request` that returns `await call_next()` is enough.
 
-If you use the wrong parameter order in your methods, sillo will raise an error at startup.
+### Catching errors inside middleware
 
-:::  tip Note
-you can handle errors in middleware by wrapping logic in try/except and returning a custom error response.
-:::
+Because `process_request` wraps the call to `call_next()`, you can guard the whole downstream pipeline:
 
 ```python
-from sillo.middleware import BaseMiddleware
-
-class ErrorCatchingMiddleware(BaseMiddleware):
-    async def process_request(self, req, res, cnext):
+class ErrorGuardMiddleware(BaseMiddleware):
+    async def process_request(self, request, response, call_next):
         try:
-            result = await cnext(req, res)  # MUST return this result in success case
-            return result
-        except Exception as exc:
-            return res.json({"error": str(exc)}, status_code=500)  # Return error response
-    # If you raise an error in middleware and do not handle it, sillo will return a 500 error. Always use try/except for critical middleware logic.
+            return await call_next()
+        except Exception as exc:                       # noqa: BLE001
+            return response.json(
+                {"error": type(exc).__name__, "detail": str(exc)},
+                status_code=500,
+            )
 
-    async def process_response(self, req, res):
-        return res  # Must return the response
-
+    async def process_response(self, request, response):
+        return response
 ```
 
----
+Prefer raising `HTTPException` and letting a registered handler format the error (see [Error Handling](/guides/error-handling/)) over hand-rolling JSON in every middleware.
 
-##  Using make_response in Middleware
+## Route-scoped middleware
 
-The `make_response` method in sillo allows you to create custom response objects within your middleware. This is particularly useful when you need to:
-
-- Create custom response types not directly supported by the built-in response methods
-- Implement response transformations or wrappers
-- Handle specific response formatting requirements
-
-### **Basic Usage**
+Pass `middleware=[...]` to a route so it applies only to that endpoint. It runs inside the app-wide middleware, right before the handler:
 
 ```python
-from sillo.http.response import JSONResponse, HTMLResponse
+async def require_auth(request, response, call_next):
+    if not request.headers.get("Authorization"):
+        return response.json({"error": "unauthorized"}, status_code=401)
+    return await call_next()
 
-async def custom_response_middleware(req, res, next):
-    # Create a custom JSON response
-    res.make_response(JSONResponse({"message": "Hello, World!"}))
-    
-    result = await next()  # MUST return this result if continuing
-    return result
-    # Note: If you don't return the response, the original response will be used
-    # If you need to continue with the normal flow, call await next()
-```
-:::caution ⚠️ Warning
-Avoid raising exceptions in middleware. Instead, handle errors gracefully and return a custom error response. Raising exceptions can lead to unexpected behavior, security issues, or a 500 error for the client.
-:::
-
-
-### **Example: Custom Error Response**
-
-```python
-from sillo.http.response import JSONResponse
-
-async def error_handler_middleware(req, res, next):
-    try:
-        result = await next()  # MUST return this result in success case
-        return result
-    except Exception as e:
-        # Create a custom error response
-        error_response = res.json(
-            {
-                "error": {
-                    "type": type(e).__name__,
-                    "message": str(e),
-                    "code": getattr(e, "code", "UNKNOWN_ERROR")
-                }
-            },
-            status_code=getattr(e, "status_code", 500)
-        )
-        
-        return error_response  # Return error response
-
-    # This line is unreachable but shown for completeness
-    return res
+@app.get("/admin/dashboard", middleware=[require_auth])
+async def dashboard(request, response):
+    return {"ok": True}
 ```
 
-##  Route-Specific Middleware
+The same `middleware=[...]` keyword works on `app.route(...)`, `Route(...)`, and the router decorators (`@router.get(..., middleware=[...])`).
 
-Route-specific middleware applies only to a particular route. This is useful for applying middleware logic to specific endpoints without affecting the entire application.
+## Router-scoped middleware
 
-### **Example: Route-Specific Middleware**
-
-```python
-async def auth_middleware(req, res, cnext):
-    if not req.headers.get("Authorization"):
-        return res.json({"error": "Unauthorized"}, status_code=401)  # Return error response
-    result = await cnext(req, res)  # MUST return this result
-    return result
-    # If you forget to call await cnext() in route-specific middleware, the request will not reach the handler and the client will not receive a response.
-
-@app.route("/profile", "GET", middleware=[auth_middleware])
-async def get_profile(req, res):
-    return res.json({"message": "Welcome to your profile!"})
-```
-
-** Execution Order:**\
-`auth_middleware → get_profile handler → response sent`
-
-# If you forget to call await cnext() in route-specific middleware, the request will not reach the handler.
-
----
-
-##  Router-Specific Middleware
-
-Router-specific middleware applies to all routes under a specific router. This is useful for grouping middleware logic for a set of related routes.
-
-### **Example: Router-Specific Middleware**
+A `Router` has its own `use` method. Middleware added there runs for every route mounted under that router, after app-level middleware:
 
 ```python
-admin_router = Router(prefix="/admin")
-
-async def admin_auth(req, res, cnext):
-    if not req.headers.get("Admin-Token"):
-        return res.json({"error": "Forbidden"}, status_code=403)  # Return error response
-    result = await cnext(req, res)  # MUST return this result
-    return result
-    # Returning a response before calling cnext will stop further processing for this request.
-
-admin_router.use(admin_auth)  # Applies to all routes inside admin_router
-
-@admin_router.route("/dashboard", "GET")
-async def dashboard(req, res):
-    return res.json({"message": "Welcome to the admin dashboard!"})
-
-app.mount_router(admin_router)  # Mount router at "/admin"
-```
-
-**Execution Order:**\
-`admin_auth → dashboard handler → response sent`
-
----
-
-##  sillo Middleware vs. ASGI Middleware
-
-sillo offers two ways to add middleware to your application: `app.use()` and `app.wrap_asgi()`. While both are used to hook into the request/response lifecycle, they serve different purposes and are designed for different types of middleware.
-
-### **`use`: For sillo-Specific Middleware**
-
-The `app.use()` method is designed for middleware that is tightly integrated with the sillo framework. This type of middleware operates on sillo's `Request` and `Response` objects, giving you access to the rich features and abstractions that sillo provides.
-
-**When to use `use`:**
-
-- You want to interact with sillo-specific objects like `Request` and `Response`.
-- Your middleware needs to access path parameters, parsed query parameters, or the request body in a convenient way.
-- You want to take advantage of sillo's dependency injection system within your middleware.
-
-**Example:**
-
-```python
-from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.routing import Router
 
 app = silloApp()
+api = Router(prefix="/api")
 
-async def sillo_style_middleware(req: Request, res: Response, next_call):
-    # This middleware has access to the sillo Request and Response objects
-    print(f"Request path: {req.path}")
-    print(f"Query params: {req.query_params}")
-    result = await next_call()  # MUST return this result
-    res.set_header("X-sillo-Middleware", "true")
-    return result
+async def api_auth(request, response, call_next):
+    if not request.headers.get("X-API-Key"):
+        return response.json({"error": "missing api key"}, status_code=401)
+    return await call_next()
 
-app.use(sillo_style_middleware)
+api.use(api_auth)
 
-@app.get("/")
-async def home(req: Request, res: Response):
-    res.send("Hello from sillo!")
+@api.get("/users")
+async def list_users(request, response):
+    return {"users": []}
+
+app.mount_router(api)
 ```
 
-### **`wrap_asgi`: For Standard ASGI Middleware**
+`Router` also accepts `middleware=[...]` in its constructor, applying to all routes added to it.
 
-The `app.wrap_asgi()` method is used to add standard ASGI middleware to your application. ASGI middleware is a lower-level type of middleware that conforms to the ASGI specification. It operates directly on the raw ASGI `scope`, `receive`, and `send` callables.
+## Raw ASGI middleware
 
-This is particularly useful when you want to use third-party ASGI middleware that is not specific to sillo.
-
-**When to use `wrap_asgi`:**
-
-- You need to integrate a third-party ASGI middleware (e.g., from a library like `asgi-correlation-id`).
-- Your middleware needs to operate at a lower level, before the request is processed by sillo's routing and request/response handling.
-- The middleware is designed to be framework-agnostic.
-
-**Example (using a hypothetical third-party ASGI middleware):**
-
-Let's say you have a third-party library that provides a GZip middleware for ASGI applications.
+`app.wrap_asgi(...)` wraps the entire sillo app in a standard ASGI middleware that sees the raw `scope`, `receive`, and `send` callables — before sillo parses the request into a `Request`. Use this for third-party ASGI middleware (GZip, correlation IDs, Sentry) or when you need to touch the ASGI layer directly.
 
 ```python
-from sillo import silloApp
-from some_asgi_library import GZipMiddleware  # A hypothetical third-party middleware
-
-app = silloApp()
-
-# Wrap the sillo application with the third-party ASGI middleware
-app.wrap_asgi(GZipMiddleware, minimum_size=1000)
-
-@app.get("/")
-async def home(req, res):
-    # The response will be gzipped by the middleware if it's large enough
-    res.send("This is a long string that will hopefully be compressed." * 100)
-```
-
-### **When to Use Which?**
-
-| Feature                | `use`                                       | `wrap_asgi`                                             |
-| ---------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
-| **Abstraction Level**  | High-level (sillo `Request`/`Response`)               | Low-level (ASGI `scope`, `receive`, `send`)             |
-| **Framework Specific** | sillo-specific                                        | Framework-agnostic (standard ASGI)                      |
-| **Use Case**           | Business logic, auth, interacting with sillo features | Third-party middleware, low-level request manipulation  |
-| **Example**            | Custom logging, modifying sillo `Response`            | GZip compression, CORS handling from a standard library |
-
-By understanding the difference between these two methods, you can choose the right tool for the job and build more powerful and flexible applications with sillo.
-
-##  Using `@use_for_route` Decorator
-
-The `@use_for_route` decorator binds a middleware function to specific routes or route patterns, ensuring that the middleware only executes when a matching route is accessed.
-
-### **Example: `@use_for_route` Decorator**
-
-```python
-from sillo.middleware.utils import use_for_route
-
-@use_for_route("/dashboard")
-async def log_middleware(req, res, cnext):
-    print(f"User accessed {req.path.url}")
-    result = await cnext()  # MUST return this result
-    return result
-    # Proceed to the next function (handler or middleware)
-```
-
----
-
-:::caution ⚠️ Critical Middleware Return Requirement
-**ALL middleware functions MUST return either `await next()` result or a Response object**
-
-Missing returns will cause client requests to hang and timeout.
-:::
-
-Always call `await next()` in middleware to ensure the request continues processing. Failing to do so will block the request pipeline.
-
-:::caution ⚠️ Warning
-Avoind modifying the request object in middleware. This can lead to unexpected behavior or security issues.
-
-:::
-
-
-
-##  Raw ASGI Middleware
-
-sillo allows you to use raw ASGI middleware for scenarios where you need lower-level control over the ASGI protocol. This is especially useful when integrating with third-party ASGI middleware, performing operations that require direct access to the ASGI `scope`, or when you need to manipulate the request/response cycle before sillo processes the request.
-
-Raw ASGI middleware operates directly on the `scope`, `receive`, and `send` callables, and is completely framework-agnostic. Unlike sillo middleware, it does not have access to sillo-specific abstractions like `Request` or `Response` objects.
-
-### Function-Based Raw Middleware
-
-A function-based raw middleware wraps the ASGI app and must call the next app in the chain. If you forget to call `await app(scope, receive, send)`, the request will never reach the application and the client will hang.
-
-```python
-def raw_middleware(app):
+def gzip_middleware(app):
     async def middleware(scope, receive, send):
-        # You can inspect or modify the scope here
-        # For example, add a custom key:
-        scope["custom_key"] = "custom_value"
-        # Always call the next app in the chain
+        # inspect or rewrite scope here
         await app(scope, receive, send)
     return middleware
 
-app.wrap_asgi(raw_middleware)
+app.wrap_asgi(gzip_middleware)
 ```
 
-If you modify the `scope`, be careful not to overwrite required ASGI keys or introduce security issues. Always validate any changes you make.
-
-### Class-Based Raw Middleware
-
-A class-based raw middleware provides more flexibility and can maintain state between requests if needed. The class must implement the `__call__` method and accept the ASGI app as its first argument.
+A class-based form is also supported — implement `__call__(self, scope, receive, send)` and store the wrapped `app`:
 
 ```python
-class RawMiddleware:
-    def __init__(self, app, *args, **kwargs):
+class ScopeLogger:
+    def __init__(self, app):
         self.app = app
-        # You can store args/kwargs for configuration
 
     async def __call__(self, scope, receive, send):
-        # Perform actions before the request is processed
-        # For example, log the incoming scope
-        print(f"ASGI scope: {scope}")
-        try:
-            await self.app(scope, receive, send)
-        except Exception as exc:
-            # Handle errors gracefully
-            print(f"Error in raw middleware: {exc}")
-            raise
-        # You can also perform actions after the response is sent
+        print("scope:", scope["type"], scope.get("path"))
+        await self.app(scope, receive, send)
 
-app.wrap_asgi(RawMiddleware, some_option=True)
+app.wrap_asgi(ScopeLogger)
 ```
 
-If you raise an error in raw middleware and do not handle it, the client will receive a 500 error. Always use try/except for critical logic.
+Raw ASGI middleware does **not** have access to sillo's `Request`/`Response` — only the ASGI primitives. If you need sillo objects, use `app.use` instead.
 
-### When to Use Raw Middleware
+## `use` vs `wrap_asgi`
 
-- Integrating third-party ASGI middleware (e.g., CORS, GZip, Sentry, etc.)
-- Performing low-level request/response manipulation before sillo processes the request
-- Adding features that require direct access to the ASGI protocol
-- Ensuring compatibility with other ASGI frameworks or tools
+| | `app.use(fn)` | `app.wrap_asgi(mw)` |
+| --- | --- | --- |
+| Abstraction | High — sillo `Request`/`Response` | Low — ASGI `scope`/`receive`/`send` |
+| Framework | sillo-specific | Framework-agnostic |
+| Best for | Auth, logging, request/response shaping | Third-party ASGI middleware, low-level tweaks |
+| Continuation | `await call_next()` | `await app(scope, receive, send)` |
 
-### Common Mistakes
+Pick `use` for application logic that touches sillo features; pick `wrap_asgi` to integrate standard ASGI components.
 
-- Not calling `await app(scope, receive, send)`: The request will hang and the client will not receive a response.
-- Modifying the `scope` incorrectly: Can break downstream middleware or the application.
-- Not handling exceptions: Unhandled errors will result in a 500 error for the client.
-- Assuming access to sillo-specific objects: Raw middleware only works with ASGI primitives.
+## First-party middleware modules
 
-By understanding and using raw ASGI middleware appropriately, you can extend your sillo application with powerful, low-level features and integrate seamlessly with the broader ASGI ecosystem.
-
-## Built-in Middleware Modules
-
-sillo ships with several first-party middleware modules organized by domain:
-
-| Module | Import | Purpose |
-|---|---|---|
-| **Security** | `sillo.security` | CSRF, CORS, Shield security headers |
-| **Error** | `sillo.error` | Server error debug middleware |
-| **Lifecycle** | `sillo.lifecycle` | Request ID, RequestContext |
-| **Normalize** | `sillo.normalize` | URL normalization (slashes, case) |
-| **Accepts** | `sillo.helpers.accepts` | Content negotiation |
-
-### Security (`sillo.security`)
+sillo ships ready-made middleware under dedicated modules:
 
 ```python
+# Security: CSRF, CORS, Shield (security headers)
 from sillo.security import CSRFMiddleware, CSRFConfig, CORSMiddleware, CorsConfig, Shield
-
 app.use(CSRFMiddleware(config=CSRFConfig(enabled=True, secret_key="...")))
 app.use(CORSMiddleware(config=CorsConfig(allow_origins=["*"])))
-app.use(Shield())  # Security headers (CSP, HSTS, X-Frame-Options, etc.)
-```
+app.use(Shield())
 
-> See [CSRF Guide](/guides/csrf), [CORS Guide](/guides/cors), and [Security Guide](/guides/security) for details.
-
-### Request Lifecycle (`sillo.lifecycle`)
-
-```python
-from sillo.lifecycle import RequestId, RequestContext
-
+# Request lifecycle: request IDs + request-scoped context
+from sillo.lifecycle import RequestId
 app.use(RequestId())
 
-@app.get("/")
-async def home(request, response):
-    with RequestContext() as ctx:
-        ctx["user"] = "alice"
-        return {"request_id": getattr(request.state, "request_id", None)}
-```
-
-> See [Request Lifecycle Guide](/guides/request-lifecycle) for details.
-
-### URL Normalization (`sillo.normalize`)
-
-```python
+# URL normalization: trailing/double-slash + optional case folding
 from sillo.normalize import Normalize, SlashAction
-
 app.use(Normalize(slash_action=SlashAction.REDIRECT_REMOVE))
-```
 
-> See [URL Normalization Guide](/guides/url-normalization) for details.
-
-### Content Negotiation (`sillo.helpers.accepts`)
-
-```python
+# Content negotiation: Accept / Accept-Language handling
 from sillo.helpers.accepts import Accepts
-
 app.use(Accepts())
 ```
 
-> See [Content Negotiation Guide](/guides/content-negotiation) for details.
+See [Security](/guides/security/), [CSRF](/guides/csrf/), [CORS](/guides/cors/), [Request Lifecycle](/guides/request-lifecycle/), [URL Normalization](/guides/url-normalization/), and [Content Negotiation](/guides/content-negotiation/) for each module's options.
+
+## Common mistakes
+
+- **Not returning `await call_next()`.** A middleware that calls `call_next()` but forgets `return` leaves the response unpropagated and the client hangs. Always `return await call_next()`.
+- **Calling the continuation with arguments.** The sillo continuation takes no arguments: `await call_next()`, not `await call_next(request, response)`.
+- **Mutating `response` but not returning it** (class-based `process_response`). Return the response you want sent.
+- **Wrong order for gates.** Put auth/validation middleware where it rejects *before* expensive downstream work — remember the last `app.use` written is outermost.
+- **Forgetting `process_response` is skipped on short-circuit.** If `process_request` returns a response without calling `call_next()`, your response-shaping code won't run.
+
+## Testing middleware
+
+Drive middleware through `TestClient` like any endpoint — assert headers, status codes, and short-circuit behavior:
+
+```python
+from sillo import silloApp
+from sillo.testclient import TestClient
+
+app = silloApp()
+
+async def add_header(request, response, call_next):
+    response = await call_next()
+    response.set_header("X-Traced", "yes")
+    return response
+
+app.use(add_header)
+
+@app.get("/ping")
+async def ping(request, response):
+    return {"ok": True}
+
+client = TestClient(app)
+
+def test_header_added():
+    resp = client.get("/ping")
+    assert resp.status_code == 200
+    assert resp.headers["X-Traced"] == "yes"
+
+def test_short_circuit():
+    async def reject(request, response, call_next):
+        return response.json({"error": "no"}, status_code=401)
+
+    app.use(reject)
+    assert client.get("/ping").status_code == 401
+```
+
+## Works with
+
+- [Handlers](/guides/handlers/) — what middleware wraps
+- [Routing](/guides/routing/) — `middleware=` on routes and routers
+- [Error Handling](/guides/error-handling/) — format errors raised in middleware
+- [Dependency Injection](/guides/dependency-injection/) — inject shared logic instead of middleware when it's per-handler
+- [Request Lifecycle](/guides/request-lifecycle/) — `RequestId` is middleware under the hood

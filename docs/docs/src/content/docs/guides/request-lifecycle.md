@@ -93,7 +93,7 @@ is_valid = validate_request_id(some_request_id)
 ```python
 @app.get("/api/users")
 async def get_users(request, response):
-    request_id = getattr(request, "request_id", None)
+    request_id = getattr(request.state, "request_id", None)
     request_id = request.headers.get("X-Request-ID")
     from sillo.lifecycle import get_request_id_from_request
     request_id = get_request_id_from_request(request)
@@ -122,16 +122,19 @@ async def dashboard(request, response):
     with RequestContext() as ctx:
         ctx["user_id"] = 42
         ctx["trace"] = "abc123"
-        # ... call deeper functions that read RequestContext()
-        return {"ok": True}
+        result = some_deep_helper()      # reads the same context
+        return {"ok": True, "user": result}
 
 def some_deep_helper():
-    ctx = RequestContext()
-    user_id = ctx.get("user_id")
-    return user_id
+    # RequestContext.current() returns the active context for this request,
+    # or None if no block is active on the current task.
+    ctx = RequestContext.current()
+    if ctx is None:
+        return None
+    return ctx.get("user_id")
 ```
 
-`RequestContext()` always returns the current context dict (creating an empty one if none is active), so you can read it from anywhere in the request without passing it around.
+`RequestContext()` (used as a `with` block) creates *and activates* a new context for the current request. To read it later from a function that did not open the block, call the classmethod `RequestContext.current()` — do **not** write `RequestContext()` outside a `with` block, because that constructs a fresh, empty context instead of returning the active one. The context resets automatically when the `with` block exits, so values do not leak across requests.
 
 ## Advanced Usage
 
@@ -149,7 +152,7 @@ logging.basicConfig(
 )
 
 async def logging_middleware(request, response, call_next):
-    request_id = getattr(request, "request_id", "unknown")
+    request_id = getattr(request.state, "request_id", "unknown")
     logger = logging.LoggerAdapter(logging.getLogger(__name__), {"request_id": request_id})
     logger.info(f"Processing request: {request.method} {request.url.path}")
     response = await call_next()
@@ -186,7 +189,7 @@ app = silloApp()
 app.use(RequestId())
 
 async def tracing_middleware(request, response, call_next):
-    request_id = getattr(request, "request_id", None)
+    request_id = getattr(request.state, "request_id", None)
     span = trace.get_current_span()
     if span and request_id:
         span.set_attribute("request.id", request_id)
@@ -245,7 +248,7 @@ logging.basicConfig(
 )
 
 async def structured_logging(request, response, call_next):
-    request_id = getattr(request, "request_id", "unknown")
+    request_id = getattr(request.state, "request_id", "unknown")
     logger = logging.LoggerAdapter(logging.getLogger(__name__), {"request_id": request_id})
     start_time = time.time()
     logger.info(f"Request started: {request.method} {request.url.path}")
