@@ -1,341 +1,340 @@
 ---
 title: Handlers
-description: Handlers are the heart of your sillo application. They define how your application responds to incoming HTTP requests. Every route in your application is handled by a handler function that
-  processes the request and returns a response.
+description: Everything a sillo handler does — the (request, response) contract, how return values become responses, path/query/body access, status codes, errors, and dependency injection.
 head:
 - tag: meta
   attrs:
     property: og:title
-    content: Handlers
+    content: Handlers in sillo
 - tag: meta
   attrs:
     property: og:description
-    content: Handlers are the heart of your sillo application. They define how your application responds to incoming HTTP requests. Every route in your application is handled by a handler function that
-      processes the request and returns a response.
+    content: The handler contract in sillo — request/response, return values, errors, and dependency injection.
 ---
 
+# Handlers
 
-#  Handlers
-Handlers are the heart of your sillo application. They define how your application responds to incoming HTTP requests. Every route in your application is handled by a handler function that processes the request and returns a response.
+A *handler* is the function sillo calls when a request matches a route. It is where your application logic lives: read the request, do the work, return a response. Almost everything else in sillo — routing, middleware, dependency injection, serialization — exists to get the right request to the right handler and turn its result into bytes on the wire.
+
+This page covers the handler contract end to end: the two arguments every handler receives, the many shapes a return value can take, how to read path/query/body data, how to set status codes and headers, how to raise errors, and how to pull dependencies in.
+
+## The smallest useful form
 
 ```python
 from sillo import silloApp
 
 app = silloApp()
 
-@app.get("/")  
-async def index(request, response): 
-    return "Hello, world!" 
+@app.get("/")
+async def index(request, response):
+    return "Hello, world!"
 ```
 
-::: tip
-sillo handler most accept at least two parameters
-:::
+Two things to notice:
 
+1. The handler is `async` and takes **at least two positional parameters** — `request` and `response`. Their names are yours to choose (`req, res` works too), but order matters: request first, response second.
+2. Returning a plain `str` is enough. sillo wraps it in a `200 OK` JSON-or-text response for you. For anything beyond the simplest case, use the `response` object.
 
-##  Handler Basics
+<aside type="tip" title="Name them what you like">
+The framework binds the first two handler parameters by position, not by name. `async def index(req, res)` and `async def index(request, response)` are identical. Pick names that read well in your codebase.
+</aside>
 
-##  Type Annotations for Better Development Experience
+## The request and response objects
 
-Using type annotations provides better IDE support, improved documentation, static type checking, better refactoring support, and clearer interfaces between components.
+Every handler receives:
+
+- **`request`** — a `sillo.http.Request` instance carrying the method, URL, headers, query, cookies, body, client address, and auth/session state. See [Request Information](/guides/request-info/).
+- **`response`** — a `sillo.http.response.Responder` (also importable as `Response`) — a fluent builder you use to produce JSON, HTML, files, redirects, headers, and cookies. See [Sending Responses](/guides/sending-responses/).
 
 ```python
 from sillo.http import Request, Response
 
-@app.get("/")  
-async def index(request: Request, response: Response): 
-    return "Hello, world!" 
+@app.get("/")
+async def index(request: Request, response: Response):
+    return response.json({"method": request.method})
 ```
 
-For more detailed information about request and response objects, see the Request and Response documentation.
+Type annotations are optional but recommended — they give you IDE autocomplete and let static analyzers check your code. They do not change runtime behavior.
 
-##  Alternative Handler Registration
+## Registering handlers
 
-You can also register handlers using the `Route` class for more control over route configuration:
+The decorator form is the common case:
+
+```python
+@app.get("/items")
+@app.post("/items")
+@app.put("/items/{id}")
+@app.delete("/items/{id}")
+@app.patch("/items/{id}")
+@app.options("/items")
+@app.head("/items")
+async def items(request, response):
+    ...
+```
+
+For finer control — or when building routes programmatically — use the `Route` class and `app.add_route`:
 
 ```python
 from sillo.routing import Route
-from sillo import silloApp
-
-app = silloApp()
 
 async def dynamic_handler(req, res):
     return "Hello, world!"
 
-app.add_route(Route("/dynamic", dynamic_handler))  # Handles All Methods by default
+# Methods defaults to ["GET"] when omitted
+app.add_route(Route("/dynamic", dynamic_handler))
+
+# explicit methods
+app.add_route(Route("/dynamic", dynamic_handler, methods=["GET", "POST"]))
 ```
 
-##  Handlers with path params
-As seen at [`Dynamic Routing`](/guide/routing#dynamic-route) a sillo handler can optionally take an extra argument when a the route definition contains a dynamic value
+## Reading the request
 
-```py
-from sillo import silloApp
+### Path parameters
 
-app = silloApp()
+Declare a `{name}` segment in the path; sillo binds the matched value to a handler parameter of the same name.
 
+```python
 @app.get("/users/{user_id}")
 async def get_user(request, response, user_id):
     return {"id": user_id}
 ```
 
-
-##  Request Processing
-
-### Accessing Request Information
-
-Handlers have access to comprehensive request information through the request object:
+For type-safe binding, append a converter: `{name:int}`, `{name:float}`, `{name:str}` (default), or `{name:path}` for catch-all segments.
 
 ```python
-@app.post("/upload")
-async def upload_file(request, response):
-    # Request method
-    method = request.method  # "POST"
-    
-    # URL information
-    url = request.url  # Full URL
-    path = request.path  # Path component
-    query = request.query  # Query string
-    
-    # Headers
-    content_type = request.headers.get("content-type")
-    user_agent = request.headers.get("user-agent")
-    
-    # Client information
-    client_ip = request.client.host
-    client_port = request.client.port
-    
-    # Request body
-    body = await request.body  # Raw bytes
-    json_data = await request.json  # Parsed JSON
-    form_data = await request.form  # Form data
-    
-    return response.json({
-        "method": method,
-        "path": path,
-        "content_type": content_type,
-        "client_ip": client_ip
-    })
+@app.get("/users/{user_id:int}")
+async def get_user_int(request, response, user_id: int):
+    # user_id is already an int here
+    return {"id": user_id, "type": type(user_id).__name__}
 ```
 
+Available converters: `str`, `int`, `float`, `path`. Register your own with `register_url_convertor` from `sillo.converters`.
 
-###  Query Parameters
+### Query parameters
 
-Query parameters are accessed through the `query_params` attribute:
+Read them off `request.query_params` (a dict-like, case-preserving object), or — preferably — declare them with the `Query` extractor so sillo does type conversion for you.
 
 ```python
 @app.get("/search")
-async def search(request, response):
-    # Get single parameter with default
-    query = request.query_params.get("q", "")
-    
-    # Get parameter with type conversion
-    page = int(request.query_params.get("page", 1))
-    limit = int(request.query_params.get("limit", 10))
-    
-    # Get multiple values for the same parameter
-    tags = request.query_params.getlist("tag")
-    
-    # Get all query parameters as dict
-    all_params = dict(request.query_params)
-    
-    return response.json({
-        "query": query,
-        "page": page,
-        "limit": limit,
-        "tags": tags,
-        "all_params": all_params
-    })
+async def search(request, response, q: str = Query(""), page: int = Query(1), tag: list = Query(None)):
+    return {"q": q, "page": page, "tag": tag}
 ```
 
-###  Request Body
+Imperative access is also available:
 
-Handlers can access the request body in various formats:
+```python
+@app.get("/search")
+async def search_raw(request, response):
+    q = request.query_params.get("q", "")
+    page = int(request.query_params.get("page", 1))
+    tags = request.query_params.getlist("tag")
+    return {"q": q, "page": page, "tags": tags}
+```
+
+See [Request Parameters](/guides/request-parameters/) for the full `Query`/`Header`/`Cookie` reference.
+
+### Request body
+
+The body is parsed lazily the first time you ask for it:
 
 ```python
 @app.post("/data")
 async def process_data(request, response):
-    # JSON data
-    json_data = await request.json
-    
-    # Form data
-    form_data = await request.form
-    
-    # Raw bytes
-    raw_body = await request.body
-    
-    # Text content
-    text_content = await request.text
-    
-    return response.json({
-        "json": json_data,
-        "form": dict(form_data),
-        "body_size": len(raw_body)
-    })
+    json_data = await request.json     # parsed JSON (dict/list)
+    form_data = await request.form     # multipart / urlencoded -> FormData
+    raw_bytes = await request.body     # raw bytes
+    text      = await request.text     # decoded text
+    return {"keys": list(json_data.keys()) if isinstance(json_data, dict) else None}
 ```
 
-##  Response Handling
+`request.json`, `request.form`, `request.body`, `request.text`, and `request.files` are all **awaitable properties** — `await` them once; the result is cached for the request.
 
-###  Creating Responses
-
-sillo provides multiple ways to create responses:
+For validated bodies, set `request_model` on the route (or `app.post(...)`) with a Pydantic model; the validated instance is available as `request.validated_data`:
 
 ```python
-@app.get("/responses")
-async def demonstrate_responses(request, response):
-    # JSON response
-    return response.json({
-        "message": "Hello",
-        "status": "success"
-    })
-    
-    # Text response
-    return response.text("Hello, World!")
-    
-    # HTML response
-    return response.html("<h1>Hello</h1>")
-    
-    # File response
-    return response.file("path/to/file.pdf")
-    
-    # Redirect
-    return response.redirect("/new-location")
-    
-    # Custom status code
+from pydantic import BaseModel
+from sillo import silloApp
+
+app = silloApp()
+
+class CreateItem(BaseModel):
+    name: str
+    price: float
+
+@app.post("/items", request_model=CreateItem)
+async def create_item(request, response):
+    item = request.validated_data      # a CreateItem instance
+    return response.json({"created": item.model_dump()}, status_code=201)
+```
+
+## Returning responses
+
+You can return a handler result in several ways, from least to most explicit:
+
+### 1. A plain value (auto-serialized)
+
+```python
+@app.get("/ping")
+async def ping(request, response):
+    return {"status": "ok"}     # -> 200 application/json
+```
+
+sillo JSON-encodes dicts, lists, and most types. Primitives become JSON scalars. This is the fastest way to write a small endpoint.
+
+### 2. The `response` builder
+
+For control over status, headers, or content type, return `response.json(...)`, `response.html(...)`, `response.text(...)`, `response.file(...)`, or `response.redirect(...)`:
+
+```python
+@app.get("/reports/{id}")
+async def report(request, response, id: int):
+    return (
+        response
+        .status(200)
+        .set_header("X-Report-Id", str(id))
+        .json({"report": id})
+    )
+```
+
+Methods are chainable. You must set a *type* (`.json()`, `.html()`, …) before calling `.set_cookie()`/`.set_header()`/`.status()`, because those operate on an already-built response.
+
+### 3. A raw `BaseResponse` subclass
+
+Return an instance of `JSONResponse`, `HTMLResponse`, `PlainTextResponse`, `FileResponse`, `StreamingResponse`, or `RedirectResponse` directly:
+
+```python
+from sillo.http.response import JSONResponse
+
+@app.get("/raw")
+async def raw(request, response):
+    return JSONResponse({"hello": "world"}, status_code=201)
+```
+
+## Status codes and headers
+
+```python
+@app.get("/statuses")
+async def statuses(request, response):
+    # 2xx
+    return response.json({"ok": True}, status_code=200)
+    # 4xx / 5xx
     return response.json({"error": "Not found"}, status_code=404)
 ```
 
-###  Setting Headers
-
-You can set custom headers on responses:
+Prefer named constants from `sillo.status` for readability:
 
 ```python
-@app.get("/custom-headers")
-async def custom_headers(request, response):
-    response.set_header("X-Custom-Header", "Custom Value")
-    response.set_header("Cache-Control", "no-cache")
-    response.set_header("Content-Type", "application/json")
-    
-    return response.json({"message": "Headers set"})
+from sillo.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
+
+@app.post("/things")
+async def make_thing(request, response):
+    return response.json({"id": 1}, status_code=HTTP_201_CREATED)
 ```
 
-###  Response Status Codes
+Set ad-hoc headers with `.set_header(...)` and cookies with `.set_cookie(...)`. See [Headers](/guides/headers/) and [Cookies](/guides/cookies/).
 
-sillo provides convenient methods for common status codes:
+## Raising errors
 
-```python
-@app.get("/status-examples")
-async def status_examples(request, response):
-    # Success responses
-    return response.json({"data": "success"}, status_code=200)
-    return response.json({"created": True}, status_code=201)
-    return response.json(None, status_code=204)
-    
-    # Client error responses
-    return response.json({"error": "Bad request"}, status_code=400)
-    return response.json({"error": "Unauthorized"}, status_code=401)
-    return response.json({"error": "Forbidden"}, status_code=403)
-    return response.json({"error": "Not found"}, status_code=404)
-    
-    # Server error responses
-    return response.json({"error": "Internal error"}, status_code=500)
-    return response.json({"error": "Service unavailable"}, status_code=503)
-```
-
-## ⚠️ Error Handling
-
-###  Raising Exceptions
-
-Handlers can raise exceptions that will be caught by exception handlers:
+Raise `HTTPException` to short-circuit with a clean status + body:
 
 ```python
 from sillo.exceptions import HTTPException
 
 @app.get("/users/{user_id:int}")
 async def get_user(request, response, user_id: int):
-    # Simulate user not found
     if user_id > 1000:
-        raise HTTPException(404, f"User {user_id} not found")
-    
-    # Simulate server error
-    if user_id == 0:
-        raise HTTPException(500, "Internal server error")
-    
-    return response.json({"id": user_id, "name": "John Doe"})
+        raise HTTPException(HTTP_404_NOT_FOUND, f"User {user_id} not found")
+    return {"id": user_id}
 ```
 
-###  Custom Exception Handling
-
-You can define custom exception handlers:
+Uncaught exceptions become `500` responses in production. Register handlers for your own exception types with `app.add_exception_handler`:
 
 ```python
-@app.add_exception_handler(ValueError)
-async def handle_value_error(request, response, exc):
-    return response.json({
-        "error": "Invalid value provided",
-        "details": str(exc)
-    }, status_code=400)
+from sillo.exceptions import HTTPException
 
-@app.add_exception_handler(404)
-async def handle_not_found(request, response, exc):
-    return response.json({
-        "error": "Resource not found",
-        "path": request.path
-    }, status_code=404)
+@app.add_exception_handler(HTTPException)
+async def http_error(request, response, exc):
+    return response.json(
+        {"error": exc.detail, "status_code": exc.status_code},
+        status_code=exc.status_code,
+    )
 ```
 
-##  Dependency Injection
+See [Error Handling](/guides/error-handling/) for the full picture, including `add_exception_handler` with status-code keys and validation-error mapping.
 
-###  Using Dependencies
+## Pulling in dependencies
 
-Handlers can use dependency injection for clean, testable code:
+Handlers declare *what they need*; sillo resolves it. Mark a parameter with `Depend(...)`:
 
 ```python
-from sillo.dependencies import Depend,Context
+from sillo import Depend
 
-async def get_database():
-    # This could return a database connection
-    return {"connection": "active"}
-
-async def get_current_user(request: Context().request, db=Depend(get_database)):
-    token = request.headers.get("Authorization")
+def get_current_user(request):
+    token = request.headers.get("Authorization", "").removeprefix("Bearer ")
     if not token:
-        raise HTTPException(401, "Unauthorized")
-    
-    # Use the database connection
-    user = await db.get_user_by_token(token)
-    return user
+        from sillo.exceptions import HTTPException
+        raise HTTPException(401, "Missing token")
+    return {"user_id": "u_1"}
 
-@app.get("/profile")
-async def get_profile(request, response, user=Depend(get_current_user)):
-    return response.json({
-        "id": user.id,
-        "name": user.name,
-        "email": user.email
-    })
+@app.get("/me")
+async def me(request, response, user: dict = Depend(get_current_user)):
+    return response.json(user)
 ```
 
-###  Dependency Scopes
+Dependencies can be nested, cached per request, and clean up after themselves via async generators. The full system — `get_request=True`, sub-dependencies, caching, generator teardown — is documented in [Dependency Injection](/guides/dependency-injection/).
 
-Dependencies can have different scopes:
+<aside type="caution" title="No `Context()` and no `scope=` on Depend">
+Two patterns you may see in older examples are not part of sillo's API: `Context().request` for injecting the request, and `Depend(fn, scope="request")`. Use a plain `request` parameter in the dependency, or `Depend(get_request=True)`, instead. `Depend` accepts only `dependency` and `get_request`.
+</aside>
+
+## A complete handler
 
 ```python
-# Application-scoped dependency (shared across all requests)
-async def get_config():
-    return load_configuration()
+from pydantic import BaseModel
+from sillo import silloApp, Query, Depend
+from sillo.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from sillo.exceptions import HTTPException
 
-# Request-scoped dependency (new instance per request)
-async def get_db_connection():
-    return await create_db_connection()
+app = silloApp()
 
-@app.get("/data")
-async def get_data(
-    request, 
-    response, 
-    config=Depend(get_config, scope="application"),
-    db=Depend(get_db_connection, scope="request")
+class ItemIn(BaseModel):
+    name: str
+    price: float
+
+def load_user(request):
+    # pretend auth
+    return {"user_id": "u_1"}
+
+@app.post("/items", request_model=ItemIn)
+async def create_item(
+    request,
+    response,
+    item: ItemIn = Depend(lambda: request.validated_data),
+    user: dict = Depend(load_user),
+    dry_run: bool = Query(False),
 ):
-    # config is shared across all requests
-    # db is a new connection for each request
-    return response.json(await db.query("SELECT * FROM data"))
+    if dry_run:
+        return response.json({"would_create": item.model_dump(), "as": user["user_id"]})
+
+    # ... persist item ...
+    return response.json(
+        {"created": item.model_dump(), "by": user["user_id"]},
+        status_code=HTTP_201_CREATED,
+    )
 ```
 
+This one handler demonstrates: path-less body validation (`request_model`), an injected dependency, a query flag, and an explicit status code.
+
+## Works with
+
+- [Routing](/guides/routing/) — path syntax, converters, `name=`, and route options
+- [Request Information](/guides/request-info/) — every `request.*` attribute
+- [Request Parameters](/guides/request-parameters/) — `Query` / `Header` / `Cookie`
+- [Sending Responses](/guides/sending-responses/) — the `response` builder in depth
+- [Dependency Injection](/guides/dependency-injection/) — `Depend`, nesting, caching, teardown
+
+## Related topics
+
+- [Error Handling](/guides/error-handling/) — `HTTPException` and custom handlers
+- [Class-Based Views](/guides/class-based-handlers/) — group methods into one class
+- [Middleware](/guides/middleware/) — logic that wraps handlers for every request

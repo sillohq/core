@@ -1,6 +1,6 @@
 ---
-title: Dependency Injection in sillo
-description: Learn how to use dependency injection in sillo
+title: Dependency Injection
+description: sillo's dependency injection system — from a single injected function to nested, cached, and request-scoped dependencies, plus how Query/Header/Cookie and request_model plug in.
 head:
 - tag: meta
   attrs:
@@ -9,272 +9,373 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: Learn how to use dependency injection utilities in sillo
+    content: How sillo resolves dependencies — nesting, caching, request injection, and parameter extractors.
 ---
 
-# Dependency Injection in sillo
+# Dependency Injection
 
-sillo provides a modern, flexible, and powerful dependency injection (DI) system for clean, testable code. Dependencies are resolved automatically, support nesting, and can use parameter extractors for request data.
+Dependency injection (DI) is how sillo lets a handler declare *what it needs* — a database session, the current user, a parsed query, a config object — without wiring it up by hand inside the function body. The framework inspects the handler's signature, builds an execution plan, runs each dependency in order, and passes the results in as arguments.
 
-## Basic Example
+The payoff is the same as anywhere else DI is used: handlers stay small and focused, cross-cutting logic lives in one place, and everything is easy to test because a dependency is just a callable you can call directly or swap out.
+
+sillo's DI is built on two ideas:
+
+- **`Depend(...)`** marks a handler parameter as "fill this in by calling this other function."
+- **Parameter extractors** (`Query`, `Header`, `Cookie`) mark a parameter as "read this value out of the request."
+
+Both are resolved by the same machinery, so you can mix them freely in one signature.
+
+## The smallest useful form
 
 ```python
 from sillo import silloApp, Depend
 
 app = silloApp()
 
-def get_settings():
-    return {"debug": True, "version": "1.0.0"}
 
-@app.get("/config")
-async def show_config(request, response, settings: dict = Depend(get_settings)):
-    return settings
+def get_greeting() -> str:
+    return "Hello"
+
+
+@app.get("/greet")
+async def greet(request, response, greeting: str = Depend(get_greeting)):
+    return response.json({"message": greeting})
 ```
 
-- Use `Depend()` to mark a parameter as a dependency
-- Dependencies can be sync or async functions, or classes
+`Depend(get_greeting)` tells sillo: *before calling `greet`, call `get_greeting()`, and bind its return value to the `greeting` parameter.* The dependency takes no arguments here, so it's just a zero-arg factory.
 
----
+<aside type="tip" title="Dependencies are plain callables">
+`get_greeting` is an ordinary function. That's the whole point — you can unit-test it without a server, and you can reuse it across many routes. sillo only cares that it's callable and that its return type matches the annotated parameter.
+</aside>
 
-## What is Dependency Injection?
+## Dependencies that take arguments
 
-Dependency Injection (DI) is a design pattern that allows decoupling components by injecting their dependencies rather than hardcoding them. In sillo, you declare what your handlers need, and the framework handles the rest.
-
-**Key Benefits:**
-- **Simplicity**: No complex containers or annotations
-- **Testability**: Easy to override for isolated testing
-- **Reusability**: Share logic across handlers
-
----
-
-## Quick Start: Basic Dependency
+Most dependencies need something from the request — the path, a header, the database. A dependency is just a function, so it can declare the same parameter extractors a handler uses:
 
 ```python
-from sillo import silloApp, Depend
+from sillo import Query, Depend
 
-app = silloApp()
 
-def get_database():
-    return DatabaseConnection()
+def paginate(page: int = Query(1), size: int = Query(20)):
+    offset = (page - 1) * size
+    return {"offset": offset, "limit": size, "page": page}
 
-@app.get("/users")
-async def list_users(request, response, db = Depend(get_database)):
-    return await db.query("SELECT * FROM users")
+
+@app.get("/items")
+async def items(request, response, p: dict = Depend(paginate)):
+    return response.json({"pagination": p, "rows": []})
 ```
 
----
+Here `paginate` declares `page` and `size` as `Query` extractors. When sillo solves the `p` dependency, it first solves those two extractors from the incoming request, then calls `paginate(offset=..., limit=..., page=...)`, then binds the result to `p`.
 
-## Getting Request Data: Use Parameter Extractors
+This is the key mental model: **a dependency's own parameters are solved recursively before the dependency itself runs.** There is no special "dependency API" — dependencies are solved by the exact same engine as the route.
 
-For accessing query parameters, headers, and cookies in dependencies, **use parameter extractors** instead of Context:
+## Injecting the raw request
 
-### Recommended: Query, Header, Cookie
-
-```python
-from sillo import Depend, Query, Header, Cookie
-
-def get_pagination(page: int = Query(1), limit: int = Query(10)):
-    return {"page": page, "limit": limit}
-
-def get_auth_data(authorization: str = Header()):
-    return {"token": authorization}
-
-def get_user_preferences(theme: str = Cookie("dark")):
-    return {"theme": theme}
-
-@app.get("/dashboard")
-async def dashboard(
-    request, response,
-    pagination: dict = Depend(get_pagination),
-    auth: dict = Depend(get_auth_data),
-    prefs: dict = Depend(get_user_preferences)
-):
-    return {**pagination, **auth, **prefs}
-```
-
-**Benefits:**
-- Automatic type conversion
-- Clean, declarative syntax
-- Works in deeply nested dependencies
-- Self-documenting parameters
-
-### Accessing the Raw Request
-
-When you need the full `Request` object inside a dependency, use `Depend(get_request=True)`:
+Sometimes a dependency needs the whole request object — to read a header that has no extractor, to touch `request.state`, or to read the client IP. Use `Depend(get_request=True)`:
 
 ```python
 from sillo import Depend
 
-def get_auth_info(req = Depend(get_request=True)):
-    token = req.headers.get("Authorization")
-    user_agent = req.headers.get("User-Agent")
-    return {"token": token, "user_agent": user_agent}
 
-@app.get("/profile")
-async def profile(request, response, auth = Depend(get_auth_info)):
-    return response.json(auth)
+def get_client_ip(request) = Depend(get_request=True):
+    return request.get_client_ip()
+
+
+@app.get("/ping")
+async def ping(request, response, ip: str = Depend(get_client_ip)):
+    return response.json({"client_ip": ip})
 ```
 
-You can also inject the request directly into the handler:
+`get_request=True` is special: it doesn't call a function. It injects the live `Request` object directly. You can also write a normal dependency that takes `request` as a parameter and sillo will inject it:
 
 ```python
-@app.get("/debug")
-async def debug(request, response, req = Depend(get_request=True)):
-    return response.json({"method": req.method, "path": req.url.path})
+def get_client_ip(request):
+    return request.get_client_ip()
 ```
 
-The DI system resolves all dependencies using a pre-flattened execution plan built at registration time — no recursion overhead at request time.
+Both forms work; `get_request=True` is the shorthand when a dependency *only* needs the request.
 
----
+## Nested dependencies
 
-## Chaining & Sub-Dependencies
-
-Dependencies can depend on other dependencies:
-
-```python
-def get_db_config():
-    return {"host": "localhost", "port": 5432}
-
-def get_db_connection(config: dict = Depend(get_db_config)):
-    return Database(**config)
-
-@app.get("/users")
-async def list_users(request, response, db = Depend(get_db_connection)):
-    return await db.query("SELECT * FROM users")
-```
-
----
-
-## Resource Management with Yield
-
-For resources needing cleanup, use generator dependencies:
-
-```python
-def get_db_session():
-    session = db.connect()
-    try:
-        yield session
-    finally:
-        session.close()
-
-async def get_async_resource():
-    resource = await acquire()
-    try:
-        yield resource
-    finally:
-        await resource.release()
-
-@app.get("/data")
-async def get_data(request, response, session = Depend(get_db_session)):
-    return await session.query("SELECT * FROM data")
-```
-
-Cleanup code in the `finally` block runs after every request, even on exceptions.
-
----
-
-## App-level and Router-level Dependencies
-
-Apply dependencies to all routes in an app or router:
-
-### App-level Dependency
+Dependencies can depend on other dependencies. sillo resolves the full tree, deepest first, and passes each result into its parent.
 
 ```python
 from sillo import silloApp, Depend
 
-def get_tenant():
-    return {"tenant_id": "default"}
+app = silloApp()
 
-app = silloApp(dependencies=[Depend(get_tenant)])
 
-@app.get("/config")
-async def config(request, response, tenant: dict = Depend(get_tenant)):
-    return tenant
+def get_db():
+    # imagine this returns a connection / session factory
+    return {"conn": "db-connection"}
+
+
+def get_current_tenant(request, db: dict = Depend(get_db)):
+    # reads a header, uses the db handle
+    tenant = request.headers.get("X-Tenant", "default")
+    return {"tenant": tenant, "db": db}
+
+
+@app.get("/data")
+async def data(
+    request,
+    response,
+    ctx: dict = Depend(get_current_tenant),
+):
+    return response.json(ctx)
 ```
 
-### Router-level Dependency
+Resolution order for `GET /data`:
+
+1. `get_current_tenant` needs `request` (injected) and `db` (a dependency).
+2. sillo solves `db` first → calls `get_db()` → `{"conn": ...}`.
+3. sillo calls `get_current_tenant(request=..., db={"conn": ...})` → result bound to `ctx`.
+4. The handler runs with `ctx` populated.
+
+You never write this ordering yourself. Declare the graph; sillo topsorts and executes it.
+
+## Caching within a single request
+
+If two dependencies both depend on `get_db`, you usually don't want to open two connections for one request. sillo caches dependency results **per request** by default.
+
+The cache key is the dependency callable plus the names of any request-derived extractors it consumed. So `get_db()` (no request input) is cached once and reused by every other dependency that asks for it in the same request. But a dependency like `get_current_tenant(request, db=...)` keyed on the `X-Tenant` header would be re-run if the header value differed.
 
 ```python
-from sillo import Router, Depend
+def get_db():
+    print("OPENING CONNECTION")   # printed once per request
+    return object()
 
-router = Router(prefix="/api", dependencies=[Depend(get_auth)])
 
-@router.get("/protected")
-async def protected(request, response, auth = Depend(get_auth)):
-    return auth
+def needs_db_a(db=Depend(get_db)):
+    return db
+
+
+def needs_db_b(db=Depend(get_db)):
+    return db
+
+
+@app.get("/x")
+async def x(request, response, a=Depend(needs_db_a), b=Depend(needs_db_b)):
+    # get_db() ran exactly once
+    return response.json({"same": a is b})
 ```
 
----
+If you need to disable caching for a specific dependency, set `use_cache=False` on the `Depend` — though for most apps the default is what you want.
 
-## Using Classes as Dependencies
+## Dependencies that clean up after themselves
 
-Classes with `__call__` work as dependencies:
+Some dependencies own a resource that must be released when the response is finished — an open file, a spawned task, a transaction. Declare the dependency as an **async generator** and `yield` the value instead of `return`ing it:
 
 ```python
-class AuthService:
-    def __init__(self, secret_key: str):
-        self.secret_key = secret_key
+from contextlib import asynccontextmanager
+from sillo import Depend
 
-    async def __call__(self, token: str = Header()):
-        return await self.verify_token(token)
 
-auth = AuthService(secret_key="my-secret")
+async def db_transaction():
+    txn = {"id": "txn-1", "open": True}
+    print("BEGIN")
+    try:
+        yield txn
+    finally:
+        txn["open"] = False
+        print("COMMIT / ROLLBACK")
 
-@app.get("/profile")
-async def profile(request, response, user = Depend(auth)):
-    return {"message": f"Welcome {user.name}"}
+
+@app.post("/charge")
+async def charge(request, response, txn: dict = Depend(db_transaction)):
+    # use txn here
+    return response.json({"charged": True})
 ```
 
----
+sillo runs the body of the generator up to `yield` to produce the value, injects that value, runs the handler, and then resumes the generator after the handler returns so the `finally` block (cleanup) executes. This is the canonical pattern for "open something, use it in the handler, close it afterward" without leaking resources.
 
-## Real-World Example: Auth with Parameter Extractors
+<aside type="caution" title="yield, not return">
+A cleanup dependency must `yield` exactly once. If you `return` instead, the teardown code after the value never runs. The generator is resumed automatically when the response is sent.
+</aside>
+
+## Combining DI with request body validation
+
+Two different mechanisms feed a handler:
+
+- **`request_model`** (set on the route) validates the JSON body and exposes it as `request.validated_data`, optionally injected by name.
+- **`Depend` / extractors** feed *other* parameters.
+
+They compose cleanly:
 
 ```python
-from sillo import silloApp, Depend, Query, Header, Cookie
+from pydantic import BaseModel
+from sillo import silloApp, Depend, Query
 
 app = silloApp()
 
-def get_db():
-    db = connect_db()
-    try:
-        yield db
-    finally:
-        db.close()
 
-def get_auth_user(authorization: str = Header()):
-    if not authorization:
-        return None
-    return verify_token(authorization)
+class CreateOrder(BaseModel):
+    item_id: int
+    quantity: int
 
-def get_pagination(page: int = Query(1), limit: int = Query(10)):
-    return {"page": page, "limit": limit}
 
-def get_user_preferences(theme: str = Cookie("dark")):
-    return {"theme": theme}
+def get_actor(request):
+    return request.headers.get("X-Actor", "anon")
 
-@app.get("/dashboard")
-async def dashboard(
-    request, response,
-    db = Depend(get_db),
-    user = Depend(get_auth_user),
-    pagination = Depend(get_pagination),
-    prefs = Depend(get_user_preferences)
+
+@app.post("/orders", request_model=CreateOrder)
+async def create_order(
+    request,
+    response,
+    order: CreateOrder = Depend(lambda: request.validated_data),
+    actor: str = Depend(get_actor),
+    dry_run: bool = Query(False),
 ):
-    if not user:
-        return {"error": "Unauthorized"}
-
-    data = db.get_dashboard(user.id)
-    return {**data, **pagination, **prefs}
+    return response.json({
+        "order": order.model_dump(),
+        "actor": actor,
+        "dry_run": dry_run,
+    })
 ```
 
----
+(For a route-level `request_model`, you can also bind the validated model to a parameter by matching its name to the model; see [Request Parameters](/guides/request-parameters/) and [Handling Inputs](/guides/request-inputs/).)
 
-## Advanced Patterns
+## Using dependencies at the router and app level
 
-- **Dependency Caching**: Use `functools.lru_cache` for expensive dependencies
-- **Conditional Dependencies**: Use default values to make dependencies optional
-- **Validation**: Combine with Pydantic for dependency validation
+DI isn't limited to one route. You can attach `Dependencies` to a `Router` or `silloApp` so every route under it gets them — useful for "require auth on everything under `/admin`" style wiring:
 
----
+```python
+from sillo import silloApp, Depend
+from sillo.routing import Router
 
-For more, see the [Request Parameters](/guide/request-parameters) guide and API reference.
+app = silloApp()
+
+admin = Router(prefix="/admin")
+# every route registered on `admin` resolves `actor` automatically
+admin.add_route(...)  # dependencies can be passed per route via the route's `dependencies=`
+```
+
+Per-route dependencies are passed through the `Route(..., dependencies=[Depend(...)])` list, or — more commonly — you simply declare `Depend(...)` on the specific handler parameter you want.
+
+## A full worked example: per-request DB session + auth
+
+This ties the pieces together. A `db_session` dependency opens a connection for the request and closes it after; an `auth_user` dependency reads a bearer token and loads the user; a route composes both plus a body model.
+
+```python
+import asyncio
+from pydantic import BaseModel
+from sillo import silloApp, Depend, Query
+
+app = silloApp()
+
+
+# --- resource-owning dependency (generator => auto cleanup) ---
+async def db_session():
+    session = {"id": "sess-1"}
+    print("session open")
+    try:
+        yield session
+    finally:
+        print("session closed")
+
+
+# --- request-derived dependency (nested) ---
+def get_token(request):
+    return request.headers.get("Authorization", "").removeprefix("Bearer ")
+
+
+def auth_user(request, token: str = Depend(get_token)):
+    if not token:
+        # raise a clean HTTP error; caught by the error handler
+        from sillo.exceptions import HTTPException
+        raise HTTPException(401, "Missing bearer token")
+    return {"user_id": "u_1", "token": token[:6]}
+
+
+class NoteIn(BaseModel):
+    text: str
+
+
+@app.post("/notes", request_model=NoteIn)
+async def create_note(
+    request,
+    response,
+    session: dict = Depend(db_session),
+    user: dict = Depend(auth_user),
+    note: NoteIn = Depend(lambda: request.validated_data),
+    echo: bool = Query(False),
+):
+    return response.json({
+        "session": session["id"],
+        "user": user["user_id"],
+        "note": note.model_dump(),
+        "echo": echo,
+    })
+```
+
+Resolution for `POST /notes`:
+
+1. `db_session` runs → yields a session, kept open.
+2. `get_token` runs (request injected) → returns the bearer string.
+3. `auth_user` runs with `token` → returns the user dict (or raises 401).
+4. The route's `request_model=NoteIn` validates the body → `request.validated_data`.
+5. The `note` dependency reads `request.validated_data` → the `NoteIn` instance.
+6. `echo` is read from the query string.
+7. Handler runs. When the response is sent, `db_session`'s `finally` closes the session.
+
+This is the shape of a real sillo route: cheap, pure functions for logic; the framework owns ordering, caching, validation, and cleanup.
+
+## Testing dependencies in isolation
+
+Because a dependency is just a callable, you test it without a server. For request-derived ones, build the smallest fake `Request` you need, or refactor the pure logic out of the extractor:
+
+```python
+# pure core, easy to test
+def build_user(token: str) -> dict:
+    if not token:
+        raise ValueError("missing token")
+    return {"user_id": "u_1", "token": token[:6]}
+
+
+def auth_user(request, token: str = Depend(get_token)):
+    return build_user(token)   # real logic lives in build_user
+
+
+def test_build_user():
+    assert build_user("abc123")["user_id"] == "u_1"
+    try:
+        build_user("")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("expected ValueError")
+```
+
+For end-to-end checks, drive the route through `TestClient` (see [Getting Started](/guides/getting-started/) for setup) — the whole DI tree resolves exactly as it would in production:
+
+```python
+from sillo.testclient import TestClient
+
+resp = TestClient(app).post(
+    "/notes",
+    json={"text": "hi"},
+    headers={"Authorization": "Bearer secret"},
+)
+assert resp.status_code == 200
+```
+
+## Common pitfalls
+
+- **Forgetting `Depend`** — writing `user: User = get_user` binds the *function object*, not its result. Always wrap with `Depend(get_user)`.
+- **Mutating shared state in a singleton dependency** — dependencies are re-solved per request (and cached within it), but a module-level object they return is shared across requests. Keep per-request state in the request, not in globals.
+- **Over-nesting** — three or four levels of dependencies is fine; a dozen is a smell. Flatten when a dependency only exists to pass values through.
+- **Doing I/O in a non-generator dependency** — if you open a connection and `return` it, nothing closes it. Use `yield` so the teardown runs.
+
+## Works with
+
+- [Request Parameters](/guides/request-parameters/) — `Query`, `Header`, `Cookie` extractors in handlers and dependencies
+- [Handlers](/guides/handlers/) — the handler contract and return values
+- [Class-Based Views](/guides/class-based-handlers/) — `APIView` with class-level `middleware` and `error_handlers`
+- [Middleware](/guides/middleware/) — request-scoped logic that runs for every request, not just injected ones
+
+## Related topics
+
+- [Routing](/guides/routing/) — path syntax, `name=`, and route options like `request_model`
+- [Error Handling](/guides/error-handling/) — turning validation failures into clean responses
+- [Authentication](/guides/authentication/) — `useAuth` and the auth dependency used by protected routes

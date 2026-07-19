@@ -1,106 +1,134 @@
 ---
-title: Routers and Sub-Applications
-description: sillo provides a powerful routing system that allows you to create modular and nested routing structures. Here's an example of how you can use routers and sub-applications in your application
+title: Routers & Sub-Applications
+description: Organize sillo routes into modular Routers and Groups — prefixes, nesting, mounting sub-applications (including external ASGI apps), and per-router middleware and dependencies.
 head:
 - tag: meta
   attrs:
     property: og:title
-    content: Routers and Sub-Applications
+    content: Routers & Sub-Applications in sillo
 - tag: meta
   attrs:
     property: og:description
-    content: sillo provides a powerful routing system that allows you to create modular and nested routing structures. Here's an example of how you can use routers and sub-applications in your application
+    content: Modular routing in sillo with Router prefixes, nested routers, and Group-mounted sub-apps.
 ---
-#  Routers and Sub-Applications
-sillo provides a powerful routing system that allows you to create modular and nested routing structures. Here's an example of how you can use routers and sub-applications in your application.
-##  Creating a Router and Mounting it to the Main Application
+
+# Routers & Sub-Applications
+
+As an app grows, a single flat list of `@app.get(...)` decorators becomes hard to navigate. sillo lets you group routes into **`Router`** objects with their own path prefix, mount them under the main app, and nest them arbitrarily. You can also mount an entire **sub-application** — another `silloApp`, or any ASGI app such as a FastAPI service — under a path using a **`Group`**.
+
+The mental model:
+
+- A **`Router`** is a *collection of routes* plus a prefix. It is not itself an app; you mount it onto an app (or another router).
+- A **`Group`** is a *mount point*: it places either a sub-app or a set of routes behind a single path prefix, optionally wrapped in middleware.
+
+Both flatten into the app's route table at startup, so nesting adds no per-request overhead.
+
+## The smallest useful form
+
 ```python
 from sillo import silloApp
 from sillo.routing import Router
 
 app = silloApp()
 
-v1_router = Router(prefix="/v1")
+v1 = Router(prefix="/v1")
 
-@v1_router.get("/users")
+@v1.get("/users")
 async def list_users(req, res):
-    return res.json({"message": "List of users"})
+    return res.json({"users": []})
 
-@v1_router.get("/users/{user_id}")
+@v1.get("/users/{user_id}")
 async def get_user(req, res, user_id):
     return res.json({"user_id": user_id})
 
-app.mount_router(v1_router)
-
+app.mount_router(v1)
 ```
 
-Using a Different Prefix
-If you want the router mounted under a different prefix, set it on the router itself.
-```py
-v1_router = Router(prefix="/api/v1")
-app.mount_router(v1_router)
-```
-:::tip Tip
-`app.mount_router` does not take a prefix argument. Use `Router(prefix="/...")`.
-:::
+`app.mount_router(v1)` folds the router's routes into the app under `/v1`, so the handlers answer `GET /v1/users` and `GET /v1/users/{user_id}`.
 
-This example creates a router with two routes, one for listing users and another for getting a specific user. The router is then mounted to the main application using the `mount_router` method.
+<aside type="tip" title="mount_router takes no prefix">
+The prefix lives on the `Router`, not on `mount_router`. You cannot pass a prefix to `app.mount_router(...)`. Set it once with `Router(prefix="/v1")` and reuse the router everywhere.
+</aside>
 
-This matches `/v1/users` and `/v1/users/{user_id}`
+## Router options
 
-:::caution ⚠️ Bug Alert
-Ensure to use `mount_router` after all routes have been defined.
-:::
+`Router(...)` accepts more than a prefix:
 
-##  What is Router?
-
-A Router is a container for routes and sub-applications. It allows you to create a modular and nested routing structure in your application.
-
-
-
-:::caution ⚠️ Bug Alert
-Ensure all mounted sub application or sub-routers have unique prefixes
-:::
-
-Routers can contain other routers. This is useful when you want even finer modularization, e.g., versioned APIs with internal domains.
 ```python
+v1 = Router(
+    prefix="/v1",
+    tags=["v1"],                       # OpenAPI tag applied to all routes
+    dependencies=[...],                # Depends applied to every route in the router
+    middleware=[...],                  # router-level middleware (see below)
+    name="api-v1",                     # name for the router group
+)
+```
+
+- **`tags`** — groups the router's endpoints under a tag in generated OpenAPI docs.
+- **`dependencies`** — a list of `Depend(...)` objects resolved for *every* route in the router (e.g. a shared auth dependency).
+- **`middleware`** — functions applied to requests matching this router's routes.
+- **`name`** — an identifier for the router (mostly for referencing in tooling/URL generation within the router tree).
+
+## Nesting routers
+
+A router can mount another router, building a deep prefix tree:
+
+```python
+app = silloApp()
+
+v1 = Router(prefix="/v1")
+users = Router(prefix="/users")
+
+@users.get("/")
+async def users_index(req, res):
+    return res.text("User root")
+
+@users.get("/{id}")
+async def users_detail(req, res, id):
+    return res.json({"user": id})
+
+# nest: /v1/users/*
+v1.mount_router(users)
+# mount the tree onto the app: /v1/users/*
+app.mount_router(v1)
+```
+
+Final paths: `/v1/users/` and `/v1/users/{id}`. You can nest as deeply as you like — `v1.mount_router(users)`, `users.mount_router(posts)`, and so on. sillo resolves the full prefix by walking the tree at startup.
+
+## Per-router middleware and dependencies
+
+Middleware and dependencies declared on a router run only for routes under that router. This is how you scope "require auth for everything under `/admin`" without touching each handler:
+
+```python
+from sillo import silloApp, Depend
+from sillo.routing import Router
 
 app = silloApp()
 
-v1_router = Router(prefix="/v1")
-user_router = Router(prefix="/users")
+admin = Router(prefix="/admin", tags=["admin"])
 
-@user_router.get("/")
-async def index(req, res):
-    return res.text("User root")
+def require_staff(request):
+    if not request.headers.get("X-Staff"):
+        from sillo.exceptions import HTTPException
+        raise HTTPException(403, "staff only")
+    return True
 
-@user_router.get("/{id}")
-async def detail(req, res, id):
-    return res.json({"user": id})
+@admin.get("/dashboard")
+async def dashboard(req, res, _staff=Depend(require_staff)):
+    return res.text("secret dashboard")
 
-# Mount user_router inside v1_router
-v1_router.mount_router(user_router)
-
-# Mount v1_router into the app
-app.mount_router(v1_router)
-
+app.mount_router(admin)
 ```
-Now, the final paths are:
 
-- `/v1/users/`
+Here `require_staff` resolves for every route registered on `admin`. (You can also pass `dependencies=[Depend(require_staff)]` to the `Router` constructor to apply it uniformly.)
 
-- `/v1/users/{id}`
+## Groups: mounting a sub-application
 
-You can nest as deeply as you want. Internally, sillo flattens the route tree during app startup for performance.
+When the thing you want to mount is itself an app — a separate `silloApp`, or any ASGI app — use `Group`. A `Group` takes either `app=` (an ASGI app) or `routes=` (a list of `Route`/`APIView` objects), plus a `path` prefix.
 
-The `Router` class also have similar routing methods as `silloApp` class
+### Mounting another silloApp
 
-
-##  Sub-Applications = Routers
-
-silloApp is an ASGI application. To mount a sub-app under a path, prefer using Group directly to mount sub-apps, or use Router.mount_router for sub-routers.
-
-```py
+```python
 from sillo import silloApp
 from sillo.routing import Group
 
@@ -113,30 +141,20 @@ async def dashboard(req, res):
 
 admin_group = Group(path="/admin", app=admin_app)
 main_app.add_route(admin_group)
-
 ```
 
-Now you can access /admin/dashboard.
+Now `/admin/dashboard` is served by `admin_app`. The sub-app keeps its own routes, handlers, and (if you add them) its own middleware — useful when different teams own different parts of a system.
 
-This makes it trivial to build modular applications where teams can work on separate parts (e.g., auth, billing, analytics) in isolation and plug them into a larger system
+### Mounting a list of routes
 
-
-##  Groups 
-
-sillo also supports groups, which is a way to group routes together and share them between multiple apps.
-
-Sometimes you want to group routes or apps under a shared path or with middleware applied collectively — that’s where Group comes in.
-
-```py
-
-from sillo.routing import Router,Group,Route
+```python
+from sillo.routing import Router, Group, Route
 from sillo import silloApp
 
 users = Router()
 
 async def list_users(req, res):
     return res.json(["John", "Jane"])
-
 
 async def get_user(req, res, id):
     return res.json({"user": id})
@@ -148,62 +166,94 @@ group = Group(
         Route(path="/{id}", methods=["GET"], handler=get_user),
     ],
 )
-
 app = silloApp()
 app.add_route(group)
-
 ```
 
-Now you can access `/users` and `/users/{id}`
+This answers `/users` and `/users/{id}`. `Group` with `routes=` is essentially a prefix wrapper around a set of `Route` objects; `Group` with `app=` mounts a whole app.
 
+## Mounting external ASGI apps
 
-##  Grouping Sub-Applications
+Because a `Group` accepts any ASGI app, you can mount a FastAPI (or Starlette, Quart, …) service under a path without rewriting it:
 
-sillo supports grouping sub-applications under a shared path or with middleware applied collectively.
-
-```py
-
+```python
 from sillo import silloApp
-from sillo.grouping import Group
-
-admin_app = silloApp()
-
-@admin_app.get("/dashboard")
-async def dashboard(req, res):
-    return res.text("Welcome to the admin panel")
-
-group = Group(path="/admin", app=admin_app)
-
-main_app = silloApp()
-main_app.add_route(group)
-
-```
-
-Now you can access /admin/dashboard
-
-##  External ASGI Apps
-
-sillo `.register` method allows you to mount other asgi application on the `silloApp` Instnce or `Router` class
-
-```py
-app = silloApp()
-
-def external_app(scope, receive , send):
-    ...
-
-external_group = Group(path="/mount_path", app=external_app)
-app.add_route(external_group)
-```
-
-You can also mount  a `fastapi` or `starlatte` app
-
-```py
-from sillo import silloApp
-from fastapi import FastApi
+from sillo.routing import Group
+from fastapi import FastAPI
 
 app = silloApp()
+fast_app = FastAPI()
 
-fast_app = FastApi()
+@fast_app.get("/ping")
+def ping():
+    return {"ping": "pong"}
+
 fast_group = Group(path="/service2", app=fast_app)
 app.add_route(fast_group)
 ```
+
+Requests to `/service2/ping` are delegated to `fast_app`, whose own routing and middleware run normally. This is the migration-friendly escape hatch: keep a legacy service running while new routes live in sillo.
+
+<aside type="caution" title="Prefix hygiene">
+A `Group`'s `path` should start with `/`. If it doesn't, sillo warns and prepends one. Consistent leading slashes keep nested prefixes from collapsing (`/v1` + `/users` → `/v1/users`, not `/v1users`).
+</aside>
+
+## Route names and URL generation
+
+Routes (and routers) accept a `name=` used with `url_for` to build URLs without hard-coding paths:
+
+```python
+@v1.get("/users/{user_id}", name="get-user")
+async def get_user(req, res, user_id):
+    return res.json({"user_id": user_id})
+
+@app.get("/home")
+async def home(req, res):
+    url = req.url_for("get-user", user_id=42)   # -> /v1/users/42
+    return res.json({"link": str(url)})
+```
+
+When a route lives under a router prefix, `url_for` includes that prefix automatically. Name routes once and generate links everywhere.
+
+## Putting it together: a modular app
+
+```python
+from sillo import silloApp, Depend
+from sillo.routing import Router, Group
+
+app = silloApp()
+
+# public API v1
+api = Router(prefix="/api/v1", tags=["api"])
+
+@api.get("/health")
+async def health(req, res):
+    return res.json({"status": "ok"})
+
+# admin sub-app
+admin = silloApp()
+
+@admin.get("/stats")
+async def stats(req, res):
+    return res.json({"requests": 0})
+
+# compose
+app.mount_router(api)
+app.add_route(Group(path="/admin", app=admin))
+```
+
+This gives you `/api/v1/health` and `/admin/stats` from two independently-defined pieces.
+
+## Works with
+
+- [Routing](/guides/routing/) — path syntax, converters, `name=`, and all route options
+- [Handlers](/guides/handlers/) — the handler contract used inside routers
+- [Middleware](/guides/middleware/) — router-scoped and global middleware
+- [Class-Based Views](/guides/class-based-handlers/) — `APIView.as_route(...)` returns a `Route` you can add to a router
+- [Dependency Injection](/guides/dependency-injection/) — router-level `dependencies=`
+
+## Related topics
+
+- [Startup & Shutdown](/guides/startups-and-shutdowns/) — run setup when the composed app boots
+- [Error Handling](/guides/error-handling/) — exception handlers registered per app vs. globally
+- [Events](/guides/events/) — router-level event hooks
