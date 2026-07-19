@@ -1,321 +1,168 @@
 ---
 title: Session Authentication
-description: sillo's session_auth module provides a complete session-based authentication system — Laravel-style SessionGuard, per-device session tracking, logout everywhere, and user mixins for seamless integration.
+description: Cookie-based session auth in sillo - SessionMiddleware, SessionAuthBackend, the SessionGuard login helper, and the SessionUserMixin for managing active sessions.
 head:
 - tag: meta
   attrs:
     property: og:title
-    content: Session Authentication
+    content: Session Authentication in sillo
 - tag: meta
   attrs:
     property: og:description
-    content: Laravel-style session auth with SessionGuard, per-device tracking, logout everywhere, and user mixins.
+    content: sillo session auth - SessionMiddleware, SessionAuthBackend, SessionGuard, SessionUserMixin.
 ---
 
 # Session Authentication
 
-The `sillo.auth.session_auth` module provides traditional session-based authentication. It includes a backend that reads from sillo's session middleware, a Laravel-style `SessionGuard` with `attempt`-based login, a Record-backed `Session` model for per-device tracking, and a mixin for User model integration.
+Sessions are **stateful**: the server stores the signed session in a cookie and looks the user up on each request. Best for server-rendered web apps and browser UIs where you want `remember me`, "log out everywhere", and per-device session lists.
 
-## Prerequisites
+Two middleware pieces are involved:
 
-Session authentication requires sillo's `SessionMiddleware`:
+| Middleware | Job |
+| --- | --- |
+| `SessionMiddleware` | Reads/writes the signed session cookie; gives you `request.session` |
+| `AuthenticationMiddleware` + `SessionAuthBackend` | Turns the session into `request.user` |
 
-```python
-from sillo.session.middleware import SessionMiddleware
+## 1. Minimal setup
 
-app.use(SessionMiddleware(secret_key="session-secret"))
-```
-
-## Module Structure
-
-```
-sillo/auth/session_auth/
-├── backend.py    — SessionAuthBackend, login(), logout()
-├── guard.py      — SessionGuard
-├── models.py     — Session (Record model)
-├── mixins.py     — SessionUserMixin
-└── __init__.py   — public exports
-```
-
-## SessionAuthBackend
-
-The backend reads user data from `request.session` — a dictionary managed by sillo's session middleware.
+`SessionMiddleware` **must** run before `AuthenticationMiddleware` (the auth backend reads `request.session`):
 
 ```python
+from sillo import silloApp
+from sillo.session import SessionMiddleware, SessionConfig
+from sillo.auth import AuthenticationMiddleware, useAuth
 from sillo.auth.session_auth import SessionAuthBackend
-from sillo.session.middleware import SessionMiddleware
+from sillo.users import User
 
-app.use(SessionMiddleware(secret_key="session-secret"))
+app = silloApp()
+
+app.use(SessionMiddleware(
+    SessionConfig(secret_key="change-me"),   # signs the cookie
+))
 app.use(AuthenticationMiddleware(
     user_model=User,
-    backend=SessionAuthBackend(
-        session_key="user",   # session dict key (default: "user")
-        identifier="id",      # key within session data for user identity
-    ),
+    backend=SessionAuthBackend(),
 ))
 ```
 
-**Parameters:**
+`SessionAuthBackend` reads `request.session["user"]["id"]` (defaults: key `"user"`, identifier `"id"`). On success `request.scope["auth"]` becomes `"session"`.
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `session_key` | `str` | `"user"` | Key in `request.session` where user data is stored. |
-| `identifier` | `str` | `"id"` | Key within the session data dict containing the user identity. |
+<aside type="caution" title="Order matters">
+`SessionAuthBackend.authenticate` asserts `"session" in request.scope`. If you forget `SessionMiddleware` (or put it after auth), every request fails with `"No Session Middleware Installed"`. Always mount `SessionMiddleware` first.
+</aside>
 
-The session data format:
+## 2. Logging a user in
 
-```python
-request.session["user"] = {
-    "id": "42",              # user identity
-    "display_name": "Alice", # display name
-}
-```
-
-### login() and logout() Helpers
-
-Low-level helpers to write and clear session user data:
-
-```python
-from sillo.auth.session_auth import login, logout
-
-# Store user in session
-login(request, user)
-# Sets: request.session["user"] = {"id": user.identity, "display_name": user.display_name}
-
-# Clear session user data
-logout(request)
-# Deletes: request.session["user"]
-```
-
-## SessionGuard
-
-`SessionGuard` provides a Laravel-style API for session authentication. It wraps the low-level helpers with credential validation and user loading.
+The `SessionGuard` helper bundles credential check + session write. It needs `user_model` so it can look users up by email:
 
 ```python
 from sillo.auth.session_auth import SessionGuard
 
-guard = SessionGuard(backend=session_backend, user_model=User)
-```
+guard = SessionGuard(user_model=User)
 
-### attempt — Login with Credentials
-
-```python
 @app.post("/login")
 async def login(request, response):
-    form = await request.form
-
-    if await guard.attempt(
-        request,
-        email=form["email"],
-        password=form["password"],
-    ):
-        return response.redirect("/dashboard")
-
-    return response.html("Invalid credentials", status_code=401)
+    data = await request.json()
+    ok = await guard.attempt(
+        request, email=data["email"], password=data["password"]
+    )
+    if not ok:
+        return response.json({"error": "invalid credentials"}, status_code=401)
+    return {"ok": True}
 ```
 
-`attempt` looks up the user by email, verifies the password with `user.check_password()`, and on success calls `login()` and `user.set_last_login()`.
+`attempt(request, email=, password=)` returns `True` on success and writes the session (it also calls `user.set_last_login()` if available). The next request arrives with `request.user` populated.
 
-### Check Authentication State
+### Guard API
 
-```python
-@app.get("/dashboard")
-async def dashboard(request, response):
-    if not await guard.check(request):
-        return response.redirect("/login")
+| Method | Returns | Notes |
+| --- | --- | --- |
+| `attempt(request, email=, password=)` | `bool` | Verify creds, then `login`. |
+| `login(request, user)` | `None` | Writes session for an already-known user object. |
+| `logout(request)` | `None` | Clears the session key (deletes cookie). |
+| `user(request)` | `User \| None` | Loads the user via `user_model.objects.get_by_id`. |
+| `id(request)` | `str \| None` | The stored identity. |
+| `check(request)` | `bool` | `True` if a session key is present. |
+| `validate(request, {email,password})` | `bool` | Like `attempt` but stores the user on `request.scope["_validated_user"]` instead of logging in. |
 
-    user = await guard.user(request)
-    return response.html(f"Welcome, {user.display_name}")
-```
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `guard.check(request)` | `bool` | Is there a user in the session? |
-| `guard.user(request)` | `User` or `None` | Fully loaded user from database. |
-| `guard.id(request)` | `str` or `None` | User identity string. |
-| `guard.validate(request, credentials)` | `bool` | Validates credentials without logging in. |
-
-### Logout
+## 3. Logout and protecting routes
 
 ```python
 @app.post("/logout")
 async def logout(request, response):
     await guard.logout(request)
-    return response.redirect("/")
-```
-
-### Full Login Flow
-
-```python
-from sillo import silloApp
-from sillo.auth.session_auth import SessionAuthBackend, SessionGuard
-from sillo.session.middleware import SessionMiddleware
-
-app = silloApp()
-app.use(SessionMiddleware(secret_key="session-secret"))
-
-session_backend = SessionAuthBackend()
-guard = SessionGuard(backend=session_backend, user_model=User)
-
-app.use(AuthenticationMiddleware(user_model=User, backend=session_backend))
-
-@app.route("/login", methods=["GET", "POST"])
-async def login(request, response):
-    if request.method == "GET":
-        return response.html("""
-            <form method="post">
-                <input name="email" type="email" placeholder="Email">
-                <input name="password" type="password" placeholder="Password">
-                <button type="submit">Login</button>
-            </form>
-        """)
-
-    form = await request.form
-    if await guard.attempt(request, email=form["email"], password=form["password"]):
-        return response.redirect("/dashboard")
-    return response.html("Invalid credentials", status_code=401)
+    return {"ok": True}
 
 @app.get("/dashboard", auth=useAuth(scopes=["session"]))
 async def dashboard(request, response):
-    user = await guard.user(request)
-    sessions = await user.get_active_sessions()
-    return response.json({
-        "user": user.display_name,
-        "active_sessions": len(sessions),
-    })
-
-@app.post("/logout", auth=useAuth())
-async def logout(request, response):
-    await guard.logout(request)
-    return response.redirect("/login")
+    return {"user": request.user.display_name}
 ```
 
-## Session Model — Per-Device Tracking
+`useAuth(scopes=["session"])` restricts the route to cookie-authenticated callers.
 
-The `Session` model (Record-backed) tracks individual user sessions with device metadata.
+## 4. Managing sessions per user
 
-```python
-from sillo.auth.session_auth.models import Session
-
-# Schema
-class Session:
-    id             — IntField(pk=True)
-    user_id        — IntField(indexed)
-    session_key    — CharField(255, unique, indexed)
-    ip_address     — CharField(45, nullable)
-    user_agent     — TextField(nullable)
-    last_activity  — DatetimeField(auto_now)
-    expires_at     — DatetimeField
-    is_active      — BooleanField(default=True)
-    device_name    — CharField(255, nullable)
-```
-
-### Session Operations
+Add `SessionUserMixin` to your user class to track and revoke device sessions. Each call writes a `Session` row (with `session_key`, `ip_address`, `user_agent`, `device_name`, `expires_at`).
 
 ```python
-# Mark activity (auto-updates last_activity)
-await session.mark_activity()
+class User(Model, AbstractBaseUser, SessionUserMixin):
+    ...
 
-# Extend session lifetime
-await session.extend(duration_seconds=7200)  # 2 more hours
+user = await User.load_user("1")
 
-# Terminate a single session
-await session.terminate()
-
-# Terminate ALL sessions for a user
-count = await Session.terminate_all_for_user(user_id=42)
-
-# Cleanup expired sessions
-count = await Session.cleanup_expired()
-```
-
-## SessionUserMixin
-
-Add `SessionUserMixin` to your User model for session management methods:
-
-```python
-from sillo.auth.session_auth.mixins import SessionUserMixin
-
-class User(Model, BaseUser, SessionUserMixin):
-    id = fields.IntField(pk=True)
-    email = fields.CharField(max_length=255)
-    password = fields.CharField(max_length=128)
-```
-
-### Available Methods
-
-**create_session** — Track a new session:
-
-```python
 await user.create_session(
-    session_key=request.session.session_id,
-    ip_address=request.client.host,
-    user_agent=request.headers.get("User-Agent"),
-    device_name="Chrome on macOS",
-    duration_seconds=86400,  # 24 hours
+    session_key="abc123",
+    ip_address="203.0.113.5",
+    user_agent="Mozilla/5.0",
+    device_name="Alice's Laptop",
+    duration_seconds=86400,
 )
-```
 
-**get_active_sessions** — List the user's active sessions:
-
-```python
-sessions = await user.get_active_sessions()
-for s in sessions:
-    print(f"{s.device_name} — last active {s.last_activity} from {s.ip_address}")
-```
-
-**logout_everywhere** — Terminate all sessions:
-
-```python
-count = await user.logout_everywhere()
-# Returns: number of sessions terminated
-```
-
-**logout_session** — Terminate a specific session:
-
-```python
-success = await user.logout_session("session_key_value")
-```
-
-**active_session_count** — Count active sessions:
-
-```python
+sessions = await user.get_active_sessions()   # non-expired, active rows
 count = await user.active_session_count()
+await user.logout_session("abc123")           # terminate one
+await user.logout_everywhere()                # terminate all for this user
 ```
 
-## Complete Example — Logout Everywhere
+These mixin methods use `int(str(self.identity))` as the `user_id`, matching how `SessionAuthBackend` and `User.load_user` resolve identities.
+
+<aside type="note" title="Two session concepts">
+There are two distinct "session" things in sillo:
+- **`request.session`** — the cookie-backed key/value store from `SessionMiddleware` (config in `SessionConfig`).
+- **`Session` model** — the DB row created by `SessionUserMixin.create_session` for device tracking.
+
+`SessionAuthBackend` uses only the cookie. The `Session` model is optional bookkeeping for "show my devices / log out everywhere".
+</aside>
+
+## 5. Configuration
+
+`SessionConfig` controls the cookie. Common knobs:
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `secret_key` | — | Signs the cookie (passed to `SessionMiddleware`). |
+| `session_cookie_name` | `"session_id"` | Cookie name. |
+| `session_expiration_time` | `86400` | Lifetime in seconds. |
+| `session_cookie_secure` | `True` | Only send over HTTPS. |
+| `session_cookie_httponly` | `True` | Not readable by JS. |
+| `session_cookie_samesite` | `"lax"` | CSRF hardening. |
+| `session_refresh_each_request` | `True` | Sliding expiry. |
 
 ```python
-@app.post("/logout-everywhere", auth=useAuth(scopes=["session"]))
-async def logout_everywhere(request, response):
-    user = request.user
-    count = await user.logout_everywhere()
-    return response.json({
-        "message": f"Logged out from {count} devices",
-    })
-```
-
-## Session vs JWT — When to Use Each
-
-| Scenario | Recommendation |
-|----------|---------------|
-| Traditional server-rendered web app | Session auth — cookies are automatic |
-| Mobile app or SPA | JWT — stateless, works without cookies |
-| API for third-party developers | API keys or JWT |
-| Both web + API in same app | Combine — session for web, JWT for API |
-| Need "logout everywhere" | Sessions with `Session` model, or JWT with `revoke_all_tokens` |
-
-## Database Setup
-
-The `Session` model needs a database table:
-
-```python
-await Tortoise.init(
-    db_url="sqlite://db.sqlite3",
-    modules={"models": [
-        "sillo.auth.session_auth.models",
-        "myapp.models",
-    ]},
+SessionConfig(
+    secret_key="change-me",
+    session_cookie_name="sid",
+    session_expiration_time=3600,        # 1 hour
+    session_cookie_secure=True,
+    session_cookie_samesite="strict",
 )
-await Tortoise.generate_schemas()
 ```
+
+For server-side session storage (instead of signed cookies), pass a `manager` to `SessionMiddleware` (e.g. a file/session interface); otherwise the default `SignedSessionManager` stores everything in the cookie.
+
+## Related
+
+- [Authentication](/guides/authentication/) — middleware + backend model
+- [Protecting Routes](/guides/protecting-routes/) — `useAuth(scopes=["session"])`
+- [Users & User Models](/guides/users/) — `SessionUserMixin` wiring
+- [JWT](/guides/jwt-auth/) · [API Keys](/guides/api-keys/)
