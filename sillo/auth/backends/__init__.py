@@ -1,2 +1,3 @@
-from .apikey import APIKeyAuthBackend
-from .jwt import JWTAuthBackend
+from sillo.auth.backends.base import AuthenticationBackend
+
+__all__ = ["AuthenticationBackend"]
