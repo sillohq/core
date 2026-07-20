@@ -68,7 +68,9 @@ A JWT-authenticated caller hitting `/webhook` gets 401 — authenticated, but vi
 Permission strings are checked via `user.has_permission(perm)` (all must pass). Implement it on your user class:
 
 ```python
-class User(AbstractBaseUser):
+from sillo.users import UserProtocol
+
+class User(UserProtocol):
     def has_permission(self, perm: str) -> bool:
         return perm in self.permissions
 
@@ -168,5 +170,5 @@ app.mount_router(api)
 ## Related
 
 - [Authentication](/guides/authentication/) — middleware + backend model
-- [Users & User Models](/guides/users/) — `has_permission`, `AbstractBaseUser`
+- [Users & User Models](/guides/users/) — `has_permission`, `UserProtocol`
 - [JWT](/guides/jwt-auth/) · [Sessions](/guides/session-auth/) · [API Keys](/guides/api-keys/)

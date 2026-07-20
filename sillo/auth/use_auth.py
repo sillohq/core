@@ -43,7 +43,7 @@ from typing import TYPE_CHECKING, Optional
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.exceptions import AuthenticationFailed, PermissionDenied
-from sillo.users.base import AbstractBaseUser
+from sillo.users.base import UserProtocol
 from sillo.users.simple import SimpleUser
 
 if TYPE_CHECKING:
@@ -113,7 +113,7 @@ class useAuth:
 
         return True
 
-    def _resolve_user_model(self) -> type[AbstractBaseUser]:
+    def _resolve_user_model(self) -> type[UserProtocol]:
         if self.user_model is not None:
             return self.user_model
         return SimpleUser

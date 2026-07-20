@@ -105,10 +105,13 @@ async def dashboard(request, response):
 Add `SessionUserMixin` to your user class to track and revoke device sessions. Each call writes a `Session` row (with `session_key`, `ip_address`, `user_agent`, `device_name`, `expires_at`).
 
 ```python
-class User(Model, AbstractBaseUser, SessionUserMixin):
+from sillo.users import User
+from sillo.auth.session_auth.mixins import SessionUserMixin
+
+class AppUser(User, SessionUserMixin):
     ...
 
-user = await User.load_user("1")
+user = await AppUser.load_user("1")
 
 await user.create_session(
     session_key="abc123",

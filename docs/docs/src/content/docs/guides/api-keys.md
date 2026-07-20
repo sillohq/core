@@ -81,10 +81,13 @@ await ApiKeyManager().revoke_all_for_user(1)
 Add `ApiKeyUserMixin` to your user class so a user can self-service keys:
 
 ```python
-class User(Model, AbstractBaseUser, ApiKeyUserMixin):
+from sillo.users import User
+from sillo.auth.apikey.mixins import ApiKeyUserMixin
+
+class AppUser(User, ApiKeyUserMixin):
     ...
 
-user = await User.load_user("1")
+user = await AppUser.load_user("1")
 
 full_key, apikey = await user.create_api_key(
     name="ci",

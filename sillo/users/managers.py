@@ -24,7 +24,7 @@ class UserManager:
         **extra_fields,
     ):
         if self.model is None:
-            from sillo.users.models import User as DefaultUser
+            from sillo.users.base import User as DefaultUser
 
             self.model = DefaultUser
 
@@ -65,21 +65,21 @@ class UserManager:
 
     async def get_by_id(self, user_id: int):
         if self.model is None:
-            from sillo.users.models import User as DefaultUser
+            from sillo.users.base import User as DefaultUser
 
             self.model = DefaultUser
         return await self.model.filter(id=user_id, is_active=True).first()
 
     async def get_by_email(self, email: str):
         if self.model is None:
-            from sillo.users.models import User as DefaultUser
+            from sillo.users.base import User as DefaultUser
 
             self.model = DefaultUser
         return await self.model.filter(email=email, is_active=True).first()
 
     async def get_by_username(self, username: str):
         if self.model is None:
-            from sillo.users.models import User as DefaultUser
+            from sillo.users.base import User as DefaultUser
 
             self.model = DefaultUser
         return await self.model.filter(username=username, is_active=True).first()

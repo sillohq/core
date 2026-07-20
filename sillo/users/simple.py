@@ -1,7 +1,7 @@
-from sillo.users.base import AbstractBaseUser
+from sillo.users.base import UserProtocol
 
 
-class SimpleUser(AbstractBaseUser):
+class SimpleUser(UserProtocol):
     def __init__(self, username: str, permissions: list[str] | None = None):
         self.username = username
         self.permissions = permissions or []
@@ -26,7 +26,7 @@ class SimpleUser(AbstractBaseUser):
         return cls(identity, [identity])
 
 
-class UnauthenticatedUser(AbstractBaseUser):
+class UnauthenticatedUser(UserProtocol):
     @property
     def is_authenticated(self) -> bool:
         return False

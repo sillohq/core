@@ -1,6 +1,11 @@
-from sillo.users.base import AbstractBaseUser, AnonymousUser, BaseUser
+from sillo.users.base import (
+    UserProtocol,
+    UserBaseModel,
+    AnonymousUser,
+    BaseUser,
+    User,
+)
 from sillo.users.managers import UserManager
-from sillo.users.models import User
 from sillo.users.password import (
     check_password,
     is_password_usable,
@@ -12,7 +17,8 @@ from sillo.users.password import (
 from sillo.users.simple import SimpleUser, UnauthenticatedUser
 
 __all__ = [
-    "AbstractBaseUser",
+    "UserProtocol",
+    "UserBaseModel",
     "BaseUser",
     "AnonymousUser",
     "User",

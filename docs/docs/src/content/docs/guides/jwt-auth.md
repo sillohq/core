@@ -97,10 +97,13 @@ The access token's payload looks like:
 When you need **refresh rotation, revocation, and reuse detection**, add `JWTUserMixin` to your user class. It persists each issued token in the `jwt_tokens` table and tracks families.
 
 ```python
-class User(Model, AbstractBaseUser, JWTUserMixin):
+from sillo.users import User
+from sillo.auth.jwt_auth.mixins import JWTUserMixin
+
+class AppUser(User, JWTUserMixin):
     ...
 
-user = await User.load_user("1")
+user = await AppUser.load_user("1")
 result = await user.issue_token_pair(secret=JWT_SECRET)
 # {"access_token", "refresh_token", "token_type", "token_family"}
 

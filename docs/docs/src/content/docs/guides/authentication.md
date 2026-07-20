@@ -145,7 +145,7 @@ You are not limited to one — compose them as above. Each has its own page:
 
 ## What a user object looks like
 
-Every `user_model` satisfies the `AbstractBaseUser` contract: `is_authenticated`, `identity`, `display_name`, `has_permission`, and a `load_user(identity)` classmethod. sillo ships a ready `User` model (Record/Tortoise-backed), a `SimpleUser` for tests, and `AnonymousUser` as the unauthenticated sentinel. The identity the middleware hands to `load_user` is a **string** (the backend's choice — for JWT it's the `sub` claim; for session, the stored user id; for API keys, the `user_id`).
+Every `user_model` satisfies the `UserProtocol` contract: `is_authenticated`, `identity`, `display_name`, `has_permission`, and a `load_user(identity)` classmethod. sillo ships a ready `User` model (Record/Tortoise-backed, built on `UserBaseModel`), a `SimpleUser` for tests, and `AnonymousUser` as the unauthenticated sentinel. The identity the middleware hands to `load_user` is a **string** (the backend's choice — for JWT it's the `sub` claim; for session, the stored user id; for API keys, the `user_id`).
 
 See [Users & User Models](/guides/users/) for the built-in `User`, building custom users, permissions, and password hashing.
 
@@ -202,7 +202,7 @@ If you keep that diagram in mind, every other auth feature in sillo is just a di
 ## Next steps
 
 - [Protecting Routes](/guides/protecting-routes/) — every `useAuth` option, scopes, permissions, subclassing
-- [Users & User Models](/guides/users/) — `User`, `AbstractBaseUser`, `SimpleUser`, passwords
+- [Users & User Models](/guides/users/) — `User`, `UserProtocol`, `UserBaseModel`, `SimpleUser`, passwords
 - [JWT Authentication](/guides/jwt-auth/) — issuing and verifying tokens
 - [Session Authentication](/guides/session-auth/) — `SessionGuard` and cookie login
 - [API Keys](/guides/api-keys/) — scoped, hashed keys
