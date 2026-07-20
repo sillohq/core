@@ -49,7 +49,7 @@ async def seed_admin():
     if not await AdminUser.get_or_none(email="admin@admin.com"):
         await AdminUser.create(
             email="admin@admin.com", username="admin",
-            password_hash=hash_password("admin"),
+            password="admin",
             is_active=True, is_superuser=True, role=role,
         )
         print("[startup] Default admin created: admin@admin.com / admin")

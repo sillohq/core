@@ -1,19 +1,39 @@
-"""sillo.services.admin.views — Template-based view handlers."""
+"""sillo.services.admin.views — Template-based view handlers.
+
+A Django-admin-level interface for sillo models:
+
+* Password fields are auto-detected and rendered with a secure widget
+  (reveal toggle + strength meter + confirmation). Plaintext is hashed on
+  save via :func:`sillo.helpers.hashing.hash_password`.
+* Many-to-many fields get a visual chip multi-select and are *actually*
+  persisted through the relation manager.
+* One-to-one / foreign-key fields get a searchable combobox.
+* List views support search, column sorting, ``list_filter`` filtering,
+  pagination, bulk actions, and per-row links.
+* Detail views show reverse relations (inline "show related" panels).
+* Every mutating action is permission-checked and audit-logged.
+"""
 
 from __future__ import annotations
-from sillo.services.admin.models import AdminActivity
 
 import math
 
+from tortoise import fields as tf
 from tortoise.fields.relational import (
+    BackwardFKRelation,
+    BackwardOneToOneRelation,
     ForeignKeyFieldInstance,
-    OneToOneFieldInstance,
     ManyToManyFieldInstance,
+    OneToOneFieldInstance,
 )
+from sillo.record.fields import PasswordField
+from sillo.helpers.hashing import hash_password, verify_password
 from .templating import render as _render
+from .models import AdminActivity
 
 FKAliases = (ForeignKeyFieldInstance, OneToOneFieldInstance)
 M2MAlias = ManyToManyFieldInstance
+
 
 _HIDDEN_FIELDS = frozenset(
     {
@@ -29,7 +49,28 @@ def _should_skip_field(field_name: str) -> bool:
     return field_name in _HIDDEN_FIELDS or field_name.endswith("_id")
 
 
-def _field_kind(field_obj) -> str:
+def _is_backward_relation(field_obj) -> bool:
+    """True for reverse (generated) relations like `books` / `profile`.
+
+    These are read-only views of related rows and must never be treated as
+    form inputs — passing them to ``Model.create`` raises a Tortoise error.
+    """
+    return isinstance(field_obj, (BackwardFKRelation, BackwardOneToOneRelation))
+
+
+def _is_password(field_obj, name: str = "") -> bool:
+    if isinstance(field_obj, PasswordField):
+        return True
+    if getattr(field_obj, "password", False):
+        return True
+    if name and "password" in name.lower():
+        return True
+    return False
+
+
+def _field_kind(field_obj, name: str = "") -> str:
+    if _is_password(field_obj, name):
+        return "password"
     if isinstance(field_obj, ManyToManyFieldInstance):
         return "m2m"
     if isinstance(field_obj, OneToOneFieldInstance):
@@ -80,22 +121,30 @@ async def _get_m2m_options(field_obj, current_ids=None):
     options = []
     for r in all_recs:
         pk = getattr(r, "pk", getattr(r, "id", None))
-        options.append({"pk": pk, "label": str(r), "selected": str(pk) in current})
+        options.append(
+            {"pk": pk, "label": str(r), "selected": str(pk) in current}
+        )
     return name, slug, options
 
 
-def _field_type_class(field_obj) -> str:
-    """Infer HTML input type."""
+def _field_widget(field_obj, name: str = "") -> str:
+    """Map a field to its input widget type."""
+    kind = _field_kind(field_obj, name)
+    if kind == "password":
+        return "password"
+    if kind in ("fk", "o2o", "m2m"):
+        return "relation" if kind != "m2m" else "m2m"
+    if isinstance(field_obj, tf.BooleanField):
+        return "checkbox"
     if hasattr(field_obj, "field_type"):
-        if field_obj.field_type is not None:
-            t = str(field_obj.field_type)
-            if "bool" in t:
-                return "checkbox"
-            if "int" in t or "float" in t or "decimal" in t:
-                return "number"
-            if "text" in t:
-                return "textarea"
-    return "text"
+        t = str(field_obj.field_type)
+        if "int" in t or "float" in t or "decimal" in t:
+            return "number"
+        if "text" in t:
+            return "textarea"
+    if isinstance(field_obj, tf.TextField):
+        return "textarea"
+    return "input"
 
 
 def _is_relation(field_obj) -> bool:
@@ -106,9 +155,7 @@ def _field_label(field_name: str) -> str:
     return field_name.replace("_", " ").title()
 
 
-async def _resolve_fk_value(
-    obj, field_name: str, field_obj, admin_site, *, as_link: bool = True
-):
+async def _resolve_fk_value(obj, field_name: str, field_obj, admin_site, *, as_link: bool = True):
     """Return (display_text, link_url_or_None)."""
     try:
         related = await getattr(obj, field_name)
@@ -140,6 +187,21 @@ async def _resolve_m2m_value(obj, field_name: str, field_obj, admin_site):
         link = f"{admin_site.prefix}/{related_slug}/{pk}/" if pk else None
         results.append((label, link))
     return results
+
+
+async def _collect_form(request):
+    """Return (get, getlist) helpers over the posted form."""
+    form = await request.form
+
+    def get(key):
+        v = form.get(key)
+        return v if isinstance(v, str) else (v[0] if isinstance(v, (list, tuple)) else v)
+
+    def getlist(key):
+        v = form.getlist(key)
+        return [x for x in v if isinstance(x, str)]
+
+    return get, getlist
 
 
 class BaseView:
@@ -176,6 +238,135 @@ class BaseView:
             "has_roles": True,
         }
 
+    def _forbidden(self, response):
+        return response.redirect(f"{self.site.prefix}/", status_code=302)
+
+    async def _log(self, request, action, model_name, object_id=None, detail=None):
+        try:
+            ctx = self.base_ctx(request)
+            await AdminActivity.create(
+                user_email=ctx.get("user_email", "system"),
+                action=action,
+                model_name=model_name,
+                object_id=str(object_id) if object_id is not None else None,
+                detail=detail,
+            )
+        except Exception:
+            pass
+
+    def _form_field_names(self, meta, admin, is_create):
+        raw = admin.get_fields(add=is_create)
+        if raw:
+            names = [f for f in raw if f in meta.fields_map]
+        else:
+            names = list(meta.fields_map.keys())
+        exclude = list(admin.exclude or [])
+        return [
+            f
+            for f in names
+            if f not in exclude
+            and not _should_skip_field(f)
+            and not _is_backward_relation(meta.fields_map[f])
+        ]
+
+    async def _build_form_fields(self, meta, admin, obj=None, is_create=True):
+        """Build the field descriptor list used by create/update templates."""
+        is_update = not is_create
+        names = self._form_field_names(meta, admin, is_create)
+        fields = []
+        for f_name in names:
+            field_obj = meta.fields_map[f_name]
+            kind = _field_kind(field_obj, f_name)
+            label = _field_label(f_name)
+            readonly = (not is_create) and f_name in admin.readonly_fields
+            required = not getattr(field_obj, "null", True)
+
+            if kind == "password":
+                fields.append(
+                    {
+                        "widget": "password",
+                        "name": f_name,
+                        "label": label,
+                        "value": "",
+                        "required": required and is_create,
+                        "readonly": readonly,
+                        "help": "Leave blank to keep unchanged."
+                        if is_update
+                        else "Use a strong password (min 8 characters).",
+                    }
+                )
+                continue
+
+            if isinstance(field_obj, FKAliases):
+                rel_name, rel_slug, options = await _get_fk_options(
+                    field_obj,
+                    getattr(obj, f_name, None)
+                    and getattr(
+                        getattr(obj, f_name),
+                        "pk",
+                        getattr(getattr(obj, f_name), "id", None),
+                    ),
+                )
+                fields.append(
+                    {
+                        "widget": "relation",
+                        "kind": kind,
+                        "name": f_name,
+                        "label": label,
+                        "rel_name": rel_name,
+                        "rel_slug": rel_slug,
+                        "options": options,
+                        "value": "",
+                        "required": required,
+                        "readonly": readonly,
+                    }
+                )
+                continue
+
+            if isinstance(field_obj, M2MAlias):
+                current_ids = None
+                if obj is not None:
+                    try:
+                        rels = await getattr(obj, f_name).all()
+                        current_ids = [
+                            str(getattr(r, "pk", getattr(r, "id"))) for r in rels
+                        ]
+                    except Exception:
+                        current_ids = []
+                rel_name, rel_slug, options = await _get_m2m_options(
+                    field_obj, current_ids
+                )
+                fields.append(
+                    {
+                        "widget": "m2m",
+                        "name": f_name,
+                        "label": label,
+                        "rel_name": rel_name,
+                        "rel_slug": rel_slug,
+                        "options": options,
+                        "value": [],
+                        "required": required,
+                        "readonly": readonly,
+                    }
+                )
+                continue
+
+            # Scalar field
+            widget = _field_widget(field_obj, f_name)
+            raw = getattr(obj, f_name, "") if obj is not None else ""
+            fields.append(
+                {
+                    "widget": widget,
+                    "name": f_name,
+                    "label": label,
+                    "value": str(raw) if raw is not None else "",
+                    "required": required,
+                    "readonly": readonly,
+                    "help": "",
+                }
+            )
+        return fields
+
 
 class DashboardView(BaseView):
     async def handle(self, request, response):
@@ -193,8 +384,25 @@ class DashboardView(BaseView):
                 count = await m.all().count()
             except Exception:
                 pass
+            admin_cls = self.site.registry.get(m)
+            can_add = False
+            can_change = False
+            can_delete = False
+            try:
+                can_add = bool(admin_cls.has_add_permission(request))
+                can_change = bool(admin_cls.has_change_permission(request))
+                can_delete = bool(admin_cls.has_delete_permission(request))
+            except Exception:
+                pass
             dashboard_models.append(
-                {"name": m.__name__, "slug": m.__name__.lower(), "count": count}
+                {
+                    "name": m.__name__,
+                    "slug": m.__name__.lower(),
+                    "count": count,
+                    "can_add": can_add,
+                    "can_change": can_change,
+                    "can_delete": can_delete,
+                }
             )
         ctx["dashboard_models"] = dashboard_models
         ctx["recent_activity"] = (
@@ -215,17 +423,22 @@ class DashboardView(BaseView):
 
 class ListView(BaseView):
     async def handle(self, request, response):
+        if not self.admin_class.has_view_permission(request):
+            return self._forbidden(response)
+
         ctx = self.base_ctx(request)
         ctx["title"] = self.model_name
         admin = self.admin_class
+        meta = self.model_class._meta
         qs = self.model_class.all()
 
         page = int(request.query_params.get("page", 1))
-        page_size = 25
+        page_size = admin.list_per_page or 25
         sort = request.query_params.get("sort", "id")
         d = request.query_params.get("dir", "asc")
         query = request.query_params.get("q", "")
 
+        # ── Search ───────────────────────────────────────────────────────
         if query and admin.search_fields:
             from tortoise.expressions import Q
 
@@ -234,6 +447,58 @@ class ListView(BaseView):
                 q_filter |= Q(**{f"{f}__icontains": query})
             qs = qs.filter(q_filter)
 
+        # ── Filters (list_filter) ───────────────────────────────────────
+        filters = []
+        active_filters = {}
+        for f in admin.get_list_filter():
+            if f not in meta.fields_map:
+                continue
+            fobj = meta.fields_map[f]
+            ftype = _field_kind(fobj, f)
+            param = f"f_{f}"
+            val = request.query_params.get(param, "")
+            spec = {
+                "name": f,
+                "param": param,
+                "label": _field_label(f),
+                "value": val,
+                "type": "text",
+                "options": [],
+            }
+            if isinstance(fobj, tf.BooleanField):
+                spec["type"] = "bool"
+                spec["options"] = [
+                    {"value": "1", "label": "Yes", "selected": val == "1"},
+                    {"value": "0", "label": "No", "selected": val == "0"},
+                ]
+            elif ftype in ("fk", "o2o"):
+                _, _, opts = await _get_fk_options(fobj)
+                spec["type"] = "relation"
+                spec["options"] = [
+                    {"value": "", "label": "All", "selected": val == ""}
+                ] + [
+                    {
+                        "value": str(o["pk"]),
+                        "label": o["label"],
+                        "selected": str(o["pk"]) == val,
+                    }
+                    for o in opts
+                ]
+            if val:
+                active_filters[f] = val
+            filters.append(spec)
+
+        for f, val in active_filters.items():
+            fobj = meta.fields_map[f]
+            ftype = _field_kind(fobj, f)
+            if isinstance(fobj, tf.BooleanField):
+                qs = qs.filter(**{f: val == "1"})
+            elif ftype in ("fk", "o2o"):
+                qs = qs.filter(**{f + "_id": int(val)})
+            else:
+                qs = qs.filter(**{f: val})
+
+        # ── Sorting + pagination ─────────────────────────────────────────
         dir_prefix = "-" if d == "desc" else ""
         try:
             qs = qs.order_by(f"{dir_prefix}{sort}")
@@ -246,58 +511,90 @@ class ListView(BaseView):
         items = await qs.offset(offset).limit(page_size)
 
         columns = [c for c in admin.list_display if not _should_skip_field(c)]
-
-        meta = self.model_class._meta
         column_info = []
         for col in columns:
-            field_obj = meta.fields_map.get(col) if meta else None
+            field_obj = meta.fields_map.get(col)
             col_type = "text"
             if field_obj:
-                kind = _field_kind(field_obj)
-                if kind == "fk":
-                    col_type = "fk"
-                elif kind == "o2o":
+                kind = _field_kind(field_obj, col)
+                if kind in ("fk", "o2o"):
                     col_type = "fk"
                 elif kind == "m2m":
                     col_type = "m2m"
-            column_info.append({"name": col, "type": col_type, "field_obj": field_obj})
+                elif kind == "password":
+                    col_type = "password"
+            column_info.append(
+                {"name": col, "type": col_type, "field_obj": field_obj}
+            )
 
         rows = []
         for item in items:
             row_cells = []
             for ci in column_info:
-                raw = ""
                 if ci["type"] == "fk" and ci["field_obj"]:
                     label, link = await _resolve_fk_value(
                         item, ci["name"], ci["field_obj"], self.site
                     )
-                    raw = {"label": label, "link": link}
+                    row_cells.append({"value": label, "link": link, "type": "fk"})
                 elif ci["type"] == "m2m" and ci["field_obj"]:
                     related = await _resolve_m2m_value(
                         item, ci["name"], ci["field_obj"], self.site
                     )
-                    raw = {"label": f"{len(related)} items", "link": None}
+                    row_cells.append(
+                        {
+                            "value": f"{len(related)} item(s)",
+                            "link": None,
+                            "type": "m2m",
+                            "items": related,
+                        }
+                    )
+                elif ci["type"] == "password":
+                    row_cells.append(
+                        {"value": "••••••••", "link": None, "type": "password"}
+                    )
                 else:
-                    raw = str(getattr(item, ci["name"], ""))
-                row_cells.append(raw)
+                    raw = getattr(item, ci["name"], "")
+                    row_cells.append(
+                        {
+                            "value": "—" if raw in (None, "") else str(raw),
+                            "link": None,
+                            "type": "text",
+                        }
+                    )
             rows.append({"pk": item.pk, "cells": row_cells})
+
+        link_cols = [
+            c
+            for c in (admin.list_display_links or [])
+            if not _should_skip_field(c)
+        ]
+        if not link_cols and columns:
+            link_cols = [columns[0]]
 
         ctx.update(
             {
                 "total": total,
                 "page": page,
+                "page_size": page_size,
                 "total_pages": total_pages,
                 "sort": sort,
                 "dir": d,
                 "query": query,
                 "columns": columns,
                 "column_info": column_info,
+                "link_cols": link_cols,
                 "rows": rows,
-                "page_range": list(
-                    range(max(1, page - 2), min(total_pages, page + 2) + 1)
-                )
-                if total_pages > 1
-                else [],
+                "filters": filters,
+                "active_filter_count": len(active_filters),
+                "bulk_actions": list(admin.actions or []),
+                "can_add": bool(admin.has_add_permission(request)),
+                "can_change": bool(admin.has_change_permission(request)),
+                "can_delete": bool(admin.has_delete_permission(request)),
+                "page_range": (
+                    list(range(max(1, page - 2), min(total_pages, page + 2) + 1))
+                    if total_pages > 1
+                    else []
+                ),
             }
         )
         return response.html(_render("list.html", **ctx))
@@ -305,6 +602,8 @@ class ListView(BaseView):
 
 class DetailView(BaseView):
     async def handle(self, request, response, id):
+        if not self.admin_class.has_view_permission(request):
+            return self._forbidden(response)
         ctx = self.base_ctx(request)
         try:
             obj = await self.model_class.get(pk=id)
@@ -312,24 +611,32 @@ class DetailView(BaseView):
             return response.text("Not Found", status_code=404)
         ctx["title"] = f"{self.model_name} #{id}"
         ctx["object_id"] = id
+        ctx["can_change"] = bool(self.admin_class.has_change_permission(request, obj))
+        ctx["can_delete"] = bool(self.admin_class.has_delete_permission(request, obj))
 
-        meta = self.model_class._meta if hasattr(self.model_class, "_meta") else None
+        meta = self.model_class._meta
         fields = []
         display_cols = [
             c for c in self.admin_class.list_display if not _should_skip_field(c)
         ]
         for f in display_cols:
             label = _field_label(f)
-            field_obj = meta.fields_map.get(f) if meta else None
-            kind = _field_kind(field_obj) if field_obj else "text"
-            if kind in ("fk", "o2o"):
+            field_obj = meta.fields_map.get(f)
+            kind = _field_kind(field_obj, f) if field_obj else "text"
+            if kind == "password":
+                fields.append(
+                    {"label": label, "value": "••••••••", "type": "password"}
+                )
+            elif kind in ("fk", "o2o"):
                 display, link = await _resolve_fk_value(obj, f, field_obj, self.site)
                 fields.append(
                     {"label": label, "value": display, "link": link, "type": "fk"}
                 )
             elif kind == "m2m":
                 related_list = await _resolve_m2m_value(obj, f, field_obj, self.site)
-                fields.append({"label": label, "value": related_list, "type": "m2m"})
+                fields.append(
+                    {"label": label, "value": related_list, "type": "m2m"}
+                )
             else:
                 fields.append(
                     {
@@ -340,106 +647,152 @@ class DetailView(BaseView):
                     }
                 )
         ctx["fields"] = fields
+
+        # ── Reverse relations (inline "show related") ────────────────────
+        reverse = []
+        back_fields = (
+            list(getattr(meta, "backward_fk_fields", set()))
+            + list(getattr(meta, "backward_o2o_fields", set()))
+            + list(getattr(meta, "m2m_fields", set()))
+        )
+        for bf in back_fields:
+            try:
+                field_obj = meta.fields_map[bf]
+                rel_model = getattr(field_obj, "related_model", None)
+                if rel_model is None:
+                    continue
+                slug = rel_model.__name__.lower()
+                manager = getattr(obj, bf)
+                if hasattr(manager, "all"):
+                    related = await manager.all()
+                else:
+                    related = list(manager) if manager else []
+                # find the forward fk field name on the related model
+                fwd = None
+                for fn, fo in rel_model._meta.fields_map.items():
+                    if (
+                        isinstance(fo, (ForeignKeyFieldInstance, OneToOneFieldInstance))
+                        and getattr(fo, "related_model", None) is self.model_class
+                    ):
+                        fwd = fn
+                        break
+                # find the forward fk field name on the related model
+                fwd = None
+                for fn, fo in rel_model._meta.fields_map.items():
+                    if (
+                        isinstance(fo, (ForeignKeyFieldInstance, OneToOneFieldInstance))
+                        and getattr(fo, "related_model", None) is self.model_class
+                    ):
+                        fwd = fn
+                        break
+                list_link = (
+                    f"{self.site.prefix}/{slug}/?f_{fwd}={obj.pk}"
+                    if fwd
+                    else f"{self.site.prefix}/{slug}/"
+                )
+                items = [
+                    {
+                        "label": str(r),
+                        "link": f"{self.site.prefix}/{slug}/{getattr(r, 'pk', getattr(r, 'id'))}/",
+                    }
+                    for r in related[:10]
+                ]
+                reverse.append(
+                    {
+                        "label": _field_label(bf),
+                        "model_name": rel_model.__name__,
+                        "slug": slug,
+                        "count": len(related),
+                        "list_link": list_link,
+                        "rows": items,
+                    }
+                )
+            except Exception:
+                continue
+        ctx["reverse_relations"] = reverse
+
         return response.html(_render("detail.html", **ctx))
 
 
 class CreateView(BaseView):
     async def handle(self, request, response):
+        if not self.admin_class.has_add_permission(request):
+            return self._forbidden(response)
         ctx = self.base_ctx(request)
         ctx["title"] = f"Add {self.model_name}"
         ctx["error"] = ""
-        meta = self.model_class._meta if hasattr(self.model_class, "_meta") else None
-        fields = []
-        if meta:
-            for f_name in meta.fields_map:
-                if _should_skip_field(f_name):
-                    continue
-                field_obj = meta.fields_map[f_name]
-                if _is_relation(field_obj):
-                    fields.append(await self._build_rel_field(field_obj, f_name, None))
-                else:
-                    ftype = _field_type_class(field_obj)
-                    fields.append(
-                        {
-                            "name": f_name,
-                            "label": _field_label(f_name),
-                            "type": ftype,
-                            "value": "",
-                            "kind": "scalar",
-                            "required": not getattr(field_obj, "null", True),
-                            "help": "",
-                        }
-                    )
+        meta = self.model_class._meta
+        fields = await self._build_form_fields(meta, self.admin_class, is_create=True)
         ctx["fields"] = fields
 
         if request.method == "POST":
-            data = dict(await request.form)
+            get, getlist = await _collect_form(request)
             try:
-                create_kwargs = await self._prepare_rel_data(data, meta)
+                create_kwargs = {}
+                m2m_data = {}
+                for f_name in self._form_field_names(meta, self.admin_class, True):
+                    field_obj = meta.fields_map[f_name]
+                    kind = _field_kind(field_obj, f_name)
+                    if kind == "password":
+                        pw = get(f_name) or ""
+                        confirm = get(f_name + "__confirm") or ""
+                        if not pw:
+                            if not getattr(field_obj, "null", True):
+                                raise ValueError(f"{_field_label(f_name)} is required")
+                            continue
+                        if pw != confirm:
+                            raise ValueError("Passwords do not match")
+                        if len(pw) < 8:
+                            raise ValueError(
+                                "Password must be at least 8 characters"
+                            )
+                        create_kwargs[f_name] = hash_password(pw)
+                    elif kind in ("fk", "o2o"):
+                        v = get(f_name)
+                        if v:
+                            create_kwargs[f"{f_name}_id"] = int(v)
+                        elif getattr(field_obj, "null", True):
+                            create_kwargs[f"{f_name}_id"] = None
+                    elif kind == "m2m":
+                        pks = [int(x) for x in getlist(f_name) if x]
+                        m2m_data[f_name] = pks
+                    else:
+                        if isinstance(field_obj, tf.BooleanField):
+                            create_kwargs[f_name] = bool(get(f_name))
+                        else:
+                            v = get(f_name)
+                            if v not in (None, ""):
+                                create_kwargs[f_name] = v
+                            elif getattr(field_obj, "null", True):
+                                create_kwargs[f_name] = None
                 obj = await self.model_class.create(**create_kwargs)
+                for name, pks in m2m_data.items():
+                    if not pks:
+                        continue
+                    rel_model = meta.fields_map[name].related_model
+                    rels = [await rel_model.get(pk=pk) for pk in pks]
+                    await getattr(obj, name).add(*rels)
+                await self._log(request, "create", self.model_name, obj.pk)
                 return response.redirect(
-                    f"{self.site.prefix}/{self.model_slug}/{obj.pk}/", status_code=302
+                    f"{self.site.prefix}/{self.model_slug}/{obj.pk}/",
+                    status_code=302,
                 )
             except Exception as e:
                 ctx["error"] = str(e)
                 for fld in fields:
-                    fld["value"] = data.get(fld["name"], "")
+                    if fld["widget"] == "password":
+                        fld["value"] = ""
+                    elif fld["widget"] in ("relation", "m2m"):
+                        pass
+                    else:
+                        fld["value"] = get(fld["name"]) or ""
         return response.html(_render("create.html", **ctx))
-
-    async def _build_rel_field(self, field_obj, f_name, current_value):
-        kind = _field_kind(field_obj)
-        label = _field_label(f_name)
-        if kind in ("fk", "o2o"):
-            rel_name, rel_slug, options = await _get_fk_options(
-                field_obj, current_value
-            )
-            return {
-                "name": f_name,
-                "label": label,
-                "kind": kind,
-                "rel_name": rel_name,
-                "rel_slug": rel_slug,
-                "options": options,
-                "value": str(current_value or ""),
-                "required": not getattr(field_obj, "null", True),
-            }
-        if kind == "m2m":
-            rel_name, rel_slug, options = await _get_m2m_options(
-                field_obj, current_value
-            )
-            return {
-                "name": f_name,
-                "label": label,
-                "kind": "m2m",
-                "rel_name": rel_name,
-                "rel_slug": rel_slug,
-                "options": options,
-                "value": [],
-            }
-        return None
-
-    async def _prepare_rel_data(self, data, meta):
-        """Convert form data to Tortoise-compatible kwargs."""
-        create_kwargs = {}
-        for k, v in data.items():
-            if k not in meta.fields_map:
-                continue
-            field_obj = meta.fields_map[k]
-            kind = _field_kind(field_obj)
-            if kind in ("fk", "o2o"):
-                if v:
-                    create_kwargs[f"{k}_id"] = int(v)
-                elif getattr(field_obj, "null", True):
-                    create_kwargs[f"{k}_id"] = None
-            elif kind == "m2m":
-                pass
-            else:
-                create_kwargs[k] = v
-        return create_kwargs
 
 
 class UpdateView(BaseView):
     async def handle(self, request, response, id):
+        if not self.admin_class.has_change_permission(request):
+            return self._forbidden(response)
         ctx = self.base_ctx(request)
         ctx["error"] = ""
         try:
@@ -449,108 +802,66 @@ class UpdateView(BaseView):
         ctx["title"] = f"Edit {self.model_name} #{id}"
         ctx["object_id"] = id
 
-        meta = self.model_class._meta if hasattr(self.model_class, "_meta") else None
-        fields = []
-        if meta:
-            for f_name in meta.fields_map:
-                if _should_skip_field(f_name):
-                    continue
-                field_obj = meta.fields_map[f_name]
-                is_readonly = f_name in self.admin_class.readonly_fields
-                if _is_relation(field_obj):
-                    kind = _field_kind(field_obj)
-                    current = getattr(obj, f_name, None)
-                    current_pk = (
-                        getattr(current, "pk", getattr(current, "id", None))
-                        if current and not isinstance(current, (list, type(None)))
-                        else None
-                    )
-                    fld = await self._build_rel_field(field_obj, f_name, current_pk)
-                    if fld:
-                        fld["readonly"] = is_readonly
-                        fields.append(fld)
-                else:
-                    ftype = _field_type_class(field_obj)
-                    raw = getattr(obj, f_name, "")
-                    fields.append(
-                        {
-                            "name": f_name,
-                            "label": _field_label(f_name),
-                            "type": ftype,
-                            "value": str(raw) if raw is not None else "",
-                            "kind": "scalar",
-                            "readonly": is_readonly,
-                            "required": not getattr(field_obj, "null", True),
-                        }
-                    )
+        meta = self.model_class._meta
+        fields = await self._build_form_fields(
+            meta, self.admin_class, obj=obj, is_create=False
+        )
         ctx["fields"] = fields
 
         if request.method == "POST":
-            data = dict(await request.form)
+            get, getlist = await _collect_form(request)
             try:
-                for k, v in data.items():
-                    if (
-                        k not in meta.fields_map
-                        or k in self.admin_class.readonly_fields
-                    ):
+                for f_name in self._form_field_names(meta, self.admin_class, False):
+                    if f_name in self.admin_class.readonly_fields:
                         continue
-                    field_obj = meta.fields_map[k]
-                    kind = _field_kind(field_obj)
-                    if kind in ("fk", "o2o"):
-                        setattr(obj, f"{k}_id", int(v) if v else None)
+                    field_obj = meta.fields_map[f_name]
+                    kind = _field_kind(field_obj, f_name)
+                    if kind == "password":
+                        pw = get(f_name) or ""
+                        if not pw:
+                            continue  # keep existing password
+                        confirm = get(f_name + "__confirm") or ""
+                        if pw != confirm:
+                            raise ValueError("Passwords do not match")
+                        if len(pw) < 8:
+                            raise ValueError(
+                                "Password must be at least 8 characters"
+                            )
+                        setattr(obj, f_name, hash_password(pw))
+                    elif kind in ("fk", "o2o"):
+                        v = get(f_name)
+                        setattr(obj, f"{f_name}_id", int(v) if v else None)
                     elif kind == "m2m":
-                        pass
+                        pks = [int(x) for x in getlist(f_name) if x]
+                        rel_model = field_obj.related_model
+                        rels = [await rel_model.get(pk=pk) for pk in pks]
+                        mgr = getattr(obj, f_name)
+                        await mgr.clear()
+                        await mgr.add(*rels)
                     else:
-                        setattr(obj, k, v)
+                        if isinstance(field_obj, tf.BooleanField):
+                            setattr(obj, f_name, bool(get(f_name)))
+                        else:
+                            setattr(obj, f_name, get(f_name) or None)
                 await obj.save()
+                await self._log(request, "update", self.model_name, id)
                 return response.redirect(
                     f"{self.site.prefix}/{self.model_slug}/{id}/", status_code=302
                 )
             except Exception as e:
                 ctx["error"] = str(e)
                 for fld in fields:
-                    fld["value"] = data.get(fld["name"], fld.get("value", ""))
+                    if fld["widget"] == "password":
+                        fld["value"] = ""
+                    elif fld["widget"] not in ("relation", "m2m"):
+                        fld["value"] = get(fld["name"]) or ""
         return response.html(_render("update.html", **ctx))
-
-    async def _build_rel_field(self, field_obj, f_name, current_value):
-        kind = _field_kind(field_obj)
-        label = _field_label(f_name)
-        if kind in ("fk", "o2o"):
-            rel_name, rel_slug, options = await _get_fk_options(
-                field_obj, current_value
-            )
-            return {
-                "name": f_name,
-                "label": label,
-                "kind": kind,
-                "rel_name": rel_name,
-                "rel_slug": rel_slug,
-                "options": options,
-                "value": str(current_value or ""),
-                "required": not getattr(field_obj, "null", True),
-            }
-        if kind == "m2m":
-            current_ids = None
-            try:
-                rel_name, rel_slug, options = await _get_m2m_options(
-                    field_obj, current_ids
-                )
-                return {
-                    "name": f_name,
-                    "label": label,
-                    "kind": "m2m",
-                    "rel_name": rel_name,
-                    "rel_slug": rel_slug,
-                    "options": options,
-                    "value": [],
-                }
-            except Exception:
-                pass
-        return None
 
 
 class DeleteView(BaseView):
     async def handle(self, request, response, id):
+        if not self.admin_class.has_delete_permission(request):
+            return self._forbidden(response)
         ctx = self.base_ctx(request)
         try:
             obj = await self.model_class.get(pk=id)
@@ -559,11 +870,35 @@ class DeleteView(BaseView):
         ctx["title"] = f"Delete {self.model_name} #{id}"
         ctx["object_id"] = id
         if request.method == "POST":
+            await self._log(request, "delete", self.model_name, id)
             await obj.delete()
             return response.redirect(
                 f"{self.site.prefix}/{self.model_slug}/", status_code=302
             )
         return response.html(_render("delete.html", **ctx))
+
+
+class BulkView(BaseView):
+    """Handle bulk actions (e.g. delete_selected) submitted from the list."""
+
+    async def handle(self, request, response):
+        if request.method != "POST":
+            return response.redirect(
+                f"{self.site.prefix}/{self.model_slug}/", status_code=302
+            )
+        if not self.admin_class.has_delete_permission(request):
+            return self._forbidden(response)
+        get, getlist = await _collect_form(request)
+        action = get("action") or ""
+        ids = [int(x) for x in getlist("bulk_ids") if x]
+        if action == "delete_selected" and ids:
+            await self.model_class.filter(pk__in=ids).delete()
+            await self._log(
+                request, "delete", self.model_name, None, f"bulk:{ids}"
+            )
+        return response.redirect(
+            f"{self.site.prefix}/{self.model_slug}/", status_code=302
+        )
 
 
 class LoginView(BaseView):
@@ -574,11 +909,19 @@ class LoginView(BaseView):
             "error": "",
         }
         if request.method == "POST":
-            data = dict(await request.form)
+            get, _ = await _collect_form(request)
             ok = await self.site.auth.login(
-                request, data.get("email", ""), data.get("password", "")
+                request, get("email") or "", get("password") or ""
             )
             if ok:
+                try:
+                    await AdminActivity.create(
+                        user_email=get("email") or "unknown",
+                        action="login",
+                        model_name="AdminUser",
+                    )
+                except Exception:
+                    pass
                 return response.redirect(f"{self.site.prefix}/", status_code=302)
             ctx["error"] = "Invalid credentials"
         return response.html(_render("login.html", **ctx))

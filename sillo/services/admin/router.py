@@ -17,6 +17,7 @@ class AdminRouter:
             CreateView,
             UpdateView,
             DeleteView,
+            BulkView,
             LoginView,
         )
 
@@ -69,6 +70,12 @@ class AdminRouter:
                     self._view(DeleteView, model_cls, admin_cls),
                     methods=["GET", "POST"],
                     name=f"admin-{name}-delete",
+                ),
+                Route(
+                    f"{b}bulk/",
+                    self._view(BulkView, model_cls, admin_cls),
+                    methods=["POST"],
+                    name=f"admin-{name}-bulk",
                 ),
             ]
         return routes

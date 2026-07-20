@@ -3,51 +3,112 @@
 <div class="toolbar">
     <div>
         <h2>{{ model_name }}</h2>
-        <div class="subtitle">{{ total }} record(s)</div>
+        <div class="subtitle">{{ total }} record(s){% if active_filter_count %} · {{ active_filter_count }} filter(s) active{% endif %}</div>
     </div>
     <div class="toolbar-actions">
-        <a href="{{ site_prefix }}/{{ model_slug }}/create/" class="btn btn-primary">+ Add {{ model_name }}</a>
+        {% if can_add %}<a href="{{ site_prefix }}/{{ model_slug }}/create/" class="btn btn-primary">+ Add {{ model_name }}</a>{% endif %}
     </div>
 </div>
+
+{% if search_fields_present is not defined %}{% set search_fields_present = true %}{% endif %}
 <form method="GET" class="search-bar">
     <input type="text" name="q" placeholder="Search {{ model_name }}..." value="{{ query }}">
     <button type="submit" class="btn btn-secondary">Search</button>
-    {% if query %}<a href="?" class="btn btn-ghost">Clear</a>{% endif %}
+    {% if query %}<a href="?{% for f in filters %}{% if f.value %}{{ f.param }}={{ f.value }}&{% endif %}{% endfor %}" class="btn btn-ghost">Clear</a>{% endif %}
 </form>
-<div class="table-wrap">
-    <table>
-        <thead><tr>
-            {% for col in columns %}
-            <th><a href="?sort={{ col }}&dir={% if sort == col and dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ query }}">{{ col }}</a></th>
-            {% endfor %}
-            <th style="width:48px;"></th>
-        </tr></thead>
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                {% for cell in row.cells %}
-                <td>{% if cell.link %}<a href="{{ cell.link }}" style="color:var(--accent);text-decoration:none;font-weight:500;">{{ cell.label }}</a>{% else %}{{ cell }}{% endif %}</td>
+
+{% if filters %}
+<form method="GET" class="filter-bar" id="filter-form">
+    {% for f in filters %}
+    <div class="filter-group">
+        <label>{{ f.label }}</label>
+        {% if f.type == "bool" or f.type == "relation" %}
+        <select name="{{ f.param }}" onchange="this.form.submit()">
+            {% for o in f.options %}<option value="{{ o.value }}" {% if o.selected %}selected{% endif %}>{{ o.label }}</option>{% endfor %}
+        </select>
+        {% else %}
+        <input type="text" name="{{ f.param }}" value="{{ f.value }}" placeholder="Filter {{ f.label }}..." onchange="this.form.submit()">
+        {% endif %}
+    </div>
+    {% endfor %}
+    <input type="hidden" name="q" value="{{ query }}">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="dir" value="{{ dir }}">
+    {% if active_filter_count %}<a href="?q={{ query }}" class="filter-clear">Clear filters</a>{% endif %}
+</form>
+{% endif %}
+
+<form method="POST" action="{{ site_prefix }}/{{ model_slug }}/bulk/">
+    <div class="bulk-bar" id="bulk-bar" style="display:none;">
+        <span class="count">0 selected</span>
+        <div class="bulk-actions" style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+            <select name="action">
+                {% for a in bulk_actions %}<option value="{{ a }}">{{ a.replace('_', ' ') | title }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-danger btn-sm">Apply</button>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead><tr>
+                <th class="checkbox-col"><input type="checkbox" class="col-check" onclick="bulkToggleAll(this)"></th>
+                {% for col in columns %}
+                <th><a href="?sort={{ col }}&dir={% if sort == col and dir == 'asc' %}desc{% else %}asc{% endif %}&q={{ query }}{% for f in filters %}{% if f.value %}&{{ f.param }}={{ f.value }}{% endif %}{% endfor %}">{{ col }}{% if sort == col %}{% if dir == 'asc' %} ▲{% else %} ▼{% endif %}{% endif %}</a></th>
                 {% endfor %}
-                <td class="actions-cell">
-                    <button class="actions-trigger" aria-label="Actions">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                    </button>
-                    <div class="actions-dropdown">
-                        <a href="{{ site_prefix }}/{{ model_slug }}/{{ row.pk }}/">View</a>
-                        <a href="{{ site_prefix }}/{{ model_slug }}/{{ row.pk }}/update/">Edit</a>
-                        <a href="{{ site_prefix }}/{{ model_slug }}/{{ row.pk }}/delete/" class="danger">Delete</a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+                <th style="width:48px;"></th>
+            </tr></thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td class="checkbox-col"><input type="checkbox" class="row-check" name="bulk_ids" value="{{ row.pk }}"></td>
+                    {% for cell in row.cells %}
+                    {% set cidx = loop.index0 %}
+                    <td>
+                        {% if cell.type == "fk" and cell.link %}
+                            <a class="cell-link" href="{{ cell.link }}">{{ cell.value }}</a>
+                        {% elif cell.type == "m2m" %}
+                            <div class="col-chips">
+                                {% for item in cell.items %}{% if item[1] %}<a class="mini-chip" href="{{ item[1] }}">{{ item[0] }}</a>{% else %}<span class="mini-chip">{{ item[0] }}</span>{% endif %}{% endfor %}
+                                {% if not cell.items %}<span class="mini-chip">—</span>{% endif %}
+                            </div>
+                        {% elif cell.type == "password" %}
+                            <span style="color:var(--text3);">••••••••</span>
+                        {% else %}
+                            {% if columns[cidx] in link_cols and row.pk and cell.value != "—" %}
+                                <a class="cell-link" href="{{ site_prefix }}/{{ model_slug }}/{{ row.pk }}/">{{ cell.value }}</a>
+                            {% else %}
+                                {{ cell.value }}
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="actions-cell">
+                        <button class="actions-trigger" aria-label="Actions">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                        </button>
+                        <div class="actions-dropdown">
+                            <a href="{{ site_prefix }}/{{ model_slug }}/{{ row.pk }}/">View</a>
+                            {% if can_change %}<a href="{{ site_prefix }}/{{ model_slug }}/{{ row.pk }}/update/">Edit</a>{% endif %}
+                            {% if can_delete %}<a href="{{ site_prefix }}/{{ model_slug }}/{{ row.pk }}/delete/" class="danger">Delete</a>{% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not rows %}
+                <tr><td colspan="{{ columns|length + 2 }}"><div class="empty"><h3>No {{ model_name }} found</h3></div></td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
 {% if page_range %}
 <div class="pagination">
+    {% if page > 1 %}<a href="?page=1&sort={{ sort }}&dir={{ dir }}&q={{ query }}{% for f in filters %}{% if f.value %}&{{ f.param }}={{ f.value }}{% endif %}{% endfor %}">«</a>{% endif %}
     {% for p in page_range %}
-    {% if p == page %}<span class="current">{{ p }}</span>{% else %}<a href="?page={{ p }}&sort={{ sort }}&dir={{ dir }}&q={{ query }}">{{ p }}</a>{% endif %}
+    {% if p == page %}<span class="current">{{ p }}</span>{% else %}<a href="?page={{ p }}&sort={{ sort }}&dir={{ dir }}&q={{ query }}{% for f in filters %}{% if f.value %}&{{ f.param }}={{ f.value }}{% endif %}{% endfor %}">{{ p }}</a>{% endif %}
     {% endfor %}
+    {% if page < total_pages %}<a href="?page={{ total_pages }}&sort={{ sort }}&dir={{ dir }}&q={{ query }}{% for f in filters %}{% if f.value %}&{{ f.param }}={{ f.value }}{% endif %}{% endfor %}">»</a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}

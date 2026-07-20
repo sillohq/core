@@ -168,6 +168,31 @@ class TestClient(httpx.Client):
             httpx.Response: The HTTP response.
         """
         url = self._merge_url(url)
+
+        # sillo types `data` as a Mapping, so a list of (key, value) tuples is
+        # silently dropped by the encoder (empty body). Normalize it into a
+        # urlencoded body with repeated keys — the standard way to send
+        # multi-value fields (e.g. m2m selections, bulk_ids) in a form post.
+        if isinstance(data, (list, tuple)) and data:
+            _is_pairs = all(
+                isinstance(item, (list, tuple)) and len(item) == 2 for item in data
+            )
+            if _is_pairs:
+                from urllib.parse import urlencode
+
+                encoded = urlencode(
+                    [(str(k), v if v is not None else "") for k, v in data],
+                    doseq=True,
+                )
+                content = encoded
+                if headers is None:
+                    headers = {}
+                headers = dict(headers)
+                headers.setdefault(
+                    "content-type", "application/x-www-form-urlencoded"
+                )
+                data = None
+
         redirect: bool | httpx._client.UseClientDefault = (
             httpx._client.USE_CLIENT_DEFAULT
         )

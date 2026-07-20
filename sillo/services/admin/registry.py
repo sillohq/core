@@ -45,16 +45,20 @@ class ModelAdmin:
     save_on_top: bool = False
 
     # ── Permissions ───────────────────────────────────────────────────
-    def has_view_permission(self, request) -> bool:
+    @staticmethod
+    def has_view_permission(request) -> bool:
         return True
 
-    def has_add_permission(self, request) -> bool:
+    @staticmethod
+    def has_add_permission(request) -> bool:
         return True
 
-    def has_change_permission(self, request, obj=None) -> bool:
+    @staticmethod
+    def has_change_permission(request, obj=None) -> bool:
         return True
 
-    def has_delete_permission(self, request, obj=None) -> bool:
+    @staticmethod
+    def has_delete_permission(request, obj=None) -> bool:
         return True
 
     # ── Display helpers ───────────────────────────────────────────────

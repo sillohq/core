@@ -67,16 +67,28 @@ class SessionAuth(AuthBackend):
         return None
 
     async def login(self, request, username: str, password: str) -> bool:
-        # Override with your own credential check
-        print(username, password)
-        if username == "admin@admin.com" and password == "admin":
-            session = request.session
-            print(session)
-            session["admin_authenticated"] = True
-            session["admin_user"] = {"id": "1", "username": "admin"}
+        """Authenticate against the ``AdminUser`` table with hashed passwords."""
+        from .models import AdminUser
+        from sillo.helpers.hashing import verify_password
 
-            return True
-        return False
+        if not username or not password:
+            return False
+        user = await AdminUser.get_or_none(email=username)
+        if user is None:
+            user = await AdminUser.get_or_none(username=username)
+        if user is None or not getattr(user, "is_active", True):
+            return False
+        if not verify_password(password, getattr(user, "password", "")):
+            return False
+
+        request.session["admin_authenticated"] = True
+        request.session["admin_user"] = {
+            "id": str(user.pk),
+            "username": user.username,
+            "email": user.email,
+            "is_superuser": user.is_superuser,
+        }
+        return True
 
     async def logout(self, request) -> None:
         session = getattr(request, "session", None)

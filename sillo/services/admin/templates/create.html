@@ -15,31 +15,55 @@
         <form method="POST">
             {% for field in fields %}
             <div class="form-group">
-                <label>{{ field.label }}</label>
-                {% if field.kind == "fk" or field.kind == "o2o" %}
-                <select name="{{ field.name }}" {% if field.required %}required{% endif %}>
-                    <option value="">-- Select {{ field.rel_name }} --</option>
-                    {% for opt in field.options %}
-                    <option value="{{ opt.pk }}" {% if opt.selected %}selected{% endif %}>{{ opt.label }}</option>
-                    {% endfor %}
-                </select>
-                {% elif field.kind == "m2m" %}
-                <div class="m2m-widget" style="border:1px solid var(--border);border-radius:var(--radius-sm);max-height:200px;overflow-y:auto;">
-                    {% for opt in field.options %}
-                    <label style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:13.5px;transition:background .1s;border-bottom:1px solid var(--border);{% if opt.selected %}background:var(--accent-subtle);{% endif %}">
-                        <input type="checkbox" name="{{ field.name }}" value="{{ opt.pk }}" {% if opt.selected %}checked{% endif %} style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
-                        <span>{{ opt.label }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-                {% elif field.type == "textarea" %}
-                <textarea name="{{ field.name }}" rows="5" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
-                {% elif field.type == "checkbox" %}
-                <input type="checkbox" name="{{ field.name }}" value="1" style="width:18px;height:18px;accent-color:var(--accent);">
+                <label>{{ field.label }}{% if field.required %}<span class="req-star">*</span>{% endif %}</label>
+                {% if field.widget == "password" %}
+                    <div class="pw-wrap">
+                        <input type="password" id="pw-{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %} autocomplete="new-password" oninput="pwStrength(this)">
+                        <button type="button" class="pw-toggle" onclick="togglePw(this)" aria-label="Show/Hide">
+                            <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+                        </button>
+                    </div>
+                    <div class="pw-strength" id="pw-{{ field.name }}-bar"><span></span></div>
+                    <input type="password" name="{{ field.name }}__confirm" placeholder="Confirm password" autocomplete="new-password" style="width:100%;margin-top:8px;padding:11px 15px;background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;font-family:var(--font);">
+                    {% if field.help %}<div class="field-help">{{ field.help }}</div>{% endif %}
+                {% elif field.widget == "relation" %}
+                    <div class="combo" data-combo="{{ field.name }}">
+                        <input type="text" class="combo-input" placeholder="Search {{ field.rel_name }}..." autocomplete="off">
+                        <input type="hidden" name="{{ field.name }}" value="{{ field.value }}">
+                        <div class="combo-list">
+                            <div class="combo-opt muted" data-val="" data-label="— None —">— None —</div>
+                            {% for opt in field.options %}
+                            <div class="combo-opt {% if opt.selected %}active{% endif %}" data-val="{{ opt.pk }}" data-label="{{ opt.label }}">{{ opt.label }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if field.help %}<div class="field-help">{{ field.help }}</div>{% endif %}
+                {% elif field.widget == "m2m" %}
+                    <div class="m2m-box" data-m2m="{{ field.name }}">
+                        <div class="m2m-search"><input type="text" placeholder="Search {{ field.rel_name }}..." oninput="m2mFilter(this)"></div>
+                        <div class="m2m-chips"></div>
+                        <div class="m2m-options">
+                            {% for opt in field.options %}
+                            <label class="m2m-opt {% if opt.selected %}selected{% endif %}">
+                                <input type="checkbox" name="{{ field.name }}" value="{{ opt.pk }}" {% if opt.selected %}checked{% endif %} style="display:none;">
+                                <span class="check">✓</span>
+                                <span class="lbl">{{ opt.label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if field.help %}<div class="field-help">{{ field.help }}</div>{% endif %}
+                {% elif field.readonly %}
+                    <input type="text" value="{{ field.value }}" readonly>
+                {% elif field.widget == "textarea" %}
+                    <textarea name="{{ field.name }}" rows="5" {% if field.required %}required{% endif %}>{{ field.value }}</textarea>
+                {% elif field.widget == "checkbox" %}
+                    <input type="checkbox" name="{{ field.name }}" value="1" {% if field.value == "True" or field.value == "1" %}checked{% endif %} style="width:18px;height:18px;accent-color:var(--accent);">
                 {% else %}
-                <input type="{{ field.type }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
+                    <input type="{{ 'number' if field.widget == 'number' else 'text' }}" name="{{ field.name }}" value="{{ field.value }}" {% if field.required %}required{% endif %}>
                 {% endif %}
-                {% if field.help %}<span style="font-size:11px;color:var(--text3);margin-top:4px;display:block;">{{ field.help }}</span>{% endif %}
+                {% if field.widget not in ("password","relation","m2m") and field.help %}<div class="field-help">{{ field.help }}</div>{% endif %}
             </div>
             {% endfor %}
             <div class="form-actions">

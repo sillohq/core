@@ -24,6 +24,10 @@
         .btn { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 8px; font-family: var(--font); transition: background 0.15s; }
         .btn:hover { background: var(--accent-hover); }
         .error { color: #ef4444; font-size: 13px; margin-top: 16px; font-weight: 500; }
+        .pw-wrap { position: relative; }
+        .pw-wrap input { padding-right: 42px; }
+        .pw-toggle { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--text2); cursor: pointer; }
+        .pw-toggle svg { width: 17px; height: 17px; }
     </style>
 </head>
 <body>
@@ -33,7 +37,15 @@
         <p>Sign in to access the admin panel</p>
         <form method="POST">
             <div class="form-group"><label>Email</label><input type="email" name="email" required autofocus></div>
-            <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="pw-wrap">
+                    <input type="password" name="password" required>
+                    <button type="button" class="pw-toggle" onclick="var i=this.previousElementSibling;i.type=i.type==='password'?'text':'password'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+            </div>
             <button type="submit" class="btn">Sign In</button>
         </form>
         {% if error %}<p class="error">{{ error }}</p>{% endif %}

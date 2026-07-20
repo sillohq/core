@@ -9,8 +9,8 @@
         <h2>{{ model_name }} #{{ object_id }}</h2>
     </div>
     <div class="toolbar-actions">
-        <a href="{{ site_prefix }}/{{ model_slug }}/{{ object_id }}/update/" class="btn btn-primary">Edit</a>
-        <a href="{{ site_prefix }}/{{ model_slug }}/{{ object_id }}/delete/" class="btn btn-danger">Delete</a>
+        {% if can_change %}<a href="{{ site_prefix }}/{{ model_slug }}/{{ object_id }}/update/" class="btn btn-primary">Edit</a>{% endif %}
+        {% if can_delete %}<a href="{{ site_prefix }}/{{ model_slug }}/{{ object_id }}/delete/" class="btn btn-danger">Delete</a>{% endif %}
     </div>
 </div>
 {% if fields %}
@@ -19,22 +19,43 @@
     <div class="detail-label">{{ field.label }}</div>
     <div class="detail-value">
         {% if field.type == "fk" and field.link %}
-        <a href="{{ field.link }}" style="color:var(--accent);text-decoration:none;font-weight:600;">{{ field.value }}</a>
+        <a href="{{ field.link }}">{{ field.value }}</a>
         {% elif field.type == "m2m" %}
-        <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            {% for item in field.value %}
-            {% if item[1] %}
-            <a href="{{ item[1] }}" style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;background:var(--accent-subtle);color:var(--accent);text-decoration:none;">{{ item[0] }}</a>
-            {% else %}
-            <span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;background:var(--surface2);color:var(--text2);">{{ item[0] }}</span>
-            {% endif %}
-            {% endfor %}
+        <div class="col-chips">
+            {% for item in field.value %}{% if item[1] %}<a class="mini-chip" href="{{ item[1] }}">{{ item[0] }}</a>{% else %}<span class="mini-chip">{{ item[0] }}</span>{% endif %}{% endfor %}
+            {% if not field.value %}<span class="mini-chip">—</span>{% endif %}
         </div>
+        {% elif field.type == "password" %}
+        <span style="color:var(--text3);letter-spacing:1px;">••••••••</span>
         {% else %}
         {{ field.value }}
         {% endif %}
     </div>
     {% endfor %}
+</div>
+{% endif %}
+
+{% if reverse_relations %}
+<div class="reverse-section">
+    <h3>Related Objects</h3>
+    <div class="reverse-grid">
+        {% for rel in reverse_relations %}
+        <div class="reverse-card">
+            <div class="rc-head">
+                <h4>{{ rel.label }} <span style="color:var(--text3);font-weight:500;">({{ rel.count }})</span></h4>
+                <a href="{{ rel.list_link }}">View all →</a>
+            </div>
+            {% if rel.rows %}
+            {% for item in rel.rows %}
+            <div class="reverse-item"><a href="{{ item.link }}">{{ item.label }}</a></div>
+            {% endfor %}
+            {% if rel.count > rel.rows|length %}<div class="reverse-item reverse-empty">+{{ rel.count - rel.rows|length }} more…</div>{% endif %}
+            {% else %}
+            <div class="reverse-empty">No related {{ rel.model_name }} yet.</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
 </div>
 {% endif %}
 {% endblock %}

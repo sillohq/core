@@ -4,6 +4,8 @@ sillo.services.admin.models — Admin-specific models for activity logging and R
 
 from tortoise import fields
 from sillo.record import Model
+from sillo.record.fields import PasswordField
+from sillo.helpers.hashing import verify_password
 
 
 class AdminActivity(Model):
@@ -45,7 +47,7 @@ class AdminUser(Model):
 
     email = fields.CharField(max_length=255, unique=True)
     username = fields.CharField(max_length=100, unique=True)
-    password_hash = fields.CharField(max_length=255)
+    password = PasswordField()
     is_active = fields.BooleanField(default=True)
     is_superuser = fields.BooleanField(default=False)
     last_login = fields.DatetimeField(null=True)
@@ -66,7 +68,11 @@ class AdminUser(Model):
             return permission in (self.role.permissions or [])
         return False
 
+    def check_password(self, plain: str) -> bool:
+        """Return True if *plain* matches this user's stored password hash."""
+        return verify_password(plain, self.password)
+
     def to_dict(self, **kwargs):
         d = super().to_dict(**kwargs)
-        d.pop("password_hash", None)
+        d.pop("password", None)
         return d

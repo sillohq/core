@@ -50,23 +50,43 @@ class DatabaseManager:
         if self._initialized:
             return
         cfg = self._build_tortoise_config()
-        await Tortoise.init(config=cfg)
+        # Tortoise.init() creates a TortoiseContext and enters it in the
+        # *startup* task. ASGI request handling runs in a separate task, so the
+        # contextvar is not propagated — capture the context here and re-enter
+        # it per-request in ensure_context().
+        self._root_context = await Tortoise.init(config=cfg)
         await Tortoise.generate_schemas(safe=True)
-
-        from tortoise.context import get_current_context
-
-        self._root_context = get_current_context()
 
         self._initialized = True
         logger.info("Database connected — backend=%s", self.config.backend.value)
 
     async def ensure_context(self, request, response, call_next):
-        """Set Tortoise context for this request task."""
-        from tortoise.context import _current_context
+        """Per-request middleware hook.
 
-        if self._root_context:
-            _current_context.set(self._root_context)
-        return await call_next()
+        Tortoise >=0.25 stores DB connections in a task-scoped
+        ``TortoiseContext`` (a contextvar) that is not propagated from the ASGI
+        startup task to request-handling tasks, so we re-enter the captured
+        root context here for the duration of the request. Older Tortoise keeps
+        connections in global state, where a pass-through is sufficient.
+        """
+        ctx = self._root_context
+        if ctx is None or not getattr(ctx, "inited", False):
+            return await call_next()
+
+        try:
+            from tortoise.context import _current_context
+        except ModuleNotFoundError:
+            # Pre-context Tortoise: connections live in global state.
+            return await call_next()
+
+        if _current_context.get() is not None:
+            return await call_next()
+
+        token = _current_context.set(ctx)
+        try:
+            return await call_next()
+        finally:
+            _current_context.reset(token)
 
     async def shutdown(self) -> None:
         """Close all database connections."""
