@@ -73,9 +73,7 @@ class MemoryCache(BaseCache):
         )
         self.max_size = max_size
         # OrderedDict doubles as the LRU: most-recently-used at the end.
-        self._store: "collections.OrderedDict[str, _Entry]" = (
-            collections.OrderedDict()
-        )
+        self._store: "collections.OrderedDict[str, _Entry]" = collections.OrderedDict()
         self._tags: Dict[str, set] = {}
 
     # ---- internal entry type ---------------------------------------

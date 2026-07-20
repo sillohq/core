@@ -84,7 +84,9 @@ def cache(
         _has_self = bool(_params) and _params[0].name in ("self", "cls")
 
         def build_key(args: Tuple, kwargs: Any) -> str:
-            effective_backend = backend if backend is not None else get_default_backend()
+            effective_backend = (
+                backend if backend is not None else get_default_backend()
+            )
             key_parts: list = []
             if key_prefix:
                 key_parts.append(key_prefix)
@@ -146,7 +148,9 @@ def cache(
             return loop.run_until_complete(_lookup(*args, **kwargs))
 
         async def _invalidate(*args: Any, **kwargs: Any) -> bool:
-            effective_backend = backend if backend is not None else get_default_backend()
+            effective_backend = (
+                backend if backend is not None else get_default_backend()
+            )
             return await effective_backend.delete(build_key(args, kwargs))
 
         wrapper = _async_wrapper if func_is_async else _sync_wrapper
