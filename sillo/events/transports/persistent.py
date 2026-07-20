@@ -50,7 +50,11 @@ class PersistentTransport(BaseTransport):
         self._worker: Optional[asyncio.Task] = None
 
     def _backlog_key(self) -> str:
-        return f"{self.namespace}:sillo:events:backlog" if self.namespace else "sillo:events:backlog"
+        return (
+            f"{self.namespace}:sillo:events:backlog"
+            if self.namespace
+            else "sillo:events:backlog"
+        )
 
     def _connect(self):
         try:

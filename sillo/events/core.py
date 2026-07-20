@@ -438,15 +438,11 @@ class Event(EventSerializationMixin):
     async def _propagate_async(self, event_data: Dict[str, Any], phase: EventPhase):
         if phase == EventPhase.CAPTURING and self.parent:
             event_data["context"].phase = phase
-            await self.parent.trigger_async(
-                *event_data["args"], **event_data["kwargs"]
-            )
+            await self.parent.trigger_async(*event_data["args"], **event_data["kwargs"])
         elif phase == EventPhase.BUBBLING and self.children:
             for child in self.children:
                 event_data["context"].phase = phase
-                await child.trigger_async(
-                    *event_data["args"], **event_data["kwargs"]
-                )
+                await child.trigger_async(*event_data["args"], **event_data["kwargs"])
 
     async def _execute_listeners_async(
         self, event_data: Dict[str, Any], phase: EventPhase
@@ -488,9 +484,7 @@ class Event(EventSerializationMixin):
                 event_data["context"].phase = phase
 
                 if asyncio.iscoroutinefunction(actual_listener):
-                    await actual_listener(
-                        *event_data["args"], **event_data["kwargs"]
-                    )
+                    await actual_listener(*event_data["args"], **event_data["kwargs"])
                 else:
                     actual_listener(*event_data["args"], **event_data["kwargs"])
 

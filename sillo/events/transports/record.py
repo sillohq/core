@@ -17,7 +17,12 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
-from .base import BaseTransport, TransportError, deserialize_envelope, serialize_envelope
+from .base import (
+    BaseTransport,
+    TransportError,
+    deserialize_envelope,
+    serialize_envelope,
+)
 
 logger = logging.getLogger("sillo.events.record")
 
@@ -33,9 +38,7 @@ def build_event_message():
     class EventMessage(Model):
         channel = fields.CharField(max_length=255, db_index=True)
         payload = fields.TextField()
-        status = fields.CharField(
-            max_length=16, default="pending", db_index=True
-        )
+        status = fields.CharField(max_length=16, default="pending", db_index=True)
         attempts = fields.IntField(default=0)
 
         class Meta:

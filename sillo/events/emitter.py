@@ -52,9 +52,7 @@ class EventEmitter:
                 **transport_opts,
             )
         self._transport.bind(self._dispatch)
-        self._transport.set_error_handler(
-            on_error or self._default_error_handler
-        )
+        self._transport.set_error_handler(on_error or self._default_error_handler)
 
     async def _dispatch(self, channel: str, envelope: Dict[str, Any]) -> None:
         """Run local listeners for a received/triggered event."""
@@ -179,7 +177,9 @@ class EventEmitter:
             )
         return self.event(event_name).trigger(*args, **kwargs)
 
-    async def emit_async(self, event_name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    async def emit_async(
+        self, event_name: str, *args: Any, **kwargs: Any
+    ) -> Dict[str, Any]:
         """
         Async publish, valid for every backend.
 

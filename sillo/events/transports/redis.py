@@ -136,9 +136,11 @@ class RedisTransport(BaseTransport):
                     # Channel comes back with the namespace prefix.
                     chan = message.get("channel")
                     chan = chan.decode() if isinstance(chan, bytes) else chan
-                    local = chan[len(self.namespace) + 1:] if (
-                        self.namespace and chan.startswith(self.namespace + ":")
-                    ) else chan
+                    local = (
+                        chan[len(self.namespace) + 1 :]
+                        if (self.namespace and chan.startswith(self.namespace + ":"))
+                        else chan
+                    )
                     await self._deliver(local, envelope)
             except asyncio.CancelledError:
                 break

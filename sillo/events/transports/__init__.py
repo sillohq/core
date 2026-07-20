@@ -56,7 +56,9 @@ def get_transport(
     if backend == "record":
         from .record import RecordTransport
 
-        return RecordTransport(namespace=namespace, on_error=on_error, loop=loop, **kwargs)
+        return RecordTransport(
+            namespace=namespace, on_error=on_error, loop=loop, **kwargs
+        )
 
     if backend in _AVAILABLE:
         import importlib
