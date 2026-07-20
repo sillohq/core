@@ -182,6 +182,12 @@ export default defineConfig({
                 ],
             },
             {
+                label: 'Cache',
+                items: [
+                    { label: 'Overview', link: '/guides/cache/' },
+                ],
+            },
+            {
                 label: 'OpenAPI',
                     items: [
                         { label: 'Overview', link: '/guides/openapi/' },
