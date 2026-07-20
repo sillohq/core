@@ -188,9 +188,7 @@ class TestClient(httpx.Client):
                 if headers is None:
                     headers = {}
                 headers = dict(headers)
-                headers.setdefault(
-                    "content-type", "application/x-www-form-urlencoded"
-                )
+                headers.setdefault("content-type", "application/x-www-form-urlencoded")
                 data = None
 
         redirect: bool | httpx._client.UseClientDefault = (

@@ -121,9 +121,7 @@ async def _get_m2m_options(field_obj, current_ids=None):
     options = []
     for r in all_recs:
         pk = getattr(r, "pk", getattr(r, "id", None))
-        options.append(
-            {"pk": pk, "label": str(r), "selected": str(pk) in current}
-        )
+        options.append({"pk": pk, "label": str(r), "selected": str(pk) in current})
     return name, slug, options
 
 
@@ -155,7 +153,9 @@ def _field_label(field_name: str) -> str:
     return field_name.replace("_", " ").title()
 
 
-async def _resolve_fk_value(obj, field_name: str, field_obj, admin_site, *, as_link: bool = True):
+async def _resolve_fk_value(
+    obj, field_name: str, field_obj, admin_site, *, as_link: bool = True
+):
     """Return (display_text, link_url_or_None)."""
     try:
         related = await getattr(obj, field_name)
@@ -195,7 +195,9 @@ async def _collect_form(request):
 
     def get(key):
         v = form.get(key)
-        return v if isinstance(v, str) else (v[0] if isinstance(v, (list, tuple)) else v)
+        return (
+            v if isinstance(v, str) else (v[0] if isinstance(v, (list, tuple)) else v)
+        )
 
     def getlist(key):
         v = form.getlist(key)
@@ -523,9 +525,7 @@ class ListView(BaseView):
                     col_type = "m2m"
                 elif kind == "password":
                     col_type = "password"
-            column_info.append(
-                {"name": col, "type": col_type, "field_obj": field_obj}
-            )
+            column_info.append({"name": col, "type": col_type, "field_obj": field_obj})
 
         rows = []
         for item in items:
@@ -564,9 +564,7 @@ class ListView(BaseView):
             rows.append({"pk": item.pk, "cells": row_cells})
 
         link_cols = [
-            c
-            for c in (admin.list_display_links or [])
-            if not _should_skip_field(c)
+            c for c in (admin.list_display_links or []) if not _should_skip_field(c)
         ]
         if not link_cols and columns:
             link_cols = [columns[0]]
@@ -624,9 +622,7 @@ class DetailView(BaseView):
             field_obj = meta.fields_map.get(f)
             kind = _field_kind(field_obj, f) if field_obj else "text"
             if kind == "password":
-                fields.append(
-                    {"label": label, "value": "••••••••", "type": "password"}
-                )
+                fields.append({"label": label, "value": "••••••••", "type": "password"})
             elif kind in ("fk", "o2o"):
                 display, link = await _resolve_fk_value(obj, f, field_obj, self.site)
                 fields.append(
@@ -634,9 +630,7 @@ class DetailView(BaseView):
                 )
             elif kind == "m2m":
                 related_list = await _resolve_m2m_value(obj, f, field_obj, self.site)
-                fields.append(
-                    {"label": label, "value": related_list, "type": "m2m"}
-                )
+                fields.append({"label": label, "value": related_list, "type": "m2m"})
             else:
                 fields.append(
                     {
@@ -743,9 +737,7 @@ class CreateView(BaseView):
                         if pw != confirm:
                             raise ValueError("Passwords do not match")
                         if len(pw) < 8:
-                            raise ValueError(
-                                "Password must be at least 8 characters"
-                            )
+                            raise ValueError("Password must be at least 8 characters")
                         create_kwargs[f_name] = hash_password(pw)
                     elif kind in ("fk", "o2o"):
                         v = get(f_name)
@@ -824,9 +816,7 @@ class UpdateView(BaseView):
                         if pw != confirm:
                             raise ValueError("Passwords do not match")
                         if len(pw) < 8:
-                            raise ValueError(
-                                "Password must be at least 8 characters"
-                            )
+                            raise ValueError("Password must be at least 8 characters")
                         setattr(obj, f_name, hash_password(pw))
                     elif kind in ("fk", "o2o"):
                         v = get(f_name)
@@ -893,9 +883,7 @@ class BulkView(BaseView):
         ids = [int(x) for x in getlist("bulk_ids") if x]
         if action == "delete_selected" and ids:
             await self.model_class.filter(pk__in=ids).delete()
-            await self._log(
-                request, "delete", self.model_name, None, f"bulk:{ids}"
-            )
+            await self._log(request, "delete", self.model_name, None, f"bulk:{ids}")
         return response.redirect(
             f"{self.site.prefix}/{self.model_slug}/", status_code=302
         )
