@@ -83,13 +83,6 @@ class PersistentTransport(BaseTransport):
         self._worker: Optional[asyncio.Task] = None
 
     def _backlog_key(self) -> str:
-<<<<<<< Updated upstream
-        return (
-            f"{self.namespace}:sillo:events:backlog"
-            if self.namespace
-            else "sillo:events:backlog"
-        )
-=======
         """Redis list key holding the unacknowledged backlog.
 
         Namespaced as ``"<namespace>:sillo:events:backlog"`` (or
@@ -97,7 +90,6 @@ class PersistentTransport(BaseTransport):
         Redis safely.
         """
         return f"{self.namespace}:sillo:events:backlog" if self.namespace else "sillo:events:backlog"
->>>>>>> Stashed changes
 
     def _connect(self):
         """Lazily create the ``redis.asyncio`` client.
