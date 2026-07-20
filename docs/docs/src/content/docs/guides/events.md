@@ -1,28 +1,61 @@
 ---
 title: Events
-description: The sillo event system — a powerful publish/subscribe layer with pluggable backends (memory, Redis, persistent, record) for in-process and cross-instance event delivery.
+description: The sillo event system — a powerful publish/subscribe layer with pluggable backends (memory, Redis, persistent, record) for in-process and cross-instance event delivery, priority listeners, namespacing, and durable replay.
 ---
 
 # Events
 
 The sillo event system implements the [publish–subscribe (pub/sub)
 pattern](https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern):
-components communicate without direct dependencies, making your code loosely
-coupled, maintainable, and flexible.
+components communicate without holding direct references to one another, which
+keeps your code loosely coupled, easy to test, and simple to extend. Instead of
+a request handler calling five unrelated functions in sequence, it *emits* an
+event and lets independent listeners react however they need to.
 
-At its core, each emitter owns a registry of named events. You **subscribe**
-listeners with `on` / `once`, and **emit** events with `emit` (synchronous,
-in-process) or `emit_async` (all backends). Listeners run in priority order and
-support capture/bubble propagation, cancellation, weak references, and
-performance metrics.
+At its core, an [`EventEmitter`](#eventemitter) owns a registry of named events.
+You **subscribe** listeners with `on` (runs every time) or `once` (runs a single
+time), and you **emit** events with `emit` (synchronous, memory backend only) or
+`emit_async` (works on every backend). Listeners run in **priority order**, can
+be cancelled mid-dispatch, support weak references, and are tracked with
+performance metrics. Delivery is handled by a pluggable **transport** — the same
+emitter API works in-process, across Redis instances, on a durable backlog, or
+persisted as database rows for audit and replay.
 
 :::caution Events are for side effects ONLY
-Use events primarily for side effects (sending emails, analytics, logging,
-cache invalidation) that should not block the main request flow. Do not use
-events to mutate data the request cycle depends on.
+Use events primarily for *side effects* — sending emails, analytics, logging,
+cache invalidation, websocket broadcasts — that should not block the main
+request flow. Do not use events to mutate data the request cycle depends on or
+to return a value to the caller. If the caller needs the result, call the
+function directly.
+:::
+
+## When to use events
+
+A good rule of thumb: emit when *what happened* is more interesting than
+*what should happen next*. Examples:
+
+- A user signs up → send a welcome email, provision a default workspace, fire an
+  analytics event, warm a recommendation cache.
+- An order is placed → charge a card, notify fulfilment, update inventory, post
+  to a Slack channel.
+- A record is deleted → purge a search index entry, write an audit log row,
+  notify connected websocket clients.
+
+None of those side effects should live inside the "create user" function. By
+emitting `user.created`, each concern gets its own listener and can fail,
+change, or be added later without touching the handler.
+
+::: tip Prefer async listeners
+Coroutine (`async def`) listeners are **awaited** in priority order across all
+backends. A synchronous listener still works, but it runs inline on the event
+loop and will block other listeners and the dispatch path while it executes.
+Always prefer `async def` handlers unless the work is trivially cheap.
 :::
 
 ## Basic usage
+
+Every `silloApp` (and every `Router`) exposes a default emitter at `app.events`.
+You subscribe with a decorator and emit from anywhere:
 
 ```python
 from sillo import silloApp
@@ -37,23 +70,28 @@ async def handle_user_created(user):
 await app.events.emit_async("user.created", {"name": "Bob"})
 ```
 
-The `silloApp` and `Router` classes expose a default emitter at `app.events`.
-You can also create standalone emitters (see [Creating emitters](#creating-emitters)).
+You can also build standalone emitters that are not attached to an app — see
+[Creating emitters](#creating-emitters).
 
 ## Subscribing to events
 
-Use `on` to register a listener that runs every time the event fires:
+### `on` — every time
+
+Register a listener that runs on every emission:
 
 ```python {3}
 from sillo import silloApp
 app = silloApp()
+
 @app.events.on("user.created")
 async def handle_user_created(user):
     print(f"User created: {user['name']}")
 ```
 
-`once` registers a listener that fires **only the first time** and is then
-removed automatically:
+### `once` — first time only
+
+Register a listener that fires **only the first time** the event is emitted and
+is then removed automatically. Useful for one-time setup or welcome flows:
 
 ```python
 @app.events.once("first.login")
@@ -61,10 +99,22 @@ async def welcome(user):
     print(f"Welcome {user['name']}!")
 ```
 
+### Direct (non-decorator) registration
+
+Both `on` and `once` also accept the function directly, which is handy when the
+handler is defined elsewhere or you need to keep a reference for later removal:
+
+```python
+async def on_user_created(user):
+    print(f"User created: {user['name']}")
+
+app.events.on("user.created", on_user_created)
+```
+
 ## Emitting events
 
-Emit with `emit_async` (works on every backend) or, for the default in-process
-`memory` backend, the synchronous `emit`:
+Use `emit_async` for all backends, or — for the default in-process `memory`
+backend only — the synchronous `emit`:
 
 ```python {3}
 @app.post("/users")
@@ -79,15 +129,25 @@ stats = app.events.emit("user.created", {"name": "Bob"})
 # {'event_id': '...', 'listeners_executed': 1, 'execution_time': 0.0001, ...}
 ```
 
-::: tip Async listeners are awaited
-Coroutine listeners are **awaited** in priority order. Always prefer `async def`
-handlers — a synchronous handler blocks the event loop while it runs.
+There are two return-value shapes you should be aware of:
+
+- `emit()` (memory) returns a **stats dict** describing the local run:
+  `event_id`, `listeners_executed`, `execution_time`, and a `cancelled` flag.
+- `emit_async()` returns a **delivery receipt** `{"event_id", "backend"}`. It
+  does *not* return listener execution stats, because for networked backends the
+  listeners may run on a different process. For local stats on memory, use the
+  synchronous `emit()`.
+
+:::caution Don't call `emit()` on networked backends
+`emit()` is synchronous and only valid for `backend="memory"`. Calling it on
+`redis`, `persistent`, or `record` raises a clear `RuntimeError` telling you to
+use `await emitter.emit_async(...)`. Networked backends need an event loop to
+publish and to await the dispatch callback.
 :::
 
 ## Removing listeners
 
-Remove a single listener with `remove_listener`, or clear listeners with
-`remove_all_listeners` (per event or for the whole emitter):
+Detach a single listener, or clear listeners per event or for the whole emitter:
 
 ```python
 # Define a handler
@@ -99,23 +159,94 @@ app.events.on("data.received", temporary_handler)
 # Later, remove it
 app.events.remove_listener("data.received", temporary_handler)
 
-# Or remove all handlers for an event
+# Remove all handlers for one event
 app.events.remove_all_listeners("data.received")
+
+# Remove every listener on the emitter
+app.events.remove_all_listeners()
 ```
+
+You can also drop an entire event (and all its listeners) with
+`remove_event(name)`, or clear the emitter with `remove_all_events()`. To inspect
+what is registered, `event_names()` returns all known event names and
+`has_event(name)` / `name in emitter` check for a specific one.
 
 ## Priority listeners
 
-Listeners execute in priority order — higher priority first. The default is
-`NORMAL`.
+Listeners execute in priority order — **higher priority runs first**. The default
+is `NORMAL`. This is useful when one listener must run before another (for
+example, a cache-warming listener before a cache-reading listener):
 
 ```python
 from sillo.events import EventPriority
 
 app.events.on("data.received", high_handler, priority=EventPriority.HIGH)
-app.events.on("data.received", low_handler, priority=EventPriority.LOW)
+app.events.on("data.received", low_handler,  priority=EventPriority.LOW)
 ```
 
-Priorities, highest to lowest: `HIGHEST`, `HIGH`, `NORMAL`, `LOW`, `LOWEST`.
+Priorities, highest to lowest:
+
+| Priority | When it runs |
+|---|---|
+| `HIGHEST` | First, before everything else |
+| `HIGH` | Before `NORMAL` |
+| `NORMAL` | Default |
+| `LOW` | After `NORMAL` |
+| `LOWEST` | Last |
+
+When two listeners share a priority they run in registration order.
+
+## Listener limits and enabling/disabling
+
+Each event caps its listener count at `max_listeners` (default `100`). Registering
+beyond the cap raises `MaxListenersExceededError`; registering the same function
+twice raises `ListenerAlreadyRegisteredError`. Set `event.max_listeners = N` to
+raise or lower the limit (you cannot set it below the current count).
+
+You can also temporarily silence an event without removing listeners:
+
+```python
+ev = app.events.event("user.created")
+ev.enabled = False   # emits are no-ops while disabled
+ev.enabled = True
+```
+
+## Weak references
+
+By default listeners are held by a strong reference, so an emitter keeps your
+handler (and its bound object) alive for the life of the process. Pass
+`weak_ref=True` to let the listener be garbage-collected when nothing else
+references it — handy for listeners bound to short-lived objects:
+
+```python
+app.events.on("data.received", instance_method, weak_ref=True)
+```
+
+For bound methods this uses `weakref.WeakMethod`; for plain functions it uses a
+plain `weakref.ref`. A collected listener simply stops receiving events and is
+skipped at dispatch time.
+
+## Error handling
+
+Listeners are error-isolated: a listener that raises is logged and, for networked
+backends, the subscriber/worker loop keeps running. By default failures go to a
+logger at `sillo.events`. To observe them yourself — for metrics, alerting, or
+re-raising — pass `on_error` when building the emitter:
+
+```python
+from sillo.events import EventEmitter
+
+async def on_listener_error(exc, channel, envelope):
+    sentry.capture_exception(exc)
+    print(f"Listener failed on {channel}: {exc}")
+
+emitter = EventEmitter("redis", url="redis://localhost:6379/0", on_error=on_listener_error)
+```
+
+The callback receives the exception, the channel name, and the decoded envelope.
+Note that `on_error` is for *listener* failures only — transport-level failures
+(such as Redis being unreachable) surface as `TransportError` from `start()` /
+`emit_async()` and are your responsibility to handle.
 
 ## Namespaces
 
@@ -129,11 +260,23 @@ ui = app.events.namespace("ui")
 async def on_click(btn):
     print(f"{btn} clicked!")
 
-ui.emit("button.click", "submit")          # -> "ui:button.click"
+ui.emit("button.click", "submit")            # -> "ui:button.click"
 app.events.emit("ui:button.click", "submit")  # equivalent
 ```
 
-Nested namespaces are supported via `ui.namespace("modal")`.
+Namespaces nest, so you can build a hierarchy such as `ui:modal:open`:
+
+```python
+modal = ui.namespace("modal")
+@modal.on("open")
+async def on_modal_open(payload):
+    ...
+# channel becomes "ui:modal:open"
+```
+
+The namespace object exposes the same `on`, `once`, `emit`, and `emit_async`
+methods (plus its own `namespace()` for nesting), so it is a drop-in stand-in
+for the parent emitter.
 
 ---
 
@@ -141,7 +284,7 @@ Nested namespaces are supported via `ui.namespace("modal")`.
 
 The event system is **backend-agnostic**. The backend decides *where* an emitted
 event goes — in-process, across Redis instances, onto a durable backlog, or into
-your database. Select a backend with `EventEmitter(backend=...)` (or
+your database. Select a backend with `EventEmitter(backend=...)` (or by assigning
 `app.events = EventEmitter("redis", ...)`).
 
 | Backend | Dependency | Delivery | Use when |
@@ -152,24 +295,28 @@ your database. Select a backend with `EventEmitter(backend=...)` (or
 | `record` | `tortoise-orm` | Persisted as DB rows (audit log + replay) | You need an audit trail or crash recovery. |
 
 ```bash
-pip install "sillo[events]"     # redis driver for redis / persistent
-pip install "sillo[record]"     # tortoise-orm for the record backend
+pip install "sillo[events]"   # redis driver for redis / persistent
+pip install "sillo[record]"   # tortoise-orm for the record backend
 ```
 
 All optional dependencies are imported **lazily** — `backend="memory"` works
-with nothing extra installed, and `redis` / `tortoise` are only imported when
-you actually construct that backend.
+with nothing extra installed, and `redis` / `tortoise` are only imported when you
+actually construct that backend. An unknown backend name raises `ValueError`; a
+backend whose dependency is missing raises `TransportError` at construction time.
 
 ::: tip Networked backends need `start()`
 `redis` and `persistent` spawn a background subscriber/worker loop. You must
-`await emitter.start()` (typically on app startup) and `await emitter.stop()`
-on shutdown. `memory` and `record` need no loop.
+`await emitter.start()` (typically on app startup) and `await emitter.stop()` on
+shutdown. `memory` and `record` need no loop — their `start()`/`stop()` are
+no-ops (they just flip a `running` flag).
 :::
 
 ### Memory (default)
 
 In-process delivery — the original sillo behaviour. No external services, no
-serialization round-trip. Use the synchronous `emit` or `emit_async`:
+serialization round-trip, and the synchronous `emit()` returns execution stats.
+Ideal for single-process apps, tests, and any side effect that should run in the
+same process that emitted the event.
 
 ```python
 from sillo.events import EventEmitter
@@ -184,7 +331,7 @@ emitter.emit("ping")                       # synchronous, in-process
 Every emit `PUBLISH`es a JSON envelope to a Redis channel; every emitter
 subscribes to the channels it has listeners for and re-dispatches received
 envelopes to its local listeners. This gives true fan-out across processes and
-instances.
+instances — emit once on instance A, run listeners on instances A, B, and C.
 
 ```python
 from sillo.events import EventEmitter
@@ -199,9 +346,13 @@ async def on_order(order):
 await emitter.emit_async("order.placed", order)
 ```
 
+Namespacing applies to Redis channels too, so multiple apps can share one Redis
+instance without cross-talk: a `namespace="payments"` emitter publishes to
+`payments:order.placed` and only subscribers of that namespace receive it.
+
 :::caution Redis pub/sub is fire-and-forget
-A message is delivered only to subscribers connected *at the moment of publish*
-— there is no backlog, so an instance that is down misses events. If you need
+A message is delivered only to subscribers connected *at the moment of publish* —
+there is no backlog, so an instance that is down misses events. If you need
 at-least-once delivery across restarts, use `persistent` instead.
 :::
 
@@ -226,13 +377,16 @@ await emitter.emit_async("invoice.due", invoice)
 ```
 
 In-flight messages remain in the backlog after `stop()`, so the next `start()`
-drains them — that is what makes delivery at-least-once across restarts.
+drains them — that is what makes delivery at-least-once across restarts. A
+lightweight, per-instance de-duplication on `event_id` also protects against
+double-processing when a Redis reconnect replays a message.
 
 ### Record (audit log + replay)
 
-Every emit writes a `EventMessage` Tortoise row (`channel`, `payload`, `status`,
+Every emit writes an `EventMessage` Tortoise row (`channel`, `payload`, `status`,
 `attempts`) **and** fires local listeners. Rows left `pending`/`failed` can be
-replayed on startup via `replay()` for crash recovery.
+replayed on startup via `replay()` for crash recovery. Unlike the Redis backends,
+`record` is about **durability and audit**, not cross-instance fan-out.
 
 ```python
 from sillo.events import EventEmitter
@@ -249,6 +403,11 @@ await emitter.emit_async("audit.trail", event)
 recovered = await emitter.transport.replay(limit=500)
 ```
 
+On a successful dispatch the row is marked `delivered`; on listener failure it is
+marked `failed` (with `attempts` incremented). `replay()` reads rows whose status
+is `pending` or `failed`, re-runs their local listeners, and marks each
+`delivered` on success — call it on boot to rebuild state after a crash.
+
 ### Custom backends
 
 Register your own transport by dotted path:
@@ -262,6 +421,8 @@ emitter = EventEmitter("kafka")
 
 A custom transport subclasses `sillo.events.transports.BaseTransport` and
 implements `publish()` (and a receive loop in `start()` if it receives remotely).
+The base class handles the dispatch callback, error isolation, the shared JSON
+envelope format, and best-effort de-duplication for you.
 
 ---
 
@@ -293,8 +454,8 @@ because subscribing lazily starts the loop if needed.
 
 ## Creating emitters
 
-Each `EventEmitter` is independent — you can run several with different
-backends or namespaces:
+Each `EventEmitter` is independent — you can run several with different backends
+or namespaces:
 
 ```python
 from sillo.events import EventEmitter
@@ -309,6 +470,27 @@ from sillo.events.transports import get_transport
 transport = get_transport("redis", url="redis://localhost:6379/0")
 custom = EventEmitter(transport=transport)
 ```
+
+When you pass `transport=`, the `backend` argument is ignored and the supplied
+transport is used directly — useful for tests or for sharing one transport
+across multiple emitters.
+
+## Metrics and history
+
+The memory backend tracks per-event performance data you can use for
+observation and debugging:
+
+```python
+ev = app.events.event("user.created")
+ev.get_metrics()
+# {'trigger_count': 12, 'total_listeners_executed': 12, 'average_execution_time': 0.0004}
+ev.get_history(limit=10)   # last 10 trigger records (timestamp, args, listeners, time)
+ev.to_json()               # serialize config + metrics for inspection
+```
+
+Metrics use a moving average of listener execution time; history keeps the most
+recent 100 triggers per event. These are in-process only and are intended for
+diagnostics, not for cross-instance aggregation.
 
 ---
 
@@ -326,6 +508,10 @@ custom = EventEmitter(transport=transport)
 | `get_transport(name, **opts)` | function | Build a transport by backend name. |
 | `register_transport(name, path)` | function | Register a custom `module:Class` backend. |
 | `setup_event_record()` | function | Build the `EventMessage` model for the `record` backend. |
+| `TransportError` | exception | Raised when a transport cannot fulfil a request. |
+| `EventCancelledError` | exception | Raised when an event is cancelled during propagation. |
+| `MaxListenersExceededError` | exception | Raised when the listener cap is hit. |
+| `ListenerAlreadyRegisteredError` | exception | Raised when a listener is registered twice. |
 
 ### `EventEmitter` methods
 
@@ -337,5 +523,16 @@ custom = EventEmitter(transport=transport)
 | `emit_async(name, *args, **kwargs)` | All backends — async, returns `{"event_id", "backend"}`. |
 | `start()` / `stop()` | Start/stop the transport's background loop. |
 | `remove_listener(name, fn)` / `remove_all_listeners(name=None)` | Detach listeners. |
+| `remove_event(name)` / `remove_all_events()` | Drop events entirely. |
+| `event(name)` / `event_names()` / `has_event(name)` | Inspect the registry. |
 | `namespace(prefix)` | Return an `EventNamespace`. |
 | `transport` | The underlying `BaseTransport` instance. |
+
+### Related guides
+
+- [Record: Scopes & Events](/guides/record/scopes-events) — model lifecycle events
+  (`before_create`, `after_create`, …) and observers.
+- [Work: Events](/guides/work/events) — the typed `@dataclass` event system used
+  by the work queue.
+- [WebSockets + Events](/guides/websockets/events) — bridging events to real-time
+  client pushes.
