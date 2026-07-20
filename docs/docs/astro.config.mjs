@@ -130,6 +130,7 @@ export default defineConfig({
                         { label: 'File Upload', link: '/guides/file-upload/' },
                         { label: 'Frontend (SPA)', link: '/guides/frontend/' },
                         { label: 'Startup & Shutdown', link: '/guides/startups-and-shutdowns/' },
+                        { label: 'Cache', link: '/guides/cache/' },
                     ],
             },
             {
@@ -179,12 +180,6 @@ export default defineConfig({
                     { label: 'Crypto', link: '/guides/helpers/crypto/' },
                     { label: 'Deprecation', link: '/guides/helpers/deprecation/' },
                     { label: 'Async', link: '/guides/helpers/async/' },
-                ],
-            },
-            {
-                label: 'Cache',
-                items: [
-                    { label: 'Overview', link: '/guides/cache/' },
                 ],
             },
             {
