@@ -4,6 +4,10 @@ Maps ``backend="memory"|"redis"|"persistent"|"record"`` to a transport.  Redis
 and record transports are imported lazily inside the factory so the base
 ``events`` package (and ``backend="memory"``) works without ``redis`` or
 Tortoise installed.
+
+Use :func:`get_transport` to build a transport directly, or let
+:class:`~sillo.events.emitter.EventEmitter` call it for you.  Register your own
+backend with :func:`register_transport`.
 """
 
 from __future__ import annotations
@@ -12,13 +16,24 @@ from typing import Any, Dict, Optional
 
 from .base import BaseTransport
 
+# Built-in backends.  Only ``memory`` is eagerly known; redis / persistent /
+# record are resolved inside get_transport so their heavy imports stay lazy.
 _AVAILABLE = {
     "memory": "sillo.events.transports.memory:MemoryTransport",
 }
 
 
 def register_transport(name: str, dotted_path: str) -> None:
-    """Register a custom transport by ``module:Class`` dotted path."""
+    """Register a custom transport by ``module:Class`` dotted path.
+
+    Args:
+        name: Backend identifier used with ``backend=`` / ``get_transport``.
+        dotted_path: Import path like ``"myapp.transports:KafkaTransport"``.
+
+    Example:
+        >>> register_transport("kafka", "myapp.transports:KafkaTransport")
+        >>> get_transport("kafka")
+    """
     _AVAILABLE[name] = dotted_path
 
 
@@ -32,8 +47,21 @@ def get_transport(
 ) -> BaseTransport:
     """Instantiate a transport by name.
 
-    Raises ``ValueError`` for an unknown backend; ``TransportError`` (from the
-    transport) if its optional dependency (redis / tortoise) is missing.
+    Args:
+        backend: One of ``"memory"``, ``"redis"``, ``"persistent"``,
+            ``"record"``, or a name registered via :func:`register_transport`.
+        namespace: Channel prefix forwarded to the transport.
+        on_error: Optional listener-error callback.
+        loop: Optional event loop for background tasks.
+        **kwargs: Backend-specific options (e.g. ``url=``, ``max_retries=``).
+
+    Returns:
+        A :class:`~sillo.events.transports.base.BaseTransport` instance.
+
+    Raises:
+        ValueError: for an unknown backend name.
+        TransportError: from the transport if its optional dependency
+            (``redis`` / ``tortoise-orm``) is missing.
     """
     if backend == "memory":
         from .memory import MemoryTransport
@@ -82,6 +110,15 @@ def setup_event_record() -> Any:
 
         from sillo.events.transports.record import setup_event_record
         EventMessage = setup_event_record()  # importable from your models module
+
+    Returns:
+        The concrete ``EventMessage`` Tortoise model (also assigned to the
+        module-level :data:`~sillo.events.transports.record.EventMessage` so
+        :class:`~sillo.events.transports.record.RecordTransport` can find it).
+
+    Raises:
+        TransportError: indirectly, if ``sillo.record`` / Tortoise is not
+            configured — the underlying import of ``sillo.record.Model`` fails.
     """
     from .record import build_event_message
 

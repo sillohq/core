@@ -447,7 +447,15 @@ class Event(EventSerializationMixin):
     async def _execute_listeners_async(
         self, event_data: Dict[str, Any], phase: EventPhase
     ) -> Dict[str, Any]:
-        """Async listener execution: coroutine listeners are awaited."""
+        """Async listener execution: coroutine listeners are awaited.
+
+        Unlike the synchronous :meth:`_execute_listeners` (which fire-and-forgets
+        coroutine listeners via ``create_task``), this *awaits* each coroutine
+        listener in priority order.  That is what makes networked delivery
+        correct: a listener's exceptions are observed and routed to the
+        transport's error handler, and ordering is preserved.  Synchronous
+        listeners are still called inline.
+        """
         start_time = time.time()
         listeners_executed = 0
         cancelled = False

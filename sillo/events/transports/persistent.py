@@ -1,12 +1,19 @@
 """sillo.events.transports.persistent — Durable Redis-backed transport.
 
-Events are pushed onto a Redis list (the backlog) instead of published.  A
-worker loop blocks on ``BRPOP`` and dispatches each message to local
-listeners, then acknowledges it.  Because the message lives in Redis until
-acknowledged, events survive a process restart and are delivered
-at-least-once.  Failed deliveries are requeued with a bounded retry count.
+Events are pushed onto a Redis list (the *backlog*) instead of published.  A
+worker loop blocks on ``BRPOP`` and dispatches each message to local listeners,
+then acknowledges it (by removing it from the list).  Because the message lives
+in Redis until acknowledged, events survive a process restart and are delivered
+*at-least-once*.  Failed deliveries are requeued with a bounded retry count.
 
-Lazy-imports ``redis`` like the redis pub/sub transport.
+Lazy-imports ``redis`` like the :class:`~sillo.events.transports.redis.RedisTransport`.
+
+When to use
+-----------
+Prefer this over the ``redis`` pub/sub backend when you cannot afford to lose
+events emitted while a consumer is offline (billing, notifications, audit).
+Accept the trade-off: higher latency (a worker must pop and dispatch) and one
+extra Redis list per namespace.
 """
 
 from __future__ import annotations
@@ -24,12 +31,38 @@ from .base import (
 
 logger = logging.getLogger("sillo.events.persistent")
 
+#: Default Redis connection URL used when no ``url`` is supplied.
 DEFAULT_URL = "redis://localhost:6379/0"
+#: Seconds to wait before retrying after a worker/connection failure.
 RECONNECT_DELAY = 2.0
+#: Maximum number of redelivery attempts before an event is dropped as
+#: permanently failed.
 MAX_RETRIES = 5
 
 
 class PersistentTransport(BaseTransport):
+    """Durable, at-least-once transport backed by a Redis backlog.
+
+    Args:
+        url: Redis connection URL.
+        namespace: Channel prefix (also prefixes the backlog key).
+        max_retries: Redelivery attempts for a failing event before it is
+            dropped.  Set to ``0`` to disable retries.
+        on_error: Optional listener-error callback.
+        loop: Optional event loop for the worker task.
+        **kwargs: Forwarded to ``redis.asyncio.from_url``.
+
+    Requires:
+        The ``redis`` package (``pip install redis`` / the ``events`` extra).
+
+    Example:
+        >>> from sillo.events.emitter import EventEmitter
+        >>> emitter = EventEmitter("persistent", url="redis://localhost:6379/0")
+        >>> await emitter.start()           # spawn the BRPOP worker
+        >>> emitter.on("invoice.due")(lambda i: charge(i))
+        >>> await emitter.emit_async("invoice.due", invoice)
+    """
+
     name = "persistent"
 
     def __init__(
@@ -50,13 +83,28 @@ class PersistentTransport(BaseTransport):
         self._worker: Optional[asyncio.Task] = None
 
     def _backlog_key(self) -> str:
+<<<<<<< Updated upstream
         return (
             f"{self.namespace}:sillo:events:backlog"
             if self.namespace
             else "sillo:events:backlog"
         )
+=======
+        """Redis list key holding the unacknowledged backlog.
+
+        Namespaced as ``"<namespace>:sillo:events:backlog"`` (or
+        ``"sillo:events:backlog"`` with no namespace) so multiple apps share
+        Redis safely.
+        """
+        return f"{self.namespace}:sillo:events:backlog" if self.namespace else "sillo:events:backlog"
+>>>>>>> Stashed changes
 
     def _connect(self):
+        """Lazily create the ``redis.asyncio`` client.
+
+        Raises:
+            TransportError: if the ``redis`` package is not installed.
+        """
         try:
             import redis.asyncio as aioredis
         except ImportError as exc:  # pragma: no cover - env dependent
@@ -69,12 +117,18 @@ class PersistentTransport(BaseTransport):
         return self._client
 
     async def ping(self) -> bool:
+        """Return ``True`` if Redis is reachable, ``False`` otherwise."""
         try:
             return bool(await self._connect().ping())
         except Exception:  # noqa: BLE001
             return False
 
     async def start(self) -> None:
+        """Connect and spawn the background ``BRPOP`` worker loop.
+
+        Idempotent.  Must be called (typically from ``app.on_startup``) before
+        any backlog is drained.
+        """
         if self._running:
             return
         self._connect()
@@ -82,6 +136,11 @@ class PersistentTransport(BaseTransport):
         self._worker = asyncio.ensure_future(self._drain_loop())
 
     async def stop(self) -> None:
+        """Cancel the worker loop and close the Redis connection.
+
+        In-flight messages remain in the backlog and are drained on the next
+        ``start`` — this is what makes delivery at-least-once across restarts.
+        """
         self._running = False
         if self._worker is not None:
             self._worker.cancel()
@@ -98,6 +157,12 @@ class PersistentTransport(BaseTransport):
             self._client = None
 
     async def publish(self, channel: str, envelope: Dict[str, Any]) -> None:
+        """Append *envelope* to the backlog for later draining.
+
+        Stores ``_channel`` (the original, namespaced channel) and ``_attempts``
+        (retry counter) alongside the envelope so the worker can route and
+        requeue it.  Raises :class:`TransportError` if Redis is unreachable.
+        """
         client = self._connect()
         envelope = dict(envelope, _channel=channel, _attempts=0)
         await client.rpush(self._backlog_key(), serialize_envelope(envelope))

@@ -37,6 +37,29 @@ class EventEmitter:
         loop=None,
         **transport_opts: Any,
     ):
+        """Create an event emitter.
+
+        Args:
+            backend: One of ``"memory"`` (default), ``"redis"``,
+                ``"persistent"``, ``"record"``.  Selects the delivery
+                transport.  See :mod:`sillo.events.transports`.
+            namespace: Optional channel prefix.  Every event name is published
+                as ``"<namespace>:<name>"`` and listeners registered under the
+                bare name still match.
+            transport: Optional pre-built :class:`~sillo.events.transports.base.BaseTransport`.
+                When given, ``backend`` is ignored and the supplied transport is
+                used directly (useful for tests or custom backends).
+            on_error: Optional callback ``(exc, channel, envelope) -> awaitable``
+                invoked when a listener raises.
+            loop: Optional event loop for networked transports' background tasks.
+            **transport_opts: Forwarded to the transport (e.g. ``url=`` for
+                redis/persistent, ``model=`` for record).
+
+        Note:
+            Networked backends (``redis``/``persistent``) require
+            ``await emitter.start()`` — typically wired to ``app.on_startup`` —
+            before cross-instance delivery works.
+        """
         self._events: Dict[str, Event] = {}
         self._lock = threading.RLock()
         self._namespace_separator = ":"
@@ -55,7 +78,14 @@ class EventEmitter:
         self._transport.set_error_handler(on_error or self._default_error_handler)
 
     async def _dispatch(self, channel: str, envelope: Dict[str, Any]) -> None:
-        """Run local listeners for a received/triggered event."""
+        """Run local listeners for a received/triggered event.
+
+        This is the dispatch callback bound to the transport.  It looks up the
+        in-process :class:`~sillo.events.core.Event` for *channel*, decodes the
+        envelope's ``args``/``kwargs``, and runs them via
+        :meth:`~sillo.events.core.Event.trigger_async` (so coroutine listeners
+        are awaited and their errors observed).
+        """
         event = self._events.get(channel)
         if event is None:
             return
@@ -186,6 +216,16 @@ class EventEmitter:
         For ``memory`` it awaits the local dispatch (coroutine listeners are
         awaited).  For networked backends it publishes through the transport;
         remote instances receive via their subscriber/worker loops.
+
+        Args:
+            event_name: Name of the event to trigger.
+            *args: Positional arguments forwarded to listeners.
+            **kwargs: Keyword arguments forwarded to listeners.
+
+        Returns:
+            ``{"event_id": <uuid4>, "backend": <backend name>}``.  Note this is
+            *not* the listener execution stats — for those, the ``memory``
+            backend's synchronous :meth:`emit` returns them directly.
         """
         envelope = serialize_payload(args, kwargs)
         await self._transport.publish(event_name, envelope)
@@ -282,6 +322,17 @@ class EventEmitter:
 class EventNamespace:
     """
     Namespace for organizing events hierarchically.
+
+    A thin wrapper that prefixes every event name with ``"<namespace>:"`` so
+    you can group related events (``ui:button.click``, ``ui:modal.open``)
+    without repeating the prefix.  Created via
+    :meth:`EventEmitter.namespace` / :meth:`EventNamespace.namespace` (nested).
+
+    Example:
+        >>> ui = emitter.namespace("ui")
+        >>> @ui.on("button.click")
+        ... async def on_click(btn): ...
+        >>> ui.emit("button.click", "submit")   # -> emitter.emit("ui:button.click", ...)
     """
 
     def __init__(self, emitter: EventEmitter, namespace: str):
@@ -374,7 +425,12 @@ class EventNamespace:
 
 class AsyncEventEmitter(EventEmitter):
     """
-    Event emitter with enhanced support for asynchronous operations.
+    .. deprecated:: 0.1.0
+
+        EventEmitter now supports async listeners natively via
+        :meth:`EventEmitter.emit_async` and coroutine ``on``/``once`` handlers,
+        so this subclass (which ran synchronous ``emit`` in a thread pool) is
+        redundant.  Use :class:`EventEmitter` instead.
     """
 
     def __init__(self, max_workers: Optional[int] = None):
