@@ -6,18 +6,94 @@ from typing import Any, Callable, Dict, List, Optional
 
 from .core import Event
 from .enums import EventPriority
+from .transports import get_transport
+from .transports.base import BaseTransport, serialize_payload
 
 
 class EventEmitter:
     """
     Advanced event emitter that manages multiple events and provides
     a namespace for event organization.
+
+    The emitter owns the in-process listener registry (``Event`` objects).
+    Delivery is delegated to a pluggable transport selected by ``backend``:
+
+    * ``"memory"`` (default) — in-process, synchronous dispatch.
+    * ``"redis"`` — cross-instance fan-out via Redis pub/sub.
+    * ``"persistent"`` — durable Redis backlog, at-least-once delivery.
+    * ``"record"`` — persist every event as a Tortoise ``EventMessage`` row.
+
+    Networked backends require ``await emitter.start()`` (typically wired to
+    ``app.on_startup``) so the subscriber/worker loops run.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        backend: str = "memory",
+        *,
+        namespace: str = "",
+        transport: Optional[BaseTransport] = None,
+        on_error=None,
+        loop=None,
+        **transport_opts: Any,
+    ):
         self._events: Dict[str, Event] = {}
         self._lock = threading.RLock()
         self._namespace_separator = ":"
+        self._backend = backend
+        if transport is not None:
+            self._transport = transport
+        else:
+            self._transport = get_transport(
+                backend,
+                namespace=namespace,
+                on_error=on_error,
+                loop=loop,
+                **transport_opts,
+            )
+        self._transport.bind(self._dispatch)
+        self._transport.set_error_handler(
+            on_error or self._default_error_handler
+        )
+
+    async def _dispatch(self, channel: str, envelope: Dict[str, Any]) -> None:
+        """Run local listeners for a received/triggered event."""
+        event = self._events.get(channel)
+        if event is None:
+            return
+        args = tuple(envelope.get("args", ()))
+        kwargs = envelope.get("kwargs", {})
+        await event.trigger_async(*args, **kwargs)
+
+    async def _default_error_handler(self, exc, channel, envelope) -> None:
+        logger = __import__("logging").getLogger("sillo.events")
+        logger.error("Listener error on %r: %s", channel, exc)
+
+    async def start(self) -> None:
+        """Start the underlying transport (subscriber/worker loops)."""
+        await self._transport.start()
+
+    async def stop(self) -> None:
+        """Stop the transport and release resources."""
+        await self._transport.stop()
+
+    @property
+    def transport(self) -> BaseTransport:
+        return self._transport
+
+    def _subscribe(self, event_name: str) -> None:
+        """Subscribe the transport to a channel when a listener is added.
+
+        Only transports that implement ``subscribe`` (redis pub/sub) react;
+        memory/persistent/record ignore it.
+        """
+        subscribe = getattr(self._transport, "subscribe", None)
+        if subscribe is not None:
+            try:
+                subscribe(event_name)
+            except RuntimeError:
+                # Loop not running yet — start() will subscribe on first emit.
+                pass
 
     def __contains__(self, event_name: str) -> bool:
         """Check if event exists"""
@@ -80,7 +156,13 @@ class EventEmitter:
 
     def emit(self, event_name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         """
-        Trigger an event by name.
+        Publish an event by name.
+
+        Synchronous for the ``memory`` backend (dispatches to local listeners
+        immediately and returns stats, preserving the original contract).
+        For networked backends (``redis``/``persistent``/``record``) use
+        :meth:`emit_async` instead — calling ``emit`` there raises a clear
+        error, since those require an event loop.
 
         Args:
             event_name: Name of the event to trigger
@@ -88,9 +170,30 @@ class EventEmitter:
             **kwargs: Keyword arguments to pass to listeners
 
         Returns:
-            Dictionary with execution statistics
+            Dictionary with delivery statistics (memory backend)
         """
+        if self._backend != "memory":
+            raise RuntimeError(
+                f"emit() is synchronous only for backend='memory', got "
+                f"{self._backend!r}. Use 'await emitter.emit_async(...)'."
+            )
         return self.event(event_name).trigger(*args, **kwargs)
+
+    async def emit_async(self, event_name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        """
+        Async publish, valid for every backend.
+
+        For ``memory`` it awaits the local dispatch (coroutine listeners are
+        awaited).  For networked backends it publishes through the transport;
+        remote instances receive via their subscriber/worker loops.
+        """
+        envelope = serialize_payload(args, kwargs)
+        await self._transport.publish(event_name, envelope)
+        return {"event_id": envelope["event_id"], "backend": self._backend}
+
+    def emit_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        """Alias for :meth:`emit` (memory backend, synchronous)."""
+        return self.emit(event_name, *args, **kwargs)
 
     def on(
         self,
@@ -115,6 +218,7 @@ class EventEmitter:
 
         def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
             self.event(event_name).listen(f, priority=priority, weak_ref=weak_ref)
+            self._subscribe(event_name)
             return f
 
         if func is None:
@@ -144,6 +248,7 @@ class EventEmitter:
 
         def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
             self.event(event_name).once(f, priority=priority, weak_ref=weak_ref)
+            self._subscribe(event_name)
             return f
 
         if func is None:
@@ -215,19 +320,13 @@ class EventNamespace:
             f"{self._namespace}{self._emitter._namespace_separator}{sub_namespace}",
         )
 
-    def emit(self, event_name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
-        """
-        Trigger an event within this namespace.
+    def emit(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+        """Publish an event within this namespace (sync, memory backend)."""
+        return self._emitter.emit(self._full(event_name), *args, **kwargs)
 
-        Args:
-            event_name: Name of the event (relative to namespace)
-            *args: Positional arguments to pass to listeners
-            **kwargs: Keyword arguments to pass to listeners
-
-        Returns:
-            Dictionary with execution statistics
-        """
-        return self.event(event_name).trigger(*args, **kwargs)
+    def emit_async(self, event_name: str, *args: Any, **kwargs: Any) -> Any:
+        """Async publish within this namespace (all backends)."""
+        return self._emitter.emit_async(self._full(event_name), *args, **kwargs)
 
     def on(
         self,
@@ -237,21 +336,12 @@ class EventNamespace:
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
     ) -> Callable[..., Any]:
-        """
-        Decorator or function to register a listener for an event in this namespace.
-
-        Args:
-            event_name: Name of the event (relative to namespace)
-            func: Listener function
-            priority: Listener priority
-            weak_ref: Use weak reference to the listener
-
-        Returns:
-            The decorated function or decorator
-        """
+        """Register a listener for an event in this namespace."""
 
         def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
-            self.event(event_name).listen(f, priority=priority, weak_ref=weak_ref)
+            self._emitter.on(
+                self._full(event_name), f, priority=priority, weak_ref=weak_ref
+            )
             return f
 
         if func is None:
@@ -266,26 +356,20 @@ class EventNamespace:
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
     ) -> Callable[..., Any]:
-        """
-        Decorator or function to register a one-time listener for an event in this namespace.
-
-        Args:
-            event_name: Name of the event (relative to namespace)
-            func: Listener function
-            priority: Listener priority
-            weak_ref: Use weak reference to the listener
-
-        Returns:
-            The decorated function or decorator
-        """
+        """Register a one-time listener for an event in this namespace."""
 
         def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
-            self.event(event_name).once(f, priority=priority, weak_ref=weak_ref)
+            self._emitter.once(
+                self._full(event_name), f, priority=priority, weak_ref=weak_ref
+            )
             return f
 
         if func is None:
             return decorator
         return decorator(func)
+
+    def _full(self, event_name: str) -> str:
+        return f"{self._namespace}{self._emitter._namespace_separator}{event_name}"
 
 
 class AsyncEventEmitter(EventEmitter):

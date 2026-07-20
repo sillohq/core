@@ -382,6 +382,137 @@ class Event(EventSerializationMixin):
                 event_data["context"].phase = phase
                 child.trigger(*event_data["args"], **event_data["kwargs"])
 
+    async def trigger_async(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        """Async variant of :meth:`trigger`.
+
+        Identical semantics to ``trigger`` but coroutine listeners are
+        *awaited* (in priority order) rather than fire-and-forget, so their
+        results and exceptions are observed.  Required for networked
+        transports where the dispatch callback is async.
+        """
+        if not self._enabled:
+            return {"cancelled": True, "reason": "Event disabled"}
+
+        with self._lock:
+            event_id = str(uuid.uuid4())
+            context = EventContext(
+                timestamp=time.time(), event_id=event_id, source=self
+            )
+            event_data: Dict[str, Any] = {
+                "args": args,
+                "kwargs": kwargs,
+                "context": context,
+                "cancelled": False,
+                "default_prevented": False,
+            }
+
+        try:
+            if self.parent:
+                await self._propagate_async(event_data, EventPhase.CAPTURING)
+
+            execution_stats = await self._execute_listeners_async(
+                event_data, EventPhase.AT_TARGET
+            )
+
+            if not event_data["cancelled"] and self.parent:
+                await self._propagate_async(event_data, EventPhase.BUBBLING)
+
+            self._update_metrics(execution_stats)
+            self._record_history(event_data, execution_stats)
+
+            if event_data["cancelled"]:
+                raise EventCancelledError("Event was cancelled during propagation")
+
+            return {
+                "event_id": event_id,
+                "listeners_executed": execution_stats["total"],
+                "execution_time": execution_stats["total_time"],
+                "cancelled": event_data["cancelled"],
+            }
+        except Exception as e:
+            logger.error(
+                f"Error triggering event '{self.name}': {str(e)}", exc_info=True
+            )
+            raise
+
+    async def _propagate_async(self, event_data: Dict[str, Any], phase: EventPhase):
+        if phase == EventPhase.CAPTURING and self.parent:
+            event_data["context"].phase = phase
+            await self.parent.trigger_async(
+                *event_data["args"], **event_data["kwargs"]
+            )
+        elif phase == EventPhase.BUBBLING and self.children:
+            for child in self.children:
+                event_data["context"].phase = phase
+                await child.trigger_async(
+                    *event_data["args"], **event_data["kwargs"]
+                )
+
+    async def _execute_listeners_async(
+        self, event_data: Dict[str, Any], phase: EventPhase
+    ) -> Dict[str, Any]:
+        """Async listener execution: coroutine listeners are awaited."""
+        start_time = time.time()
+        listeners_executed = 0
+        cancelled = False
+
+        with self._lock:
+            all_listeners: List[Tuple[ListenerType, EventPriority, bool]] = []
+            for priority in EventPriority:
+                all_listeners.extend(
+                    (listener, priority, False)
+                    for listener in self._listeners[priority]
+                )
+                all_listeners.extend(
+                    (listener, priority, True)
+                    for listener in self._once_listeners[priority]
+                )
+            for priority in EventPriority:
+                self._once_listeners[priority].clear()
+
+        for listener, priority, _ in all_listeners:
+            if event_data.get("cancelled", False):
+                cancelled = True
+                break
+            try:
+                actual_listener: Optional[Callable[..., Any]] = None
+                if isinstance(listener, (ref, WeakMethod)):
+                    actual_listener = listener()
+                    if actual_listener is None:
+                        continue
+                else:
+                    actual_listener = listener
+                if actual_listener is None:
+                    continue
+
+                event_data["context"].phase = phase
+
+                if asyncio.iscoroutinefunction(actual_listener):
+                    await actual_listener(
+                        *event_data["args"], **event_data["kwargs"]
+                    )
+                else:
+                    actual_listener(*event_data["args"], **event_data["kwargs"])
+
+                listeners_executed += 1
+            except EventCancelledError:
+                event_data["cancelled"] = True
+                cancelled = True
+                break
+            except Exception as e:
+                logger.error(
+                    f"Error in event listener for '{self.name}': {str(e)}",
+                    exc_info=True,
+                )
+
+        execution_time = time.time() - start_time
+        return {
+            "total": listeners_executed,
+            "total_time": execution_time,
+            "average_time": execution_time / max(1, listeners_executed),
+            "cancelled": cancelled,
+        }
+
     def _execute_listeners(
         self, event_data: Dict[str, Any], phase: EventPhase
     ) -> Dict[str, Any]:

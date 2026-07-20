@@ -9,6 +9,8 @@ from .exceptions import (
 )
 from .mixins import EventSerializationMixin
 from .types import EventContext, EventProtocol, ListenerType
+from .transports import get_transport, register_transport, setup_event_record
+from .transports.base import BaseTransport, TransportError
 
 __all__ = [
     "Event",
@@ -25,4 +27,9 @@ __all__ = [
     "EventProtocol",
     "ListenerType",
     "EventSerializationMixin",
+    "BaseTransport",
+    "TransportError",
+    "get_transport",
+    "register_transport",
+    "setup_event_record",
 ]
