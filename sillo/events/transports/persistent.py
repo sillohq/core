@@ -89,7 +89,11 @@ class PersistentTransport(BaseTransport):
         ``"sillo:events:backlog"`` with no namespace) so multiple apps share
         Redis safely.
         """
-        return f"{self.namespace}:sillo:events:backlog" if self.namespace else "sillo:events:backlog"
+        return (
+            f"{self.namespace}:sillo:events:backlog"
+            if self.namespace
+            else "sillo:events:backlog"
+        )
 
     def _connect(self):
         """Lazily create the ``redis.asyncio`` client.
