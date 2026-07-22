@@ -133,7 +133,7 @@ print(user.has_perm("anything"))         # False unless superuser / wired up
 
 - `identity` returns `str(self.id)` — the stable string used by backends and `load_user`.
 - `display_name` returns `username` — for logs and UI.
-- `has_perm(perm)` returns `True` for superusers, otherwise checks an in-memory `_permissions` list (empty by default). To drive permissions from your own source (a role table, an enum, an external service), override `has_perm` / `has_permission` — see [Custom user classes](#custom-user-classes).
+- `has_permission(perm)` returns `True` for superusers, `False` for inactive users, otherwise dispatches to the active permissions system (see [DB-backed permissions](#db-backed-permissions) below).
 - `load_user(identity)` resolves through `UserManager().get_by_id(int(identity))`, which returns **only active** users. A deactivated (`is_active=False`) user fails to load and is treated as unauthenticated.
 
 ### Authenticating credentials
@@ -234,6 +234,32 @@ if needs_rehash(user.password, rounds=14):
     await user.save()
 ```
 
+## DB-backed permissions
+
+`UserBaseModel` checks `has_permission` via an in-memory list that is empty by default. For production apps that need persistent, queryable permissions — roles, groups, audits, admin UIs — use `sillo.permissions`:
+
+```python
+from sillo.permissions import PermissionMixin, Permission, Group
+
+class Account(PermissionMixin, UserBaseModel):
+    class Meta:
+        table = "accounts"
+
+# Define
+await Permission.define("posts:create")
+
+# Assign directly or via groups
+await Permission.assign(user, "posts:create")
+await Group.get_or_create("editors").add_permissions("posts:create")
+
+# Check
+user.has_permission("posts:create")   # True
+```
+
+See the [Permissions](/guides/permissions/) guide for the full API — groups, inheritance, batch operations, caching, startup seeding, and the complete reference.
+
+If you don't want the DB-backed model — perhaps permissions come from an external role table, an LDAP group, or an enum — implement `has_permission` directly on your user class (see [Custom user classes](#custom-user-classes) below). The `sillo.permissions` module is optional; `useAuth` works with any user that implements `has_permission`.
+
 ## Custom user classes
 
 You have two extension paths:
@@ -288,7 +314,26 @@ app.use(AuthenticationMiddleware(user_model=LDAPUser, backend=LDAPBackend()))
 
 ### Path B — extend the database model (`UserBaseModel` / `User`)
 
-`User` is the default. To add fields, mixins, or custom permission logic, subclass `User` (or `UserBaseModel`):
+`User` is the default. To add fields, mixins, or custom permission logic, subclass `User` (or `UserBaseModel`).
+
+**With DB-backed permissions** (recommended — mix in `PermissionMixin`):
+
+```python
+from sillo.users import User
+from sillo.permissions import PermissionMixin
+from sillo.record import TimestampsMixin, SoftDeletesMixin
+from sillo.auth.jwt_auth.mixins import JWTUserMixin
+
+class Account(PermissionMixin, User, TimestampsMixin, SoftDeletesMixin, JWTUserMixin):
+    bio = fields.TextField(null=True)
+
+    # has_permission / has_perm come from PermissionMixin.
+    # Call await user.load_permissions() after login to warm the cache.
+```
+
+`PermissionMixin` must come **first** among base classes so its `has_permission` / `has_perm` override the defaults.
+
+**With custom permission logic** — override `has_perm` when you have your own source (an enum, a role table, an external API):
 
 ```python
 from sillo.users import User
@@ -303,7 +348,7 @@ class Account(User, TimestampsMixin, SoftDeletesMixin, JWTUserMixin):
             return False
         if self.is_superuser:
             return True
-        return perm in (self.permissions or [])
+        return perm in self._permissions
 ```
 
 `UserBaseModel` is the abstract base (`Meta.abstract = True`); `User` is just `UserBaseModel` with `table="users"` and the manager attached. Build your own from `UserBaseModel` when you want a different table name or a fully custom base:
@@ -392,6 +437,7 @@ If you internalize that arrow — *identity → `load_user` → `request.user`* 
 
 ## Related
 
+- [Permissions](/guides/permissions/) — full permission system with groups, caching, and inheritance
 - [Authentication](/guides/authentication/) — middleware + backend model
 - [Protecting Routes](/guides/protecting-routes/) — `useAuth` and `has_permission`
 - [JWT](/guides/jwt-auth/) · [Sessions](/guides/session-auth/) · [API Keys](/guides/api-keys/)

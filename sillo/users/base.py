@@ -238,7 +238,10 @@ class UserBaseModel(Model, UserProtocol):
             uid = int(identity)
         except (TypeError, ValueError):
             return None
-        return await cls.filter(id=uid, is_active=True).first()
+        user = await cls.filter(id=uid, is_active=True).first()
+        if user is not None and hasattr(user, "load_permissions"):
+            await user.load_permissions()
+        return user
 
     @classmethod
     def get_email_field_name(cls) -> str:
@@ -271,6 +274,8 @@ class UserBaseModel(Model, UserProtocol):
         if not user.check_password(password):
             return None
         await user.set_last_login()
+        if hasattr(user, "load_permissions"):
+            await user.load_permissions()
         return user
 
 

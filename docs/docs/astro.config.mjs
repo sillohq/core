@@ -102,6 +102,7 @@ export default defineConfig({
                     items: [
                         { label: 'Overview', link: '/guides/authentication/' },
                         { label: 'Protecting Routes', link: '/guides/protecting-routes/' },
+                        { label: 'Permissions', link: '/guides/permissions/' },
                         { label: 'Users & User Models', link: '/guides/users/' },
                         { label: 'JWT Authentication', link: '/guides/jwt-auth/' },
                         { label: 'Session Authentication', link: '/guides/session-auth/' },
