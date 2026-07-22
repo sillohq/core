@@ -30,7 +30,7 @@ from sillo.routing import Group
 from sillo.static import StaticFiles
 from .registry import ModelAdmin, Registry
 from .auth import AuthBackend, SessionAuth
-from .router import AdminRouter
+from .router import build_routes
 
 
 class AdminSite:
@@ -56,7 +56,7 @@ class AdminSite:
         self.prefix = prefix.rstrip("/")
         self.registry = Registry()
         self.auth = auth_backend or SessionAuth()
-        self.router = AdminRouter(self)
+        self._build_routes = build_routes
         self._setup = False
 
     def register(
@@ -98,7 +98,7 @@ class AdminSite:
             app.router.routes.append(static_group)
 
     def _register_routes(self, app) -> None:
-        for route in self.router.build_routes():
+        for route in self._build_routes(self):
             app.router.add_route(route)
 
 
