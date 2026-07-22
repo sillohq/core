@@ -105,7 +105,6 @@ class MemoryCache(BaseCache):
         # OrderedDict doubles as the LRU: most-recently-used at the end.
         self._store: collections.OrderedDict[str, "_Entry"] = collections.OrderedDict()
         self._tags: Dict[str, set] = {}
-        
 
     # ---- internal entry type ---------------------------------------
 
@@ -625,14 +624,16 @@ class RedisCache(BaseCache):
 
         value = deserialize(raw)
         now = time.monotonic()
-        
+
         # Handle sliding TTL
         if not isinstance(value, dict):
             # Simple value
             await self.touch(key, None, now)
         else:
             # Check if it's a sliding TTL stored value
-            if value.get("_sliding", False) or (not value.get("_expire_at") or value["_expire_at"] > now):
+            if value.get("_sliding", False) or (
+                not value.get("_expire_at") or value["_expire_at"] > now
+            ):
                 await self.touch(key, value.get("_ttl"), now)
 
         self._stats.hits += 1
@@ -729,7 +730,9 @@ class RedisCache(BaseCache):
         redis = await self._redis()
         return await redis.exists(key) > 0
 
-    async def touch(self, key: str, ttl: Optional[int] = None, now: Optional[float] = None) -> bool:
+    async def touch(
+        self, key: str, ttl: Optional[int] = None, now: Optional[float] = None
+    ) -> bool:
         """Refresh the TTL of a key in the Redis cache store.
 
         Issues a Redis ``EXPIRE`` command to reset the key's expiration
@@ -805,9 +808,7 @@ class RedisCache(BaseCache):
             pattern = f"{self.namespace}:*"
             cursor = 0
             while True:
-                cursor, keys = await redis.scan(
-                    cursor=cursor, match=pattern, count=100
-                )
+                cursor, keys = await redis.scan(cursor=cursor, match=pattern, count=100)
                 if keys:
                     await redis.delete(*keys)
                 if cursor == 0:
@@ -829,5 +830,6 @@ class RedisCache(BaseCache):
                 await self._client.close()
             except Exception:  # noqa: BLE001
                 pass
+
 
 __all__ = ["MemoryCache", "RedisCache"]
