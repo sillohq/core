@@ -3,6 +3,8 @@ from __future__ import annotations
 import traceback
 import typing
 
+from pydantic import ValidationError
+
 from sillo import logging
 from sillo.auth.exceptions import AuthenticationFailed, AuthErrorHandler
 from sillo.exceptions import HTTPException, NotFoundException
@@ -64,6 +66,7 @@ class ExceptionMiddleware:
             HTTPException: self.http_exception,
             AuthenticationFailed: AuthErrorHandler,
             NotFoundException: handle_404_error,
+            ValidationError: pydantic_validation_error_handler,
         }
 
     def add_exception_handler(
@@ -102,3 +105,24 @@ class ExceptionMiddleware:
         return response.json(
             exc.detail, status_code=exc.status_code, headers=exc.headers
         )
+
+
+async def pydantic_validation_error_handler(
+    request: Request, response: Response, exc: ValidationError
+) -> Response:
+    errors = exc.errors()
+    error_dict = {}
+    for e in errors:
+        loc, msg = e["loc"], e["msg"]
+        if len(loc) == 1:
+            error_dict[loc[0]] = msg
+        elif len(loc) == 2:
+            if loc[0] not in error_dict:
+                error_dict[loc[0]] = {}
+            error_dict[loc[0]][loc[1]] = msg
+        else:
+            error_dict[".".join(map(str, loc))] = msg
+    return response.json(
+        {"error": "Validation Error", "errors": error_dict},
+        status_code=422,
+    )

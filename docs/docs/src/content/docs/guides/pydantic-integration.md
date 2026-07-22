@@ -57,55 +57,19 @@ async def create_user(request, response):
 
 ## ⚠️ Error Handling
 
-sillo provides a built-in error handler for Pydantic validation errors with multiple formatting options:
+Pydantic's `ValidationError` is caught **automatically** by sillo and returned as a `422` JSON response with nested error details:
 
-```python
-from sillo.utils.pydantic import add_pydantic_error_handler
-
-# Add the error handler to your app
-add_pydantic_error_handler(app, style="list", status_code=422)
+```json
+{
+  "error": "Validation Error",
+  "errors": {
+    "username": "field required",
+    "email": "invalid email format"
+  }
+}
 ```
 
-### Error Formats
-
-Choose from three different error formats:
-
-1. **Flat Format**
-   ```json
-   {
-     "error": "Validation Error",
-     "errors": {
-       "username": "field required",
-       "email": "invalid email format"
-     }
-   }
-   ```
-
-2. **List Format**
-   ```json
-   {
-     "error": "Validation Error",
-     "errors": [
-       {"field": "username", "message": "field required"},
-       {"field": "email", "message": "invalid email format"}
-     ]
-   }
-   ```
-
-3. **Nested Format** (default)
-   ```json
-   {
-     "error": "Validation Error",
-     "errors": {
-       "user": {
-         "username": "field required",
-         "profile": {
-           "email": "invalid email format"
-         }
-       }
-     }
-   }
-   ```
+You don't need to register any handler — it works out of the box. The response body uses a nested format that maps field paths to error messages.
 
 ##  Advanced Usage
 

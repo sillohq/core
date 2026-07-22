@@ -123,7 +123,7 @@ export default defineConfig({
                 {
                     label: 'Features',
                     items: [
-                        { label: 'Concurrency', link: '/guides/concurrency/' },
+                        { label: 'Thread Pool', link: '/guides/concurrency/' },
                         { label: 'Pagination', link: '/guides/pagination/' },
                         { label: 'Event System', link: '/guides/events/' },
                         { label: 'Pydantic Integration', link: '/guides/pydantic-integration/' },
