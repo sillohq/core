@@ -145,7 +145,9 @@ def _field_label(field_name: str) -> str:
     return field_name.replace("_", " ").title()
 
 
-async def _resolve_fk_value(obj, field_name: str, field_obj, admin_site, *, as_link: bool = True):
+async def _resolve_fk_value(
+    obj, field_name: str, field_obj, admin_site, *, as_link: bool = True
+):
     try:
         related = await getattr(obj, field_name)
     except Exception:
@@ -182,7 +184,9 @@ async def _collect_form(request):
 
     def get(key):
         v = form.get(key)
-        return v if isinstance(v, str) else (v[0] if isinstance(v, (list, tuple)) else v)
+        return (
+            v if isinstance(v, str) else (v[0] if isinstance(v, (list, tuple)) else v)
+        )
 
     def getlist(key):
         v = form.getlist(key)
@@ -272,7 +276,9 @@ async def _build_form_fields(meta, admin, obj=None, is_create=True):
                     "value": "",
                     "required": required and is_create,
                     "readonly": readonly,
-                    "help": "Leave blank to keep unchanged." if is_update else "Use a strong password (min 8 characters).",
+                    "help": "Leave blank to keep unchanged."
+                    if is_update
+                    else "Use a strong password (min 8 characters).",
                 }
             )
             continue
@@ -308,7 +314,9 @@ async def _build_form_fields(meta, admin, obj=None, is_create=True):
             if obj is not None:
                 try:
                     rels = await getattr(obj, f_name).all()
-                    current_ids = [str(getattr(r, "pk", getattr(r, "id"))) for r in rels]
+                    current_ids = [
+                        str(getattr(r, "pk", getattr(r, "id"))) for r in rels
+                    ]
                 except Exception:
                     current_ids = []
             rel_name, rel_slug, options = await _get_m2m_options(field_obj, current_ids)
@@ -528,10 +536,14 @@ async def list_view(request, response, site, model_cls, admin_cls):
         row_cells = []
         for ci in column_info:
             if ci["type"] == "fk" and ci["field_obj"]:
-                label, link = await _resolve_fk_value(item, ci["name"], ci["field_obj"], site)
+                label, link = await _resolve_fk_value(
+                    item, ci["name"], ci["field_obj"], site
+                )
                 row_cells.append({"value": label, "link": link, "type": "fk"})
             elif ci["type"] == "m2m" and ci["field_obj"]:
-                related = await _resolve_m2m_value(item, ci["name"], ci["field_obj"], site)
+                related = await _resolve_m2m_value(
+                    item, ci["name"], ci["field_obj"], site
+                )
                 row_cells.append(
                     {
                         "value": f"{len(related)} item(s)",
@@ -541,7 +553,13 @@ async def list_view(request, response, site, model_cls, admin_cls):
                     }
                 )
             elif ci["type"] == "password":
-                row_cells.append({"value": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022", "link": None, "type": "password"})
+                row_cells.append(
+                    {
+                        "value": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+                        "link": None,
+                        "type": "password",
+                    }
+                )
             else:
                 raw = getattr(item, ci["name"], "")
                 row_cells.append(
@@ -553,7 +571,9 @@ async def list_view(request, response, site, model_cls, admin_cls):
                 )
         rows.append({"pk": item.pk, "cells": row_cells})
 
-    link_cols = [c for c in (admin_cls.list_display_links or []) if not _should_skip_field(c)]
+    link_cols = [
+        c for c in (admin_cls.list_display_links or []) if not _should_skip_field(c)
+    ]
     if not link_cols and columns:
         link_cols = [columns[0]]
 
@@ -610,10 +630,18 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
         field_obj = meta.fields_map.get(f)
         kind = _field_kind(field_obj, f) if field_obj else "text"
         if kind == "password":
-            fields.append({"label": label, "value": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022", "type": "password"})
+            fields.append(
+                {
+                    "label": label,
+                    "value": "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022",
+                    "type": "password",
+                }
+            )
         elif kind in ("fk", "o2o"):
             display, link = await _resolve_fk_value(obj, f, field_obj, site)
-            fields.append({"label": label, "value": display, "link": link, "type": "fk"})
+            fields.append(
+                {"label": label, "value": display, "link": link, "type": "fk"}
+            )
         elif kind == "m2m":
             related_list = await _resolve_m2m_value(obj, f, field_obj, site)
             fields.append({"label": label, "value": related_list, "type": "m2m"})
@@ -648,7 +676,10 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
                 related = list(manager) if manager else []
             fwd = None
             for fn, fo in rel_model._meta.fields_map.items():
-                if isinstance(fo, (ForeignKeyFieldInstance, OneToOneFieldInstance)) and getattr(fo, "related_model", None) is model_cls:
+                if (
+                    isinstance(fo, (ForeignKeyFieldInstance, OneToOneFieldInstance))
+                    and getattr(fo, "related_model", None) is model_cls
+                ):
                     fwd = fn
                     break
             list_link = (
@@ -838,9 +869,7 @@ async def delete_view(request, response, site, model_cls, admin_cls, id):
     if request.method == "POST":
         await _log(request, "delete", model_name, site, id)
         await obj.delete()
-        return response.redirect(
-            f"{site.prefix}/{model_slug}/", status_code=302
-        )
+        return response.redirect(f"{site.prefix}/{model_slug}/", status_code=302)
     return response.html(_render("delete.html", **ctx))
 
 

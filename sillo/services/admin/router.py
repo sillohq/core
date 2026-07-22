@@ -26,7 +26,9 @@ def build_routes(site) -> list:
             methods=["GET", "POST"],
             name="admin-login",
         ),
-        Route(f"{p}/logout/", _logout_handler(site), methods=["GET"], name="admin-logout"),
+        Route(
+            f"{p}/logout/", _logout_handler(site), methods=["GET"], name="admin-logout"
+        ),
         Route(
             f"{p}/",
             _dashboard_handler(site),
@@ -81,52 +83,61 @@ def build_routes(site) -> list:
 def _login_handler(site):
     async def handler(request, response):
         return await login_view(request, response, site)
+
     return handler
 
 
 def _logout_handler(site):
     async def handler(request, response):
         return await logout_view(request, response, site)
+
     return handler
 
 
 def _dashboard_handler(site):
     async def handler(request, response):
         return await dashboard_view(request, response, site)
+
     return handler
 
 
 def _list_handler(site, model_cls, admin_cls):
     async def handler(request, response):
         return await list_view(request, response, site, model_cls, admin_cls)
+
     return handler
 
 
 def _create_handler(site, model_cls, admin_cls):
     async def handler(request, response):
         return await create_view(request, response, site, model_cls, admin_cls)
+
     return handler
 
 
 def _detail_handler(site, model_cls, admin_cls):
     async def handler(request, response, id):
         return await detail_view(request, response, site, model_cls, admin_cls, id)
+
     return handler
 
 
 def _update_handler(site, model_cls, admin_cls):
     async def handler(request, response, id):
         return await update_view(request, response, site, model_cls, admin_cls, id)
+
     return handler
 
 
 def _delete_handler(site, model_cls, admin_cls):
     async def handler(request, response, id):
         return await delete_view(request, response, site, model_cls, admin_cls, id)
+
     return handler
 
 
 def _bulk_handler(site, model_cls, admin_cls):
     async def handler(request, response):
         return await bulk_view(request, response, site, model_cls, admin_cls)
+
     return handler
