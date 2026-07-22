@@ -409,7 +409,9 @@ class MemoryCache(BaseCache):
                 for k in to_remove:
                     del self._store[k]
                 tag_prefix = f"tag:{self.namespace}:"
-                self._tags = {k: v for k, v in self._tags.items() if not k.startswith(tag_prefix)}
+                self._tags = {
+                    k: v for k, v in self._tags.items() if not k.startswith(tag_prefix)
+                }
             else:
                 self._store.clear()
                 self._tags.clear()

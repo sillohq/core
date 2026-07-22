@@ -854,7 +854,6 @@ class StreamingResponse(BaseResponse):
         self.content_type = content_type
         self.headers["content-type"] = self.content_type
         del self.headers["content-length"]
-        
 
     async def listen_for_disconnect(self, receive: Receive) -> None:
         while True:
@@ -1057,7 +1056,7 @@ class Responder:
 
     def has_header(self, key: str) -> bool:
         """Check if a header is present in the response."""
-        
+
         return key.lower() in (k.lower() for k in self.headers.keys())
 
     def text(
