@@ -90,9 +90,7 @@ class Permission(Model):
         perm = await cls.get_or_none(name=name)
         if perm is None:
             return False
-        return await UserPermission.filter(
-            user_id=user_id, permission=perm
-        ).exists()
+        return await UserPermission.filter(user_id=user_id, permission=perm).exists()
 
     # ── group helpers ─────────────────────────────────────────────
 
@@ -254,7 +252,9 @@ class GroupPermission(Model):
     """Link table between a Group and a Permission."""
 
     group = fields.ForeignKeyField("models.Group", related_name="group_permissions")
-    permission = fields.ForeignKeyField("models.Permission", related_name="group_permissions")
+    permission = fields.ForeignKeyField(
+        "models.Permission", related_name="group_permissions"
+    )
 
     class Meta:
         table = "perm_group_permissions"

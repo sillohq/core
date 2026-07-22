@@ -40,10 +40,9 @@ class PermissionMixin:
         memberships = await Group.of_user(self)
         if memberships:
             group_ids = [g.id for g in memberships]
-            gp_rows = (
-                await GroupPermission.filter(group_id__in=group_ids)
-                .prefetch_related("permission")
-            )
+            gp_rows = await GroupPermission.filter(
+                group_id__in=group_ids
+            ).prefetch_related("permission")
             for gp in gp_rows:
                 inherited.add(gp.permission.name)
 
@@ -89,8 +88,7 @@ class PermissionMixin:
         if not memberships:
             return set()
         group_ids = [g.id for g in memberships]
-        gp_rows = (
-            await GroupPermission.filter(group_id__in=group_ids)
-            .prefetch_related("permission")
+        gp_rows = await GroupPermission.filter(group_id__in=group_ids).prefetch_related(
+            "permission"
         )
         return {gp.permission.name for gp in gp_rows}
