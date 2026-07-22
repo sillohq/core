@@ -24,11 +24,11 @@ class InMemoryBackend(RateLimitBackend):
     def __init__(self) -> None:
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._store: dict[str, tuple[dict, float]] = {}
         self._lock = asyncio.Lock()
@@ -36,14 +36,14 @@ class InMemoryBackend(RateLimitBackend):
     async def fetch_state(self, key: str) -> Optional[dict]:
         """Fetch State
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         async with self._lock:
             item = self._store.get(key)
@@ -58,16 +58,16 @@ class InMemoryBackend(RateLimitBackend):
     async def save_state(self, key: str, state: dict, ttl: int) -> None:
         """Save State
 
-            Args:
-                key: [description]
-                state: [description]
-                ttl: [description]
+        Args:
+            key: [description]
+            state: [description]
+            ttl: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         async with self._lock:
             self._store[key] = (state, time.time() + ttl)
@@ -75,11 +75,11 @@ class InMemoryBackend(RateLimitBackend):
     async def clear(self) -> None:
         """Clear
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         async with self._lock:
             self._store.clear()

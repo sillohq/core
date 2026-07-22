@@ -73,14 +73,14 @@ class BackgroundTask:
     ) -> None:
         """Init
 
-            Args:
-                func: [description]
+        Args:
+            func: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._task_obj = Task(
             func,
@@ -191,11 +191,11 @@ class BackgroundTask:
             async def _wrapper(*a, **kw):
                 """Wrapper
 
-                    Returns:
-                        [description]
+                Returns:
+                    [description]
 
-                    Raises:
-                        [description]
+                Raises:
+                    [description]
                 """
                 return func(*a, **kw)
 
@@ -249,10 +249,10 @@ class BackgroundTask:
     def __repr__(self) -> str:
         """Repr
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return f"BackgroundTask({self.name}, done={self.done})"

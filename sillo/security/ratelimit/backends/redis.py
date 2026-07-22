@@ -39,15 +39,15 @@ class RedisBackend(RateLimitBackend):
     ) -> None:
         """Init
 
-            Args:
-                url: [description]
-                prefix: [description]
+        Args:
+            url: [description]
+            prefix: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             import redis.asyncio as aioredis
@@ -64,28 +64,28 @@ class RedisBackend(RateLimitBackend):
     def _key(self, key: str) -> str:
         """Key
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return f"{self._prefix}{key}"
 
     async def fetch_state(self, key: str) -> Optional[dict]:
         """Fetch State
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         raw = await self._client.get(self._key(key))
         if raw is None:
@@ -98,16 +98,16 @@ class RedisBackend(RateLimitBackend):
     async def save_state(self, key: str, state: dict, ttl: int) -> None:
         """Save State
 
-            Args:
-                key: [description]
-                state: [description]
-                ttl: [description]
+        Args:
+            key: [description]
+            state: [description]
+            ttl: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         payload = json.dumps(state)
         await self._script(keys=[self._key(key)], args=[ttl, payload])
@@ -115,11 +115,11 @@ class RedisBackend(RateLimitBackend):
     async def clear(self) -> None:
         """Clear
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         async for name in self._client.scan_iter(match=f"{self._prefix}*"):
             await self._client.delete(name)

@@ -20,12 +20,13 @@ from typing_extensions import Doc
 class DatabaseBackend(Enum):
     """Databasebackend
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     SQLITE = "sqlite"
     POSTGRES = "postgres"
     MYSQL = "mysql"
@@ -72,11 +73,11 @@ class DatabaseConfig:
     def __post_init__(self):
         """Post Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.url.startswith("postgres") or self.url.startswith("postgresql"):
             self.backend = DatabaseBackend.POSTGRES
@@ -144,11 +145,11 @@ class DatabaseConfig:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         d = {k: v for k, v in self.__dict__.items()}
         d["backend"] = self.backend.value

@@ -16,15 +16,15 @@ class UserManager:
     def contribute_to_class(self, model, name: str):
         """Contribute To Class
 
-            Args:
-                model: [description]
-                name: [description]
+        Args:
+            model: [description]
+            name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.model = model
 
@@ -37,16 +37,16 @@ class UserManager:
     ):
         """Create User
 
-            Args:
-                email: [description]
-                username: [description]
-                password: [description]
+        Args:
+            email: [description]
+            username: [description]
+            password: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.model is None:
             from sillo.users.base import User as DefaultUser
@@ -75,16 +75,16 @@ class UserManager:
     ):
         """Create Superuser
 
-            Args:
-                email: [description]
-                username: [description]
-                password: [description]
+        Args:
+            email: [description]
+            username: [description]
+            password: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -104,14 +104,14 @@ class UserManager:
     async def get_by_id(self, user_id: int):
         """Get By Id
 
-            Args:
-                user_id: [description]
+        Args:
+            user_id: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.model is None:
             from sillo.users.base import User as DefaultUser
@@ -122,14 +122,14 @@ class UserManager:
     async def get_by_email(self, email: str):
         """Get By Email
 
-            Args:
-                email: [description]
+        Args:
+            email: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.model is None:
             from sillo.users.base import User as DefaultUser
@@ -140,14 +140,14 @@ class UserManager:
     async def get_by_username(self, username: str):
         """Get By Username
 
-            Args:
-                username: [description]
+        Args:
+            username: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.model is None:
             from sillo.users.base import User as DefaultUser

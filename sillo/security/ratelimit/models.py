@@ -30,26 +30,27 @@ class RateLimitCounter(Model):
     class Meta:
         """Meta
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
+
         table = "sillo_ratelimit_counters"
 
     @classmethod
     async def fetch(cls, key: str) -> Optional[dict]:
         """Fetch
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         row = await cls.get_or_none(key=key)
         if row is None:
@@ -65,19 +66,18 @@ class RateLimitCounter(Model):
 
     @classmethod
     async def save_state(cls, key: str, state: dict, ttl: int) -> None:
-
         """Save State
 
-            Args:
-                key: [description]
-                state: [description]
-                ttl: [description]
+        Args:
+            key: [description]
+            state: [description]
+            ttl: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         payload = json.dumps(state)
         expires_at = int(time.time()) + ttl
@@ -93,10 +93,10 @@ class RateLimitCounter(Model):
     async def clear_all(cls) -> None:
         """Clear All
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         await cls.all().delete()

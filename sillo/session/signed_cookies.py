@@ -7,24 +7,25 @@ from .base import BaseSessionInterface
 class SignedSessionManager(BaseSessionInterface):
     """Signedsessionmanager
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, config=None, secret_key: typing.Optional[str] = None):
+        """Init
+
+        Args:
+            config: [description]
+            secret_key: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, config=None, secret_key: typing.Optional[str] = None):
-        """Init
-
-            Args:
-                config: [description]
-                secret_key: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         super().__init__(config)
 
@@ -39,28 +40,28 @@ class SignedSessionManager(BaseSessionInterface):
     def sign_session_data(self, session_data: typing.Dict[str, typing.Any]) -> str:
         """Sign Session Data
 
-            Args:
-                session_data: [description]
+        Args:
+            session_data: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.serializer.dumps(session_data)
 
     def verify_session_data(self, token: str | None) -> typing.Dict[str, typing.Any]:
         """Verify Session Data
 
-            Args:
-                token: [description]
+        Args:
+            token: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not token:
             return {}
@@ -73,14 +74,14 @@ class SignedSessionManager(BaseSessionInterface):
     async def load(self, session):
         """Load
 
-            Args:
-                session: [description]
+        Args:
+            session: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         token = session.session_key
 
@@ -94,14 +95,14 @@ class SignedSessionManager(BaseSessionInterface):
     async def save(self, session):
         """Save
 
-            Args:
-                session: [description]
+        Args:
+            session: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if session.deleted:
             session.session_key = ""

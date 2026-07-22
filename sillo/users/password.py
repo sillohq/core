@@ -19,11 +19,11 @@ UNUSABLE_PASSWORD_SUFFIX_LENGTH = 40
 def _ensure_bcrypt():
     """Ensure Bcrypt
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return bcrypt
 
@@ -31,15 +31,15 @@ def _ensure_bcrypt():
 def make_password(raw_password: str, salt: Optional[str] = None) -> str:
     """Make Password
 
-        Args:
-            raw_password: [description]
-            salt: [description]
+    Args:
+        raw_password: [description]
+        salt: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if raw_password is None:
         return UNUSABLE_PASSWORD_PREFIX + secrets.token_hex(
@@ -56,15 +56,15 @@ def make_password(raw_password: str, salt: Optional[str] = None) -> str:
 def check_password(raw_password: str, encoded: str) -> bool:
     """Check Password
 
-        Args:
-            raw_password: [description]
-            encoded: [description]
+    Args:
+        raw_password: [description]
+        encoded: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if raw_password is None or not raw_password:
         return False
@@ -80,14 +80,14 @@ def check_password(raw_password: str, encoded: str) -> bool:
 def is_password_usable(encoded: str) -> bool:
     """Is Password Usable
 
-        Args:
-            encoded: [description]
+    Args:
+        encoded: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return bool(encoded) and not encoded.startswith(UNUSABLE_PASSWORD_PREFIX)
 
@@ -95,15 +95,15 @@ def is_password_usable(encoded: str) -> bool:
 def needs_rehash(encoded: str, rounds: int = 12) -> bool:
     """Needs Rehash
 
-        Args:
-            encoded: [description]
-            rounds: [description]
+    Args:
+        encoded: [description]
+        rounds: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     bcrypt = _ensure_bcrypt()
     try:
@@ -116,16 +116,16 @@ def needs_rehash(encoded: str, rounds: int = 12) -> bool:
 def validate_password(password: str, user=None, min_length: int = 8) -> list[str]:
     """Validate Password
 
-        Args:
-            password: [description]
-            user: [description]
-            min_length: [description]
+    Args:
+        password: [description]
+        user: [description]
+        min_length: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     errors: list[str] = []
     if len(password) < min_length:
@@ -144,14 +144,14 @@ def validate_password(password: str, user=None, min_length: int = 8) -> list[str
 def password_strength(password: str) -> dict:
     """Password Strength
 
-        Args:
-            password: [description]
+    Args:
+        password: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     score = 0
     feedback: list[str] = []
@@ -188,15 +188,15 @@ def password_strength(password: str) -> dict:
 def constant_time_compare(val1: str, val2: str) -> bool:
     """Constant Time Compare
 
-        Args:
-            val1: [description]
-            val2: [description]
+    Args:
+        val1: [description]
+        val2: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return secrets.compare_digest(val1.encode(), val2.encode())
 
@@ -204,14 +204,14 @@ def constant_time_compare(val1: str, val2: str) -> bool:
 def md5(data: str | bytes) -> str:
     """Md5
 
-        Args:
-            data: [description]
+    Args:
+        data: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if isinstance(data, str):
         data = data.encode()
@@ -221,14 +221,14 @@ def md5(data: str | bytes) -> str:
 def sha256(data: str | bytes) -> str:
     """Sha256
 
-        Args:
-            data: [description]
+    Args:
+        data: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if isinstance(data, str):
         data = data.encode()

@@ -47,23 +47,23 @@ class RateLimitConfig:
     ) -> None:
         """Init
 
-            Args:
-                limit: [description]
-                window: [description]
-                strategy: [description]
-                backend: [description]
-                key_func: [description]
-                namespace: [description]
-                cost: [description]
-                include_headers: [description]
-                fail_open: [description]
-                on_exceed: [description]
+        Args:
+            limit: [description]
+            window: [description]
+            strategy: [description]
+            backend: [description]
+            key_func: [description]
+            namespace: [description]
+            cost: [description]
+            include_headers: [description]
+            fail_open: [description]
+            on_exceed: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if limit <= 0:
             raise ValueError("limit must be a positive integer")
@@ -87,14 +87,14 @@ class RateLimitConfig:
     def _default_key(request: Request) -> Optional[str]:
         """Default Key
 
-            Args:
-                request: [description]
+        Args:
+            request: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         client = request.client
         if client is not None:

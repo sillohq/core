@@ -46,12 +46,13 @@ class Model(_TortoiseModel):
     class Meta:
         """Meta
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
+
         abstract = True
 
     def to_dict(

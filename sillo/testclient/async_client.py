@@ -37,12 +37,13 @@ from sillo.types import ASGIApp
 class AsyncTestClient(httpx.AsyncClient):
     """Asynctestclient
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     __test__ = False
 
     def __init__(
@@ -60,23 +61,23 @@ class AsyncTestClient(httpx.AsyncClient):
     ) -> None:
         """Init
 
-            Args:
-                app: [description]
-                base_url: [description]
-                raise_server_exceptions: [description]
-                root_path: [description]
-                backend: [description]
-                backend_options: [description]
-                cookies: [description]
-                headers: [description]
-                follow_redirects: [description]
-                check_asgi_conformance: [description]
+        Args:
+            app: [description]
+            base_url: [description]
+            raise_server_exceptions: [description]
+            root_path: [description]
+            backend: [description]
+            backend_options: [description]
+            cookies: [description]
+            headers: [description]
+            follow_redirects: [description]
+            check_asgi_conformance: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.async_backend = AsyncBackend(
             backend=backend, backend_options=backend_options or {}
@@ -137,15 +138,15 @@ class AsyncTestClient(httpx.AsyncClient):
     ) -> httpx.Response:
         """Request
 
-            Args:
-                method: [description]
-                url: [description]
+        Args:
+            method: [description]
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         url = self._merge_url(url)
         redirect: bool | UseClientDefault = USE_CLIENT_DEFAULT
@@ -171,98 +172,98 @@ class AsyncTestClient(httpx.AsyncClient):
     async def get(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """Get
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.request("GET", url, **kwargs)
 
     async def post(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """Post
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.request("POST", url, **kwargs)
 
     async def put(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """Put
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.request("PUT", url, **kwargs)
 
     async def patch(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """Patch
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.request("PATCH", url, **kwargs)
 
     async def delete(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """Delete
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.request("DELETE", url, **kwargs)
 
     async def head(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """Head
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.request("HEAD", url, **kwargs)
 
     async def options(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
         """Options
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.request("OPTIONS", url, **kwargs)
 
@@ -274,15 +275,15 @@ class AsyncTestClient(httpx.AsyncClient):
     ) -> WebSocketTestSession:
         """Websocket Connect
 
-            Args:
-                url: [description]
-                subprotocols: [description]
+        Args:
+            url: [description]
+            subprotocols: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         url = urljoin("ws://testserver", url)
         headers = self._prepare_websocket_headers(subprotocols, **kwargs)
@@ -301,14 +302,14 @@ class AsyncTestClient(httpx.AsyncClient):
     ) -> dict[str, str]:
         """Prepare Websocket Headers
 
-            Args:
-                subprotocols: [description]
+        Args:
+            subprotocols: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         raw = kwargs.get("headers", {})
         headers: dict[str, str] = (
@@ -327,11 +328,11 @@ class AsyncTestClient(httpx.AsyncClient):
     async def __aenter__(self) -> AsyncTestClient:
         """Aenter
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._tg = await anyio.create_task_group().__aenter__()
         send1: ObjectSendStream[Any]
@@ -355,16 +356,16 @@ class AsyncTestClient(httpx.AsyncClient):
     ) -> None:
         """Aexit
 
-            Args:
-                exc_type: [description]
-                exc_value: [description]
-                traceback: [description]
+        Args:
+            exc_type: [description]
+            exc_value: [description]
+            traceback: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         await self.wait_shutdown()
         await self._tg.__aexit__(exc_type, exc_value, traceback)
@@ -374,11 +375,11 @@ class AsyncTestClient(httpx.AsyncClient):
     ) -> None:
         """Lifespan Runner
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         task_status.started()
         await self.lifespan()
@@ -386,11 +387,11 @@ class AsyncTestClient(httpx.AsyncClient):
     async def lifespan(self) -> None:
         """Lifespan
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         scope = {"type": "lifespan", "state": self.app_state}
         try:
@@ -402,22 +403,22 @@ class AsyncTestClient(httpx.AsyncClient):
     async def wait_startup(self) -> None:
         """Wait Startup
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         await self.stream_receive.send({"type": "lifespan.startup"})
 
         async def receive() -> Any:
             """Receive
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             msg = await self.stream_send.receive()
             if msg is None:
@@ -432,20 +433,21 @@ class AsyncTestClient(httpx.AsyncClient):
     async def wait_shutdown(self) -> None:
         """Wait Shutdown
 
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+        """
+
+        async def receive() -> Any:
+            """Receive
+
             Returns:
                 [description]
 
             Raises:
                 [description]
-        """
-        async def receive() -> Any:
-            """Receive
-
-                Returns:
-                    [description]
-
-                Raises:
-                    [description]
             """
             msg = await self.stream_send.receive()
             if msg is None:

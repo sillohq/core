@@ -34,14 +34,14 @@ class RecordCLI:
     ):
         """Init
 
-            Args:
-                app_module: [description]
+        Args:
+            app_module: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._app = app_module
         self._location = Path(location)

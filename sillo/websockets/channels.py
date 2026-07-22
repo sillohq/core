@@ -21,12 +21,13 @@ logging = sillo_logger.getLogger("sillo")
 class Channel:
     """Channel
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     def __init__(
         self,
         websocket: WebSocket,
@@ -60,14 +61,14 @@ class Channel:
     async def _send(self, payload: typing.Any) -> None:
         """Send
 
-            Args:
-                payload: [description]
+        Args:
+            payload: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             if self.payload_type == "json":
@@ -86,11 +87,11 @@ class Channel:
     async def _is_expired(self) -> bool:
         """Is Expired
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not self.expires:
             return False
@@ -99,11 +100,11 @@ class Channel:
     def __repr__(self) -> str:
         """Repr
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return f"{self.__class__.__name__} {self.uuid=} {self.payload_type=} {self.expires=}"
 
@@ -111,12 +112,13 @@ class Channel:
 class ChannelBox:
     """Channelbox
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     CHANNEL_GROUPS: typing.Dict[
         str, typing.Any
     ] = {}  # groups of channels ~ key: group_name, val: dict of channels
@@ -225,11 +227,11 @@ class ChannelBox:
     async def show_groups(cls) -> typing.Dict[str, typing.Any]:
         """Show Groups
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.CHANNEL_GROUPS
 
@@ -237,11 +239,11 @@ class ChannelBox:
     async def flush_groups(cls) -> None:
         """Flush Groups
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         cls.CHANNEL_GROUPS = {}
 
@@ -276,11 +278,11 @@ class ChannelBox:
     async def _clean_expired(cls) -> None:
         """Clean Expired
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         for group_name in list(cls.CHANNEL_GROUPS):
             for channel in cls.CHANNEL_GROUPS.get(group_name, {}):

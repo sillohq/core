@@ -24,6 +24,7 @@ class SlashAction(Enum):
         REDIRECT_REMOVE: Issues an HTTP redirect to a URL with the trailing slash removed.
         IGNORE: Takes no action on trailing slashes, leaving the path unchanged.
     """
+
     ADD = "add"
     REMOVE = "remove"
     REDIRECT_ADD = "redirect_add"

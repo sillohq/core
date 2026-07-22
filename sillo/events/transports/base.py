@@ -336,28 +336,28 @@ class BaseTransport(abc.ABC):
     def set_error_handler(self, fn: ErrorFn) -> None:
         """Override or set the listener-error callback after construction.
 
-        Replaces the ``on_error`` handler that was optionally passed to the
-        constructor.  This is useful when the error handler needs to be
-        configured after the transport is already instantiated — for example,
-        when the handler depends on application-level logging or metrics
-        infrastructure that is not available at transport creation time.
+            Replaces the ``on_error`` handler that was optionally passed to the
+            constructor.  This is useful when the error handler needs to be
+            configured after the transport is already instantiated — for example,
+            when the handler depends on application-level logging or metrics
+            infrastructure that is not available at transport creation time.
 
-        The new handler takes effect immediately for all subsequent listener
-    failures.  It does not retroactively apply to errors that were already
-        routed to the previous handler.
+            The new handler takes effect immediately for all subsequent listener
+        failures.  It does not retroactively apply to errors that were already
+            routed to the previous handler.
 
-        Args:
-            fn: An async callable with the signature
-                ``async def on_error(exc, channel, envelope) -> None``.
-                Receives the exception raised by the listener, the channel
-                name on which it occurred, and the decoded envelope dict.
-                The handler should not raise; if it does, the transport logs
-                the secondary failure and continues.
+            Args:
+                fn: An async callable with the signature
+                    ``async def on_error(exc, channel, envelope) -> None``.
+                    Receives the exception raised by the listener, the channel
+                    name on which it occurred, and the decoded envelope dict.
+                    The handler should not raise; if it does, the transport logs
+                    the secondary failure and continues.
 
-        Example:
-            >>> async def log_errors(exc, channel, envelope):
-            ...     logger.error("Listener failed on %s: %s", channel, exc)
-            >>> transport.set_error_handler(log_errors)
+            Example:
+                >>> async def log_errors(exc, channel, envelope):
+                ...     logger.error("Listener failed on %s: %s", channel, exc)
+                >>> transport.set_error_handler(log_errors)
         """
         self._on_error = fn
 

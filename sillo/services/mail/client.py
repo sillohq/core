@@ -22,23 +22,24 @@ except ImportError:
 class MailClient:
     """Mailclient
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, config: Optional[MailConfig] = None) -> None:
+        """Init
+
+        Args:
+            config: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, config: Optional[MailConfig] = None) -> None:
-        """Init
-
-            Args:
-                config: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         self.config = config or MailConfig()
         self._smtp: Optional[smtplib.SMTP] = None
@@ -50,11 +51,11 @@ class MailClient:
     def _setup_templates(self) -> None:
         """Setup Templates
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         path = Path(self.config.template_directory)
         if not path.exists():
@@ -70,11 +71,11 @@ class MailClient:
     async def start(self) -> None:
         """Start
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self._started or self.config.suppress_send:
             self._started = True
@@ -86,11 +87,11 @@ class MailClient:
     async def stop(self) -> None:
         """Stop
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not self._started:
             return
@@ -106,11 +107,11 @@ class MailClient:
     async def _connect(self) -> None:
         """Connect
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self._connect_sync)
@@ -118,11 +119,11 @@ class MailClient:
     def _connect_sync(self) -> None:
         """Connect Sync
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.config.use_ssl:
             self._smtp = smtplib.SMTP_SSL(
@@ -146,11 +147,11 @@ class MailClient:
     async def _ensure_connected(self) -> None:
         """Ensure Connected
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.config.suppress_send:
             return
@@ -182,24 +183,24 @@ class MailClient:
     ) -> EmailResult:
         """Send Email
 
-            Args:
-                to: [description]
-                subject: [description]
-                body: [description]
-                html_body: [description]
-                from_email: [description]
-                reply_to: [description]
-                cc: [description]
-                bcc: [description]
-                attachments: [description]
-                template_name: [description]
-                template_context: [description]
+        Args:
+            to: [description]
+            subject: [description]
+            body: [description]
+            html_body: [description]
+            from_email: [description]
+            reply_to: [description]
+            cc: [description]
+            bcc: [description]
+            attachments: [description]
+            template_name: [description]
+            template_context: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         message = EmailMessage(
             to=to,
@@ -233,18 +234,18 @@ class MailClient:
     ) -> EmailResult:
         """Send Template Email
 
-            Args:
-                to: [description]
-                subject: [description]
-                template_name: [description]
-                context: [description]
-                from_email: [description]
+        Args:
+            to: [description]
+            subject: [description]
+            template_name: [description]
+            context: [description]
+            from_email: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.send_email(
             to=to,
@@ -258,14 +259,14 @@ class MailClient:
     async def send_message(self, message: EmailMessage) -> EmailResult:
         """Send Message
 
-            Args:
-                message: [description]
+        Args:
+            message: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             if message.template_name and self._template_env:
@@ -317,15 +318,15 @@ class MailClient:
     def _send_mime(self, mime_message, recipients: List[str]) -> None:
         """Send Mime
 
-            Args:
-                mime_message: [description]
-                recipients: [description]
+        Args:
+            mime_message: [description]
+            recipients: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not self._smtp:
             raise RuntimeError("SMTP not connected")
@@ -334,14 +335,14 @@ class MailClient:
     def _render_template(self, message: EmailMessage) -> None:
         """Render Template
 
-            Args:
-                message: [description]
+        Args:
+            message: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not self._template_env or not message.template_name:
             return
@@ -364,15 +365,15 @@ class MailClient:
 def setup_mail(app, config: Optional[MailConfig] = None) -> MailClient:
     """Setup Mail
 
-        Args:
-            app: [description]
-            config: [description]
+    Args:
+        app: [description]
+        config: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if "mail_client" in app.state:
         return app.state["mail_client"]
@@ -386,14 +387,14 @@ def setup_mail(app, config: Optional[MailConfig] = None) -> MailClient:
 def get_mail_client(request) -> MailClient:
     """Get Mail Client
 
-        Args:
-            request: [description]
+    Args:
+        request: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     client = request.state._state.get("mail_client")
     if client is None:

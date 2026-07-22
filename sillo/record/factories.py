@@ -77,11 +77,11 @@ class Factory:
         def modifier():
             """Modifier
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             return {**cls.definition(), **kwargs}
 
@@ -94,40 +94,40 @@ class FactoryBuilder:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._factories: Dict[str, Type[Factory]] = {}
 
     def register(self, name: str, factory: Type[Factory]) -> None:
         """Register
 
-            Args:
-                name: [description]
-                factory: [description]
+        Args:
+            name: [description]
+            factory: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._factories[name] = factory
 
     def get(self, name: str) -> Type[Factory]:
         """Get
 
-            Args:
-                name: [description]
+        Args:
+            name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if name not in self._factories:
             raise KeyError(f"Factory '{name}' not registered")

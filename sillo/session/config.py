@@ -27,24 +27,24 @@ class SessionConfig(ConfigBase):
     ):
         """Init
 
-            Args:
-                session_cookie_name: [description]
-                session_expiration_time: [description]
-                session_permanent: [description]
-                session_refresh_each_request: [description]
-                session_cookie_secure: [description]
-                session_cookie_httponly: [description]
-                session_cookie_samesite: [description]
-                session_cookie_path: [description]
-                session_cookie_domain: [description]
-                session_file_storage_path: [description]
-                manager: [description]
+        Args:
+            session_cookie_name: [description]
+            session_expiration_time: [description]
+            session_permanent: [description]
+            session_refresh_each_request: [description]
+            session_cookie_secure: [description]
+            session_cookie_httponly: [description]
+            session_cookie_samesite: [description]
+            session_cookie_path: [description]
+            session_cookie_domain: [description]
+            session_file_storage_path: [description]
+            manager: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         config = {
             "session_cookie_name": session_cookie_name,
@@ -65,11 +65,11 @@ class SessionConfig(ConfigBase):
     def session_cookie_name(self) -> str:
         """Session Cookie Name
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_cookie_name", "session_id")
 
@@ -77,11 +77,11 @@ class SessionConfig(ConfigBase):
     def session_expiration_time(self) -> int:
         """Session Expiration Time
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_expiration_time", 86400)
 
@@ -89,11 +89,11 @@ class SessionConfig(ConfigBase):
     def session_permanent(self) -> bool:
         """Session Permanent
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_permanent", True)
 
@@ -101,11 +101,11 @@ class SessionConfig(ConfigBase):
     def session_refresh_each_request(self) -> bool:
         """Session Refresh Each Request
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_refresh_each_request", True)
 
@@ -113,11 +113,11 @@ class SessionConfig(ConfigBase):
     def session_cookie_secure(self) -> bool:
         """Session Cookie Secure
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_cookie_secure", True)
 
@@ -125,11 +125,11 @@ class SessionConfig(ConfigBase):
     def session_cookie_httponly(self) -> bool:
         """Session Cookie Httponly
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_cookie_httponly", True)
 
@@ -137,11 +137,11 @@ class SessionConfig(ConfigBase):
     def session_cookie_samesite(self) -> Literal["lax", "strict", "none"]:
         """Session Cookie Samesite
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_cookie_samesite", "lax")
 
@@ -149,11 +149,11 @@ class SessionConfig(ConfigBase):
     def session_cookie_path(self) -> str:
         """Session Cookie Path
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_cookie_path", "/")
 
@@ -161,11 +161,11 @@ class SessionConfig(ConfigBase):
     def session_cookie_domain(self) -> Optional[str]:
         """Session Cookie Domain
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_cookie_domain")
 
@@ -173,11 +173,11 @@ class SessionConfig(ConfigBase):
     def session_file_storage_path(self) -> Optional[str]:
         """Session File Storage Path
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("session_file_storage_path")
 
@@ -185,10 +185,10 @@ class SessionConfig(ConfigBase):
     def manager(self) -> Optional[Any]:
         """Manager
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("manager")

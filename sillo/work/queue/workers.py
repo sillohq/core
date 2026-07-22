@@ -53,11 +53,11 @@ class WorkerOptions:
     ):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.concurrency = concurrency
         self.memory_limit = memory_limit
@@ -90,16 +90,16 @@ class QueueWorker:
     ):
         """Init
 
-            Args:
-                manager: [description]
-                serializer: [description]
-                failed_repo: [description]
+        Args:
+            manager: [description]
+            serializer: [description]
+            failed_repo: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.manager = manager
         self.serializer = serializer
@@ -148,11 +148,11 @@ class QueueWorker:
     def _register_signals(self) -> None:
         """Register Signals
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             loop = asyncio.get_event_loop()
@@ -164,14 +164,14 @@ class QueueWorker:
     async def _run_worker(self, worker_id: int) -> None:
         """Run Worker
 
-            Args:
-                worker_id: [description]
+        Args:
+            worker_id: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         while self._running:
             if self._paused:
@@ -211,17 +211,17 @@ class QueueWorker:
     ) -> None:
         """Process Job
 
-            Args:
-                conn: [description]
-                queue_name: [description]
-                job_data: [description]
-                worker_id: [description]
+        Args:
+            conn: [description]
+            queue_name: [description]
+            job_data: [description]
+            worker_id: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         job_id = job_data.get("_job_id", "unknown")
         job_class_name = job_data.get("job", "unknown")
@@ -254,14 +254,14 @@ class QueueWorker:
     def _resolve_job_class(self, name: str) -> type:
         """Resolve Job Class
 
-            Args:
-                name: [description]
+        Args:
+            name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         parts = name.rsplit(".", 1)
         if len(parts) == 2:
@@ -284,11 +284,11 @@ class WorkerPool:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._workers: List[QueueWorker] = []
         self._tasks: List[asyncio.Task] = []
@@ -296,14 +296,14 @@ class WorkerPool:
     def add(self, worker: QueueWorker) -> "WorkerPool":
         """Add
 
-            Args:
-                worker: [description]
+        Args:
+            worker: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._workers.append(worker)
         return self
@@ -311,22 +311,22 @@ class WorkerPool:
     async def start(self) -> None:
         """Start
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._tasks = [asyncio.create_task(w.run()) for w in self._workers]
 
     async def shutdown(self) -> None:
         """Shutdown
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         for w in self._workers:
             w.stop()

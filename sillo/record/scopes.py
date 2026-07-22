@@ -16,11 +16,11 @@ class ScopeRegistry:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._global_scopes: List[Callable] = []
 
@@ -83,14 +83,14 @@ class HasScopes:
     def apply_scopes(cls, queryset):
         """Apply Scopes
 
-            Args:
-                queryset: [description]
+        Args:
+            queryset: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if cls._scope_registry is not None:
             return cls._scope_registry.apply(queryset)

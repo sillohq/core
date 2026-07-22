@@ -25,51 +25,52 @@ logger = logging.getLogger("sillo.work.middleware")
 class TimeoutMiddleware:
     """Timeoutmiddleware
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, timeout: float):
+        """Init
+
+        Args:
+            timeout: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, timeout: float):
-        """Init
-
-            Args:
-                timeout: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         self.timeout = timeout
 
     async def before_enqueue(self, task: Task) -> None:
         """Before Enqueue
 
-            Args:
-                task: [description]
+        Args:
+            task: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         pass
 
     async def before_execute(self, task: Task) -> None:
         """Before Execute
 
-            Args:
-                task: [description]
+        Args:
+            task: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not getattr(task, "timeout", None):
             object.__setattr__(task, "timeout", self.timeout)
@@ -77,29 +78,29 @@ class TimeoutMiddleware:
     async def after_execute(self, result: TaskResult) -> None:
         """After Execute
 
-            Args:
-                result: [description]
+        Args:
+            result: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         pass
 
     async def on_error(self, task: Task, error: Exception) -> None:
         """On Error
 
-            Args:
-                task: [description]
-                error: [description]
+        Args:
+            task: [description]
+            error: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         pass
 
@@ -107,24 +108,25 @@ class TimeoutMiddleware:
 class RateLimitMiddleware:
     """Ratelimitmiddleware
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, max_per_second: float, burst: int = 1):
+        """Init
+
+        Args:
+            max_per_second: [description]
+            burst: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, max_per_second: float, burst: int = 1):
-        """Init
-
-            Args:
-                max_per_second: [description]
-                burst: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         self.max_per_second = max_per_second
         self.burst = burst
@@ -134,28 +136,28 @@ class RateLimitMiddleware:
     async def before_enqueue(self, task: Task) -> None:
         """Before Enqueue
 
-            Args:
-                task: [description]
+        Args:
+            task: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         pass
 
     async def before_execute(self, task: Task) -> None:
         """Before Execute
 
-            Args:
-                task: [description]
+        Args:
+            task: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         now = time.monotonic()
         elapsed = now - self._last_refill
@@ -174,29 +176,29 @@ class RateLimitMiddleware:
     async def after_execute(self, result: TaskResult) -> None:
         """After Execute
 
-            Args:
-                result: [description]
+        Args:
+            result: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         pass
 
     async def on_error(self, task: Task, error: Exception) -> None:
         """On Error
 
-            Args:
-                task: [description]
-                error: [description]
+        Args:
+            task: [description]
+            error: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         pass
 
@@ -204,65 +206,66 @@ class RateLimitMiddleware:
 class LoggingMiddleware:
     """Loggingmiddleware
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, level: int = logging.DEBUG):
+        """Init
+
+        Args:
+            level: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, level: int = logging.DEBUG):
-        """Init
-
-            Args:
-                level: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         self.level = level
 
     async def before_enqueue(self, task: Task) -> None:
         """Before Enqueue
 
-            Args:
-                task: [description]
+        Args:
+            task: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         logger.log(self.level, f"ENQUEUE {task.name} [{task.id[:8]}]")
 
     async def before_execute(self, task: Task) -> None:
         """Before Execute
 
-            Args:
-                task: [description]
+        Args:
+            task: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         logger.log(self.level, f"START   {task.name} [{task.id[:8]}]")
 
     async def after_execute(self, result: TaskResult) -> None:
         """After Execute
 
-            Args:
-                result: [description]
+        Args:
+            result: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         logger.log(
             self.level,
@@ -272,15 +275,15 @@ class LoggingMiddleware:
     async def on_error(self, task: Task, error: Exception) -> None:
         """On Error
 
-            Args:
-                task: [description]
-                error: [description]
+        Args:
+            task: [description]
+            error: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         logger.log(
             logging.WARNING,

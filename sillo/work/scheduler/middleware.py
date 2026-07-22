@@ -27,11 +27,11 @@ async def timeout_middleware(
     async def wrapper():
         """Wrapper
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await asyncio.wait_for(handler(), timeout=seconds)
 
@@ -53,11 +53,11 @@ async def rate_limit_middleware(
     async def wrapper():
         """Wrapper
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         nonlocal tokens, last_refill
         now = time.monotonic()
@@ -88,11 +88,11 @@ async def retry_middleware(
     async def wrapper():
         """Wrapper
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         for attempt in range(1, max_attempts + 1):
             try:

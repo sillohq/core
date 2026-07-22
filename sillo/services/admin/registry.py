@@ -49,14 +49,14 @@ class ModelAdmin:
     def has_view_permission(request) -> bool:
         """Has View Permission
 
-            Args:
-                request: [description]
+        Args:
+            request: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return True
 
@@ -64,14 +64,14 @@ class ModelAdmin:
     def has_add_permission(request) -> bool:
         """Has Add Permission
 
-            Args:
-                request: [description]
+        Args:
+            request: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return True
 
@@ -79,15 +79,15 @@ class ModelAdmin:
     def has_change_permission(request, obj=None) -> bool:
         """Has Change Permission
 
-            Args:
-                request: [description]
-                obj: [description]
+        Args:
+            request: [description]
+            obj: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return True
 
@@ -95,15 +95,15 @@ class ModelAdmin:
     def has_delete_permission(request, obj=None) -> bool:
         """Has Delete Permission
 
-            Args:
-                request: [description]
-                obj: [description]
+        Args:
+            request: [description]
+            obj: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return True
 
@@ -112,11 +112,11 @@ class ModelAdmin:
     def get_list_display(cls):
         """Get List Display
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.list_display
 
@@ -124,11 +124,11 @@ class ModelAdmin:
     def get_search_fields(cls):
         """Get Search Fields
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.search_fields
 
@@ -136,11 +136,11 @@ class ModelAdmin:
     def get_list_filter(cls):
         """Get List Filter
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.list_filter
 
@@ -148,11 +148,11 @@ class ModelAdmin:
     def get_ordering(cls):
         """Get Ordering
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.ordering
 
@@ -160,14 +160,14 @@ class ModelAdmin:
     def get_fields(cls, add: bool = False):
         """Get Fields
 
-            Args:
-                add: [description]
+        Args:
+            add: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.fields
 
@@ -175,14 +175,14 @@ class ModelAdmin:
     def get_readonly_fields(cls, add: bool = False):
         """Get Readonly Fields
 
-            Args:
-                add: [description]
+        Args:
+            add: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.readonly_fields
 
@@ -190,14 +190,14 @@ class ModelAdmin:
     def get_queryset(cls, queryset):
         """Get Queryset
 
-            Args:
-                queryset: [description]
+        Args:
+            queryset: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return queryset
 
@@ -208,26 +208,26 @@ class Registry:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._registry: Dict[Type, Type[ModelAdmin]] = {}
 
     def register(self, model_class: Type, admin_class: Type[ModelAdmin]) -> None:
         """Register
 
-            Args:
-                model_class: [description]
-                admin_class: [description]
+        Args:
+            model_class: [description]
+            admin_class: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if model_class in self._registry:
             raise ValueError(f"Model {model_class.__name__} is already registered")
@@ -236,14 +236,14 @@ class Registry:
     def get(self, model_class: Type) -> Optional[Type[ModelAdmin]]:
         """Get
 
-            Args:
-                model_class: [description]
+        Args:
+            model_class: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._registry.get(model_class)
 
@@ -251,11 +251,11 @@ class Registry:
     def models(self) -> List[Type]:
         """Models
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return list(self._registry.keys())
 
@@ -263,35 +263,35 @@ class Registry:
     def admins(self) -> List[Type[ModelAdmin]]:
         """Admins
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return list(self._registry.values())
 
     def __iter__(self):
         """Iter
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return iter(self._registry.items())
 
     def __contains__(self, model_class: Type) -> bool:
         """Contains
 
-            Args:
-                model_class: [description]
+        Args:
+            model_class: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return model_class in self._registry

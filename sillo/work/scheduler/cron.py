@@ -37,14 +37,14 @@ class CronParser:
     ):
         """Init
 
-            Args:
-                expression: [description]
+        Args:
+            expression: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         fields = expression.strip().split()
         if len(fields) != 5:
@@ -63,16 +63,16 @@ class CronParser:
     def _parse_field(field: str, lo: int, hi: int) -> Set[int]:
         """Parse Field
 
-            Args:
-                field: [description]
-                lo: [description]
-                hi: [description]
+        Args:
+            field: [description]
+            lo: [description]
+            hi: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if field == "*":
             return set(range(lo, hi + 1))

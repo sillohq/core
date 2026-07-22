@@ -20,12 +20,13 @@ from sillo.types import Request, Response
 class Shield(BaseMiddleware):
     """Shield
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     def __init__(
         self,
         # Content Security Policy
@@ -83,47 +84,47 @@ class Shield(BaseMiddleware):
     ):
         """Init
 
-            Args:
-                csp_enabled: [description]
-                csp_policy: [description]
-                csp_report_only: [description]
-                hsts_enabled: [description]
-                hsts_max_age: [description]
-                hsts_include_subdomains: [description]
-                hsts_preload: [description]
-                xss_protection: [description]
-                xss_mode: [description]
-                frame_options: [description]
-                frame_options_allow_from: [description]
-                content_type_options: [description]
-                referrer_policy: [description]
-                permissions_policy: [description]
-                ssl_redirect: [description]
-                ssl_host: [description]
-                ssl_permanent: [description]
-                cache_control: [description]
-                clear_site_data: [description]
-                dns_prefetch_control: [description]
-                download_options: [description]
-                cross_origin_opener_policy: [description]
-                cross_origin_embedder_policy: [description]
-                cross_origin_resource_policy: [description]
-                expect_ct: [description]
-                expect_ct_max_age: [description]
-                expect_ct_enforce: [description]
-                expect_ct_report_uri: [description]
-                report_to: [description]
-                nel: [description]
-                trusted_types: [description]
-                trusted_types_policies: [description]
-                hide_server: [description]
-                server_header: [description]
+        Args:
+            csp_enabled: [description]
+            csp_policy: [description]
+            csp_report_only: [description]
+            hsts_enabled: [description]
+            hsts_max_age: [description]
+            hsts_include_subdomains: [description]
+            hsts_preload: [description]
+            xss_protection: [description]
+            xss_mode: [description]
+            frame_options: [description]
+            frame_options_allow_from: [description]
+            content_type_options: [description]
+            referrer_policy: [description]
+            permissions_policy: [description]
+            ssl_redirect: [description]
+            ssl_host: [description]
+            ssl_permanent: [description]
+            cache_control: [description]
+            clear_site_data: [description]
+            dns_prefetch_control: [description]
+            download_options: [description]
+            cross_origin_opener_policy: [description]
+            cross_origin_embedder_policy: [description]
+            cross_origin_resource_policy: [description]
+            expect_ct: [description]
+            expect_ct_max_age: [description]
+            expect_ct_enforce: [description]
+            expect_ct_report_uri: [description]
+            report_to: [description]
+            nel: [description]
+            trusted_types: [description]
+            trusted_types_policies: [description]
+            hide_server: [description]
+            server_header: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.csp_enabled = csp_enabled
         self.csp_policy = csp_policy or {
@@ -186,11 +187,11 @@ class Shield(BaseMiddleware):
     def _build_csp_header(self) -> str:
         """Build Csp Header
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         policies = []
         for directive, sources in self.csp_policy.items():
@@ -202,11 +203,11 @@ class Shield(BaseMiddleware):
     def _build_permissions_policy(self) -> str:
         """Build Permissions Policy
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         policies = []
         for feature, setting in self.permissions_policy.items():
@@ -219,16 +220,16 @@ class Shield(BaseMiddleware):
     async def __call__(self, request: Request, response: Response, call_next):
         """Call
 
-            Args:
-                request: [description]
-                response: [description]
-                call_next: [description]
+        Args:
+            request: [description]
+            response: [description]
+            call_next: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.ssl_redirect and not request.url.scheme == "https":
             redirect_url = (

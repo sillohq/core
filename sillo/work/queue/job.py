@@ -124,11 +124,11 @@ class Job(Dispatchable):
     def __init__(self, *args: Any, **kwargs: Any):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._job_id: Optional[str] = None
         self._attempts: int = 0
@@ -154,11 +154,11 @@ class Job(Dispatchable):
         async def call_handle():
             """Call Handle
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             if self.timeout:
                 return await asyncio.wait_for(self.handle(), timeout=self.timeout)
@@ -173,44 +173,44 @@ class Job(Dispatchable):
     def max_tries(self) -> int:
         """Max Tries
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.__class__.tries
 
     def retry_after(self) -> int:
         """Retry After
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.__class__.backoff
 
     def display_name(self) -> str:
         """Display Name
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.__class__.__name__
 
     def payload(self) -> Dict[str, Any]:
         """Payload
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "job": self.__class__.__name__,

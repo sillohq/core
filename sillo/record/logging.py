@@ -22,17 +22,17 @@ class QueryLogEntry:
     def __init__(self, sql: str, params: Any, duration_ms: float, source: str = ""):
         """Init
 
-            Args:
-                sql: [description]
-                params: [description]
-                duration_ms: [description]
-                source: [description]
+        Args:
+            sql: [description]
+            params: [description]
+            duration_ms: [description]
+            source: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.sql = sql
         self.params = params
@@ -43,11 +43,11 @@ class QueryLogEntry:
     def __repr__(self):
         """Repr
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return f"[{self.duration_ms:.1f}ms] {self.sql[:120]}"
 
@@ -69,15 +69,15 @@ class QueryLogger:
     ):
         """Init
 
-            Args:
-                slow_threshold_ms: [description]
-                detect_n_plus_one: [description]
+        Args:
+            slow_threshold_ms: [description]
+            detect_n_plus_one: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._entries: List[QueryLogEntry] = []
         self._slow_threshold = slow_threshold_ms
@@ -88,11 +88,11 @@ class QueryLogger:
     def start(self) -> None:
         """Start
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._entries.clear()
         self._started = True
@@ -101,11 +101,11 @@ class QueryLogger:
     def stop(self) -> None:
         """Stop
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._started = False
 
@@ -114,17 +114,17 @@ class QueryLogger:
     ) -> None:
         """Log
 
-            Args:
-                sql: [description]
-                params: [description]
-                duration_ms: [description]
-                source: [description]
+        Args:
+            sql: [description]
+            params: [description]
+            duration_ms: [description]
+            source: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self._started:
             entry = QueryLogEntry(sql, params, duration_ms, source)
@@ -136,11 +136,11 @@ class QueryLogger:
     def total_time_ms(self) -> float:
         """Total Time Ms
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return sum(e.duration_ms for e in self._entries)
 
@@ -148,11 +148,11 @@ class QueryLogger:
     def total_queries(self) -> int:
         """Total Queries
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return len(self._entries)
 
@@ -160,11 +160,11 @@ class QueryLogger:
     def slow_queries(self) -> List[QueryLogEntry]:
         """Slow Queries
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return [e for e in self._entries if e.duration_ms > self._slow_threshold]
 
@@ -181,11 +181,11 @@ class QueryLogger:
     def report(self) -> Dict[str, Any]:
         """Report
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "total_queries": self.total_queries,
@@ -198,10 +198,10 @@ class QueryLogger:
     def entries(self) -> List[QueryLogEntry]:
         """Entries
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return list(self._entries)

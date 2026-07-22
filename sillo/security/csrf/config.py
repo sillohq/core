@@ -28,26 +28,26 @@ class CSRFConfig(ConfigBase):
     ):
         """Init
 
-            Args:
-                enabled: [description]
-                required_urls: [description]
-                exempt_urls: [description]
-                sensitive_cookies: [description]
-                safe_methods: [description]
-                cookie_name: [description]
-                cookie_path: [description]
-                cookie_domain: [description]
-                cookie_secure: [description]
-                cookie_httponly: [description]
-                cookie_samesite: [description]
-                header_name: [description]
-                secret_key: [description]
+        Args:
+            enabled: [description]
+            required_urls: [description]
+            exempt_urls: [description]
+            sensitive_cookies: [description]
+            safe_methods: [description]
+            cookie_name: [description]
+            cookie_path: [description]
+            cookie_domain: [description]
+            cookie_secure: [description]
+            cookie_httponly: [description]
+            cookie_samesite: [description]
+            header_name: [description]
+            secret_key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         config = {
             "enabled": enabled,
@@ -70,11 +70,11 @@ class CSRFConfig(ConfigBase):
     def enabled(self) -> bool:
         """Enabled
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["enabled"]
 
@@ -82,11 +82,11 @@ class CSRFConfig(ConfigBase):
     def required_urls(self) -> List[str]:
         """Required Urls
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["required_urls"]
 
@@ -94,11 +94,11 @@ class CSRFConfig(ConfigBase):
     def exempt_urls(self) -> List[str]:
         """Exempt Urls
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["exempt_urls"]
 
@@ -106,11 +106,11 @@ class CSRFConfig(ConfigBase):
     def sensitive_cookies(self) -> List[str]:
         """Sensitive Cookies
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["sensitive_cookies"]
 
@@ -118,11 +118,11 @@ class CSRFConfig(ConfigBase):
     def safe_methods(self) -> List[str]:
         """Safe Methods
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["safe_methods"]
 
@@ -130,11 +130,11 @@ class CSRFConfig(ConfigBase):
     def cookie_name(self) -> str:
         """Cookie Name
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["cookie_name"]
 
@@ -142,11 +142,11 @@ class CSRFConfig(ConfigBase):
     def cookie_path(self) -> str:
         """Cookie Path
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["cookie_path"]
 
@@ -154,11 +154,11 @@ class CSRFConfig(ConfigBase):
     def cookie_domain(self) -> Optional[str]:
         """Cookie Domain
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["cookie_domain"]
 
@@ -166,11 +166,11 @@ class CSRFConfig(ConfigBase):
     def cookie_secure(self) -> bool:
         """Cookie Secure
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["cookie_secure"]
 
@@ -178,11 +178,11 @@ class CSRFConfig(ConfigBase):
     def cookie_httponly(self) -> bool:
         """Cookie Httponly
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["cookie_httponly"]
 
@@ -190,11 +190,11 @@ class CSRFConfig(ConfigBase):
     def cookie_samesite(self) -> typing.Literal["lax", "none", "strict"]:
         """Cookie Samesite
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["cookie_samesite"]
 
@@ -202,11 +202,11 @@ class CSRFConfig(ConfigBase):
     def header_name(self) -> str:
         """Header Name
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config["header_name"]
 
@@ -214,10 +214,10 @@ class CSRFConfig(ConfigBase):
     def secret_key(self) -> Optional[str]:
         """Secret Key
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._config.get("secret_key")

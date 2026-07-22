@@ -25,12 +25,13 @@ from .cron import CronParser
 class TriggerType(Enum):
     """Triggertype
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     INTERVAL = "interval"
     CRON = "cron"
     DATETIME = "datetime"
@@ -40,12 +41,13 @@ class TriggerType(Enum):
 class CompoundLogic(Enum):
     """Compoundlogic
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     AND = "and"
     OR = "or"
 
@@ -95,11 +97,11 @@ class CronTrigger:
     def __post_init__(self):
         """Post Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         parser = CronParser(self.expression)
         self._parser = parser

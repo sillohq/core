@@ -56,10 +56,10 @@ class RateLimitBackend:
 def _now() -> float:
     """Now
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return time.time()

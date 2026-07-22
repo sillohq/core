@@ -24,11 +24,11 @@ class SoftDeletesMixin:
     async def soft_delete(self) -> None:
         """Soft Delete
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.deleted_at = datetime.now(timezone.utc)
         await self.save(update_fields=["deleted_at"])
@@ -36,11 +36,11 @@ class SoftDeletesMixin:
     async def restore(self) -> None:
         """Restore
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.deleted_at = None
         await self.save(update_fields=["deleted_at"])
@@ -48,11 +48,11 @@ class SoftDeletesMixin:
     async def force_delete(self) -> None:
         """Force Delete
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         await self.delete()
 
@@ -60,11 +60,11 @@ class SoftDeletesMixin:
     def active(cls):
         """Active
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.filter(deleted_at__isnull=True)
 
@@ -72,11 +72,11 @@ class SoftDeletesMixin:
     def only_trashed(cls):
         """Only Trashed
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.filter(deleted_at__isnull=False)
 
@@ -84,11 +84,11 @@ class SoftDeletesMixin:
     def with_trashed(cls):
         """With Trashed
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls.all()
 
@@ -96,11 +96,11 @@ class SoftDeletesMixin:
     def is_trashed(self) -> bool:
         """Is Trashed
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.deleted_at is not None
 
@@ -121,11 +121,11 @@ class TimestampsMixin:
     def set_created_at(self) -> None:
         """Set Created At
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not self.created_at:
             self.created_at = datetime.now(timezone.utc)
@@ -137,11 +137,11 @@ class HasUlidMixin:
     def generate_ulid(self) -> str:
         """Generate Ulid
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return str(ulid.new())
 
@@ -158,11 +158,11 @@ class SerializesToDictMixin:
     ) -> Dict:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         data = {}
         for field_name in self._meta.fields:
@@ -181,11 +181,11 @@ class SerializesToDictMixin:
     def to_json(self, *, indent: Optional[int] = None, **kwargs) -> str:
         """To Json
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return json.dumps(self.to_dict(**kwargs), indent=indent, default=str)
 
@@ -204,11 +204,11 @@ class ValidatesBeforeSaveMixin:
     async def save(self, *args, **kwargs):
         """Save
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         await self.validate()
         return await super().save(*args, **kwargs)
@@ -226,11 +226,11 @@ class CascadesDeletesMixin:
     async def delete(self):
         """Delete
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         for relation in self._cascade_deletes:
             related = getattr(self, relation, None)

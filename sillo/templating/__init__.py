@@ -34,22 +34,22 @@ class TemplateConfig(ConfigBase):
     ):
         """Init
 
-            Args:
-                template_dir: [description]
-                cache_size: [description]
-                auto_reload: [description]
-                encoding: [description]
-                enable_async: [description]
-                trim_blocks: [description]
-                lstrip_blocks: [description]
-                custom_filters: [description]
-                custom_globals: [description]
+        Args:
+            template_dir: [description]
+            cache_size: [description]
+            auto_reload: [description]
+            encoding: [description]
+            enable_async: [description]
+            trim_blocks: [description]
+            lstrip_blocks: [description]
+            custom_filters: [description]
+            custom_globals: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         super().__init__(
             {

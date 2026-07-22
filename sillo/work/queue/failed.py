@@ -30,11 +30,11 @@ class FailedJob:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return dataclasses.asdict(self)
 
@@ -87,11 +87,11 @@ class MemoryFailedRepository(FailedJobRepository):
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._failed: List[FailedJob] = []
 
@@ -100,18 +100,18 @@ class MemoryFailedRepository(FailedJobRepository):
     ) -> None:
         """Log
 
-            Args:
-                queue: [description]
-                job_id: [description]
-                job_class: [description]
-                payload: [description]
-                exception: [description]
+        Args:
+            queue: [description]
+            job_id: [description]
+            job_class: [description]
+            payload: [description]
+            exception: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._failed.append(
             FailedJob(
@@ -126,29 +126,29 @@ class MemoryFailedRepository(FailedJobRepository):
     async def all(self, limit: int = 50, offset: int = 0) -> List[FailedJob]:
         """All
 
-            Args:
-                limit: [description]
-                offset: [description]
+        Args:
+            limit: [description]
+            offset: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return list(reversed(self._failed))[offset : offset + limit]
 
     async def find(self, job_id: str) -> Optional[FailedJob]:
         """Find
 
-            Args:
-                job_id: [description]
+        Args:
+            job_id: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         for fj in self._failed:
             if fj.id == job_id:
@@ -158,14 +158,14 @@ class MemoryFailedRepository(FailedJobRepository):
     async def forget(self, job_id: str) -> bool:
         """Forget
 
-            Args:
-                job_id: [description]
+        Args:
+            job_id: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         before = len(self._failed)
         self._failed = [fj for fj in self._failed if fj.id != job_id]
@@ -174,10 +174,10 @@ class MemoryFailedRepository(FailedJobRepository):
     async def flush(self) -> None:
         """Flush
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._failed.clear()

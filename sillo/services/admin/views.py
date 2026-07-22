@@ -49,14 +49,14 @@ _HIDDEN_FIELDS = frozenset(
 def _should_skip_field(field_name: str) -> bool:
     """Should Skip Field
 
-        Args:
-            field_name: [description]
+    Args:
+        field_name: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return field_name in _HIDDEN_FIELDS or field_name.endswith("_id")
 
@@ -64,14 +64,14 @@ def _should_skip_field(field_name: str) -> bool:
 def _is_backward_relation(field_obj) -> bool:
     """Is Backward Relation
 
-        Args:
-            field_obj: [description]
+    Args:
+        field_obj: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return isinstance(field_obj, (BackwardFKRelation, BackwardOneToOneRelation))
 
@@ -79,15 +79,15 @@ def _is_backward_relation(field_obj) -> bool:
 def _is_password(field_obj, name: str = "") -> bool:
     """Is Password
 
-        Args:
-            field_obj: [description]
-            name: [description]
+    Args:
+        field_obj: [description]
+        name: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if isinstance(field_obj, PasswordField):
         return True
@@ -101,15 +101,15 @@ def _is_password(field_obj, name: str = "") -> bool:
 def _field_kind(field_obj, name: str = "") -> str:
     """Field Kind
 
-        Args:
-            field_obj: [description]
-            name: [description]
+    Args:
+        field_obj: [description]
+        name: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if _is_password(field_obj, name):
         return "password"
@@ -125,14 +125,14 @@ def _field_kind(field_obj, name: str = "") -> str:
 def _related_model_name(field_obj) -> str:
     """Related Model Name
 
-        Args:
-            field_obj: [description]
+    Args:
+        field_obj: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     parts = field_obj.model_name.split(".")
     return parts[-1] if parts else ""
@@ -141,15 +141,15 @@ def _related_model_name(field_obj) -> str:
 async def _get_fk_options(field_obj, current_value=None):
     """Get Fk Options
 
-        Args:
-            field_obj: [description]
-            current_value: [description]
+    Args:
+        field_obj: [description]
+        current_value: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     name = _related_model_name(field_obj)
     slug = name.lower()
@@ -172,15 +172,15 @@ async def _get_fk_options(field_obj, current_value=None):
 async def _get_m2m_options(field_obj, current_ids=None):
     """Get M2M Options
 
-        Args:
-            field_obj: [description]
-            current_ids: [description]
+    Args:
+        field_obj: [description]
+        current_ids: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     name = _related_model_name(field_obj)
     slug = name.lower()
@@ -202,15 +202,15 @@ async def _get_m2m_options(field_obj, current_ids=None):
 def _field_widget(field_obj, name: str = "") -> str:
     """Field Widget
 
-        Args:
-            field_obj: [description]
-            name: [description]
+    Args:
+        field_obj: [description]
+        name: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     kind = _field_kind(field_obj, name)
     if kind == "password":
@@ -233,14 +233,14 @@ def _field_widget(field_obj, name: str = "") -> str:
 def _is_relation(field_obj) -> bool:
     """Is Relation
 
-        Args:
-            field_obj: [description]
+    Args:
+        field_obj: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return isinstance(field_obj, FKAliases) or isinstance(field_obj, M2MAlias)
 
@@ -248,14 +248,14 @@ def _is_relation(field_obj) -> bool:
 def _field_label(field_name: str) -> str:
     """Field Label
 
-        Args:
-            field_name: [description]
+    Args:
+        field_name: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return field_name.replace("_", " ").title()
 
@@ -265,17 +265,17 @@ async def _resolve_fk_value(
 ):
     """Resolve Fk Value
 
-        Args:
-            obj: [description]
-            field_name: [description]
-            field_obj: [description]
-            admin_site: [description]
+    Args:
+        obj: [description]
+        field_name: [description]
+        field_obj: [description]
+        admin_site: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     try:
         related = await getattr(obj, field_name)
@@ -295,17 +295,17 @@ async def _resolve_fk_value(
 async def _resolve_m2m_value(obj, field_name: str, field_obj, admin_site):
     """Resolve M2M Value
 
-        Args:
-            obj: [description]
-            field_name: [description]
-            field_obj: [description]
-            admin_site: [description]
+    Args:
+        obj: [description]
+        field_name: [description]
+        field_obj: [description]
+        admin_site: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     try:
         manager = getattr(obj, field_name)
@@ -325,28 +325,28 @@ async def _resolve_m2m_value(obj, field_name: str, field_obj, admin_site):
 async def _collect_form(request):
     """Collect Form
 
-        Args:
-            request: [description]
+    Args:
+        request: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     form = await request.form
 
     def get(key):
         """Get
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         v = form.get(key)
         return (
@@ -356,14 +356,14 @@ async def _collect_form(request):
     def getlist(key):
         """Getlist
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         v = form.getlist(key)
         return [x for x in v if isinstance(x, str)]
@@ -377,14 +377,14 @@ async def _collect_form(request):
 def model_links_html(site):
     """Model Links Html
 
-        Args:
-            site: [description]
+    Args:
+        site: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     links = []
     for m in site.registry.models:
@@ -397,17 +397,17 @@ def model_links_html(site):
 def base_ctx(request, site, model_name="", model_slug=""):
     """Base Ctx
 
-        Args:
-            request: [description]
-            site: [description]
-            model_name: [description]
-            model_slug: [description]
+    Args:
+        request: [description]
+        site: [description]
+        model_name: [description]
+        model_slug: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return {
         "site_title": site.title,
@@ -426,15 +426,15 @@ def base_ctx(request, site, model_name="", model_slug=""):
 def _forbidden(response, site_prefix):
     """Forbidden
 
-        Args:
-            response: [description]
-            site_prefix: [description]
+    Args:
+        response: [description]
+        site_prefix: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     return response.redirect(f"{site_prefix}/", status_code=302)
 
@@ -442,19 +442,19 @@ def _forbidden(response, site_prefix):
 async def _log(request, action, model_name, site, object_id=None, detail=None):
     """Log
 
-        Args:
-            request: [description]
-            action: [description]
-            model_name: [description]
-            site: [description]
-            object_id: [description]
-            detail: [description]
+    Args:
+        request: [description]
+        action: [description]
+        model_name: [description]
+        site: [description]
+        object_id: [description]
+        detail: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     try:
         ctx = base_ctx(request, site)
@@ -472,16 +472,16 @@ async def _log(request, action, model_name, site, object_id=None, detail=None):
 def _form_field_names(meta, admin, is_create):
     """Form Field Names
 
-        Args:
-            meta: [description]
-            admin: [description]
-            is_create: [description]
+    Args:
+        meta: [description]
+        admin: [description]
+        is_create: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     raw = admin.get_fields(add=is_create)
     if raw:
@@ -501,17 +501,17 @@ def _form_field_names(meta, admin, is_create):
 async def _build_form_fields(meta, admin, obj=None, is_create=True):
     """Build Form Fields
 
-        Args:
-            meta: [description]
-            admin: [description]
-            obj: [description]
-            is_create: [description]
+    Args:
+        meta: [description]
+        admin: [description]
+        obj: [description]
+        is_create: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     is_update = not is_create
     names = _form_field_names(meta, admin, is_create)
@@ -613,16 +613,16 @@ async def _build_form_fields(meta, admin, obj=None, is_create=True):
 async def login_view(request, response, site):
     """Login View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     ctx = {
         "site_title": site.title,
@@ -649,16 +649,16 @@ async def login_view(request, response, site):
 async def logout_view(request, response, site):
     """Logout View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     await site.auth.logout(request)
     return response.redirect(f"{site.prefix}/login/", status_code=302)
@@ -667,16 +667,16 @@ async def logout_view(request, response, site):
 async def dashboard_view(request, response, site):
     """Dashboard View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     ctx = base_ctx(request, site)
     ctx["title"] = "Dashboard"
@@ -732,18 +732,18 @@ async def dashboard_view(request, response, site):
 async def list_view(request, response, site, model_cls, admin_cls):
     """List View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
-            model_cls: [description]
-            admin_cls: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
+        model_cls: [description]
+        admin_cls: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
@@ -919,19 +919,19 @@ async def list_view(request, response, site, model_cls, admin_cls):
 async def detail_view(request, response, site, model_cls, admin_cls, id):
     """Detail View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
-            model_cls: [description]
-            admin_cls: [description]
-            id: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
+        model_cls: [description]
+        admin_cls: [description]
+        id: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
@@ -1040,18 +1040,18 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
 async def create_view(request, response, site, model_cls, admin_cls):
     """Create View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
-            model_cls: [description]
-            admin_cls: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
+        model_cls: [description]
+        admin_cls: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if not admin_cls.has_add_permission(request):
         return _forbidden(response, site.prefix)
@@ -1130,19 +1130,19 @@ async def create_view(request, response, site, model_cls, admin_cls):
 async def update_view(request, response, site, model_cls, admin_cls, id):
     """Update View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
-            model_cls: [description]
-            admin_cls: [description]
-            id: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
+        model_cls: [description]
+        admin_cls: [description]
+        id: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if not admin_cls.has_change_permission(request):
         return _forbidden(response, site.prefix)
@@ -1213,19 +1213,19 @@ async def update_view(request, response, site, model_cls, admin_cls, id):
 async def delete_view(request, response, site, model_cls, admin_cls, id):
     """Delete View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
-            model_cls: [description]
-            admin_cls: [description]
-            id: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
+        model_cls: [description]
+        admin_cls: [description]
+        id: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if not admin_cls.has_delete_permission(request):
         return _forbidden(response, site.prefix)
@@ -1249,18 +1249,18 @@ async def delete_view(request, response, site, model_cls, admin_cls, id):
 async def bulk_view(request, response, site, model_cls, admin_cls):
     """Bulk View
 
-        Args:
-            request: [description]
-            response: [description]
-            site: [description]
-            model_cls: [description]
-            admin_cls: [description]
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
+        model_cls: [description]
+        admin_cls: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     model_name = model_cls.__name__
     model_slug = model_name.lower()

@@ -123,6 +123,7 @@ class MemoryCache(BaseCache):
             sliding: Whether this entry uses sliding TTL expiration mode.
             ttl: The TTL in seconds that was configured for this entry.
         """
+
         __slots__ = ("payload", "expire_at", "sliding", "ttl")
 
         def __init__(

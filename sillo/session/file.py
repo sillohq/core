@@ -8,23 +8,24 @@ from .base import BaseSessionInterface
 class FileSessionManager(BaseSessionInterface):
     """Filesessionmanager
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, config=None) -> None:
+        """Init
+
+        Args:
+            config: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, config=None) -> None:
-        """Init
-
-            Args:
-                config: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         super().__init__(config)
         self.storage_path = getattr(config, "session_file_storage_path", "__sessions")
@@ -35,28 +36,28 @@ class FileSessionManager(BaseSessionInterface):
     def _get_file_path(self, session_key: str) -> str:
         """Get File Path
 
-            Args:
-                session_key: [description]
+        Args:
+            session_key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return os.path.join(self.storage_path, f"{session_key}.json")
 
     def _load_session_data(self, session_key: str) -> Optional[Dict[str, Any]]:
         """Load Session Data
 
-            Args:
-                session_key: [description]
+        Args:
+            session_key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         path = self._get_file_path(session_key)
 
@@ -72,15 +73,15 @@ class FileSessionManager(BaseSessionInterface):
     def _save_session_data(self, session_key: str, data: Dict[str, Any]) -> None:
         """Save Session Data
 
-            Args:
-                session_key: [description]
-                data: [description]
+        Args:
+            session_key: [description]
+            data: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         path = self._get_file_path(session_key)
 
@@ -90,14 +91,14 @@ class FileSessionManager(BaseSessionInterface):
     def _delete_session_file(self, session_key: str) -> None:
         """Delete Session File
 
-            Args:
-                session_key: [description]
+        Args:
+            session_key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         path = self._get_file_path(session_key)
 
@@ -107,14 +108,14 @@ class FileSessionManager(BaseSessionInterface):
     async def load(self, session):
         """Load
 
-            Args:
-                session: [description]
+        Args:
+            session: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         key = session.get_session_key()
 
@@ -128,14 +129,14 @@ class FileSessionManager(BaseSessionInterface):
     async def save(self, session):
         """Save
 
-            Args:
-                session: [description]
+        Args:
+            session: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         key = session.get_session_key()
 

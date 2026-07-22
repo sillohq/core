@@ -81,23 +81,23 @@ class TestClient(httpx.Client):
     ) -> None:
         """Init
 
-            Args:
-                app: [description]
-                base_url: [description]
-                raise_server_exceptions: [description]
-                root_path: [description]
-                backend: [description]
-                backend_options: [description]
-                cookies: [description]
-                headers: [description]
-                follow_redirects: [description]
-                check_asgi_conformance: [description]
+        Args:
+            app: [description]
+            base_url: [description]
+            raise_server_exceptions: [description]
+            root_path: [description]
+            backend: [description]
+            backend_options: [description]
+            cookies: [description]
+            headers: [description]
+            follow_redirects: [description]
+            check_asgi_conformance: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.async_backend = AsyncBackend(
             backend=backend, backend_options=backend_options or {}
@@ -287,14 +287,14 @@ class TestClient(httpx.Client):
     ) -> httpx.Response:
         """Get
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._process_request(method="GET", url=url, **kwargs)
 
@@ -305,14 +305,14 @@ class TestClient(httpx.Client):
     ) -> httpx.Response:
         """Head
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._process_request(method="HEAD", url=url, **kwargs)
 
@@ -323,14 +323,14 @@ class TestClient(httpx.Client):
     ) -> httpx.Response:
         """Post
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._process_request(method="POST", url=url, **kwargs)
 
@@ -341,14 +341,14 @@ class TestClient(httpx.Client):
     ) -> httpx.Response:
         """Put
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._process_request(method="PUT", url=url, **kwargs)
 
@@ -359,14 +359,14 @@ class TestClient(httpx.Client):
     ) -> httpx.Response:
         """Patch
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._process_request(method="PATCH", url=url, **kwargs)
 
@@ -377,14 +377,14 @@ class TestClient(httpx.Client):
     ) -> httpx.Response:
         """Delete
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._process_request(method="DELETE", url=url, **kwargs)
 
@@ -395,14 +395,14 @@ class TestClient(httpx.Client):
     ) -> httpx.Response:
         """Options
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._process_request(method="OPTIONS", url=url, **kwargs)
 
@@ -475,11 +475,11 @@ class TestClient(httpx.Client):
             def reset_portal() -> None:
                 """Reset Portal
 
-                    Returns:
-                        [description]
+                Returns:
+                    [description]
 
-                    Raises:
-                        [description]
+                Raises:
+                    [description]
                 """
                 self.portal = None
 
@@ -498,11 +498,11 @@ class TestClient(httpx.Client):
             def wait_shutdown() -> None:
                 """Wait Shutdown
 
-                    Returns:
-                        [description]
+                Returns:
+                    [description]
 
-                    Raises:
-                        [description]
+                Raises:
+                    [description]
                 """
                 portal.call(self.wait_shutdown)
 
@@ -578,11 +578,11 @@ class TestClient(httpx.Client):
         async def receive() -> Any:
             """Receive
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             message = await self.stream_send.receive()
             if message is None:
@@ -605,11 +605,11 @@ class TestClient(httpx.Client):
         async def receive() -> Any:
             """Receive
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             message = await self.stream_send.receive()
             if message is None:

@@ -13,14 +13,14 @@ from sillo.helpers.async_helpers import is_async_callable
 def is_asgi3(app: ASGI2App | ASGI3App) -> TypeGuard[ASGI3App]:
     """Is Asgi3
 
-        Args:
-            app: [description]
+    Args:
+        app: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     if inspect.isclass(app):
         return hasattr(app, "__await__")
@@ -35,30 +35,30 @@ class WrapASGI2:
     def __init__(self, app) -> None:
         """Init
 
-            Args:
-                app: [description]
+        Args:
+            app: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Call
 
-            Args:
-                scope: [description]
-                receive: [description]
-                send: [description]
+        Args:
+            scope: [description]
+            receive: [description]
+            send: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         instance = self.app(scope)
         await instance(receive, send)
@@ -67,11 +67,12 @@ class WrapASGI2:
 class AsyncBackend(TypedDict):
     """Asyncbackend
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     backend: str
     backend_options: dict[str, Any]

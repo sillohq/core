@@ -17,12 +17,13 @@ Message = typing.MutableMapping[str, typing.Any]
 class WebSocketConsumer:
     """Websocketconsumer
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     channel: typing.Optional[Channel] = None
     middleware: typing.List[typing.Any] = []
 
@@ -53,14 +54,14 @@ class WebSocketConsumer:
         ) -> None:
             """Handler
 
-                Args:
-                    websocket: [description]
+            Args:
+                websocket: [description]
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             instance = cls()
             await instance(websocket, **kwargs)
@@ -70,14 +71,14 @@ class WebSocketConsumer:
     async def __call__(self, ws: WebSocket) -> None:
         """Call
 
-            Args:
-                ws: [description]
+        Args:
+            ws: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.websocket = ws
 
@@ -114,15 +115,15 @@ class WebSocketConsumer:
     async def decode(self, websocket: WebSocket, message: Message) -> typing.Any:
         """Decode
 
-            Args:
-                websocket: [description]
-                message: [description]
+        Args:
+            websocket: [description]
+            message: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.encoding == "text":
             if "text" not in message:

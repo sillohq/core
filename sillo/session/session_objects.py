@@ -5,24 +5,25 @@ from typing import Any, Dict, Iterable, Optional
 class Session:
     """Session
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, interface, session_key: Optional[str] = None) -> None:
+        """Init
+
+        Args:
+            interface: [description]
+            session_key: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, interface, session_key: Optional[str] = None) -> None:
-        """Init
-
-            Args:
-                interface: [description]
-                session_key: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         self.interface = interface
         self.session_key = session_key
@@ -37,14 +38,14 @@ class Session:
     def __getitem__(self, key: str) -> Any:
         """Getitem
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         return self._session_cache[key]
@@ -52,15 +53,15 @@ class Session:
     def __setitem__(self, key: str, value: Any) -> None:
         """Setitem
 
-            Args:
-                key: [description]
-                value: [description]
+        Args:
+            key: [description]
+            value: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.modified = True
         self.accessed = True
@@ -69,14 +70,14 @@ class Session:
     def __delitem__(self, key: str) -> None:
         """Delitem
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.modified = True
         self.deleted = True
@@ -85,14 +86,14 @@ class Session:
     def __contains__(self, key: str) -> bool:
         """Contains
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         return key in self._session_cache
@@ -100,11 +101,11 @@ class Session:
     def __len__(self) -> int:
         """Len
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         return len(self._session_cache)
@@ -112,15 +113,15 @@ class Session:
     def get(self, key: str, default: Any = None) -> Any:
         """Get
 
-            Args:
-                key: [description]
-                default: [description]
+        Args:
+            key: [description]
+            default: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         return self._session_cache.get(key, default)
@@ -128,15 +129,15 @@ class Session:
     def set(self, key: str, value: Any) -> None:
         """Set
 
-            Args:
-                key: [description]
-                value: [description]
+        Args:
+            key: [description]
+            value: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.modified = True
         self.accessed = True
@@ -145,14 +146,14 @@ class Session:
     def delete(self, key: str) -> None:
         """Delete
 
-            Args:
-                key: [description]
+        Args:
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.modified = True
         self.deleted = True
@@ -162,11 +163,11 @@ class Session:
     def clear(self) -> None:
         """Clear
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         self.modified = True
@@ -176,11 +177,11 @@ class Session:
     def keys(self):
         """Keys
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         return self._session_cache.keys()
@@ -188,11 +189,11 @@ class Session:
     def values(self):
         """Values
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         return self._session_cache.values()
@@ -200,11 +201,11 @@ class Session:
     def items(self):
         """Items
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         return self._session_cache.items()
@@ -212,25 +213,25 @@ class Session:
     def is_empty(self) -> bool:
         """Is Empty
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return len(self._session_cache) == 0
 
     def update(self, other: Dict[str, Any]):
         """Update
 
-            Args:
-                other: [description]
+        Args:
+            other: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.modified = True
         self._session_cache.update(other)
@@ -238,11 +239,11 @@ class Session:
     def get_session_key(self) -> str:
         """Get Session Key
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.session_key:
             return self.session_key
@@ -251,25 +252,25 @@ class Session:
     def set_expiration_time(self, expiration: datetime) -> None:
         """Set Expiration Time
 
-            Args:
-                expiration: [description]
+        Args:
+            expiration: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._expiration_time = expiration
 
     def get_expiration_time(self) -> datetime:
         """Get Expiration Time
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self._expiration_time:
             return self._expiration_time
@@ -298,11 +299,11 @@ class Session:
     def has_expired(self) -> bool:
         """Has Expired
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         expiration_time = self.get_expiration_time()
         if expiration_time and datetime.now(timezone.utc) > expiration_time:
@@ -313,11 +314,11 @@ class Session:
     def should_set_cookie(self) -> bool:
         """Should Set Cookie
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         config = getattr(self.interface, "config", None)
 
@@ -334,22 +335,22 @@ class Session:
     async def load(self) -> None:
         """Load
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self.interface.load(self)
 
     async def save(self) -> str:
         """Save
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.modified = False
         self.deleted = False
@@ -359,22 +360,22 @@ class Session:
     def __str__(self) -> str:
         """Str
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return f"<Session {self._session_cache}>"
 
     def __iter__(self) -> Iterable[str]:
         """Iter
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.accessed = True
         return iter(self._session_cache)
@@ -382,10 +383,10 @@ class Session:
     def __repr__(self) -> str:
         """Repr
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return f"<Session {self.session_key} {self._session_cache}>"

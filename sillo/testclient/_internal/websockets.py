@@ -124,14 +124,14 @@ class WebSocketTestSession:
         async def run_app(tg: TaskGroup) -> None:
             """Run App
 
-                Args:
-                    tg: [description]
+            Args:
+                tg: [description]
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             try:
                 await self.app(self.scope, self._asgi_receive, self._asgi_send)

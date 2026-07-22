@@ -21,17 +21,17 @@ class PaginatedResult:
     def __init__(self, items: List[Any], total: int, page: int, page_size: int):
         """Init
 
-            Args:
-                items: [description]
-                total: [description]
-                page: [description]
-                page_size: [description]
+        Args:
+            items: [description]
+            total: [description]
+            page: [description]
+            page_size: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.items = items
         self.total = total
@@ -42,11 +42,11 @@ class PaginatedResult:
     def pages(self) -> int:
         """Pages
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return max(1, (self.total + self.page_size - 1) // self.page_size)
 
@@ -54,11 +54,11 @@ class PaginatedResult:
     def has_next(self) -> bool:
         """Has Next
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.page < self.pages
 
@@ -66,22 +66,22 @@ class PaginatedResult:
     def has_prev(self) -> bool:
         """Has Prev
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.page > 1
 
     def to_dict(self) -> dict:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "items": [

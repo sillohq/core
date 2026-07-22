@@ -49,14 +49,14 @@ class Batch:
     ):
         """Init
 
-            Args:
-                name: [description]
+        Args:
+            name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.id = str(uuid.uuid4())
         self.name = name
@@ -99,11 +99,11 @@ class Batch:
     def _check_done(self) -> None:
         """Check Done
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         total = len(self._jobs)
         done = len(self._completed) + len(self._failed)
@@ -113,11 +113,11 @@ class Batch:
     def _finish(self) -> None:
         """Finish
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self._finished:
             return
@@ -134,11 +134,11 @@ class Batch:
     def completed_count(self) -> int:
         """Completed Count
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return len(self._completed)
 
@@ -146,11 +146,11 @@ class Batch:
     def failed_count(self) -> int:
         """Failed Count
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return len(self._failed)
 
@@ -158,11 +158,11 @@ class Batch:
     def total(self) -> int:
         """Total
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return len(self._jobs)
 
@@ -170,11 +170,11 @@ class Batch:
     def is_done(self) -> bool:
         """Is Done
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._finished
 
@@ -192,11 +192,11 @@ class JobChain:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._jobs: List[Callable[[], Awaitable[Any]]] = []
 

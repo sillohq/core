@@ -75,14 +75,14 @@ def listen(*events: Type[Event], priority: int = 0) -> Callable:
     def decorator(func: ListenerCallback) -> ListenerCallback:
         """Decorator
 
-            Args:
-                func: [description]
+        Args:
+            func: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         func._listens_to = events
         func._listener_priority = priority
@@ -119,11 +119,11 @@ class EventDispatcher:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._listeners: Dict[Type[Event], List[ListenerRegistration]] = {}
         self._wildcards: List[ListenerRegistration] = []
@@ -213,15 +213,15 @@ class EventDispatcher:
     async def _call_listener(self, reg: ListenerRegistration, event: Event) -> None:
         """Call Listener
 
-            Args:
-                reg: [description]
-                event: [description]
+        Args:
+            reg: [description]
+            event: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             await reg.callback(event)

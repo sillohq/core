@@ -25,40 +25,40 @@ class TortoiseDataHandler(AsyncDataHandler):
     def __init__(self, queryset: Annotated[Any, Doc("Tortoise queryset.")]):
         """Init
 
-            Args:
-                queryset: [description]
+        Args:
+            queryset: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._qs = queryset
 
     async def get_total_items(self) -> int:
         """Get Total Items
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self._qs.count()
 
     async def get_items(self, offset: int, limit: int) -> List[Any]:
         """Get Items
 
-            Args:
-                offset: [description]
-                limit: [description]
+        Args:
+            offset: [description]
+            limit: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return await self._qs.offset(offset).limit(limit).all()
 
@@ -69,39 +69,39 @@ class SyncTortoiseDataHandler(SyncDataHandler):
     def __init__(self, data: List[Any]):
         """Init
 
-            Args:
-                data: [description]
+        Args:
+            data: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._data = data
 
     def get_total_items(self) -> int:
         """Get Total Items
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return len(self._data)
 
     def get_items(self, offset: int, limit: int) -> List[Any]:
         """Get Items
 
-            Args:
-                offset: [description]
-                limit: [description]
+        Args:
+            offset: [description]
+            limit: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self._data[offset : offset + limit]

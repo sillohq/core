@@ -13,15 +13,15 @@ async def websocket_exception_handler(
 ) -> None:
     """Websocket Exception Handler
 
-        Args:
-            websocket: [description]
-            exc: [description]
+    Args:
+        websocket: [description]
+        exc: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     error = traceback.format_exc()
     logger.error(f"WebSocket error: {error}")
@@ -31,39 +31,40 @@ async def websocket_exception_handler(
 class WebSocketErrorMiddleware:
     """Websocketerrormiddleware
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, app: ASGIApp):
+        """Init
+
+        Args:
+            app: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, app: ASGIApp):
-        """Init
-
-            Args:
-                app: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         """Call
 
-            Args:
-                scope: [description]
-                receive: [description]
-                send: [description]
+        Args:
+            scope: [description]
+            receive: [description]
+            send: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if scope["type"] == "websocket":
             websocket = WebSocket(scope, receive, send)

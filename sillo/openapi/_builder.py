@@ -31,12 +31,13 @@ from .models import (
 class APIDocumentation:
     """Apidocumentation
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     def __init__(
         self,
         config: Optional[OpenAPIConfig] = None,
@@ -46,17 +47,17 @@ class APIDocumentation:
     ):
         """Init
 
-            Args:
-                config: [description]
-                swagger_url: [description]
-                redoc_url: [description]
-                openapi_url: [description]
+        Args:
+            config: [description]
+            swagger_url: [description]
+            redoc_url: [description]
+            openapi_url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.config = config or OpenAPIConfig()
         self.swagger_url = swagger_url

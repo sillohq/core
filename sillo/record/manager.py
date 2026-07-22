@@ -39,14 +39,14 @@ class DatabaseManager:
     ):
         """Init
 
-            Args:
-                config: [description]
+        Args:
+            config: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.config = config
         self._initialized = False
@@ -122,11 +122,11 @@ class DatabaseManager:
     def _build_tortoise_config(self) -> dict:
         """Build Tortoise Config
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         cfg = self.config
         modules = self._model_modules or ["__main__"]

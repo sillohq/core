@@ -54,15 +54,15 @@ class Supervisor:
     ):
         """Init
 
-            Args:
-                func: [description]
-                policy: [description]
+        Args:
+            func: [description]
+            policy: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.func = func
         self.policy = policy
@@ -129,11 +129,11 @@ class Supervisor:
     def _should_restart(self) -> bool:
         """Should Restart
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.policy == RestartPolicy.NEVER:
             return False
@@ -146,11 +146,11 @@ class Supervisor:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "name": self.name,

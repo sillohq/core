@@ -24,12 +24,13 @@ from .models import (
 class OpenAPIConfig:
     """Openapiconfig
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     def __init__(
         self,
         title: str = "API Documentation",
@@ -43,21 +44,21 @@ class OpenAPIConfig:
     ):
         """Init
 
-            Args:
-                title: [description]
-                version: [description]
-                description: [description]
-                servers: [description]
-                contact: [description]
-                license: [description]
-                termsOfService: [description]
-                openapi_version: [description]
+        Args:
+            title: [description]
+            version: [description]
+            description: [description]
+            servers: [description]
+            contact: [description]
+            license: [description]
+            termsOfService: [description]
+            openapi_version: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.openapi_spec = OpenAPI(
             openapi=openapi_version,

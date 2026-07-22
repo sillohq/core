@@ -13,12 +13,13 @@ from .signed_cookies import SignedSessionManager
 class SessionMiddleware(BaseMiddleware):
     """Sessionmiddleware
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     def __init__(
         self,
         config: Optional[SessionConfig] = None,
@@ -28,16 +29,16 @@ class SessionMiddleware(BaseMiddleware):
     ):
         """Init
 
-            Args:
-                config: [description]
-                manager: [description]
-                secret_key: [description]
+        Args:
+            config: [description]
+            manager: [description]
+            secret_key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         super().__init__(**kwargs)
 
@@ -56,16 +57,16 @@ class SessionMiddleware(BaseMiddleware):
     ):
         """Process Request
 
-            Args:
-                request: [description]
-                response: [description]
-                call_next: [description]
+        Args:
+            request: [description]
+            response: [description]
+            call_next: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         cookie_name = self.session_config.session_cookie_name or "session_id"
         session_key = request.cookies.get(cookie_name)
@@ -80,15 +81,15 @@ class SessionMiddleware(BaseMiddleware):
     async def process_response(self, request: Request, response: Response):
         """Process Response
 
-            Args:
-                request: [description]
-                response: [description]
+        Args:
+            request: [description]
+            response: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         session: Session | None = request.scope.get("session")
         if session is None:

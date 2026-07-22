@@ -90,6 +90,7 @@ def deprecated(
         warning behavior while preserving its signature via
         ``functools.wraps``.
     """
+
     def decorator(func: F) -> F:
         """Build the deprecation-wrapped version of the target callable.
 
@@ -182,6 +183,7 @@ def deprecate_parameter(
         deprecation warning behavior while preserving its signature via
         ``functools.wraps``.
     """
+
     def decorator(func: F) -> F:
         msg = f"Parameter `{param_name}` of `{func.__name__}` is deprecated"
         if replacement:

@@ -328,6 +328,7 @@ class silloApp:
         Raises:
             None
         """
+
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)
         async def serve_openapi(request: "Request", response: "Response"):
             root_path = request.scope.get("root_path", "")

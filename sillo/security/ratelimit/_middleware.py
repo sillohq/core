@@ -35,14 +35,14 @@ class RateLimitMiddleware(BaseMiddleware):
     ) -> None:
         """Init
 
-            Args:
-                config: [description]
+        Args:
+            config: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if config is not None and not isinstance(config, RateLimitConfig):
             raise TypeError("config must be a RateLimitConfig instance")
@@ -59,16 +59,16 @@ class RateLimitMiddleware(BaseMiddleware):
     ):
         """Process Request
 
-            Args:
-                request: [description]
-                response: [description]
-                call_next: [description]
+        Args:
+            request: [description]
+            response: [description]
+            call_next: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         key = self.config._key_func(request)
         if key is None:
@@ -97,15 +97,15 @@ class RateLimitMiddleware(BaseMiddleware):
     async def process_response(self, request: Request, response: Response):
         """Process Response
 
-            Args:
-                request: [description]
-                response: [description]
+        Args:
+            request: [description]
+            response: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         result = self._last_result
         if result is None or not self.config.include_headers:
@@ -117,16 +117,16 @@ class RateLimitMiddleware(BaseMiddleware):
     def _deny(self, request: Request, response: Response, result: Any):
         """Deny
 
-            Args:
-                request: [description]
-                response: [description]
-                result: [description]
+        Args:
+            request: [description]
+            response: [description]
+            result: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if callable(self.config.on_exceed):
             return self.config.on_exceed(request, response, result)

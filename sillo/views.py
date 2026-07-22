@@ -337,6 +337,7 @@ class APIView:
         """
         Handle POST requests.
         """
+
     async def post(self, req: Request, res: Response) -> Response:
         """
         Handle incoming POST requests for resource creation.

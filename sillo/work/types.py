@@ -58,12 +58,13 @@ class TaskStatus(enum.Enum):
 class TriggerType(enum.Enum):
     """Triggertype
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     INTERVAL = "interval"
     CRON = "cron"
     DATETIME = "datetime"
@@ -72,12 +73,13 @@ class TriggerType(enum.Enum):
 class JobStatus(enum.Enum):
     """Jobstatus
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     ACTIVE = "active"
     PAUSED = "paused"
     COMPLETED = "completed"
@@ -87,12 +89,13 @@ class JobStatus(enum.Enum):
 class CircuitState(enum.Enum):
     """Circuitstate
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     CLOSED = "closed"  # normal operation
     OPEN = "open"  # failures exceeded threshold
     HALF_OPEN = "half_open"  # testing recovery
@@ -101,12 +104,13 @@ class CircuitState(enum.Enum):
 class QueueHealth(enum.Enum):
     """Queuehealth
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"  # high backlog
     STALLED = "stalled"  # no consumers
@@ -121,14 +125,14 @@ class WorkError(Exception):
     def __init__(self, message: str, *, task_id: str = "", queue_name: str = ""):
         """Init
 
-            Args:
-                message: [description]
+        Args:
+            message: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         super().__init__(message)
         self.task_id = task_id
@@ -212,11 +216,11 @@ class TaskResult:
     def ok(self) -> bool:
         """Ok
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.status == TaskStatus.COMPLETED
 
@@ -224,11 +228,11 @@ class TaskResult:
     def is_terminal(self) -> bool:
         """Is Terminal
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.status in (
             TaskStatus.COMPLETED,
@@ -241,11 +245,11 @@ class TaskResult:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "task_id": self.task_id,
@@ -269,22 +273,22 @@ class TaskResult:
     def to_json(self) -> str:
         """To Json
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return json.dumps(self.to_dict(), default=str)
 
     def _serialise_result(self) -> Optional[str]:
         """Serialise Result
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.result is None:
             return None
@@ -297,11 +301,11 @@ class TaskResult:
     def __repr__(self) -> str:
         """Repr
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return (
             f"TaskResult(id={self.task_id[:8]}, name={self.name!r}, "
@@ -323,11 +327,11 @@ class QueueStats:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "name": self.name,
@@ -353,11 +357,11 @@ class WorkerStats:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "processed": self.processed,
@@ -373,12 +377,13 @@ class WorkerStats:
 class SchedulerStats:
     """Schedulerstats
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     jobs_total: int = 0
     jobs_active: int = 0
     jobs_paused: int = 0
@@ -388,11 +393,11 @@ class SchedulerStats:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "jobs_total": self.jobs_total,

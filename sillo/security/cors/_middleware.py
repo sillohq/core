@@ -19,23 +19,24 @@ SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-
 class CORSMiddleware(BaseMiddleware):
     """Corsmiddleware
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, config: CorsConfig):
+        """Init
+
+        Args:
+            config: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, config: CorsConfig):
-        """Init
-
-            Args:
-                config: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         self.config = config
         self.allow_origins: List[str] = self.config.allow_origins or []
@@ -101,16 +102,16 @@ class CORSMiddleware(BaseMiddleware):
     ):
         """Process Request
 
-            Args:
-                request: [description]
-                response: [description]
-                call_next: [description]
+        Args:
+            request: [description]
+            response: [description]
+            call_next: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         config = getattr(self, "config", None)
         if not config:
@@ -140,19 +141,18 @@ class CORSMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
-
         """Simple Response
 
-            Args:
-                request: [description]
-                response: [description]
-                call_next: [description]
+        Args:
+            request: [description]
+            response: [description]
+            call_next: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         origin = request.origin
         server_error_headers = request.scope.get("server_error_headers", {})
@@ -179,14 +179,14 @@ class CORSMiddleware(BaseMiddleware):
     def is_allowed_origin(self, origin: Optional[str]) -> bool:
         """Is Allowed Origin
 
-            Args:
-                origin: [description]
+        Args:
+            origin: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if origin in self.blacklist_origins:
             if self.debug:
@@ -210,14 +210,14 @@ class CORSMiddleware(BaseMiddleware):
     def is_allowed_method(self, method: Optional[str]) -> bool:
         """Is Allowed Method
 
-            Args:
-                method: [description]
+        Args:
+            method: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not method or method.strip() == "":
             return False
@@ -230,15 +230,15 @@ class CORSMiddleware(BaseMiddleware):
     async def preflight_response(self, request: Request, response: Response) -> Any:
         """Preflight Response
 
-            Args:
-                request: [description]
-                response: [description]
+        Args:
+            request: [description]
+            response: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         origin = request.headers.get("origin")
         requested_method = request.headers.get("access-control-request-method")
@@ -318,14 +318,14 @@ class CORSMiddleware(BaseMiddleware):
     def get_error_message(self, error_type: str) -> str:
         """Get Error Message
 
-            Args:
-                error_type: [description]
+        Args:
+            error_type: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not self.custom_error_messages:
             return "CORS request denied."

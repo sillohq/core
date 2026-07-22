@@ -21,17 +21,16 @@ class CSRFMiddleware(BaseMiddleware):
         config: Optional[CSRFConfig] = None,
         **kwargs: Any,
     ) -> None:
-
         """Init
 
-            Args:
-                config: [description]
+        Args:
+            config: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if config is not None:
             if not isinstance(config, CSRFConfig):
@@ -73,16 +72,16 @@ class CSRFMiddleware(BaseMiddleware):
     ):
         """Process Request
 
-            Args:
-                request: [description]
-                response: [description]
-                call_next: [description]
+        Args:
+            request: [description]
+            response: [description]
+            call_next: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if not self.csrf_config or not self.use_csrf:
             return await call_next()

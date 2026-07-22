@@ -15,12 +15,13 @@ Send = typing.Callable[[Message], typing.Awaitable[None]]
 class WebSocketState(enum.Enum):
     """Websocketstate
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     CONNECTING = 0
     CONNECTED = 1
     DISCONNECTED = 2
@@ -30,24 +31,25 @@ class WebSocketState(enum.Enum):
 class WebSocketDisconnect(Exception):
     """Websocketdisconnect
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, code: int = 1000, reason: Optional[str] = None) -> None:
+        """Init
+
+        Args:
+            code: [description]
+            reason: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, code: int = 1000, reason: Optional[str] = None) -> None:
-        """Init
-
-            Args:
-                code: [description]
-                reason: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         self.code = code
         self.reason = reason or ""
@@ -56,25 +58,26 @@ class WebSocketDisconnect(Exception):
 class WebSocket(HTTPConnection):
     """Websocket
 
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Init
+
+        Args:
+            scope: [description]
+            receive: [description]
+            send: [description]
+
         Returns:
             [description]
 
         Raises:
             [description]
-    """
-    def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """Init
-
-            Args:
-                scope: [description]
-                receive: [description]
-                send: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
         """
         super().__init__(scope, receive)
         assert scope["type"] == "websocket"
@@ -165,15 +168,15 @@ class WebSocket(HTTPConnection):
     ) -> None:
         """Accept
 
-            Args:
-                subprotocol: [description]
-                headers: [description]
+        Args:
+            subprotocol: [description]
+            headers: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         headers = headers or []
 
@@ -187,14 +190,14 @@ class WebSocket(HTTPConnection):
     def _raise_on_disconnect(self, message: Message) -> None:
         """Raise On Disconnect
 
-            Args:
-                message: [description]
+        Args:
+            message: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if message["type"] == "websocket.disconnect":
             raise WebSocketDisconnect(message["code"], message.get("reason"))
@@ -202,11 +205,11 @@ class WebSocket(HTTPConnection):
     async def receive_text(self) -> str:
         """Receive Text
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.application_state != WebSocketState.CONNECTED:
             raise RuntimeError(
@@ -219,11 +222,11 @@ class WebSocket(HTTPConnection):
     async def receive_bytes(self) -> bytes:
         """Receive Bytes
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.application_state != WebSocketState.CONNECTED:
             raise RuntimeError(
@@ -236,14 +239,14 @@ class WebSocket(HTTPConnection):
     async def receive_json(self, mode: str = "text") -> typing.Any:
         """Receive Json
 
-            Args:
-                mode: [description]
+        Args:
+            mode: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if mode not in {"text", "binary"}:
             raise RuntimeError('The "mode" argument should be "text" or "binary".')
@@ -264,11 +267,11 @@ class WebSocket(HTTPConnection):
     async def iter_text(self) -> AsyncIterator[str]:
         """Iter Text
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             while True:
@@ -279,11 +282,11 @@ class WebSocket(HTTPConnection):
     async def iter_bytes(self) -> AsyncIterator[bytes]:
         """Iter Bytes
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             while True:
@@ -294,11 +297,11 @@ class WebSocket(HTTPConnection):
     async def iter_json(self) -> AsyncIterator[typing.Any]:
         """Iter Json
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             while True:
@@ -309,43 +312,43 @@ class WebSocket(HTTPConnection):
     async def send_text(self, data: str) -> None:
         """Send Text
 
-            Args:
-                data: [description]
+        Args:
+            data: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         await self.send({"type": "websocket.send", "text": data})
 
     async def send_bytes(self, data: bytes) -> None:
         """Send Bytes
 
-            Args:
-                data: [description]
+        Args:
+            data: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         await self.send({"type": "websocket.send", "bytes": data})
 
     async def send_json(self, data: typing.Any, mode: str = "text") -> None:
         """Send Json
 
-            Args:
-                data: [description]
-                mode: [description]
+        Args:
+            data: [description]
+            mode: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if mode not in {"text", "binary"}:
             raise RuntimeError('The "mode" argument should be "text" or "binary".')
@@ -358,15 +361,15 @@ class WebSocket(HTTPConnection):
     async def close(self, code: int = 1000, reason: Optional[str] = None) -> None:
         """Close
 
-            Args:
-                code: [description]
-                reason: [description]
+        Args:
+            code: [description]
+            reason: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         await self.send(
             {"type": "websocket.close", "code": code, "reason": reason or ""}
@@ -375,11 +378,11 @@ class WebSocket(HTTPConnection):
     def is_connected(self) -> bool:
         """Is Connected
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return (
             self.client_state == WebSocketState.CONNECTED

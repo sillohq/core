@@ -25,12 +25,13 @@ logger = logging.getLogger("sillo.work.scheduler.jobs")
 class JobStatus(Enum):
     """Jobstatus
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     ACTIVE = "active"
     PAUSED = "paused"
     COMPLETED = "completed"
@@ -80,15 +81,15 @@ class ScheduledJob:
     ):
         """Init
 
-            Args:
-                func: [description]
-                trigger: [description]
+        Args:
+            func: [description]
+            trigger: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.id = id or str(uuid4())
         self.name = name or func.__name__

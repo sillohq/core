@@ -41,15 +41,15 @@ class WildcardListener:
     ):
         """Init
 
-            Args:
-                pattern: [description]
-                callback: [description]
+        Args:
+            pattern: [description]
+            callback: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.pattern = pattern
         self.callback = callback
@@ -61,28 +61,28 @@ class WildcardListener:
     def matches(self, event_name: str) -> bool:
         """Matches
 
-            Args:
-                event_name: [description]
+        Args:
+            event_name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return fnmatch.fnmatch(event_name, self.pattern)
 
     async def handle(self, event: Event) -> None:
         """Handle
 
-            Args:
-                event: [description]
+        Args:
+            event: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.once and self._fired:
             return
@@ -105,14 +105,14 @@ class ListenerRegistry:
     def __init__(self, dispatcher: EventDispatcher):
         """Init
 
-            Args:
-                dispatcher: [description]
+        Args:
+            dispatcher: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.dispatcher = dispatcher
         self._wildcards: List[WildcardListener] = []
@@ -145,14 +145,14 @@ class ListenerRegistry:
             async def _once(evt):
                 """Once
 
-                    Args:
-                        evt: [description]
+                Args:
+                    evt: [description]
 
-                    Returns:
-                        [description]
+                Returns:
+                    [description]
 
-                    Raises:
-                        [description]
+                Raises:
+                    [description]
                 """
                 self.dispatcher.forget(event, callback)
                 await callback(evt)
@@ -192,14 +192,14 @@ class EventListener:
     def __init__(self, dispatcher: EventDispatcher):
         """Init
 
-            Args:
-                dispatcher: [description]
+        Args:
+            dispatcher: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.registry = ListenerRegistry(dispatcher)
         self.dispatcher = dispatcher

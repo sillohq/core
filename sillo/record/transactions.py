@@ -57,15 +57,15 @@ class TransactionContext:
     def __init__(self, conn, tx):
         """Init
 
-            Args:
-                conn: [description]
-                tx: [description]
+        Args:
+            conn: [description]
+            tx: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._conn = conn
         self._tx = tx

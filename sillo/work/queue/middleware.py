@@ -43,16 +43,16 @@ class RetryMiddleware:
     ):
         """Init
 
-            Args:
-                max_attempts: [description]
-                base_delay: [description]
-                max_delay: [description]
+        Args:
+            max_attempts: [description]
+            base_delay: [description]
+            max_delay: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.max_attempts = max_attempts
         self.base_delay = base_delay
@@ -61,14 +61,14 @@ class RetryMiddleware:
     def __call__(self, handler: JobHandler) -> JobHandler:
         """Call
 
-            Args:
-                handler: [description]
+        Args:
+            handler: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         max_attempts = self.max_attempts
         base_delay = self.base_delay
@@ -77,11 +77,11 @@ class RetryMiddleware:
         async def wrapper() -> Any:
             """Wrapper
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             last_exc = None
             for attempt in range(1, max_attempts + 1):
@@ -120,16 +120,16 @@ class RateLimitMiddleware:
     ):
         """Init
 
-            Args:
-                max_jobs: [description]
-                per_seconds: [description]
-                burst: [description]
+        Args:
+            max_jobs: [description]
+            per_seconds: [description]
+            burst: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.max_jobs = max_jobs
         self.per_seconds = per_seconds
@@ -140,25 +140,25 @@ class RateLimitMiddleware:
     def __call__(self, handler: JobHandler) -> JobHandler:
         """Call
 
-            Args:
-                handler: [description]
+        Args:
+            handler: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         rate = self.max_jobs / self.per_seconds
 
         async def wrapper() -> Any:
             """Wrapper
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             now = time.monotonic()
             elapsed = now - self._last_refill
@@ -190,39 +190,39 @@ class TimeoutMiddleware:
     def __init__(self, seconds: Annotated[float, Doc("Max execution seconds.")] = 30.0):
         """Init
 
-            Args:
-                seconds: [description]
+        Args:
+            seconds: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.seconds = seconds
 
     def __call__(self, handler: JobHandler) -> JobHandler:
         """Call
 
-            Args:
-                handler: [description]
+        Args:
+            handler: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         seconds = self.seconds
 
         async def wrapper() -> Any:
             """Wrapper
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             return await asyncio.wait_for(handler(), timeout=seconds)
 

@@ -79,11 +79,11 @@ class RedisTransport(BaseTransport):
     ) -> None:
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         super().__init__(namespace=namespace, on_error=on_error, loop=loop)
         self._url = url
@@ -189,11 +189,11 @@ class RedisTransport(BaseTransport):
     async def _listen_loop(self) -> None:
         """Listen Loop
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         while self._running:
             try:

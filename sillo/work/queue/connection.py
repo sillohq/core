@@ -89,11 +89,11 @@ class SyncConnection(QueueConnection):
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._queues: Dict[str, asyncio.PriorityQueue] = {}
         self._delayed: Dict[str, List[tuple[float, str, str]]] = {}
@@ -103,14 +103,14 @@ class SyncConnection(QueueConnection):
     def _ensure(self, name: str) -> None:
         """Ensure
 
-            Args:
-                name: [description]
+        Args:
+            name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if name not in self._queues:
             self._queues[name] = asyncio.PriorityQueue()
@@ -121,15 +121,15 @@ class SyncConnection(QueueConnection):
     async def push(self, queue_name: str, payload: str, *, delay: int = 0) -> str:
         """Push
 
-            Args:
-                queue_name: [description]
-                payload: [description]
+        Args:
+            queue_name: [description]
+            payload: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._ensure(queue_name)
         job_id = f"{int(time.time() * 1e6)}-{id(payload)}"
@@ -147,14 +147,14 @@ class SyncConnection(QueueConnection):
     ) -> Optional[tuple[str, str]]:
         """Pop
 
-            Args:
-                queue_name: [description]
+        Args:
+            queue_name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._ensure(queue_name)
 
@@ -171,14 +171,14 @@ class SyncConnection(QueueConnection):
     async def size(self, queue_name: str) -> int:
         """Size
 
-            Args:
-                queue_name: [description]
+        Args:
+            queue_name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._ensure(queue_name)
         return self._queues[queue_name].qsize() + len(self._delayed.get(queue_name, []))
@@ -186,14 +186,14 @@ class SyncConnection(QueueConnection):
     async def clear(self, queue_name: str) -> None:
         """Clear
 
-            Args:
-                queue_name: [description]
+        Args:
+            queue_name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._ensure(queue_name)
         while not self._queues[queue_name].empty():
@@ -204,14 +204,14 @@ class SyncConnection(QueueConnection):
     def _release_delayed(self, name: str) -> None:
         """Release Delayed
 
-            Args:
-                name: [description]
+        Args:
+            name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         now = time.monotonic()
         remaining = []
@@ -237,14 +237,14 @@ class RedisConnection(QueueConnection):
     ):
         """Init
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.url = url
         self.prefix = prefix
@@ -253,11 +253,11 @@ class RedisConnection(QueueConnection):
     async def _r(self):
         """R
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self._redis is not None:
             return self._redis
@@ -267,15 +267,15 @@ class RedisConnection(QueueConnection):
     async def push(self, queue_name: str, payload: str, *, delay: int = 0) -> str:
         """Push
 
-            Args:
-                queue_name: [description]
-                payload: [description]
+        Args:
+            queue_name: [description]
+            payload: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         r = await self._r()
         job_id = f"{int(time.time() * 1e6)}-{hash(payload)}"
@@ -292,14 +292,14 @@ class RedisConnection(QueueConnection):
     ) -> Optional[tuple[str, str]]:
         """Pop
 
-            Args:
-                queue_name: [description]
+        Args:
+            queue_name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         r = await self._r()
         key = f"{self.prefix}{queue_name}"
@@ -319,14 +319,14 @@ class RedisConnection(QueueConnection):
     async def size(self, queue_name: str) -> int:
         """Size
 
-            Args:
-                queue_name: [description]
+        Args:
+            queue_name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         r = await self._r()
         key = f"{self.prefix}{queue_name}"
@@ -335,14 +335,14 @@ class RedisConnection(QueueConnection):
     async def clear(self, queue_name: str) -> None:
         """Clear
 
-            Args:
-                queue_name: [description]
+        Args:
+            queue_name: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         r = await self._r()
         await r.delete(f"{self.prefix}{queue_name}")
@@ -350,15 +350,15 @@ class RedisConnection(QueueConnection):
     async def _migrate_delayed(self, r, key: str) -> None:
         """Migrate Delayed
 
-            Args:
-                r: [description]
-                key: [description]
+        Args:
+            r: [description]
+            key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         now = time.time()
         delayed_key = f"{key}:delayed"
@@ -384,11 +384,11 @@ class ConnectionManager:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._connections: Dict[str, QueueConnection] = {}
 

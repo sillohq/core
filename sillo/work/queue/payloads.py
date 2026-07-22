@@ -30,15 +30,15 @@ class JobPayload:
     ):
         """Init
 
-            Args:
-                job_class: [description]
-                data: [description]
+        Args:
+            job_class: [description]
+            data: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.job_class = job_class
         self.data = data
@@ -51,11 +51,11 @@ class JobPayload:
     def to_json(self) -> str:
         """To Json
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return json.dumps(self.__dict__, default=str)
 

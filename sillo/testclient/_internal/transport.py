@@ -18,12 +18,13 @@ from sillo.types import Message
 class TestClientTransport(httpx.BaseTransport):
     """Testclienttransport
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     encoding: str = "ascii"
 
     def __init__(
@@ -461,12 +462,13 @@ class TestClientTransport(httpx.BaseTransport):
 class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     """Asynctestclienttransport
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     encoding: str = "ascii"
 
     def __init__(
@@ -480,14 +482,14 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     ) -> None:
         """Init
 
-            Args:
-                app: [description]
+        Args:
+            app: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.app = app
         self.raise_server_exceptions = raise_server_exceptions
@@ -498,14 +500,14 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         """Handle Async Request
 
-            Args:
-                request: [description]
+        Args:
+            request: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         scheme, netloc, path, raw_path, query = self._parse_url(request.url)
         host, port, default_port = self._parse_host_and_port(netloc, scheme)
@@ -528,14 +530,14 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     ) -> tuple[str, str, str, str, str] | tuple[str, str, str, bytes, str]:
         """Parse Url
 
-            Args:
-                url: [description]
+        Args:
+            url: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         scheme = url.scheme
         netloc = url.netloc.decode(encoding=self.encoding)
@@ -547,15 +549,15 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     def _parse_host_and_port(self, netloc: str, scheme: str) -> tuple[str, int, int]:
         """Parse Host And Port
 
-            Args:
-                netloc: [description]
-                scheme: [description]
+        Args:
+            netloc: [description]
+            scheme: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
         if ":" in netloc:
@@ -571,17 +573,17 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     ) -> list[tuple[bytes, bytes]]:
         """Build Headers
 
-            Args:
-                request_headers: [description]
-                host: [description]
-                port: [description]
-                default_port: [description]
+        Args:
+            request_headers: [description]
+            host: [description]
+            port: [description]
+            default_port: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if "host" in request_headers:
             headers: list[Any] = []
@@ -607,21 +609,21 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     ) -> WebSocketTestSession:
         """Handle Websocket Request
 
-            Args:
-                request: [description]
-                scheme: [description]
-                path: [description]
-                raw_path: [description]
-                query: [description]
-                headers: [description]
-                host: [description]
-                port: [description]
+        Args:
+            request: [description]
+            scheme: [description]
+            path: [description]
+            raw_path: [description]
+            query: [description]
+            headers: [description]
+            host: [description]
+            port: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         subprotocol = request.headers.get("sec-websocket-protocol", None)
         subprotocols: Sequence[str] = (
@@ -657,21 +659,21 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     ) -> dict[str, Any]:
         """Build Http Scope
 
-            Args:
-                request: [description]
-                scheme: [description]
-                path: [description]
-                raw_path: [description]
-                query: [description]
-                headers: [description]
-                host: [description]
-                port: [description]
+        Args:
+            request: [description]
+            scheme: [description]
+            path: [description]
+            raw_path: [description]
+            query: [description]
+            headers: [description]
+            host: [description]
+            port: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "type": "http",
@@ -694,15 +696,15 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     ) -> httpx.Response:
         """Process Http Request
 
-            Args:
-                scope: [description]
-                request: [description]
+        Args:
+            scope: [description]
+            request: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         request_complete = False
         response_started = False
@@ -714,11 +716,11 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
         async def receive() -> Message:
             """Receive
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             nonlocal request_complete
             if request_complete:
@@ -758,14 +760,14 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
         async def send(message: Message) -> None:
             """Send
 
-                Args:
-                    message: [description]
+            Args:
+                message: [description]
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             nonlocal raw_kwargs, response_started, template, context
 

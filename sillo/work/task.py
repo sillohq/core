@@ -113,14 +113,14 @@ class Task:
     ) -> None:
         """Init
 
-            Args:
-                func: [description]
+        Args:
+            func: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.id: str = str(uuid4())
         self.name: str = name or getattr(func, "__name__", "unknown")
@@ -157,11 +157,11 @@ class Task:
     def is_done(self) -> bool:
         """Is Done
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.status in (
             TaskStatus.COMPLETED,
@@ -173,25 +173,25 @@ class Task:
     def is_running(self) -> bool:
         """Is Running
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.status == TaskStatus.RUNNING
 
     def before(self, callback: Callable[["Task"], Awaitable[None]]) -> "Task":
         """Before
 
-            Args:
-                callback: [description]
+        Args:
+            callback: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._hooks["before"].append(callback)
         return self
@@ -199,14 +199,14 @@ class Task:
     def after(self, callback: Callable[["Task"], Awaitable[None]]) -> "Task":
         """After
 
-            Args:
-                callback: [description]
+        Args:
+            callback: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._hooks["after"].append(callback)
         return self
@@ -214,14 +214,14 @@ class Task:
     def on_success(self, callback: Callable[[TaskResult], Awaitable[None]]) -> "Task":
         """On Success
 
-            Args:
-                callback: [description]
+        Args:
+            callback: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._hooks["success"].append(callback)
         return self
@@ -229,14 +229,14 @@ class Task:
     def on_failure(self, callback: Callable[[TaskResult], Awaitable[None]]) -> "Task":
         """On Failure
 
-            Args:
-                callback: [description]
+        Args:
+            callback: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._hooks["failure"].append(callback)
         return self
@@ -250,14 +250,14 @@ class Task:
         async def _chain(result: TaskResult) -> None:
             """Chain
 
-                Args:
-                    result: [description]
+            Args:
+                result: [description]
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             pass  # The queue/worker handles chaining
 
@@ -271,14 +271,14 @@ class Task:
         async def _fallback(result: TaskResult) -> None:
             """Fallback
 
-                Args:
-                    result: [description]
+            Args:
+                result: [description]
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             pass
 
@@ -348,14 +348,14 @@ class Task:
     def _complete_success(self, value: Any) -> Any:
         """Complete Success
 
-            Args:
-                value: [description]
+        Args:
+            value: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.status = TaskStatus.COMPLETED
         self.completed_at = time.time()
@@ -366,14 +366,14 @@ class Task:
     def _complete_failure(self, exc: Exception) -> None:
         """Complete Failure
 
-            Args:
-                exc: [description]
+        Args:
+            exc: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.status = (
             TaskStatus.FAILED
@@ -394,11 +394,11 @@ class Task:
     def _complete_cancelled(self) -> None:
         """Complete Cancelled
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.status = TaskStatus.CANCELLED
         self.completed_at = time.time()
@@ -415,16 +415,16 @@ class Task:
     ) -> TaskResult:
         """Make Result
 
-            Args:
-                status: [description]
-                result: [description]
-                error: [description]
+        Args:
+            status: [description]
+            result: [description]
+            error: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return TaskResult(
             task_id=self.id,
@@ -447,14 +447,14 @@ class Task:
     async def _fire_hooks(self, group: str) -> None:
         """Fire Hooks
 
-            Args:
-                group: [description]
+        Args:
+            group: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         for hook in self._hooks[group]:
             try:
@@ -467,15 +467,15 @@ class Task:
     async def _fire_callbacks(self, group: str, result: TaskResult) -> None:
         """Fire Callbacks
 
-            Args:
-                group: [description]
-                result: [description]
+        Args:
+            group: [description]
+            result: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         for cb in self._hooks[group]:
             try:
@@ -490,14 +490,14 @@ class Task:
     async def wait(self, timeout: Optional[float] = None) -> Any:
         """Wait
 
-            Args:
-                timeout: [description]
+        Args:
+            timeout: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.result is not None:
             return self._unwrap_result()
@@ -507,11 +507,11 @@ class Task:
     def _unwrap_result(self) -> Any:
         """Unwrap Result
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.result is None:
             return None
@@ -532,11 +532,11 @@ class Task:
     def cancel(self) -> bool:
         """Cancel
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self._task and not self._task.done():
             return self._task.cancel()
@@ -547,11 +547,11 @@ class Task:
     def serialize(self) -> str:
         """Serialize
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return json.dumps(
             {
@@ -570,11 +570,11 @@ class Task:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "id": self.id,
@@ -593,14 +593,14 @@ class Task:
     def __lt__(self, other: "Task") -> bool:
         """Lt
 
-            Args:
-                other: [description]
+        Args:
+            other: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return (-self.priority.value, self.created_at) < (
             -other.priority.value,
@@ -610,11 +610,11 @@ class Task:
     def __repr__(self) -> str:
         """Repr
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return (
             f"Task(name={self.name!r}, status={self.status.value}, "
@@ -649,14 +649,14 @@ def task(
     def decorator(func):
         """Decorator
 
-            Args:
-                func: [description]
+        Args:
+            func: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         func._work_task = True
         func._work_name = name or func.__name__

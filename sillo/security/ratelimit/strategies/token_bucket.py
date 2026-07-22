@@ -34,19 +34,19 @@ class TokenBucketStrategy(RateLimitStrategy):
     ) -> RateLimitResult:
         """Hit
 
-            Args:
-                backend: [description]
-                key: [description]
-                limit: [description]
-                window: [description]
-                cost: [description]
-                now: [description]
+        Args:
+            backend: [description]
+            key: [description]
+            limit: [description]
+            window: [description]
+            cost: [description]
+            now: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         now = now if now is not None else time.time()
         refill_rate = limit / window  # tokens per second

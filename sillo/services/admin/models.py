@@ -22,23 +22,24 @@ class AdminActivity(Model):
     class Meta:
         """Meta
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
+
         table = "admin_activity"
         ordering = ["-created_at"]
 
     def __str__(self):
         """Str
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return f"{self.user_email} {self.action} {self.model_name} at {self.created_at}"
 
@@ -54,22 +55,23 @@ class AdminRole(Model):
     class Meta:
         """Meta
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
+
         table = "admin_roles"
 
     def __str__(self):
         """Str
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.name
 
@@ -90,36 +92,37 @@ class AdminUser(Model):
     class Meta:
         """Meta
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
+
         table = "admin_users"
 
     def __str__(self):
         """Str
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return self.email
 
     def has_permission(self, permission: str) -> bool:
         """Has Permission
 
-            Args:
-                permission: [description]
+        Args:
+            permission: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.is_superuser:
             return True
@@ -134,11 +137,11 @@ class AdminUser(Model):
     def to_dict(self, **kwargs):
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         d = super().to_dict(**kwargs)
         d.pop("password", None)

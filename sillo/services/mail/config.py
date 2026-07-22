@@ -9,12 +9,13 @@ from typing import Any, Dict, List, Optional
 class MailConfig:
     """Mailconfig
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     smtp_host: str = field(default_factory=lambda: os.getenv("SMTP_HOST", "localhost"))
     smtp_port: int = field(default_factory=lambda: int(os.getenv("SMTP_PORT", "587")))
     smtp_username: Optional[str] = field(
@@ -59,11 +60,11 @@ class MailConfig:
     def __post_init__(self) -> None:
         """Post Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         if self.use_ssl and self.use_tls:
             raise ValueError("Cannot use both SSL and TLS")
@@ -75,11 +76,11 @@ class MailConfig:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         d = {k: v for k, v in self.__dict__.items()}
         if d.get("smtp_password"):
@@ -90,15 +91,15 @@ class MailConfig:
     def for_gmail(cls, username: str, password: str, **kwargs: Any) -> MailConfig:
         """For Gmail
 
-            Args:
-                username: [description]
-                password: [description]
+        Args:
+            username: [description]
+            password: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls(
             smtp_host="smtp.gmail.com",
@@ -113,15 +114,15 @@ class MailConfig:
     def for_outlook(cls, username: str, password: str, **kwargs: Any) -> MailConfig:
         """For Outlook
 
-            Args:
-                username: [description]
-                password: [description]
+        Args:
+            username: [description]
+            password: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls(
             smtp_host="smtp-mail.outlook.com",
@@ -136,14 +137,14 @@ class MailConfig:
     def for_sendgrid(cls, api_key: str, **kwargs: Any) -> MailConfig:
         """For Sendgrid
 
-            Args:
-                api_key: [description]
+        Args:
+            api_key: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return cls(
             smtp_host="smtp.sendgrid.net",

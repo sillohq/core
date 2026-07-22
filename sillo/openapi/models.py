@@ -28,12 +28,13 @@ Extension = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 class Contact(BaseModel):
     """Contact
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     name: Optional[str] = None
     url: Optional[AnyUrl] = None
     email: Optional[EmailStr] = None
@@ -42,12 +43,13 @@ class Contact(BaseModel):
 class License(BaseModel):
     """License
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     name: str
     url: Optional[AnyUrl] = None
 
@@ -55,12 +57,13 @@ class License(BaseModel):
 class Info(BaseModel):
     """Info
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     title: str
     version: str
     description: Optional[str] = None
@@ -77,12 +80,13 @@ class Info(BaseModel):
 class ServerVariable(BaseModel):
     """Servervariable
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     default: str
     enum: Optional[List[str]] = None
     description: Optional[str] = None
@@ -91,12 +95,13 @@ class ServerVariable(BaseModel):
 class Server(BaseModel):
     """Server
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     url: Union[AnyUrl, str]
     description: Optional[str] = None
     variables: Optional[Dict[str, ServerVariable]] = None
@@ -105,24 +110,26 @@ class Server(BaseModel):
 class Reference(BaseModel):
     """Reference
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     ref: Annotated[str, Field(alias="$ref")]
 
 
 class Discriminator(BaseModel):
     """Discriminator
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     propertyName: str
     mapping: Optional[Dict[str, str]] = None
 
@@ -130,12 +137,13 @@ class Discriminator(BaseModel):
 class XML(BaseModel):
     """Xml
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     name: Optional[str] = None
     namespace: Optional[str] = None
     prefix: Optional[str] = None
@@ -146,12 +154,13 @@ class XML(BaseModel):
 class ExternalDocumentation(BaseModel):
     """Externaldocumentation
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     url: Optional[AnyUrl] = None
     description: Optional[str] = None
 
@@ -159,12 +168,13 @@ class ExternalDocumentation(BaseModel):
 class Schema(BaseModel):
     """Schema
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     ref: Annotated[Optional[str], Field(alias="$ref")] = None
     title: Optional[str] = None
     multipleOf: Optional[float] = None
@@ -225,12 +235,13 @@ class Schema(BaseModel):
 class Example(BaseModel):
     """Example
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     summary: Optional[str] = None
     description: Optional[str] = None
     value: Any = None
@@ -243,12 +254,13 @@ Examples = Mapping[str, Union[Example, Reference]]
 class Encoding(BaseModel):
     """Encoding
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     contentType: Optional[str] = None
     headers: Optional[Dict[str, Union[Header, Reference]]] = None
     style: Optional[str] = None
@@ -258,12 +270,13 @@ class Encoding(BaseModel):
 class MediaType(BaseModel):
     """Mediatype
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     spec: Optional[Union[Schema, Reference]] = Field(
         default=None, serialization_alias="schema"
     )
@@ -274,12 +287,13 @@ class MediaType(BaseModel):
 class ParameterBase(BaseModel):
     """Parameterbase
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     description: Optional[str] = None
     required: Optional[bool] = None
     deprecated: Optional[bool] = None
@@ -296,12 +310,13 @@ class ParameterBase(BaseModel):
 class ConcreteParameter(ParameterBase):
     """Concreteparameter
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     name: str
     in_: ParameterLocations = Field(alias="in")
 
@@ -309,12 +324,13 @@ class ConcreteParameter(ParameterBase):
 class Header(ConcreteParameter):
     """Header
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     in_: Literal["header"] = Field(default="header", serialization_alias="in")
     style: HeaderParamStyles = "simple"
     explode: bool = False
@@ -327,12 +343,13 @@ class Header(ConcreteParameter):
 class Query(ConcreteParameter):
     """Query
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     in_: Literal["query"] = Field(
         default="query",
         serialization_alias="in",
@@ -348,12 +365,13 @@ class Query(ConcreteParameter):
 class Path(ConcreteParameter):
     """Path
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     in_: Literal["path"] = Field(default="path", alias="in")  # Explicit default
     style: PathParamStyles = "simple"
     explode: bool = False
@@ -363,12 +381,13 @@ class Path(ConcreteParameter):
 class Cookie(ConcreteParameter):
     """Cookie
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     in_: Literal["cookie"] = "cookie"
     style: CookieParamStyles = "form"
     explode: bool = True
@@ -380,12 +399,13 @@ Parameter = Union[Query, Header, Cookie, Path]
 class RequestBody(BaseModel):
     """Requestbody
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     content: Dict[str, MediaType]
     description: Optional[str] = None
     required: Optional[bool] = None
@@ -394,12 +414,13 @@ class RequestBody(BaseModel):
 class Link(BaseModel):
     """Link
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     operationRef: Optional[str] = None
     operationId: Optional[str] = None
     parameters: Optional[Dict[str, str]] = None
@@ -411,12 +432,13 @@ class Link(BaseModel):
 class ResponseHeader(BaseModel):
     """Responseheader
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     description: Optional[str] = None
     deprecated: Optional[bool] = None
     style: HeaderParamStyles = "simple"
@@ -432,12 +454,13 @@ class ResponseHeader(BaseModel):
 class Response(BaseModel):
     """Response
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     description: str
     headers: Optional[Dict[str, Union[ResponseHeader, Reference]]] = None
     content: Optional[Dict[str, MediaType]] = None
@@ -447,12 +470,13 @@ class Response(BaseModel):
 class Operation(BaseModel):
     """Operation
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     responses: Dict[str, Union[Response, Reference]]
     tags: Optional[List[str]] = None
     summary: Optional[str] = None
@@ -476,12 +500,13 @@ class Operation(BaseModel):
 class PathItem(BaseModel):
     """Pathitem
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     ref: Annotated[Optional[str], Field(alias="$ref")] = None
     summary: Optional[str] = None
     description: Optional[str] = None
@@ -508,12 +533,13 @@ SecuritySchemeName = Literal["apiKey", "http", "oauth2", "openIdConnect"]
 class SecurityBase(BaseModel):
     """Securitybase
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     type: SecuritySchemeName
     description: Optional[str] = None
 
@@ -524,12 +550,13 @@ APIKeyLocation = Literal["query", "header", "cookie"]
 class APIKey(SecurityBase):
     """Apikey
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     name: str
     in_: Annotated[APIKeyLocation, Field(alias="in")]
     type: Literal["apiKey"] = "apiKey"
@@ -538,12 +565,13 @@ class APIKey(SecurityBase):
 class HTTPBase(SecurityBase):
     """Httpbase
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     scheme: str
     type: Literal["http"] = "http"
 
@@ -551,12 +579,13 @@ class HTTPBase(SecurityBase):
 class HTTPBearer(HTTPBase):
     """Httpbearer
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     scheme: Literal["bearer"] = "bearer"
     bearerFormat: Optional[str] = None
     type: Literal["http"] = "http"
@@ -565,12 +594,13 @@ class HTTPBearer(HTTPBase):
 class OAuthFlow(BaseModel):
     """Oauthflow
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     refreshUrl: Optional[AnyUrl] = None
     scopes: Annotated[Optional[Mapping[str, str]], Field(default_factory=dict)]
 
@@ -578,48 +608,52 @@ class OAuthFlow(BaseModel):
 class OAuthFlowImplicit(OAuthFlow):
     """Oauthflowimplicit
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     authorizationUrl: str
 
 
 class OAuthFlowPassword(OAuthFlow):
     """Oauthflowpassword
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     tokenUrl: str
 
 
 class OAuthFlowClientCredentials(OAuthFlow):
     """Oauthflowclientcredentials
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     tokenUrl: str
 
 
 class OAuthFlowAuthorizationCode(OAuthFlow):
     """Oauthflowauthorizationcode
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     authorizationUrl: str
     tokenUrl: str
 
@@ -627,12 +661,13 @@ class OAuthFlowAuthorizationCode(OAuthFlow):
 class OAuthFlows(BaseModel):
     """Oauthflows
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     implicit: Optional[OAuthFlowImplicit] = None
     password: Optional[OAuthFlowPassword] = None
     clientCredentials: Optional[OAuthFlowClientCredentials] = None
@@ -642,12 +677,13 @@ class OAuthFlows(BaseModel):
 class OAuth2(SecurityBase):
     """Oauth2
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     flows: OAuthFlows
     type: Literal["oauth2"] = "oauth2"
 
@@ -655,12 +691,13 @@ class OAuth2(SecurityBase):
 class OpenIdConnect(SecurityBase):
     """Openidconnect
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     openIdConnectUrl: str
     type: Literal["openIdConnect"] = "openIdConnect"
 
@@ -671,12 +708,13 @@ SecurityScheme = Union[APIKey, HTTPBase, OAuth2, OpenIdConnect, HTTPBearer]
 class Components(BaseModel):
     """Components
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     schemas: Optional[Dict[str, Union[Schema, Reference]]] = None
     responses: Optional[Dict[str, Union[Response, Reference]]] = None
     parameters: Optional[Dict[str, Union[Parameter, Reference]]] = None
@@ -691,12 +729,13 @@ class Components(BaseModel):
 class Tag(BaseModel):
     """Tag
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     name: str
     description: Optional[str] = None
     externalDocs: Optional[ExternalDocumentation] = None
@@ -705,12 +744,13 @@ class Tag(BaseModel):
 class OpenAPI(BaseModel):
     """Openapi
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
+
     openapi: str
     info: Info
     paths: Annotated[Dict[str, Union[PathItem, Extension]], Field(default_factory=dict)]

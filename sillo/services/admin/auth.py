@@ -61,14 +61,14 @@ class SessionAuth(AuthBackend):
     async def authenticate(self, request) -> bool:
         """Authenticate
 
-            Args:
-                request: [description]
+        Args:
+            request: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         session = getattr(request, "session", None)
         if session:
@@ -78,14 +78,14 @@ class SessionAuth(AuthBackend):
     async def get_user(self, request) -> Optional[dict]:
         """Get User
 
-            Args:
-                request: [description]
+        Args:
+            request: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         session = getattr(request, "session", None)
         if session:
@@ -116,14 +116,14 @@ class SessionAuth(AuthBackend):
     async def logout(self, request) -> None:
         """Logout
 
-            Args:
-                request: [description]
+        Args:
+            request: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         session = getattr(request, "session", None)
         if session:
@@ -134,11 +134,11 @@ class SessionAuth(AuthBackend):
     def middleware(self):
         """Middleware
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return _AuthMiddleware(self)
 
@@ -149,30 +149,30 @@ class _AuthMiddleware:
     def __init__(self, backend: AuthBackend):
         """Init
 
-            Args:
-                backend: [description]
+        Args:
+            backend: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.backend = backend
 
     async def __call__(self, request, response, call_next):
         """Call
 
-            Args:
-                request: [description]
-                response: [description]
-                call_next: [description]
+        Args:
+            request: [description]
+            response: [description]
+            call_next: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         path = (
             request.url.path

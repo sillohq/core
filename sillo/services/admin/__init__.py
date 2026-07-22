@@ -54,16 +54,16 @@ class AdminSite:
     ):
         """Init
 
-            Args:
-                title: [description]
-                prefix: [description]
-                auth_backend: [description]
+        Args:
+            title: [description]
+            prefix: [description]
+            auth_backend: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.title = title
         self.prefix = prefix.rstrip("/")
@@ -90,14 +90,14 @@ class AdminSite:
             def decorator(kls):
                 """Decorator
 
-                    Args:
-                        kls: [description]
+                Args:
+                    kls: [description]
 
-                    Returns:
-                        [description]
+                Returns:
+                    [description]
 
-                    Raises:
-                        [description]
+                Raises:
+                    [description]
                 """
                 self.registry.register(model_class, kls)
                 return kls
@@ -117,14 +117,14 @@ class AdminSite:
     def _mount_static(self, app: silloApp) -> None:
         """Mount Static
 
-            Args:
-                app: [description]
+        Args:
+            app: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         static_dir = Path(__file__).parent / "static"
         if static_dir.is_dir():
@@ -135,14 +135,14 @@ class AdminSite:
     def _register_routes(self, app) -> None:
         """Register Routes
 
-            Args:
-                app: [description]
+        Args:
+            app: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         for route in self._build_routes(self):
             app.router.add_route(route)
@@ -156,17 +156,17 @@ def setup_admin(
 ) -> AdminSite:
     """Setup Admin
 
-        Args:
-            app: [description]
-            title: [description]
-            prefix: [description]
-            auth_backend: [description]
+    Args:
+        app: [description]
+        title: [description]
+        prefix: [description]
+        auth_backend: [description]
 
-        Returns:
-            [description]
+    Returns:
+        [description]
 
-        Raises:
-            [description]
+    Raises:
+        [description]
     """
     site = AdminSite(title=title, prefix=prefix, auth_backend=auth_backend)
     site.mount(app)

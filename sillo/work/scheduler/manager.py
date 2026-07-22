@@ -27,11 +27,11 @@ class SchedulerStats:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self.jobs_total = 0
         self.jobs_active = 0
@@ -43,11 +43,11 @@ class SchedulerStats:
     def to_dict(self) -> Dict[str, Any]:
         """To Dict
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         return {
             "jobs_total": self.jobs_total,
@@ -78,11 +78,11 @@ class SchedulerManager:
     def __init__(self):
         """Init
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         self._jobs: Dict[str, ScheduledJob] = {}
         self._running = False
@@ -117,14 +117,14 @@ class SchedulerManager:
         def decorator(func):
             """Decorator
 
-                Args:
-                    func: [description]
+            Args:
+                func: [description]
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             return self.schedule(
                 func, IntervalTrigger(seconds), name=name or func.__name__
@@ -143,14 +143,14 @@ class SchedulerManager:
         def decorator(func):
             """Decorator
 
-                Args:
-                    func: [description]
+            Args:
+                func: [description]
 
-                Returns:
-                    [description]
+            Returns:
+                [description]
 
-                Raises:
-                    [description]
+            Raises:
+                [description]
             """
             return self.schedule(
                 func, CronTrigger(expression), name=name or func.__name__
@@ -236,11 +236,11 @@ class SchedulerManager:
     async def _loop(self) -> None:
         """Loop
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         while self._running:
             try:
@@ -268,14 +268,14 @@ class SchedulerManager:
     async def _execute(self, job: ScheduledJob) -> None:
         """Execute
 
-            Args:
-                job: [description]
+        Args:
+            job: [description]
 
-            Returns:
-                [description]
+        Returns:
+            [description]
 
-            Raises:
-                [description]
+        Raises:
+            [description]
         """
         try:
             await job.run()
