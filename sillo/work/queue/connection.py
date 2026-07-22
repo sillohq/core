@@ -20,6 +20,11 @@ from typing_extensions import Doc
 
 logger = logging.getLogger("sillo.work.queue.connection")
 
+try:
+    import redis.asyncio as aioredis  # type: ignore[import-untyped]
+except ImportError:
+    aioredis = None  # type: ignore[assignment]
+
 
 class QueueConnection(ABC):
     """Abstract queue connection — push / pop / size / clear."""
@@ -162,8 +167,6 @@ class RedisConnection(QueueConnection):
     async def _r(self):
         if self._redis is not None:
             return self._redis
-        import redis.asyncio as aioredis
-
         self._redis = aioredis.from_url(self.url, decode_responses=True)
         return self._redis
 

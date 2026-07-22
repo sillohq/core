@@ -10,6 +10,7 @@ drain operations.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 import time
 from typing import Annotated, Any, Awaitable, Callable, Dict, List, Optional, Set
@@ -174,8 +175,6 @@ class BackgroundTask:
         **kwargs: Annotated[Any, Doc("Keyword arguments.")],
     ) -> "BackgroundTask":
         """Create a background task, auto-wrapping sync functions."""
-        import inspect
-
         if not inspect.iscoroutinefunction(func):
 
             async def _wrapper(*a, **kw):

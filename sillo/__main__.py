@@ -14,13 +14,16 @@ ascii_art = f"""
       Version: {__version__}
 """
 
+try:
+    from sillo.cli import cli
+except ImportError:
+    cli = None  # type: ignore[assignment]
+
 if __name__ == "__main__":
     print(ascii_art)
 
     # Allow direct module execution to invoke the CLI
-    try:
-        from sillo.cli import cli
-
+    if cli is not None:
         cli()
-    except ImportError:
+    else:
         print("CLI tools not available. Make sure sillo is properly installed.")

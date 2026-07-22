@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Annotated, Any, Dict, List, Optional, Type
 
 from pydantic import BaseModel, Field, create_model
+from tortoise import fields as f
 from typing_extensions import Doc
 
 
@@ -64,8 +65,6 @@ def pydantic_model_from_tortoise(
 
 def _tortoise_to_python_type(field_obj) -> type:
     """Map Tortoise field types to Python types."""
-    from tortoise import fields as f
-
     mapping = {
         f.IntField: int,
         f.SmallIntField: int,

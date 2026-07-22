@@ -19,6 +19,8 @@ from typing import Annotated, List, Optional
 
 from typing_extensions import Doc
 
+from .cron import CronParser
+
 
 class TriggerType(Enum):
     INTERVAL = "interval"
@@ -75,8 +77,6 @@ class CronTrigger:
     timezone: Annotated[Optional[str], Doc("IANA timezone name.")] = None
 
     def __post_init__(self):
-        from .cron import CronParser
-
         parser = CronParser(self.expression)
         self._parser = parser
 

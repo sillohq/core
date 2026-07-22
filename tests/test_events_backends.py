@@ -14,21 +14,19 @@ from sillo.events.transports.base import TransportError
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
+try:
+    import redis.asyncio as aioredis  # type: ignore[import-untyped]
+    _have_redis = True
+except ImportError:
+    aioredis = None  # type: ignore[assignment]
+    _have_redis = False
 
-def _have_redis() -> bool:
-    try:
-        import redis.asyncio  # noqa: F401
-    except ImportError:
-        return False
-    return True
 
-
-def _have_tortoise() -> bool:
-    try:
-        import tortoise  # noqa: F401
-    except ImportError:
-        return False
-    return True
+try:
+    import tortoise  # noqa: F401
+    _have_tortoise = True
+except ImportError:
+    _have_tortoise = False
 
 
 # --------------------------------------------------------------------------
@@ -139,7 +137,7 @@ def test_factory_unknown_backend():
 
 
 def test_factory_record_without_tortoise_raises_transport_error():
-    if not _have_tortoise():
+    if not _have_tortoise:
         with pytest.raises(TransportError):
             get_transport("record")
 
@@ -150,15 +148,13 @@ def test_factory_record_without_tortoise_raises_transport_error():
 
 
 redis_mark = pytest.mark.skipif(
-    not _have_redis(), reason="redis package not installed"
+    not _have_redis, reason="redis package not installed"
 )
 
 
 @redis_mark
 async def test_redis_cross_instance_fanout():
     try:
-        import redis.asyncio as aioredis
-
         client = aioredis.from_url(REDIS_URL)
         await client.ping()
         await client.flushdb()
@@ -189,8 +185,6 @@ async def test_redis_cross_instance_fanout():
 @redis_mark
 async def test_persistent_durable_delivery():
     try:
-        import redis.asyncio as aioredis
-
         client = aioredis.from_url(REDIS_URL)
         await client.ping()
         await client.flushdb()

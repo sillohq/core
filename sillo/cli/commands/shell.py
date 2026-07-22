@@ -3,10 +3,17 @@
 sillo CLI - Interactive shell command.
 """
 
+import code
 import sys
 from typing import Any
 
 import click
+
+try:
+    import IPython  # noqa: F401
+    from IPython.terminal.embed import InteractiveShellEmbed
+except ImportError:
+    InteractiveShellEmbed = None  # type: ignore[assignment]
 
 from sillo.cli.utils import (
     _echo_error,
@@ -94,15 +101,14 @@ def shell(app_path: str, ipython: bool = False):
 
 def _try_start_ipython_shell(shell_vars: dict[str, Any]) -> bool:
     """Try to start IPython shell."""
-    try:
-        import IPython  # noqa: F401
-        from IPython.terminal.embed import InteractiveShellEmbed
+    if InteractiveShellEmbed is None:
+        return False
 
-        _echo_info("Starting IPython shell...")
-        _echo_info("Available variables: app, Client, Request, Response")
-        _echo_info("Type 'exit' or press Ctrl+D to exit")
+    _echo_info("Starting IPython shell...")
+    _echo_info("Available variables: app, Client, Request, Response")
+    _echo_info("Type 'exit' or press Ctrl+D to exit")
 
-        banner = """
+    banner = """
 sillo Interactive Shell
 =======================
 Available variables:
@@ -123,19 +129,14 @@ Examples:
   print(app.config)
 """
 
-        shell = InteractiveShellEmbed(banner1=banner)
-        shell(local_ns=shell_vars)
-        return True
-
-    except ImportError:
-        return False
+    shell = InteractiveShellEmbed(banner1=banner)
+    shell(local_ns=shell_vars)
+    return True
 
 
 def _try_start_regular_shell(shell_vars: dict[str, Any]) -> bool:
     """Try to start regular Python shell."""
     try:
-        import code
-
         _echo_info("Starting Python shell...")
         _echo_info("Available variables: app, Client, Request, Response")
         _echo_info("Type 'exit()' or press Ctrl+D to exit")

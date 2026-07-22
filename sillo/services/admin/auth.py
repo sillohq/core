@@ -10,6 +10,10 @@ from __future__ import annotations
 
 from typing import Optional
 
+from sillo.helpers.hashing import verify_password
+
+from .models import AdminUser
+
 
 class AuthBackend:
     """Abstract authentication backend.
@@ -68,9 +72,6 @@ class SessionAuth(AuthBackend):
 
     async def login(self, request, username: str, password: str) -> bool:
         """Authenticate against the ``AdminUser`` table with hashed passwords."""
-        from .models import AdminUser
-        from sillo.helpers.hashing import verify_password
-
         if not username or not password:
             return False
         user = await AdminUser.get_or_none(email=username)

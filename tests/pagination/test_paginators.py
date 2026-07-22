@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict
 
 import pytest
@@ -215,8 +216,6 @@ class TestAsyncPaginator:
         base_url = "http://example.com/api/items"
         request_params = {"page": "2", "page_size": "10"}
 
-        import asyncio
-
         async def run_test():
             paginator = AsyncPaginator(handler, pagination, base_url, request_params)
             result = await paginator.paginate()
@@ -239,8 +238,6 @@ class TestAsyncPaginator:
         base_url = "http://example.com/api/items"
         request_params = {"limit": "15", "offset": "30"}
 
-        import asyncio
-
         async def run_test():
             paginator = AsyncPaginator(handler, pagination, base_url, request_params)
             result = await paginator.paginate()
@@ -262,8 +259,6 @@ class TestAsyncPaginator:
         pagination = CursorPagination(default_page_size=10)
         base_url = "http://example.com/api/items"
         request_params = {"page_size": "10"}
-
-        import asyncio
 
         async def run_test():
             paginator = AsyncPaginator(handler, pagination, base_url, request_params)
@@ -288,8 +283,6 @@ class TestAsyncPaginator:
         base_url = "http://example.com/api/items"
         request_params = {"page": "1", "page_size": "10"}
 
-        import asyncio
-
         async def run_test():
             paginator = AsyncPaginator(handler, pagination, base_url, request_params)
             result = await paginator.paginate()
@@ -307,8 +300,6 @@ class TestAsyncPaginator:
         pagination = PageNumberPagination()
         base_url = "http://example.com/api/items"
         request_params = {"page": "1", "page_size": "10"}
-
-        import asyncio
 
         async def run_test():
             paginator = AsyncPaginator(handler, pagination, base_url, request_params)
@@ -329,8 +320,6 @@ class TestAsyncPaginator:
         base_url = "http://example.com/api/items"
         request_params = {"limit": "10", "offset": "10"}
 
-        import asyncio
-
         async def run_test():
             paginator = AsyncPaginator(handler, pagination, base_url, request_params)
             with pytest.raises(InvalidPageError):
@@ -345,8 +334,6 @@ class TestAsyncPaginator:
         pagination = LimitOffsetPagination()
         base_url = "http://example.com/api/items"
         request_params = {"limit": "10", "offset": "10"}
-
-        import asyncio
 
         async def run_test():
             paginator = AsyncPaginator(
@@ -367,8 +354,6 @@ class TestAsyncPaginator:
         handler = AsyncListDataHandler(data)
         pagination = CursorPagination(default_page_size=10)
         base_url = "http://example.com/api/items"
-
-        import asyncio
 
         async def run_test():
             # First, get the first page to extract cursor

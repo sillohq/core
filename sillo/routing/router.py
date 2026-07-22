@@ -66,6 +66,8 @@ from .grouping import Group
 from .websocket import WebsocketRoute
 from pathlib import Path
 
+from sillo.frontend import FrontendApp
+
 if TYPE_CHECKING:
     from sillo.types import WsHandlerType
 
@@ -2358,9 +2360,6 @@ class Router(BaseRouter):
             # Frontend routes are checked *after* API routes
             app.frontend("/", directory="./frontend/dist")
         """
-        from sillo.frontend import FrontendApp
-        from sillo.routing.grouping import Group
-
         frontend_app = FrontendApp(
             directory=directory,
             fallback=fallback,
@@ -2449,8 +2448,6 @@ class Router(BaseRouter):
             app: The ASGI application (e.g., another Router) to register.
             prefix: The path prefix under which the app will be registered.
         """
-
-        import warnings
 
         warnings.warn(
             "Router.register(...) is deprecated and will be removed in a future release. "

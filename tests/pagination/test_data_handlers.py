@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, List
 
 import pytest
@@ -90,8 +91,6 @@ class TestAsyncListDataHandler:
         data = [{"id": 1}, {"id": 2}, {"id": 3}]
         handler = AsyncListDataHandler(data)
 
-        import asyncio
-
         async def run_test():
             total = await handler.get_total_items()
             assert total == 3
@@ -103,8 +102,6 @@ class TestAsyncListDataHandler:
         data = []
         handler = AsyncListDataHandler(data)
 
-        import asyncio
-
         async def run_test():
             total = await handler.get_total_items()
             assert total == 0
@@ -115,8 +112,6 @@ class TestAsyncListDataHandler:
         """Test getting items with basic slicing"""
         data = [{"id": i} for i in range(1, 101)]  # 100 items
         handler = AsyncListDataHandler(data)
-
-        import asyncio
 
         async def run_test():
             items = await handler.get_items(10, 20)  # offset 10, limit 20
@@ -131,8 +126,6 @@ class TestAsyncListDataHandler:
         """Test getting items when slice exceeds data length"""
         data = [{"id": 1}, {"id": 2}, {"id": 3}]
         handler = AsyncListDataHandler(data)
-
-        import asyncio
 
         async def run_test():
             items = await handler.get_items(
@@ -149,8 +142,6 @@ class TestAsyncListDataHandler:
         data = [{"id": 1}, {"id": 2}, {"id": 3}]
         handler = AsyncListDataHandler(data)
 
-        import asyncio
-
         async def run_test():
             items = await handler.get_items(
                 10, 5
@@ -165,8 +156,6 @@ class TestAsyncListDataHandler:
         data = [{"id": 1}, {"id": 2}, {"id": 3}]
         handler = AsyncListDataHandler(data)
 
-        import asyncio
-
         async def run_test():
             items = await handler.get_items(0, 0)
 
@@ -178,8 +167,6 @@ class TestAsyncListDataHandler:
         """Test getting items from large dataset"""
         data = [{"id": i} for i in range(1, 10001)]  # 10k items
         handler = AsyncListDataHandler(data)
-
-        import asyncio
 
         async def run_test():
             items = await handler.get_items(5000, 100)
@@ -238,8 +225,6 @@ class TestCustomDataHandlers:
 
         data = [{"id": i} for i in range(1, 11)]  # IDs 1-10
         handler = CustomAsyncHandler(data)
-
-        import asyncio
 
         async def run_test():
             total = await handler.get_total_items()

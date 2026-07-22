@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, AsyncIterator, List, Optional, Type, TypeVar
 
+from tortoise import connections
 from typing_extensions import Doc
 
 T = TypeVar("T")
@@ -87,8 +88,6 @@ async def explain(queryset) -> str:
     """Return the SQL EXPLAIN plan for a queryset."""
     try:
         sql, params = queryset.sql()
-        from tortoise import connections
-
         conn = connections.get("default")
         result = await conn.execute_query(f"EXPLAIN {sql}", params)
         return str(result)

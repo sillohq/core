@@ -6,6 +6,7 @@ from sillo.http import Response
 from sillo.http import Request
 import json
 import os
+import shutil
 import tempfile
 
 import pytest
@@ -29,8 +30,6 @@ class TestFileSessionManager:
 
     def teardown_method(self):
         """Clean up temporary directory"""
-        import shutil
-
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 
@@ -149,8 +148,6 @@ class TestFileSessionManager:
         manager = FileSessionManager(config)
 
         assert os.path.exists(new_path)
-        import shutil
-
         shutil.rmtree(new_temp_dir)
 
     async def test_file_session_complex_data(self):
@@ -203,8 +200,6 @@ class TestFileSessionIntegration:
 
     def teardown_method(self):
         """Clean up"""
-        import shutil
-
         if os.path.exists(self.temp_dir):
             shutil.rmtree(self.temp_dir)
 

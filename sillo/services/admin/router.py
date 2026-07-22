@@ -4,23 +4,23 @@ from __future__ import annotations
 
 from sillo.routing import Route
 
+from .views import (
+    BulkView,
+    CreateView,
+    DashboardView,
+    DeleteView,
+    DetailView,
+    ListView,
+    LoginView,
+    UpdateView,
+)
+
 
 class AdminRouter:
     def __init__(self, site):
         self.site = site
 
     def build_routes(self) -> list:
-        from .views import (
-            DashboardView,
-            ListView,
-            DetailView,
-            CreateView,
-            UpdateView,
-            DeleteView,
-            BulkView,
-            LoginView,
-        )
-
         p = self.site.prefix
         routes = [
             Route(

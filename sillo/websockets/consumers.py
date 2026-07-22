@@ -4,6 +4,10 @@ import uuid
 
 from sillo import logging, status
 
+# NOTE: WebsocketRoute is imported lazily inside as_route() to break a
+# circular import: types → websockets → consumers → routing.websocket → types.
+# Moving it to top-level would fail during module initialization.
+
 from .base import WebSocket
 from .channels import Channel, ChannelBox, PayloadTypeEnum
 
@@ -31,11 +35,10 @@ class WebSocketConsumer:
 
     @classmethod
     def as_route(cls, path: str):
-        from sillo.routing import WebsocketRoute
-
         """
         Convert the WebSocketConsumer class into a Route that can be registered with the app or router.
         """
+        from sillo.routing.websocket import WebsocketRoute
 
         async def handler(
             websocket: WebSocket, **kwargs: typing.Dict[str, typing.Any]

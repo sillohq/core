@@ -1,3 +1,6 @@
+import asyncio
+import base64
+
 import pytest
 
 from sillo.pagination import (
@@ -70,8 +73,6 @@ class TestPaginationErrorHandling:
 
     def test_cursor_pagination_invalid_json_cursor(self):
         """Test cursor pagination with invalid JSON in cursor"""
-        import base64
-
         # Valid base64 but invalid JSON
         invalid_json = base64.b64encode(b"invalid_json").decode("utf-8")
         pagination = CursorPagination()
@@ -105,8 +106,6 @@ class TestPaginationErrorHandling:
         pagination = LimitOffsetPagination()
         base_url = "http://example.com/api/items"
         request_params = {"limit": "10", "offset": "10"}
-
-        import asyncio
 
         async def run_test():
             paginator = AsyncPaginator(
@@ -144,8 +143,6 @@ class TestPaginationErrorHandling:
         pagination = LimitOffsetPagination()
         base_url = "http://example.com/api/items"
         request_params = {"limit": "10", "offset": "10"}
-
-        import asyncio
 
         async def run_test():
             paginator = AsyncPaginator(
@@ -287,8 +284,6 @@ class TestErrorPropagation:
         pagination = PageNumberPagination()
         base_url = "http://example.com/api/items"
         request_params = {"page": "1", "page_size": "10"}
-
-        import asyncio
 
         async def run_test():
             paginator = AsyncPaginator(handler, pagination, base_url, request_params)

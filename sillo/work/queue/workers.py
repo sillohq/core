@@ -14,6 +14,7 @@ import logging
 import signal
 import time
 import traceback
+import importlib
 from typing import Annotated, Any, Dict, List, Optional, Set
 
 from typing_extensions import Doc
@@ -197,8 +198,6 @@ class QueueWorker:
                 logger.exception("Failed to log failed job")
 
     def _resolve_job_class(self, name: str) -> type:
-        import importlib
-
         parts = name.rsplit(".", 1)
         if len(parts) == 2:
             mod = importlib.import_module(parts[0])

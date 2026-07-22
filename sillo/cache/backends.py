@@ -29,6 +29,11 @@ from .base import (
     tag_key,
 )
 
+try:
+    import redis.asyncio as aioredis  # type: ignore[import-untyped]
+except ImportError:
+    aioredis = None  # type: ignore[assignment]
+
 if typing.TYPE_CHECKING:
     pass
 
@@ -291,13 +296,11 @@ class RedisCache(BaseCache):
     def _get_client(self):
         if self._client is not None:
             return self._client
-        try:
-            import redis.asyncio as aioredis
-        except ImportError as exc:  # pragma: no cover
+        if aioredis is None:
             raise CacheError(
                 "The 'redis' package is required for RedisCache. "
                 "Install it with: pip install sillo[cache]"
-            ) from exc
+            )
         if self._url:
             self._client = aioredis.from_url(
                 self._url,

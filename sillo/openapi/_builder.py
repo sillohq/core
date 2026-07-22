@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
@@ -194,8 +195,6 @@ class APIDocumentation:
             path = "/" + path
 
         # Remove duplicate slashes but preserve parameter patterns like {id}
-        import re
-
         path = re.sub(r"/+", "/", path)
 
         # Ensure we don't end with / unless it's the root
@@ -250,8 +249,6 @@ class APIDocumentation:
         Convert sillo path format to OpenAPI format.
         Example: /users/{id:int} -> /users/{id}
         """
-        import re
-
         return re.sub(r"\{(\w+):[^}]+\}", r"{\1}", path)
 
     def _build_request_body_spec(

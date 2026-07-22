@@ -12,6 +12,8 @@ from typing import Optional
 
 from tortoise import fields as _fields
 
+from sillo.helpers.hashing import hash_password
+
 
 class PasswordField(_fields.CharField):
     """A CharField that stores a *hashed* password, never the plaintext.
@@ -44,8 +46,6 @@ class PasswordField(_fields.CharField):
             return value
         if isinstance(value, str) and value.startswith(("$2b$", "$2a$", "$2y$")):
             return value  # already a bcrypt hash
-        from sillo.helpers.hashing import hash_password
-
         return hash_password(value)
 
     def to_python_value(self, value, *args, **kwargs):

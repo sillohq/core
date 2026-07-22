@@ -17,6 +17,8 @@ from uuid import uuid4
 
 from typing_extensions import Doc
 
+from .triggers import DateTrigger
+
 logger = logging.getLogger("sillo.work.scheduler.jobs")
 
 
@@ -126,7 +128,6 @@ class ScheduledJob:
             raise
         finally:
             self.current_instances -= 1
-            from .triggers import DateTrigger
 
             if isinstance(self.trigger, DateTrigger):
                 self.status = JobStatus.COMPLETED

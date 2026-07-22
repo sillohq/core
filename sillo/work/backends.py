@@ -24,6 +24,11 @@ import logging
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+try:
+    import redis.asyncio as aioredis  # type: ignore[import-untyped]
+except ImportError:
+    aioredis = None  # type: ignore[assignment]
+
 from .task import Task
 from .types import (
     BackendUnavailable,
@@ -206,17 +211,15 @@ class RedisBackend:
     async def _r(self):
         if self._redis is not None:
             return self._redis
+        if aioredis is None:
+            raise ImportError("redis is required. Install: pip install redis")
         try:
-            import redis.asyncio as aioredis
-
             self._redis = aioredis.from_url(
                 self.url,
                 decode_responses=True,
                 socket_timeout=DEFAULT_REDIS_TIMEOUT,
             )
             await self._redis.ping()
-        except ImportError:
-            raise ImportError("redis is required. Install: pip install redis")
         except Exception as e:
             raise BackendUnavailable(f"Redis unavailable: {e}")
         return self._redis

@@ -24,6 +24,8 @@ from typing import Annotated, Any, Dict, List, Optional
 
 from typing_extensions import Doc
 
+from aerich import Command  # type: ignore[import-untyped]
+
 
 class Seeder:
     """Seed database tables with test data.
@@ -114,8 +116,6 @@ class MigrationHelper:
 
     async def init(self) -> None:
         """Initialize migration tracking."""
-        from aerich import Command
-
         cmd = Command(
             tortoise_config={
                 "connections": {"default": self._app},
@@ -128,8 +128,6 @@ class MigrationHelper:
 
     async def migrate(self, name: str = "auto") -> None:
         """Generate a migration."""
-        from aerich import Command
-
         cmd = Command(
             tortoise_config={
                 "connections": {"default": self._app},
@@ -142,8 +140,6 @@ class MigrationHelper:
 
     async def upgrade(self) -> None:
         """Apply pending migrations."""
-        from aerich import Command
-
         cmd = Command(
             tortoise_config={
                 "connections": {"default": self._app},
@@ -156,8 +152,6 @@ class MigrationHelper:
 
     async def downgrade(self, target: str) -> None:
         """Roll back to *target*."""
-        from aerich import Command
-
         cmd = Command(
             tortoise_config={
                 "connections": {"default": self._app},
@@ -170,8 +164,6 @@ class MigrationHelper:
 
     async def history(self) -> list:
         """Show migration history."""
-        from aerich import Command
-
         cmd = Command(
             tortoise_config={
                 "connections": {"default": self._app},

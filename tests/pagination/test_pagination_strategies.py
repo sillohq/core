@@ -1,3 +1,5 @@
+import base64
+import json
 import urllib.parse
 from typing import Any, Dict
 
@@ -427,9 +429,6 @@ class TestCursorPagination:
         cursor = pagination.encode_cursor(42)
 
         # Should be base64 encoded JSON
-        import base64
-        import json
-
         decoded = base64.b64decode(cursor).decode("utf-8")
         cursor_data = json.loads(decoded)
         assert cursor_data == {"id": 42}
@@ -439,9 +438,6 @@ class TestCursorPagination:
         pagination = CursorPagination(sort_field="created_at")
 
         cursor = pagination.encode_cursor("2023-01-01T00:00:00Z")
-
-        import base64
-        import json
 
         decoded = base64.b64decode(cursor).decode("utf-8")
         cursor_data = json.loads(decoded)
@@ -453,9 +449,6 @@ class TestCursorPagination:
 
         # Create a valid cursor
         original_data = {"id": 42}
-        import base64
-        import json
-
         encoded_cursor = base64.b64encode(
             json.dumps(original_data).encode("utf-8")
         ).decode("utf-8")
@@ -469,8 +462,6 @@ class TestCursorPagination:
         pagination = CursorPagination()
 
         # Valid base64 but invalid JSON
-        import base64
-
         invalid_json = base64.b64encode(b"invalid_json").decode("utf-8")
 
         with pytest.raises(InvalidCursorError, match="Invalid cursor format"):

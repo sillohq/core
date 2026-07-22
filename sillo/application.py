@@ -56,6 +56,14 @@ from .types import (
 
 if TYPE_CHECKING:
     from sillo.http import Request, Response
+
+import warnings
+
+try:
+    import uvicorn  # type: ignore[import-untyped]
+except ImportError:
+    uvicorn = None  # type: ignore[assignment]
+
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 logger = create_logger("sillo")
@@ -2189,8 +2197,6 @@ class silloApp:
             reload (bool): Enable auto-reload.
             **kwargs: Additional keyword arguments for uvicorn.
         """
-        import warnings
-
         warnings.warn(
             "app.run() is inefficient and only for testing. For development and production, use:\n"
             "- sillo run --host 0.0.0.0 --port 8000\n"
@@ -2200,13 +2206,10 @@ class silloApp:
             stacklevel=2,
         )
 
-        try:
-            import uvicorn
-
-            logger.info(f"Starting server with uvicorn: {host}:{port}")
-            uvicorn.run(self, host=host, port=port, reload=reload)
-        except ImportError:
+        if uvicorn is None:
             raise RuntimeError(
                 "uvicorn not found. Install it with: pip install uvicorn\n"
                 "Or use the sillo CLI: sillo run"
             )
+        logger.info(f"Starting server with uvicorn: {host}:{port}")
+        uvicorn.run(self, host=host, port=port, reload=reload)

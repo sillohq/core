@@ -13,6 +13,9 @@ from typing import Annotated, Optional
 
 from typing_extensions import Doc
 
+import click
+from sillo.record.helpers import MigrationHelper
+
 
 class RecordCLI:
     """Command-line interface for sillo.record migrations.
@@ -34,7 +37,6 @@ class RecordCLI:
 
     def register(self, group) -> None:
         """Register sub-commands on a Click group."""
-        import click
 
         @group.group(name="record")
         def record_group():
@@ -44,8 +46,6 @@ class RecordCLI:
         @record_group.command()
         def init():
             """Initialize migration tracking."""
-            from sillo.record.helpers import MigrationHelper
-
             asyncio.run(MigrationHelper(self._app, location=str(self._location)).init())
             click.echo(f"Migration tracking initialized in {self._location}/")
 
@@ -53,8 +53,6 @@ class RecordCLI:
         @click.option("--name", "-n", default="auto", help="Migration name.")
         def migrate(name):
             """Generate a new migration."""
-            from sillo.record.helpers import MigrationHelper
-
             asyncio.run(
                 MigrationHelper(self._app, location=str(self._location)).migrate(name)
             )
@@ -63,8 +61,6 @@ class RecordCLI:
         @record_group.command()
         def upgrade():
             """Apply pending migrations."""
-            from sillo.record.helpers import MigrationHelper
-
             asyncio.run(
                 MigrationHelper(self._app, location=str(self._location)).upgrade()
             )
@@ -74,8 +70,6 @@ class RecordCLI:
         @click.argument("target")
         def downgrade(target):
             """Roll back to a specific migration."""
-            from sillo.record.helpers import MigrationHelper
-
             asyncio.run(
                 MigrationHelper(self._app, location=str(self._location)).downgrade(
                     target
@@ -86,8 +80,6 @@ class RecordCLI:
         @record_group.command()
         def history():
             """Show migration history."""
-            from sillo.record.helpers import MigrationHelper
-
             result = asyncio.run(
                 MigrationHelper(self._app, location=str(self._location)).history()
             )

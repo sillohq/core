@@ -5,16 +5,16 @@ import hmac
 import secrets
 from typing import Optional, Union
 
+try:
+    import bcrypt
+except ImportError:
+    raise ImportError(
+        "bcrypt is required for password hashing. Install with: pip install bcrypt"
+    )
+
 
 def _ensure_bcrypt():
-    try:
-        import bcrypt
-
-        return bcrypt
-    except ImportError:
-        raise ImportError(
-            "bcrypt is required for password hashing. Install with: pip install bcrypt"
-        )
+    return bcrypt
 
 
 def hash_password(password: str) -> str:

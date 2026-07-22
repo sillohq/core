@@ -16,17 +16,15 @@ from sillo.cache.backends import RedisCache
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
-
-def _have_redis() -> bool:
-    try:
-        import redis.asyncio  # noqa: F401
-    except ImportError:
-        return False
-    return True
+try:
+    import redis.asyncio  # noqa: F401
+    _have_redis = True
+except ImportError:
+    _have_redis = False
 
 
 pytestmark = pytest.mark.skipif(
-    not _have_redis(), reason="redis package not installed (pip install sillo[cache])"
+    not _have_redis, reason="redis package not installed (pip install sillo[cache])"
 )
 
 

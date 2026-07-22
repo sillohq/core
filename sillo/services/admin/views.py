@@ -19,6 +19,7 @@ from __future__ import annotations
 import math
 
 from tortoise import fields as tf
+from tortoise.expressions import Q
 from tortoise.fields.relational import (
     BackwardFKRelation,
     BackwardOneToOneRelation,
@@ -442,8 +443,6 @@ class ListView(BaseView):
 
         # ── Search ───────────────────────────────────────────────────────
         if query and admin.search_fields:
-            from tortoise.expressions import Q
-
             q_filter = Q()
             for f in admin.search_fields:
                 q_filter |= Q(**{f"{f}__icontains": query})

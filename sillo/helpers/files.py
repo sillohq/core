@@ -3,6 +3,7 @@ from __future__ import annotations
 import mimetypes
 import os
 import re
+import time
 import unicodedata
 from pathlib import Path
 from typing import List, Optional, Union
@@ -126,8 +127,6 @@ def is_media_extension(filename: str) -> bool:
 
 
 def file_age(path: Union[str, Path]) -> float:
-    import time
-
     return time.time() - os.path.getmtime(str(path))
 
 

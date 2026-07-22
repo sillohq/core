@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
+
+try:
+    import ulid
+except ImportError:
+    ulid = None  # type: ignore[assignment]
 
 
 class SoftDeletesMixin:
@@ -65,8 +71,6 @@ class HasUlidMixin:
     """Generates a ULID primary key before creation."""
 
     def generate_ulid(self) -> str:
-        import ulid
-
         return str(ulid.new())
 
 
@@ -80,8 +84,6 @@ class SerializesToDictMixin:
         include: Optional[List[str]] = None,
         max_depth: int = 3,
     ) -> Dict:
-        from datetime import datetime as dt
-
         data = {}
         for field_name in self._meta.fields:
             if exclude and field_name in exclude:
@@ -89,7 +91,7 @@ class SerializesToDictMixin:
             if include and field_name not in include:
                 continue
             value = getattr(self, field_name, None)
-            if isinstance(value, dt):
+            if isinstance(value, datetime):
                 value = value.isoformat()
             elif max_depth > 0 and hasattr(value, "to_dict"):
                 value = value.to_dict(max_depth=max_depth - 1)
@@ -97,8 +99,6 @@ class SerializesToDictMixin:
         return data
 
     def to_json(self, *, indent: Optional[int] = None, **kwargs) -> str:
-        import json
-
         return json.dumps(self.to_dict(**kwargs), indent=indent, default=str)
 
 

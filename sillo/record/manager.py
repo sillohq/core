@@ -15,6 +15,11 @@ from typing_extensions import Doc
 
 from .config import DatabaseConfig
 
+try:
+    from tortoise.context import _current_context
+except ModuleNotFoundError:
+    _current_context = None  # type: ignore[assignment]
+
 logger = logging.getLogger("sillo.record")
 
 
@@ -73,9 +78,7 @@ class DatabaseManager:
         if ctx is None or not getattr(ctx, "inited", False):
             return await call_next()
 
-        try:
-            from tortoise.context import _current_context
-        except ModuleNotFoundError:
+        if _current_context is None:
             # Pre-context Tortoise: connections live in global state.
             return await call_next()
 

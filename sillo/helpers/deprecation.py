@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import inspect
 import warnings
 from typing import Any, Callable, TypeVar
 
@@ -45,8 +46,6 @@ def deprecated(
             warn_deprecated(msg, since, removed_in, stacklevel=2)
             return await func(*args, **kwargs)
 
-        import inspect
-
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]
         return wrapper  # type: ignore[return-value]
@@ -76,8 +75,6 @@ def deprecate_parameter(
             if param_name in kwargs:
                 warn_deprecated(msg, since, removed_in, stacklevel=2)
             return await func(*args, **kwargs)
-
-        import inspect
 
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import inspect
 import random
 import time
 from typing import Any, Callable, List, Optional, Tuple, Type, TypeVar, Union
@@ -70,8 +71,6 @@ def retry(
                     )
                     await asyncio.sleep(delay)
             raise RetryError("Unexpected retry exit", last_exc)
-
-        import inspect
 
         if inspect.iscoroutinefunction(func):
             return async_wrapper  # type: ignore[return-value]

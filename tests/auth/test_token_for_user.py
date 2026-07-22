@@ -1,4 +1,6 @@
-from datetime import timedelta
+import base64
+import json
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -83,8 +85,6 @@ class TestTokenForUser:
         assert payload["sub"] == "42"
 
     def test_verify_no_expire_ignores_expiry(self, tokens):
-        from datetime import datetime, timezone
-
         token = tokens.access_token(expires_in=timedelta(seconds=-1))
         payload = tokens.verify_no_expire(token)
         assert payload["sub"] == "42"
@@ -114,8 +114,6 @@ class TestTokenForUser:
         payload = TokenForUser.decode_unverified(token)
         assert payload["sub"] == "42"
         # Should NOT verify signature — any junk token with valid parts works
-        import base64, json
-
         header = base64.urlsafe_b64encode(json.dumps({"alg": "HS256", "typ": "JWT"}).encode()).decode().rstrip("=")
         body = base64.urlsafe_b64encode(json.dumps({"sub": "99"}).encode()).decode().rstrip("=")
         junk = f"{header}.{body}.badsignature"
@@ -141,8 +139,6 @@ class TestTokenForUserEdgeCases:
     """Edge cases and error handling."""
 
     def test_tampered_token_fails_verification(self):
-        from sillo.auth.jwt_auth.tokens import TokenForUser
-
         u = MagicMock()
         u.identity = "1"
         tokens = TokenForUser(u, secret="key")

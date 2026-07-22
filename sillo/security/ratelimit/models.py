@@ -16,6 +16,9 @@ from typing_extensions import Doc
 
 from sillo.record import Model
 
+import json
+import time
+
 
 class RateLimitCounter(Model):
     """Persisted rate-limit state keyed by ``key`` (namespace-aware)."""
@@ -32,8 +35,6 @@ class RateLimitCounter(Model):
         row = await cls.get_or_none(key=key)
         if row is None:
             return None
-        import json
-        import time
 
         if row.expires_at <= int(time.time()):
             await row.delete()
@@ -45,8 +46,6 @@ class RateLimitCounter(Model):
 
     @classmethod
     async def save_state(cls, key: str, state: dict, ttl: int) -> None:
-        import json
-        import time
 
         payload = json.dumps(state)
         expires_at = int(time.time()) + ttl

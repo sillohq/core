@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from sillo.pagination import (
@@ -204,8 +206,6 @@ class TestEdgeCases:
 
     def test_async_edge_cases(self):
         """Test async pagination edge cases"""
-        import asyncio
-
         async def run_test():
             data = []
             handler = AsyncListDataHandler(data)

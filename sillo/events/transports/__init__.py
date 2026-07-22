@@ -12,9 +12,14 @@ backend with :func:`register_transport`.
 
 from __future__ import annotations
 
+import importlib
 from typing import Any, Dict, Optional
 
 from .base import BaseTransport
+from .memory import MemoryTransport
+from .persistent import PersistentTransport
+from .record import RecordTransport, build_event_message
+from .redis import RedisTransport
 
 # Built-in backends.  Only ``memory`` is eagerly known; redis / persistent /
 # record are resolved inside get_transport so their heavy imports stay lazy.
@@ -64,35 +69,23 @@ def get_transport(
             (``redis`` / ``tortoise-orm``) is missing.
     """
     if backend == "memory":
-        from .memory import MemoryTransport
-
         return MemoryTransport(namespace=namespace, on_error=on_error, loop=loop)
 
     if backend in ("redis", "persistent"):
-        # Imported eagerly here (inside the branch) so a missing redis package
-        # only fails when actually requested.
         if backend == "redis":
-            from .redis import RedisTransport
-
             cls = RedisTransport
         else:
-            from .persistent import PersistentTransport
-
             cls = PersistentTransport
         return cls(namespace=namespace, on_error=on_error, loop=loop, **kwargs)
 
     if backend == "record":
-        from .record import RecordTransport
-
         return RecordTransport(
             namespace=namespace, on_error=on_error, loop=loop, **kwargs
         )
 
-    if backend in _AVAILABLE:
-        import importlib
-
-        module_path, _, attr = _AVAILABLE[backend].partition(":")
-        module = importlib.import_module(module_path)
+        if backend in _AVAILABLE:
+            module_path, _, attr = _AVAILABLE[backend].partition(":")
+            module = importlib.import_module(module_path)
         cls = getattr(module, attr)
         return cls(namespace=namespace, on_error=on_error, loop=loop, **kwargs)
 
@@ -120,6 +113,4 @@ def setup_event_record() -> Any:
         TransportError: indirectly, if ``sillo.record`` / Tortoise is not
             configured — the underlying import of ``sillo.record.Model`` fails.
     """
-    from .record import build_event_message
-
     return build_event_message()

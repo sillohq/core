@@ -4,8 +4,10 @@ all wired via setup_work and consumed through the real subsystems.
 """
 
 import asyncio
+import json
 
 from sillo import silloApp
+from sillo.work.background.tasks import BackgroundTask
 from sillo.dependencies import Depend
 from sillo.http import Request, Response
 from sillo.testclient import AsyncTestClient
@@ -29,8 +31,6 @@ async def test_route_launches_background_task_and_drains():
 
     @app.post("/ingest")
     async def ingest(request: Request, response: Response):
-        from sillo.work.background.tasks import BackgroundTask
-
         async def process(value: str):
             sink.append(value)
 
@@ -58,8 +58,6 @@ async def test_route_dispatches_job_consumed_by_worker():
     @app.post("/email")
     async def send_email(request: Request, response: Response):
         to = request.query_params.get("to", "nobody")
-        import json
-
         payload = json.dumps(
             {
                 "job": "tests.work.work_jobs.SendEmail",

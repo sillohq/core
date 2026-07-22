@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import typing
 from http import cookies as http_cookies
@@ -630,8 +631,6 @@ class Request(HTTPConnection):
     def has_files(self) -> bool:
         """Check if the request contains uploaded files."""
         try:
-            import asyncio
-
             if self.is_multipart:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():

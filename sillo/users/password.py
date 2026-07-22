@@ -5,19 +5,19 @@ import re
 import secrets
 from typing import Optional
 
+try:
+    import bcrypt
+except ImportError:
+    raise ImportError(
+        "bcrypt is required for password hashing. Install with: pip install bcrypt"
+    )
+
 UNUSABLE_PASSWORD_PREFIX = "!"
 UNUSABLE_PASSWORD_SUFFIX_LENGTH = 40
 
 
 def _ensure_bcrypt():
-    try:
-        import bcrypt
-
-        return bcrypt
-    except ImportError:
-        raise ImportError(
-            "bcrypt is required for password hashing. Install with: pip install bcrypt"
-        )
+    return bcrypt
 
 
 def make_password(raw_password: str, salt: Optional[str] = None) -> str:

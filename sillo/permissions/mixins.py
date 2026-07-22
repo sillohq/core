@@ -1,3 +1,6 @@
+from sillo.permissions.models import Group, GroupPermission, UserPermission
+
+
 class PermissionMixin:
     """Adds ``has_permission`` / ``has_perm`` to a user model.
 
@@ -26,8 +29,6 @@ class PermissionMixin:
         Called automatically on login by ``load_user`` and
         ``verify_credentials``.  Also safe to call manually to refresh.
         """
-        from sillo.permissions.models import UserPermission, Group, GroupPermission
-
         direct: set[str] = set()
         assignments = await UserPermission.filter(
             user_id=self.identity
@@ -71,8 +72,6 @@ class PermissionMixin:
 
     async def get_groups(self) -> list[str]:
         """Return names of all groups this user belongs to."""
-        from sillo.permissions.models import Group
-
         return await Group.names_of_user(self)
 
     async def is_in_group(self, name: str) -> bool:
@@ -82,8 +81,6 @@ class PermissionMixin:
 
     async def get_group_permissions(self) -> set[str]:
         """Return all permission names inherited through group membership."""
-        from sillo.permissions.models import Group, GroupPermission
-
         memberships = await Group.of_user(self)
         if not memberships:
             return set()
