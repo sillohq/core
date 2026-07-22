@@ -170,8 +170,21 @@ def _run(client, coro_factory):
 def client(tmp_path):
     app = _make_app(tmp_path / "test.db")
     with TestClient(app) as c:
-        yield c
-        c.portal.call(Tortoise._drop_databases)
+        db = app.state.get("record")
+        ctx = db._root_context if db is not None else None
+        # Tortoise >=1.0 uses per-task contextvars.  Enter the context from
+        # the main thread so that portal.call() tasks inherit it.  This is
+        # safe for Tortoise 0.x too where _root_context is None.
+        if ctx is not None:
+            ctx.__enter__()
+        try:
+            yield c
+        finally:
+            try:
+                c.portal.call(Tortoise._drop_databases)
+            finally:
+                if ctx is not None:
+                    ctx.__exit__(None, None, None)
 
 
 def _login(client):
