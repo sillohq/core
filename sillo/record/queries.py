@@ -19,6 +19,20 @@ class PaginatedResult:
     """Holds a page of results plus pagination metadata."""
 
     def __init__(self, items: List[Any], total: int, page: int, page_size: int):
+        """Init
+
+            Args:
+                items: [description]
+                total: [description]
+                page: [description]
+                page_size: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.items = items
         self.total = total
         self.page = page
@@ -26,17 +40,49 @@ class PaginatedResult:
 
     @property
     def pages(self) -> int:
+        """Pages
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return max(1, (self.total + self.page_size - 1) // self.page_size)
 
     @property
     def has_next(self) -> bool:
+        """Has Next
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.page < self.pages
 
     @property
     def has_prev(self) -> bool:
+        """Has Prev
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.page > 1
 
     def to_dict(self) -> dict:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "items": [
                 item.to_dict() if hasattr(item, "to_dict") else str(item)

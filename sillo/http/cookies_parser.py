@@ -5,13 +5,32 @@ from urllib.parse import unquote
 def parse_cookies(
     cookie_string: typing.Union[str, None],
 ) -> typing.Dict[str, typing.Any]:
-    """
-    Parses a ``Cookie`` HTTP header into a dictionary of key/value pairs.
+    """Parse a ``Cookie`` HTTP header string into a dictionary of key-value pairs.
 
-    Mimics browser cookie parsing behavior, which is often less strict than the spec (RFC 6265).
-    This function handles common scenarios that browsers and web servers often ignore in cookie parsing.
+    Mimics browser cookie-parsing behavior, which is often more lenient than
+    the formal specification defined in RFC 6265.  Browsers and web servers
+    routinely ignore strict parsing rules, so this implementation handles the
+    common real-world scenarios that arise in production traffic.
 
-    Adapted from Django 3.1.0, but avoids using outdated `SimpleCookie.load`.
+    The function splits the raw header on semicolons, trims whitespace from
+    each token, and URL-decodes the values.  Keys without a corresponding
+    value are stored with ``None``.
+
+    Adapted from Django 3.1.0, but deliberately avoids the outdated
+    ``SimpleCookie.load`` method which rejects many valid inputs.
+
+    Args:
+        cookie_string: The raw ``Cookie`` header value as received from the
+            client, or ``None`` if the header was not present in the request.
+
+    Returns:
+        A dictionary mapping cookie names (``str``) to their URL-decoded
+        values (``str``).  Cookies that had no value are mapped to ``None``.
+        Returns an empty dictionary when *cookie_string* is ``None`` or
+        contains no parseable tokens.
+
+    Raises:
+        TypeError: If *cookie_string* is neither ``str`` nor ``None``.
     """
 
     if cookie_string is None:

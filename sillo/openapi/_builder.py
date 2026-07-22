@@ -29,6 +29,14 @@ from .models import (
 
 
 class APIDocumentation:
+    """Apidocumentation
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     def __init__(
         self,
         config: Optional[OpenAPIConfig] = None,
@@ -36,6 +44,20 @@ class APIDocumentation:
         redoc_url: str = "/redoc",
         openapi_url: str = "/openapi.json",
     ):
+        """Init
+
+            Args:
+                config: [description]
+                swagger_url: [description]
+                redoc_url: [description]
+                openapi_url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.config = config or OpenAPIConfig()
         self.swagger_url = swagger_url
         self.redoc_url = redoc_url

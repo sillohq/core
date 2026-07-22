@@ -56,12 +56,28 @@ class TaskStatus(enum.Enum):
 
 
 class TriggerType(enum.Enum):
+    """Triggertype
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     INTERVAL = "interval"
     CRON = "cron"
     DATETIME = "datetime"
 
 
 class JobStatus(enum.Enum):
+    """Jobstatus
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     ACTIVE = "active"
     PAUSED = "paused"
     COMPLETED = "completed"
@@ -69,12 +85,28 @@ class JobStatus(enum.Enum):
 
 
 class CircuitState(enum.Enum):
+    """Circuitstate
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     CLOSED = "closed"  # normal operation
     OPEN = "open"  # failures exceeded threshold
     HALF_OPEN = "half_open"  # testing recovery
 
 
 class QueueHealth(enum.Enum):
+    """Queuehealth
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     HEALTHY = "healthy"
     DEGRADED = "degraded"  # high backlog
     STALLED = "stalled"  # no consumers
@@ -87,6 +119,17 @@ class WorkError(Exception):
     """Base for all work-related errors."""
 
     def __init__(self, message: str, *, task_id: str = "", queue_name: str = ""):
+        """Init
+
+            Args:
+                message: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         super().__init__(message)
         self.task_id = task_id
         self.queue_name = queue_name
@@ -167,10 +210,26 @@ class TaskResult:
 
     @property
     def ok(self) -> bool:
+        """Ok
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.status == TaskStatus.COMPLETED
 
     @property
     def is_terminal(self) -> bool:
+        """Is Terminal
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.status in (
             TaskStatus.COMPLETED,
             TaskStatus.FAILED,
@@ -180,6 +239,14 @@ class TaskResult:
     # ── serialisation ───────────────────────────────────────────────────
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "task_id": self.task_id,
             "name": self.name,
@@ -200,9 +267,25 @@ class TaskResult:
         }
 
     def to_json(self) -> str:
+        """To Json
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return json.dumps(self.to_dict(), default=str)
 
     def _serialise_result(self) -> Optional[str]:
+        """Serialise Result
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self.result is None:
             return None
         try:
@@ -212,6 +295,14 @@ class TaskResult:
             return "<unserialisable>"
 
     def __repr__(self) -> str:
+        """Repr
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return (
             f"TaskResult(id={self.task_id[:8]}, name={self.name!r}, "
             f"status={self.status.value}, attempt={self.attempt})"
@@ -230,6 +321,14 @@ class QueueStats:
     status: QueueHealth = QueueHealth.HEALTHY
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "name": self.name,
             "size": self.size,
@@ -252,6 +351,14 @@ class WorkerStats:
     uptime_seconds: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "processed": self.processed,
             "failed": self.failed,
@@ -264,6 +371,14 @@ class WorkerStats:
 
 @dataclasses.dataclass
 class SchedulerStats:
+    """Schedulerstats
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     jobs_total: int = 0
     jobs_active: int = 0
     jobs_paused: int = 0
@@ -271,6 +386,14 @@ class SchedulerStats:
     errors_total: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "jobs_total": self.jobs_total,
             "jobs_active": self.jobs_active,

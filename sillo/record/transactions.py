@@ -55,6 +55,18 @@ class TransactionContext:
     """Context for manual transaction management."""
 
     def __init__(self, conn, tx):
+        """Init
+
+            Args:
+                conn: [description]
+                tx: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._conn = conn
         self._tx = tx
 

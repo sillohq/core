@@ -58,60 +58,206 @@ class UserProtocol:
 
     @property
     def is_authenticated(self) -> bool:
+        """Is Authenticated
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return True
 
     @property
     def is_anonymous(self) -> bool:
+        """Is Anonymous
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return not self.is_authenticated
 
     is_active: bool = True
 
     @property
     def display_name(self) -> str:
+        """Display Name
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         raise NotImplementedError
 
     @property
     def identity(self) -> str:
+        """Identity
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         raise NotImplementedError
 
     def get_id(self) -> str:
+        """Get Id
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.identity
 
     def get_display_name(self) -> str:
+        """Get Display Name
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.display_name
 
     def has_perm(self, perm: str) -> bool:
+        """Has Perm
+
+            Args:
+                perm: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return False
 
     def has_perms(self, perm_list: list[str]) -> bool:
+        """Has Perms
+
+            Args:
+                perm_list: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return all(self.has_perm(p) for p in perm_list)
 
     def has_permission(self, permission: str) -> bool:
+        """Has Permission
+
+            Args:
+                permission: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         raise NotImplementedError
 
     def has_module_perms(self, app_label: str) -> bool:
+        """Has Module Perms
+
+            Args:
+                app_label: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.is_active and self.is_staff  # pyright: ignore[reportAttributeAccessIssue]
 
     def __str__(self) -> str:
+        """Str
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.get_display_name()
 
     def __repr__(self) -> str:
+        """Repr
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return f"<{self.__class__.__name__}: {self}>"
 
     def __eq__(self, other: object) -> bool:
+        """Eq
+
+            Args:
+                other: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if not isinstance(other, UserProtocol):
             return NotImplemented
         return self.get_id() == other.get_id()
 
     def __hash__(self) -> int:
+        """Hash
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return hash(self.get_id())
 
     @classmethod
     async def load_user(cls, identity: str) -> Optional[UserProtocol]:
+        """Load User
+
+            Args:
+                identity: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         raise NotImplementedError
 
     @classmethod
     def get_email_field_name(cls) -> str:
+        """Get Email Field Name
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return "email"
 
 
@@ -132,29 +278,105 @@ class AnonymousUser:
     identity: str = ""
 
     def get_id(self) -> str:
+        """Get Id
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return ""
 
     def get_display_name(self) -> str:
+        """Get Display Name
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return ""
 
     def has_perm(self, perm: str) -> bool:
+        """Has Perm
+
+            Args:
+                perm: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return False
 
     def has_perms(self, perm_list: list[str]) -> bool:
+        """Has Perms
+
+            Args:
+                perm_list: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return False
 
     def has_module_perms(self, app_label: str) -> bool:
+        """Has Module Perms
+
+            Args:
+                app_label: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return False
 
     def __str__(self) -> str:
+        """Str
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return "AnonymousUser"
 
     def __eq__(self, other: object) -> bool:
+        """Eq
+
+            Args:
+                other: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if not isinstance(other, AnonymousUser):
             return NotImplemented
         return True
 
     def __hash__(self) -> int:
+        """Hash
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return 0
 
 
@@ -184,56 +406,197 @@ class UserBaseModel(Model, UserProtocol):
     email_verified_at = fields.DatetimeField(null=True, default=None)
 
     class Meta:
+        """Meta
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         abstract = True
 
     @property
     def is_authenticated(self) -> bool:
+        """Is Authenticated
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return bool(self.is_active)
 
     @property
     def display_name(self) -> str:
+        """Display Name
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.username
 
     @property
     def identity(self) -> str:
+        """Identity
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return str(self.id)
 
     def has_perm(self, perm: str) -> bool:
+        """Has Perm
+
+            Args:
+                perm: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self.is_superuser:
             return True
         return perm in getattr(self, "_permissions", [])
 
     def has_permission(self, permission: str) -> bool:
+        """Has Permission
+
+            Args:
+                permission: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.has_perm(permission)
 
     def has_perms(self, perm_list: list[str]) -> bool:
+        """Has Perms
+
+            Args:
+                perm_list: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return all(self.has_perm(p) for p in perm_list)
 
     def has_module_perms(self, app_label: str) -> bool:
+        """Has Module Perms
+
+            Args:
+                app_label: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return bool(self.is_active and self.is_staff)
 
     def set_password(self, raw_password: str) -> None:
+        """Set Password
+
+            Args:
+                raw_password: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.password = make_password(raw_password)
 
     def check_password(self, raw_password: str) -> bool:
+        """Check Password
+
+            Args:
+                raw_password: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return check_password(raw_password, self.password)
 
     def set_unusable_password(self) -> None:
+        """Set Unusable Password
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.password = UNUSABLE_PASSWORD_PREFIX
 
     def has_usable_password(self) -> bool:
+        """Has Usable Password
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return is_password_usable(self.password)
 
     async def set_last_login(self) -> None:
+        """Set Last Login
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.last_login = datetime.now(timezone.utc)
         await self.save(update_fields=["last_login"])
 
     async def mark_email_verified(self) -> None:
+        """Mark Email Verified
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.email_verified_at = datetime.now(timezone.utc)
         await self.save(update_fields=["email_verified_at"])
 
     @classmethod
     async def load_user(cls, identity: str) -> Optional["UserBaseModel"]:
+        """Load User
+
+            Args:
+                identity: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         try:
             uid = int(identity)
         except (TypeError, ValueError):
@@ -245,6 +608,14 @@ class UserBaseModel(Model, UserProtocol):
 
     @classmethod
     def get_email_field_name(cls) -> str:
+        """Get Email Field Name
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return "email"
 
     @classmethod
@@ -290,4 +661,12 @@ class User(UserBaseModel):
     objects = UserManager()
 
     class Meta:
+        """Meta
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         table = "users"

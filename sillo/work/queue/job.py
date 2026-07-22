@@ -122,6 +122,14 @@ class Job(Dispatchable):
     middleware: ClassVar[List[Any]] = []
 
     def __init__(self, *args: Any, **kwargs: Any):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._job_id: Optional[str] = None
         self._attempts: int = 0
         self._started_at: float = 0.0
@@ -144,6 +152,14 @@ class Job(Dispatchable):
         pipeline = self.middleware_pipeline()
 
         async def call_handle():
+            """Call Handle
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             if self.timeout:
                 return await asyncio.wait_for(self.handle(), timeout=self.timeout)
             return await self.handle()
@@ -155,15 +171,47 @@ class Job(Dispatchable):
         return await handler()
 
     def max_tries(self) -> int:
+        """Max Tries
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.__class__.tries
 
     def retry_after(self) -> int:
+        """Retry After
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.__class__.backoff
 
     def display_name(self) -> str:
+        """Display Name
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.__class__.__name__
 
     def payload(self) -> Dict[str, Any]:
+        """Payload
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "job": self.__class__.__name__,
             "maxTries": self.max_tries(),

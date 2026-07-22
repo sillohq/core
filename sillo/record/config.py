@@ -18,6 +18,14 @@ from typing_extensions import Doc
 
 
 class DatabaseBackend(Enum):
+    """Databasebackend
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     SQLITE = "sqlite"
     POSTGRES = "postgres"
     MYSQL = "mysql"
@@ -62,6 +70,14 @@ class DatabaseConfig:
     ssl_key: Optional[str] = field(default_factory=lambda: os.getenv("DB_SSL_KEY"))
 
     def __post_init__(self):
+        """Post Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self.url.startswith("postgres") or self.url.startswith("postgresql"):
             self.backend = DatabaseBackend.POSTGRES
         elif self.url.startswith("mysql"):
@@ -126,6 +142,14 @@ class DatabaseConfig:
         )
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         d = {k: v for k, v in self.__dict__.items()}
         d["backend"] = self.backend.value
         return d

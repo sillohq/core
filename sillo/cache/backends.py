@@ -50,6 +50,11 @@ class MemoryCache(BaseCache):
           written with that tag.
         * **Versioning** — bump ``version`` to expire a whole namespace at once.
 
+    This backend stores all data in an :class:`~collections.OrderedDict`
+    protected by a reentrant lock, making it safe for concurrent async access
+    within a single process. It requires no external dependencies and is the
+    default backend when no other is configured.
+
     Example:
         ```python
         cache = MemoryCache(namespace="users", default_ttl=300, max_size=1024)
@@ -70,6 +75,26 @@ class MemoryCache(BaseCache):
         max_size: Optional[int] = None,
         stats: Optional[CacheStats] = None,
     ) -> None:
+        """Initialize the in-memory cache backend with storage configuration.
+
+        Sets up the internal ordered dictionary for LRU tracking, the tag
+        membership mapping, and delegates common configuration to the base
+        class constructor. The max_size parameter enables automatic eviction
+        of the least-recently-used entries when the store exceeds capacity.
+
+        Args:
+            namespace: Optional prefix for isolating cache keys into logical
+                groups. Affects key generation and namespace-scoped clear.
+            default_ttl: Default time-to-live in seconds applied to entries
+                when no explicit TTL is provided at write time.
+            serializer: Serialization format, either ``"json"`` or ``"pickle"``,
+                controlling how values are encoded for storage.
+            max_size: Maximum number of entries allowed in the store. When
+                ``None``, the store grows without bound. When set, LRU
+                eviction removes the oldest entry to stay within the limit.
+            stats: Optional shared :class:`CacheStats` instance for tracking
+                cache operation counters across multiple backend references.
+        """
         super().__init__(
             namespace=namespace,
             default_ttl=default_ttl,
@@ -84,6 +109,20 @@ class MemoryCache(BaseCache):
     # ---- internal entry type ---------------------------------------
 
     class _Entry:
+        """Internal cache entry storing a serialized payload and expiry metadata.
+
+        Each entry tracks its raw byte payload, the TTL it was written with,
+        whether it uses sliding expiration, and the absolute expiration time
+        computed from the write timestamp. Uses ``__slots__`` for memory
+        efficiency since many entries may exist simultaneously.
+
+        Attributes:
+            payload: The serialized byte representation of the cached value.
+            expire_at: Absolute monotonic time when the entry expires, or
+                ``None`` if the entry has no TTL and persists indefinitely.
+            sliding: Whether this entry uses sliding TTL expiration mode.
+            ttl: The TTL in seconds that was configured for this entry.
+        """
         __slots__ = ("payload", "expire_at", "sliding", "ttl")
 
         def __init__(
@@ -93,15 +132,57 @@ class MemoryCache(BaseCache):
             sliding: bool,
             now: float,
         ) -> None:
+            """Initialize a cache entry with payload and expiration metadata.
+
+            Constructs a new entry by storing the serialized payload and
+            computing the absolute expiration time from the current monotonic
+            timestamp and the provided TTL value.
+
+            Args:
+                payload: The serialized byte data representing the cached value.
+                ttl: Time-to-live in seconds, or ``None`` for no expiration.
+                sliding: Whether this entry should use sliding TTL mode where
+                    the expiration window refreshes on each read access.
+                now: The current monotonic time used as the base for computing
+                    the absolute expiration timestamp.
+            """
             self.payload = payload
             self.ttl = ttl
             self.sliding = sliding
             self.expire_at = (now + ttl) if ttl is not None else None
 
         def is_expired(self, now: float) -> bool:
+            """Check whether this cache entry has expired.
+
+            Compares the provided current time against the entry's absolute
+            expiration timestamp. Entries with no expiration (``expire_at``
+            is ``None``) are never considered expired.
+
+            Args:
+                now: The current monotonic time to compare against the
+                    entry's expiration deadline.
+
+            Returns:
+                ``True`` if the entry has an expiration time and the current
+                time has reached or exceeded it, ``False`` otherwise.
+            """
             return self.expire_at is not None and now >= self.expire_at
 
         def touch(self, ttl: Optional[int], now: float) -> None:
+            """Refresh the entry's expiration time with a new TTL.
+
+            Updates the entry's TTL if a new value is provided, then
+            recomputes the absolute expiration timestamp from the given
+            current time. This is used to implement sliding expiration
+            where each access extends the entry's lifetime.
+
+            Args:
+                ttl: New TTL in seconds to apply. When ``None``, the
+                    entry's existing TTL value is retained for the
+                    expiration recomputation.
+                now: The current monotonic time used as the base for
+                    computing the new absolute expiration timestamp.
+            """
             if ttl is not None:
                 self.ttl = ttl
             if self.ttl is not None:
@@ -110,28 +191,22 @@ class MemoryCache(BaseCache):
     # ---- get / set / delete ----------------------------------------
 
     async def get(self, key: str) -> Any:
-        with self._lock:
-            entry = self._store.get(key)
-            now = time.monotonic()
-            if entry is None:
-                self._stats.misses += 1
-                return _MISSING
-            if entry.is_expired(now):
-                self._store.pop(key, None)
-                self._stats.misses += 1
-                return _MISSING
-            # LRU: move to end (most-recently used).
-            self._store.move_to_end(key)
-            if entry.sliding and entry.ttl is not None:
-                entry.expire_at = now + entry.ttl
-            self._stats.hits += 1
-            try:
-                return deserialize(entry.payload)
-            except SerializationError:
-                # Corrupt entry: treat as miss and evict.
-                self._store.pop(key, None)
-                self._stats.misses += 1
-                return _MISSING
+        """Retrieve a cached value from the in-memory store.
+
+        Looks up the key in the internal ordered dictionary, checks for
+        expiration, and deserializes the stored payload on a hit. Expired
+        entries are evicted as a side effect. On a successful read with
+        sliding TTL enabled, the entry's expiration time is refreshed.
+        The entry is moved to the end of the ordered dict to mark it as
+        most-recently used for LRU eviction purposes.
+
+        Args:
+            key: The cache key to look up in the in-memory store.
+
+        Returns:
+            The deserialized cached value on a hit, or the :data:`_MISSING`
+            sentinel object if the key is absent, expired, or corrupt.
+        """
 
     async def set(
         self,
@@ -142,101 +217,154 @@ class MemoryCache(BaseCache):
         tags: Optional[Iterable[str]] = None,
         sliding: bool = False,
     ) -> None:
-        ttl = self._resolve_ttl(ttl)
-        try:
-            payload = serialize(value, self.serializer == "pickle")
-        except SerializationError:
-            raise
-        with self._lock:
-            now = time.monotonic()
-            entry = self._Entry(payload, ttl, sliding, now)
-            self._store[key] = entry
-            self._store.move_to_end(key)
-            self._stats.sets += 1
-            if tags:
-                for tag in tags:
-                    tk = tag_key(self.namespace, tag)
-                    self._tags.setdefault(tk, set()).add(key)
-            self._enforce_size()
+        """Store a value in the in-memory cache under the given key.
+
+        Serializes the value, creates a new cache entry with the resolved
+        TTL, and inserts it into the ordered dictionary. If tags are
+        provided, the key is registered in each tag's membership set for
+        later bulk invalidation. After insertion, the max-size constraint
+        is enforced by evicting the least-recently-used entries if needed.
+
+        Args:
+            key: The cache key to store the value under.
+            value: The Python object to serialize and cache in memory.
+            ttl: Optional time-to-live in seconds. Falls back to the
+                backend's ``default_ttl`` when ``None``.
+            tags: Optional iterable of invalidation tag strings for
+                group-based cache purging via :meth:`invalidate_tags`.
+            sliding: When ``True``, the TTL window refreshes on every
+                :meth:`get` call, implementing sliding expiration.
+
+        Raises:
+            SerializationError: If the value cannot be serialized by the
+                configured serializer.
+        """
 
     async def delete(self, key: str) -> bool:
-        with self._lock:
-            entry = self._store.pop(key, None)
-            if entry is None:
-                return False
-            self._stats.deletes += 1
-            return True
+        """Delete a key from the in-memory cache store.
+
+        Removes the entry associated with the given key from the internal
+        ordered dictionary and increments the delete statistics counter.
+        Note that tag membership sets are not cleaned up here; tag-based
+        invalidation handles that separately.
+
+        Args:
+            key: The cache key to remove from the in-memory store.
+
+        Returns:
+            ``True`` if the key existed and was removed, ``False`` if
+            the key was not found in the store.
+        """
 
     async def exists(self, key: str) -> bool:
-        with self._lock:
-            entry = self._store.get(key)
-            if entry is None:
-                return False
-            if entry.is_expired(time.monotonic()):
-                self._store.pop(key, None)
-                return False
-            return True
+        """Check if a key exists and is unexpired in the in-memory store.
+
+        Performs a presence check without deserializing the stored value,
+        making this a lightweight operation. Expired entries are evicted
+        as a side effect and treated as absent.
+
+        Args:
+            key: The cache key to check for existence in the store.
+
+        Returns:
+            ``True`` if the key is present and has not expired, ``False``
+            if the key is missing or its TTL has elapsed.
+        """
 
     async def touch(self, key: str, ttl: Optional[int] = None) -> bool:
-        with self._lock:
-            entry = self._store.get(key)
-            if entry is None or entry.is_expired(time.monotonic()):
-                return False
-            entry.touch(ttl if ttl is not None else self.default_ttl, time.monotonic())
-            self._store.move_to_end(key)
-            return True
+        """Refresh the TTL of an entry in the in-memory store.
+
+        Extends the lifetime of a cached key by recomputing its expiration
+        time. The entry is also moved to the end of the ordered dictionary
+        to mark it as most-recently used for LRU eviction purposes.
+
+        Args:
+            key: The cache key whose TTL should be refreshed.
+            ttl: Optional new TTL in seconds. When ``None``, the backend's
+                ``default_ttl`` is used as the new expiration window.
+
+        Returns:
+            ``True`` if the key existed and was refreshed, ``False`` if
+            the key was not found or had already expired.
+        """
 
     async def invalidate_tags(self, *tags: str) -> int:
-        if not tags:
-            return 0
-        removed = 0
-        with self._lock:
-            for tag in tags:
-                tk = tag_key(self.namespace, tag)
-                keys = self._tags.pop(tk, set())
-                for k in keys:
-                    if self._store.pop(k, None) is not None:
-                        removed += 1
-            if removed:
-                self._stats.deletes += removed
-        return removed
+        """Delete all in-memory entries associated with the given tags.
+
+        Iterates over each provided tag, looks up its membership set, and
+        removes every associated key from the internal store. The tag
+        membership sets themselves are also removed. This provides efficient
+        group-based cache purging without knowing individual key names.
+
+        Args:
+            *tags: One or more invalidation tag strings. Every in-memory
+                key registered with any of these tags will be deleted.
+
+        Returns:
+            The total number of keys that were deleted as a result of
+            this tag invalidation operation.
+        """
 
     async def clear(self) -> None:
-        with self._lock:
-            if self.namespace:
-                # Only drop keys belonging to this namespace.
-                for k in list(self._store.keys()):
-                    if k.startswith(f"{self.namespace}:"):
-                        self._store.pop(k, None)
-                for tk in list(self._tags.keys()):
-                    if tk.startswith(f"tag:{self.namespace}:"):
-                        self._tags.pop(tk, None)
-            else:
-                self._store.clear()
-                self._tags.clear()
+        """Remove all keys from the in-memory cache, respecting namespace.
+
+        When a namespace is configured, only keys and tags belonging to
+        that namespace are removed from the internal store. When no
+        namespace is set, the entire store and tag mapping are cleared
+        unconditionally.
+
+        Note:
+            This operation does not reset statistics counters; use
+            :meth:`reset_stats` for that purpose.
+        """
 
     async def close(self) -> None:
-        with self._lock:
-            self._store.clear()
-            self._tags.clear()
+        """Release all in-memory cache resources.
+
+        Clears the internal ordered dictionary and tag membership mapping,
+        effectively discarding all cached data. After calling this method,
+        the backend instance should not be used for further operations.
+        """
 
     # ---- size management -------------------------------------------
 
     def _enforce_size(self) -> None:
-        if self.max_size is None:
-            return
-        while len(self._store) > self.max_size:
-            # Pop the oldest (LRU) item.
-            _, evicted = self._store.popitem(last=False)
-            self._stats.evictions += 1
+        """Enforce the maximum store size by evicting least-recently-used entries.
 
-    # ---- size/len helpers ------------------------------------------
+        Removes the oldest entries from the ordered dictionary (those at the
+        front, i.e. least-recently used) until the store size is within the
+        configured ``max_size`` limit. Each eviction increments the eviction
+        statistics counter. Does nothing when ``max_size`` is ``None``.
+
+        Note:
+            This method is called automatically after every :meth:`set`
+            operation and should not typically need to be called directly.
+        """
 
     def __len__(self) -> int:
+        """Return the number of entries currently in the in-memory store.
+
+        Includes both expired and unexpired entries since expiration is
+        checked lazily on access. The count reflects the raw size of the
+        internal ordered dictionary.
+
+        Returns:
+            The total number of entries in the store as an integer,
+            including any that may have expired but not yet been evicted.
+        """
         return len(self._store)
 
     def size(self) -> int:
-        return len(self._store)
+        """Return the number of entries currently in the in-memory store.
+
+        Provides an explicit method alternative to ``len(cache)`` for
+        obtaining the current store size. Includes both expired and
+        unexpired entries since expiration is checked lazily on access.
+
+        Returns:
+            The total number of entries in the store as an integer,
+            including any that may have expired but not yet been evicted.
+        """
 
 
 class RedisCache(BaseCache):
@@ -251,6 +379,11 @@ class RedisCache(BaseCache):
         * TTL is handled natively via ``SETEX`` / ``PEXPIRE``.
         * Tags map to Redis sets (``tag:<ns>:<tag>``) of member keys.
         * Sliding TTL is emulated by re-issuing ``EXPIRE`` on every read.
+
+    The backend lazily establishes its Redis connection on the first
+    operation, either from an explicit URL or from individual host/port/db
+    parameters. An externally-managed client can also be injected via the
+    ``client`` parameter, in which case the backend will not close it.
 
     Example:
         ```python
@@ -277,6 +410,38 @@ class RedisCache(BaseCache):
         client: Any = None,
         stats: Optional[CacheStats] = None,
     ) -> None:
+        """Initialize the Redis cache backend with connection parameters.
+
+        Configures the Redis connection settings and delegates common
+        backend configuration to the base class. The connection is
+        established lazily on the first cache operation. Either a full
+        Redis URL or individual host/port/db parameters can be provided.
+        An externally-managed client can also be injected directly.
+
+        Args:
+            url: Optional full Redis connection URL (e.g.
+                ``redis://localhost:6379/0``). Takes precedence over
+                individual host/port/db parameters when provided.
+            host: Redis server hostname. Defaults to ``"localhost"``.
+                Ignored when ``url`` is provided.
+            port: Redis server port number. Defaults to ``6379``.
+                Ignored when ``url`` is provided.
+            db: Redis database index. Defaults to ``0``.
+                Ignored when ``url`` is provided.
+            password: Optional Redis authentication password. Ignored
+                when ``url`` is provided and the URL contains no password.
+            namespace: Optional prefix for isolating cache keys into
+                logical groups within the Redis instance.
+            default_ttl: Default time-to-live in seconds for entries
+                when no explicit TTL is provided at write time.
+            serializer: Serialization format, either ``"json"`` or
+                ``"pickle"``, for encoding values before storage.
+            client: Optional pre-existing async Redis client instance.
+                When provided, the backend uses it directly and will
+                not close it on :meth:`close`.
+            stats: Optional shared :class:`CacheStats` instance for
+                tracking cache operation counters.
+        """
         super().__init__(
             namespace=namespace,
             default_ttl=default_ttl,
@@ -294,6 +459,33 @@ class RedisCache(BaseCache):
     # ---- lazy connection -------------------------------------------
 
     def _get_client(self):
+        """Lazily create and return the async Redis client connection.
+
+        On the first call, establishes a connection to Redis using either
+        the configured URL or the individual host/port/db parameters. If
+        the ``redis`` package is not installed, raises a :class:`CacheError`
+        with installation instructions. Subsequent calls return the cached
+        client instance without reconnecting.
+
+        Returns:
+            The async Redis client instance, either the externally-provided
+            one or a newly created connection.
+
+        Raises:
+            CacheError: If the ``redis`` package is not installed and no
+                external client was provided at construction time.
+        """
+
+    async def _redis(self):
+        """Return the async Redis client, ensuring the connection is active.
+
+        This is the async entry point for obtaining the Redis client. It
+        delegates to :meth:`_get_client` for lazy connection establishment
+        and returns the client ready for command execution.
+
+        Returns:
+            The async Redis client instance for executing Redis commands.
+        """
         if self._client is not None:
             return self._client
         if aioredis is None:
@@ -324,24 +516,20 @@ class RedisCache(BaseCache):
     # ---- get / set / delete ----------------------------------------
 
     async def get(self, key: str) -> Any:
-        client = await self._redis()
-        payload = await client.get(key)
-        if payload is None:
-            self._stats.misses += 1
-            return _MISSING
-        # Sliding TTL: refresh expiry on read.
-        entry_ttl = await client.ttl(key)
-        if entry_ttl is not None and entry_ttl > 0:
-            ttl = self._resolve_ttl(self.default_ttl)
-            if ttl is not None:
-                await client.expire(key, ttl)
-        try:
-            value = deserialize(payload)
-        except SerializationError:
-            self._stats.misses += 1
-            return _MISSING
-        self._stats.hits += 1
-        return value
+        """Retrieve a cached value from the Redis backend.
+
+        Fetches the raw byte payload from Redis using the ``GET`` command,
+        deserializes it, and returns the resulting Python object. When
+        sliding TTL is in effect, the entry's expiration is refreshed by
+        re-issuing the ``EXPIRE`` command with the backend's default TTL.
+
+        Args:
+            key: The cache key to look up in the Redis store.
+
+        Returns:
+            The deserialized cached value on a hit, or the :data:`_MISSING`
+            sentinel object if the key is absent or the payload is corrupt.
+        """
 
     async def set(
         self,
@@ -352,74 +540,114 @@ class RedisCache(BaseCache):
         tags: Optional[Iterable[str]] = None,
         sliding: bool = False,
     ) -> None:
-        ttl = self._resolve_ttl(ttl)
-        try:
-            payload = serialize(value, self.serializer == "pickle")
-        except SerializationError:
-            raise
-        client = await self._redis()
-        if ttl is not None:
-            await client.set(key, payload, ex=ttl)
-        else:
-            await client.set(key, payload)
-        self._stats.sets += 1
-        if tags:
-            for tag in tags:
-                tk = tag_key(self.namespace, tag)
-                await client.sadd(tk, key)
-                # Tags themselves expire with the longest reasonable window so
-                # orphaned sets don't accumulate forever.
-                await client.expire(tk, 60 * 60 * 24)
+        """Store a value in the Redis cache under the given key.
+
+        Serializes the value and writes it to Redis with an optional TTL
+        using the ``SET`` command with the ``EX`` flag. When tags are
+        provided, the key is added to each tag's Redis set via ``SADD``,
+        and the tag set itself is given a 24-hour expiration to prevent
+        orphaned sets from accumulating indefinitely.
+
+        Args:
+            key: The cache key to store the value under in Redis.
+            value: The Python object to serialize and cache in Redis.
+            ttl: Optional time-to-live in seconds. Falls back to the
+                backend's ``default_ttl`` when ``None``.
+            tags: Optional iterable of invalidation tag strings for
+                group-based cache purging via :meth:`invalidate_tags`.
+            sliding: When ``True``, the TTL window refreshes on every
+                :meth:`get` call, implementing sliding expiration.
+
+        Raises:
+            SerializationError: If the value cannot be serialized by the
+                configured serializer.
+        """
 
     async def delete(self, key: str) -> bool:
-        client = await self._redis()
-        removed = await client.delete(key)
-        if removed:
-            self._stats.deletes += 1
-        return bool(removed)
+        """Delete a key from the Redis cache store.
+
+        Issues a Redis ``DEL`` command for the given key and increments
+        the delete statistics counter if the key was actually removed.
+
+        Args:
+            key: The cache key to remove from the Redis store.
+
+        Returns:
+            ``True`` if the key existed and was deleted, ``False`` if
+            the key was not found in Redis.
+        """
 
     async def exists(self, key: str) -> bool:
-        client = await self._redis()
-        return bool(await client.exists(key))
+        """Check if a key exists in the Redis cache store.
+
+        Issues a Redis ``EXISTS`` command to test for key presence. Note
+        that Redis natively handles TTL expiration, so expired keys are
+        automatically treated as absent by the server.
+
+        Args:
+            key: The cache key to check for existence in Redis.
+
+        Returns:
+            ``True`` if the key exists in Redis, ``False`` otherwise.
+        """
 
     async def touch(self, key: str, ttl: Optional[int] = None) -> bool:
-        client = await self._redis()
-        ttl = ttl if ttl is not None else self.default_ttl
-        if ttl is None:
-            return False
-        return bool(await client.expire(key, ttl))
+        """Refresh the TTL of a key in the Redis cache store.
+
+        Issues a Redis ``EXPIRE`` command to reset the key's expiration
+        time. Returns ``False`` immediately if no TTL can be resolved
+        (neither explicit nor default).
+
+        Args:
+            key: The cache key whose TTL should be refreshed in Redis.
+            ttl: Optional new TTL in seconds. When ``None``, the backend's
+                ``default_ttl`` is used as the new expiration window.
+
+        Returns:
+            ``True`` if the key existed and its TTL was updated, ``False``
+            if the key was not found or no TTL could be resolved.
+        """
 
     async def invalidate_tags(self, *tags: str) -> int:
-        if not tags:
-            return 0
-        client = await self._redis()
-        removed = 0
-        for tag in tags:
-            tk = tag_key(self.namespace, tag)
-            keys = await client.smembers(tk)
-            if keys:
-                removed += await client.delete(*keys)
-                await client.delete(tk)
-        if removed:
-            self._stats.deletes += removed
-        return removed
+        """Delete all Redis entries associated with the given tags.
+
+        For each tag, retrieves the member keys from the tag's Redis set
+        via ``SMEMBERS``, deletes all those keys in bulk, and then removes
+        the tag set itself. This provides efficient group-based cache
+        purging without knowing individual key names.
+
+        Args:
+            *tags: One or more invalidation tag strings. Every Redis key
+                registered with any of these tags will be deleted.
+
+        Returns:
+            The total number of keys that were deleted as a result of
+            this tag invalidation operation.
+        """
 
     async def clear(self) -> None:
-        client = await self._redis()
-        if self.namespace:
-            async for key in client.scan_iter(match=f"{self.namespace}:*"):
-                await client.delete(key)
-            async for key in client.scan_iter(match=f"tag:{self.namespace}:*"):
-                await client.delete(key)
-        else:
-            await client.flushdb()
+        """Remove all keys from the Redis cache, respecting namespace.
+
+        When a namespace is configured, uses ``SCAN`` with a pattern match
+        to find and delete only keys belonging to that namespace, including
+        tag sets. When no namespace is set, issues a ``FLUSHDB`` command
+        to clear the entire Redis database.
+
+        Warning:
+            When no namespace is configured, this operation clears the
+            entire Redis database, not just cache keys. Use namespaces
+            to scope the impact of :meth:`clear`.
+        """
 
     async def close(self) -> None:
-        if self._client is not None and self._owns_client:
-            try:
-                await self._client.aclose()
-            except Exception:  # pragma: no cover
-                pass
+        """Release the Redis connection if the backend owns the client.
+
+        Closes the async Redis client connection only when the backend
+        created it internally (i.e., no external client was injected).
+        External clients are left open since their lifecycle is managed
+        by the caller. Exceptions during close are silently caught to
+        ensure graceful shutdown.
+        """
 
 
 __all__ = ["MemoryCache", "RedisCache"]

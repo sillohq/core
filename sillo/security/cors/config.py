@@ -26,6 +26,30 @@ class CorsConfig(ConfigBase):
         custom_error_messages: Optional[Dict[str, str]] = None,
         **kwargs: Any,
     ):
+        """Init
+
+            Args:
+                allow_origins: [description]
+                blacklist_origins: [description]
+                allow_methods: [description]
+                blacklist_headers: [description]
+                allow_headers: [description]
+                allow_credentials: [description]
+                allow_origin_regex: [description]
+                expose_headers: [description]
+                max_age: [description]
+                strict_origin_checking: [description]
+                dynamic_origin_validator: [description]
+                debug: [description]
+                custom_error_status: [description]
+                custom_error_messages: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         config = {
             "allow_origins": allow_origins or [],
             "blacklist_origins": blacklist_origins or [],
@@ -47,56 +71,168 @@ class CorsConfig(ConfigBase):
 
     @property
     def allow_origins(self) -> List[str]:
+        """Allow Origins
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["allow_origins"]
 
     @property
     def blacklist_origins(self) -> List[str]:
+        """Blacklist Origins
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["blacklist_origins"]
 
     @property
     def allow_methods(self) -> List[str]:
+        """Allow Methods
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["allow_methods"]
 
     @property
     def blacklist_headers(self) -> List[str]:
+        """Blacklist Headers
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["blacklist_headers"]
 
     @property
     def allow_headers(self) -> List[str]:
+        """Allow Headers
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["allow_headers"]
 
     @property
     def allow_credentials(self) -> bool:
+        """Allow Credentials
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["allow_credentials"]
 
     @property
     def allow_origin_regex(self) -> Optional[str]:
+        """Allow Origin Regex
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["allow_origin_regex"]
 
     @property
     def expose_headers(self) -> List[str]:
+        """Expose Headers
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["expose_headers"]
 
     @property
     def max_age(self) -> int:
+        """Max Age
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["max_age"]
 
     @property
     def strict_origin_checking(self) -> bool:
+        """Strict Origin Checking
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["strict_origin_checking"]
 
     @property
     def dynamic_origin_validator(self) -> Optional[Callable[[Optional[str]], bool]]:
+        """Dynamic Origin Validator
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["dynamic_origin_validator"]
 
     @property
     def debug(self) -> bool:
+        """Debug
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["debug"]
 
     @property
     def custom_error_status(self) -> int:
+        """Custom Error Status
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["custom_error_status"]
 
     @property
     def custom_error_messages(self) -> Dict[str, str]:
+        """Custom Error Messages
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config["custom_error_messages"]

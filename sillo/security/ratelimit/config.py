@@ -45,6 +45,26 @@ class RateLimitConfig:
         fail_open: bool = True,
         on_exceed: Union[str, Callable[[Request, Any], Any]] = "deny",
     ) -> None:
+        """Init
+
+            Args:
+                limit: [description]
+                window: [description]
+                strategy: [description]
+                backend: [description]
+                key_func: [description]
+                namespace: [description]
+                cost: [description]
+                include_headers: [description]
+                fail_open: [description]
+                on_exceed: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if limit <= 0:
             raise ValueError("limit must be a positive integer")
         if window <= 0:
@@ -65,6 +85,17 @@ class RateLimitConfig:
 
     @staticmethod
     def _default_key(request: Request) -> Optional[str]:
+        """Default Key
+
+            Args:
+                request: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         client = request.client
         if client is not None:
             return client[0]

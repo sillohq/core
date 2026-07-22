@@ -47,6 +47,17 @@ class Batch:
             Optional[float], Doc("Max seconds before timing out the batch.")
         ] = None,
     ):
+        """Init
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.id = str(uuid.uuid4())
         self.name = name
         self._jobs: List[str] = []
@@ -86,12 +97,28 @@ class Batch:
             self._check_done()
 
     def _check_done(self) -> None:
+        """Check Done
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         total = len(self._jobs)
         done = len(self._completed) + len(self._failed)
         if total > 0 and done >= total:
             self._finish()
 
     def _finish(self) -> None:
+        """Finish
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self._finished:
             return
         self._finished = True
@@ -105,18 +132,50 @@ class Batch:
 
     @property
     def completed_count(self) -> int:
+        """Completed Count
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return len(self._completed)
 
     @property
     def failed_count(self) -> int:
+        """Failed Count
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return len(self._failed)
 
     @property
     def total(self) -> int:
+        """Total
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return len(self._jobs)
 
     @property
     def is_done(self) -> bool:
+        """Is Done
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._finished
 
 
@@ -131,6 +190,14 @@ class JobChain:
     """
 
     def __init__(self):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._jobs: List[Callable[[], Awaitable[Any]]] = []
 
     def then(

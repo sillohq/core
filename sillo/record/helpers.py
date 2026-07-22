@@ -39,6 +39,17 @@ class Seeder:
     """
 
     def __init__(self, db_manager):
+        """Init
+
+            Args:
+                db_manager: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._db = db_manager
         self._records: List[tuple[type, Dict[str, Any]]] = []
 
@@ -74,6 +85,17 @@ class FixtureLoader:
     """
 
     def __init__(self, directory: Annotated[str, Doc("Path to fixtures directory.")]):
+        """Init
+
+            Args:
+                directory: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._dir = Path(directory)
 
     async def load_all(self) -> int:
@@ -94,6 +116,17 @@ class FixtureLoader:
         raise FileNotFoundError(f"Fixture '{name}' not found in {self._dir}")
 
     async def _load_file(self, path: Path) -> int:
+        """Load File
+
+            Args:
+                path: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         content = path.read_text()
         if path.suffix == ".jsonl":
             records = [
@@ -111,6 +144,17 @@ class MigrationHelper:
     """Utility for running aerich migrations programmatically."""
 
     def __init__(self, app_module: str, *, location: str = "migrations"):
+        """Init
+
+            Args:
+                app_module: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._app = app_module
         self._location = location
 

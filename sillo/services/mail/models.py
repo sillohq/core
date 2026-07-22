@@ -12,12 +12,28 @@ from typing import Any, Dict, List, Optional, Union
 
 @dataclass
 class EmailAttachment:
+    """Emailattachment
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     filename: str
     content: Union[bytes, str]
     content_type: Optional[str] = None
     content_id: Optional[str] = None
 
     def __post_init__(self) -> None:
+        """Post Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if isinstance(self.content, str):
             path = Path(self.content)
             if path.exists():
@@ -32,6 +48,14 @@ class EmailAttachment:
 
 @dataclass
 class EmailMessage:
+    """Emailmessage
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     to: Union[str, List[str]]
     subject: str
     body: Optional[str] = None
@@ -48,6 +72,14 @@ class EmailMessage:
     priority: Optional[int] = None
 
     def __post_init__(self) -> None:
+        """Post Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         for attr in ("to", "cc", "bcc", "reply_to"):
             val = getattr(self, attr)
             if isinstance(val, str):
@@ -68,6 +100,20 @@ class EmailMessage:
         content_type: Optional[str] = None,
         content_id: Optional[str] = None,
     ) -> None:
+        """Add Attachment
+
+            Args:
+                filename: [description]
+                content: [description]
+                content_type: [description]
+                content_id: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.attachments.append(
             EmailAttachment(
                 filename=filename,
@@ -78,9 +124,32 @@ class EmailMessage:
         )
 
     def add_header(self, name: str, value: str) -> None:
+        """Add Header
+
+            Args:
+                name: [description]
+                value: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.headers[name] = value
 
     def to_mime_message(self, from_email: Optional[str] = None) -> MIMEMultipart:
+        """To Mime Message
+
+            Args:
+                from_email: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         msg = MIMEMultipart("alternative")
         msg["Subject"] = self.subject
         msg["To"] = ", ".join(self.to)
@@ -117,6 +186,14 @@ class EmailMessage:
 
 @dataclass
 class EmailResult:
+    """Emailresult
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     success: bool
     message_id: str
     to: List[str]
@@ -126,6 +203,14 @@ class EmailResult:
     provider_response: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "success": self.success,
             "message_id": self.message_id,

@@ -20,10 +20,26 @@ class AdminActivity(Model):
     user_agent = fields.TextField(null=True)
 
     class Meta:
+        """Meta
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         table = "admin_activity"
         ordering = ["-created_at"]
 
     def __str__(self):
+        """Str
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return f"{self.user_email} {self.action} {self.model_name} at {self.created_at}"
 
 
@@ -36,9 +52,25 @@ class AdminRole(Model):
     description = fields.TextField(null=True)
 
     class Meta:
+        """Meta
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         table = "admin_roles"
 
     def __str__(self):
+        """Str
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.name
 
 
@@ -56,12 +88,39 @@ class AdminUser(Model):
     )
 
     class Meta:
+        """Meta
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         table = "admin_users"
 
     def __str__(self):
+        """Str
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.email
 
     def has_permission(self, permission: str) -> bool:
+        """Has Permission
+
+            Args:
+                permission: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self.is_superuser:
             return True
         if self.role and hasattr(self.role, "permissions"):
@@ -73,6 +132,14 @@ class AdminUser(Model):
         return verify_password(plain, self.password)
 
     def to_dict(self, **kwargs):
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         d = super().to_dict(**kwargs)
         d.pop("password", None)
         return d

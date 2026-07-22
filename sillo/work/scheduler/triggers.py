@@ -23,6 +23,14 @@ from .cron import CronParser
 
 
 class TriggerType(Enum):
+    """Triggertype
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     INTERVAL = "interval"
     CRON = "cron"
     DATETIME = "datetime"
@@ -30,6 +38,14 @@ class TriggerType(Enum):
 
 
 class CompoundLogic(Enum):
+    """Compoundlogic
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     AND = "and"
     OR = "or"
 
@@ -77,6 +93,14 @@ class CronTrigger:
     timezone: Annotated[Optional[str], Doc("IANA timezone name.")] = None
 
     def __post_init__(self):
+        """Post Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         parser = CronParser(self.expression)
         self._parser = parser
 

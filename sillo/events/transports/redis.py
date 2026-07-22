@@ -77,6 +77,14 @@ class RedisTransport(BaseTransport):
         loop=None,
         **kwargs: Any,
     ) -> None:
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         super().__init__(namespace=namespace, on_error=on_error, loop=loop)
         self._url = url
         self._kwargs = kwargs
@@ -179,6 +187,14 @@ class RedisTransport(BaseTransport):
         await client.publish(self._channel(channel), serialize_envelope(envelope))
 
     async def _listen_loop(self) -> None:
+        """Listen Loop
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         while self._running:
             try:
                 if self._pubsub is None:

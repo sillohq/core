@@ -6,23 +6,64 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 
 class PaginationError(Exception):
-    """Base class for all pagination errors"""
+    """
+    Base exception class for all pagination-related errors.
+
+    Serves as the root of the pagination exception hierarchy, allowing
+    callers to catch any pagination error with a single ``except`` clause.
+    All specific pagination errors (invalid page, invalid size, invalid
+    cursor) inherit from this base class.
+    """
 
 
 class InvalidPageError(PaginationError):
-    """Raised when requesting an invalid page number"""
+    """
+    Raised when a requested page number is invalid or out of range.
+
+    Typically raised when the page number is less than 1 or when the
+    computed offset exceeds the total number of available items. Inherits
+    from ``PaginationError`` for unified exception handling.
+    """
 
 
 class InvalidPageSizeError(PaginationError):
-    """Raised when requesting an invalid page size"""
+    """
+    Raised when a requested page size or limit is invalid.
+
+    Typically raised when the page size is less than 1, exceeds the
+    configured maximum, or when a negative limit/offset is provided.
+    Inherits from ``PaginationError`` for unified exception handling.
+    """
 
 
 class InvalidCursorError(PaginationError):
-    """Raised when providing an invalid cursor"""
+    """
+    Raised when a provided cursor string cannot be decoded or is malformed.
+
+    Typically raised when base64 decoding fails or the decoded JSON
+    payload does not contain the expected sort field. Inherits from
+    ``PaginationError`` for unified exception handling.
+    """
 
 
 class LinkBuilder:
-    """Helper to build pagination URLs."""
+    """
+    Helper class for constructing pagination navigation URLs.
+
+    Builds pagination links by merging the original request query parameters
+    with new pagination-specific parameters, stripping out any previous
+    pagination parameters to avoid duplication. Used internally by all
+    pagination strategies to generate ``next``, ``prev``, ``first``, and
+    ``last`` navigation links.
+
+    Attributes:
+        base_url: The base URL (without query string) for constructing links.
+        request_params: The original request query parameters to preserve
+            across pagination links (e.g., filters, search terms).
+        pagination_params: A list of parameter names that are managed by
+            the pagination system and should be stripped before merging
+            new pagination values.
+    """
 
     def __init__(
         self,
@@ -30,25 +71,49 @@ class LinkBuilder:
         request_params: Dict[str, Union[str, List[str]]],
         pagination_params: List[str],
     ):
-        """Initialize LinkBuilder.
+        """
+        Initialize the LinkBuilder with URL and parameter configuration.
 
         Args:
-            base_url: The base URL for pagination links.
-            request_params: All request query parameters.
-            pagination_params: Parameter names used for pagination.
+            base_url: The base URL for pagination links, typically the
+                request URL without query string parameters.
+            request_params: All query parameters from the original request,
+                including both pagination and non-pagination parameters.
+                Non-pagination parameters are preserved in generated links.
+            pagination_params: A list of parameter names that are managed
+                by the pagination strategy and should be stripped from the
+                original parameters before merging new pagination values.
+                For example, ``["page", "page_size"]`` for page-number
+                pagination.
+
+        Returns:
+            None. Initializes the LinkBuilder instance with the provided
+            configuration for subsequent link generation.
         """
         self.base_url = base_url
         self.request_params = request_params
         self.pagination_params = pagination_params
 
     def build_link(self, new_params: Dict[str, Any]) -> str:
-        """Build a pagination URL.
+        """
+        Build a complete pagination URL by merging new parameters with existing ones.
+
+        Filters out all pagination-specific parameters from the original request
+        parameters, then merges in the new pagination parameters to produce a
+        fully-qualified URL with a properly encoded query string. This ensures
+        that non-pagination parameters (filters, search terms) are preserved
+        while pagination parameters are updated to the new values.
 
         Args:
-            new_params: New pagination parameters to add.
+            new_params: A dictionary of new pagination parameters to apply,
+                such as ``{"page": 3, "page_size": 20}`` or
+                ``{"cursor": "abc123", "page_size": 10}``. These override
+                any existing pagination parameters in the request.
 
         Returns:
-            Full URL with query string.
+            A fully-qualified URL string with the base URL, preserved
+            non-pagination query parameters, and the new pagination
+            parameters properly URL-encoded.
         """
         filtered_params: Dict[str, Any] = {
             k: v

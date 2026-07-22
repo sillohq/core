@@ -83,7 +83,33 @@ def run(
     Run the sillo application using the specified server.
 
     Supports both Uvicorn (development) and Granian (production) servers.
-    You can also pass additional options as key=value arguments.
+    You can also pass additional options as key=value arguments. The command
+    merges default configuration values with any CLI-provided key=value overrides,
+    constructs the appropriate server command, and executes it as a subprocess.
+
+    Args:
+        host: The hostname or IP address to bind the server to. Validated to
+            ensure proper DNS hostname format. Defaults to '127.0.0.1'.
+        port: The TCP port number to bind the server to. Must be in the range
+            1-65535. Defaults to 8000.
+        reload: Whether to enable auto-reload for development. Only applicable
+            when using the uvicorn server. Defaults to False.
+        app_path: The application module path in 'module:app_variable' format,
+            specifying where the sillo app instance can be imported from.
+        server: The ASGI server implementation to use. Must be either 'uvicorn'
+            or 'granian'. Defaults to 'uvicorn'.
+        workers: The number of worker processes to spawn. Primarily used with
+            the granian server. Defaults to 1.
+        cli_options: Additional unprocessed CLI arguments passed as key=value
+            pairs. These override the default configuration values.
+
+    Returns:
+        None. The function starts the server as a subprocess and blocks until
+        the server process terminates.
+
+    Raises:
+        SystemExit: If the server process exits with an error code or if an
+            unexpected exception occurs during server startup or execution.
     """
     try:
         # Parse CLI options (key=value)

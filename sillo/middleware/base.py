@@ -30,13 +30,17 @@ class BaseMiddleware:
         ],
     ) -> None:
         """
-        Initializes the middleware with optional keyword arguments.
+        Initializes the base middleware instance with optional configuration.
 
-        Middleware can accept configuration parameters via `kwargs`. These parameters
-        can be used to modify behavior when subclassing this base class.
+        This constructor sets up the middleware with any keyword arguments that
+        may be required by subclasses. The kwargs pattern allows flexible
+        configuration without requiring each subclass to define its own
+        constructor signature explicitly.
 
         Args:
             **kwargs (dict): Arbitrary keyword arguments for middleware settings.
+                These are stored and made available to subclass implementations
+                for custom configuration and behavioral adjustments.
         """
         pass
 
@@ -73,6 +77,18 @@ class BaseMiddleware:
         self._call_next = False
 
         async def wrapped_call_next() -> Any:
+            """
+            Wraps the next middleware callable in the processing chain.
+
+            This inner async function serves as a controlled gateway to invoke
+            the subsequent middleware or route handler. It sets an internal flag
+            to indicate that the chain was actually advanced, which the outer
+            ``__call__`` method uses to determine whether response processing
+            should be triggered after the downstream handler completes.
+
+            Returns:
+                Any: The response object returned by the next middleware or handler.
+            """
             self._call_next = True
             return await call_next()
 

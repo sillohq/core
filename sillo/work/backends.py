@@ -58,6 +58,17 @@ class MemoryBackend:
     """
 
     def __init__(self, max_size: Optional[int] = None):
+        """Init
+
+            Args:
+                max_size: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._queues: Dict[str, List[Tuple[float, Task]]] = {}
         self._results: Dict[str, TaskResult] = {}
         self._dedup: Dict[str, set] = {}
@@ -69,6 +80,17 @@ class MemoryBackend:
         self.max_size = max_size
 
     def _ensure(self, name: str) -> None:
+        """Ensure
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if name in self._queues:
             return
         self._queues[name] = []
@@ -81,6 +103,17 @@ class MemoryBackend:
     # ── enqueue / dequeue ───────────────────────────────────────────────
 
     async def enqueue(self, task: Task) -> None:
+        """Enqueue
+
+            Args:
+                task: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._ensure(task.queue_name)
 
         if self.max_size is not None:
@@ -100,6 +133,18 @@ class MemoryBackend:
     async def dequeue(
         self, queue_name: str, timeout: Optional[float] = None
     ) -> Optional[Task]:
+        """Dequeue
+
+            Args:
+                queue_name: [description]
+                timeout: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._ensure(queue_name)
         deadline = time.monotonic() + timeout if timeout else None
 
@@ -126,6 +171,17 @@ class MemoryBackend:
     # ── result storage ──────────────────────────────────────────────────
 
     async def store_result(self, result: TaskResult) -> None:
+        """Store Result
+
+            Args:
+                result: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._results[result.task_id] = result
         if result.queue_name not in self._completed_counts:
             self._ensure(result.queue_name)
@@ -135,11 +191,34 @@ class MemoryBackend:
             self._failed_counts[result.queue_name] += 1
 
     async def get_result(self, task_id: str) -> Optional[TaskResult]:
+        """Get Result
+
+            Args:
+                task_id: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._results.get(task_id)
 
     # ── dedup ───────────────────────────────────────────────────────────
 
     async def is_duplicate(self, queue_name: str, dedup_key: str) -> bool:
+        """Is Duplicate
+
+            Args:
+                queue_name: [description]
+                dedup_key: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._ensure(queue_name)
         if queue_name not in self._dedup:
             self._dedup[queue_name] = set()
@@ -150,16 +229,50 @@ class MemoryBackend:
         return False
 
     async def clear_dedup(self, queue_name: str, dedup_key: str) -> None:
+        """Clear Dedup
+
+            Args:
+                queue_name: [description]
+                dedup_key: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if queue_name in self._dedup:
             self._dedup[queue_name].discard(dedup_key)
 
     # ── stats ───────────────────────────────────────────────────────────
 
     async def queue_size(self, name: str) -> int:
+        """Queue Size
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._ensure(name)
         return len(self._queues[name])
 
     async def queue_stats(self, name: str) -> QueueStats:
+        """Queue Stats
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._ensure(name)
         now = time.time()
         oldest = 0
@@ -200,15 +313,46 @@ class RedisBackend:
         prefix: str = "sillo:work:",
         task_registry: Optional[Dict[str, Any]] = None,
     ):
+        """Init
+
+            Args:
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.url = url
         self.prefix = prefix
         self._registry = task_registry or {}
         self._redis: Any = None
 
     def register(self, name: str, func) -> None:
+        """Register
+
+            Args:
+                name: [description]
+                func: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._registry[name] = func
 
     async def _r(self):
+        """R
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self._redis is not None:
             return self._redis
         if aioredis is None:
@@ -227,6 +371,17 @@ class RedisBackend:
     # ── enqueue / dequeue ───────────────────────────────────────────────
 
     async def enqueue(self, task: Task) -> None:
+        """Enqueue
+
+            Args:
+                task: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         key = f"{self.prefix}q:{task.queue_name}"
         score = -task.priority.value * 1e12 + task.created_at
@@ -236,6 +391,18 @@ class RedisBackend:
     async def dequeue(
         self, queue_name: str, timeout: Optional[float] = None
     ) -> Optional[Task]:
+        """Dequeue
+
+            Args:
+                queue_name: [description]
+                timeout: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         key = f"{self.prefix}q:{queue_name}"
         effective_timeout = timeout or 0
@@ -278,11 +445,33 @@ class RedisBackend:
     # ── result storage ──────────────────────────────────────────────────
 
     async def store_result(self, result: TaskResult) -> None:
+        """Store Result
+
+            Args:
+                result: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         key = f"{self.prefix}result:{result.task_id}"
         await r.set(key, result.to_json(), ex=REDIS_RESULT_TTL)
 
     async def get_result(self, task_id: str) -> Optional[TaskResult]:
+        """Get Result
+
+            Args:
+                task_id: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         data = await r.get(f"{self.prefix}result:{task_id}")
         if not data:
@@ -297,21 +486,67 @@ class RedisBackend:
     # ── dedup ───────────────────────────────────────────────────────────
 
     async def is_duplicate(self, queue_name: str, dedup_key: str) -> bool:
+        """Is Duplicate
+
+            Args:
+                queue_name: [description]
+                dedup_key: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         key = f"{self.prefix}dedup:{queue_name}:{dedup_key}"
         return bool(await r.exists(key))
 
     async def clear_dedup(self, queue_name: str, dedup_key: str) -> None:
+        """Clear Dedup
+
+            Args:
+                queue_name: [description]
+                dedup_key: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         await r.delete(f"{self.prefix}dedup:{queue_name}:{dedup_key}")
 
     # ── stats ───────────────────────────────────────────────────────────
 
     async def queue_size(self, name: str) -> int:
+        """Queue Size
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         return await r.zcard(f"{self.prefix}q:{name}")
 
     async def queue_stats(self, name: str) -> QueueStats:
+        """Queue Stats
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         size = await r.zcard(f"{self.prefix}q:{name}")
         completed = int(await r.get(f"{self.prefix}stats:{name}:completed") or 0)
@@ -321,10 +556,29 @@ class RedisBackend:
     # ── misc ────────────────────────────────────────────────────────────
 
     async def flush(self, queue_name: str) -> None:
+        """Flush
+
+            Args:
+                queue_name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         r = await self._r()
         await r.delete(f"{self.prefix}q:{queue_name}")
 
     async def ping(self) -> bool:
+        """Ping
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         try:
             r = await self._r()
             return await r.ping()

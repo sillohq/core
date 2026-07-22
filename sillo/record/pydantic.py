@@ -64,7 +64,20 @@ def pydantic_model_from_tortoise(
 
 
 def _tortoise_to_python_type(field_obj) -> type:
-    """Map Tortoise field types to Python types."""
+    """Map a Tortoise ORM field type to the corresponding Python type.
+
+    Looks up the field instance against a hardcoded mapping of common
+    Tortoise field classes (IntField, CharField, BooleanField, etc.)
+    and returns the Python type used for Pydantic model generation.
+
+    Args:
+        field_obj: A Tortoise field instance (e.g. ``fields.IntField()``).
+
+    Returns:
+        The corresponding Python type (``int``, ``str``, ``bool``,
+        ``float``, ``dict``) or ``str`` as a fallback for unrecognised
+        field types.
+    """
     mapping = {
         f.IntField: int,
         f.SmallIntField: int,

@@ -36,6 +36,17 @@ def _make_provider(key: str):
     """Create a DI provider function that pulls *key* from app.state."""
 
     async def provider(req=Depend(get_request=True)):
+        """Provider
+
+            Args:
+                req: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         app = req.base_app
         return app.state.get(key) if hasattr(app, "state") else None
 

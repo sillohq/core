@@ -37,6 +37,18 @@ class RedisBackend(RateLimitBackend):
         prefix: str = "sillo:ratelimit:",
         **kwargs: Any,
     ) -> None:
+        """Init
+
+            Args:
+                url: [description]
+                prefix: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         try:
             import redis.asyncio as aioredis
         except ImportError as exc:  # pragma: no cover - depends on env
@@ -50,9 +62,31 @@ class RedisBackend(RateLimitBackend):
         self._script = self._client.register_script(_LUA_SET)
 
     def _key(self, key: str) -> str:
+        """Key
+
+            Args:
+                key: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return f"{self._prefix}{key}"
 
     async def fetch_state(self, key: str) -> Optional[dict]:
+        """Fetch State
+
+            Args:
+                key: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         raw = await self._client.get(self._key(key))
         if raw is None:
             return None
@@ -62,9 +96,30 @@ class RedisBackend(RateLimitBackend):
             return None
 
     async def save_state(self, key: str, state: dict, ttl: int) -> None:
+        """Save State
+
+            Args:
+                key: [description]
+                state: [description]
+                ttl: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         payload = json.dumps(state)
         await self._script(keys=[self._key(key)], args=[ttl, payload])
 
     async def clear(self) -> None:
+        """Clear
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         async for name in self._client.scan_iter(match=f"{self._prefix}*"):
             await self._client.delete(name)

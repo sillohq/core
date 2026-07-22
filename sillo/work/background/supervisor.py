@@ -52,6 +52,18 @@ class Supervisor:
         max_delay: Annotated[float, Doc("Max backoff seconds.")] = 60.0,
         name: Annotated[Optional[str], Doc("Label for logging.")] = None,
     ):
+        """Init
+
+            Args:
+                func: [description]
+                policy: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.func = func
         self.policy = policy
         self.max_restarts = max_restarts
@@ -115,6 +127,14 @@ class Supervisor:
         await asyncio.wait_for(self._stopped.wait(), timeout=timeout)
 
     def _should_restart(self) -> bool:
+        """Should Restart
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self.policy == RestartPolicy.NEVER:
             return False
         if self.policy == RestartPolicy.ALWAYS:
@@ -124,6 +144,14 @@ class Supervisor:
         return False
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "name": self.name,
             "policy": self.policy.value,

@@ -25,6 +25,14 @@ class SchedulerStats:
     """Aggregated statistics for a scheduler instance."""
 
     def __init__(self):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.jobs_total = 0
         self.jobs_active = 0
         self.jobs_paused = 0
@@ -33,6 +41,14 @@ class SchedulerStats:
         self.uptime_seconds = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return {
             "jobs_total": self.jobs_total,
             "jobs_active": self.jobs_active,
@@ -60,6 +76,14 @@ class SchedulerManager:
     """
 
     def __init__(self):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._jobs: Dict[str, ScheduledJob] = {}
         self._running = False
         self._ticker: Optional[asyncio.Task] = None
@@ -91,6 +115,17 @@ class SchedulerManager:
         """Decorator: run every *seconds*."""
 
         def decorator(func):
+            """Decorator
+
+                Args:
+                    func: [description]
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             return self.schedule(
                 func, IntervalTrigger(seconds), name=name or func.__name__
             )
@@ -106,6 +141,17 @@ class SchedulerManager:
         """Decorator: run on a cron schedule."""
 
         def decorator(func):
+            """Decorator
+
+                Args:
+                    func: [description]
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             return self.schedule(
                 func, CronTrigger(expression), name=name or func.__name__
             )
@@ -188,6 +234,14 @@ class SchedulerManager:
         logger.info("Scheduler stopped")
 
     async def _loop(self) -> None:
+        """Loop
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         while self._running:
             try:
                 now = time.time()
@@ -212,6 +266,17 @@ class SchedulerManager:
                 await asyncio.sleep(1)
 
     async def _execute(self, job: ScheduledJob) -> None:
+        """Execute
+
+            Args:
+                job: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         try:
             await job.run()
         except asyncio.CancelledError:

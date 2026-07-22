@@ -71,6 +71,17 @@ class BackgroundTask:
         ] = None,
         **kwargs: Annotated[Any, Doc("Keyword arguments forwarded to *func*.")],
     ) -> None:
+        """Init
+
+            Args:
+                func: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._task_obj = Task(
             func,
             *args,
@@ -178,6 +189,14 @@ class BackgroundTask:
         if not inspect.iscoroutinefunction(func):
 
             async def _wrapper(*a, **kw):
+                """Wrapper
+
+                    Returns:
+                        [description]
+
+                    Raises:
+                        [description]
+                """
                 return func(*a, **kw)
 
             return cls(_wrapper, *args, **kwargs)
@@ -228,4 +247,12 @@ class BackgroundTask:
         }
 
     def __repr__(self) -> str:
+        """Repr
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return f"BackgroundTask({self.name}, done={self.done})"

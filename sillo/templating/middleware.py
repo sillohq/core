@@ -10,14 +10,36 @@ from sillo.helpers.async_helpers import is_async_callable
 
 
 class TemplateContextMiddleware(BaseMiddleware):
-    """Middleware for injecting template context."""
+    """Middleware that injects template context into every request.
+
+    Merges a static default context with an optional async context
+    processor, then adds request-specific variables (``request``,
+    ``url_for``, ``csrf_token``) into ``request.state.template_context``
+    for downstream templates to consume.
+
+    Args:
+        default_context: Static dict of variables injected into every
+            template. ``None`` becomes an empty dict.
+        context_processor: Optional async callable that receives the
+            ``Request`` and returns a dict of additional context.
+            If sync, it is awaited automatically.
+    """
 
     def __init__(
         self,
         default_context: Dict[str, Any] | None = None,
         context_processor: Callable[[Request], Awaitable[Dict[str, Any]]] | None = None,
     ):
-        """Initialize middleware with context."""
+        """Initialise the template-context middleware.
+
+        Stores the default context and optional processor for use during
+        every request.
+
+        Args:
+            default_context: Static dict merged into every template.
+            context_processor: Async callable that returns per-request
+                context variables.
+        """
         self.default_context = default_context or {}
         self.context_processor = context_processor
 
@@ -27,7 +49,20 @@ class TemplateContextMiddleware(BaseMiddleware):
         response: Response,
         call_next: Callable[..., Awaitable[Any]],
     ) -> Response:
-        """Process request and inject context."""
+        """Intercept every request, inject template context, and continue.
+
+        Builds the full template context by merging default context,
+        the processor's output, and request-level variables, then stores
+        the result in ``request.state.template_context``.
+
+        Args:
+            request: The incoming HTTP request.
+            response: The response object.
+            call_next: The next middleware or route handler.
+
+        Returns:
+            The response from the downstream handler.
+        """
         context = self.default_context.copy()
 
         if self.context_processor:
@@ -53,5 +88,18 @@ def template_context(
     default_context: Optional[Dict[str, Any]] = None,
     context_processor: Optional[Callable[[Request], Awaitable[Dict[str, Any]]]] = None,
 ):
-    """Create template context middleware."""
+    """Factory that returns a ``TemplateContextMiddleware`` instance.
+
+    Convenience function so users can register the middleware without
+    importing the class directly::
+
+        app.add_middleware(template_context(default_context={"site_name": "MyApp"}))
+
+    Args:
+        default_context: Static default context dict.
+        context_processor: Optional per-request context callable.
+
+    Returns:
+        A configured ``TemplateContextMiddleware`` instance.
+    """
     return TemplateContextMiddleware(default_context, context_processor)

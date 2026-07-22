@@ -22,7 +22,16 @@ from ..backends.base import RateLimitBackend, RateLimitResult
 
 
 class RateLimitStrategy(abc.ABC):
-    """Abstract base class for rate-limit algorithms."""
+    """Abstract base class for rate-limit algorithm implementations.
+
+    Subclasses must implement ``hit()``, which encapsulates the core
+    rate-limit decision logic (fixed-window, sliding-window, token-bucket,
+    etc.). A strategy is stateless on its own — all state lives in the
+    ``RateLimitBackend`` passed to ``hit()``.
+
+    The base class provides no custom ``__init__``; subclasses are free
+    to accept their own configuration parameters.
+    """
 
     @abc.abstractmethod
     async def hit(
@@ -34,5 +43,27 @@ class RateLimitStrategy(abc.ABC):
         cost: int = 1,
         now: Optional[float] = None,
     ) -> RateLimitResult:
-        """Process one request for ``key`` and return the decision."""
+        """Evaluate one request against the rate-limit state and return the decision.
+
+        Loads the current state for *key* from the *backend*, decides
+        whether the request is allowed based on the algorithm, persists
+        any updated state, and returns a ``RateLimitResult`` with the
+        verdict, remaining count, and reset time.
+
+        Args:
+            backend: The storage backend holding per-key counters.
+            key: Unique identifier for the entity being rate-limited
+                (typically an IP or user ID).
+            limit: Maximum number of requests allowed within the window.
+            window: Time window in seconds.
+            cost: Request cost in tokens (default 1). Set >1 for heavy
+                endpoints.
+            now: Current timestamp as ``time.time()``. Passed explicitly
+                for testability — defaults to ``time.time()`` when
+                ``None``.
+
+        Returns:
+            A ``RateLimitResult`` with ``allowed``, ``remaining``,
+            ``reset_at``, and ``retry_at`` fields.
+        """
         raise NotImplementedError

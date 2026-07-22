@@ -35,6 +35,14 @@ from sillo.types import ASGIApp
 
 
 class AsyncTestClient(httpx.AsyncClient):
+    """Asynctestclient
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     __test__ = False
 
     def __init__(
@@ -50,6 +58,26 @@ class AsyncTestClient(httpx.AsyncClient):
         follow_redirects: bool = True,
         check_asgi_conformance: bool = True,
     ) -> None:
+        """Init
+
+            Args:
+                app: [description]
+                base_url: [description]
+                raise_server_exceptions: [description]
+                root_path: [description]
+                backend: [description]
+                backend_options: [description]
+                cookies: [description]
+                headers: [description]
+                follow_redirects: [description]
+                check_asgi_conformance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.async_backend = AsyncBackend(
             backend=backend, backend_options=backend_options or {}
         )
@@ -107,6 +135,18 @@ class AsyncTestClient(httpx.AsyncClient):
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         extensions: RequestExtensions | None = None,
     ) -> httpx.Response:
+        """Request
+
+            Args:
+                method: [description]
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         url = self._merge_url(url)
         redirect: bool | UseClientDefault = USE_CLIENT_DEFAULT
         if follow_redirects is not None:
@@ -129,24 +169,101 @@ class AsyncTestClient(httpx.AsyncClient):
         )
 
     async def get(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """Get
+
+            Args:
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self.request("GET", url, **kwargs)
 
     async def post(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """Post
+
+            Args:
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self.request("POST", url, **kwargs)
 
     async def put(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """Put
+
+            Args:
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self.request("PUT", url, **kwargs)
 
     async def patch(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """Patch
+
+            Args:
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self.request("PATCH", url, **kwargs)
 
     async def delete(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """Delete
+
+            Args:
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self.request("DELETE", url, **kwargs)
 
     async def head(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """Head
+
+            Args:
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self.request("HEAD", url, **kwargs)
 
     async def options(self, url: URLTypes, **kwargs: Any) -> httpx.Response:
+        """Options
+
+            Args:
+                url: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self.request("OPTIONS", url, **kwargs)
 
     async def websocket_connect(
@@ -155,6 +272,18 @@ class AsyncTestClient(httpx.AsyncClient):
         subprotocols: Sequence[str] | None = None,
         **kwargs: Any,
     ) -> WebSocketTestSession:
+        """Websocket Connect
+
+            Args:
+                url: [description]
+                subprotocols: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         url = urljoin("ws://testserver", url)
         headers = self._prepare_websocket_headers(subprotocols, **kwargs)
         kwargs["headers"] = headers
@@ -170,6 +299,17 @@ class AsyncTestClient(httpx.AsyncClient):
         subprotocols: Sequence[str] | None = None,
         **kwargs: dict[str, Any],
     ) -> dict[str, str]:
+        """Prepare Websocket Headers
+
+            Args:
+                subprotocols: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         raw = kwargs.get("headers", {})
         headers: dict[str, str] = (
             dict(httpx.Headers(raw).items())
@@ -185,6 +325,14 @@ class AsyncTestClient(httpx.AsyncClient):
         return headers
 
     async def __aenter__(self) -> AsyncTestClient:
+        """Aenter
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._tg = await anyio.create_task_group().__aenter__()
         send1: ObjectSendStream[Any]
         receive1: ObjectReceiveStream[Any]
@@ -205,16 +353,45 @@ class AsyncTestClient(httpx.AsyncClient):
         exc_value: BaseException | None = None,
         traceback: TracebackType | None = None,
     ) -> None:
+        """Aexit
+
+            Args:
+                exc_type: [description]
+                exc_value: [description]
+                traceback: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         await self.wait_shutdown()
         await self._tg.__aexit__(exc_type, exc_value, traceback)
 
     async def _lifespan_runner(
         self, *, task_status: TaskStatus = anyio.TASK_STATUS_IGNORED
     ) -> None:
+        """Lifespan Runner
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         task_status.started()
         await self.lifespan()
 
     async def lifespan(self) -> None:
+        """Lifespan
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         scope = {"type": "lifespan", "state": self.app_state}
         try:
             await self.app(scope, self.stream_receive.receive, self.stream_send.send)
@@ -223,9 +400,25 @@ class AsyncTestClient(httpx.AsyncClient):
                 await self.stream_send.send(None)
 
     async def wait_startup(self) -> None:
+        """Wait Startup
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         await self.stream_receive.send({"type": "lifespan.startup"})
 
         async def receive() -> Any:
+            """Receive
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             msg = await self.stream_send.receive()
             if msg is None:
                 self.task.result()
@@ -237,7 +430,23 @@ class AsyncTestClient(httpx.AsyncClient):
             await receive()
 
     async def wait_shutdown(self) -> None:
+        """Wait Shutdown
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         async def receive() -> Any:
+            """Receive
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             msg = await self.stream_send.receive()
             if msg is None:
                 self.task.result()

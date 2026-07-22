@@ -140,6 +140,27 @@ class WebsocketRoute(BaseRoute):
                 """),
         ],
     ):
+        """Initialize a WebSocket route with path pattern and handler.
+
+        Creates a new WebSocket route that matches incoming WebSocket
+        upgrade requests against the provided path pattern. The handler
+        function is invoked with a WebSocket object when a client connects
+        to a matching path.
+
+        The path pattern is compiled into a regex using RouteBuilder for
+        efficient matching and parameter extraction. Both synchronous and
+        asynchronous validation checks are performed on the handler.
+
+        Args:
+            path: URL path pattern for the WebSocket endpoint. Supports
+                dynamic parameters using curly brace syntax.
+            handler: Async function to handle WebSocket connections. Must
+                be a coroutine function accepting a WebSocket argument.
+
+        Raises:
+            AssertionError: If handler is not callable or is not an async
+                coroutine function.
+        """
         assert callable(handler), "Route handler must be callable"
         assert asyncio.iscoroutinefunction(handler), "Route handler must be async"
         self.raw_path = path
@@ -151,15 +172,26 @@ class WebsocketRoute(BaseRoute):
         self.router_middleware = None
 
     def match(self, scope: Scope) -> typing.Tuple[Any, Any]:
-        """
-        Match a path against this route's pattern and return captured parameters.
+        """Match a WebSocket request path against this route's URL pattern.
+
+        Extracts the path from the ASGI scope and attempts to match it
+        against the compiled regex pattern. When a match is found, path
+        parameters are extracted and converted to their appropriate types
+        using the route info convertors.
+
+        Unlike HTTP routes, WebSocket routes do not check the request
+        method since WebSocket connections use a special upgrade mechanism
+        rather than standard HTTP methods.
 
         Args:
-            path: The URL path to match.
+            scope: ASGI scope containing the request path and connection
+                metadata used for route matching.
 
         Returns:
-            Optional[Dict[str, Any]]: A dictionary of captured parameters if the path matches,
-            otherwise None.
+            A tuple of (MatchStatus, dict) containing the match status
+            and any captured path parameters. Returns MatchStatus.FULL
+            with parameters on success, or MatchStatus.NONE with an
+            empty dict on failure.
         """
         path = get_route_path(scope)
         match = self.pattern.match(path)
@@ -171,12 +203,48 @@ class WebsocketRoute(BaseRoute):
         return MatchStatus.NONE, {}
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Handles the WebSocket connection by calling the route's handler.
+        """Handle an incoming WebSocket connection by invoking the route handler.
+
+        Creates a WebSocket session object from the ASGI connection triple
+        and passes it to the route's handler function. The handler is wrapped
+        in a WebSocketErrorMiddleware to ensure proper error handling and
+        connection cleanup when exceptions occur during the WebSocket session.
+
+        This method sets up the full lifecycle of a WebSocket connection
+        including creation of the session object, handler invocation, and
+        error handling with automatic cleanup.
+
+        Args:
+            scope: ASGI scope containing WebSocket connection information
+                including path, headers, and query parameters.
+            receive: ASGI receive callable for reading incoming WebSocket
+                messages from the client.
+            send: ASGI send callable for transmitting WebSocket messages
+                back to the client.
         """
 
         # Create the base handler
         async def handler_app(scope: Scope, receive: Receive, send: Send) -> None:
+            """Serve as the base ASGI application for this WebSocket route.
+
+            Creates a ``WebSocket`` session object from the raw ASGI
+            connection triple and passes it to the route's handler function.
+            This inner function is wrapped by ``WebSocketErrorMiddleware``
+            to ensure proper error handling and connection cleanup when
+            exceptions occur during the WebSocket session lifecycle.
+
+            Args:
+                scope: ASGI scope dictionary containing WebSocket connection
+                    metadata including path, headers, and query parameters.
+                receive: ASGI receive callable for reading incoming WebSocket
+                    messages from the client.
+                send: ASGI send callable for transmitting WebSocket messages
+                    back to the client.
+
+            Returns:
+                None. All communication happens through the WebSocket session
+                object passed to the handler.
+            """
             websocket_session = WebSocket(scope, receive=receive, send=send)
             await self.handler(websocket_session)
 
@@ -185,15 +253,30 @@ class WebsocketRoute(BaseRoute):
         await app(scope, receive, send)
 
     def url_path_for(self, name: str, **path_params: Dict[str, Any]) -> URLPath:
-        """
-        Generate URL path for this WebSocket route by name.
+        """Generate a URL path for this WebSocket route by name.
+
+        Performs reverse URL resolution for WebSocket routes by substituting
+        the provided path parameters into the route's raw path pattern. The
+        method validates that the requested name matches this route's name
+        before performing the substitution.
+
+        This enables applications to generate WebSocket connection URLs
+        dynamically without hardcoding URL patterns throughout the codebase.
 
         Args:
-            name: The name of the route
-            **path_params: Path parameters to substitute
+            name: The name of the route to generate a URL for. Must match
+                this route's name attribute for the lookup to succeed.
+            **path_params: Path parameters to substitute into the URL
+                pattern. Keys correspond to parameter names defined in
+                the route path using curly brace syntax.
 
         Returns:
-            URLPath object for the generated URL
+            A URLPath object containing the resolved path string for
+            the WebSocket endpoint.
+
+        Raises:
+            ValueError: If the provided name does not match this route's
+                name attribute.
         """
         if name != self.name:
             raise ValueError(
@@ -209,6 +292,17 @@ class WebsocketRoute(BaseRoute):
         return URLPath(path=path)
 
     def __repr__(self) -> str:
+        """Return a detailed string representation of this WebSocket route.
+
+        Produces a human-readable string that includes the route class
+        identifier and the raw path pattern. This is useful for debugging
+        and logging purposes, providing a quick overview of the WebSocket
+        route's configuration.
+
+        Returns:
+            A formatted string in the form ``<WSRoute /path>`` showing
+            the path pattern of this WebSocket route.
+        """
         return f"<WSRoute {self.raw_path}>"
 
 

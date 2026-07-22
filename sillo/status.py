@@ -182,6 +182,17 @@ __deprecated__ = {"WS_1004_NO_STATUS_RCVD": 1004, "WS_1005_ABNORMAL_CLOSURE": 10
 
 
 def __getattr__(name: str) -> int:
+    """Getattr
+
+        Args:
+            name: [description]
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     deprecation_changes = {
         "WS_1004_NO_STATUS_RCVD": "WS_1005_NO_STATUS_RCVD",
         "WS_1005_ABNORMAL_CLOSURE": "WS_1006_ABNORMAL_CLOSURE",
@@ -198,4 +209,12 @@ def __getattr__(name: str) -> int:
 
 
 def __dir__() -> list[str]:
+    """Dir
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     return sorted(list(__all__) + list(__deprecated__.keys()))

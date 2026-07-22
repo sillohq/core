@@ -19,6 +19,22 @@ CONTEXT_SETTINGS = {
 def cli():
     """
     sillo CLI - Command line tools for the sillo framework.
+
+    This is the root command group for the sillo CLI application. It serves as
+    the main entry point that aggregates all subcommands such as new, run, urls,
+    ping, and shell into a unified command-line interface.
+
+    The command group is configured with custom context settings that enable
+    short-form help flags (-h) and automatic environment variable prefixing
+    using the 'sillo' prefix for all options.
+
+    Returns:
+        None. This function acts as a Click group dispatcher and does not
+        return a value. Subcommands are invoked through Click's routing.
+
+    Raises:
+        click.UsageError: If an unknown subcommand is provided by the user.
+        SystemExit: If the --version flag is passed, Click exits after printing.
     """
     pass
 

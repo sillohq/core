@@ -78,13 +78,29 @@ class EventEmitter:
         self._transport.set_error_handler(on_error or self._default_error_handler)
 
     async def _dispatch(self, channel: str, envelope: Dict[str, Any]) -> None:
-        """Run local listeners for a received/triggered event.
+        """Dispatch a received or locally-triggered event to its in-process listeners.
 
-        This is the dispatch callback bound to the transport.  It looks up the
-        in-process :class:`~sillo.events.core.Event` for *channel*, decodes the
-        envelope's ``args``/``kwargs``, and runs them via
-        :meth:`~sillo.events.core.Event.trigger_async` (so coroutine listeners
-        are awaited and their errors observed).
+        This method serves as the transport-bound callback that is bound during
+        emitter initialisation.  It decodes the serialised envelope produced by
+        :func:`~sillo.events.transports.base.serialize_payload`, reconstructs
+        the original positional and keyword arguments, and forwards them to
+        every registered listener via :meth:`Event.trigger_async` so that both
+        synchronous and coroutine listeners are handled uniformly.
+
+        Args:
+            channel: The fully-qualified event name (including any namespace
+                prefix) that identifies which local listeners should fire.
+            envelope: A dictionary produced by the transport layer containing
+                at least ``"args"`` (a tuple of positional arguments) and
+                ``"kwargs"`` (a dict of keyword arguments).
+
+        Returns:
+            None.
+
+        Raises:
+            Does not raise; exceptions raised by individual listeners are
+            captured inside :meth:`Event.trigger_async` and forwarded to the
+            configured error handler.
         """
         event = self._events.get(channel)
         if event is None:
@@ -94,26 +110,117 @@ class EventEmitter:
         await event.trigger_async(*args, **kwargs)
 
     async def _default_error_handler(self, exc, channel, envelope) -> None:
+        """Handle uncaught exceptions raised by event listeners.
+
+        This is the fallback error handler bound to the transport when no
+        custom ``on_error`` callback is supplied to the emitter constructor.
+        It logs the exception at ``ERROR`` level using the ``sillo.events``
+        logger so that failures are visible in standard logging output
+        without crashing the dispatch loop.
+
+        Args:
+            exc: The exception instance raised by a listener callback.
+            channel: The fully-qualified event name on which the listener
+                was registered when the error occurred.
+            envelope: The serialised event envelope (dict) that was being
+                dispatched to listeners at the time of the failure.
+
+        Returns:
+            None.
+
+        Raises:
+            Does not raise; this method is itself an error boundary and
+            swallows all exceptions to keep the dispatch loop running.
+        """
         logger = __import__("logging").getLogger("sillo.events")
         logger.error("Listener error on %r: %s", channel, exc)
 
     async def start(self) -> None:
-        """Start the underlying transport (subscriber/worker loops)."""
+        """Start the underlying transport and its background subscriber/worker loops.
+
+        For networked backends (``redis``, ``persistent``, ``record``) this
+        method must be awaited before any cross-instance event delivery can
+        occur.  It is typically wired to the application's ``on_startup``
+        lifecycle hook.  The ``memory`` backend is a no-op since dispatch is
+        entirely synchronous and in-process.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+
+        Raises:
+            ConnectionError: If a networked transport cannot establish a
+                connection to its backing store (e.g. Redis server unreachable).
+            RuntimeError: If the transport has already been started or if the
+                event loop is not running when background tasks are scheduled.
+        """
         await self._transport.start()
 
     async def stop(self) -> None:
-        """Stop the transport and release resources."""
+        """Stop the underlying transport and release all associated resources.
+
+        Cancels any background subscriber or worker tasks started by
+        :meth:`start`, closes network connections held by the transport, and
+        ensures a clean shutdown.  After calling this method the emitter
+        should not be used for further event delivery unless :meth:`start` is
+        called again.  For the ``memory`` backend this is effectively a no-op.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the transport is not in a started state and
+                therefore cannot be cleanly stopped.
+        """
         await self._transport.stop()
 
     @property
     def transport(self) -> BaseTransport:
+        """Return the transport instance used by this emitter for event delivery.
+
+        The transport is responsible for publishing events to and receiving
+        events from the configured backend (memory, redis, persistent, or
+        record).  This property is read-only; the transport is set during
+        ``__init__`` and cannot be replaced afterwards.  It is primarily
+        useful for introspection, testing, and advanced transport-level
+        configuration that is not exposed through the emitter API.
+
+        Returns:
+            The :class:`~sillo.events.transports.base.BaseTransport` subclass
+            instance bound to this emitter.
+
+        Raises:
+            Does not raise.
+        """
         return self._transport
 
     def _subscribe(self, event_name: str) -> None:
-        """Subscribe the transport to a channel when a listener is added.
+        """Subscribe the transport to a channel when a new listener is registered.
 
-        Only transports that implement ``subscribe`` (redis pub/sub) react;
-        memory/persistent/record ignore it.
+        This internal helper is called automatically by :meth:`on` and
+        :meth:`once` after a listener has been added.  Only transports that
+        implement a ``subscribe`` method (such as the Redis pub/sub transport)
+        react to this call; the ``memory``, ``persistent``, and ``record``
+        backends silently ignore it.  If the event loop is not yet running
+        when this method is called, the ``RuntimeError`` is caught and the
+        subscription is deferred until :meth:`start` is invoked.
+
+        Args:
+            event_name: The fully-qualified event name (including any
+                namespace prefix) to subscribe the transport to.
+
+        Returns:
+            None.
+
+        Raises:
+            Does not raise; ``RuntimeError`` from a non-running event loop is
+            caught and silently ignored so that early listener registration
+            before ``start()`` does not fail.
         """
         subscribe = getattr(self._transport, "subscribe", None)
         if subscribe is not None:
@@ -124,22 +231,70 @@ class EventEmitter:
                 pass
 
     def __contains__(self, event_name: str) -> bool:
-        """Check if event exists"""
+        """Check whether an event with the given name is registered in this emitter.
+
+        Supports the ``in`` operator, e.g. ``"user.login" in emitter``.  The
+        lookup is a simple dictionary membership check against the internal
+        ``_events`` registry and does not create the event if it does not
+        already exist (unlike :meth:`event` which lazily creates it).
+
+        Args:
+            event_name: The name of the event to look up, optionally
+                including a namespace prefix (e.g. ``"ui:button.click"``).
+
+        Returns:
+            ``True`` if an :class:`Event` instance for *event_name* exists in
+            the emitter's registry, ``False`` otherwise.
+
+        Raises:
+            Does not raise.
+        """
         return event_name in self._events
 
     def __getitem__(self, event_name: str) -> Event:
-        """Get an event by name"""
+        """Retrieve an event by name using bracket notation.
+
+        Supports the ``emitter["event.name"]`` syntax as a convenient
+        shorthand for :meth:`event`.  If the event does not already exist it
+        is lazily created and registered in the emitter's internal registry,
+        so accessing a name via ``[]`` has the same side-effect as calling
+        :meth:`event` — an empty :class:`Event` is created if absent.
+
+        Args:
+            event_name: The name of the event to retrieve, optionally
+                including a namespace prefix (e.g. ``"ui:button.click"``).
+
+        Returns:
+            The :class:`~sillo.events.core.Event` instance registered under
+            *event_name*, created lazily if it did not previously exist.
+
+        Raises:
+            Does not raise; a missing event is created rather than raising
+            ``KeyError``, matching :meth:`event` semantics.
+        """
         return self.event(event_name)
 
     def event(self, event_name: str) -> Event:
-        """
-        Get or create an event by name.
+        """Get or lazily create an :class:`Event` by name.
+
+        If an event with *event_name* already exists in the emitter's internal
+        registry it is returned directly.  Otherwise a new :class:`Event`
+        instance is created, stored in the registry under *event_name*, and
+        returned.  The lookup and optional creation are performed under the
+        emitter's reentrant lock so this method is safe to call from multiple
+        threads concurrently.
 
         Args:
-            event_name: Name of the event (can include namespaces)
+            event_name: Name of the event to look up or create.  May include
+                a namespace prefix separated by ``":"`` (e.g.
+                ``"ui:button.click"``).
 
         Returns:
-            Event instance
+            The :class:`~sillo.events.core.Event` instance registered under
+            *event_name*, either pre-existing or newly created.
+
+        Raises:
+            Does not raise; a missing event is created rather than raising.
         """
         with self._lock:
             if event_name not in self._events:
@@ -147,23 +302,45 @@ class EventEmitter:
             return self._events[event_name]
 
     def namespace(self, namespace: str) -> "EventNamespace":
-        """
-        Get a namespace for organizing events.
+        """Create an :class:`EventNamespace` wrapper for organizing events hierarchically.
+
+        Returns a lightweight namespace object that prefixes every event name
+        with ``"<namespace>:"`` so you can group related events without
+        repeating the prefix in every call.  Namespaces can be nested by
+        calling :meth:`EventNamespace.namespace` on the returned object.
 
         Args:
-            namespace: Namespace prefix
+            namespace: The namespace prefix to apply to all events accessed
+                through the returned :class:`EventNamespace` instance.
 
         Returns:
-            EventNamespace instance
+            A new :class:`EventNamespace` bound to this emitter with the
+            given *namespace* as its prefix.
+
+        Raises:
+            Does not raise.
         """
         return EventNamespace(self, namespace)
 
     def remove_event(self, event_name: str):
-        """
-        Remove an event and all its listeners.
+        """Remove an event and all its registered listeners from the emitter.
+
+        Deletes the :class:`Event` instance for *event_name* from the
+        emitter's internal registry.  After removal, any listeners that were
+        attached to the event are discarded and will no longer be invoked on
+        subsequent emissions.  The operation is performed under the emitter's
+        reentrant lock for thread safety.  If *event_name* is not registered,
+        this method is a silent no-op.
 
         Args:
-            event_name: Name of the event to remove
+            event_name: The name of the event to remove, optionally
+                including a namespace prefix (e.g. ``"ui:button.click"``).
+
+        Returns:
+            None.
+
+        Raises:
+            Does not raise; removing a non-existent event is a no-op.
         """
         with self._lock:
             if event_name in self._events:

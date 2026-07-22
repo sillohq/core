@@ -33,27 +33,115 @@ class ModelObserver:
     """
 
     async def before_create(self, instance):
+        """Before Create
+
+            Args:
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         pass
 
     async def after_create(self, instance):
+        """After Create
+
+            Args:
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         pass
 
     async def before_save(self, instance):
+        """Before Save
+
+            Args:
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         pass
 
     async def after_save(self, instance):
+        """After Save
+
+            Args:
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         pass
 
     async def before_update(self, instance):
+        """Before Update
+
+            Args:
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         pass
 
     async def after_update(self, instance):
+        """After Update
+
+            Args:
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         pass
 
     async def before_delete(self, instance):
+        """Before Delete
+
+            Args:
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         pass
 
     async def after_delete(self, instance):
+        """After Delete
+
+            Args:
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         pass
 
 
@@ -61,6 +149,14 @@ class EventDispatcher:
     """Dispatches model lifecycle events to registered callbacks."""
 
     def __init__(self):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._listeners: Dict[str, List[Callable[..., Awaitable[None]]]] = {
             "before_create": [],
             "after_create": [],
@@ -122,6 +218,14 @@ class HasEvents:
 
     @classmethod
     def _ensure_events(cls):
+        """Ensure Events
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if cls._events is None:
             cls._events = EventDispatcher()
 
@@ -131,6 +235,17 @@ class HasEvents:
         cls._ensure_events()
 
         def decorator(func):
+            """Decorator
+
+                Args:
+                    func: [description]
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             cls._events.on(event, func)
             return func
 
@@ -144,5 +259,17 @@ class HasEvents:
 
     @classmethod
     async def fire_event(cls, event: str, instance) -> None:
+        """Fire Event
+
+            Args:
+                event: [description]
+                instance: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if cls._events:
             await cls._events.fire(event, instance)

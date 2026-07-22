@@ -38,11 +38,50 @@ def ping(
     """
     Ping a route in the sillo app to check if it exists (returns status code).
 
+    Loads the sillo application instance from the specified module path and uses
+    an asynchronous test client to send an HTTP request to the given route. The
+    response status code is displayed along with a human-readable indication of
+    whether the route is reachable, not found, or returning an unexpected status.
+
     Examples:
       sillo ping /about --app sandbox:app
+      sillo ping /api/users --app myapp.main:app --method POST
+
+    Args:
+        route_path: The URL path of the route to ping within the application.
+            Should begin with a forward slash, e.g., '/about' or '/api/users'.
+        cli_app_path: The application module path in 'module:app_variable' format,
+            specifying where the sillo app instance can be imported from.
+        method: The HTTP method to use for the request. Defaults to 'GET'. Other
+            common values include 'POST', 'PUT', 'DELETE', and 'PATCH'.
+
+    Returns:
+        None. The function prints the HTTP status code and a success, error, or
+        warning message to the console via Click echo utilities.
+
+    Raises:
+        SystemExit: If the application cannot be loaded, if httpx is not installed,
+            or if an error occurs during the route ping operation.
     """
 
     async def _ping():
+        """
+        Asynchronously ping the specified route using the test client.
+
+        This inner async function handles the actual route testing logic. It loads
+        the application instance, creates a test client session, sends the HTTP
+        request to the target route, and reports the response status code with
+        appropriate success, error, or warning messages to the console.
+
+        Returns:
+            None. Results are printed to the console via Click echo utilities.
+
+        Raises:
+            SystemExit: If the app instance cannot be loaded or if the httpx
+                library is not installed for test client functionality.
+            Exception: Any exception raised during the HTTP request is caught,
+                reported via error message, and causes a system exit with code 1.
+        """
         try:
             # Load app instance
             app = _load_app_from_path(cli_app_path)

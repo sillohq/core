@@ -32,6 +32,17 @@ class RecordCLI:
         *,
         location: Annotated[str, Doc("Directory for migration files.")] = "migrations",
     ):
+        """Init
+
+            Args:
+                app_module: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._app = app_module
         self._location = Path(location)
 

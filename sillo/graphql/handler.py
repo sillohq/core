@@ -8,6 +8,20 @@ from strawberry.types import ExecutionResult
 
 
 class GraphQL:
+    """GraphQL endpoint handler that integrates Strawberry with the sillo framework.
+
+    Registers a route on the sillo application to serve both the GraphiQL interactive
+    IDE (via GET) and GraphQL query execution (via POST). Supports query variables,
+    operation names, and passes the request/response objects into the Strawberry
+    execution context for resolver access.
+
+    Attributes:
+        app: The sillo application instance on which the route is registered.
+        schema: The Strawberry GraphQL schema used to execute incoming queries.
+        path: The URL path where the GraphQL endpoint is mounted.
+        graphiql: Whether to serve the GraphiQL interactive IDE on GET requests.
+    """
+
     def __init__(
         self,
         app: silloApp,
@@ -15,6 +29,28 @@ class GraphQL:
         path: str = "/graphql",
         graphiql: bool = True,
     ):
+        """Initialize the GraphQL handler and register its route on the application.
+
+        Stores references to the application, schema, mount path, and GraphiQL
+        toggle, then immediately calls the internal setup method to register the
+        route with the sillo router.
+
+        Args:
+            app: The sillo application instance on which the GraphQL route will
+                be registered for handling incoming HTTP requests.
+            schema: A fully constructed Strawberry ``Schema`` object defining the
+                GraphQL types, queries, mutations, and subscriptions to serve.
+            path: The URL path at which the GraphQL endpoint will be accessible.
+                Defaults to ``"/graphql"``.
+            graphiql: A boolean flag controlling whether the GraphiQL interactive
+                browser IDE is served on GET requests. Defaults to True.
+
+        Returns:
+            None. This method initializes the handler and triggers route registration.
+
+        Raises:
+            None.
+        """
         self.app = app
         self.schema = schema
         self.path = path
@@ -23,11 +59,50 @@ class GraphQL:
         self._setup()
 
     def _setup(self):
+        """Register the GraphQL endpoint route on the sillo application.
+
+        Creates a sillo ``Route`` bound to the configured path that accepts both
+        GET and POST HTTP methods, and adds it to the application's router. GET
+        requests serve the GraphiQL IDE while POST requests execute GraphQL queries.
+
+        Args:
+            None. This method uses instance attributes configured during initialization.
+
+        Returns:
+            None. This method registers the route as a side effect.
+
+        Raises:
+            None.
+        """
         self.app.add_route(
             Route(self.path, self.handle_request, methods=["GET", "POST"])
         )
 
     async def handle_request(self, req: Request, res: Response):
+        """Handle an incoming HTTP request to the GraphQL endpoint.
+
+        Routes the request based on HTTP method. GET requests return the GraphiQL
+        interactive IDE HTML page if enabled, or a 404 response if disabled. POST
+        requests parse the JSON body to extract the GraphQL query, variables, and
+        operation name, then execute the query against the Strawberry schema and
+        return the result as a JSON response. Invalid JSON or non-object bodies
+        receive a 400 error response.
+
+        Args:
+            req: The incoming HTTP Request object. For POST requests, its JSON body
+                must contain a ``"query"`` field and optionally ``"variables"`` and
+                ``"operationName"`` fields conforming to the GraphQL over HTTP spec.
+            res: The HTTP Response object used to construct the appropriate response
+                with the correct content type and status code.
+
+        Returns:
+            A Response object containing either the GraphiQL HTML page (GET), a JSON
+            GraphQL execution result (POST), or a JSON error message for invalid input.
+
+        Raises:
+            None. JSON parsing errors are caught and converted into a 400 response
+            with an appropriate error message.
+        """
         if req.method == "GET":
             if self.graphiql:
                 return res.html(self._get_graphiql_html())
@@ -69,6 +144,25 @@ class GraphQL:
             return res.json(response_data)
 
     def _get_graphiql_html(self) -> str:
+        """Generate the HTML page for the GraphiQL interactive query IDE.
+
+        Returns a self-contained HTML document that loads React, GraphiQL, and the
+        GraphiQL Explorer plugin from CDN. The page configures a GraphQL fetcher
+        pointing at the current URL, supports WebSocket subscriptions, and includes
+        CSRF token handling via cookies. The IDE provides syntax highlighting,
+        auto-completion, query documentation browsing, and an explorer panel.
+
+        Args:
+            None. This method returns a static HTML template string with embedded
+            JavaScript for initializing the GraphiQL application.
+
+        Returns:
+            A complete HTML document string that renders the GraphiQL interactive
+            IDE when loaded in a web browser.
+
+        Raises:
+            None.
+        """
         return """
 <!doctype html>
 <html>

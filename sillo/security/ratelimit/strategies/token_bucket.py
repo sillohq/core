@@ -32,6 +32,22 @@ class TokenBucketStrategy(RateLimitStrategy):
         cost: int = 1,
         now: Optional[float] = None,
     ) -> RateLimitResult:
+        """Hit
+
+            Args:
+                backend: [description]
+                key: [description]
+                limit: [description]
+                window: [description]
+                cost: [description]
+                now: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         now = now if now is not None else time.time()
         refill_rate = limit / window  # tokens per second
         state = await backend.fetch_state(key)

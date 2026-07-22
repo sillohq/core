@@ -37,6 +37,17 @@ class DatabaseManager:
     def __init__(
         self, config: Annotated[DatabaseConfig, Doc("Connection configuration.")]
     ):
+        """Init
+
+            Args:
+                config: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.config = config
         self._initialized = False
         self._model_modules: List[str] = []
@@ -109,6 +120,14 @@ class DatabaseManager:
             return False
 
     def _build_tortoise_config(self) -> dict:
+        """Build Tortoise Config
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         cfg = self.config
         modules = self._model_modules or ["__main__"]
         credentials: Dict[str, Any] = {

@@ -70,6 +70,26 @@ class RateLimit(RateLimitMiddleware):
         on_exceed: Any = "deny",
         **kwargs: Any,
     ) -> None:
+        """Init
+
+            Args:
+                limit: [description]
+                window: [description]
+                strategy: [description]
+                backend: [description]
+                key_func: [description]
+                namespace: [description]
+                cost: [description]
+                include_headers: [description]
+                fail_open: [description]
+                on_exceed: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         config = RateLimitConfig(
             limit=limit,
             window=window,

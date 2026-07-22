@@ -122,6 +122,17 @@ class WebSocketTestSession:
         """
 
         async def run_app(tg: TaskGroup) -> None:
+            """Run App
+
+                Args:
+                    tg: [description]
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             try:
                 await self.app(self.scope, self._asgi_receive, self._asgi_send)
             except anyio.get_cancelled_exc_class():

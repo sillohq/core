@@ -39,6 +39,18 @@ class WildcardListener:
             Optional[Callable[[Event], bool]], Doc("Only fire if this returns True.")
         ] = None,
     ):
+        """Init
+
+            Args:
+                pattern: [description]
+                callback: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.pattern = pattern
         self.callback = callback
         self.priority = priority
@@ -47,9 +59,31 @@ class WildcardListener:
         self._fired = False
 
     def matches(self, event_name: str) -> bool:
+        """Matches
+
+            Args:
+                event_name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return fnmatch.fnmatch(event_name, self.pattern)
 
     async def handle(self, event: Event) -> None:
+        """Handle
+
+            Args:
+                event: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self.once and self._fired:
             return
         if self.guard and not self.guard(event):
@@ -69,6 +103,17 @@ class ListenerRegistry:
     """
 
     def __init__(self, dispatcher: EventDispatcher):
+        """Init
+
+            Args:
+                dispatcher: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.dispatcher = dispatcher
         self._wildcards: List[WildcardListener] = []
         self._typed: Dict[Type[Event], List[ListenerCallback]] = {}
@@ -98,6 +143,17 @@ class ListenerRegistry:
         else:
 
             async def _once(evt):
+                """Once
+
+                    Args:
+                        evt: [description]
+
+                    Returns:
+                        [description]
+
+                    Raises:
+                        [description]
+                """
                 self.dispatcher.forget(event, callback)
                 await callback(evt)
 
@@ -134,6 +190,17 @@ class EventListener:
     """
 
     def __init__(self, dispatcher: EventDispatcher):
+        """Init
+
+            Args:
+                dispatcher: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.registry = ListenerRegistry(dispatcher)
         self.dispatcher = dispatcher
 

@@ -23,12 +23,43 @@ class TortoiseDataHandler(AsyncDataHandler):
     """
 
     def __init__(self, queryset: Annotated[Any, Doc("Tortoise queryset.")]):
+        """Init
+
+            Args:
+                queryset: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._qs = queryset
 
     async def get_total_items(self) -> int:
+        """Get Total Items
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self._qs.count()
 
     async def get_items(self, offset: int, limit: int) -> List[Any]:
+        """Get Items
+
+            Args:
+                offset: [description]
+                limit: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return await self._qs.offset(offset).limit(limit).all()
 
 
@@ -36,10 +67,41 @@ class SyncTortoiseDataHandler(SyncDataHandler):
     """Synchronous data handler (rare — for SyncPaginator compat)."""
 
     def __init__(self, data: List[Any]):
+        """Init
+
+            Args:
+                data: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._data = data
 
     def get_total_items(self) -> int:
+        """Get Total Items
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return len(self._data)
 
     def get_items(self, offset: int, limit: int) -> List[Any]:
+        """Get Items
+
+            Args:
+                offset: [description]
+                limit: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._data[offset : offset + limit]

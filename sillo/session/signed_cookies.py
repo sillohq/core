@@ -5,7 +5,27 @@ from .base import BaseSessionInterface
 
 
 class SignedSessionManager(BaseSessionInterface):
+    """Signedsessionmanager
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     def __init__(self, config=None, secret_key: typing.Optional[str] = None):
+        """Init
+
+            Args:
+                config: [description]
+                secret_key: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         super().__init__(config)
 
         if not secret_key:
@@ -17,9 +37,31 @@ class SignedSessionManager(BaseSessionInterface):
         )
 
     def sign_session_data(self, session_data: typing.Dict[str, typing.Any]) -> str:
+        """Sign Session Data
+
+            Args:
+                session_data: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.serializer.dumps(session_data)
 
     def verify_session_data(self, token: str | None) -> typing.Dict[str, typing.Any]:
+        """Verify Session Data
+
+            Args:
+                token: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if not token:
             return {}
 
@@ -29,6 +71,17 @@ class SignedSessionManager(BaseSessionInterface):
             return {}
 
     async def load(self, session):
+        """Load
+
+            Args:
+                session: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         token = session.session_key
 
         data = self.verify_session_data(token)
@@ -39,6 +92,17 @@ class SignedSessionManager(BaseSessionInterface):
             session._session_cache.clear()
 
     async def save(self, session):
+        """Save
+
+            Args:
+                session: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if session.deleted:
             session.session_key = ""
             return ""

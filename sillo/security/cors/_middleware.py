@@ -17,7 +17,26 @@ SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-
 
 
 class CORSMiddleware(BaseMiddleware):
+    """Corsmiddleware
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     def __init__(self, config: CorsConfig):
+        """Init
+
+            Args:
+                config: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.config = config
         self.allow_origins: List[str] = self.config.allow_origins or []
         self.blacklist_origins: List[str] = self.config.blacklist_origins or []
@@ -80,6 +99,19 @@ class CORSMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
+        """Process Request
+
+            Args:
+                request: [description]
+                response: [description]
+                call_next: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         config = getattr(self, "config", None)
         if not config:
             return await call_next()
@@ -109,6 +141,19 @@ class CORSMiddleware(BaseMiddleware):
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
 
+        """Simple Response
+
+            Args:
+                request: [description]
+                response: [description]
+                call_next: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         origin = request.origin
         server_error_headers = request.scope.get("server_error_headers", {})
         server_error_headers["Access-Control-Allow-Origin"] = origin
@@ -132,6 +177,17 @@ class CORSMiddleware(BaseMiddleware):
         return cnext
 
     def is_allowed_origin(self, origin: Optional[str]) -> bool:
+        """Is Allowed Origin
+
+            Args:
+                origin: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if origin in self.blacklist_origins:
             if self.debug:
                 logger.error(f"Request denied: Origin '{origin}' is blacklisted.")
@@ -152,6 +208,17 @@ class CORSMiddleware(BaseMiddleware):
         return origin in self.allow_origins
 
     def is_allowed_method(self, method: Optional[str]) -> bool:
+        """Is Allowed Method
+
+            Args:
+                method: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if not method or method.strip() == "":
             return False
         if "*" in self.allow_methods:
@@ -161,6 +228,18 @@ class CORSMiddleware(BaseMiddleware):
         return True
 
     async def preflight_response(self, request: Request, response: Response) -> Any:
+        """Preflight Response
+
+            Args:
+                request: [description]
+                response: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         origin = request.headers.get("origin")
         requested_method = request.headers.get("access-control-request-method")
         requested_headers = request.headers.get("access-control-request-headers")
@@ -237,6 +316,17 @@ class CORSMiddleware(BaseMiddleware):
         return response.json("OK", status_code=201, headers=headers)
 
     def get_error_message(self, error_type: str) -> str:
+        """Get Error Message
+
+            Args:
+                error_type: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if not self.custom_error_messages:
             return "CORS request denied."
         return self.custom_error_messages.get(error_type, "CORS request denied.")

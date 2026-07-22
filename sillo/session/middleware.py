@@ -11,6 +11,14 @@ from .signed_cookies import SignedSessionManager
 
 
 class SessionMiddleware(BaseMiddleware):
+    """Sessionmiddleware
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     def __init__(
         self,
         config: Optional[SessionConfig] = None,
@@ -18,6 +26,19 @@ class SessionMiddleware(BaseMiddleware):
         secret_key: Optional[str] = None,
         **kwargs: Any,
     ):
+        """Init
+
+            Args:
+                config: [description]
+                manager: [description]
+                secret_key: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         super().__init__(**kwargs)
 
         self.session_config = config or SessionConfig()
@@ -33,6 +54,19 @@ class SessionMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
+        """Process Request
+
+            Args:
+                request: [description]
+                response: [description]
+                call_next: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         cookie_name = self.session_config.session_cookie_name or "session_id"
         session_key = request.cookies.get(cookie_name)
 
@@ -44,6 +78,18 @@ class SessionMiddleware(BaseMiddleware):
         return await call_next()
 
     async def process_response(self, request: Request, response: Response):
+        """Process Response
+
+            Args:
+                request: [description]
+                response: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         session: Session | None = request.scope.get("session")
         if session is None:
             return

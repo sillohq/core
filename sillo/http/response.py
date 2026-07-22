@@ -53,26 +53,128 @@ JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 
 
 class MalformedRangeHeader(Exception):
-    """Exception raised for malformed range headers."""
+    """Exception raised when a Range header cannot be parsed.
+
+    This exception is raised by the file response handler when the client
+    sends a malformed or unsupported Range header that cannot be interpreted
+    for partial content delivery.  The exception carries a human-readable
+    error message describing the problem.
+
+    Inherits from:
+        Exception: Standard Python exception base class.
+
+    Attributes:
+        content: A human-readable error message describing the malformed
+            range header.  Defaults to ``"Malformed range header."``.
+    """
 
     def __init__(self, content: str = "Malformed range header.") -> None:
-        """Initialize the exception with content."""
+        """Initialize the exception with a descriptive error message.
+
+        Args:
+            content: A human-readable error message describing the malformed
+                range header.  Defaults to ``"Malformed range header."``.
+
+        Returns:
+            None: This method initializes the instance in-place.
+
+        Raises:
+            None: This method does not raise exceptions.
+        """
         self.content = content
 
 
 class RangeNotSatisfiable(Exception):
-    """Exception raised when range is not satisfiable."""
+    """Exception raised when a requested byte range cannot be satisfied.
+
+    This exception is raised by the file response handler when the client
+    requests a byte range that falls outside the bounds of the file (e.g.
+    requesting bytes 1000-2000 of a 500-byte file).  The HTTP response
+    should return a 416 status code with a ``Content-Range`` header
+    indicating the file size.
+
+    Inherits from:
+        Exception: Standard Python exception base class.
+
+    Attributes:
+        max_size: The total size of the file in bytes, used to construct
+            the ``Content-Range`` response header.
+    """
 
     def __init__(self, max_size: int) -> None:
-        """Initialize with max size."""
+        """Initialize the exception with the file's maximum size.
+
+        Args:
+            max_size: The total size of the file in bytes.  This value is
+                used to construct the ``Content-Range`` response header
+                (e.g. ``"bytes */500"``).
+
+        Returns:
+            None: This method initializes the instance in-place.
+
+        Raises:
+            None: This method does not raise exceptions.
+        """
         self.max_size = max_size
 
 
 class BaseResponse:
-    """Base ASGI-compatible Response class.
+    """Base ASGI-compatible Response class for the sillo framework.
 
-    Provides support for cookies, caching, and custom headers.
+    Provides the foundation for all HTTP response types, including support
+    for cookies, caching headers, custom headers, and content rendering.
+    Subclasses specialize this base for specific content types (JSON, HTML,
+    files, streaming).  The response is callable as an ASGI application,
+    allowing it to be returned directly from request handlers.
+
+    The class manages raw headers as a list of byte tuples for efficient
+    ASGI serialization and provides convenience methods for common header
+    operations like setting cookies and cache control.
+
+    Attributes:
+        STATUS_CODES: A dictionary mapping common HTTP status codes to their
+            standard reason phrases.
+        charset: The character encoding used for text content (default UTF-8).
+        status_code: The HTTP status code for the response.
+        raw_headers: List of (name, value) byte tuples for ASGI serialization.
+        content_type: The Content-Type header value, if set.
+
+    Inherits from:
+        object: Python built-in base class.
     """
+
+    def __init__(
+        self,
+        body: Union[JSONType, Any] = "",
+        status_code: int = 200,
+        headers: Optional[Dict[str, str]] = None,
+        content_type: Optional[str] = None,
+    ):
+        """Initialize a BaseResponse with body, status, headers, and content type.
+
+        Renders the body content to bytes, sets the HTTP status code, and
+        initializes the raw headers list.  Automatically populates the
+        Content-Length and Content-Type headers if not explicitly provided
+        in the *headers* dictionary.
+
+        Args:
+            body: The response body content.  Can be a string, bytes, or any
+                JSON-compatible type.  Defaults to an empty string.
+            status_code: The HTTP status code for the response.  Defaults to
+                200 (OK).
+            headers: Optional dictionary of header name-value pairs to include
+                in the response.  Defaults to ``None``.
+            content_type: Optional Content-Type header value.  If the content
+                type starts with ``"text/"`` and lacks a charset parameter,
+                the response charset is appended automatically.
+
+        Returns:
+            None: This method initializes the instance in-place.
+
+        Raises:
+            None: This method does not raise exceptions under normal
+                circumstances.
+        """
 
     STATUS_CODES = {
         200: "OK",
@@ -111,7 +213,25 @@ class BaseResponse:
         self._init_headers(headers)
 
     def render(self, content: typing.Any) -> typing.Union[bytes, memoryview]:
-        """Render content to bytes."""
+        """Render content to bytes for transmission over the wire.
+
+        Converts the provided content into a bytes representation suitable
+        for sending as an HTTP response body.  Handles ``None`` (returns
+        empty bytes), ``bytes``/``memoryview`` (returns as-is), and strings
+        (encodes using the response charset).
+
+        Args:
+            content: The content to render.  Can be ``None``, ``bytes``,
+                ``memoryview``, or a string-like object with an ``encode``
+                method.
+
+        Returns:
+            The rendered content as ``bytes`` or ``memoryview``.
+
+        Raises:
+            AttributeError: If *content* is a string-like object that does
+                not support the ``encode`` method.
+        """
         if content is None:
             return b""
         if isinstance(content, (bytes, memoryview)):
@@ -119,7 +239,29 @@ class BaseResponse:
         return content.encode(self.charset)
 
     def _init_headers(self, headers: Optional[Dict[str, str]] = None):
-        """Initialize response headers."""
+        """Initialize response headers from a dictionary of name-value pairs.
+
+        Processes the provided headers dictionary, normalizing header names
+        to lowercase and encoding values as Latin-1 bytes for ASGI
+        compatibility.  Automatically populates the Content-Length header
+        based on the response body size (unless the status code indicates
+        no body should be sent) and the Content-Type header if a content
+        type was specified.
+
+        Args:
+            headers: Optional dictionary of header name-value pairs.  Header
+                names are normalized to lowercase.  Defaults to ``None``,
+                meaning no additional headers are added beyond the automatic
+                Content-Length and Content-Type.
+
+        Returns:
+            None: This method modifies the instance's ``raw_headers`` list
+                in-place.
+
+        Raises:
+            UnicodeEncodeError: If a header value contains characters that
+                cannot be encoded as Latin-1.
+        """
         if headers is None:
             raw_headers: list[tuple[bytes, bytes]] = []
             populate_content_length = True
@@ -153,7 +295,19 @@ class BaseResponse:
 
     @property
     def headers(self) -> MutableHeaders:
-        """The response headers."""
+        """The response headers as a mutable mapping.
+
+        Lazily builds and caches a :class:`MutableHeaders` instance from
+        the raw headers list.  Provides convenient dictionary-style access
+        for reading and modifying response headers after initialization.
+
+        Returns:
+            A :class:`MutableHeaders` instance wrapping the response's raw
+            headers list.
+
+        Raises:
+            None: This property does not raise exceptions.
+        """
         if not hasattr(self, "_headers"):
             self._headers = MutableHeaders(raw=self.raw_headers)
         return self._headers
@@ -170,6 +324,39 @@ class BaseResponse:
         httponly: typing.Optional[bool] = False,
         samesite: typing.Optional[typing.Literal["lax", "strict", "none"]] = "lax",
     ) -> Any:
+        """Set an HTTP cookie in the response with full attribute control.
+
+        Creates a ``Set-Cookie`` header with the specified cookie name, value,
+        and attributes.  Supports all standard cookie attributes including
+        expiration, path, domain, security flags, and SameSite policy.  The
+        cookie is serialized and appended to the response headers.
+
+        Args:
+            key: The cookie name.  Must be a valid cookie token (no semicolons
+                or whitespace).
+            value: The cookie value.  Defaults to an empty string.
+            max_age: Maximum age of the cookie in seconds.  Takes precedence
+                over *expires* if both are set.  Defaults to ``None``.
+            expires: Expiration date/time for the cookie.  Can be a datetime
+                object, Unix timestamp (int), or HTTP date string.  Defaults
+                to ``None``.
+            path: URL path where the cookie is valid.  Defaults to ``"/"``.
+            domain: Domain where the cookie is valid.  Defaults to ``None``
+                (current domain only).
+            secure: If ``True``, cookie is only sent over HTTPS.  Defaults to
+                ``False``.
+            httponly: If ``True``, cookie is inaccessible to JavaScript.
+                Defaults to ``False``.
+            samesite: SameSite attribute for CSRF protection.  Must be
+                ``"lax"``, ``"strict"``, or ``"none"``.  Defaults to ``"lax"``.
+
+        Returns:
+            The underlying ``SimpleCookie`` object for advanced manipulation.
+
+        Raises:
+            AssertionError: If *samesite* is not one of ``"lax"``, ``"strict"``,
+                or ``"none"`` (case-insensitive).
+        """
         cookie: http.cookies.BaseCookie[str] = http.cookies.SimpleCookie()
         cookie[key] = value
         if max_age is not None:
@@ -202,7 +389,26 @@ class BaseResponse:
     def delete_cookie(
         self, key: str, path: str = "/", domain: Optional[str] = None
     ) -> Any:
-        """Delete a cookie by setting its expiry to the past."""
+        """Delete a cookie by setting its expiration to the past.
+
+        Sends a ``Set-Cookie`` header with an empty value and zero expiration,
+        instructing the client to remove the specified cookie.  The path and
+        domain must match those used when the cookie was originally set for
+        the deletion to take effect.
+
+        Args:
+            key: The name of the cookie to delete.
+            path: The URL path where the cookie was originally set.  Must
+                match the original cookie's path.  Defaults to ``"/"``.
+            domain: The domain where the cookie was originally set.  Must
+                match the original cookie's domain.  Defaults to ``None``.
+
+        Returns:
+            The underlying ``SimpleCookie`` object for advanced manipulation.
+
+        Raises:
+            None: This method does not raise exceptions.
+        """
         cookie = self.set_cookie(
             key=key, value="", max_age=0, expires=0, path=path, domain=domain
         )
@@ -210,7 +416,27 @@ class BaseResponse:
         return cookie
 
     def enable_caching(self, max_age: int = 3600, private: bool = True) -> None:
-        """Enable caching with the specified max age (in seconds)."""
+        """Enable HTTP caching with the specified max age and visibility.
+
+        Sets the ``Cache-Control``, ``ETag``, and ``Expires`` headers to
+        enable browser and proxy caching of the response.  The ETag is
+        generated from a SHA-1 hash of the response body for cache
+        validation.
+
+        Args:
+            max_age: Maximum age of the cached response in seconds.  Defaults
+                to 3600 (1 hour).
+            private: If ``True``, the response is marked as private (only
+                the client's browser may cache it).  If ``False``, the
+                response is marked as public (intermediate proxies may also
+                cache it).  Defaults to ``True``.
+
+        Returns:
+            None: This method modifies the response headers in-place.
+
+        Raises:
+            None: This method does not raise exceptions.
+        """
         cache_control: List[str] = []
         if private:
             cache_control.append("private")

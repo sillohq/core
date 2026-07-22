@@ -14,13 +14,24 @@ from .base import BaseTransport
 
 
 class MemoryTransport(BaseTransport):
-    """Default, in-process delivery.  Backwards compatible with the old
-    synchronous :class:`~sillo.events.emitter.EventEmitter` semantics.
+    """Default in-process transport that delivers events synchronously.
 
-    ``publish`` simply calls :meth:`~sillo.events.transports.base.BaseTransport._deliver`
-    directly, so delivery is immediate and in-order.  No ``start`` /
-    background loop is required, although ``start`` / ``stop`` are still
-    honoured as no-ops for API symmetry with the networked backends.
+    This transport provides backwards-compatible, in-process event delivery
+    where emitted events dispatch to local listeners within the same Python
+    process.  No external services, network connections, or serialization
+    round-trips are involved beyond the standard envelope bookkeeping.
+
+    The :meth:`publish` method calls :meth:`~BaseTransport._deliver` directly,
+    so delivery is immediate and in-order.  No background loop is required,
+    although :meth:`start` and :meth:`stop` are still honoured as no-ops for
+    API symmetry with the networked backends (Redis, persistent).
+
+    This is the backend selected when ``backend="memory"`` (the default) or
+    when no backend argument is supplied to the emitter or transport factory.
+
+    Attributes:
+        name: The backend identifier string, always ``"memory"`` for this class.
+            Used by the factory function and logging infrastructure.
 
     Example:
         >>> from sillo.events.emitter import EventEmitter
@@ -33,11 +44,34 @@ class MemoryTransport(BaseTransport):
     name = "memory"
 
     async def publish(self, channel: str, envelope: Dict[str, Any]) -> None:
-        """Deliver *envelope* to local listeners immediately.
+        """Deliver an envelope to local listeners immediately and in-process.
 
-        Because memory transport has no remote hop, this is equivalent to
-        running the listeners in the caller's context — which is why the
-        emitter's synchronous :meth:`~sillo.events.emitter.EventEmitter.emit`
-        works on this backend without an event loop.
+        Because the memory transport has no remote hop, this method simply
+        delegates to :meth:`~BaseTransport._deliver`, which runs the matching
+        listeners in the caller's async context.  This is why the emitter's
+        synchronous :meth:`~sillo.events.emitter.EventEmitter.emit` works on
+        this backend without requiring an explicit event loop.
+
+        The method preserves the full envelope structure (event ID, args,
+        kwargs, timestamp) so that de-duplication and error isolation behave
+        identically to the networked backends.
+
+        Args:
+            channel: The fully-qualified channel name (including any namespace
+                prefix) on which the envelope was published.  Passed through
+                to the dispatch callback for listener matching.
+            envelope: The envelope dictionary produced by
+                :func:`~sillo.events.transports.base.serialize_payload`,
+                containing ``"event_id"``, ``"args"``, ``"kwargs"``, and
+                ``"ts"`` keys.
+
+        Raises:
+            This method does not raise.  All listener errors are isolated by
+            :meth:`~BaseTransport._deliver` and routed to the configured
+            ``on_error`` handler if one is registered.
+
+        Example:
+            >>> envelope = serialize_payload(("hello",), {"target": "world"})
+            >>> await transport.publish("greeting", envelope)
         """
         await self._deliver(channel, envelope)

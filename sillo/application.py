@@ -73,6 +73,37 @@ lifespan_manager = Callable[
 
 
 class silloApp:
+    """
+    Core application class for the sillo ASGI web framework.
+
+    This class serves as the central entry point for building asynchronous
+    web applications and APIs. It integrates routing, middleware, dependency
+    injection, OpenAPI documentation generation, lifespan management, and
+    WebSocket support into a single cohesive interface.
+
+    The application follows the ASGI specification and can be served by any
+    compliant ASGI server such as uvicorn, granian, or daphne. It provides
+    both decorator-based and programmatic route registration patterns.
+
+    Attributes:
+        debug: Whether debug mode is enabled for detailed error output.
+        dependencies: Global dependency injection definitions.
+        custom_encoders: Mapping of types to custom JSON encoder callables.
+        http_middleware: Ordered list of HTTP middleware instances.
+        startup_handlers: List of async callables executed on application startup.
+        shutdown_handlers: List of async callables executed on application shutdown.
+        server_error_handler: Optional handler for unhandled server exceptions.
+        route_class: The route class used for constructing route instances.
+        app: The root router instance managing all registered routes.
+        exceptions_handler: The middleware handling registered exception mappings.
+        router: Reference to the root router for convenience access.
+        state: A shared dictionary for storing application-level state.
+        openapi_config: Configuration object for OpenAPI schema generation.
+        openapi: The API documentation builder instance.
+        events: The event emitter for application-level event broadcasting.
+        title: The display title of the application.
+    """
+
     def __init__(
         self,
         debug: Annotated[
@@ -186,7 +217,53 @@ class silloApp:
                     The class used to create routes. This can be a custom route class that inherits from `Route`.
                 """),
         ] = Route,
-    ):
+    ) -> None:
+        """
+        Initialize the sillo application with all core subsystems.
+
+        Constructs the root router, configures OpenAPI documentation settings,
+        registers default security schemes, sets up the event emitter, and
+        wires internal bookkeeping structures such as middleware lists and
+        lifecycle handler queues. The ``setup`` method is called at the end
+        of initialization to mount built-in documentation routes.
+
+        Args:
+            debug: Whether to enable debug mode. When ``True``, detailed
+                error traces are included in responses. Defaults to ``True``.
+            title: The display title used in generated OpenAPI documentation.
+                Falls back to ``"sillo API"`` when not provided.
+            version: The semantic version string shown in OpenAPI output.
+                Defaults to ``"1.0.0"`` when not provided.
+            description: A human-readable description of the API surfaced in
+                OpenAPI documentation. Defaults to ``"sillo Asgi framework"``.
+            contact: Optional contact information embedded in the OpenAPI schema.
+            license: Optional license metadata embedded in the OpenAPI schema.
+            servers: An optional list of server entries for the OpenAPI schema.
+            terms_of_service: Optional URL pointing to the API terms of service.
+            swagger_docs: The URL path at which the Swagger UI is served.
+                Defaults to ``"/docs"``.
+            redoc_docs: The URL path at which the Redoc UI is served.
+                Defaults to ``"/redoc"``.
+            openapi_url: The URL path serving the raw OpenAPI JSON schema.
+                Defaults to ``"/openapi.json"``.
+            server_error_handler: An optional callable invoked when an
+                unhandled exception occurs during request processing.
+            lifespan: An optional async context manager factory for managing
+                application startup and shutdown lifecycle events.
+            routes: An initial sequence of route objects to register with the
+                root router. Defaults to an empty list.
+            dependencies: An optional list of global dependency injection
+                definitions applied across all routes.
+            route_class: The class used to instantiate new routes. Allows
+                substitution of a custom ``Route`` subclass. Defaults to
+                :class:`Route`.
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
         self.debug = debug
         self.dependencies = dependencies or []
         self.custom_encoders: Dict[type, Callable[[Any], Any]] = {}
@@ -231,7 +308,26 @@ class silloApp:
         self.title = title or "sillo API"
         self.setup()
 
-    def setup(self):
+    def setup(self) -> None:
+        """
+        Register built-in documentation routes for OpenAPI, Swagger UI, and Redoc.
+
+        This method is invoked automatically during application initialization
+        to mount three internal GET endpoints that serve the raw OpenAPI JSON
+        schema, the interactive Swagger UI, and the Redoc documentation viewer.
+        All three routes are excluded from the generated OpenAPI schema to
+        prevent recursive documentation entries. The routes respect the
+        application's mount path by reading ``root_path`` from the ASGI scope.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)
         async def serve_openapi(request: "Request", response: "Response"):
             root_path = request.scope.get("root_path", "")
@@ -348,7 +444,26 @@ class silloApp:
         return handler
 
     async def _startup(self) -> None:
-        """Execute all startup handlers sequentially, logging warnings on failure."""
+        """
+        Execute all registered startup handlers sequentially.
+
+        Iterates through the ``startup_handlers`` list and invokes each
+        handler in registration order. Both async and sync callables are
+        supported; async handlers are awaited while sync handlers are
+        called directly. This method is invoked by the ASGI lifespan
+        protocol when no custom lifespan context manager is configured.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Raises:
+            Exception: Propagates any exception raised by a startup handler
+                to the caller, which typically results in a
+                ``lifespan.startup.failed`` ASGI message.
+        """
         for handler in self.startup_handlers:
             if is_async_callable(handler):
                 await handler()
@@ -356,7 +471,26 @@ class silloApp:
                 handler()
 
     async def _shutdown(self) -> None:
-        """Execute all shutdown handlers sequentially, logging warnings on failure."""
+        """
+        Execute all registered shutdown handlers sequentially.
+
+        Iterates through the ``shutdown_handlers`` list and invokes each
+        handler in registration order. Both async and sync callables are
+        supported; async handlers are awaited while sync handlers are
+        called directly. This method is invoked by the ASGI lifespan
+        protocol when no custom lifespan context manager is configured.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Raises:
+            Exception: Propagates any exception raised by a shutdown handler
+                to the caller, which typically results in a
+                ``lifespan.shutdown.failed`` ASGI message.
+        """
         for handler in self.shutdown_handlers:
             if is_async_callable(handler):
                 await handler()
@@ -365,10 +499,51 @@ class silloApp:
 
     @staticmethod
     def _is_async_context_manager(obj: Any) -> bool:
+        """
+        Determine whether an object implements the async context manager protocol.
+
+        Checks for the presence of both ``__aenter__`` and ``__aexit__``
+        dunder methods on the provided object. This is used internally by
+        the lifespan handler to decide whether to await or synchronously
+        invoke the context manager entry and exit methods.
+
+        Args:
+            obj: Any Python object to inspect for async context manager
+                protocol compliance.
+
+        Returns:
+            bool: ``True`` if the object implements both ``__aenter__``
+                and ``__aexit__``, ``False`` otherwise.
+
+        Raises:
+            None
+        """
         return hasattr(obj, "__aenter__") and hasattr(obj, "__aexit__")
 
     async def handle_lifespan(self, receive: Receive, send: Send) -> None:
-        """Handle ASGI lifespan protocol events."""
+        """
+        Handle the ASGI lifespan protocol for application startup and shutdown.
+
+        Listens for ``lifespan.startup`` and ``lifespan.shutdown`` messages
+        from the ASGI server. On startup, either the custom lifespan context
+        manager is entered or the registered startup handlers are executed.
+        On shutdown, the corresponding cleanup is performed. State returned
+        from the lifespan context manager is merged into ``self.state``.
+
+        Args:
+            receive: An async callable that yields ASGI scope messages from
+                the server. Used to receive lifespan event notifications.
+            send: An async callable that sends ASGI messages back to the
+                server, such as startup complete or shutdown failed signals.
+
+        Returns:
+            None
+
+        Raises:
+            None: Exceptions during startup or shutdown are caught internally
+                and communicated via ``lifespan.startup.failed`` or
+                ``lifespan.shutdown.failed`` messages.
+        """
 
         while True:
             message: Message = await receive()
@@ -589,6 +764,32 @@ class silloApp:
         self.router.mount_router(router, name=name)
 
     def handle_request(self, scope: Scope, receive: Receive, send: Send):
+        """
+        Build the middleware chain and dispatch an incoming ASGI request.
+
+        Constructs a layered middleware stack consisting of the server error
+        middleware, all registered HTTP middleware, and the exception handler
+        middleware. The chain is assembled in reverse order so that the
+        outermost layer processes the request first. The root router is used
+        as the innermost application in the chain.
+
+        Args:
+            scope: The ASGI connection scope dictionary containing metadata
+                about the incoming request such as type, path, and headers.
+            receive: An async callable that yields ASGI messages from the
+                client, such as request body chunks.
+            send: An async callable that sends ASGI messages back to the
+                client, such as response headers and body chunks.
+
+        Returns:
+            An awaitable coroutine representing the fully wrapped ASGI
+            application invocation that processes the request through
+            all middleware layers and returns a response.
+
+        Raises:
+            None: Exceptions are handled by the middleware layers in the
+                chain, specifically the server error and exception middleware.
+        """
         app = self.app
         middleware = (
             [
@@ -607,7 +808,31 @@ class silloApp:
         return app(scope, receive, send)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """ASGI application callable"""
+        """
+        ASGI application entry point invoked by the server for every connection.
+
+        Injects the application instance, base application reference, and
+        global state dictionary into the ASGI scope for downstream access.
+        Dispatches the connection to the appropriate handler based on the
+        scope type: lifespan connections are routed to ``handle_lifespan``,
+        while HTTP and WebSocket connections are routed to ``handle_request``.
+
+        Args:
+            scope: The ASGI connection scope dictionary containing metadata
+                such as the connection type, path, headers, and query string.
+            receive: An async callable that yields ASGI messages from the
+                client throughout the connection lifecycle.
+            send: An async callable that sends ASGI messages back to the
+                client, such as response start, body, and disconnect signals.
+
+        Returns:
+            None
+
+        Raises:
+            None: Exceptions are caught and handled by the middleware layers
+                within ``handle_request`` or by the lifespan error handling
+                within ``handle_lifespan``.
+        """
         scope["app"] = self
         scope["base_app"] = self
         scope["global_state"] = self.state
@@ -2067,6 +2292,30 @@ class silloApp:
         exc_class_or_status_code: Union[Type[Exception], int],
         handler: Optional[ExceptionHandlerType] = None,
     ) -> Any:
+        """
+        Register a custom exception handler for specific exception types or status codes.
+
+        Maps an exception class or HTTP status code to a handler function that
+        produces a response when the specified error occurs during request
+        processing. Can be used as a direct method call or as a decorator
+        when the handler argument is omitted.
+
+        Args:
+            exc_class_or_status_code: Either an exception class (subclass of
+                ``Exception``) or an integer HTTP status code to handle.
+                For example, ``ValueError`` or ``404``.
+            handler: An optional callable that accepts ``(request, response,
+                exception)`` and returns a ``Response``. When ``None``, a
+                decorator is returned instead for deferred registration.
+
+        Returns:
+            Any: When ``handler`` is ``None``, returns a decorator that
+                accepts the handler function. When ``handler`` is provided,
+                returns ``None`` after registering the handler directly.
+
+        Raises:
+            None
+        """
         if handler is None:
             # If handler is not given yet, return a decorator
             def decorator(func: ExceptionHandlerType) -> Any:
@@ -2083,6 +2332,30 @@ class silloApp:
             )
 
     def url_for(self, _name: str, **path_params: Any) -> URLPath:
+        """
+        Generate a URL path for a named route with the given path parameters.
+
+        Looks up a route by its registered name and interpolates the
+        provided path parameters into the route's URL pattern to produce
+        a concrete ``URLPath`` instance. This is useful for reverse URL
+        generation in redirects, hypermedia responses, and templates.
+
+        Args:
+            _name: The unique name assigned to the route during registration.
+                This corresponds to the ``name`` argument passed to route
+                decorators or the ``add_route`` method.
+            **path_params: Keyword arguments representing the path parameters
+                to substitute into the route's URL pattern. For example,
+                ``user_id=42`` for a route pattern ``/users/{user_id}``.
+
+        Returns:
+            URLPath: A URL path object containing the fully resolved URL
+                string with all path parameters interpolated.
+
+        Raises:
+            KeyError: If the named route is not found in the router or if
+                required path parameters are missing from the arguments.
+        """
         return self.router.url_for(_name, **path_params)
 
     def wrap_asgi(
@@ -2172,9 +2445,47 @@ class silloApp:
         app: ASGIApp,
         prefix: str = "",
     ) -> None:
+        """
+        Register an external ASGI application under an optional URL prefix.
+
+        Delegates to the root router's ``register`` method to mount a
+        sub-application or external ASGI app at a given prefix path. This
+        is useful for integrating third-party ASGI components or mounting
+        independent sub-applications within the main sillo application.
+
+        Args:
+            app: An ASGI application callable conforming to the standard
+                ``(scope, receive, send)`` interface that will handle
+                requests matching the specified prefix.
+            prefix: An optional URL path prefix under which the sub-application
+                is mounted. Defaults to an empty string, meaning the app
+                handles requests at the root level.
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
         self.router.register(app, prefix)
 
     def __str__(self) -> str:
+        """
+        Return a human-readable string representation of the application.
+
+        Produces a descriptive string containing the application's title,
+        useful for logging, debugging, and development server output.
+
+        Args:
+            None
+
+        Returns:
+            str: A string in the format ``<silloApp: {title}>`` where
+                ``{title}`` is the application's configured title.
+
+        Raises:
+            None
+        """
         return f"<silloApp: {self.title}>"
 
     def run(

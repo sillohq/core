@@ -59,12 +59,34 @@ class SessionAuth(AuthBackend):
     """
 
     async def authenticate(self, request) -> bool:
+        """Authenticate
+
+            Args:
+                request: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         session = getattr(request, "session", None)
         if session:
             return session.get("admin_authenticated", False)
         return False
 
     async def get_user(self, request) -> Optional[dict]:
+        """Get User
+
+            Args:
+                request: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         session = getattr(request, "session", None)
         if session:
             return session.get("admin_user")
@@ -92,6 +114,17 @@ class SessionAuth(AuthBackend):
         return True
 
     async def logout(self, request) -> None:
+        """Logout
+
+            Args:
+                request: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         session = getattr(request, "session", None)
         if session:
             session.pop("admin_authenticated", None)
@@ -99,6 +132,14 @@ class SessionAuth(AuthBackend):
 
     @property
     def middleware(self):
+        """Middleware
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return _AuthMiddleware(self)
 
 
@@ -106,9 +147,33 @@ class _AuthMiddleware:
     """Middleware that enforces admin authentication."""
 
     def __init__(self, backend: AuthBackend):
+        """Init
+
+            Args:
+                backend: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.backend = backend
 
     async def __call__(self, request, response, call_next):
+        """Call
+
+            Args:
+                request: [description]
+                response: [description]
+                call_next: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         path = (
             request.url.path
             if hasattr(request.url, "path")

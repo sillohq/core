@@ -31,30 +31,68 @@ def build_event_message():
     """Build and return the concrete ``EventMessage`` model bound to
     ``sillo.record.Model``.
 
-    Called lazily (via :func:`setup_event_record`) so importing this module
-    never requires Tortoise to be initialised.  The returned class is a normal
-    Tortoise model — register it in your ``model_modules`` before
-    ``tortoise.init`` (or import it from your models package).
+    Constructs a Tortoise model class at runtime so that the ``EventMessage``
+    table can participate in the ``sillo.record`` database without requiring
+    Tortoise to be initialised at import time.  The caller is responsible for
+    registering the returned class in the ``model_modules`` list passed to
+    ``tortoise.init`` (or importing it from a models package that is listed
+    there).
 
     Returns:
-        A ``Model`` subclass with columns ``channel`` (indexed), ``payload``
-        (text, the JSON envelope), ``status`` (``pending``/``delivered``/
-        ``failed``, indexed) and ``attempts`` (int).
+        A ``Model`` subclass named ``EventMessage`` with the following columns:
+        ``channel`` (``CharField``, max 255, indexed), ``payload`` (``TextField``,
+        stores the serialised JSON envelope), ``status`` (``CharField``, one of
+        ``pending`` / ``delivered`` / ``failed``, indexed), and ``attempts``
+        (``IntField``, delivery retry counter starting at zero).
+
+    Raises:
+        ImportError: if ``sillo.record`` has not been configured via
+            ``setup_record`` before this function is called.
     """
     from tortoise import fields
 
     from sillo.record import Model
 
     class EventMessage(Model):
+        """Tortoise ORM model representing a single persisted event message.
+
+        Each row corresponds to one emitted event and tracks its delivery
+        lifecycle through the ``status`` and ``attempts`` fields.  The model
+        is created dynamically by :func:`build_event_message` so that the
+        ``sillo.record`` database backend can be initialised lazily.
+
+        Attributes:
+            channel: The fully-qualified channel name the event was published
+                to, including any namespace prefix applied by the transport.
+            payload: The JSON-serialised envelope containing the event data,
+                ready for deserialisation via :func:`deserialize_envelope`.
+            status: Current delivery state — one of ``pending``, ``delivered``,
+                or ``failed``.  Indexed for efficient replay queries.
+            attempts: Number of delivery attempts made so far; incremented
+                each time a listener dispatch raises an exception.
+        """
+
         channel = fields.CharField(max_length=255, db_index=True)
         payload = fields.TextField()
         status = fields.CharField(max_length=16, default="pending", db_index=True)
         attempts = fields.IntField(default=0)
 
         class Meta:
+            """Tortoise model metadata controlling the database table name."""
+
             table = "sillo_event_messages"
 
         def __repr__(self) -> str:  # pragma: no cover - cosmetic
+            """Return a concise developer-friendly string representation.
+
+            The output includes the channel name and current delivery status
+            so that rows can be quickly identified in logs and debug sessions
+            without requiring a full database query for context.
+
+            Returns:
+                A string of the form ``<EventMessage channel='...' status='...'>``
+                suitable for inclusion in log lines and REPL output.
+            """
             return f"<EventMessage channel={self.channel!r} status={self.status!r}>"
 
     return EventMessage

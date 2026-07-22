@@ -66,6 +66,17 @@ class InMemoryHistoryManager(BaseHistoryManager):
     """
 
     def __init__(self, history_size: int = 1_048_576):
+        """Init
+
+            Args:
+                history_size: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.history_size = history_size
         self._history: typing.Dict[str, typing.List[ChannelMessageDC]] = {}
 

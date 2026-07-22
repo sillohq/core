@@ -28,6 +28,18 @@ class JobPayload:
         priority: Annotated[int, Doc("0=normal, higher=more urgent.")] = 0,
         queue: Annotated[str, Doc("Target queue name.")] = "default",
     ):
+        """Init
+
+            Args:
+                job_class: [description]
+                data: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.job_class = job_class
         self.data = data
         self.max_tries = max_tries
@@ -37,6 +49,14 @@ class JobPayload:
         self.queue = queue
 
     def to_json(self) -> str:
+        """To Json
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return json.dumps(self.__dict__, default=str)
 
 

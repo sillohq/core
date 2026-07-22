@@ -55,12 +55,33 @@ def new(
 
     Creates a new sillo project with the given name in the specified directory.
     The project will be initialized with the selected template structure including
-    configuration files and a main application file.
+    configuration files and a main application file. Template variables such as
+    project name, display title, and version are substituted during file copying.
 
     Available template types:
     - basic: Minimal starter template with essential structure
     - standard: A complete template with commonly used features
     - beta: An advanced template with experimental features
+
+    Args:
+        project_name: The name of the project to create. Must be a valid Python
+            identifier starting with a letter and containing only letters, numbers,
+            and underscores. Used as both directory name and module name.
+        output_dir: The directory path where the project folder should be created.
+            Defaults to the current working directory if not specified.
+        title: An optional display title for the project. If not provided, it
+            defaults to the project name with underscores replaced by spaces and
+            converted to title case.
+        template: The template type to use for scaffolding the project. Must be
+            one of 'basic', 'standard', or 'beta'. Defaults to 'basic'.
+
+    Returns:
+        None. The function creates the project directory structure and files on
+        disk, printing status messages to the console via Click echo utilities.
+
+    Raises:
+        SystemExit: If an unexpected error occurs during project creation, the
+            function prints an error message and exits with code 1.
     """
     try:
         output_path = Path(output_dir).resolve()

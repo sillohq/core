@@ -15,6 +15,14 @@ Message = typing.MutableMapping[str, typing.Any]
 
 
 class WebSocketConsumer:
+    """Websocketconsumer
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     channel: typing.Optional[Channel] = None
     middleware: typing.List[typing.Any] = []
 
@@ -43,12 +51,34 @@ class WebSocketConsumer:
         async def handler(
             websocket: WebSocket, **kwargs: typing.Dict[str, typing.Any]
         ) -> None:
+            """Handler
+
+                Args:
+                    websocket: [description]
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             instance = cls()
             await instance(websocket, **kwargs)
 
         return WebsocketRoute(path, handler)
 
     async def __call__(self, ws: WebSocket) -> None:
+        """Call
+
+            Args:
+                ws: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.websocket = ws
 
         self.channel = Channel(
@@ -82,6 +112,18 @@ class WebSocketConsumer:
             await self.on_disconnect(self.websocket, close_code)
 
     async def decode(self, websocket: WebSocket, message: Message) -> typing.Any:
+        """Decode
+
+            Args:
+                websocket: [description]
+                message: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if self.encoding == "text":
             if "text" not in message:
                 await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)

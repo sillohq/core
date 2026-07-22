@@ -180,26 +180,57 @@ class Route(BaseRoute):
         exclude_from_schema: bool = False,
         auth: Optional[Any] = None,
         **kwargs: Dict[str, Any],
-    ):
-        """
-        Initialize a route configuration with endpoint details.
+    ) -> None:
+        """Initialize a Route instance with full endpoint configuration.
+
+        Constructs a new Route that encapsulates all information needed to
+        match incoming HTTP requests, validate parameters, apply middleware,
+        and dispatch to the appropriate handler function. The path pattern
+        is compiled into a regex for efficient matching, and the handler
+        is introspected to extract dependency injection metadata.
+
+        An internal ASGI application is built by composing the handler with
+        all route-specific middleware layers, enabling per-route middleware
+        chains that execute before the handler is invoked.
 
         Args:
-            path: URL path pattern with optional parameters.
-            handler: Request processing function/method.
-            methods: Allowed HTTP methods (default: ['GET']).
-            validator: Multi-layer request validation rules.
-            request_schema: Request body structure definition.
-            response_schema: Success response structure definition.
-            deprecated: Deprecation marker.
-            tags: Documentation categories.
-            description: Comprehensive endpoint documentation.
-            summary: Brief endpoint description.
-            auth: Optional :class:`sillo.auth.useAuth` instance for
-                route-level authentication and authorisation.
+            path: URL path pattern for the endpoint, supporting dynamic
+                parameters via curly brace syntax such as ``/users/{id}``.
+            handler: Callable responsible for processing requests. Must
+                accept at least a request and response argument.
+            methods: HTTP methods allowed for this endpoint. Defaults to
+                all standard methods. ``HEAD`` is added automatically when
+                ``GET`` is present.
+            name: Unique identifier for the route, used with ``url_for``
+                to generate URLs dynamically.
+            summary: Brief one-line description for OpenAPI documentation.
+            description: Detailed explanation of the endpoint purpose,
+                behavior, and any relevant context for API consumers.
+            responses: Mapping of HTTP status codes to response schemas
+                or descriptions for OpenAPI documentation.
+            request_model: Pydantic model or dict of status codes to models
+                defining the expected request payload structure.
+            request_content_type: Content type for the request body in
+                OpenAPI docs. Defaults to ``"application/json"``.
+            tags: Sequence of OpenAPI tags for grouping this endpoint in
+                generated documentation.
+            security: List of security requirement dicts for OpenAPI docs.
+            operation_id: Unique operation identifier for OpenAPI docs.
+            deprecated: Whether to mark this endpoint as deprecated in
+                the generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those extracted from the path pattern.
+            middleware: List of route-specific middleware callables or
+                middleware tuples to apply before the handler.
+            exclude_from_schema: When True, this route is omitted from
+                OpenAPI documentation generation entirely.
+            auth: Optional authentication gate instance for route-level
+                authentication and authorization checks.
+            **kwargs: Additional metadata stored on the route instance
+                for use by plugins or custom extensions.
 
         Raises:
-            AssertionError: If handler is not callable.
+            AssertionError: If the provided handler is not callable.
         """
         assert callable(handler), "Route handler must be callable"
 
@@ -246,6 +277,24 @@ class Route(BaseRoute):
                     self._validated_param_name = params[2]
 
         async def _route_asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
+            """Serve as the base ASGI application for this route.
+
+            Creates a Request and Response pair from the raw ASGI connection
+            triple, invokes the route handler through the full dependency
+            injection pipeline, serializes the handler's return value into
+            an HTTP response, and sends it back to the client.
+
+            This function is wrapped by route-level middleware before being
+            assigned as the route's ``app`` attribute.
+
+            Args:
+                scope: ASGI scope dictionary containing request metadata.
+                receive: ASGI receive callable for reading the request body.
+                send: ASGI send callable for transmitting the response.
+
+            Returns:
+                None. The response is sent directly through ``send``.
+            """
             request = Request(scope, receive, send)
             response_manager = Response(request)
             func_result = await self.get_route_handler(
@@ -257,6 +306,23 @@ class Route(BaseRoute):
         route_handler_as_asgi_app = _route_asgi_app
 
         def apply_middleware(app: ASGIApp) -> ASGIApp:
+            """Build the middleware chain around a base ASGI application.
+
+            Wraps the provided ASGI application with all route-specific
+            middleware registered on this route. Each middleware is first
+            normalized through ``wrap_middleware`` to ensure a consistent
+            interface, then applied in reverse order so that the first
+            middleware in the list becomes the outermost layer.
+
+            Args:
+                app: The base ASGI application to wrap with the route's
+                    middleware stack.
+
+            Returns:
+                The ASGI application wrapped with all registered route-level
+                middleware, forming a complete middleware chain ready to
+                process incoming requests.
+            """
             middleware: typing.List[Middleware] = []
             for mdw in self.middleware:
                 middleware.append(wrap_middleware(mdw))
@@ -268,24 +334,56 @@ class Route(BaseRoute):
 
     @property
     def resolved_params(self) -> List[SolvedParamDependency]:
-        """Backward-compat: expose param extractors for OpenAPI doc generation."""
+        """Expose parameter extractors for backward-compatible OpenAPI generation.
+
+        Provides access to the resolved parameter dependencies from the
+        route's dependant object. This property exists primarily for
+        backward compatibility with the OpenAPI documentation generation
+        system that needs to inspect route parameters.
+
+        Returns:
+            A list of SolvedParamDependency instances representing the
+            extracted and resolved parameters for this route's handler.
+        """
         return list(self.dependant.param_extractors)
 
     @property
     def _own_resolved_dependencies(self) -> List[Dependant]:
-        """Backward-compat: the handler's own dependency sub-tree."""
+        """Expose the handler's own dependency sub-tree for backward compatibility.
+
+        Provides access to the list of dependant objects that represent
+        the direct dependencies of this route's handler function. This
+        property exists primarily for backward compatibility with systems
+        that need to introspect the dependency graph.
+
+        Returns:
+            A list of Dependant instances representing the handler's
+            direct dependency sub-tree, excluding transitive dependencies.
+        """
         return list(self.dependant.dependencies)
 
     def match(self, scope: Scope) -> typing.Tuple[MatchStatus, Any]:
-        """
-        Match a path against this route's pattern and return captured parameters.
+        """Match an HTTP request path against this route's URL pattern.
+
+        Extracts the path from the ASGI scope and attempts to match it
+        against the compiled regex pattern. When a match is found, path
+        parameters are extracted and converted to their appropriate types.
+        The method also checks whether the HTTP method is allowed, returning
+        a partial match if the path matches but the method is not permitted.
+
+        This distinction between full and partial matches allows the router
+        to return proper 405 Method Not Allowed responses when a path exists
+        but the requested method is not supported.
 
         Args:
-            path: The URL path to match.
+            scope: ASGI scope containing the request path, HTTP method,
+                and connection metadata used for route matching.
 
         Returns:
-            Optional[Dict[str, Any]]: A dictionary of captured parameters if the path matches,
-            otherwise None.
+            A tuple of (MatchStatus, dict) containing the match status
+            and any captured path parameters. Returns MatchStatus.FULL
+            when both path and method match, MatchStatus.PARTIAL when
+            only the path matches, or MatchStatus.NONE on failure.
         """
         if scope.get("type") != "http":
             return MatchStatus.NONE, {}
@@ -398,15 +496,23 @@ class Route(BaseRoute):
                     await result
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """
-        Process an incoming request using the route's handler.
+        """Process an incoming HTTP request using the route's middleware stack.
+
+        Dispatches the request through the route's ASGI application chain
+        which includes all route-specific middleware and the request handler.
+        If the HTTP method is not in the allowed methods list, a 405 Method
+        Not Allowed JSON response is returned instead of invoking the handler.
+
+        This method is called by the router after a successful path match
+        has been confirmed via the ``match`` method.
 
         Args:
-            request: The incoming HTTP request object.
-            response: The outgoing HTTP response object.
-
-        Returns:
-            Response: The processed HTTP response object.
+            scope: ASGI scope containing request information including
+                path, method, headers, and captured path parameters.
+            receive: ASGI receive callable for reading the request body
+                and other incoming messages from the client.
+            send: ASGI send callable for transmitting the response data
+                back to the client.
         """
 
         if self.methods and scope["method"] not in self.methods:
@@ -419,16 +525,38 @@ class Route(BaseRoute):
         await self.app(scope, receive, send)
 
     def __repr__(self) -> str:
-        """
-        Return a string representation of the route.
+        """Return a detailed string representation of this route.
+
+        Produces a human-readable string that includes the raw path pattern
+        and the set of allowed HTTP methods. This is useful for debugging
+        and logging purposes, providing a quick overview of the route's
+        configuration at a glance.
 
         Returns:
-            str: A string describing the route.
+            A formatted string in the form
+            ``<Route /path methods={'GET', 'POST'}>`` showing the
+            key attributes of this HTTP route.
         """
         return f"<Route {self.raw_path} methods={self.methods}>"
 
 
 class Router(BaseRouter):
+    """Main router implementation for the sillo ASGI framework.
+
+    The Router is the central component for organizing and dispatching HTTP
+    and WebSocket requests. It maintains a collection of routes, manages
+    middleware stacks, supports nested sub-routers, and provides decorator
+    methods for convenient route registration.
+
+    Key features include prefix-based route grouping, dependency injection
+    propagation, tag inheritance for OpenAPI documentation, and flexible
+    middleware application at both router and route levels.
+
+    The router implements the ASGI callable interface, allowing it to be
+    used directly as an ASGI application or mounted within other ASGI
+    applications.
+    """
+
     def __init__(
         self,
         prefix: Optional[str] = None,
@@ -439,6 +567,34 @@ class Router(BaseRouter):
         dependencies: Optional[list[Depend]] = None,
         route_class: Type[Route] = Route,
     ):
+        """Initialize the router with configuration options.
+
+        Creates a new Router instance with the specified prefix, initial
+        routes, tags, and dependency injection configuration. The router
+        validates the prefix format and establishes the dependency graph
+        for all registered routes.
+
+        An EventEmitter is created for lifecycle event handling, and the
+        route dependency tree is refreshed to ensure all routes have the
+        correct inherited dependencies.
+
+        Args:
+            prefix: URL path prefix for all routes in this router. Should
+                start with a forward slash. A warning is issued if it does
+                not, and the prefix is corrected automatically.
+            routes: Initial sequence of route instances to register with
+                this router upon creation.
+            tags: Default OpenAPI tags applied to all routes in this router.
+                Individual routes can add additional tags.
+            exclude_from_schema: When True, all routes in this router are
+                excluded from OpenAPI documentation generation.
+            name: Optional name for this router, used in nested URL
+                generation with dot-separated notation.
+            dependencies: List of dependency injection definitions that
+                apply to all routes in this router.
+            route_class: The Route class to use when creating new routes
+                via decorator methods. Defaults to the standard Route class.
+        """
         self.prefix = prefix or ""
         self.prefix.rstrip("/")
         self.routes = list(routes)
@@ -462,9 +618,32 @@ class Router(BaseRouter):
         self._refresh_route_dependencies()
 
     def _get_combined_dependencies(self) -> List[Dependant]:
+        """Combine inherited and local dependencies into a single list.
+
+        Merges the dependencies inherited from parent routers with the
+        dependencies defined locally on this router. Inherited dependencies
+        appear first to ensure proper resolution order in the dependency
+        injection pipeline.
+
+        Returns:
+            A list of Dependant instances representing all dependencies
+            that should be applied to routes in this router, combining
+            both inherited and locally defined entries.
+        """
         return [*self._inherited_dependencies, *self.dependencies]
 
     def _refresh_route_dependencies(self) -> None:
+        """Propagate combined dependencies to all registered routes.
+
+        Iterates through all routes and updates their router-level
+        dependant lists with the current combined dependencies. For
+        Route instances, the dependants are set directly. For Group
+        instances containing a Router, the inherited dependencies are
+        propagated recursively through the sub-router hierarchy.
+
+        This method is called whenever dependencies change to ensure
+        all routes have up-to-date dependency information.
+        """
         combined_dependencies = self._get_combined_dependencies()
         for route in self.routes:
             if isinstance(route, Route):
@@ -477,18 +656,40 @@ class Router(BaseRouter):
     def _set_inherited_dependencies(
         self, inherited_dependencies: Sequence[Dependant]
     ) -> None:
+        """Set dependencies inherited from a parent router and refresh routes.
+
+        Updates the inherited dependencies list and triggers a refresh of
+        all route dependencies to incorporate the new inherited values.
+        This method is called by parent routers when mounting sub-routers
+        to propagate the dependency chain downward.
+
+        Args:
+            inherited_dependencies: Sequence of Dependant instances from
+                the parent router that should be applied to all routes
+                in this router.
+        """
         self._inherited_dependencies = list(inherited_dependencies)
         self._refresh_route_dependencies()
 
     def build_middleware_stack(self, app: ASGIApp) -> ASGIApp:
-        """
-        Builds the middleware stack by applying all registered middleware to the app.
+        """Build the middleware stack by applying all registered middleware.
+
+        Constructs the full middleware chain by wrapping the provided ASGI
+        application with all middleware components registered on this router.
+        Middleware is applied in reverse order so that the first middleware
+        added via ``use`` is the outermost wrapper in the call chain.
+
+        This method is called during request dispatch to ensure that all
+        router-level middleware is properly applied before the request
+        reaches the matched route handler.
 
         Args:
-            app: The base ASGI application.
+            app: The base ASGI application to wrap with middleware. This
+                is typically the internal request dispatching application.
 
         Returns:
-            ASGIApp: The application wrapped with all middleware.
+            The ASGI application wrapped with all registered middleware,
+            forming a complete middleware stack ready to process requests.
         """
 
         for cls, args, kwargs in reversed(self.middleware):
@@ -633,22 +834,53 @@ class Router(BaseRouter):
             """),
         ],
     ) -> None:
-        """
-        Adds an HTTP route to the application.
+        """Add an HTTP route to the router's route collection.
 
-        This method registers an HTTP route, allowing the application to handle requests for a specific URL path.
+        Registers a route on this router either from a pre-constructed
+        ``Route`` instance or by constructing one from the provided keyword
+        arguments. When a ``Route`` instance is provided, the router's tags
+        are prepended to the route's existing tags, schema exclusion is
+        propagated from the router level, and combined dependencies are
+        attached to the route for dependency injection.
+
+        Non-``Route`` base routes (such as ``Group`` or ``WebsocketRoute``)
+        are appended directly without tag or dependency processing, as they
+        manage their own configuration independently.
 
         Args:
-            route (Route): The HTTP route configuration.
+            route: A pre-constructed ``Route`` instance to register. When
+                provided, all other parameters are ignored.
+            path: URL path pattern for the route. Required when ``route``
+                is not provided.
+            methods: List of HTTP methods this route should handle.
+                Defaults to all standard methods if not specified.
+            handler: Async handler function for processing requests.
+                Required when ``route`` is not provided.
+            name: Unique route name for URL generation with ``url_for``.
+            summary: Brief endpoint summary for OpenAPI documentation.
+            description: Detailed endpoint description for OpenAPI docs.
+            responses: Response schemas by HTTP status code for OpenAPI.
+            request_model: Pydantic model for request body validation.
+            request_content_type: Content type for the request body in
+                OpenAPI docs. Defaults to ``"application/json"``.
+            middleware: List of route-specific middleware to apply.
+            tags: OpenAPI tags for grouping related endpoints.
+            security: Security requirements for OpenAPI documentation.
+            operation_id: Unique operation ID for OpenAPI documentation.
+            deprecated: Whether to mark the endpoint as deprecated in
+                the generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions.
+            exclude_from_schema: When True, hides this route from OpenAPI
+                documentation entirely.
+            **kwargs: Additional metadata stored on the route instance.
 
         Returns:
-            None
+            None. The route is appended to the router's internal route
+            list after tag and dependency processing.
 
-        Example:
-            ```python
-            route = Route("/home", home_handler, methods=["GET", "POST"])
-            app.add_route(route)
-            ```
+        Raises:
+            ValueError: If neither ``route`` nor both ``path`` and
+                ``handler`` are provided.
         """
         if not route:
             if (not path) or (not handler):
@@ -690,7 +922,28 @@ class Router(BaseRouter):
         self.routes.append(route)
 
     def use(self, middleware: MiddlewareType) -> None:
-        """Add middleware to the router"""
+        """Register a middleware component on this router.
+
+        Adds a middleware callable to the router's middleware stack. The
+        middleware is wrapped in an ``ASGIRequestResponseBridge`` to ensure
+        compatibility with the internal ASGI middleware pipeline, then
+        inserted at the beginning of the middleware list so that it
+        executes as the outermost layer in the request processing chain.
+
+        Router-level middleware applies to all routes registered on this
+        router and its sub-routers, making it suitable for cross-cutting
+        concerns such as authentication, logging, or CORS handling.
+
+        Args:
+            middleware: A middleware callable or middleware tuple following
+                the framework's middleware interface. Can be a simple async
+                callable or a tuple of ``(cls, args, kwargs)`` for
+                class-based middleware with constructor arguments.
+
+        Returns:
+            None. The middleware is inserted at the front of the router's
+            internal middleware list.
+        """
         if callable(middleware):
             mdw = Middleware(ASGIRequestResponseBridge, dispatch=middleware)
             self.middleware.insert(0, mdw)
@@ -822,47 +1075,75 @@ class Router(BaseRouter):
             """),
         ],
     ) -> Callable[..., Any]:
-        """
-        Register a GET endpoint with comprehensive OpenAPI support.
+        """Register a GET endpoint decorator with comprehensive OpenAPI support.
 
-        Examples:
-            1. Basic GET endpoint:
-            @router.get("/users")
-            async def get_users(request: Request, response: Response):
-                users = await get_all_users()
-                return response.json(users)
+        Creates and registers a Route configured for HTTP GET requests on the
+        given path. Can be used as a decorator with or without arguments, or
+        called directly by passing the handler function. Supports full OpenAPI
+        documentation metadata including response schemas, security requirements,
+        and deprecation markers.
 
-            2. GET with path parameter and response model:
-            @router.get(
-                "/users/{user_id}",
-                responses={
-                    200: UserResponse,
-                    404: {"description": "User not found"}
-                }
-            )
-            async def get_user(request: Request, response: Response):
-                user_id = request.path_params['user_id']
-                user = await get_user_by_id(user_id)
-                if not user:
-                    return response.status(404).json({"error": "User not found"})
-                return response.json(user)
+        When used as a decorator the original handler function is returned
+        unchanged so it can still be referenced directly in application code.
 
-            3. GET with query parameters:
-            class UserQuery(BaseModel):
-                active: bool = True
-                limit: int = 100
+        Args:
+            path: URL path pattern for the GET endpoint, supporting dynamic
+                parameters using curly brace syntax such as ``/users/{id}``.
+            handler: Optional async handler function for GET requests. If
+                provided the route is registered immediately; if omitted a
+                decorator is returned instead.
+            name: Unique route identifier used for URL generation with
+                ``url_for``. Should be unique across the entire application.
+            summary: Brief one-line summary for OpenAPI documentation.
+            description: Detailed description of the endpoint for OpenAPI
+                documentation generation.
+            responses: Mapping of HTTP status codes to response schemas or
+                description dicts for OpenAPI documentation.
+            request_model: Pydantic model for request body validation, or a
+                dict mapping status codes to models for complex scenarios.
+            middleware: List of route-specific middleware functions or
+                middleware tuples to apply before the handler.
+            tags: OpenAPI tags for grouping related endpoints together in
+                the generated API documentation.
+            security: List of security requirement dicts for OpenAPI docs,
+                such as ``[{"BearerAuth": []}]``.
+            operation_id: Unique operation identifier for OpenAPI docs.
+                Auto-generated from the path if not provided.
+            deprecated: When True, marks the endpoint as deprecated in the
+                generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those automatically extracted from the path pattern.
+            exclude_from_schema: When True, this route is excluded from
+                OpenAPI documentation entirely.
+            auth: Optional route-level authentication gate instance.
+            **kwargs: Additional route metadata stored on the route instance
+                for use by plugins or custom extensions.
 
-            @router.get("/users/search", request_model=UserQuery)
-            async def search_users(request: Request, response: Response):
-                query = request.query_params
-                users = await search_users(
-                    active=query['active'],
-                    limit=query['limit']
-                )
-                return response.json(users)
+        Returns:
+            A decorator function that registers the handler as a GET route
+            and returns the original handler, or the original handler
+            directly if it was provided.
+
+        Raises:
+            ValueError: If the path is empty or handler is not callable
+                when constructing the underlying Route instance.
         """
 
         def decorator(handler: HandlerType) -> HandlerType:
+            """Create a GET route from the handler and register it.
+
+            Constructs a new Route instance configured for HTTP GET requests
+            using the captured closure variables from the enclosing ``get``
+            method call, then registers it with this router. The original
+            handler is returned unchanged so it remains directly callable.
+
+            Args:
+                handler: The async handler function to wrap as a GET route.
+
+            Returns:
+                The original handler function, unmodified, allowing it to
+                be referenced directly outside of the routing context.
+            """
             route = self.route_class(
                 path=path,
                 handler=handler,
@@ -1023,37 +1304,59 @@ class Router(BaseRouter):
             """),
         ],
     ) -> Callable[..., Any]:
-        """
-        Register a POST endpoint with the application.
+        """Register a POST endpoint decorator with request validation support.
 
-        Examples:
-            1. Simple POST endpoint:
-            @router.post("/messages")
-            async def create_message(request, response):
-                message = await Message.create(**request.json)
-                return response.json(message, status=201)
+        Creates and registers a Route configured for HTTP POST requests on the
+        given path. Delegates to the generic ``route`` method with the methods
+        list set to ``["POST"]``. Supports the same decorator pattern and full
+        OpenAPI documentation metadata as all other HTTP method decorators.
 
-            2. POST with request validation:
-            class ProductCreate(BaseModel):
-                name: str
-                price: float
-                category: str
+        POST endpoints typically handle resource creation and operations that
+        cause side effects on the server. The ``request_model`` parameter enables
+        automatic Pydantic validation of the incoming request body.
 
-            @router.post(
-                "/products",
-                request_model=ProductCreate,
-                responses={201: ProductSchema}
-            )
-            async def create_product(request, response):
-                product = await Product.create(**request.validated_data)
-                return response.json(product, status=201)
+        Args:
+            path: URL path pattern for the POST endpoint, supporting dynamic
+                parameters using curly brace syntax.
+            handler: Optional async handler function for POST requests. If
+                provided the route is registered immediately; if omitted a
+                decorator is returned instead.
+            name: Unique route identifier used for URL generation with
+                ``url_for``. Should be unique across the application.
+            summary: Brief one-line summary for OpenAPI documentation.
+            description: Detailed description of the endpoint for OpenAPI
+                documentation generation.
+            responses: Mapping of HTTP status codes to response schemas or
+                description dicts for OpenAPI documentation.
+            request_model: Pydantic model for request body validation, or a
+                dict mapping status codes to models for complex scenarios.
+            request_content_type: Content type for the request body in OpenAPI
+                docs. Defaults to ``"application/json"``.
+            middleware: List of route-specific middleware functions or
+                middleware tuples to apply before the handler.
+            tags: OpenAPI tags for grouping related endpoints together in
+                the generated API documentation.
+            security: List of security requirement dicts for OpenAPI docs.
+            operation_id: Unique operation identifier for OpenAPI docs.
+                Auto-generated from the path if not provided.
+            deprecated: When True, marks the endpoint as deprecated in the
+                generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those automatically extracted from the path pattern.
+            exclude_from_schema: When True, this route is excluded from
+                OpenAPI documentation entirely.
+            auth: Optional route-level authentication gate instance.
+            **kwargs: Additional route metadata stored on the route instance
+                for use by plugins or custom extensions.
 
-            3. POST with file upload:
-            @router.post("/upload")
-            async def upload_file(request, response):
-                file = request.files.get('file')
-                # Process file upload
-                return response.json({"filename": file.filename})
+        Returns:
+            A decorator function that registers the handler as a POST route
+            and returns the original handler, or the original handler
+            directly if it was provided.
+
+        Raises:
+            ValueError: If the path is empty or handler is not callable
+                when constructing the underlying Route instance.
         """
         return self.route(
             path=path,
@@ -1197,35 +1500,57 @@ class Router(BaseRouter):
             """),
         ],
     ) -> Callable[..., Any]:
-        """
-        Register a DELETE endpoint with the application.
+        """Register a DELETE endpoint decorator for resource removal operations.
 
-        Examples:
-            1. Simple DELETE endpoint:
-            @router.delete("/users/{id}")
-            async def delete_user(request, response):
-                await User.delete(request.path_params['id'])
-                return response.status(204)
+        Creates and registers a Route configured for HTTP DELETE requests on the
+        given path. Delegates to the generic ``route`` method with the methods
+        list set to ``["DELETE"]``. Supports the same decorator pattern and full
+        OpenAPI documentation metadata as all other HTTP method decorators.
 
-            2. DELETE with confirmation:
-            @router.delete(
-                "/account",
-                responses={
-                    204: None,
-                    400: {"description": "Confirmation required"}
-                }
-            )
-            async def delete_account(request, response):
-                if not request.query_params.get('confirm'):
-                    return response.status(400)
-                await request.user.delete()
-                return response.status(204)
+        DELETE endpoints typically handle resource removal or soft-deletion.
+        The ``responses`` parameter should document 204 No Content for success
+        and 404 Not Found for missing resources.
 
-            3. Soft DELETE:
-            @router.delete("/posts/{id}")
-            async def soft_delete_post(request, response):
-                await Post.soft_delete(request.path_params['id'])
-                return response.json({"status": "archived"})
+        Args:
+            path: URL path pattern for the DELETE endpoint, supporting dynamic
+                parameters using curly brace syntax.
+            handler: Optional async handler function for DELETE requests. If
+                provided the route is registered immediately; if omitted a
+                decorator is returned instead.
+            name: Unique route identifier used for URL generation with
+                ``url_for``. Should be unique across the application.
+            summary: Brief one-line summary for OpenAPI documentation.
+            description: Detailed description of the endpoint for OpenAPI
+                documentation generation.
+            responses: Mapping of HTTP status codes to response schemas or
+                description dicts for OpenAPI documentation.
+            request_model: Pydantic model for request body validation, or a
+                dict mapping status codes to models for complex scenarios.
+            middleware: List of route-specific middleware functions or
+                middleware tuples to apply before the handler.
+            tags: OpenAPI tags for grouping related endpoints together in
+                the generated API documentation.
+            security: List of security requirement dicts for OpenAPI docs.
+            operation_id: Unique operation identifier for OpenAPI docs.
+                Auto-generated from the path if not provided.
+            deprecated: When True, marks the endpoint as deprecated in the
+                generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those automatically extracted from the path pattern.
+            exclude_from_schema: When True, this route is excluded from
+                OpenAPI documentation entirely.
+            auth: Optional route-level authentication gate instance.
+            **kwargs: Additional route metadata stored on the route instance
+                for use by plugins or custom extensions.
+
+        Returns:
+            A decorator function that registers the handler as a DELETE route
+            and returns the original handler, or the original handler
+            directly if it was provided.
+
+        Raises:
+            ValueError: If the path is empty or handler is not callable
+                when constructing the underlying Route instance.
         """
         return self.route(
             path=path,
@@ -1381,40 +1706,60 @@ class Router(BaseRouter):
             """),
         ],
     ) -> Callable[..., Any]:
-        """
-        Register a PUT endpoint with the application.
+        """Register a PUT endpoint decorator for full resource replacement.
 
-        Examples:
-            1. Simple PUT endpoint:
-            @router.put("/users/{id}")
-            async def update_user(request, response):
-                user_id = request.path_params['id']
-                await User.update(user_id, **request.json)
-                return response.json({"status": "updated"})
+        Creates and registers a Route configured for HTTP PUT requests on the
+        given path. Delegates to the generic ``route`` method with the methods
+        list set to ``["PUT"]``. Supports the same decorator pattern and full
+        OpenAPI documentation metadata as all other HTTP method decorators.
 
-            2. PUT with full resource replacement:
-            @router.put(
-                "/articles/{slug}",
-                request_model=ArticleUpdate,
-                responses={
-                    200: ArticleSchema,
-                    404: {"description": "Article not found"}
-                }
-            )
-            async def replace_article(request, response):
-                article = await Article.replace(
-                    request.path_params['slug'],
-                    request.validated_data
-                )
-                return response.json(article)
+        PUT endpoints typically handle full resource replacement where the
+        client sends a complete representation of the resource. The
+        ``request_model`` parameter enables automatic Pydantic validation of
+        the incoming request body before it reaches the handler.
 
-            3. PUT with conditional update:
-            @router.put("/resources/{id}")
-            async def update_resource(request, response):
-                if request.headers.get('If-Match') != expected_etag:
-                    return response.status(412)
-                # Process update
-                return response.json({"status": "success"})
+        Args:
+            path: URL path pattern for the PUT endpoint, supporting dynamic
+                parameters using curly brace syntax.
+            handler: Optional async handler function for PUT requests. If
+                provided the route is registered immediately; if omitted a
+                decorator is returned instead.
+            name: Unique route identifier used for URL generation with
+                ``url_for``. Should be unique across the application.
+            summary: Brief one-line summary for OpenAPI documentation.
+            description: Detailed description of the endpoint for OpenAPI
+                documentation generation.
+            responses: Mapping of HTTP status codes to response schemas or
+                description dicts for OpenAPI documentation.
+            request_model: Pydantic model for request body validation, or a
+                dict mapping status codes to models for complex scenarios.
+            middleware: List of route-specific middleware functions or
+                middleware tuples to apply before the handler.
+            tags: OpenAPI tags for grouping related endpoints together in
+                the generated API documentation.
+            security: List of security requirement dicts for OpenAPI docs.
+            operation_id: Unique operation identifier for OpenAPI docs.
+                Auto-generated from the path if not provided.
+            deprecated: When True, marks the endpoint as deprecated in the
+                generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those automatically extracted from the path pattern.
+            exclude_from_schema: When True, this route is excluded from
+                OpenAPI documentation entirely.
+            auth: Optional route-level authentication gate instance.
+            request_content_type: Content type for the request body in
+                OpenAPI docs. Defaults to ``"application/json"``.
+            **kwargs: Additional route metadata stored on the route instance
+                for use by plugins or custom extensions.
+
+        Returns:
+            A decorator function that registers the handler as a PUT route
+            and returns the original handler, or the original handler
+            directly if it was provided.
+
+        Raises:
+            ValueError: If the path is empty or handler is not callable
+                when constructing the underlying Route instance.
         """
         return self.route(
             path=path,
@@ -1570,38 +1915,59 @@ class Router(BaseRouter):
             """),
         ],
     ) -> Callable[..., Any]:
-        """
-        Register a PATCH endpoint with the application.
+        """Register a PATCH endpoint decorator for partial resource updates.
 
-        Examples:
-            1. Simple PATCH endpoint:
-            @router.patch("/users/{id}")
-            async def update_user(request, response):
-                user_id = request.path_params['id']
-                await User.partial_update(user_id, **request.json)
-                return response.json({"status": "updated"})
+        Creates and registers a Route configured for HTTP PATCH requests on the
+        given path. Delegates to the generic ``route`` method with the methods
+        list set to ``["PATCH"]``. Supports the same decorator pattern and full
+        OpenAPI documentation metadata as all other HTTP method decorators.
 
-            2. PATCH with JSON Merge Patch:
-            @router.patch(
-                "/articles/{id}",
-                request_model=ArticlePatch,
-                responses={200: ArticleSchema}
-            )
-            async def patch_article(request, response):
-                article = await Article.patch(
-                    request.path_params['id'],
-                    request.validated_data
-                )
-                return response.json(article)
+        PATCH endpoints typically handle partial resource modifications where
+        the client sends only the fields that need to change, as opposed to
+        PUT which expects a complete resource representation.
 
-            3. PATCH with selective fields:
-            @router.patch("/profile")
-            async def update_profile(request, response):
-                allowed_fields = {'bio', 'avatar_url'}
-                updates = {k: v for k, v in request.json.items()
-                        if k in allowed_fields}
-                await Profile.update(request.user.id, **updates)
-                return response.json(updates)
+        Args:
+            path: URL path pattern for the PATCH endpoint, supporting dynamic
+                parameters using curly brace syntax.
+            handler: Optional async handler function for PATCH requests. If
+                provided the route is registered immediately; if omitted a
+                decorator is returned instead.
+            name: Unique route identifier used for URL generation with
+                ``url_for``. Should be unique across the application.
+            summary: Brief one-line summary for OpenAPI documentation.
+            description: Detailed description of the endpoint for OpenAPI
+                documentation generation.
+            responses: Mapping of HTTP status codes to response schemas or
+                description dicts for OpenAPI documentation.
+            request_model: Pydantic model for request body validation, or a
+                dict mapping status codes to models for complex scenarios.
+            middleware: List of route-specific middleware functions or
+                middleware tuples to apply before the handler.
+            tags: OpenAPI tags for grouping related endpoints together in
+                the generated API documentation.
+            security: List of security requirement dicts for OpenAPI docs.
+            operation_id: Unique operation identifier for OpenAPI docs.
+                Auto-generated from the path if not provided.
+            deprecated: When True, marks the endpoint as deprecated in the
+                generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those automatically extracted from the path pattern.
+            exclude_from_schema: When True, this route is excluded from
+                OpenAPI documentation entirely.
+            auth: Optional route-level authentication gate instance.
+            request_content_type: Content type for the request body in
+                OpenAPI docs. Defaults to ``"application/json"``.
+            **kwargs: Additional route metadata stored on the route instance
+                for use by plugins or custom extensions.
+
+        Returns:
+            A decorator function that registers the handler as a PATCH route
+            and returns the original handler, or the original handler
+            directly if it was provided.
+
+        Raises:
+            ValueError: If the path is empty or handler is not callable
+                when constructing the underlying Route instance.
         """
         return self.route(
             path=path,
@@ -1744,34 +2110,59 @@ class Router(BaseRouter):
             """),
         ],
     ) -> Callable[..., Any]:
-        """
-        Register an OPTIONS endpoint with the application.
+        """Register an OPTIONS endpoint decorator for CORS and method discovery.
 
-        Examples:
-            1. Simple OPTIONS endpoint:
-            @router.options("/users")
-            async def user_options(request, response):
-                response.headers['Allow'] = 'GET, POST, OPTIONS'
-                return response
+        Creates and registers a Route configured for HTTP OPTIONS requests on
+        the given path. Delegates to the generic ``route`` method with the
+        methods list set to ``["OPTIONS"]``. Supports the same decorator
+        pattern and full OpenAPI documentation metadata as all other HTTP
+        method decorators.
 
-            2. CORS OPTIONS handler:
-            @router.options("/{path:path}")
-            async def cors_options(request, response):
-                response.headers.update({
-                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
-                    'Access-Control-Allow-Headers': 'Content-Type',
-                    'Access-Control-Max-Age': '86400'
-                })
-                return response.status(204)
+        OPTIONS endpoints are commonly used for CORS preflight requests and
+        for advertising the set of HTTP methods supported by a resource.
+        Browsers send OPTIONS requests automatically before cross-origin
+        requests to verify that the server permits the actual request.
 
-            3. Detailed OPTIONS response:
-            @router.options("/resources")
-            async def resource_options(request, response):
-                return response.json({
-                    "methods": ["GET", "POST"],
-                    "formats": ["application/json"],
-                    "limits": {"max_size": "10MB"}
-                })
+        Args:
+            path: URL path pattern for the OPTIONS endpoint, supporting
+                dynamic parameters using curly brace syntax.
+            handler: Optional async handler function for OPTIONS requests.
+                If provided the route is registered immediately; if omitted
+                a decorator is returned instead.
+            name: Unique route identifier used for URL generation with
+                ``url_for``. Should be unique across the application.
+            summary: Brief one-line summary for OpenAPI documentation.
+            description: Detailed description of the endpoint for OpenAPI
+                documentation generation.
+            responses: Mapping of HTTP status codes to response schemas or
+                description dicts for OpenAPI documentation.
+            request_model: Pydantic model for request body validation, or a
+                dict mapping status codes to models for complex scenarios.
+            middleware: List of route-specific middleware functions or
+                middleware tuples to apply before the handler.
+            tags: OpenAPI tags for grouping related endpoints together in
+                the generated API documentation.
+            security: List of security requirement dicts for OpenAPI docs.
+            operation_id: Unique operation identifier for OpenAPI docs.
+                Auto-generated from the path if not provided.
+            deprecated: When True, marks the endpoint as deprecated in the
+                generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those automatically extracted from the path pattern.
+            exclude_from_schema: When True, this route is excluded from
+                OpenAPI documentation entirely.
+            auth: Optional route-level authentication gate instance.
+            **kwargs: Additional route metadata stored on the route instance
+                for use by plugins or custom extensions.
+
+        Returns:
+            A decorator function that registers the handler as an OPTIONS
+            route and returns the original handler, or the original handler
+            directly if it was provided.
+
+        Raises:
+            ValueError: If the path is empty or handler is not callable
+                when constructing the underlying Route instance.
         """
         return self.route(
             path=path,
@@ -1914,33 +2305,58 @@ class Router(BaseRouter):
             """),
         ],
     ) -> Callable[..., Any]:
-        """
-        Register a HEAD endpoint with the application.
+        """Register a HEAD endpoint decorator for header-only responses.
 
-        Examples:
-            1. Simple HEAD endpoint:
-            @router.head("/resources/{id}")
-            async def check_resource(request, response):
-                exists = await Resource.exists(request.path_params['id'])
-                return response.status(200 if exists else 404)
+        Creates and registers a Route configured for HTTP HEAD requests on the
+        given path. Delegates to the generic ``route`` method with the methods
+        list set to ``["HEAD"]``. Supports the same decorator pattern and full
+        OpenAPI documentation metadata as all other HTTP method decorators.
 
-            2. HEAD with cache headers:
-            @router.head("/static/{path:path}")
-            async def check_static(request, response):
-                path = request.path_params['path']
-                if not static_file_exists(path):
-                    return response.status(404)
-                response.headers['Last-Modified'] = get_last_modified(path)
-                return response.status(200)
+        HEAD endpoints return only headers without a response body, making them
+        useful for checking resource existence, retrieving metadata such as
+        content length or last-modified timestamps, and validating cache
+        freshness without transferring the full resource.
 
-            3. HEAD with metadata:
-            @router.head("/documents/{id}")
-            async def document_metadata(request, response):
-                doc = await Document.metadata(request.path_params['id'])
-                if not doc:
-                    return response.status(404)
-                response.headers['X-Document-Size'] = str(doc.size)
-                return response.status(200)
+        Args:
+            path: URL path pattern for the HEAD endpoint, supporting dynamic
+                parameters using curly brace syntax.
+            handler: Optional async handler function for HEAD requests. If
+                provided the route is registered immediately; if omitted a
+                decorator is returned instead.
+            name: Unique route identifier used for URL generation with
+                ``url_for``. Should be unique across the application.
+            summary: Brief one-line summary for OpenAPI documentation.
+            description: Detailed description of the endpoint for OpenAPI
+                documentation generation.
+            responses: Mapping of HTTP status codes to response schemas or
+                description dicts for OpenAPI documentation.
+            request_model: Pydantic model for request body validation, or a
+                dict mapping status codes to models for complex scenarios.
+            middleware: List of route-specific middleware functions or
+                middleware tuples to apply before the handler.
+            tags: OpenAPI tags for grouping related endpoints together in
+                the generated API documentation.
+            security: List of security requirement dicts for OpenAPI docs.
+            operation_id: Unique operation identifier for OpenAPI docs.
+                Auto-generated from the path if not provided.
+            deprecated: When True, marks the endpoint as deprecated in the
+                generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those automatically extracted from the path pattern.
+            exclude_from_schema: When True, this route is excluded from
+                OpenAPI documentation entirely.
+            auth: Optional route-level authentication gate instance.
+            **kwargs: Additional route metadata stored on the route instance
+                for use by plugins or custom extensions.
+
+        Returns:
+            A decorator function that registers the handler as a HEAD route
+            and returns the original handler, or the original handler
+            directly if it was provided.
+
+        Raises:
+            ValueError: If the path is empty or handler is not callable
+                when constructing the underlying Route instance.
         """
         return self.route(
             path=path,
@@ -2087,43 +2503,83 @@ class Router(BaseRouter):
             """),
         ],
     ) -> Union[HandlerType, Callable[..., HandlerType]]:
-        """
-        Register a route with configurable HTTP methods and OpenAPI documentation.
+        """Register a route with configurable HTTP methods and OpenAPI metadata.
 
-        This is the most flexible way to register routes, allowing full control over
-        HTTP methods, request/response validation, and OpenAPI documentation.
+        This is the most flexible route registration method, allowing full
+        control over HTTP methods, request/response validation, and OpenAPI
+        documentation generation. All convenience decorators (``get``, ``post``,
+        ``put``, ``delete``, ``patch``, ``options``, ``head``) delegate to this
+        method internally with their respective method lists.
 
-        Can be used as a decorator:
-            @router.route("/users", methods=["GET", "POST"])
-            async def user_handler(request, response):
-                ...
-
-        Or directly:
-            router.route("/users", methods=["GET", "POST"], handler=user_handler)
+        Can be used as a decorator with or without arguments, or called
+        directly by passing the handler function. When used as a decorator
+        the original handler is returned unchanged for direct reference.
 
         Args:
-            path: URL path pattern with optional parameters
-            methods: HTTP methods this route accepts
-            handler: Async function to handle requests
-            name: Unique route identifier
-            summary: Brief route description
-            description: Detailed route description
-            responses: Response models by status code
-            request_model: Request body validation model
-            middleware: Route-specific middleware
-            tags: OpenAPI tags for grouping
-            security: Security requirements
-            operation_id: OpenAPI operation ID
-            deprecated: Mark as deprecated
-            parameters: Additional OpenAPI parameters
-            exclude_from_schema: Hide from docs
-            **kwargs: Additional route metadata
+            path: URL path pattern with optional parameters using curly brace
+                syntax such as ``/users/{user_id}`` or ``/files/{filepath:path}``.
+            methods: List of HTTP methods this route accepts. Defaults to all
+                standard methods if not specified.
+            handler: Optional async function to handle requests. If provided
+                the route is registered immediately; if omitted a decorator
+                is returned instead.
+            name: Unique route identifier used for URL generation with
+                ``url_for``. Auto-generated from the path if not provided.
+            summary: Brief one-line description of the route for OpenAPI
+                documentation generation.
+            description: Detailed description of the route for OpenAPI
+                documentation generation.
+            responses: Mapping of HTTP status codes to response models or
+                description dicts for OpenAPI documentation.
+            request_model: Pydantic model for request body validation and
+                OpenAPI documentation generation.
+            request_content_type: Content type for the request body in OpenAPI
+                docs. Defaults to ``"application/json"``.
+            middleware: List of route-specific middleware callables or tuples
+                to execute in order before the route handler.
+            tags: OpenAPI tags for grouping related routes together in the
+                generated API documentation.
+            security: List of security requirement dicts for OpenAPI docs,
+                such as ``[{"bearerAuth": []}]`` for JWT authentication.
+            operation_id: Unique identifier for this operation in OpenAPI
+                docs. Auto-generated if not provided.
+            deprecated: When True, marks the route as deprecated in the
+                generated OpenAPI documentation.
+            parameters: Additional OpenAPI parameter definitions beyond
+                those automatically extracted from the path pattern.
+            exclude_from_schema: When True, excludes this route from OpenAPI
+                documentation entirely. Useful for internal or admin routes.
+            auth: Optional route-level authentication gate instance for
+                requiring authentication and checking permissions.
+            **kwargs: Additional route metadata available in the request
+                scope for use by plugins or custom extensions.
 
         Returns:
-            The route handler function (when used as decorator)
+            The route handler function when used as a decorator, or a
+            decorator function that registers the handler and returns it.
+
+        Raises:
+            ValueError: If the path is empty or handler is not callable
+                when constructing the underlying Route instance.
         """
 
         def decorator(handler: HandlerType):
+            """Create a route from the handler and register it.
+
+            Constructs a new Route instance using the captured closure
+            variables from the enclosing ``route`` method call, then
+            registers it with this router via ``add_route``. The original
+            handler is not returned; this decorator is used internally
+            for side-effect registration only.
+
+            Args:
+                handler: The async handler function to wrap as a route
+                    with the configured HTTP methods and metadata.
+
+            Returns:
+                None. The route is registered as a side effect via
+                ``add_route`` on the enclosing router instance.
+            """
             route_instance = self.route_class(
                 path=path,
                 handler=handler,
@@ -2161,29 +2617,34 @@ class Router(BaseRouter):
         path: Optional[str] = None,
         handler: Optional[WsHandlerType] = None,
     ) -> None:
-        """
-        Adds a WebSocket route to the application.
+        """Add a WebSocket route to the application router.
 
-        This method registers a WebSocket route, allowing the application to handle WebSocket connections.
+        Registers a WebSocket route either from a pre-constructed
+        ``WebsocketRoute`` instance or by creating one from the provided
+        path and handler arguments. This enables the application to handle
+        persistent WebSocket connections for real-time bidirectional
+        communication between clients and the server.
+
+        Exactly one of ``route`` or both ``path`` and ``handler`` must be
+        provided. If ``route`` is given it is appended directly; otherwise
+        a new ``WebsocketRoute`` is constructed from the path and handler.
 
         Args:
-            route: Either a pre-constructed WebsocketRoute instance or None
-            path: The URL path for the WebSocket route (required if route is None)
-            handler: The WebSocket handler function (required if route is None)
-            middleware: List of middleware for this route
+            route: A pre-constructed ``WebsocketRoute`` instance to register.
+                When provided, ``path`` and ``handler`` are ignored.
+            path: The URL path pattern for the WebSocket endpoint. Required
+                when ``route`` is not provided. Supports dynamic parameters
+                using curly brace syntax.
+            handler: The async WebSocket handler function. Required when
+                ``route`` is not provided. Must accept a single
+                ``WebSocket`` argument.
 
         Returns:
-            None
+            None. The route is appended to the router's internal route list.
 
-        Example:
-            ```python
-            # Using with a pre-constructed route
-            route = WebsocketRoute("/ws/chat", chat_handler)
-            app.add_ws_route(route)
-
-            # Or directly with path and handler
-            app.add_ws_route(path="/ws/chat", handler=chat_handler)
-            ```
+        Raises:
+            ValueError: If neither ``route`` nor both ``path`` and
+                ``handler`` are provided.
         """
         if route is not None:
             self.routes.append(route)
@@ -2202,46 +2663,92 @@ class Router(BaseRouter):
             Doc("The WebSocket handler function. Must be an async function."),
         ] = None,
     ) -> Any:
-        """
-        Registers a WebSocket route.
+        """Register a WebSocket route as a decorator or direct call.
 
-        This decorator is used to define WebSocket routes in the application, allowing handlers
-        to manage WebSocket connections. When a WebSocket client connects to the given path,
-        the specified handler function will be executed.
+        Creates and registers a ``WebsocketRoute`` for handling persistent
+        WebSocket connections at the given path. Can be used as a decorator
+        with or without the handler argument, enabling flexible registration
+        patterns for WebSocket endpoints.
+
+        When a handler is provided directly the route is registered
+        immediately and the result of ``add_ws_route`` is returned. When
+        handler is omitted a decorator is returned that wraps the handler
+        and registers the route upon decoration.
+
+        Args:
+            path: The WebSocket route path pattern. Must be a valid URL
+                pattern supporting dynamic parameters via curly brace syntax
+                such as ``/ws/chat/{room_id}``.
+            handler: Optional async WebSocket handler function. Must be a
+                coroutine function accepting a single ``WebSocket`` argument.
+                If provided the route is registered immediately.
 
         Returns:
-            Callable: The original WebSocket handler function.
+            The original handler function if handler was provided directly,
+            or a decorator function that registers the handler as a WebSocket
+            route and returns the original handler.
 
-        Example:
-            ```python
-
-            @app.ws_route("/ws/chat")
-            async def chat_handler(websocket):
-                await websocket.accept()
-                while True:
-                    message = await websocket.receive_text()
-                    await websocket.send_text(f"Echo: {message}")
-            ```
+        Raises:
+            AssertionError: If the handler is not callable or is not an
+                async coroutine function (raised during WebsocketRoute
+                construction).
         """
         if handler:
             return self.add_ws_route(WebsocketRoute(path, handler))
 
         def decorator(handler: WsHandlerType) -> WsHandlerType:
+            """Create a WebSocket route from the handler and register it.
+
+            Constructs a new ``WebsocketRoute`` instance from the captured
+            path and the provided handler, then registers it with this
+            router via ``add_ws_route``. The original handler is returned
+            unchanged so it remains directly callable outside the routing
+            context.
+
+            Args:
+                handler: The async WebSocket handler function to wrap as
+                    a WebSocket route at the configured path.
+
+            Returns:
+                The original handler function, unmodified, allowing it to
+                be referenced directly outside of the routing context.
+            """
             self.add_ws_route(WebsocketRoute(path, handler))
             return handler
 
         return decorator
 
     def url_for(self, _name: str, **path_params: Any) -> URLPath:
-        """
-        Generate a URL path including all router prefixes for nested routes.
+        """Generate a complete URL path including all router prefixes.
+
+        Performs reverse URL resolution by looking up a named route and
+        substituting the provided path parameters into its URL pattern.
+        Supports both simple route names (searched directly in the current
+        router's routes) and dot-separated nested names that traverse
+        through ``Group`` objects to find routes in sub-routers.
+
+        The returned ``URLPath`` includes the full path from the root of
+        the application, incorporating all intermediate router prefixes
+        accumulated during the nested route search.
 
         Args:
-            _name: Route name in format 'router1.router2.route_name'
-            **path_params: Path parameters to substitute
+            _name: Route name to resolve. Simple names like ``"get_user"``
+                search the current router directly. Dot-separated names
+                like ``"api.v1.get_user"`` traverse nested Group objects
+                recursively to find the target route.
+            **path_params: Path parameters to substitute into the resolved
+                route's URL pattern. Keys must match the parameter names
+                defined in the route path using curly brace syntax.
 
         Returns:
-            URLPath: Complete path including all router prefixes
+            A ``URLPath`` instance containing the complete resolved path
+            string including all router prefixes, with the ``"http"``
+            protocol set.
+
+        Raises:
+            ValueError: If the named route cannot be found in the current
+                router or any nested sub-routers, or if the route name
+                format is invalid for nested resolution.
         """
         name_parts = _name.split(".")
 
@@ -2264,17 +2771,39 @@ class Router(BaseRouter):
         path_segments: List[str],
         **path_params: Any,
     ) -> URLPath:
-        """
-        Recursively search for a route in nested Group objects.
+        """Recursively search for a named route through nested Group objects.
+
+        Traverses the router hierarchy by consuming dot-separated name parts
+        one at a time. Each intermediate part is matched against Group objects
+        in the current router's route list, and the search descends into the
+        Group's underlying sub-router. The final name part is matched against
+        actual route instances to produce the resolved URL.
+
+        Path segments from each traversed Group are accumulated and prepended
+        to the final route path, producing a complete URL that includes all
+        intermediate router prefixes.
 
         Args:
-            full_name: The original full route name for error messages
-            name_parts: Remaining parts of the route name to resolve
-            path_segments: Accumulated path segments from parent routers
-            **path_params: Path parameters to substitute
+            full_name: The original full dot-separated route name, used in
+                error messages when resolution fails at any level.
+            name_parts: Remaining list of name segments to resolve. The first
+                element is matched against Groups or routes at the current
+                level; remaining elements are passed recursively downward.
+            path_segments: Accumulated path segments from parent routers and
+                Groups traversed so far. Each segment has leading and trailing
+                slashes stripped for clean joining.
+            **path_params: Path parameters to substitute into the resolved
+                route's URL pattern via ``url_path_for``.
 
         Returns:
-            URLPath: Complete path including all router prefixes
+            A ``URLPath`` instance containing the complete resolved path
+            including all accumulated router prefixes, with the ``"http"``
+            protocol set.
+
+        Raises:
+            ValueError: If no name parts remain, if a route with the
+                expected name is not found at the current level, or if a
+                Group does not contain a Router as its underlying app.
         """
         if not name_parts:
             raise ValueError(f"Invalid route name format: '{full_name}'")
@@ -2330,35 +2859,40 @@ class Router(BaseRouter):
     ) -> None:
         """Mount a frontend SPA build directory with fallback routing.
 
-        Registers a :class:`FrontendApp` as a :class:`Group` at *path*, so that
-        static files from *directory* are served and unknown paths fall back to
-        a fallback HTML file (typically ``index.html``).
+        Registers a :class:`FrontendApp` as a :class:`Group` at the given
+        path, so that static files from the build directory are served and
+        unknown paths fall back to a fallback HTML file (typically
+        ``index.html``). This enables single-page application hosting
+        alongside API routes within the same server instance.
 
         Because this adds a route to the router's route list, any API routes
         registered *before* calling ``frontend()`` are matched first. This
-        guarantees that API endpoints take precedence over the frontend catch-all.
+        guarantees that API endpoints take precedence over the frontend
+        catch-all, preventing API paths from being shadowed by the SPA.
 
         Args:
-            path: URL path prefix to mount the frontend at (default ``"/"``).
-            directory: Path to the directory containing the built frontend files.
-            fallback: Fallback behaviour. ``"auto"`` (default) tries ``404.html``
-                      then ``index.html``. Pass an explicit filename or ``None``
-                      (or ``False``) to disable fallback.
-            name: Optional name for the route group (used with ``url_for``).
-            cache_control: Optional ``Cache-Control`` header value.
+            path: URL path prefix to mount the frontend at. Defaults to
+                ``"/"`` which catches all unmatched paths. Should start
+                with a forward slash.
+            directory: Path to the directory containing the built frontend
+                files. Can be an absolute or relative filesystem path.
+                Defaults to ``"dist"``.
+            fallback: Fallback behaviour for unmatched paths. ``"auto"``
+                (default) tries ``404.html`` then ``index.html``. Pass an
+                explicit filename string to use a specific fallback file,
+                or ``None``/``False`` to disable fallback entirely.
+            name: Optional name for the route group, used with ``url_for``
+                for reverse URL generation of the frontend mount point.
+            cache_control: Optional ``Cache-Control`` header value applied
+                to all static file responses served from this mount.
 
-        Example::
+        Returns:
+            None. A ``Group`` containing the ``FrontendApp`` is appended
+            to the router's internal route list.
 
-            from sillo import silloApp
-
-            app = silloApp()
-
-            @app.get("/api/health")
-            async def health(request, response):
-                return response.json({"status": "ok"})
-
-            # Frontend routes are checked *after* API routes
-            app.frontend("/", directory="./frontend/dist")
+        Raises:
+            FileNotFoundError: If the specified directory does not exist
+                when the FrontendApp attempts to serve files.
         """
         frontend_app = FrontendApp(
             directory=directory,
@@ -2369,6 +2903,18 @@ class Router(BaseRouter):
         self.add_route(group)
 
     def __repr__(self) -> str:
+        """Return a detailed string representation of this router.
+
+        Produces a human-readable string that includes the router's URL
+        prefix and the total number of registered routes. This is useful
+        for debugging and logging purposes, providing a quick overview
+        of the router's configuration at a glance.
+
+        Returns:
+            A formatted string in the form
+            ``<Router prefix='/api' routes=5>`` showing the key
+            attributes of this router instance.
+        """
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
 
     async def __call__(
@@ -2377,10 +2923,66 @@ class Router(BaseRouter):
         receive: Receive,
         send: Send,
     ) -> Any:
+        """Dispatch an incoming ASGI request through the full middleware stack.
+
+        Implements the ASGI callable interface, allowing the Router to be
+        used directly as an ASGI application. Builds the complete middleware
+        stack by wrapping the internal dispatch application with all
+        registered router-level middleware, then invokes the resulting
+        application with the provided ASGI connection triple.
+
+        This method is the entry point for all requests handled by this
+        router, whether mounted as the top-level application or as a
+        sub-router within a larger application hierarchy.
+
+        Args:
+            scope: ASGI scope dictionary containing request information
+                including type, path, method, headers, and query string.
+            receive: ASGI receive callable for reading the request body
+                and other incoming messages from the client.
+            send: ASGI send callable for transmitting the response data
+                back to the client.
+
+        Returns:
+            The return value of the inner ASGI application, which is
+            typically None for standard ASGI applications.
+        """
         app = self.build_middleware_stack(cast(ASGIApp, self.app))
         await app(scope, receive, send)
 
     async def app(self, scope: Scope, receive: Receive, send: Send):
+        """Dispatch a request to the first matching route handler.
+
+        Iterates through all registered routes in order, attempting to match
+        the incoming request path against each route's URL pattern. When a
+        full match is found (both path and HTTP method match), the request
+        is dispatched to that route's handler immediately. If only a partial
+        match is found (path matches but method does not), the first partial
+        match is stored and used if no full match is found later, enabling
+        proper 405 Method Not Allowed responses.
+
+        For HTTP requests that match no route, a ``NotFoundException`` is
+        raised which results in a 404 response. For WebSocket connections
+        that match no route, a close frame with code 4404 is sent to the
+        client instead of raising an exception.
+
+        Args:
+            scope: ASGI scope dictionary containing request information
+                including type, path, method, headers, and query string.
+                The scope is mutated to include ``"app"`` and ``"route_params"``
+                keys for downstream use by handlers.
+            receive: ASGI receive callable for reading the request body
+                and other incoming messages from the client.
+            send: ASGI send callable for transmitting the response data
+                back to the client.
+
+        Returns:
+            None. The response is sent directly through the ``send`` callable.
+
+        Raises:
+            NotFoundException: If no route matches the request path for
+                HTTP-type connections.
+        """
         scope["app"] = self
 
         path_match = None
@@ -2404,18 +3006,57 @@ class Router(BaseRouter):
             await send({"type": "websocket.close", "code": 4404})
 
     def mount_router(self, app: "Router", name: Optional[str] = None):
-        """
-        Mount an ASGI application (e.g., another Router) using its prefix.
+        """Mount a sub-router under this router using its prefix.
+
+        Attaches another Router instance as a sub-application wrapped in a
+        ``Group`` object, using the sub-router's prefix as the mount path.
+        The sub-router inherits the combined dependencies from this router,
+        ensuring that dependency injection propagates correctly through the
+        entire router hierarchy.
+
+        This is the primary mechanism for composing large applications from
+        smaller, modular router components. Each sub-router maintains its
+        own routes, middleware, and dependency configuration while inheriting
+        parent-level dependencies.
 
         Args:
-            app: The ASGI application (e.g., another Router) to mount.
+            app: The Router instance to mount as a sub-application. The
+                router's ``prefix`` attribute determines the URL path at
+                which it will be mounted.
+            name: Optional name for the Group wrapping the sub-router.
+                Used for reverse URL generation with ``url_for`` using
+                dot-separated notation.
+
+        Returns:
+            None. A ``Group`` containing the sub-router is appended to
+            this router's internal route list.
         """
         app._set_inherited_dependencies(self._get_combined_dependencies())
         path = app.prefix
         self.routes.append(Group(app=app, path=path, name=name))
 
     def get_all_routes(self) -> List[Route]:
-        """Returns a flat list of all HTTP routes in this router and all nested sub-routers"""
+        """Collect all HTTP routes from this router and all nested sub-routers.
+
+        Performs a breadth-first traversal of the router hierarchy, starting
+        from this router and descending into all mounted sub-routers. Each
+        route is shallow-copied and its ``raw_path`` is updated to include
+        the accumulated prefix from all parent routers, producing a flat
+        list of routes with fully qualified paths.
+
+        This method is primarily used by the OpenAPI documentation generator
+        to collect all routes across the entire application for schema
+        generation, and by debugging tools that need a complete route listing.
+
+        Args:
+            None. This method takes no arguments beyond the implicit
+                ``self`` reference to the current router instance.
+
+        Returns:
+            A flat list of ``Route`` instances from this router and all
+            nested sub-routers, with each route's ``raw_path`` updated
+            to include the full accumulated prefix from parent routers.
+        """
         all_routes: List[Route] = []
         routers_to_process: List[Any] = [(self, "")]  # (router, current_prefix)
 
@@ -2441,12 +3082,27 @@ class Router(BaseRouter):
         app: ASGIApp,
         prefix: str = "",
     ):
-        """
-        Register an ASGI application (e.g., another Router) under a specdefific path prefix.
+        """Register an ASGI application under a specific path prefix.
+
+        Wraps the provided ASGI application in a ``Group`` and adds it to
+        this router's route list at the given prefix. This method is
+        deprecated in favor of using ``Group`` directly or
+        ``mount_router`` for sub-router mounting.
+
+        A ``DeprecationWarning`` is issued when this method is called,
+        directing users to the preferred alternatives for sub-application
+        mounting.
 
         Args:
-            app: The ASGI application (e.g., another Router) to register.
-            prefix: The path prefix under which the app will be registered.
+            app: The ASGI application to register. Can be another Router
+                instance or any ASGI-compatible callable.
+            prefix: The URL path prefix under which the application will
+                be registered. Defaults to an empty string for root-level
+                mounting.
+
+        Returns:
+            None. A ``Group`` containing the application is appended to
+            this router's internal route list.
         """
 
         warnings.warn(
@@ -2467,15 +3123,29 @@ class Router(BaseRouter):
         ],
         **kwargs: Dict[str, Any],
     ) -> None:
-        """
-        Wraps the entire router with an ASGI middleware.
+        """Wrap the entire router with an ASGI-level middleware.
 
-        This method allows adding middleware at the ASGI level, which intercepts all requests
-        (HTTP and WebSocket) before they reach the router.
+        Applies an ASGI middleware around the router's internal dispatch
+        application, intercepting all requests (both HTTP and WebSocket)
+        before they reach the route matching and handling pipeline. This
+        operates at a lower level than router-level middleware added via
+        ``use``, wrapping the entire dispatch application rather than
+        individual route handlers.
+
+        This is useful for cross-cutting concerns that must apply to every
+        request regardless of which route is matched, such as request
+        logging, tracing, or protocol-level transformations.
 
         Args:
-            middleware_cls: An ASGI middleware class or callable that follows the ASGI interface
-            **kwargs: Additional keyword arguments to pass to the middleware
+            middleware_cls: An ASGI middleware class or callable that
+                follows the ASGI interface, accepting an app as its first
+                argument and returning an ASGI-compatible application.
+            **kwargs: Additional keyword arguments passed to the middleware
+                constructor alongside the application reference.
+
+        Returns:
+            None. The router's internal ``app`` attribute is replaced with
+            the middleware-wrapped version.
         """
         self.app = middleware_cls(
             self.app,  # ty:ignore[invalid-argument-type]

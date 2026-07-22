@@ -23,27 +23,49 @@ logger = logging.getLogger(__name__)
 
 
 class Event(EventSerializationMixin):
-    """
-    Advanced event implementation with support for:
-    - Priority-based listener execution
-    - Event propagation (capture/bubble phases)
-    - Asynchronous listeners
-    - Thread safety
-    - Listener management
-    - Event cancellation
-    - Detailed event context
-    - Performance metrics
+    """Advanced event implementation with support for priority-based dispatch.
+
+    This class provides a full-featured event object that supports priority-based
+    listener execution, DOM-style event propagation (capture/bubble phases),
+    both synchronous and asynchronous listeners, thread-safe listener management,
+    event cancellation, detailed event context tracking, and built-in performance
+    metrics collection.
+
+    Events can be organized hierarchically via parent-child relationships, enabling
+    propagation patterns where ancestor events observe or intercept events fired
+    on their descendants.  Each event maintains an execution history and running
+    performance metrics for observability.
+
+    The class inherits serialization capabilities from
+    :class:`~sillo.events.mixins.EventSerializationMixin`, allowing event state
+    to be converted to and from dictionary representations for transport or
+    persistence.
+
+    Attributes:
+        DEFAULT_MAX_LISTENERS: Class-level default for the maximum number of
+            listeners a single event instance may hold (100).
     """
 
     DEFAULT_MAX_LISTENERS = 100
 
     def __init__(self, name: str, max_listeners: Optional[int] = None):
-        """
-        Initialize an event.
+        """Initialize an Event instance with the given name and listener limit.
+
+        Sets up internal data structures for priority-bucketed listener storage,
+        once-listener tracking, thread-safety locks, parent-child hierarchy
+        references, execution history, and performance metrics counters.
 
         Args:
-            name: Name of the event
-            max_listeners: Maximum number of listeners allowed (None for no limit)
+            name: Human-readable name that uniquely identifies this event within
+                an emitter or namespace.  Used in log messages, error reports,
+                and metric labels.
+            max_listeners: Upper bound on the total number of listeners this
+                event may hold across all priority levels.  Pass ``None`` to
+                fall back to :attr:`DEFAULT_MAX_LISTENERS` (100).  Setting this
+                to a very large value effectively disables the guard.
+
+        Raises:
+            ValueError: If ``max_listeners`` is provided and is less than zero.
         """
         self.name = name
         self._listeners: Dict[EventPriority, List[ListenerType]] = {
@@ -73,11 +95,33 @@ class Event(EventSerializationMixin):
         }
 
     def __repr__(self) -> str:
+        """Return a concise string representation of this Event instance.
+
+        The representation includes the event name and the current total count
+        of registered listeners (both persistent and once-listeners combined),
+        making it suitable for debugging and interactive inspection.
+
+        Returns:
+            A formatted string of the form ``<Event name='...' listeners=N>``
+            where *N* is the live listener count obtained via the
+            :attr:`listener_count` property.
+        """
         return f"<Event name='{self.name}' listeners={self.listener_count}>"
 
     @property
     def listener_count(self) -> int:
-        """Get total number of listeners"""
+        """Get the total number of listeners currently registered on this event.
+
+        Counts both persistent listeners and one-shot (``once``) listeners across
+        all five priority buckets.  The count is computed under the internal
+        reentrant lock so the value is consistent even when listeners are being
+        added or removed concurrently from other threads.
+
+        Returns:
+            Non-negative integer representing the sum of all persistent and
+            once-listeners across every :class:`~sillo.events.enums.EventPriority`
+            bucket.
+        """
         with self._lock:
             return sum(len(v) for v in self._listeners.values()) + sum(
                 len(v) for v in self._once_listeners.values()
@@ -85,12 +129,36 @@ class Event(EventSerializationMixin):
 
     @property
     def max_listeners(self) -> int:
-        """Get maximum number of listeners allowed"""
+        """Get the maximum number of listeners this event is allowed to hold.
+
+        Returns the current ceiling enforced by :meth:`_add_listener` when new
+        listeners are registered.  If the listener count reaches this value,
+        subsequent registration attempts raise
+        :class:`~sillo.events.exceptions.MaxListenersExceededError`.
+
+        Returns:
+            Positive integer representing the upper bound on total listeners
+            (both persistent and once) for this event instance.
+        """
         return self._max_listeners
 
     @max_listeners.setter
     def max_listeners(self, value: int):
-        """Set maximum number of listeners allowed"""
+        """Set the maximum number of listeners allowed on this event.
+
+        Updates the listener ceiling that guards against accidental listener
+        leaks.  The new value is validated under the internal lock to prevent
+        race conditions with concurrent listener registration.
+
+        Args:
+            value: New maximum listener count.  Must be greater than or equal
+                to the current :attr:`listener_count`.
+
+        Raises:
+            ValueError: If ``value`` is less than the current number of
+                registered listeners, since shrinking below the existing count
+                would silently orphan active listeners.
+        """
         with self._lock:
             if value < self.listener_count:
                 raise ValueError(
@@ -100,22 +168,63 @@ class Event(EventSerializationMixin):
 
     @property
     def enabled(self) -> bool:
-        """Check if event is enabled"""
+        """Check whether this event is currently enabled for dispatch.
+
+        When an event is disabled, calls to :meth:`trigger` and
+        :meth:`trigger_async` return immediately with a cancellation
+        dictionary without invoking any registered listeners.  This provides
+        a lightweight on/off switch without requiring listener removal.
+
+        Returns:
+            ``True`` if the event will dispatch to listeners when triggered,
+            ``False`` if trigger calls will be short-circuited.
+        """
         return self._enabled
 
     @enabled.setter
     def enabled(self, value: bool):
-        """Enable or disable the event"""
+        """Enable or disable event dispatch for this event instance.
+
+        Sets the internal enabled flag that controls whether :meth:`trigger`
+        and :meth:`trigger_async` execute registered listeners or return
+        immediately.  Toggling this flag is thread-safe and does not affect
+        the listener registry — listeners remain registered and will fire
+        once the event is re-enabled.
+
+        Args:
+            value: ``True`` to enable dispatch so that listeners are invoked
+                on trigger, ``False`` to disable dispatch causing trigger
+                calls to return a cancellation dictionary immediately.
+        """
         self._enabled = value
 
     @property
     def parent(self) -> Optional["Event"]:
-        """Get parent event"""
+        """Get the parent event in the propagation hierarchy.
+
+        Returns the event that this event is a child of, or ``None`` if this
+        event sits at the root of the hierarchy.  Parent relationships drive
+        the capture and bubble propagation phases during event dispatch.
+
+        Returns:
+            The parent :class:`Event` instance, or ``None`` if this event has
+            no parent and is therefore a root-level event.
+        """
         return self._parent
 
     @parent.setter
     def parent(self, value: Optional["Event"]):
-        """Set parent event"""
+        """Set the parent event, updating the hierarchy bidirectionally.
+
+        Assigns a new parent to this event.  If a previous parent existed,
+        this event is removed from that parent's children list first.  The
+        new parent (if not ``None``) receives a weak-reference proxy of this
+        event in its children list to avoid reference cycles.
+
+        Args:
+            value: The new parent :class:`Event` instance, or ``None`` to
+                detach this event from the hierarchy entirely.
+        """
         with self._lock:
             if self._parent is not None:
                 self._parent._children.remove(self)
@@ -125,15 +234,47 @@ class Event(EventSerializationMixin):
 
     @property
     def children(self) -> List["Event"]:
-        """Get child events"""
+        """Get a snapshot of the child events registered under this event.
+
+        Returns a shallow copy of the internal children list so that callers
+        can iterate safely without holding the lock.  Children are stored as
+        weak-reference proxies to prevent reference cycles in the hierarchy.
+
+        Returns:
+            A new list of :class:`Event` instances that are direct children
+            of this event in the propagation hierarchy.  The list is empty
+            if no children have been added.
+        """
         return self._children.copy()
 
     def add_child(self, child: "Event"):
-        """Add a child event"""
+        """Add a child event to this event's propagation hierarchy.
+
+        Establishes a parent-child relationship by setting this event as the
+        parent of the given child.  This enables capture-phase propagation
+        from this event down to the child and bubble-phase propagation from
+        the child back up.  If the child already has a different parent, that
+        relationship is severed first.
+
+        Args:
+            child: The :class:`Event` instance to register as a direct child
+                of this event in the propagation hierarchy.
+        """
         child.parent = self
 
     def remove_child(self, child: "Event"):
-        """Remove a child event"""
+        """Remove a child event from this event's propagation hierarchy.
+
+        Severs the parent-child relationship between this event and the given
+        child by clearing the child's parent reference.  If the child is not
+        currently a child of this event, the call is a no-op.  After removal,
+        capture/bubble propagation between these two events ceases.
+
+        Args:
+            child: The :class:`Event` instance to detach from this event's
+                children list.  If not found among current children, no
+                modification occurs.
+        """
         if child in self._children:
             child.parent = None
 
@@ -144,16 +285,33 @@ class Event(EventSerializationMixin):
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
     ) -> Callable[..., Any]:
-        """
-        Decorator or function to register a listener.
+        """Register a persistent listener via decorator or direct invocation.
+
+        Can be used as a bare decorator (``@event.listen``), a parameterized
+        decorator (``@event.listen(priority=EventPriority.HIGH)``), or called
+        directly (``event.listen(my_func)``).  The listener remains registered
+        until explicitly removed and fires on every subsequent :meth:`trigger`.
 
         Args:
-            func: Listener function
-            priority: Listener priority
-            weak_ref: Use weak reference to the listener
+            func: The listener callable to register.  When used as a decorator
+                without arguments this is passed automatically; when used with
+                keyword arguments pass ``None`` or omit it.
+            priority: The :class:`~sillo.events.enums.EventPriority` level that
+                determines execution order relative to other listeners.
+                Defaults to ``EventPriority.NORMAL``.
+            weak_ref: If ``True``, store a weak reference to the listener so
+                that it does not prevent garbage collection of bound methods.
+                Defaults to ``False``.
 
         Returns:
-            The decorated function or decorator
+            The original listener callable, unmodified, allowing transparent
+            use as a decorator without altering the decorated function.
+
+        Raises:
+            ListenerAlreadyRegisteredError: If the same callable is already
+                registered at the same priority level.
+            MaxListenersExceededError: If adding this listener would exceed
+                the configured :attr:`max_listeners` ceiling.
         """
 
         def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
@@ -171,16 +329,34 @@ class Event(EventSerializationMixin):
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
     ) -> Callable[..., Any]:
-        """
-        Decorator or function to register a one-time listener.
+        """Register a one-shot listener that auto-removes after first invocation.
+
+        Can be used as a bare decorator (``@event.once``), a parameterized
+        decorator (``@event.once(priority=EventPriority.HIGH)``), or called
+        directly (``event.once(my_func)``).  The listener fires exactly once
+        on the next :meth:`trigger` and is then automatically removed from
+        the internal registry.
 
         Args:
-            func: Listener function
-            priority: Listener priority
-            weak_ref: Use weak reference to the listener
+            func: The listener callable to register.  When used as a decorator
+                without arguments this is passed automatically; when used with
+                keyword arguments pass ``None`` or omit it.
+            priority: The :class:`~sillo.events.enums.EventPriority` level that
+                determines execution order relative to other listeners.
+                Defaults to ``EventPriority.NORMAL``.
+            weak_ref: If ``True``, store a weak reference to the listener so
+                that it does not prevent garbage collection of bound methods.
+                Defaults to ``False``.
 
         Returns:
-            The decorated function or decorator
+            The original listener callable, unmodified, allowing transparent
+            use as a decorator without altering the decorated function.
+
+        Raises:
+            ListenerAlreadyRegisteredError: If the same callable is already
+                registered as a once-listener at the same priority level.
+            MaxListenersExceededError: If adding this listener would exceed
+                the configured :attr:`max_listeners` ceiling.
         """
 
         def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
@@ -199,18 +375,32 @@ class Event(EventSerializationMixin):
         once: bool = False,
         weak_ref: bool = False,
     ):
-        """
-        Internal method to add a listener.
+        """Internal method to register a listener with validation and wrapping.
+
+        Performs duplicate detection, max-listener enforcement, optional weak
+        reference wrapping, and storage into the appropriate priority bucket.
+        This is the single code path used by both :meth:`listen` and
+        :meth:`once` to ensure consistent validation semantics.
 
         Args:
-            listener: Listener function
-            priority: Listener priority
-            once: Whether to remove after first trigger
-            weak_ref: Use weak reference to the listener
+            listener: The callable to invoke when the event is triggered.
+                May be a regular function, a bound method, or a coroutine
+                function.
+            priority: The :class:`~sillo.events.enums.EventPriority` bucket
+                into which the listener is placed.  Defaults to
+                ``EventPriority.NORMAL``.
+            once: If ``True``, the listener is stored in the once-listener
+                registry and cleared after the first trigger.  Defaults to
+                ``False``.
+            weak_ref: If ``True``, wrap the listener in a :class:`weakref.ref`
+                or :class:`weakref.WeakMethod` so it does not prevent garbage
+                collection.  Defaults to ``False``.
 
         Raises:
-            ListenerAlreadyRegisteredError: If listener is already registered
-            MaxListenersExceededError: If max listeners would be exceeded
+            MaxListenersExceededError: If the total listener count has already
+                reached the configured :attr:`max_listeners` ceiling.
+            ListenerAlreadyRegisteredError: If an equivalent listener is
+                already present in the target priority bucket.
         """
         with self._lock:
             if self.listener_count >= self._max_listeners:
@@ -240,11 +430,17 @@ class Event(EventSerializationMixin):
             container[priority].append(wrapped_listener)
 
     def remove_listener(self, listener: Callable[..., Any]):
-        """
-        Remove a listener from all priorities.
+        """Remove a listener from all priority buckets and once-registries.
+
+        Scans every :class:`~sillo.events.enums.EventPriority` level in both
+        the persistent and once-listener registries, removing all entries that
+        match the given callable.  Uses :meth:`_listeners_equal` for comparison
+        so weak references and wrapped functions are resolved before matching.
 
         Args:
-            listener: Listener function to remove
+            listener: The callable to remove.  All registrations of this
+                callable across every priority level are removed in a single
+                pass under the internal lock.
         """
         with self._lock:
             for priority in EventPriority:
@@ -263,7 +459,25 @@ class Event(EventSerializationMixin):
     def _listeners_equal(
         self, listener1: Callable[..., Any], listener2: Callable[..., Any]
     ) -> bool:
-        """Check if two listeners are effectively the same"""
+        """Determine whether two listener references point to the same callable.
+
+        Resolves weak references and ``WeakMethod`` proxies to their underlying
+        callables before comparison.  Also unwraps decorator chains via the
+        ``__wrapped__`` attribute so that a decorated function and its original
+        are considered equivalent.  If either weak reference has been garbage
+        collected (returns ``None``), the listeners are considered unequal.
+
+        Args:
+            listener1: First listener reference, which may be a raw callable,
+                a :class:`weakref.ref`, or a :class:`weakref.WeakMethod`.
+            listener2: Second listener reference to compare against, with the
+                same type flexibility as ``listener1``.
+
+        Returns:
+            ``True`` if both references resolve to the same underlying callable
+            (after unwrapping ``__wrapped__`` chains), ``False`` otherwise or
+            if either weak reference has been collected.
+        """
         if listener1 == listener2:
             return True
 

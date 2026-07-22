@@ -15,6 +15,19 @@ from .helpers import (
 
 
 class RequestIdMiddleware(BaseMiddleware):
+    """Middleware that manages request ID generation and propagation.
+
+    Automatically assigns a unique request ID to each incoming request,
+    either by reading an existing ID from a configurable header or by
+    generating a fresh UUID4. The ID is stored on the request state
+    object and echoed back in the response header for client-side
+    tracing and log correlation.
+
+    Supports forced regeneration (ignoring client-supplied IDs),
+    optional response header inclusion, and configurable attribute
+    names for request state storage.
+    """
+
     def __init__(
         self,
         *,
@@ -25,6 +38,37 @@ class RequestIdMiddleware(BaseMiddleware):
         include_in_response: bool = True,
         **kwargs: Any,
     ) -> None:
+        """Initialize the RequestIdMiddleware with tracing configuration.
+
+        Configures how request IDs are sourced, stored, and propagated
+        through the request/response pipeline. All parameters are
+        keyword-only to prevent positional argument misuse.
+
+        Args:
+            header_name (str, optional): The HTTP header name used
+                for reading and writing the request ID. Defaults to
+                ``"X-Request-ID"``.
+            force_generate (bool, optional): When ``True``, always
+                generate a new UUID4 and ignore any client-supplied
+                header value. Defaults to ``False``.
+            store_in_request (bool, optional): When ``True``, persist
+                the request ID on ``request.state`` for downstream
+                access. Defaults to ``True``.
+            request_attribute_name (str, optional): The attribute
+                name used when storing the ID on ``request.state``.
+                Defaults to ``"request_id"``.
+            include_in_response (bool, optional): When ``True``, set
+                the request ID as a header on the outgoing response.
+                Defaults to ``True``.
+            **kwargs: Additional keyword arguments forwarded to the
+                ``BaseMiddleware`` parent class.
+
+        Returns:
+            None.
+
+        Raises:
+            None.
+        """
         super().__init__(**kwargs)
         self.header_name = header_name
         self.force_generate = force_generate
@@ -38,6 +82,29 @@ class RequestIdMiddleware(BaseMiddleware):
         response: Response,
         call_next: Any,
     ) -> Any:
+        """Process the incoming request to assign and propagate a request ID.
+
+        Determines the request ID by either forcing a fresh UUID4
+        generation or extracting/generating one from the request
+        headers. Optionally stores the ID on the request state and
+        sets it as a response header before delegating to the next
+        middleware or handler in the chain.
+
+        Args:
+            request (Request): The incoming HTTP request object to
+                inspect and annotate with a request ID.
+            response (Response): The HTTP response object on which
+                to set the request ID header if configured.
+            call_next (Any): An awaitable callable representing the
+                next middleware or route handler in the pipeline.
+
+        Returns:
+            Any: The return value of ``call_next()``, typically the
+                response produced by downstream handlers.
+
+        Raises:
+            None.
+        """
         response.empty()
         if self.force_generate:
             request_id = generate_request_id()
@@ -62,6 +129,26 @@ class RequestIdMiddleware(BaseMiddleware):
         request: Request,
         response: Response,
     ) -> Any:
+        """Ensure the request ID header is present on the outgoing response.
+
+        Runs after downstream handlers have produced a response. If the
+        response does not already carry the request ID header (e.g. it
+        was cleared or overwritten), this method re-applies it to
+        guarantee the client always receives the correlation ID.
+
+        Args:
+            request (Request): The original HTTP request object
+                associated with this response.
+            response (Response): The outgoing HTTP response object
+                that may need the request ID header set.
+
+        Returns:
+            Any: The response object, with the request ID header
+                ensured if ``include_in_response`` is enabled.
+
+        Raises:
+            None.
+        """
         request_id = self.request_id
 
         if request_id and self.include_in_response:
@@ -79,6 +166,36 @@ def RequestId(
     request_attribute_name: str = "request_id",
     include_in_response: bool = True,
 ) -> RequestIdMiddleware:
+    """Factory function that creates a configured RequestIdMiddleware instance.
+
+    Convenience wrapper around ``RequestIdMiddleware`` that provides a
+    cleaner API for registering request ID tracking middleware. Accepts
+    the same configuration parameters as the middleware constructor
+    and returns a fully initialized instance ready for use.
+
+    Args:
+        header_name (str, optional): The HTTP header name for reading
+            and writing the request ID. Defaults to
+            ``"X-Request-ID"``.
+        force_generate (bool, optional): When ``True``, always
+            generate a new UUID4 regardless of client headers.
+            Defaults to ``False``.
+        store_in_request (bool, optional): When ``True``, persist the
+            request ID on ``request.state``. Defaults to ``True``.
+        request_attribute_name (str, optional): The attribute name
+            used on ``request.state`` for storage. Defaults to
+            ``"request_id"``.
+        include_in_response (bool, optional): When ``True``, include
+            the request ID in the response header. Defaults to
+            ``True``.
+
+    Returns:
+        RequestIdMiddleware: A fully configured middleware instance
+            ready to be registered in the middleware pipeline.
+
+    Raises:
+        None.
+    """
     return RequestIdMiddleware(
         header_name=header_name,
         force_generate=force_generate,

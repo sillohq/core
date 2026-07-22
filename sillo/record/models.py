@@ -44,6 +44,14 @@ class Model(_TortoiseModel):
     deleted_at: ClassVar[SoftDeleteField] = SoftDeleteField()
 
     class Meta:
+        """Meta
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         abstract = True
 
     def to_dict(

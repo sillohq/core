@@ -5,8 +5,21 @@ from sillo.routing.grouping import Group
 
 
 def get_openapi(route: Union[Route, Router, Group, Any]) -> List[Route]:
-    """
-    Recursively extract all Route from a route structure, handling nested Groups and Routers.
+    """Recursively extract all Route objects from a nested route structure.
+
+    Walks through Route, Router, Group, and generic route containers to
+    flatten the hierarchy into a single list of Route instances. Handles
+    Groups that may wrap a Router internally.
+
+    Args:
+        route: A Route, Router, Group, or any object with a ``routes`` attribute.
+
+    Returns:
+        A flat list of Route instances extracted from the structure.
+
+    Raises:
+        None explicitly. If ``route`` has no viable structure an empty list
+        is returned rather than raising.
     """
     routes_list: List[Route] = []
 

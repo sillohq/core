@@ -22,6 +22,17 @@ class CSRFMiddleware(BaseMiddleware):
         **kwargs: Any,
     ) -> None:
 
+        """Init
+
+            Args:
+                config: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if config is not None:
             if not isinstance(config, CSRFConfig):
                 raise TypeError("config must be a CSRFConfig instance")
@@ -60,6 +71,19 @@ class CSRFMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
+        """Process Request
+
+            Args:
+                request: [description]
+                response: [description]
+                call_next: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if not self.csrf_config or not self.use_csrf:
             return await call_next()
 

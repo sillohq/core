@@ -33,6 +33,17 @@ class RateLimitMiddleware(BaseMiddleware):
         config: Optional[RateLimitConfig] = None,
         **kwargs: Any,
     ) -> None:
+        """Init
+
+            Args:
+                config: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if config is not None and not isinstance(config, RateLimitConfig):
             raise TypeError("config must be a RateLimitConfig instance")
         self.config: RateLimitConfig = config or RateLimitConfig()
@@ -46,6 +57,19 @@ class RateLimitMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
+        """Process Request
+
+            Args:
+                request: [description]
+                response: [description]
+                call_next: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         key = self.config._key_func(request)
         if key is None:
             return await call_next()
@@ -71,6 +95,18 @@ class RateLimitMiddleware(BaseMiddleware):
         return await call_next()
 
     async def process_response(self, request: Request, response: Response):
+        """Process Response
+
+            Args:
+                request: [description]
+                response: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         result = self._last_result
         if result is None or not self.config.include_headers:
             return
@@ -79,6 +115,19 @@ class RateLimitMiddleware(BaseMiddleware):
         response.set_header(_HEADER_RESET, str(int(result.reset_at)), overide=True)
 
     def _deny(self, request: Request, response: Response, result: Any):
+        """Deny
+
+            Args:
+                request: [description]
+                response: [description]
+                result: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if callable(self.config.on_exceed):
             return self.config.on_exceed(request, response, result)
         retry_after = max(int(result.retry_after), 1)

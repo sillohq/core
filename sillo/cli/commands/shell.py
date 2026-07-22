@@ -45,9 +45,30 @@ def shell(app_path: str, ipython: bool = False):
     - Inspect app configuration
     - Debug and experiment with your application
 
+    The shell automatically attempts to import and expose useful classes such
+    as the test Client, Request, and Response for convenient interactive testing.
+    IPython is preferred if available, otherwise falls back to the standard
+    Python interactive console.
+
     Examples:
       sillo shell --app myapp.main:app
       sillo shell --app myapp.main:app --ipython
+
+    Args:
+        app_path: The application module path in 'module:app_variable' format,
+            specifying where the sillo app instance can be imported from.
+        ipython: Whether to force the use of IPython shell. If True and IPython
+            is not available, falls back to the regular Python shell with a
+            warning message. Defaults to False for auto-detection.
+
+    Returns:
+        None. The function starts an interactive shell session that blocks until
+        the user exits via 'exit' command or Ctrl+D keystroke.
+
+    Raises:
+        SystemExit: If the application instance cannot be loaded from the
+            specified app_path, or if an unexpected error occurs during
+            shell initialization.
     """
     try:
         # Load app instance

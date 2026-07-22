@@ -75,6 +75,14 @@ class Factory:
         """Return a modifier that overrides definition attributes."""
 
         def modifier():
+            """Modifier
+
+                Returns:
+                    [description]
+
+                Raises:
+                    [description]
+            """
             return {**cls.definition(), **kwargs}
 
         return modifier
@@ -84,12 +92,43 @@ class FactoryBuilder:
     """Registry-builder pattern for defining factories."""
 
     def __init__(self):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._factories: Dict[str, Type[Factory]] = {}
 
     def register(self, name: str, factory: Type[Factory]) -> None:
+        """Register
+
+            Args:
+                name: [description]
+                factory: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._factories[name] = factory
 
     def get(self, name: str) -> Type[Factory]:
+        """Get
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if name not in self._factories:
             raise KeyError(f"Factory '{name}' not registered")
         return self._factories[name]

@@ -19,6 +19,14 @@ logging = sillo_logger.getLogger("sillo")
 
 
 class Channel:
+    """Channel
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     def __init__(
         self,
         websocket: WebSocket,
@@ -50,6 +58,17 @@ class Channel:
         self.created = time.time()
 
     async def _send(self, payload: typing.Any) -> None:
+        """Send
+
+            Args:
+                payload: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         try:
             if self.payload_type == "json":
                 await self.websocket.send_json(payload)
@@ -65,15 +84,39 @@ class Channel:
         self.created = time.time()
 
     async def _is_expired(self) -> bool:
+        """Is Expired
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if not self.expires:
             return False
         return (self.expires + int(self.created)) < time.time()
 
     def __repr__(self) -> str:
+        """Repr
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return f"{self.__class__.__name__} {self.uuid=} {self.payload_type=} {self.expires=}"
 
 
 class ChannelBox:
+    """Channelbox
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     CHANNEL_GROUPS: typing.Dict[
         str, typing.Any
     ] = {}  # groups of channels ~ key: group_name, val: dict of channels
@@ -180,10 +223,26 @@ class ChannelBox:
 
     @classmethod
     async def show_groups(cls) -> typing.Dict[str, typing.Any]:
+        """Show Groups
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return cls.CHANNEL_GROUPS
 
     @classmethod
     async def flush_groups(cls) -> None:
+        """Flush Groups
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         cls.CHANNEL_GROUPS = {}
 
     @classmethod
@@ -215,6 +274,14 @@ class ChannelBox:
 
     @classmethod
     async def _clean_expired(cls) -> None:
+        """Clean Expired
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         for group_name in list(cls.CHANNEL_GROUPS):
             for channel in cls.CHANNEL_GROUPS.get(group_name, {}):
                 _is_expired = await channel._is_expired()

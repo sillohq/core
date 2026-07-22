@@ -28,26 +28,94 @@ class CastRegistry:
 
     @classmethod
     def register(cls, name: str, encoder: Callable, decoder: Callable) -> None:
+        """Register
+
+            Args:
+                name: [description]
+                encoder: [description]
+                decoder: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         cls._builtins[name] = (encoder, decoder)
 
     @classmethod
     def get(cls, name: str):
+        """Get
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return cls._builtins.get(name)
 
 
 def _json_encoder(value: Any) -> str:
+    """Json Encoder
+
+        Args:
+            value: [description]
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     return json.dumps(value, default=str)
 
 
 def _json_decoder(value: str) -> Any:
+    """Json Decoder
+
+        Args:
+            value: [description]
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     return json.loads(value) if isinstance(value, str) else value
 
 
 def _datetime_encoder(value: datetime) -> str:
+    """Datetime Encoder
+
+        Args:
+            value: [description]
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     return value.isoformat() if isinstance(value, datetime) else str(value)
 
 
 def _datetime_decoder(value: str) -> Optional[datetime]:
+    """Datetime Decoder
+
+        Args:
+            value: [description]
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     if value is None:
         return None
     return datetime.fromisoformat(value)
@@ -57,11 +125,33 @@ def _encrypted_factory(key: str):
     """Create an encrypted caster with a symmetric key."""
 
     def encoder(value: str) -> str:
+        """Encoder
+
+            Args:
+                value: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         # Simple XOR + base64 for demo. Use cryptography.fernet in production.
         encoded = bytes([ord(c) ^ ord(key[i % len(key)]) for i, c in enumerate(value)])
         return base64.b64encode(encoded).decode()
 
     def decoder(value: str) -> str:
+        """Decoder
+
+            Args:
+                value: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         decoded = base64.b64decode(value)
         return "".join(chr(b ^ ord(key[i % len(key)])) for i, b in enumerate(decoded))
 
@@ -96,6 +186,17 @@ class HasCasts:
     _casts: Dict[str, Any] = {}
 
     def get_cast(self, field_name: str):
+        """Get Cast
+
+            Args:
+                field_name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         cast_def = self._casts.get(field_name)
         if cast_def is None:
             return None, None
@@ -108,12 +209,36 @@ class HasCasts:
         return Callable, Callable
 
     def cast_get(self, field_name: str, value: Any) -> Any:
+        """Cast Get
+
+            Args:
+                field_name: [description]
+                value: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         _, decoder = self.get_cast(field_name)
         if decoder and value is not None:
             return decoder(value)
         return value
 
     def cast_set(self, field_name: str, value: Any) -> Any:
+        """Cast Set
+
+            Args:
+                field_name: [description]
+                value: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         encoder, _ = self.get_cast(field_name)
         if encoder and value is not None:
             return encoder(value)

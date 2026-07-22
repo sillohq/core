@@ -25,6 +25,27 @@ class SessionConfig(ConfigBase):
         manager: Optional[Any] = None,
         **kwargs: Any,
     ):
+        """Init
+
+            Args:
+                session_cookie_name: [description]
+                session_expiration_time: [description]
+                session_permanent: [description]
+                session_refresh_each_request: [description]
+                session_cookie_secure: [description]
+                session_cookie_httponly: [description]
+                session_cookie_samesite: [description]
+                session_cookie_path: [description]
+                session_cookie_domain: [description]
+                session_file_storage_path: [description]
+                manager: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         config = {
             "session_cookie_name": session_cookie_name,
             "session_expiration_time": session_expiration_time,
@@ -42,44 +63,132 @@ class SessionConfig(ConfigBase):
 
     @property
     def session_cookie_name(self) -> str:
+        """Session Cookie Name
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_cookie_name", "session_id")
 
     @property
     def session_expiration_time(self) -> int:
+        """Session Expiration Time
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_expiration_time", 86400)
 
     @property
     def session_permanent(self) -> bool:
+        """Session Permanent
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_permanent", True)
 
     @property
     def session_refresh_each_request(self) -> bool:
+        """Session Refresh Each Request
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_refresh_each_request", True)
 
     @property
     def session_cookie_secure(self) -> bool:
+        """Session Cookie Secure
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_cookie_secure", True)
 
     @property
     def session_cookie_httponly(self) -> bool:
+        """Session Cookie Httponly
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_cookie_httponly", True)
 
     @property
     def session_cookie_samesite(self) -> Literal["lax", "strict", "none"]:
+        """Session Cookie Samesite
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_cookie_samesite", "lax")
 
     @property
     def session_cookie_path(self) -> str:
+        """Session Cookie Path
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_cookie_path", "/")
 
     @property
     def session_cookie_domain(self) -> Optional[str]:
+        """Session Cookie Domain
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_cookie_domain")
 
     @property
     def session_file_storage_path(self) -> Optional[str]:
+        """Session File Storage Path
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("session_file_storage_path")
 
     @property
     def manager(self) -> Optional[Any]:
+        """Manager
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self._config.get("manager")

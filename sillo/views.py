@@ -251,7 +251,32 @@ class APIView:
         self, req: Request, res: Response, **kwargs: Dict[str, Any]
     ) -> Response:
         """
-        Dispatch the request to the appropriate handler method.
+        Dispatch the request to the appropriate HTTP method handler.
+
+        Creates a fresh instance of the view class, stores the request and
+        response objects as instance attributes, then looks up the handler
+        method matching the request's HTTP method (lowercased). If no
+        matching method is found, delegates to ``method_not_allowed``. Any
+        exceptions raised during handler execution are checked against the
+        ``error_handlers`` dictionary; if a matching handler exists for the
+        exception type, it is invoked instead of propagating the error.
+
+        Args:
+            req: The incoming HTTP ``Request`` object containing method,
+                headers, path parameters, and body data.
+            res: The ``Response`` object used for constructing the HTTP
+                response to send back to the client.
+            **kwargs: Additional keyword arguments extracted from the URL
+                path parameters, passed through to the handler method.
+
+        Returns:
+            A ``Response`` object produced by the matched handler method,
+            the ``method_not_allowed`` fallback, or a registered error
+            handler if an exception was caught.
+
+        Raises:
+            Exception: Re-raises any exception that does not have a
+                registered error handler in ``self.error_handlers``.
         """
 
         self.request = req
@@ -268,13 +293,43 @@ class APIView:
 
     async def method_not_allowed(self, req: Request, res: Response) -> Response:
         """
-        Handle requests with unsupported HTTP methods.
+        Handle requests with unsupported or unimplemented HTTP methods.
+
+        Returns a 405 Method Not Allowed JSON response when a client sends
+        an HTTP request using a method that the view class does not implement.
+        This serves as the default fallback handler invoked by ``dispatch``
+        when no matching method handler is found on the view instance.
+
+        Args:
+            req: The incoming HTTP ``Request`` object that triggered the
+                method-not-allowed condition.
+            res: The ``Response`` object used to construct the 405 error
+                response with appropriate status code and JSON body.
+
+        Returns:
+            A ``Response`` object with HTTP status 405 and a JSON body
+            containing ``{"error": "Method Not Allowed"}``.
         """
         return res.status(405).json({"error": "Method Not Allowed"})
 
     async def get(self, req: Request, res: Response) -> Response:
         """
-        Handle GET requests.
+        Handle incoming GET requests for resource retrieval.
+
+        Default implementation returns a 404 Not Found JSON response.
+        Subclasses should override this method to implement custom GET
+        logic for retrieving resources at the view's configured path.
+
+        Args:
+            req: The incoming HTTP ``Request`` object containing query
+                parameters, headers, and path parameters.
+            res: The ``Response`` object used to construct the HTTP
+                response to send back to the client.
+
+        Returns:
+            A ``Response`` object with HTTP status 404 and a JSON body
+            containing ``{"error": "Not Found"}`` by default. Subclasses
+            should return appropriate resource data.
         """
         return res.status(404).json({"error": "Not Found"})
 
@@ -282,22 +337,88 @@ class APIView:
         """
         Handle POST requests.
         """
+    async def post(self, req: Request, res: Response) -> Response:
+        """
+        Handle incoming POST requests for resource creation.
+
+        Default implementation returns a 404 Not Found JSON response.
+        Subclasses should override this method to implement custom POST
+        logic for creating new resources at the view's configured path.
+
+        Args:
+            req: The incoming HTTP ``Request`` object containing the
+                request body, headers, and path parameters.
+            res: The ``Response`` object used to construct the HTTP
+                response to send back to the client.
+
+        Returns:
+            A ``Response`` object with HTTP status 404 and a JSON body
+            containing ``{"error": "Not Found"}`` by default. Subclasses
+            should return the created resource with appropriate status.
+        """
         return res.status(404).json({"error": "Not Found"})
 
     async def put(self, req: Request, res: Response) -> Response:
         """
-        Handle PUT requests.
+        Handle incoming PUT requests for full resource replacement.
+
+        Default implementation returns a 404 Not Found JSON response.
+        Subclasses should override this method to implement custom PUT
+        logic for replacing entire resources at the view's configured path.
+
+        Args:
+            req: The incoming HTTP ``Request`` object containing the
+                complete replacement data in the request body, along
+                with headers and path parameters.
+            res: The ``Response`` object used to construct the HTTP
+                response to send back to the client.
+
+        Returns:
+            A ``Response`` object with HTTP status 404 and a JSON body
+            containing ``{"error": "Not Found"}`` by default. Subclasses
+            should return the updated resource representation.
         """
         return res.status(404).json({"error": "Not Found"})
 
     async def delete(self, req: Request, res: Response) -> Response:
         """
-        Handle DELETE requests.
+        Handle incoming DELETE requests for resource removal.
+
+        Default implementation returns a 404 Not Found JSON response.
+        Subclasses should override this method to implement custom DELETE
+        logic for removing resources at the view's configured path.
+
+        Args:
+            req: The incoming HTTP ``Request`` object containing headers
+                and path parameters identifying the resource to delete.
+            res: The ``Response`` object used to construct the HTTP
+                response to send back to the client.
+
+        Returns:
+            A ``Response`` object with HTTP status 404 and a JSON body
+            containing ``{"error": "Not Found"}`` by default. Subclasses
+            should return a 204 No Content or confirmation response.
         """
         return res.status(404).json({"error": "Not Found"})
 
     async def patch(self, req: Request, res: Response) -> Response:
         """
-        Handle PATCH requests.
+        Handle incoming PATCH requests for partial resource updates.
+
+        Default implementation returns a 404 Not Found JSON response.
+        Subclasses should override this method to implement custom PATCH
+        logic for applying partial modifications to resources.
+
+        Args:
+            req: The incoming HTTP ``Request`` object containing the
+                partial update data in the request body, along with
+                headers and path parameters.
+            res: The ``Response`` object used to construct the HTTP
+                response to send back to the client.
+
+        Returns:
+            A ``Response`` object with HTTP status 404 and a JSON body
+            containing ``{"error": "Not Found"}`` by default. Subclasses
+            should return the updated resource representation.
         """
         return res.status(404).json({"error": "Not Found"})

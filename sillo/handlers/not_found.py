@@ -7,7 +7,25 @@ from sillo.http import Request, Response
 
 
 def generate_html_page(title: str, message: str) -> str:
-    """Generates a simple HTML page without using Jinja2."""
+    """Generate a self-contained HTML error page without external dependencies.
+
+    Builds a complete HTML5 document with inline CSS styling suitable for
+    displaying error messages to end users. The page uses a centered layout
+    with a styled heading and paragraph for the error content.
+
+    Args:
+        title: The text displayed as both the browser tab title and the
+            primary heading (h1) on the error page.
+        message: The descriptive error message rendered as a paragraph
+            below the heading.
+
+    Returns:
+        A fully-formed HTML string containing the styled error page,
+        ready to be sent as an HTTP response body.
+
+    Raises:
+        None
+    """
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,17 +61,33 @@ async def handle_404_error(
     response: Response,
     exception: NotFoundException,
 ) -> Response:
-    """
-    Handles 404 errors dynamically, supporting JSON, HTML, and plain text responses.
+    """Handle 404 Not Found errors with content negotiation across multiple formats.
+
+    Dynamically selects the appropriate response format (JSON, HTML, or plain text)
+    based on application settings. In debug mode, detailed error messages and
+    traceback information are included; in production, a sanitized custom message
+    is returned instead to avoid leaking internal details.
+
+    The function first attempts to load configuration from the application settings
+    object. If settings are unavailable, it falls back to sensible defaults:
+    JSON output enabled, HTML rendering enabled, and debug mode active.
 
     Args:
-        request: The request object (not used here but kept for flexibility).
-        response: A callable that returns a response.
-        exception: The NotFoundException instance.
-        settings: A dictionary of settings to determine the response format.
+        request: The incoming HTTP request object. Not directly used in the
+            current implementation but retained for interface compatibility
+            with other error handlers.
+        response: A response factory object providing ``.json()``, ``.html()``,
+            and ``.text()`` methods for constructing typed HTTP responses.
+        exception: The ``NotFoundException`` instance that triggered this handler,
+            whose ``detail`` attribute supplies the error message in debug mode.
 
     Returns:
-        A response based on the settings.
+        A ``Response`` object with status code 404, formatted as JSON, HTML,
+        or plain text depending on the resolved configuration.
+
+    Raises:
+        None: All exceptions during settings access are caught and silently
+            ignored, causing the function to use default values.
     """
     try:
         settings = None

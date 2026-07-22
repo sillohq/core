@@ -20,24 +20,146 @@ if TYPE_CHECKING:
 
 
 class Depend:
+    """
+    Declares a dependency injection marker for route handler parameters.
+
+    Used as a default value in handler function signatures to signal that
+    the parameter should be resolved through the dependency injection system
+    rather than extracted directly from the request. Wraps a callable that
+    produces the injected value and supports optional raw request injection.
+
+    This is the primary user-facing API for declaring dependencies in sillo's
+    DI system. Dependencies can be nested — a ``Depend``-wrapped callable may
+    itself declare further ``Depend`` parameters, forming a dependency graph
+    that is resolved at request time.
+
+    Attributes:
+        dependency: The callable whose return value will be injected. If
+            ``None`` and ``get_request`` is ``True``, the raw ``Request``
+            object is injected instead.
+        get_request: When ``True`` and ``dependency`` is ``None``, the
+            framework injects the current ``Request`` object directly
+            into the parameter.
+    """
+
     def __init__(
         self, dependency: Callable[..., Any] = None, *, get_request: bool = False
     ) -> None:
+        """
+        Initialize a Depend instance with a dependency callable and request flag.
+
+        Args:
+            dependency: An optional callable that produces the value to be
+                injected into the handler parameter. Can be a regular function,
+                an async function, a generator, or an async generator. When
+                ``None``, the ``get_request`` flag must be ``True`` to inject
+                the raw request object.
+            get_request: A keyword-only boolean flag indicating whether the
+                raw ``Request`` object should be injected directly. Defaults
+                to ``False``. Only effective when ``dependency`` is ``None``.
+
+        Returns:
+            None. This constructor initializes the ``Depend`` marker instance.
+
+        Example::
+
+            async def get_db():
+                return await Database.connect()
+
+            @app.get("/items")
+            async def list_items(request, response, db=Depend(get_db)):
+                return response.json(await db.query("SELECT * FROM items"))
+
+            @app.get("/me")
+            async def get_me(request, response, req=Depend(get_request=True)):
+                return response.json({"user": req.user})
+        """
         self.dependency = dependency
         self.get_request = get_request
 
     def __class_getitem__(cls, item: Any):
+        """
+        Support generic subscript syntax for type-checker compatibility.
+
+        Allows ``Depend`` to be used with subscript notation (e.g.,
+        ``Depend[SomeType]``) without raising a ``TypeError``. This is
+        primarily for static type-checker support and does not alter
+        runtime behavior.
+
+        Args:
+            item: The type or types used in the subscript expression.
+                This value is ignored at runtime.
+
+        Returns:
+            The ``Depend`` class itself, unchanged, regardless of the
+            subscript argument provided.
+        """
         return cls
 
 
 @dataclass(slots=True)
 class ExecutionStep:
+    """
+    Represents a single step in the flattened dependency execution plan.
+
+    Each execution step wraps a ``Dependant`` node and marks whether it is
+    the root (final) dependency whose kwargs should be returned to the
+    caller. The execution plan is a pre-computed, depth-first ordered list
+    of these steps, enabling iterative (non-recursive) resolution of the
+    entire dependency graph at request time.
+
+    Attributes:
+        dependant: The ``Dependant`` node to execute at this step, containing
+            the callable, its sub-dependencies, and parameter extractors.
+        is_root: A boolean flag indicating whether this step represents the
+            root dependency. When ``True``, the solver returns the collected
+            kwargs instead of executing the callable. Defaults to ``False``.
+    """
+
     dependant: Dependant
     is_root: bool = False
 
 
 @dataclass(slots=True)
 class Dependant:
+    """
+    Represents a single node in the dependency injection resolution graph.
+
+    A ``Dependant`` wraps a callable and holds all the metadata needed to
+    execute it during dependency resolution: its sub-dependencies, parameter
+    extractors, introspection flags (coroutine, generator, async generator),
+    and a pre-computed flat execution plan for iterative solving.
+
+    The dependency tree is built statically by ``get_dependant`` during route
+    registration, and the execution plan is flattened via depth-first traversal
+    so that runtime resolution is a simple iterative loop with zero recursion.
+
+    Attributes:
+        call: The wrapped callable that produces the dependency value. May be
+            a regular function, async function, generator, or async generator.
+            Can be ``None`` for the root dependant that represents the handler
+            itself.
+        name: The parameter name under which this dependency's result is stored
+            in the resolved values dictionary. ``None`` for the root node.
+        dependencies: A list of child ``Dependant`` nodes representing direct
+            sub-dependencies declared via ``Depend()`` defaults.
+        request_param_names: Parameter names that should receive the raw
+            ``Request`` object directly (declared via ``Depend(get_request=True)``).
+        param_extractors: A list of solved parameter extractor dependencies
+            (e.g., ``Query``, ``Header``, ``Cookie``) that pull values from
+            specific parts of the incoming request.
+        is_coroutine: ``True`` if ``call`` is an ``async def`` function.
+        is_generator: ``True`` if ``call`` is a synchronous generator function.
+        is_async_generator: ``True`` if ``call`` is an async generator function.
+        cache_key: An optional tuple used as a cache key for deduplication.
+            When set, repeated resolutions of the same dependency within a
+            single request return the cached value. ``None`` disables caching.
+        use_cache: Whether to use caching for this dependency. Defaults to
+            ``True``.
+        _execution_plan: A pre-computed flat list of ``ExecutionStep`` objects
+            representing the depth-first traversal order for iterative solving.
+    """
+
     call: Optional[Callable[..., Any]] = None
     name: Optional[str] = None
     dependencies: List["Dependant"] = field(default_factory=list)
@@ -60,6 +182,39 @@ def get_dependant(
     call: Callable[..., Any],
     name: Optional[str] = None,
 ) -> Dependant:
+    """
+    Analyze a callable's signature and build a Dependant dependency tree.
+
+    Inspects the parameters of the given callable to discover dependency
+    injection markers (``Depend`` instances) and parameter extractors
+    (``ParameterExtractor`` instances such as ``Query``, ``Header``,
+    ``Cookie``). Recursively builds a tree of ``Dependant`` nodes for
+    nested dependencies, then flattens the tree into an execution plan
+    for efficient iterative resolution at request time.
+
+    Args:
+        call: The callable to analyze. Can be a regular function, async
+            function, generator, or async generator. Its signature is
+            inspected to discover ``Depend`` and ``ParameterExtractor``
+            default values on each parameter.
+        name: An optional name to assign to this dependant node. Typically
+            corresponds to the parameter name in the parent callable's
+            signature. Used as the key when storing resolved values.
+
+    Returns:
+        A fully constructed ``Dependant`` instance with its dependency tree,
+        parameter extractors, introspection flags, cache key, and pre-computed
+        execution plan populated and ready for resolution.
+
+    Example::
+
+        async def get_db():
+            return await Database.connect()
+
+        dependant = get_dependant(get_db, name="db")
+        # dependant.call == get_db
+        # dependant.is_coroutine == True
+    """
     sig = signature(call)
     deps: List[Dependant] = []
     request_params: List[str] = []
@@ -110,6 +265,25 @@ def get_dependant(
 
 
 def _build_execution_plan(root: Dependant) -> List[ExecutionStep]:
+    """
+    Build a flattened execution plan from a dependency tree via DFS traversal.
+
+    Performs a recursive depth-first traversal of the ``Dependant`` tree rooted
+    at ``root``, emitting an ``ExecutionStep`` for each non-root node in
+    post-order (children before parents). A final step wrapping the root node
+    with ``is_root=True`` is appended at the end. This produces a flat list
+    that the solver can iterate through without recursion.
+
+    Args:
+        root: The root ``Dependant`` node of the dependency tree. Its
+            sub-dependencies are traversed recursively to build the
+            complete execution plan.
+
+    Returns:
+        A list of ``ExecutionStep`` instances in depth-first post-order,
+        with the root step marked as ``is_root=True`` at the end of the
+        list. All child steps appear before the root step.
+    """
     steps: List[ExecutionStep] = []
 
     def _collect(node: Dependant) -> None:
@@ -127,6 +301,28 @@ def _collect_kwargs(
     values: Dict[str, Any],
     request: Optional["Request"],
 ) -> Dict[str, Any]:
+    """
+    Collect keyword arguments for executing a dependency node.
+
+    Gathers all the arguments needed to call a ``Dependant`` node's callable
+    by combining resolved sub-dependency values, parameter extractor results,
+    and raw request references from the already-computed values dictionary.
+
+    Args:
+        node: The ``Dependant`` node whose arguments are being collected.
+            Its ``dependencies``, ``param_extractors``, and
+            ``request_param_names`` fields determine which values are gathered.
+        values: A dictionary of already-resolved dependency results, keyed
+            by dependency name. Sub-dependency values are looked up here.
+        request: The current ``Request`` object, or ``None`` if not available.
+            Used to satisfy parameter extractors and raw request parameters.
+
+    Returns:
+        A dictionary of keyword arguments ready to be unpacked into the
+        node's callable. Keys are parameter names and values are the
+        resolved dependency results, extracted parameters, or request
+        references as appropriate.
+    """
     kwargs: Dict[str, Any] = {
         dep.name: values[dep.name] for dep in node.dependencies if dep.name
     }
@@ -146,6 +342,38 @@ async def solve_dependencies(
     dependency_cache: Optional[DependencyCache] = None,
     cleanup_callbacks: Optional[List[Callable[[], Any]]] = None,
 ) -> Dict[str, Any]:
+    """
+    Resolve all dependencies in a Dependant tree iteratively using the execution plan.
+
+    Walks through the pre-computed execution plan of the given ``Dependant``,
+    executing each dependency node in order and collecting results. Supports
+    caching to avoid redundant executions and handles async generators and
+    sync generators by registering cleanup callbacks for teardown.
+
+    Args:
+        dependant: The root ``Dependant`` node whose execution plan should
+            be resolved. The plan was built during route registration by
+            ``get_dependant``.
+        request: The current ``Request`` object to pass to parameter
+            extractors and ``Depend(get_request=True)`` dependencies.
+            May be ``None`` for non-request contexts.
+        dependency_cache: An optional dictionary for caching resolved
+            dependency values across the resolution. If ``None``, a fresh
+            empty cache is created. Keys are ``(callable, param_names)``
+            tuples; values are the resolved results.
+        cleanup_callbacks: An optional list to which generator teardown
+            callbacks are appended. After the request is handled, the
+            framework calls each callback to close generators properly.
+
+    Returns:
+        A dictionary mapping parameter names to their resolved values for
+        the root dependant. These are the keyword arguments that should be
+        passed to the route handler.
+
+    Raises:
+        RuntimeError: If a dependant node has no callable to execute
+            (propagated from ``_execute_dependency``).
+    """
     cache: DependencyCache = dependency_cache if dependency_cache is not None else {}
     cleanups: List[Callable[[], Any]] = (
         cleanup_callbacks if cleanup_callbacks is not None else []
@@ -181,6 +409,38 @@ async def _execute_dependency(
     kwargs: Dict[str, Any],
     cleanup_callbacks: List[Callable[[], Any]],
 ) -> Any:
+    """
+    Execute a single dependency node and return its produced value.
+
+    Dispatches the execution based on the dependant's introspection flags,
+    handling four callable types: async generators (yields one value then
+    registers an ``aclose`` cleanup), sync generators (yields one value
+    then registers a ``close`` cleanup), async functions (awaited), and
+    regular functions (called directly).
+
+    Args:
+        dependant: The ``Dependant`` node to execute. Must have a non-``None``
+            ``call`` attribute. The execution strategy is determined by the
+            ``is_async_generator``, ``is_generator``, and ``is_coroutine``
+            flags on this node.
+        kwargs: The keyword arguments dictionary to pass to the callable.
+            These are collected by ``_collect_kwargs`` from resolved
+            sub-dependencies and parameter extractors.
+        cleanup_callbacks: A mutable list to which generator teardown
+            callbacks are appended. For generator-based dependencies, a
+            lambda capturing the generator object is added so that the
+            framework can properly close it after the request completes.
+
+    Returns:
+        The value produced by the dependency callable. For generators, this
+        is the first yielded value. For async generators, this is the first
+        value from ``__anext__``. For coroutines, the awaited result. For
+        regular functions, the direct return value.
+
+    Raises:
+        RuntimeError: If the dependant node has no callable assigned
+            (``dependant.call`` is ``None``).
+    """
     func = dependant.call
     if func is None:
         raise RuntimeError("Dependant node has no callable to execute")

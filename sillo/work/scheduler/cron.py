@@ -35,6 +35,17 @@ class CronParser:
         self,
         expression: Annotated[str, Doc("5-field cron: 'min hour day month weekday'.")],
     ):
+        """Init
+
+            Args:
+                expression: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         fields = expression.strip().split()
         if len(fields) != 5:
             raise ValueError(f"Cron requires 5 fields, got {len(fields)}: {expression}")
@@ -50,6 +61,19 @@ class CronParser:
 
     @staticmethod
     def _parse_field(field: str, lo: int, hi: int) -> Set[int]:
+        """Parse Field
+
+            Args:
+                field: [description]
+                lo: [description]
+                hi: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if field == "*":
             return set(range(lo, hi + 1))
         result: Set[int] = set()

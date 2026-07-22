@@ -22,30 +22,86 @@ class SoftDeletesMixin:
     """
 
     async def soft_delete(self) -> None:
+        """Soft Delete
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.deleted_at = datetime.now(timezone.utc)
         await self.save(update_fields=["deleted_at"])
 
     async def restore(self) -> None:
+        """Restore
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.deleted_at = None
         await self.save(update_fields=["deleted_at"])
 
     async def force_delete(self) -> None:
+        """Force Delete
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         await self.delete()
 
     @classmethod
     def active(cls):
+        """Active
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return cls.filter(deleted_at__isnull=True)
 
     @classmethod
     def only_trashed(cls):
+        """Only Trashed
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return cls.filter(deleted_at__isnull=False)
 
     @classmethod
     def with_trashed(cls):
+        """With Trashed
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return cls.all()
 
     @property
     def is_trashed(self) -> bool:
+        """Is Trashed
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return self.deleted_at is not None
 
 
@@ -63,6 +119,14 @@ class TimestampsMixin:
         await self.save(update_fields=["updated_at"])
 
     def set_created_at(self) -> None:
+        """Set Created At
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         if not self.created_at:
             self.created_at = datetime.now(timezone.utc)
 
@@ -71,6 +135,14 @@ class HasUlidMixin:
     """Generates a ULID primary key before creation."""
 
     def generate_ulid(self) -> str:
+        """Generate Ulid
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return str(ulid.new())
 
 
@@ -84,6 +156,14 @@ class SerializesToDictMixin:
         include: Optional[List[str]] = None,
         max_depth: int = 3,
     ) -> Dict:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         data = {}
         for field_name in self._meta.fields:
             if exclude and field_name in exclude:
@@ -99,6 +179,14 @@ class SerializesToDictMixin:
         return data
 
     def to_json(self, *, indent: Optional[int] = None, **kwargs) -> str:
+        """To Json
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return json.dumps(self.to_dict(**kwargs), indent=indent, default=str)
 
 
@@ -114,6 +202,14 @@ class ValidatesBeforeSaveMixin:
         pass
 
     async def save(self, *args, **kwargs):
+        """Save
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         await self.validate()
         return await super().save(*args, **kwargs)
 
@@ -128,6 +224,14 @@ class CascadesDeletesMixin:
     _cascade_deletes: List[str] = []
 
     async def delete(self):
+        """Delete
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         for relation in self._cascade_deletes:
             related = getattr(self, relation, None)
             if related is not None:

@@ -52,6 +52,19 @@ class AdminSite:
         prefix: str = "/admin",
         auth_backend: Optional[AuthBackend] = None,
     ):
+        """Init
+
+            Args:
+                title: [description]
+                prefix: [description]
+                auth_backend: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.title = title
         self.prefix = prefix.rstrip("/")
         self.registry = Registry()
@@ -75,6 +88,17 @@ class AdminSite:
         if admin_class is None:
 
             def decorator(kls):
+                """Decorator
+
+                    Args:
+                        kls: [description]
+
+                    Returns:
+                        [description]
+
+                    Raises:
+                        [description]
+                """
                 self.registry.register(model_class, kls)
                 return kls
 
@@ -91,6 +115,17 @@ class AdminSite:
         self._setup = True
 
     def _mount_static(self, app: silloApp) -> None:
+        """Mount Static
+
+            Args:
+                app: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         static_dir = Path(__file__).parent / "static"
         if static_dir.is_dir():
             static_files = StaticFiles(directory=static_dir)
@@ -98,6 +133,17 @@ class AdminSite:
             app.router.routes.append(static_group)
 
     def _register_routes(self, app) -> None:
+        """Register Routes
+
+            Args:
+                app: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         for route in self._build_routes(self):
             app.router.add_route(route)
 
@@ -108,6 +154,20 @@ def setup_admin(
     prefix: str = "/admin",
     auth_backend: Optional[AuthBackend] = None,
 ) -> AdminSite:
+    """Setup Admin
+
+        Args:
+            app: [description]
+            title: [description]
+            prefix: [description]
+            auth_backend: [description]
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+    """
     site = AdminSite(title=title, prefix=prefix, auth_backend=auth_backend)
     site.mount(app)
     return site

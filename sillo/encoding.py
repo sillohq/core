@@ -1,3 +1,12 @@
+"""JSON encoding utilities for serializing Python objects to JSON-compatible types.
+
+This module provides a comprehensive JSON encoding system that converts arbitrary
+Python objects into JSON-serializable representations. It handles Pydantic models,
+dataclasses, enums, dates, UUIDs, IP addresses, secrets, and many other common
+types. A global custom encoder registry allows applications to extend the encoding
+system with support for application-specific types.
+"""
+
 from __future__ import annotations
 
 import dataclasses
@@ -26,10 +35,52 @@ from pydantic_core import PydanticUndefinedType
 
 
 def isoformat(o: datetime.date | datetime.time) -> str:
+    """Convert a date or time object to its ISO 8601 string representation.
+
+    This is a thin wrapper around the ``isoformat()`` method of Python's
+    ``datetime.date`` and ``datetime.time`` objects. It is used as the default
+    encoder for date and time types in the JSON encoding system.
+
+    Args:
+        o: A ``datetime.date`` or ``datetime.time`` instance to serialize.
+            Both types implement the ``isoformat()`` method.
+
+    Returns:
+        An ISO 8601 formatted string. For dates: ``"YYYY-MM-DD"``. For times:
+        ``"HH:MM:SS"`` with optional microseconds and timezone info.
+
+    Note:
+        This function also works with ``datetime.datetime`` objects since
+        ``datetime`` is a subclass of ``date``. The output format depends on
+        whether the input is a date-only or time-aware object.
+    """
     return o.isoformat()
 
 
 def decimal_encoder(dec_value: Decimal) -> int | float:
+    """Encode a Decimal value as either an int or float for JSON serialization.
+
+    Examines the exponent of the Decimal to determine whether it represents an
+    integer value (non-negative exponent) or a fractional value (negative
+    exponent). Integer-valued Decimals are converted to ``int``, while
+    fractional Decimals are converted to ``float``.
+
+    Args:
+        dec_value: A ``decimal.Decimal`` instance to encode. Can represent
+            either an integer value like ``Decimal("42")`` or a fractional
+            value like ``Decimal("3.14")``.
+
+    Returns:
+        An ``int`` if the Decimal has a non-negative exponent (e.g.,
+        ``Decimal("100")`` returns ``100``), or a ``float`` if it has a
+        negative exponent (e.g., ``Decimal("1.5")`` returns ``1.5``).
+
+    Note:
+        This heuristic preserves precision for integer-valued Decimals by
+        avoiding the float conversion, which could lose precision for very
+        large integers. For fractional values, the standard float precision
+        limitations apply.
+    """
     exponent = dec_value.as_tuple().exponent
     if isinstance(exponent, int) and exponent >= 0:
         return int(dec_value)
@@ -47,16 +98,34 @@ def register_encoder(
     type_: type[typing.Any],
     encoder: typing.Callable[[typing.Any], typing.Any],
 ) -> None:
-    """Register a global custom encoder for ``type_``.
+    """Register a global custom encoder for a specific Python type.
 
-    Once registered, the encoder is used automatically by
-    :func:`jsonable_encoder` (and therefore by every sillo JSON response)
-    whenever an object of ``type_`` (or a subclass) is encountered.
+    Adds an encoder function to the global ``CUSTOM_ENCODERS`` registry, which
+    is automatically consulted by ``jsonable_encoder`` whenever an object of the
+    specified type (or a subclass) is encountered during JSON serialization.
+    This allows applications to extend the JSON encoding system without modifying
+    the core encoding logic.
 
     Args:
-        type_: The Python type (or ABC/abstract base) to encode.
-        encoder: A callable that receives an instance of ``type_`` and
-            returns a JSON-serializable value.
+        type_: The Python type (class, ABC, or abstract base) to register the
+            encoder for. When an object is an instance of this type, the
+            encoder will be invoked. Subclass relationships are checked using
+            ``isinstance``, so registering a base class encoder will also
+            cover subclasses unless a more specific encoder exists.
+        encoder: A callable that receives an instance of ``type_`` and returns
+            a JSON-serializable value (e.g., dict, list, str, int, float, bool,
+            or None). The callable should handle all valid instances of the type.
+
+    Returns:
+        None. This function modifies the global ``CUSTOM_ENCODERS`` dictionary
+        in place as a side effect.
+
+    Note:
+        Custom encoders registered via this function take priority over the
+        built-in ``ENCODERS_BY_TYPE`` mappings. If multiple custom encoders
+        match an object (via inheritance), the exact type match is tried first,
+        followed by ``isinstance`` checks in registration order. Encoders
+        registered later for the same type will overwrite earlier ones.
     """
     CUSTOM_ENCODERS[type_] = encoder
 
@@ -64,7 +133,21 @@ def register_encoder(
 def get_custom_encoders() -> dict[
     type[typing.Any], typing.Callable[[typing.Any], typing.Any]
 ]:
-    """Return a copy of the currently registered global custom encoders."""
+    """Return a shallow copy of the currently registered global custom encoders.
+
+    Provides read-only access to the global ``CUSTOM_ENCODERS`` registry by
+    returning a copy. Modifications to the returned dictionary do not affect
+    the actual registry; use ``register_encoder`` to add new encoders.
+
+    Returns:
+        A new dictionary mapping types to their encoder callables. The returned
+        dictionary is a snapshot and will not reflect subsequent registrations.
+
+    Note:
+        This function is useful for debugging, introspection, and testing. It
+        allows callers to inspect which custom encoders are currently active
+        without risking accidental modification of the global registry.
+    """
     return dict(CUSTOM_ENCODERS)
 
 
@@ -99,6 +182,30 @@ ENCODERS_BY_TYPE: dict[type[typing.Any], typing.Callable[[typing.Any], typing.An
 def generate_encoders_by_class_tuples(
     type_encoder_map: dict[typing.Any, typing.Callable[[typing.Any], typing.Any]],
 ) -> dict[typing.Callable[[typing.Any], typing.Any], tuple[typing.Any, ...]]:
+    """Invert a type-to-encoder mapping into an encoder-to-types-tuple mapping.
+
+    Takes a dictionary that maps individual types to their encoder functions
+    and produces the inverse mapping: each encoder function maps to a tuple of
+    all types it handles. This inverted structure enables efficient ``isinstance``
+    checks during encoding, where a single encoder call can handle multiple
+    related types (e.g., one ``str`` encoder handles ``IPv4Address``,
+    ``IPv6Address``, ``Path``, etc.).
+
+    Args:
+        type_encoder_map: A dictionary mapping Python types to their encoder
+            callables. Multiple types may map to the same encoder function
+            (e.g., both ``set`` and ``frozenset`` map to ``list``).
+
+    Returns:
+        A dictionary mapping each unique encoder callable to a tuple of all
+        types that it handles. The tuple preserves the order in which types
+        were encountered during iteration of the input map.
+
+    Note:
+        This function is called once at module load time to pre-compute the
+        inverted mapping for ``ENCODERS_BY_TYPE``. The result is cached in
+        the module-level ``encoders_by_class_tuples`` variable for performance.
+    """
     encoders_by_class_tuples: dict[
         typing.Callable[[typing.Any], typing.Any], tuple[typing.Any, ...]
     ] = defaultdict(tuple)
@@ -122,7 +229,56 @@ def jsonable_encoder(
         typing.Dict[type, typing.Callable[[typing.Any], typing.Any]]
     ] = None,
 ) -> typing.Any:
-    """Convert any object to something that can be encoded in JSON."""
+    """Convert any Python object into a JSON-serializable representation.
+
+    Recursively traverses an arbitrary Python object and converts it into a
+    composition of JSON-native types (dict, list, str, int, float, bool, None).
+    Handles Pydantic models, dataclasses, enums, dates, UUIDs, IP addresses,
+    paths, sets, generators, and any type registered in the built-in or custom
+    encoder registries. This is the core serialization function used by all
+    sillo JSON responses.
+
+    Args:
+        obj: The Python object to encode. Can be any type including nested
+            structures of dicts, lists, Pydantic models, dataclasses, etc.
+        include: An optional set of field names to include when encoding
+            Pydantic models and dataclasses. If provided, only these fields
+            will appear in the output. Defaults to None (include all fields).
+        exclude: An optional set of field names to exclude when encoding
+            Pydantic models and dataclasses. If provided, these fields will
+            be omitted from the output. Defaults to None (exclude nothing).
+        by_alias: Whether to use field aliases (True) or original field names
+            (False) when encoding Pydantic models. Defaults to True.
+        exclude_unset: Whether to exclude fields that were not explicitly set
+            during Pydantic model construction. Defaults to False.
+        exclude_defaults: Whether to exclude fields whose values match their
+            declared defaults. Defaults to False.
+        exclude_none: Whether to exclude fields whose values are None. When
+            True, any key-value pair with a None value is omitted from the
+            output. Defaults to False.
+        custom_encoder: An optional dictionary mapping types to encoder
+            callables for this specific invocation. These are merged with
+            the global ``CUSTOM_ENCODERS`` registry, with per-call encoders
+            taking precedence. Defaults to None.
+
+    Returns:
+        A JSON-serializable value: typically a dict, list, str, int, float,
+        bool, or None. The exact structure mirrors the input object with all
+        non-JSON-native types converted to their serializable equivalents.
+
+    Raises:
+        ValueError: If the object cannot be encoded by any registered encoder
+            and cannot be converted to a dict via ``dict()`` or ``vars()``.
+            The exception contains a list of all encoding errors encountered.
+
+    Note:
+        The encoding priority is: (1) custom encoders (global + per-call),
+        (2) Pydantic model_dump, (3) dataclass asdict, (4) Enum value,
+        (5) PurePath str, (6) primitive passthrough, (7) dict/list recursion,
+        (8) ENCODERS_BY_TYPE lookup, (9) isinstance-based encoder tuples,
+        (10) dict()/vars() fallback. This order ensures the most specific
+        encoder is always preferred.
+    """
     custom_encoder = {**CUSTOM_ENCODERS, **(custom_encoder or {})}
     if custom_encoder:
         if type(obj) in custom_encoder:

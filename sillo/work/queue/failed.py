@@ -28,6 +28,14 @@ class FailedJob:
     failed_at: float = dataclasses.field(default_factory=time.time)
 
     def to_dict(self) -> Dict[str, Any]:
+        """To Dict
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return dataclasses.asdict(self)
 
 
@@ -77,11 +85,34 @@ class MemoryFailedRepository(FailedJobRepository):
     """In-memory failed job repository — for development."""
 
     def __init__(self):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._failed: List[FailedJob] = []
 
     async def log(
         self, queue: str, job_id: str, job_class: str, payload: str, exception: str
     ) -> None:
+        """Log
+
+            Args:
+                queue: [description]
+                job_id: [description]
+                job_class: [description]
+                payload: [description]
+                exception: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._failed.append(
             FailedJob(
                 id=job_id,
@@ -93,18 +124,60 @@ class MemoryFailedRepository(FailedJobRepository):
         )
 
     async def all(self, limit: int = 50, offset: int = 0) -> List[FailedJob]:
+        """All
+
+            Args:
+                limit: [description]
+                offset: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         return list(reversed(self._failed))[offset : offset + limit]
 
     async def find(self, job_id: str) -> Optional[FailedJob]:
+        """Find
+
+            Args:
+                job_id: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         for fj in self._failed:
             if fj.id == job_id:
                 return fj
         return None
 
     async def forget(self, job_id: str) -> bool:
+        """Forget
+
+            Args:
+                job_id: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         before = len(self._failed)
         self._failed = [fj for fj in self._failed if fj.id != job_id]
         return len(self._failed) < before
 
     async def flush(self) -> None:
+        """Flush
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._failed.clear()

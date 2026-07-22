@@ -22,8 +22,25 @@ def create_client(
     dependencies: Optional[List[Depend]] = None,
     client_config: Optional[Dict[str, Any]] = None,
 ) -> TestClient:
-    """
-    Create a synchronous test client for a sillo application.
+    """Create a synchronous ``TestClient`` for a sillo application.
+
+    Builds a minimal ``silloApp`` with the supplied parameters, then wraps
+    it in a ``TestClient`` that speaks ASGI directly (no network socket).
+    An optional ``client_config`` dict overrides the default client
+    settings (base URL, redirect behaviour, ASGI backend, etc.).
+
+    Args:
+        title: Application title forwarded to ``silloApp``.
+        version: Application version.
+        description: Application description.
+        server_error_handler: Custom 500 error handler.
+        lifespan: Lifespan context manager.
+        routes: Initial route list.
+        dependencies: Global dependency list.
+        client_config: Overrides for ``TestClient`` constructor kwargs.
+
+    Returns:
+        A configured synchronous ``TestClient`` instance.
     """
     app = silloApp(
         title=title,
@@ -74,8 +91,23 @@ def create_async_client(
     dependencies: Optional[List[Depend]] = None,
     client_config: Optional[Dict[str, Any]] = None,
 ) -> AsyncTestClient:
-    """
-    Create an asynchronous test client for a sillo application.
+    """Create an asynchronous ``AsyncTestClient`` for a sillo application.
+
+    Identical in purpose to ``create_client`` but returns the async
+    variant so tests can ``await`` ASGI calls directly.
+
+    Args:
+        title: Application title forwarded to ``silloApp``.
+        version: Application version.
+        description: Application description.
+        server_error_handler: Custom 500 error handler.
+        lifespan: Lifespan context manager.
+        routes: Initial route list.
+        dependencies: Global dependency list.
+        client_config: Overrides for ``AsyncTestClient`` constructor kwargs.
+
+    Returns:
+        A configured ``AsyncTestClient`` instance.
     """
     app = silloApp(
         title=title,

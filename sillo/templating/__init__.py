@@ -32,6 +32,25 @@ class TemplateConfig(ConfigBase):
         custom_filters: Dict[str, Callable[[Any], Any]] = {},
         custom_globals: Dict[str, Any] = {},
     ):
+        """Init
+
+            Args:
+                template_dir: [description]
+                cache_size: [description]
+                auto_reload: [description]
+                encoding: [description]
+                enable_async: [description]
+                trim_blocks: [description]
+                lstrip_blocks: [description]
+                custom_filters: [description]
+                custom_globals: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         super().__init__(
             {
                 "template_dir": template_dir,

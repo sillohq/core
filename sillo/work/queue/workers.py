@@ -51,6 +51,14 @@ class WorkerOptions:
         ] = ["default"],
         backoff: Annotated[float, Doc("Base backoff seconds for retries.")] = 0.0,
     ):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.concurrency = concurrency
         self.memory_limit = memory_limit
         self.timeout = timeout
@@ -80,6 +88,19 @@ class QueueWorker:
             Optional[WorkerOptions], Doc("Worker configuration.")
         ] = None,
     ):
+        """Init
+
+            Args:
+                manager: [description]
+                serializer: [description]
+                failed_repo: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self.manager = manager
         self.serializer = serializer
         self.failed_repo = failed_repo
@@ -125,6 +146,14 @@ class QueueWorker:
         logger.info("QueueWorker resumed")
 
     def _register_signals(self) -> None:
+        """Register Signals
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         try:
             loop = asyncio.get_event_loop()
             for sig in (signal.SIGINT, signal.SIGTERM):
@@ -133,6 +162,17 @@ class QueueWorker:
             pass
 
     async def _run_worker(self, worker_id: int) -> None:
+        """Run Worker
+
+            Args:
+                worker_id: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         while self._running:
             if self._paused:
                 await asyncio.sleep(1)
@@ -169,6 +209,20 @@ class QueueWorker:
         job_data: Dict[str, Any],
         worker_id: int,
     ) -> None:
+        """Process Job
+
+            Args:
+                conn: [description]
+                queue_name: [description]
+                job_data: [description]
+                worker_id: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         job_id = job_data.get("_job_id", "unknown")
         job_class_name = job_data.get("job", "unknown")
 
@@ -198,6 +252,17 @@ class QueueWorker:
                 logger.exception("Failed to log failed job")
 
     def _resolve_job_class(self, name: str) -> type:
+        """Resolve Job Class
+
+            Args:
+                name: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         parts = name.rsplit(".", 1)
         if len(parts) == 2:
             mod = importlib.import_module(parts[0])
@@ -217,17 +282,52 @@ class WorkerPool:
     """
 
     def __init__(self):
+        """Init
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._workers: List[QueueWorker] = []
         self._tasks: List[asyncio.Task] = []
 
     def add(self, worker: QueueWorker) -> "WorkerPool":
+        """Add
+
+            Args:
+                worker: [description]
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._workers.append(worker)
         return self
 
     async def start(self) -> None:
+        """Start
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         self._tasks = [asyncio.create_task(w.run()) for w in self._workers]
 
     async def shutdown(self) -> None:
+        """Shutdown
+
+            Returns:
+                [description]
+
+            Raises:
+                [description]
+        """
         for w in self._workers:
             w.stop()
         await asyncio.gather(*self._tasks, return_exceptions=True)
