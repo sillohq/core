@@ -103,8 +103,9 @@ class MemoryCache(BaseCache):
         )
         self.max_size = max_size
         # OrderedDict doubles as the LRU: most-recently-used at the end.
-        self._store: "collections.OrderedDict[str, _Entry]" = collections.OrderedDict()
+        self._store: collections.OrderedDict[str, "_Entry"] = collections.OrderedDict()
         self._tags: Dict[str, set] = {}
+        
 
     # ---- internal entry type ---------------------------------------
 
@@ -565,24 +566,6 @@ class RedisCache(BaseCache):
 
     # ---- lazy connection -------------------------------------------
 
-    def _get_client(self):
-        """Lazily create and return the async Redis client connection.
-
-        On the first call, establishes a connection to Redis using either
-        the configured URL or the individual host/port/db parameters. If
-        the ``redis`` package is not installed, raises a :class:`CacheError`
-        with installation instructions. Subsequent calls return the cached
-        client instance without reconnecting.
-
-        Returns:
-            The async Redis client instance, either the externally-provided
-            one or a newly created connection.
-
-        Raises:
-            CacheError: If the ``redis`` package is not installed and no
-                external client was provided at construction time.
-        """
-
     async def _redis(self):
         """Return the async Redis client, ensuring the connection is active.
 
@@ -617,9 +600,6 @@ class RedisCache(BaseCache):
             )
         return self._client
 
-    async def _redis(self):
-        return self._get_client()
-
     # ---- get / set / delete ----------------------------------------
 
     async def get(self, key: str) -> Any:
@@ -637,6 +617,26 @@ class RedisCache(BaseCache):
             The deserialized cached value on a hit, or the :data:`_MISSING`
             sentinel object if the key is absent or the payload is corrupt.
         """
+        redis = await self._redis()
+        raw = await redis.get(key)
+        if raw is None:
+            self._stats.misses += 1
+            return _MISSING
+
+        value = deserialize(raw)
+        now = time.monotonic()
+        
+        # Handle sliding TTL
+        if not isinstance(value, dict):
+            # Simple value
+            await self.touch(key, None, now)
+        else:
+            # Check if it's a sliding TTL stored value
+            if value.get("_sliding", False) or (not value.get("_expire_at") or value["_expire_at"] > now):
+                await self.touch(key, value.get("_ttl"), now)
+
+        self._stats.hits += 1
+        return value
 
     async def set(
         self,
@@ -669,6 +669,30 @@ class RedisCache(BaseCache):
             SerializationError: If the value cannot be serialized by the
                 configured serializer.
         """
+        redis = await self._redis()
+        resolved_ttl = self._resolve_ttl(ttl)
+        payload = serialize(value, use_pickle=(self.serializer == "pickle"))
+
+        # Handle sliding TTL by storing metadata
+        if sliding:
+            now = time.monotonic()
+            redis_value = {
+                "_value": value,
+                "_sliding": True,
+                "_ttl": resolved_ttl,
+                "_expire_at": (now + resolved_ttl) if resolved_ttl else None,
+            }
+            payload = serialize(redis_value, use_pickle=(self.serializer == "pickle"))
+        await redis.set(key, payload, ex=resolved_ttl)
+
+        # Store tags
+        if tags:
+            self._stats.sets += 1
+            for tag in tags:
+                await redis.sadd(tag_key(self.namespace, tag), key)
+
+        # Cleanup old tag sets (24 hour TTL)
+        await redis.expire(tag_key(self.namespace, "__cleanup__"), 86400)
 
     async def delete(self, key: str) -> bool:
         """Delete a key from the Redis cache store.
@@ -683,6 +707,11 @@ class RedisCache(BaseCache):
             ``True`` if the key existed and was deleted, ``False`` if
             the key was not found in Redis.
         """
+        redis = await self._redis()
+        deleted = await redis.delete(key)
+        if deleted:
+            self._stats.deletes += 1
+        return bool(deleted)
 
     async def exists(self, key: str) -> bool:
         """Check if a key exists in the Redis cache store.
@@ -697,8 +726,10 @@ class RedisCache(BaseCache):
         Returns:
             ``True`` if the key exists in Redis, ``False`` otherwise.
         """
+        redis = await self._redis()
+        return await redis.exists(key) > 0
 
-    async def touch(self, key: str, ttl: Optional[int] = None) -> bool:
+    async def touch(self, key: str, ttl: Optional[int] = None, now: Optional[float] = None) -> bool:
         """Refresh the TTL of a key in the Redis cache store.
 
         Issues a Redis ``EXPIRE`` command to reset the key's expiration
@@ -714,6 +745,14 @@ class RedisCache(BaseCache):
             ``True`` if the key existed and its TTL was updated, ``False``
             if the key was not found or no TTL could be resolved.
         """
+        if now is None:
+            now = time.monotonic()
+
+        resolved_ttl = self._resolve_ttl(ttl)
+        if resolved_ttl:
+            redis = await self._redis()
+            return bool(await redis.expire(key, resolved_ttl))
+        return False
 
     async def invalidate_tags(self, *tags: str) -> int:
         """Delete all Redis entries associated with the given tags.
@@ -731,6 +770,22 @@ class RedisCache(BaseCache):
             The total number of keys that were deleted as a result of
             this tag invalidation operation.
         """
+        if not tags:
+            return 0
+
+        redis = await self._redis()
+        deleted_total = 0
+        for tag in tags:
+            member_keys = await redis.smembers(tag_key(self.namespace, tag))
+            if member_keys:
+                await redis.delete(*member_keys)
+                deleted_total += len(member_keys)
+            # Cleanup the tag set
+            await redis.delete(tag_key(self.namespace, tag))
+
+        if deleted_total:
+            self._stats.deletes += deleted_total
+        return deleted_total
 
     async def clear(self) -> None:
         """Remove all keys from the Redis cache, respecting namespace.
@@ -745,6 +800,20 @@ class RedisCache(BaseCache):
             entire Redis database, not just cache keys. Use namespaces
             to scope the impact of :meth:`clear`.
         """
+        redis = await self._redis()
+        if self.namespace:
+            pattern = f"{self.namespace}:*"
+            cursor = 0
+            while True:
+                cursor, keys = await redis.scan(
+                    cursor=cursor, match=pattern, count=100
+                )
+                if keys:
+                    await redis.delete(*keys)
+                if cursor == 0:
+                    break
+        else:
+            await redis.flushdb()
 
     async def close(self) -> None:
         """Release the Redis connection if the backend owns the client.
@@ -755,6 +824,10 @@ class RedisCache(BaseCache):
         by the caller. Exceptions during close are silently caught to
         ensure graceful shutdown.
         """
-
+        if self._owns_client and self._client:
+            try:
+                await self._client.close()
+            except Exception:  # noqa: BLE001
+                pass
 
 __all__ = ["MemoryCache", "RedisCache"]
