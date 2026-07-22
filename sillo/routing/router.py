@@ -30,7 +30,7 @@ from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo._internals._middleware import (
     wrap_middleware,
 )
-from sillo._internals._response_transformer import serialize_response
+from sillo.encoding import jsonable_encoder
 from sillo.route_builder import RouteBuilder
 from sillo.dependencies import (
     Depend,
@@ -43,7 +43,7 @@ from sillo.parameters import ParameterExtractor, SolvedParamDependency
 from sillo.events import EventEmitter
 from sillo.exceptions import NotFoundException, HTTPException
 from sillo.http import Request, Response
-from sillo.http.response import JSONResponse
+from sillo.http.response import BaseResponse, JSONResponse, Responder
 from sillo.objects import RouteParam, URLPath
 from sillo.openapi.models import Parameter
 from sillo.types import (
@@ -300,7 +300,14 @@ class Route(BaseRoute):
             func_result = await self.get_route_handler(
                 request, response_manager, **request.path_params
             )
-            response = serialize_response(func_result)
+            if isinstance(func_result, (BaseResponse, Responder)):
+                response = func_result
+            else:
+                encoded = jsonable_encoder(func_result)
+                if isinstance(encoded, str):
+                    response = BaseResponse(body=encoded, content_type="text/plain")
+                else:
+                    response = JSONResponse(content=encoded)
             return await response(scope, receive, send)
 
         route_handler_as_asgi_app = _route_asgi_app
