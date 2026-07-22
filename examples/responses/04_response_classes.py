@@ -1,5 +1,5 @@
 from sillo import silloApp
-from sillo.http.response import (
+from sillo.core.http.response import (
     BaseResponse,
     FileResponse,
     HTMLResponse,

@@ -1,7 +1,7 @@
 from typing import Dict, Set
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.websockets import WebSocket
 
 app = silloApp()

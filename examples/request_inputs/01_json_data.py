@@ -5,7 +5,7 @@ Example of getting and processing JSON data
 from pydantic import BaseModel, ValidationError
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 app = silloApp()
 

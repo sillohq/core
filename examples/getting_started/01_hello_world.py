@@ -8,7 +8,7 @@ creating temporary files, which fixes the import error.
 """
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 # Create the application
 app = silloApp(

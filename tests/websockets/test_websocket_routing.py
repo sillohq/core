@@ -7,7 +7,7 @@ from typing import Callable
 import pytest
 
 from sillo import silloApp
-from sillo.routing import Router
+from sillo.core.routing import Router
 from sillo.testclient import TestClient
 from sillo.websockets import WebSocket
 

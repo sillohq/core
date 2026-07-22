@@ -13,7 +13,7 @@ from typing import Any, Optional
 
 from typing_extensions import Doc
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 
 from .backends import RateLimitBackend, get_backend

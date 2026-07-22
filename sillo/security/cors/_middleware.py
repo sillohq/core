@@ -2,7 +2,7 @@ import re
 import typing
 from typing import Any, Callable, Dict, List, Optional
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.logging import getLogger
 
 # from typing_extensions import Annotated, Doc

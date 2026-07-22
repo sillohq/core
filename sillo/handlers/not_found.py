@@ -3,7 +3,7 @@ import traceback
 import typing
 
 from sillo.exceptions import NotFoundException
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 
 def generate_html_page(title: str, message: str) -> str:

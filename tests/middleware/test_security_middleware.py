@@ -3,7 +3,7 @@ Tests for Shield (security headers middleware)
 """
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.security import Shield
 from sillo.testclient import TestClient
 

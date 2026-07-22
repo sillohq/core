@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pytest
 
 from sillo import silloApp
-from sillo.encoding import CUSTOM_ENCODERS, register_encoder
+from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder
 from sillo.testclient import TestClient
 
 

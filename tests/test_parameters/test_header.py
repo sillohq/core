@@ -4,7 +4,7 @@ Tests for Header parameter extractor.
 
 import pytest
 from sillo import silloApp, Header
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 

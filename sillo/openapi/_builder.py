@@ -6,8 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from pydantic import BaseModel
 
 from sillo.openapi.models import Reference
-from sillo.routing import Route, Router
-from sillo.routing.grouping import Group
+from sillo.core.routing import Route, Router
+from sillo.core.routing.grouping import Group
 from sillo.parameters import Query, Header, Cookie, SolvedParamDependency
 
 from .config import OpenAPIConfig

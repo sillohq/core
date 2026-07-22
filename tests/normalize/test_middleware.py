@@ -1,5 +1,5 @@
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.normalize import NormalizeMiddleware, SlashAction, Normalize
 from sillo.testclient import TestClient
 

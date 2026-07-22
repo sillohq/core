@@ -15,8 +15,8 @@ import logging
 from contextlib import asynccontextmanager
 
 from sillo import silloApp
-from sillo.http.request import Request
-from sillo.http.response import Response
+from sillo.core.http.request import Request
+from sillo.core.http.response import Response
 
 # Configure logging
 logging.basicConfig(

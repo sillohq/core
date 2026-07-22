@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 
 from .helpers import (

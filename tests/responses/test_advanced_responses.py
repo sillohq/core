@@ -7,8 +7,8 @@ from typing import Any, Callable, Dict, List
 import pytest
 
 from sillo import silloApp
-from sillo.http import Request, Response
-from sillo.http.response import (
+from sillo.core.http import Request, Response
+from sillo.core.http.response import (
     BaseResponse,
     HTMLResponse,
     JSONResponse,

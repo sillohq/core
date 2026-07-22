@@ -30,7 +30,7 @@ from anyio import AsyncFile
 from typing_extensions import Doc
 
 from sillo.exceptions import HTTPException, NotFoundException
-from sillo.http.request import ClientDisconnect, Request
+from sillo.core.http.request import ClientDisconnect, Request
 from sillo.objects import MutableHeaders
 from sillo.pagination import (
     AsyncListDataHandler,
@@ -564,7 +564,7 @@ class JSONResponse(BaseResponse):
             # Pre-process content through jsonable_encoder when requested
             # to handle complex types (datetimes, UUIDs, Decimals, models, …)
             if use_encoder:
-                from sillo.encoding import jsonable_encoder
+                from sillo.core.encoding import jsonable_encoder
 
                 content = jsonable_encoder(content, custom_encoder=custom_encoder)
 
@@ -853,12 +853,8 @@ class StreamingResponse(BaseResponse):
 
         self.content_type = content_type
         self.headers["content-type"] = self.content_type
-
         del self.headers["content-length"]
-        self.raw_headers += [
-            (k.lower().encode("latin-1"), v.encode("latin-1"))
-            for k, v in self.headers.items()
-        ]
+        
 
     async def listen_for_disconnect(self, receive: Receive) -> None:
         while True:
@@ -1061,6 +1057,7 @@ class Responder:
 
     def has_header(self, key: str) -> bool:
         """Check if a header is present in the response."""
+        
         return key.lower() in (k.lower() for k in self.headers.keys())
 
     def text(

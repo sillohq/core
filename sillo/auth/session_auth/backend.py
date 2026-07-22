@@ -13,7 +13,7 @@ from typing import Any
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
-from sillo.http import Request
+from sillo.core.http import Request
 
 DEFAULT_SESSION_KEY = "user"
 DEFAULT_IDENTIFIER = "id"

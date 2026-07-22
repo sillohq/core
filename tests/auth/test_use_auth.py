@@ -7,7 +7,7 @@ from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
 from sillo.users import SimpleUser, UnauthenticatedUser
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import AsyncTestClient
 
 

@@ -8,8 +8,8 @@ import json
 
 from sillo import silloApp
 from sillo.work.background.tasks import BackgroundTask
-from sillo.dependencies import Depend
-from sillo.http import Request, Response
+from sillo.core.dependencies import Depend
+from sillo.core.http import Request, Response
 from sillo.testclient import AsyncTestClient
 from sillo.work import setup_work
 from sillo.work.dependency import events, queue_connection, scheduler

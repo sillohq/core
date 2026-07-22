@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Union
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 app = silloApp()
 

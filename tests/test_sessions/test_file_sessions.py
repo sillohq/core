@@ -2,8 +2,8 @@
 Tests for file-based session manager
 """
 
-from sillo.http import Response
-from sillo.http import Request
+from sillo.core.http import Response
+from sillo.core.http import Request
 import json
 import os
 import shutil

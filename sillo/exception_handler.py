@@ -18,7 +18,7 @@ from sillo import logging
 from sillo.auth.exceptions import AuthenticationFailed, AuthErrorHandler
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.handlers.not_found import handle_404_error
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.types import ExceptionHandlerType
 
 logger = logging.getLogger("sillo")

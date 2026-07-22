@@ -2,7 +2,7 @@ import typing
 
 from typing_extensions import Annotated, Any, Doc
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 
 class BaseMiddleware:

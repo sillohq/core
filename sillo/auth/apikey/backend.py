@@ -7,7 +7,7 @@ from typing import Any, Optional
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.apikey.models import ApiKeyManager
 from sillo.auth.model import AuthResult
-from sillo.http import Request
+from sillo.core.http import Request
 
 
 class APIKeyAuthBackend(AuthenticationBackend):

@@ -78,11 +78,11 @@ Common Patterns:
     GraphQL(app, schema, path="/graphql", graphiql=True)
 """
 
-from sillo.routing import Route, Router
+from sillo.core.routing import Route, Router
 
 from .application import silloApp
 from .frontend import FrontendApp
-from .dependencies import Depend
+from sillo.core.dependencies import Depend
 from .parameters import Query, Header, Cookie
 
 __all__ = [

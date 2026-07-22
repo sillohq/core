@@ -5,9 +5,9 @@ Helper functions for creating sync and async test clients for sillo applications
 from typing import Any, Dict, List, Optional, Sequence
 
 from sillo import silloApp
-from sillo.dependencies import Depend
-from sillo.routing import Route
-from sillo.routing.base import BaseRoute
+from sillo.core.dependencies import Depend
+from sillo.core.routing import Route
+from sillo.core.routing.base import BaseRoute
 from sillo.testclient import AsyncTestClient, TestClient
 from sillo.types import ExceptionHandlerType
 

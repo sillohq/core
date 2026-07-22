@@ -4,7 +4,7 @@ from tortoise.expressions import Q
 from tortoise.functions import Count
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 app = silloApp()
 

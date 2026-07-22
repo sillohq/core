@@ -1,8 +1,8 @@
 """Tests for sillo.work.dependency — DI providers for work components."""
 
 from sillo import silloApp
-from sillo.dependencies import Depend
-from sillo.http import Request, Response
+from sillo.core.dependencies import Depend
+from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 from sillo.work import setup_work
 from sillo.work.dependency import scheduler, queue_connection, events

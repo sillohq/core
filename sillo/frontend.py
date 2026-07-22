@@ -4,8 +4,8 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 
-from sillo.http import Request, Response
-from sillo.routing.base import BaseRouter
+from sillo.core.http import Request, Response
+from sillo.core.routing.base import BaseRouter
 from sillo.types import Receive, Scope, Send
 
 FallbackType = Optional[Union[str, bool]]

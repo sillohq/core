@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sillo.routing import Route
+from sillo.core.routing import Route
 
 from .views import (
     bulk_view,

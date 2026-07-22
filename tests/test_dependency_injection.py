@@ -8,9 +8,9 @@ from typing import Callable
 import pytest
 
 from sillo import silloApp
-from sillo.dependencies import Depend
-from sillo.http import Request, Response
-from sillo.routing import Router
+from sillo.core.dependencies import Depend
+from sillo.core.http import Request, Response
+from sillo.core.routing import Router
 from sillo.testclient import TestClient
 
 # ========== Basic Dependency Tests ==========

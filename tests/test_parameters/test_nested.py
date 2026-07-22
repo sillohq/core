@@ -4,7 +4,7 @@ Tests for parameter extractors in nested dependencies.
 
 import pytest
 from sillo import silloApp, Query, Header, Cookie, Depend
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 

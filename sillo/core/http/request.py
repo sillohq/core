@@ -16,7 +16,7 @@ from sillo.formparser import (
     UploadedFile,
 )
 from sillo.objects import URL, Address, FormData, Headers, QueryParams, State
-from sillo.helpers.async_helpers import (
+from sillo.core.helpers.async_helpers import (
     AwaitableOrContextManager,
     AwaitableOrContextManagerWrapper,
 )

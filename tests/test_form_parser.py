@@ -3,7 +3,7 @@ from typing import AsyncGenerator
 import pytest
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.formparser import FormParser, MultiPartException, MultiPartParser
 from sillo.objects import FormData, Headers, UploadedFile
 from sillo.testclient import TestClient

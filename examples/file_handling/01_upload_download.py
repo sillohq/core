@@ -6,7 +6,7 @@ from pathlib import Path
 import aiofiles
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.responses import FileResponse, StreamingResponse
 
 app = silloApp()

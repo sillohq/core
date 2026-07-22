@@ -10,7 +10,7 @@ import pytest
 
 from sillo import silloApp
 from sillo.exceptions import WebSocketException
-from sillo.routing import Router
+from sillo.core.routing import Router
 from sillo.testclient import TestClient
 from sillo.types import ASGIApp, Receive, Scope, Send
 from sillo.websockets.base import WebSocket

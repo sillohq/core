@@ -1,7 +1,7 @@
 import typing
 from typing import Any, List, Optional
 
-from sillo.config.base import ConfigBase
+from sillo.core.config.base import ConfigBase
 
 
 class CSRFConfig(ConfigBase):

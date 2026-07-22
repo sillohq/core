@@ -47,7 +47,7 @@ class WebSocketConsumer:
         """
         Convert the WebSocketConsumer class into a Route that can be registered with the app or router.
         """
-        from sillo.routing.websocket import WebsocketRoute
+        from sillo.core.routing.websocket import WebsocketRoute
 
         async def handler(
             websocket: WebSocket, **kwargs: typing.Dict[str, typing.Any]

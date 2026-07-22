@@ -2,8 +2,8 @@ from sillo import silloApp
 from sillo.auth import BaseUser, useAuth
 from sillo.auth import JWTAuthBackend, create_jwt
 from sillo.auth.middleware import AuthenticationMiddleware
-from sillo.http import Request, Response
-from sillo.routing import Router
+from sillo.core.http import Request, Response
+from sillo.core.routing import Router
 
 
 class User(BaseUser):

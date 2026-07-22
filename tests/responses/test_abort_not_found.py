@@ -12,8 +12,8 @@ import pytest
 
 from sillo import silloApp
 from sillo.exceptions import HTTPException, NotFoundException
-from sillo.http import Request, Response
-from sillo.http.response import Responder
+from sillo.core.http import Request, Response
+from sillo.core.http.response import Responder
 from sillo.testclient import TestClient
 
 

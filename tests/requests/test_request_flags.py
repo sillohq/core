@@ -5,7 +5,7 @@ Tests for new Request utility flags and methods
 import pytest
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 

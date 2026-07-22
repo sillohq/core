@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional
 
-from sillo.config.base import ConfigBase
+from sillo.core.config.base import ConfigBase
 
 
 class CorsConfig(ConfigBase):

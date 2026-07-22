@@ -7,7 +7,7 @@ from typing import AsyncIterator, Callable
 import pytest
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 # ========== Redirect Response Tests ==========

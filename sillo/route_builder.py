@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Dict, List, Pattern
 
-from sillo.converters import CONVERTOR_TYPES, Convertor
+from sillo.core.converters import CONVERTOR_TYPES, Convertor
 
 PARAM_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
 

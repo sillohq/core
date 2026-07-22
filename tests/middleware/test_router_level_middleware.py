@@ -7,9 +7,9 @@ from typing import Callable
 import pytest
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
-from sillo.routing import Router
+from sillo.core.routing import Router
 from sillo.testclient import TestClient
 
 # ========== Basic Router-Level Middleware Tests ==========

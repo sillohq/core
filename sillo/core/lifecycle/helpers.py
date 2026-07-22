@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 
 def generate_request_id() -> str:

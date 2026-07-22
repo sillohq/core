@@ -2,8 +2,8 @@ from typing import Any, cast
 
 import strawberry
 from sillo.application import silloApp
-from sillo.http import Request, Response
-from sillo.routing import Route
+from sillo.core.http import Request, Response
+from sillo.core.routing import Route
 from strawberry.types import ExecutionResult
 
 

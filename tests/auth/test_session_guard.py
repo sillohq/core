@@ -5,7 +5,7 @@ import pytest
 from sillo.application import silloApp
 from sillo.auth.session_auth.backend import login, logout
 from sillo.auth.session_auth.guard import SessionGuard
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.session.middleware import SessionMiddleware
 from sillo.testclient import AsyncTestClient
 from sillo.users import SimpleUser

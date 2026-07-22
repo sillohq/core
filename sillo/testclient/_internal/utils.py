@@ -7,7 +7,7 @@ from typing_extensions import TypeGuard
 
 from sillo.testclient._internal.types import ASGI2App, ASGI3App
 from sillo.types import Receive, Scope, Send
-from sillo.helpers.async_helpers import is_async_callable
+from sillo.core.helpers.async_helpers import is_async_callable
 
 
 def is_asgi3(app: ASGI2App | ASGI3App) -> TypeGuard[ASGI3App]:

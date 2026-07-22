@@ -5,10 +5,10 @@ from typing import Any, Callable
 
 from pydantic import BaseModel
 
-from sillo.http.response import StreamingResponse
+from sillo.core.http.response import StreamingResponse
 
-from .http.request import Request
-from .http.response import Responder as Response
+from sillo.core.http.request import Request
+from sillo.core.http.response import Responder as Response
 from .websockets import WebSocket
 
 

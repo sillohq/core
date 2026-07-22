@@ -2,7 +2,7 @@ from sillo.session.session_objects import Session
 import typing
 from typing import Any, Optional
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 
 from .base import BaseSessionInterface

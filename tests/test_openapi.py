@@ -5,7 +5,7 @@ Tests the actual /openapi.json endpoint with various configurations.
 
 import pytest
 from sillo import silloApp, Query, Header, Cookie, Depend, Router
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 

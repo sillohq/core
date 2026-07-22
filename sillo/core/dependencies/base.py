@@ -12,7 +12,7 @@ from sillo.parameters import (
 )
 
 if TYPE_CHECKING:
-    from sillo.http import Request
+    from sillo.core.http import Request
 
 # =============================================================================
 # User-facing API

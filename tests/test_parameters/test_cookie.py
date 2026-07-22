@@ -4,7 +4,7 @@ Tests for Cookie parameter extractor.
 
 import pytest
 from sillo import silloApp, Cookie
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 

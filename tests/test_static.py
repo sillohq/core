@@ -2,13 +2,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sillo import silloApp
-from sillo.http import Request, Response
-from sillo.routing import Group
+from sillo.core.http import Request, Response
+from sillo.core.routing import Group
 from sillo.static import StaticFiles
 from sillo.testclient import TestClient
 
 if TYPE_CHECKING:
-    from sillo.http import Request, Response
+    from sillo.core.http import Request, Response
 
 
 def test_static_file_serving():

@@ -208,6 +208,25 @@ class MemoryCache(BaseCache):
             The deserialized cached value on a hit, or the :data:`_MISSING`
             sentinel object if the key is absent, expired, or corrupt.
         """
+        with self._lock:
+            entry = self._store.get(key)
+            if entry is None:
+                self._stats.misses += 1
+                return _MISSING
+
+            now = time.monotonic()
+            if entry.is_expired(now):
+                del self._store[key]
+                self._stats.misses += 1
+                return _MISSING
+
+            self._store.move_to_end(key)
+
+            if entry.sliding:
+                entry.touch(None, now)
+
+            self._stats.hits += 1
+            return deserialize(entry.payload)
 
     async def set(
         self,
@@ -240,6 +259,24 @@ class MemoryCache(BaseCache):
             SerializationError: If the value cannot be serialized by the
                 configured serializer.
         """
+        resolved_ttl = self._resolve_ttl(ttl)
+        now = time.monotonic()
+        payload = serialize(value, use_pickle=(self.serializer == "pickle"))
+        entry = self._Entry(payload, resolved_ttl, sliding, now)
+
+        with self._lock:
+            self._store[key] = entry
+            self._store.move_to_end(key)
+
+            if tags:
+                for tag in tags:
+                    tkey = tag_key(self.namespace, tag)
+                    if tkey not in self._tags:
+                        self._tags[tkey] = set()
+                    self._tags[tkey].add(key)
+
+            self._stats.sets += 1
+            self._enforce_size()
 
     async def delete(self, key: str) -> bool:
         """Delete a key from the in-memory cache store.
@@ -256,6 +293,12 @@ class MemoryCache(BaseCache):
             ``True`` if the key existed and was removed, ``False`` if
             the key was not found in the store.
         """
+        with self._lock:
+            if key in self._store:
+                del self._store[key]
+                self._stats.deletes += 1
+                return True
+            return False
 
     async def exists(self, key: str) -> bool:
         """Check if a key exists and is unexpired in the in-memory store.
@@ -271,6 +314,18 @@ class MemoryCache(BaseCache):
             ``True`` if the key is present and has not expired, ``False``
             if the key is missing or its TTL has elapsed.
         """
+        with self._lock:
+            entry = self._store.get(key)
+            if entry is None:
+                return False
+
+            now = time.monotonic()
+            if entry.is_expired(now):
+                del self._store[key]
+                return False
+
+            self._store.move_to_end(key)
+            return True
 
     async def touch(self, key: str, ttl: Optional[int] = None) -> bool:
         """Refresh the TTL of an entry in the in-memory store.
@@ -288,6 +343,20 @@ class MemoryCache(BaseCache):
             ``True`` if the key existed and was refreshed, ``False`` if
             the key was not found or had already expired.
         """
+        resolved_ttl = self._resolve_ttl(ttl)
+        with self._lock:
+            entry = self._store.get(key)
+            if entry is None:
+                return False
+
+            now = time.monotonic()
+            if entry.is_expired(now):
+                del self._store[key]
+                return False
+
+            entry.touch(resolved_ttl, now)
+            self._store.move_to_end(key)
+            return True
 
     async def invalidate_tags(self, *tags: str) -> int:
         """Delete all in-memory entries associated with the given tags.
@@ -305,6 +374,21 @@ class MemoryCache(BaseCache):
             The total number of keys that were deleted as a result of
             this tag invalidation operation.
         """
+        if not tags:
+            return 0
+
+        removed = 0
+        with self._lock:
+            for tag in tags:
+                tkey = tag_key(self.namespace, tag)
+                members = self._tags.pop(tkey, set())
+                for member_key in members:
+                    if member_key in self._store:
+                        del self._store[member_key]
+                        removed += 1
+            if removed:
+                self._stats.deletes += removed
+        return removed
 
     async def clear(self) -> None:
         """Remove all keys from the in-memory cache, respecting namespace.
@@ -318,6 +402,17 @@ class MemoryCache(BaseCache):
             This operation does not reset statistics counters; use
             :meth:`reset_stats` for that purpose.
         """
+        with self._lock:
+            if self.namespace:
+                prefix = f"{self.namespace}:"
+                to_remove = [k for k in self._store if k.startswith(prefix)]
+                for k in to_remove:
+                    del self._store[k]
+                tag_prefix = f"tag:{self.namespace}:"
+                self._tags = {k: v for k, v in self._tags.items() if not k.startswith(tag_prefix)}
+            else:
+                self._store.clear()
+                self._tags.clear()
 
     async def close(self) -> None:
         """Release all in-memory cache resources.
@@ -326,6 +421,9 @@ class MemoryCache(BaseCache):
         effectively discarding all cached data. After calling this method,
         the backend instance should not be used for further operations.
         """
+        with self._lock:
+            self._store.clear()
+            self._tags.clear()
 
     # ---- size management -------------------------------------------
 
@@ -341,6 +439,11 @@ class MemoryCache(BaseCache):
             This method is called automatically after every :meth:`set`
             operation and should not typically need to be called directly.
         """
+        if self.max_size is None:
+            return
+        while len(self._store) > self.max_size:
+            self._store.popitem(last=False)
+            self._stats.evictions += 1
 
     def __len__(self) -> int:
         """Return the number of entries currently in the in-memory store.
@@ -366,6 +469,7 @@ class MemoryCache(BaseCache):
             The total number of entries in the store as an integer,
             including any that may have expired but not yet been evicted.
         """
+        return len(self._store)
 
 
 class RedisCache(BaseCache):

@@ -2,7 +2,7 @@ import re
 from functools import wraps
 from typing import Any, Awaitable, Callable
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.types import HandlerType
 
 

@@ -6,13 +6,13 @@ from typing import Any, AsyncIterable, Callable, Mapping, MutableMapping
 
 import anyio
 
-from sillo.http.request import ClientDisconnect, Request
-from sillo.http.response import (
+from sillo.core.http.request import ClientDisconnect, Request
+from sillo.core.http.response import (
     BaseResponse,
 )
-from sillo.http.response import Responder as Response
+from sillo.core.http.response import Responder as Response
 from sillo.types import ASGIApp, Message, MiddlewareType, Receive, Scope, Send
-from sillo.helpers.async_helpers import collapse_excgroups
+from sillo.core.helpers.async_helpers import collapse_excgroups
 from sillo.websockets import WebSocket
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]

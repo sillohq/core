@@ -2,7 +2,7 @@ from pathlib import Path
 
 from sillo import silloApp
 from sillo.frontend import FrontendApp
-from sillo.routing import Group
+from sillo.core.routing import Group
 from sillo.testclient import TestClient
 
 HERE = Path(__file__).parent

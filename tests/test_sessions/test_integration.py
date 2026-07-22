@@ -7,7 +7,7 @@ import time
 import pytest
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
 from sillo.testclient import TestClient

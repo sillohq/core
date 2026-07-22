@@ -3,7 +3,7 @@ import typing
 from functools import wraps
 
 from sillo.decorator_helper import RouteDecorator
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 from .exceptions import AuthenticationFailed, PermissionDenied
 

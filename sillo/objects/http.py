@@ -209,6 +209,7 @@ class Headers(typing.Mapping[str, str]):
         Returns:
             List[str]: A list of decoded header name strings.
         """
+        return [k.decode("latin-1") for k, _ in self._list]
 
     def values(self):
         """
@@ -221,6 +222,7 @@ class Headers(typing.Mapping[str, str]):
         Returns:
             List[str]: A list of decoded header value strings.
         """
+        return [v.decode("latin-1") for _, v in self._list]
 
     def items(self):
         """
@@ -233,6 +235,7 @@ class Headers(typing.Mapping[str, str]):
         Returns:
             List[Tuple[str, str]]: A list of decoded header name-value pairs.
         """
+        return [(k.decode("latin-1"), v.decode("latin-1")) for k, v in self._list]
 
     def getlist(self, key: str) -> typing.List[str]:
         """

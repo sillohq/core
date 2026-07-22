@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 
 

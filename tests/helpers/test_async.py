@@ -2,7 +2,7 @@ import functools
 
 import pytest
 
-from sillo.helpers.async_helpers import (
+from sillo.core.helpers.async_helpers import (
     AwaitableOrContextManagerWrapper,
     SupportsAsyncClose,
     collapse_excgroups,

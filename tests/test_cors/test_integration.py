@@ -5,7 +5,7 @@ Integration tests for CORS middleware with realistic scenarios
 import pytest
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
 

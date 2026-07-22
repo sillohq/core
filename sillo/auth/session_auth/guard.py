@@ -8,7 +8,7 @@ from sillo.auth.session_auth.backend import (
     login as _session_login,
     logout as _session_logout,
 )
-from sillo.http import Request
+from sillo.core.http import Request
 
 
 class SessionGuard:

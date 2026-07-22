@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from sillo.converters import (
+from sillo.core.converters import (
     CONVERTOR_TYPES,
     FloatConvertor,
     IntegerConvertor,

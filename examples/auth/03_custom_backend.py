@@ -3,7 +3,7 @@ from sillo.auth.base import AuthenticationBackend
 from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.auth.users.base import BaseUser
 from sillo.auth.users.simple import UnauthenticatedUser
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 
 class CustomUser(BaseUser):

@@ -1,5 +1,5 @@
 from sillo import silloApp
-from sillo.routing import Routes
+from sillo.core.routing import Routes
 
 app = silloApp()
 

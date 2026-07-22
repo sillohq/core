@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any
 from urllib.parse import urlunparse
 
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 
 

@@ -16,7 +16,7 @@ from sillo.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, au
 from sillo.auth.apikey import create_api_key, verify_key
 from sillo.auth.model import AuthResult
 from sillo.users import SimpleUser
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import AsyncTestClient
 
 

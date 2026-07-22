@@ -18,7 +18,7 @@ from pydantic.networks import AnyUrl, NameEmail
 from pydantic.types import SecretBytes, SecretStr
 from pydantic_core import PydanticUndefined, PydanticUndefinedType
 
-from sillo.encoding import (
+from sillo.core.encoding import (
     ENCODERS_BY_TYPE,
     decimal_encoder,
     encoders_by_class_tuples,
@@ -725,7 +725,7 @@ def test_dict_with_encoded_keys():
 # ---------------------------------------------------------------------------
 
 
-from sillo.encoding import CUSTOM_ENCODERS, register_encoder, get_custom_encoders
+from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder, get_custom_encoders
 
 
 class _RegType:

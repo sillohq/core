@@ -1,7 +1,7 @@
 from typing import Literal
 from typing import Any, Optional
 
-from sillo.config.base import ConfigBase
+from sillo.core.config.base import ConfigBase
 
 
 class SessionConfig(ConfigBase):

@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any, TypeVar, List, Optional
 
 if typing.TYPE_CHECKING:
-    from sillo.http import Request
+    from sillo.core.http import Request
 
 
 T = TypeVar("T")

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 
@@ -68,7 +68,7 @@ def test_request_model_validation_error():
 
 def test_request_model_with_di_does_not_clash():
     """Handler with Depend and request_model — validated_data goes to request, not injected."""
-    from sillo.dependencies import Depend
+    from sillo.core.dependencies import Depend
 
     app = silloApp()
 

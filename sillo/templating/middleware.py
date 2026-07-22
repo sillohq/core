@@ -6,7 +6,7 @@ from typing import Any, Awaitable, Callable, Dict, Optional
 
 from sillo.middleware import BaseMiddleware
 from sillo.types import Request, Response
-from sillo.helpers.async_helpers import is_async_callable
+from sillo.core.helpers.async_helpers import is_async_callable
 
 
 class TemplateContextMiddleware(BaseMiddleware):

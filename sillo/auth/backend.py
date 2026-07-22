@@ -6,7 +6,7 @@ from sillo import logging
 from sillo.auth.model import AuthResult
 
 if TYPE_CHECKING:
-    from sillo.http import Request, Response
+    from sillo.core.http import Request, Response
 
 logger = logging.create_logger(__name__)
 

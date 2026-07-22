@@ -1,5 +1,5 @@
 from __future__ import annotations
-from sillo.helpers.async_helpers import is_async_callable
+from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.openapi import License
 from sillo.openapi import Contact
 
@@ -24,14 +24,14 @@ from typing_extensions import Annotated, Doc
 from sillo._internals._middleware import (
     ASGIRequestResponseBridge,
 )
-from sillo.encoding import CUSTOM_ENCODERS, register_encoder
+from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder
 
 from sillo._internals._middleware import DefineMiddleware as Middleware
-from sillo.dependencies import Depend
+from sillo.core.dependencies import Depend
 from sillo.events import EventEmitter
 from sillo.exception_handler import ExceptionHandlerType, ExceptionMiddleware
 from sillo.logging import create_logger
-from sillo.error import (
+from sillo.core.error import (
     ServerErrHandlerType,
     ServerErrorMiddleware,
 )
@@ -39,9 +39,9 @@ from sillo.objects import URLPath
 from sillo.openapi._builder import APIDocumentation
 from sillo.openapi.config import OpenAPIConfig
 from sillo.openapi.models import HTTPBearer, Parameter, Server
-from sillo.routing.base import BaseRoute
+from sillo.core.routing.base import BaseRoute
 from pathlib import Path
-from .routing import Route, Router, WebsocketRoute
+from sillo.core.routing import Route, Router, WebsocketRoute
 from .types import (
     ASGIApp,
     ArgsType,
@@ -55,7 +55,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
-    from sillo.http import Request, Response
+    from sillo.core.http import Request, Response
 
 import warnings
 

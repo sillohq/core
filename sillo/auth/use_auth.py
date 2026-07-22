@@ -47,7 +47,7 @@ from sillo.users.base import UserProtocol
 from sillo.users.simple import SimpleUser
 
 if TYPE_CHECKING:
-    from sillo.http import Request
+    from sillo.core.http import Request
 
 
 class useAuth:

@@ -9,7 +9,7 @@ from typing import Any, Callable, Optional, Union
 
 from typing_extensions import Doc
 
-from sillo.http import Request
+from sillo.core.http import Request
 
 
 class RateLimitConfig:

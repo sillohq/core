@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Type
 
 from sillo import silloApp
-from sillo.routing import Group
+from sillo.core.routing import Group
 from sillo.static import StaticFiles
 from .registry import ModelAdmin, Registry
 from .auth import AuthBackend, SessionAuth

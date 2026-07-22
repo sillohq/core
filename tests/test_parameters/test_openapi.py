@@ -4,7 +4,7 @@ Tests for OpenAPI integration with Query, Header, Cookie parameters.
 
 import pytest
 from sillo import silloApp, Query, Header, Cookie
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 
 @pytest.fixture

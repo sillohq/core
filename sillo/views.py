@@ -3,8 +3,8 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional, Type
 
 from typing_extensions import Annotated, Doc
 
-from sillo.http import Request, Response
-from sillo.routing import Route as Route
+from sillo.core.http import Request, Response
+from sillo.core.routing import Route as Route
 from sillo.types import MiddlewareType
 
 logger = logging.getLogger(__name__)

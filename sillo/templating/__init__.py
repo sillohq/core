@@ -8,8 +8,8 @@ from typing import Any, Callable, Dict, Optional, Union
 import jinja2
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from sillo.config import ConfigBase
-from sillo.http.response import HTMLResponse
+from sillo.core.config import ConfigBase
+from sillo.core.http.response import HTMLResponse
 from sillo.types import Request
 
 from .middleware import template_context

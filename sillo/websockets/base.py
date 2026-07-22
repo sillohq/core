@@ -3,7 +3,7 @@ import json
 import typing
 from typing import AsyncIterator, Iterable, Optional
 
-from sillo.http.request import HTTPConnection
+from sillo.core.http.request import HTTPConnection
 
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]

@@ -1,4 +1,4 @@
-from sillo.lifecycle import RequestContext
+from sillo.core.lifecycle import RequestContext
 
 
 class TestRequestContext:

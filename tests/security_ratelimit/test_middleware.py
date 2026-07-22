@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sillo import silloApp
-from sillo.http import Request
+from sillo.core.http import Request
 from sillo.security import RateLimit, RateLimitConfig, RateLimitMiddleware
 from sillo.testclient import TestClient
 

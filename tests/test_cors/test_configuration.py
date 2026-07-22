@@ -7,7 +7,7 @@ import warnings
 import pytest
 
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
 

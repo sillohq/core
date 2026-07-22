@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 from sillo.exceptions import HTTPException
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 HeadersType = Dict[str, Any]  # Alias for better readability
 """Type alias for HTTP header dictionaries used in auth exception responses.

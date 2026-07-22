@@ -30,9 +30,9 @@ from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo._internals._middleware import (
     wrap_middleware,
 )
-from sillo.encoding import jsonable_encoder
+from sillo.core.encoding import jsonable_encoder
 from sillo.route_builder import RouteBuilder
-from sillo.dependencies import (
+from sillo.core.dependencies import (
     Depend,
     Dependant,
     _execute_dependency,
@@ -42,8 +42,8 @@ from sillo.dependencies import (
 from sillo.parameters import ParameterExtractor, SolvedParamDependency
 from sillo.events import EventEmitter
 from sillo.exceptions import NotFoundException, HTTPException
-from sillo.http import Request, Response
-from sillo.http.response import BaseResponse, JSONResponse, Responder
+from sillo.core.http import Request, Response
+from sillo.core.http.response import BaseResponse, JSONResponse, Responder
 from sillo.objects import RouteParam, URLPath
 from sillo.openapi.models import Parameter
 from sillo.types import (
@@ -55,7 +55,7 @@ from sillo.types import (
     Scope,
     Send,
 )
-from sillo.helpers.async_helpers import is_async_callable
+from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.utils.concurrency import run_in_threadpool
 
 from pydantic import ValidationError

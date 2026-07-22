@@ -11,8 +11,8 @@ from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 
 from sillo import Depend, MakeConfig, silloApp
-from sillo.http import Request, Response
-from sillo.routing import Router
+from sillo.core.http import Request, Response
+from sillo.core.routing import Router
 from sillo.views import APIView
 from sillo.websockets import WebSocket, WebSocketDisconnect
 

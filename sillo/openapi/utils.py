@@ -1,7 +1,7 @@
 from typing import Any, List, Union
 
-from sillo.routing import Route, Router
-from sillo.routing.grouping import Group
+from sillo.core.routing import Route, Router
+from sillo.core.routing.grouping import Group
 
 
 def get_openapi(route: Union[Route, Router, Group, Any]) -> List[Route]:

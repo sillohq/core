@@ -9,7 +9,7 @@ reaching into ``request.app.state``.
 
 Usage::
 
-    from sillo.dependencies import Depend
+    from sillo.core.dependencies import Depend
     from sillo.work.dependency import scheduler, queue_connection, events
 
     @app.get("/admin/scheduler")
@@ -29,7 +29,7 @@ Usage::
 
 from __future__ import annotations
 
-from sillo.dependencies import Depend
+from sillo.core.dependencies import Depend
 
 
 def _make_provider(key: str):
