@@ -2,7 +2,6 @@ from typing import Literal
 from typing import Any, Optional
 
 
-
 class SessionConfig:
     """
     Typed configuration for Session middleware.

@@ -2,7 +2,6 @@ import typing
 from typing import Any, List, Optional
 
 
-
 class CSRFConfig:
     """
     Typed configuration for CSRF middleware.

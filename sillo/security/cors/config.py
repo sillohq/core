@@ -1,7 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional
 
 
-
 class CorsConfig:
     """
     Typed configuration for CORS middleware.
