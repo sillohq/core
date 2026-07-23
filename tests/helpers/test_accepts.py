@@ -1,6 +1,6 @@
 from sillo import silloApp
 from sillo.core.http import Request, Response
-from sillo.helpers.accepts import (
+from sillo.http.accepts import (
     AcceptItem,
     AcceptsInfo,
     parse_accept_header,

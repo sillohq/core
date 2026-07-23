@@ -1,14 +1,11 @@
 """
-HTTP codes
-See HTTP Status Code Registry:
-https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
+HTTP status codes.
 
-And RFC 2324 - https://tools.ietf.org/html/rfc2324
+See the HTTP Status Code Registry:
+https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 """
 
 from __future__ import annotations
-
-import warnings
 
 __all__ = (
     "HTTP_100_CONTINUE",
@@ -74,21 +71,6 @@ __all__ = (
     "HTTP_508_LOOP_DETECTED",
     "HTTP_510_NOT_EXTENDED",
     "HTTP_511_NETWORK_AUTHENTICATION_REQUIRED",
-    "WS_1000_NORMAL_CLOSURE",
-    "WS_1001_GOING_AWAY",
-    "WS_1002_PROTOCOL_ERROR",
-    "WS_1003_UNSUPPORTED_DATA",
-    "WS_1005_NO_STATUS_RCVD",
-    "WS_1006_ABNORMAL_CLOSURE",
-    "WS_1007_INVALID_FRAME_PAYLOAD_DATA",
-    "WS_1008_POLICY_VIOLATION",
-    "WS_1009_MESSAGE_TOO_BIG",
-    "WS_1010_MANDATORY_EXT",
-    "WS_1011_INTERNAL_ERROR",
-    "WS_1012_SERVICE_RESTART",
-    "WS_1013_TRY_AGAIN_LATER",
-    "WS_1014_BAD_GATEWAY",
-    "WS_1015_TLS_HANDSHAKE",
 )
 
 HTTP_100_CONTINUE = 100
@@ -154,67 +136,3 @@ HTTP_507_INSUFFICIENT_STORAGE = 507
 HTTP_508_LOOP_DETECTED = 508
 HTTP_510_NOT_EXTENDED = 510
 HTTP_511_NETWORK_AUTHENTICATION_REQUIRED = 511
-
-
-"""
-WebSocket codes
-https://www.iana.org/assignments/websocket/websocket.xml#close-code-number
-https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
-"""
-WS_1000_NORMAL_CLOSURE = 1000
-WS_1001_GOING_AWAY = 1001
-WS_1002_PROTOCOL_ERROR = 1002
-WS_1003_UNSUPPORTED_DATA = 1003
-WS_1005_NO_STATUS_RCVD = 1005
-WS_1006_ABNORMAL_CLOSURE = 1006
-WS_1007_INVALID_FRAME_PAYLOAD_DATA = 1007
-WS_1008_POLICY_VIOLATION = 1008
-WS_1009_MESSAGE_TOO_BIG = 1009
-WS_1010_MANDATORY_EXT = 1010
-WS_1011_INTERNAL_ERROR = 1011
-WS_1012_SERVICE_RESTART = 1012
-WS_1013_TRY_AGAIN_LATER = 1013
-WS_1014_BAD_GATEWAY = 1014
-WS_1015_TLS_HANDSHAKE = 1015
-
-
-__deprecated__ = {"WS_1004_NO_STATUS_RCVD": 1004, "WS_1005_ABNORMAL_CLOSURE": 1005}
-
-
-def __getattr__(name: str) -> int:
-    """Getattr
-
-    Args:
-        name: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-    deprecation_changes = {
-        "WS_1004_NO_STATUS_RCVD": "WS_1005_NO_STATUS_RCVD",
-        "WS_1005_ABNORMAL_CLOSURE": "WS_1006_ABNORMAL_CLOSURE",
-    }
-    deprecated = __deprecated__.get(name)
-    if deprecated:
-        warnings.warn(
-            f"'{name}' is deprecated. Use '{deprecation_changes[name]}' instead.",
-            category=DeprecationWarning,
-            stacklevel=3,
-        )
-        return deprecated
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
-
-
-def __dir__() -> list[str]:
-    """Dir
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-    return sorted(list(__all__) + list(__deprecated__.keys()))

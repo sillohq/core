@@ -170,7 +170,7 @@ Combining path params, methods, middleware, validation, and OpenAPI metadata int
 from pydantic import BaseModel
 from sillo import silloApp
 from sillo.views import APIView
-from sillo.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from sillo.http.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 from sillo.exceptions import HTTPException
 
 app = silloApp()

@@ -1,6 +1,6 @@
 from sillo import silloApp
 from sillo.core.http import Request, Response
-from sillo.core.lifecycle import (
+from sillo.http.lifecycle import (
     RequestIdMiddleware,
     generate_request_id,
     validate_request_id,

@@ -2,7 +2,7 @@ import json
 import typing
 import uuid
 
-from sillo import logging, status
+from sillo import logging
 
 # NOTE: WebsocketRoute is imported lazily inside as_route() to break a
 # circular import: types → websockets → consumers → routing.websocket → types.
@@ -10,6 +10,7 @@ from sillo import logging, status
 
 from .base import WebSocket
 from .channels import Channel, ChannelBox, PayloadTypeEnum
+from . import status
 
 Message = typing.MutableMapping[str, typing.Any]
 

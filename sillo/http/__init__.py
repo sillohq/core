@@ -1,8 +1,25 @@
-"""sillo.http — HTTP sub-packages.
+"""sillo.http — HTTP client, middleware, negotiation, and lifecycle helpers."""
 
-- ``sillo.http.client``: Production-grade async HTTP client (httpx-based).
-"""
-
+from sillo.http.accepts import (
+    AcceptItem,
+    Accepts,
+    AcceptsInfo,
+    AcceptsMiddleware,
+    ContentNegotiationMiddleware,
+    StrictContentNegotiationMiddleware,
+    create_vary_header,
+    get_accepts_info,
+    get_best_match,
+    matches_media_type,
+    negotiate_charset,
+    negotiate_content_type,
+    negotiate_encoding,
+    negotiate_language,
+    parse_accept_charset,
+    parse_accept_encoding,
+    parse_accept_header,
+    parse_accept_language,
+)
 from sillo.http.client import (
     BaseURLMiddleware,
     CacheConfig,
@@ -26,6 +43,32 @@ from sillo.http.client import (
     merge_headers,
     sanitize_url_for_log,
 )
+from sillo.http.etag import (
+    ETag,
+    ETagMiddleware,
+    compute_and_set_etag,
+    etag_matches,
+    generate_etag_from_bytes,
+    is_fresh,
+    normalize_etag,
+    parse_if_match,
+    parse_if_none_match,
+    set_response_etag,
+)
+from sillo.http.lifecycle import (
+    RequestContext,
+    RequestId,
+    RequestIdMiddleware,
+    generate_request_id,
+    get_or_generate_request_id,
+    get_request_id_from_header,
+    get_request_id_from_request,
+    set_request_id_header,
+    store_request_id_in_request,
+    validate_request_id,
+)
+from sillo.http.status import *  # noqa: F403
+from sillo.http.status import __all__ as _status_all
 
 __all__ = [
     "HTTPClient",
@@ -49,4 +92,42 @@ __all__ = [
     "merge_headers",
     "sanitize_url_for_log",
     "guess_content_type",
-]
+    "ETagMiddleware",
+    "ETag",
+    "generate_etag_from_bytes",
+    "normalize_etag",
+    "set_response_etag",
+    "compute_and_set_etag",
+    "parse_if_none_match",
+    "parse_if_match",
+    "etag_matches",
+    "is_fresh",
+    "RequestIdMiddleware",
+    "RequestId",
+    "RequestContext",
+    "generate_request_id",
+    "get_request_id_from_header",
+    "set_request_id_header",
+    "get_or_generate_request_id",
+    "validate_request_id",
+    "store_request_id_in_request",
+    "get_request_id_from_request",
+    "AcceptItem",
+    "AcceptsInfo",
+    "AcceptsMiddleware",
+    "Accepts",
+    "ContentNegotiationMiddleware",
+    "StrictContentNegotiationMiddleware",
+    "parse_accept_header",
+    "parse_accept_language",
+    "parse_accept_charset",
+    "parse_accept_encoding",
+    "matches_media_type",
+    "negotiate_content_type",
+    "negotiate_language",
+    "negotiate_charset",
+    "negotiate_encoding",
+    "get_best_match",
+    "get_accepts_info",
+    "create_vary_header",
+] + list(_status_all)

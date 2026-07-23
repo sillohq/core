@@ -265,7 +265,7 @@ from sillo.normalize import Normalize, SlashAction
 app.use(Normalize(slash_action=SlashAction.REDIRECT_REMOVE))
 
 # Content negotiation: Accept / Accept-Language handling
-from sillo.helpers.accepts import Accepts
+from sillo.http.accepts import Accepts
 app.use(Accepts())
 ```
 

@@ -56,7 +56,7 @@ async def getUsers(request, response):
 ```
 
 ```py title="Enum"
-from sillo.status import HTTP_200_OK
+from sillo.http.status import HTTP_200_OK
 
 @app.get("/users")
 async def getUsers(request, response):

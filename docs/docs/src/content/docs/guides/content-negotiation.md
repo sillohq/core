@@ -1,11 +1,11 @@
 ---
 title: Content Negotiation
-description: Negotiate Accept headers with the sillo.helpers.accepts module.
+description: Negotiate Accept headers with the sillo.http.accepts module.
 ---
 
 # Content Negotiation
 
-A comprehensive content negotiation middleware for sillo, shipped as the first‑party `sillo.helpers.accepts` module. It parses `Accept`, `Accept-Language`, `Accept-Charset`, and `Accept-Encoding` headers and performs RFC 7231 content negotiation.
+A comprehensive content negotiation middleware for sillo, shipped as the first-party `sillo.http.accepts` module. It parses `Accept`, `Accept-Language`, `Accept-Charset`, and `Accept-Encoding` headers and performs RFC 7231 content negotiation.
 
 It automatically:
 
@@ -19,7 +19,7 @@ It automatically:
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import Accepts
+from sillo.http.accepts import Accepts
 
 app = silloApp()
 
@@ -40,7 +40,7 @@ async def home(request, response):
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import Accepts
+from sillo.http.accepts import Accepts
 
 app = silloApp()
 app.use(Accepts())
@@ -57,7 +57,7 @@ async def get_data(request, response):
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import ContentNegotiationMiddleware, negotiate_content_type
+from sillo.http.accepts import ContentNegotiationMiddleware, negotiate_content_type
 
 app = silloApp()
 app.use(ContentNegotiationMiddleware())
@@ -82,7 +82,7 @@ async def get_content(request, response):
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import ContentNegotiationMiddleware, negotiate_language
+from sillo.http.accepts import ContentNegotiationMiddleware, negotiate_language
 
 app = silloApp()
 app.use(ContentNegotiationMiddleware())
@@ -105,7 +105,7 @@ async def get_greetings(request, response):
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import StrictContentNegotiationMiddleware
+from sillo.http.accepts import StrictContentNegotiationMiddleware
 
 app = silloApp()
 app.use(
@@ -153,7 +153,7 @@ async def strict_api(request, response):
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import Accepts
+from sillo.http.accepts import Accepts
 
 app = silloApp()
 app.use(Accepts())
@@ -163,7 +163,7 @@ app.use(Accepts())
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import Accepts
+from sillo.http.accepts import Accepts
 
 app = silloApp()
 app.use(
@@ -196,7 +196,7 @@ async def debug_accepts(request, response):
 ### Content Negotiation Utilities
 
 ```python
-from sillo.helpers.accepts import get_best_match, negotiate_content_type
+from sillo.http.accepts import get_best_match, negotiate_content_type
 
 @app.get("/negotiate")
 async def negotiate_example(request, response):
@@ -252,7 +252,7 @@ Follows RFC 7231 content negotiation rules:
 ### Parsing Accept Headers
 
 ```python
-from sillo.helpers.accepts import parse_accept_header, parse_accept_language
+from sillo.http.accepts import parse_accept_header, parse_accept_language
 
 accept_items = parse_accept_header("text/html, application/json;q=0.9")
 # [AcceptItem("text/html", 1.0), AcceptItem("application/json", 0.9)]
@@ -264,7 +264,7 @@ lang_items = parse_accept_language("en-US, en;q=0.9, es;q=0.8")
 ### Content Negotiation
 
 ```python
-from sillo.helpers.accepts import negotiate_content_type, negotiate_language
+from sillo.http.accepts import negotiate_content_type, negotiate_language
 
 best_type = negotiate_content_type(
     "text/html, application/json;q=0.9",
@@ -279,7 +279,7 @@ best_lang = negotiate_language("en-US, fr;q=0.8", ["en", "fr", "es"])
 ### Best Match Selection
 
 ```python
-from sillo.helpers.accepts import get_best_match
+from sillo.http.accepts import get_best_match
 
 best = get_best_match(
     "application/json, text/html;q=0.9",
@@ -294,7 +294,7 @@ best = get_best_match(
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import ContentNegotiationMiddleware
+from sillo.http.accepts import ContentNegotiationMiddleware
 
 class CustomNegotiationMiddleware(ContentNegotiationMiddleware):
     def __init__(self, *args, **kwargs):
@@ -321,7 +321,7 @@ app.use(CustomNegotiationMiddleware())
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import ContentNegotiationMiddleware
+from sillo.http.accepts import ContentNegotiationMiddleware
 
 app = silloApp()
 app.use(ContentNegotiationMiddleware())
@@ -341,7 +341,7 @@ async def get_users(request, response):
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import ContentNegotiationMiddleware, negotiate_language
+from sillo.http.accepts import ContentNegotiationMiddleware, negotiate_language
 
 app = silloApp()
 app.use(ContentNegotiationMiddleware())
@@ -387,7 +387,7 @@ Drive negotiation through `TestClient` by setting request headers. Assert both t
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import Accepts
+from sillo.http.accepts import Accepts
 from sillo.testclient import TestClient
 
 
@@ -406,7 +406,7 @@ def test_negotiates_json():
 
 
 def test_strict_returns_406():
-    from sillo.helpers.accepts import StrictContentNegotiationMiddleware
+    from sillo.http.accepts import StrictContentNegotiationMiddleware
 
     app = silloApp()
     app.use(
@@ -460,7 +460,7 @@ def test_stores_accepts_info():
 
 ```python
 from sillo import silloApp
-from sillo.helpers.accepts import StrictContentNegotiationMiddleware
+from sillo.http.accepts import StrictContentNegotiationMiddleware
 
 app = silloApp()
 app.use(

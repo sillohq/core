@@ -221,10 +221,10 @@ async def statuses(request, response):
     return response.json({"error": "Not found"}, status_code=404)
 ```
 
-Prefer named constants from `sillo.status` for readability:
+Prefer named constants from `sillo.http.status` for readability:
 
 ```python
-from sillo.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from sillo.http.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
 @app.post("/things")
 async def make_thing(request, response):
@@ -292,7 +292,7 @@ Two patterns you may see in older examples are not part of sillo's API: `Context
 ```python
 from pydantic import BaseModel
 from sillo import silloApp, Query, Depend
-from sillo.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
+from sillo.http.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
 from sillo.exceptions import HTTPException
 
 app = silloApp()

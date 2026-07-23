@@ -80,6 +80,8 @@ async def on_disconnect(self, ws, code):
 
 ### **Broadcasting Messages**
 ```python
+from sillo.websockets import status
+
 async def on_receive(self, ws, data):
     await self.broadcast(
         {"user": "anon", "message": data},
