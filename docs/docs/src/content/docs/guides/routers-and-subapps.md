@@ -124,7 +124,7 @@ Here `require_staff` resolves for every route registered on `admin`. (You can al
 
 ## Groups: mounting a sub-application
 
-When the thing you want to mount is itself an app — a separate `silloApp`, or any ASGI app — use `Group`. A `Group` takes either `app=` (an ASGI app) or `routes=` (a list of `Route`/`APIView` objects), plus a `path` prefix.
+When the thing you want to mount is itself an app — a separate `silloApp`, or any ASGI app — use `Group`. A `Group` takes either `app=` (an ASGI app) or `routes=` (a list of `Route` objects), plus a `path` prefix.
 
 ### Mounting another silloApp
 
@@ -249,7 +249,7 @@ This gives you `/api/v1/health` and `/admin/stats` from two independently-define
 - [Routing](/guides/routing/) — path syntax, converters, `name=`, and all route options
 - [Handlers](/guides/handlers/) — the handler contract used inside routers
 - [Middleware](/guides/middleware/) — router-scoped and global middleware
-- [Class-Based Views](/guides/class-based-handlers/) — `APIView.as_route(...)` returns a `Route` you can add to a router
+- [Handlers](/guides/handlers/) — define function handlers for router endpoints
 - [Dependency Injection](/guides/dependency-injection/) — router-level `dependencies=`
 
 ## Related topics

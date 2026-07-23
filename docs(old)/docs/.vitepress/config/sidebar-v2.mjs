@@ -34,7 +34,6 @@ export const sidebarV2 = [
       { text: 'Pagination', link: '/v2/guide/pagination' },
       { text: 'Authentication', link: '/v2/guide/authentication' },
       { text: "Handler Hooks", link: '/v2/guide/handler-hooks' },
-      { text: 'Class Based Handlers', link: '/v2/guide/class-based-handlers' },
       { text: 'Events', link: '/v2/guide/events' },
       { text: 'Streaming Response', link: '/v2/guide/streaming-response' },
       { text: 'Dependency Injection', link: '/v2/guide/dependency-injection' },

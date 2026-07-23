@@ -13,7 +13,6 @@ from pydantic import BaseModel, EmailStr
 from sillo import Depend, MakeConfig, silloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Router
-from sillo.views import APIView
 from sillo.websockets import WebSocket, WebSocketDisconnect
 
 
@@ -70,68 +69,50 @@ async def get_current_user(request: Request = Depend(lambda: None)):
     return {"id": 1, "name": "John Doe", "email": "john@example.com"}
 
 
-# Class-based views example
-class UserView(APIView):
-    """
-    Class-based view for user management endpoints.
+# Function-based route handlers
+async def list_users(request: Request, response: Response):
+    """Get all users with optional filtering."""
+    limit = int(request.query_params.get("limit", "10"))
+    offset = int(request.query_params.get("offset", "0"))
 
-    This view demonstrates how to organize related HTTP methods
-    in a single class with shared middleware and error handling.
-    """
-
-    # Middleware applied to all methods in this view
-    middleware = []  # Add authentication, rate limiting, etc.
-
-    # Custom error handlers for this view
-    error_handlers = {}
-
-    async def get(self, request: Request, response: Response):
-        """Get all users with optional filtering."""
-        # Access query parameters
-        limit = int(request.query_params.get("limit", "10"))
-        offset = int(request.query_params.get("offset", "0"))
-
-        # Mock user data
-        users = [
-            {
-                "id": i,
-                "name": f"User {i}",
-                "email": f"user{i}@example.com",
-                "age": 25 + i,
-                "created_at": datetime.now().isoformat(),
-            }
-            for i in range(offset + 1, offset + limit + 1)
-        ]
-
-        return response.json(
-            {"users": users, "total": 100, "limit": limit, "offset": offset}
-        )
-
-    async def post(self, request: Request, response: Response):
-        """Create a new user."""
-        # Parse and validate JSON data
-        data = await request.json
-
-        try:
-            user_data = UserCreate(**data)
-        except Exception as e:
-            return response.json(
-                {"error": "Invalid user data", "details": str(e)}, status=400
-            )
-
-        # Create user (mock)
-        new_user = {
-            "id": 123,
-            "name": user_data.name,
-            "email": user_data.email,
-            "age": user_data.age,
+    users = [
+        {
+            "id": i,
+            "name": f"User {i}",
+            "email": f"user{i}@example.com",
+            "age": 25 + i,
             "created_at": datetime.now().isoformat(),
         }
+        for i in range(offset + 1, offset + limit + 1)
+    ]
 
-        return response.json(new_user, status=201)
+    return response.json(
+        {"users": users, "total": 100, "limit": limit, "offset": offset}
+    )
 
 
-# Function-based route handlers
+async def create_user(request: Request, response: Response):
+    """Create a new user."""
+    data = await request.json
+
+    try:
+        user_data = UserCreate(**data)
+    except Exception as e:
+        return response.json(
+            {"error": "Invalid user data", "details": str(e)}, status=400
+        )
+
+    new_user = {
+        "id": 123,
+        "name": user_data.name,
+        "email": user_data.email,
+        "age": user_data.age,
+        "created_at": datetime.now().isoformat(),
+    }
+
+    return response.json(new_user, status=201)
+
+
 async def get_user_detail(
     request: Request,
     response: Response,
@@ -293,14 +274,19 @@ def create_app() -> silloApp:
         description="Demonstration of sillo framework with comprehensive documentation",
     )
 
-    # Register class-based view
-    app.add_route(
-        UserView.as_route(
-            "/users",
-            name="user-list",
-            tags=["Users"],
-            summary="User management endpoints",
-        )
+    app.get(
+        "/users",
+        handler=list_users,
+        name="user-list",
+        tags=["Users"],
+        summary="List users",
+    )
+    app.post(
+        "/users",
+        handler=create_user,
+        name="user-create",
+        tags=["Users"],
+        summary="Create user",
     )
 
     # Register function-based routes with full OpenAPI documentation

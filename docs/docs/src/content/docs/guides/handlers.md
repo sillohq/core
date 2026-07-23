@@ -336,5 +336,5 @@ This one handler demonstrates: path-less body validation (`request_model`), an i
 ## Related topics
 
 - [Error Handling](/guides/error-handling/) — `HTTPException` and custom handlers
-- [Class-Based Views](/guides/class-based-handlers/) — group methods into one class
+- [Routers & Sub-Apps](/guides/routers-and-subapps/) — group related function handlers behind a prefix
 - [Middleware](/guides/middleware/) — logic that wraps handlers for every request

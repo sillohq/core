@@ -10,9 +10,8 @@ Use this reference for day-to-day endpoint authoring in sillo.
 4. [Routing Decorators](#routing-decorators)
 5. [Typed Path Parameters](#typed-path-parameters)
 6. [Route and Router](#route-and-router)
-7. [Class-Based Handlers](#class-based-handlers)
-8. [File Uploads](#file-uploads)
-9. [Pagination](#pagination)
+7. [File Uploads](#file-uploads)
+8. [Pagination](#pagination)
 
 ## Basic Handlers
 
@@ -203,22 +202,6 @@ async def list_users(request, response):
 
 app.mount_router(api)
 ```
-
-## Class-Based Handlers
-
-Use class-based handlers when the user wants a structured, reusable endpoint surface:
-
-```python
-from sillo.views import APIHandler
-
-class UserView(APIHandler):
-    async def get(self, request, response):
-        return response.json({"message": "user view"})
-
-app.add_route(UserView.as_route("/user"))
-```
-
-This is useful when a group of HTTP methods belongs to one resource.
 
 ## File Uploads
 

@@ -163,9 +163,9 @@ async def org_members(request, response, org_id: str): ...
 
 Call `super().authenticate(request)` first (it raises on failure), then layer your logic. Rate limiting per user, IP allow-lists, and tenancy checks all fit this pattern.
 
-## Inside routers and class-based views
+## Inside routers
 
-The gate is identical on `Router` decorators and on `APIView`:
+The gate is identical on `Router` decorators:
 
 ```python
 api = Router(prefix="/api")

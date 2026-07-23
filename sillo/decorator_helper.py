@@ -18,9 +18,7 @@ class RouteDecorator:
 
     This class provides the foundational interface that all concrete route
     decorators must implement. Route decorators are callable objects that wrap
-    handler functions to associate them with routing configuration. They also
-    implement the descriptor protocol to support use as method decorators on
-    class-based views.
+    handler functions to associate them with routing configuration.
 
     The decorator pattern allows route configuration to be expressed declaratively
     using Python's decorator syntax, e.g., ``@app.get("/path")``. Subclasses
@@ -31,10 +29,8 @@ class RouteDecorator:
         attributes for path patterns, HTTP methods, middleware lists, etc.
 
     Note:
-        This class implements ``__get__`` to support the descriptor protocol,
-        enabling decorators to work correctly when applied to methods on
-        class-based views. When accessed from an instance, a new decorator
-        instance is created bound to that instance's handler method.
+        This class implements ``__get__`` for normal descriptor behavior when a
+        decorator instance is stored on another object.
     """
 
     def __init__(self, **kwargs: Dict[str, Any]):
@@ -86,12 +82,10 @@ class RouteDecorator:
         raise NotImplementedError("Handler not set")
 
     def __get__(self, obj: typing.Any, objtype: typing.Any = None):
-        """Descriptor protocol support for class-based view method decoration.
+        """Descriptor protocol support.
 
-        Enables route decorators to work correctly when applied to methods on
-        class-based views. When accessed through an instance, creates a new
-        decorator bound to the instance's method. When accessed through the
-        class, returns the decorator itself.
+        When accessed through an instance, creates a new decorator bound to that
+        instance. When accessed through the class, returns the decorator itself.
 
         Args:
             obj: The instance through which the attribute is accessed, or
@@ -104,10 +98,6 @@ class RouteDecorator:
             Otherwise, returns a new instance of the decorator's class,
             effectively binding the decorator to the instance's handler method.
 
-        Note:
-            This descriptor behavior is essential for supporting decorators on
-            methods in class-based views, where the same decorator class needs
-            to work with different handler methods on different instances.
         """
         if obj is None:
             return self

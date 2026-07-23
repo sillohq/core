@@ -95,7 +95,6 @@ export const sidebarGuide = [
       { text: 'Pagination', link: '/guide/pagination' },
       { text: 'Authentication', link: '/guide/authentication' },
       { text: "Handler Hooks", link: '/guide/handler-hooks' },
-      { text: 'Class Based Handlers', link: '/guide/class-based-handlers' },
       { text: 'Events', link: '/guide/events' },
       { text: 'Streaming Response', link: '/guide/streaming-response' },
       { text: 'Dependency Injection', link: '/guide/dependency-injection' },

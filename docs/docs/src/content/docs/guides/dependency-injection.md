@@ -371,7 +371,7 @@ assert resp.status_code == 200
 
 - [Request Parameters](/guides/request-parameters/) — `Query`, `Header`, `Cookie` extractors in handlers and dependencies
 - [Handlers](/guides/handlers/) — the handler contract and return values
-- [Class-Based Views](/guides/class-based-handlers/) — `APIView` with class-level `middleware` and `error_handlers`
+- [Routers & Sub-Apps](/guides/routers-and-subapps/) — organize dependency-protected function handlers behind a prefix
 - [Middleware](/guides/middleware/) — request-scoped logic that runs for every request, not just injected ones
 
 ## Related topics

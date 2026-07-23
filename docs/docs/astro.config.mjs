@@ -81,7 +81,6 @@ export default defineConfig({
                         { label: 'Routing', link: '/guides/routing/' },
                         { label: 'Routers & Sub-Apps', link: '/guides/routers-and-subapps/' },
                         { label: 'Handlers', link: '/guides/handlers/' },
-                        { label: 'Class-Based Views', link: '/guides/class-based-handlers/' },
                         { label: 'Middleware', link: '/guides/middleware/' },
                         { label: 'JSON Serialization', link: '/guides/serialization/' },
                         { label: 'Request Lifecycle', link: '/guides/request-lifecycle/' },
