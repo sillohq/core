@@ -64,7 +64,9 @@ class RetryStrategy:
         elif self.mode == RetryMode.LINEAR:
             delay = min(self.base_delay * (attempt + 1), self.max_delay)
         else:
-            delay = min(self.base_delay * (self.backoff_factor ** attempt), self.max_delay)
+            delay = min(
+                self.base_delay * (self.backoff_factor**attempt), self.max_delay
+            )
 
         if self.jitter:
             delay = random.uniform(0, delay)

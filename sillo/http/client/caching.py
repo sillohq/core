@@ -54,8 +54,7 @@ class CacheConfig:
             return False
         method = response.request.method if response.request else "GET"
         return (
-            response.status_code in self.status_codes
-            and method.upper() in self.methods
+            response.status_code in self.status_codes and method.upper() in self.methods
         )
 
     def should_read_from_cache(self, request: Request) -> bool:

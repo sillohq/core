@@ -242,7 +242,9 @@ class HTTPClient:
 
         # Cache check (read-through)
         state = self._state
-        if state.cache is not None and state.cache.config.should_read_from_cache(request):
+        if state.cache is not None and state.cache.config.should_read_from_cache(
+            request
+        ):
             cached = await state.cache.get(request)
             if cached is not _MISSING:
                 state.stats.cache_hits += 1
@@ -315,7 +317,9 @@ class HTTPClient:
             )
 
         # Cache write-through
-        if state.cache is not None and state.cache.config.should_cache_response(response):
+        if state.cache is not None and state.cache.config.should_cache_response(
+            response
+        ):
             await state.cache.set(request, response)
 
         return response
@@ -365,7 +369,9 @@ class HTTPClient:
                 "jitter": retry_strategy.jitter,
             }
             if retry_strategy.retryable_exceptions:
-                retry_kwargs["retryable_exceptions"] = retry_strategy.retryable_exceptions
+                retry_kwargs["retryable_exceptions"] = (
+                    retry_strategy.retryable_exceptions
+                )
 
             @sillo_retry(**retry_kwargs)
             async def _send_with_retry(*a: Any, **kw: Any) -> httpx.Response:

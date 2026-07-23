@@ -48,8 +48,13 @@ def sanitize_url_for_log(url: str) -> str:
     import re
 
     sensitive_params = {
-        "api_key", "token", "secret", "password", "key",
-        "apikey", "access_token",
+        "api_key",
+        "token",
+        "secret",
+        "password",
+        "key",
+        "apikey",
+        "access_token",
     }
     return re.sub(
         r"([?&])(" + "|".join(sensitive_params) + r")=[^&]+",

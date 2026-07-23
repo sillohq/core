@@ -96,7 +96,11 @@ class HTTPClientStats:
     def success_rate(self) -> float:
         if self.requests_total == 0:
             return 0.0
-        return self.requests_total / self.requests_success if self.requests_success > 0 else 0.0
+        return (
+            self.requests_total / self.requests_success
+            if self.requests_success > 0
+            else 0.0
+        )
 
     def as_dict(self) -> dict[str, int | float]:
         return {

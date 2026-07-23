@@ -25,8 +25,7 @@ class HTTPMiddleware(abc.ABC):
         self,
         request: Request,
         next_call: NextCall,
-    ) -> AsyncGenerator[Response, None]:
-        ...
+    ) -> AsyncGenerator[Response, None]: ...
 
 
 class MiddlewareChain:

@@ -100,7 +100,9 @@ class ResponseValidator:
                         validation_errors=[],
                         response_body=response_body,
                     )
-                return [response_model.model_validate(item, strict=strict) for item in data]
+                return [
+                    response_model.model_validate(item, strict=strict) for item in data
+                ]
             return response_model.model_validate(data, strict=strict)
         except ValidationError as exc:
             raise HTTPValidationError(
