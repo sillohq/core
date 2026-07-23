@@ -22,7 +22,7 @@ sillo provides a powerful command-line interface (CLI) that makes it easy to dev
 First, install the sillo CLI with the `cli` extra:
 
 ```bash
-pip install sillo[cli]
+uv add "sillo[cli]"
 ```
 
 ##  Basic Commands

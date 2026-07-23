@@ -347,7 +347,7 @@ def test_build_user():
         raise AssertionError("expected ValueError")
 ```
 
-For end-to-end checks, drive the route through `TestClient` (see [Getting Started](/guides/getting-started/) for setup) — the whole DI tree resolves exactly as it would in production:
+For end-to-end checks, drive the route through `TestClient` (see [Installation](/guides/installation/) for setup) — the whole DI tree resolves exactly as it would in production:
 
 ```python
 from sillo.testclient import TestClient

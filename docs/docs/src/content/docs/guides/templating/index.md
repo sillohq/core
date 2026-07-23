@@ -23,7 +23,7 @@ sillo provides a powerful templating system built on top of Jinja2, offering fea
 Before using templating features, you need to install the required dependencies:
 
 ```bash
-pip install sillo[templating]
+uv add "sillo[templating]"
 ```
 
 ##  Quick Start

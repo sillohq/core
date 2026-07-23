@@ -5,7 +5,7 @@ description: Cryptography utilities — encrypt/decrypt, key derivation, signed 
 
 # Crypto (`sillo.helpers.crypto`)
 
-Requires `cryptography` (`pip install cryptography`).
+Requires `cryptography` (`uv add cryptography`).
 
 ```python
 from sillo.helpers import crypto

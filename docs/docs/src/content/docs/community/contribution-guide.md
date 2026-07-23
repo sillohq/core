@@ -25,20 +25,14 @@ Thank you for your interest in contributing to sillo! This guide will help you g
    git clone https://github.com/YOUR_USERNAME/sillo.git
    cd sillo
    ```
-3. **Set up development environment**:   ```bash [Using uv (Recommended)]
+3. **Set up development environment**:
+
+   ```bash
    # Create virtual environment and install dependencies
    uv venv
-   uv pip install -e ".[dev]"
+   uv sync --extra dev
    ```
-
-   ```bash title="Using venv"
-   # Create and activate virtual environment
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   
-   # Install development dependencies
-   pip install -e ".[dev]"
-   ```4. **Create a feature branch**: 
+4. **Create a feature branch**: 
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -60,7 +54,7 @@ Thank you for your interest in contributing to sillo! This guide will help you g
 - Python 3.9 or higher
 - Git
 - A GitHub account
-- **uv** (recommended) - Modern Python package installer. Install with: `pip install uv`
+- **uv** - Modern Python package installer. See the [uv documentation](https://docs.astral.sh/uv/).
 
 ### Environment Setup
 
@@ -70,29 +64,19 @@ Thank you for your interest in contributing to sillo! This guide will help you g
    cd sillo
    ```
 
-2. **Set up virtual environment**:   ```bash [Using uv (Recommended)]
+2. **Set up virtual environment**:
+
+   ```bash
    # Create virtual environment
    uv venv
    ```
+3. **Install dependencies**:
 
-   ```bash title="Using venv"
-   # Create virtual environment
-   python -m venv venv
-   
-   # On Unix/macOS
-   source venv/bin/activate
-   
-   # On Windows
-   venv\Scripts\activate
-   ```3. **Install dependencies**:   ```bash [Using uv (Recommended)]
+   ```bash
    # Install development dependencies
-   uv pip install -e ".[dev]"
+   uv sync --extra dev
    ```
-
-   ```bash title="Using venv"
-   # Install development dependencies
-   pip install -e ".[dev]"
-   ```4. **Install pre-commit hooks**:
+4. **Install pre-commit hooks**:
    ```bash
    pre-commit install
    ```
@@ -217,7 +201,7 @@ This template includes:
 - Pre-commit hooks
 - PyPI publishing configuration
 
-### Getting Started with the Template
+### Use the Template
 
 1. **Click "Use this template"** on the GitHub repository
 2. **Clone your new repository**

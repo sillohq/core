@@ -20,7 +20,7 @@ Timeout middleware and utilities for sillo web framework, providing flexible req
 
 ```bash
 # Install with pip
-pip install sillo-contrib
+uv add sillo-contrib
 
 # Or with uv (recommended)
 uv add sillo-contrib

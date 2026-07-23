@@ -21,7 +21,7 @@ A built-in job scheduling system for sillo applications, providing interval-base
 The scheduler is included in the `sillo-contrib` package:
 
 ```bash
-pip install sillo-contrib
+uv add sillo-contrib
 ```
 
 ## Quick Start

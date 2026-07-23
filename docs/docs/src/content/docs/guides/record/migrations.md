@@ -91,7 +91,7 @@ seeder.seed(User, [
 
 seeder.seed(Post, [
     {"title": "Hello World", "content": "First post!", "user_id": 1},
-    {"title": "Getting Started", "content": "Welcome to sillo", "user_id": 1},
+    {"title": "First Sillo App", "content": "Welcome to Sillo", "user_id": 1},
 ])
 
 count = await seeder.run()

@@ -1,0 +1,146 @@
+---
+icon: down-to-line
+title: Installation
+description: Install Sillo with uv, the recommended Python package manager for fast, reproducible projects.
+comment: true
+---
+
+import { TabItem, Tabs } from '@astrojs/starlight/components';
+
+# Installation
+
+Install Sillo with [`uv`](https://docs.astral.sh/uv/). It is the recommended package manager for Sillo projects because it is fast, creates reproducible environments, and keeps dependency management simple.
+
+## Requirements
+
+- Python 3.10 or newer
+- `uv`
+- Basic familiarity with `async` / `await`
+
+Check your Python version:
+
+```bash
+python --version
+```
+
+## Install uv
+
+If you do not have `uv` yet, install it first:
+
+<Tabs syncKey="os">
+  <TabItem label="macOS / Linux">
+
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
+
+  </TabItem>
+  <TabItem label="Windows">
+
+    ```powershell
+    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+    ```
+
+  </TabItem>
+</Tabs>
+
+Confirm it works:
+
+```bash
+uv --version
+```
+
+## Create a Sillo project
+
+Use `uv init` to create a project and `uv add` to install Sillo:
+
+```bash
+uv init my-sillo-app
+cd my-sillo-app
+uv add sillo
+```
+
+This creates a project with a managed virtual environment and records dependencies in your project files.
+
+## Add a development server
+
+Sillo is ASGI-based. Use `uvicorn` for local development:
+
+```bash
+uv add uvicorn
+```
+
+## Create your first app
+
+Create `main.py`:
+
+```python
+from sillo import silloApp
+
+app = silloApp()
+
+
+@app.get("/")
+async def home(request, response):
+    return response.json({"message": "Hello from Sillo"})
+```
+
+Run it with `uv`:
+
+```bash
+uv run uvicorn main:app --reload
+```
+
+Open:
+
+```text
+http://127.0.0.1:8000
+```
+
+You should see:
+
+```json
+{"message": "Hello from Sillo"}
+```
+
+## Install optional feature groups
+
+Sillo ships optional extras for integrations that need additional dependencies. Add them only when your project needs them.
+
+```bash
+uv add "sillo[templating]"
+uv add "sillo[jwt]"
+uv add "sillo[cache]"
+uv add "sillo[record]"
+uv add "sillo[graphql]"
+```
+
+For a full development setup:
+
+```bash
+uv add "sillo[all]"
+```
+
+## Existing projects
+
+If you already have a Python project, install Sillo into it with:
+
+```bash
+uv add sillo
+```
+
+If you are using a manually managed virtual environment, prefer switching the project to `uv` before adding Sillo. This keeps the install command, lockfile, and local run commands consistent across your team.
+
+## Why uv?
+
+`uv` is the default recommendation for Sillo because it gives you:
+
+- fast installs
+- isolated virtual environments
+- reproducible dependency resolution
+- simple project commands with `uv run`
+- a modern workflow that works well for applications, libraries, CI, and deployment pipelines
+
+## Next step
+
+Continue with the [Introduction](/guides/introduction/) if you want the framework overview, or go directly to [Routing](/guides/routing/) to start building endpoints.

@@ -26,7 +26,7 @@ The contrib package provides independently versioned packages that you can insta
 Install all contrib packages at once:
 
 ```bash
-pip install sillo_contrib
+uv add sillo-contrib
 ```
 
 This installs the meta package that includes all available contrib packages, giving you access to the entire community-contributed ecosystem.
@@ -41,10 +41,7 @@ For development or to use the latest features:
 git clone https://github.com/sillo-labs/sillo-contrib.git
 cd sillo-contrib
 
-# Install in development mode
-pip install -e .
-
-# Or with uv
+# Install dependencies for development
 uv sync
 ```
 
@@ -66,13 +63,13 @@ You can install contrib packages with their optional dependencies:
 
 ```bash
 # Install with Redis support
-pip install sillo_contrib[redis]
+uv add "sillo-contrib[redis]"
 
 # Install with Tortoise ORM support
-pip install sillo_contrib[tortoise]
+uv add "sillo-contrib[tortoise]"
 
 # Install with all optional dependencies
-pip install sillo_contrib[all]
+uv add "sillo-contrib[all]"
 ```
 
 ## Verification
@@ -103,14 +100,14 @@ As an open source project, sillo-contrib thrives on community contributions! Her
 - **Report issues** - Found a problem? Let us know on [GitHub Issues](https://github.com/sillo-labs/sillo-contrib/issues)
 - **Share feedback** - Join discussions and help shape the future of contrib packages
 
-### Getting Started
+### First Contribution
 
 1. **Fork the repository**: [sillo-contrib on GitHub](https://github.com/sillo-labs/sillo-contrib)
 2. **Set up development environment**:
    ```bash
    git clone https://github.com/your-username/sillo-contrib.git
    cd sillo-contrib
-   uv sync  # or pip install -e .
+   uv sync
    ```
 3. **Create your contribution** following our [contribution guidelines](/community/contribution-guide)
 4. **Submit a pull request** with your changes

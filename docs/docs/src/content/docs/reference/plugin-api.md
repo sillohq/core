@@ -42,7 +42,7 @@ type Link = {
 ```js
 lucode({
   navLinks: [
-    { label: 'Docs', link: '/guides/getting-started/' },
+    { label: 'Docs', link: '/guides/installation/' },
     { label: 'API', link: '/reference/plugin-api/' },
     {
       label: 'GitHub',

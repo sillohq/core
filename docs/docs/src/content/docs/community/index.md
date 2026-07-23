@@ -39,7 +39,7 @@ The **sillo-contrib** package is our community-driven collection of extensions, 
 
 Install all contrib packages at once:
 ```bash
-pip install sillo_contrib
+uv add sillo-contrib
 ```
 
 Or explore individual packages in the [sillo-contrib repository](https://github.com/sillo-labs/sillo-contrib).

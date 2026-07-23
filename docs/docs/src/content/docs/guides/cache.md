@@ -27,10 +27,10 @@ Two backends ship today:
 | Backend | Dependency | Notes |
 |---|---|---|
 | `MemoryCache` | none (stdlib) | In-process, thread-safe, full feature set. |
-| `RedisCache` | `redis>=5` (`pip install sillo[cache]`) | Async Redis; mirrors the memory feature set. |
+| `RedisCache` | `redis>=5` (`uv add "sillo[cache]"`) | Async Redis; mirrors the memory feature set. |
 
 ```bash
-pip install "sillo[cache]"   # installs the optional redis driver
+uv add "sillo[cache]"   # installs the optional redis driver
 ```
 
 If `redis` is not installed, `RedisCache` still imports — the `redis.asyncio`

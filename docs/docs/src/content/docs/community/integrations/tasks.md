@@ -26,7 +26,7 @@ Key capabilities that make background task management efficient and reliable:
 Install the sillo-contrib package to access background task functionality:
 
 ```bash
-pip install sillo-contrib
+uv add sillo-contrib
 ```
 
 ## Basic Usage

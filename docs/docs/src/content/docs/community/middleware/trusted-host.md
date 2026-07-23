@@ -12,7 +12,7 @@ It automatically validates the `Host` header of incoming requests against a conf
 ## Installation
 
 ```bash
-pip install sillo_contrib
+uv add sillo-contrib
 ```
 
 ## Quick Start

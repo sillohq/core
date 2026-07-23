@@ -30,7 +30,7 @@ Pass options to `lucode()` when you want custom top navigation or footer text.
 ```js
 lucode({
   navLinks: [
-    { label: 'Docs', link: '/guides/getting-started/' },
+    { label: 'Docs', link: '/guides/installation/' },
     { label: 'Showcase', link: '/showcase/starlight-components/' },
     { label: 'GitHub', link: 'https://github.com/lucas-labs/lucode-starlight-theme' },
   ],
@@ -69,7 +69,7 @@ starlight({
   plugins: [
     lucode({
       navLinks: [
-        { label: 'Docs', link: '/guides/getting-started/' },
+        { label: 'Docs', link: '/guides/installation/' },
         { label: 'Reference', link: '/reference/plugin-api/' },
       ],
     }),

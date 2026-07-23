@@ -295,8 +295,8 @@ your database. Select a backend with `EventEmitter(backend=...)` (or by assignin
 | `record` | `tortoise-orm` | Persisted as DB rows (audit log + replay) | You need an audit trail or crash recovery. |
 
 ```bash
-pip install "sillo[events]"   # redis driver for redis / persistent
-pip install "sillo[record]"   # tortoise-orm for the record backend
+uv add "sillo[events]"   # redis driver for redis / persistent
+uv add "sillo[record]"   # tortoise-orm for the record backend
 ```
 
 All optional dependencies are imported **lazily** — `backend="memory"` works

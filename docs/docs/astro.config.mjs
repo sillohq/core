@@ -9,7 +9,14 @@ const docsBasePath = process.env.DOCS_BASE_PATH ?? '/lucode-starlight-theme';
 export default defineConfig({
     site: 'https://sillo.build',
     redirects: {
-        '/': '/guides/getting-started/',
+        '/': {
+            status: 302,
+            destination: '/guides/introduction/',
+        },
+        '/guides/getting-started/': {
+            status: 302,
+            destination: '/guides/introduction/',
+        },
     },
 
     integrations: [
@@ -43,7 +50,7 @@ export default defineConfig({
                         includeAiUtilities: true,
                     },
                     navLinks: [
-                        { label: 'Docs', link: '/guides/getting-started/' },
+                        { label: 'Docs', link: '/guides/introduction/' },
                         { label: 'Community', link: '/community/' },
                         { label: 'Showcase', link: '/showcase/starlight-components/' },
                         { label: 'API', link: '/reference/plugin-api/' },
@@ -59,10 +66,10 @@ export default defineConfig({
             ],
             sidebar: [
                 {
-                    label: 'Getting Started',
+                    label: 'Start Here',
                     items: [
-                        { label: 'Why sillo?', link: '/guides/why-nexios/' },
-                        { label: 'Getting Started', link: '/guides/getting-started/' },
+                        { label: 'Introduction', link: '/guides/introduction/' },
+                        { label: 'Installation', link: '/guides/installation/' },
                         { label: 'Configuration', link: '/guides/configuration/' },
                         { label: 'sillo CLI Guide', link: '/guides/cli/' },
                         { label: 'Customize the Theme', link: '/guides/theming/' },

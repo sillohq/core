@@ -20,14 +20,14 @@ head:
 - **Performance**: Efficient validation with minimal overhead
 - **Optional Typing**: Add type safety where it matters most
 
-##  Getting Started
+## Setup
 
 ### Installation
 
 First, install Pydantic:
 
 ```bash
-pip install pydantic
+uv add pydantic
 ```
 
 ### Basic Usage

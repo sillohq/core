@@ -21,9 +21,9 @@ The `sillo_contrib.tortoise` package provides seamless integration between sillo
 Install the Tortoise ORM integration:
 
 ```bash
-pip install sillo_contrib[tortoise]
+uv add "sillo-contrib[tortoise]"
 # or
-pip install tortoise-orm
+uv add tortoise-orm
 ```
 
 ## Quick Start

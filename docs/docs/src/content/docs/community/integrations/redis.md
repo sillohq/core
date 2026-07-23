@@ -22,7 +22,7 @@ Redis integration for sillo web framework, providing seamless caching, session s
 
 ```bash
 # Install with pip
-pip install sillo-contrib-redis[redis]
+uv add "sillo-contrib-redis[redis]"
 
 # Or with uv (recommended)
 uv add sillo-contrib[redis]

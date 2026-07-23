@@ -23,13 +23,13 @@ sillo Mail is a powerful and easy-to-use email sending solution for sillo applic
 
 ```bash
 # Basic installation
-pip install sillo-contrib[mail]
+uv add "sillo-contrib[mail]"
 
 # With template support
-pip install sillo-contrib[mail,templating]
+uv add "sillo-contrib[mail,templating]"
 
 # With all features
-pip install sillo-contrib[all]
+uv add "sillo-contrib[all]"
 ```
 
 ## Direct MailClient Usage
@@ -482,7 +482,7 @@ Configuration for the mail client.
    - Ensure template files exist
 
 4. **Background Tasks Not Working**
-   - Install sillo-contrib tasks: `pip install sillo-contrib[tasks]`
+   - Install sillo-contrib tasks: `uv add "sillo-contrib[tasks]"`
    - Setup tasks in your app: `setup_tasks(app)`
 
 ### Debug Mode

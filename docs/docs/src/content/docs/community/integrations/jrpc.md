@@ -33,7 +33,7 @@ The JSON-RPC contrib is included with the main sillo_contrib package, making it 
 Install the JSON-RPC contrib with sillo:
 
 ```bash
-pip install sillo_contrib
+uv add sillo-contrib
 ```
 
 **Why No External Dependencies?**

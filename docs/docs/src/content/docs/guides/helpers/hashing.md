@@ -5,7 +5,7 @@ description: Hashing utilities — password hashing (bcrypt), digests, HMAC, con
 
 # Hashing (`sillo.helpers.hashing`)
 
-Password hashing requires `bcrypt` (`pip install bcrypt`). Digest functions use stdlib only.
+Password hashing requires `bcrypt` (`uv add bcrypt`). Digest functions use stdlib only.
 
 ```python
 from sillo.helpers import hashing

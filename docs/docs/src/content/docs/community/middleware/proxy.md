@@ -19,7 +19,7 @@ It automatically:
 ## Installation
 
 ```bash
-pip install sillo_contrib
+uv add sillo-contrib
 ```
 
 ## Quick Start

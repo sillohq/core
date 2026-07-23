@@ -5,7 +5,7 @@ description: JWT utilities — encode, decode, sign, verify, and create access/r
 
 # JWT (`sillo.helpers.jwt`)
 
-Requires `pyjwt`: `pip install pyjwt`
+Requires `pyjwt`: `uv add pyjwt`
 
 ```python
 from sillo.helpers import jwt

@@ -135,8 +135,8 @@ hero:
     text: Version 2.0 is ready
     link: /guides/migration/
   actions:
-    - text: Get started
-      link: /guides/getting-started/
+    - text: Install
+      link: /guides/installation/
       icon: right-arrow
 ---
 ```
