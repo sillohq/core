@@ -1,17 +1,15 @@
-__version__: str = "3.3.1"
+__version__: str = "0.0.1a1"
 
-# Version bump test - this comment will be removed after testing
 ascii_art = f"""
-  _   _                  _
- | \\ | |               (_)
- |  \\| |   ___  __  __  _    ___    ___
- | . ` |  / _ \\ \\ \\/ / | |  / _ \\  / __|
- | |\\  | |  __/  >  <  | | | (_) | \\__ \\
- |_| \\_|  \\___| /_/\\_\\ |_|  \\___/  |___/
+   _____ _ _ _       
+  / ____(_) | |      
+ | (___  _| | | ___  
+  \___ \| | | |/ _ \ 
+  ____) | | | | (_) |
+ |_____/|_|_|_|\___/ 
 
-     Welcome to sillo 
-      The sleek ASGI Backend Framework
-      Version: {__version__}
+      Async Python web framework
+       Version: {__version__}
 """
 
 try:
@@ -22,7 +20,7 @@ except ImportError:
 if __name__ == "__main__":
     print(ascii_art)
 
-    # Allow direct module execution to invoke the CLI
+    # Allow direct module execution to invoke the CLI.
     if cli is not None:
         cli()
     else:

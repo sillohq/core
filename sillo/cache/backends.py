@@ -477,7 +477,7 @@ class MemoryCache(BaseCache):
 class RedisCache(BaseCache):
     """Async Redis cache backend.
 
-    Requires the optional ``redis`` package (``pip install sillo[cache]``).
+    Requires the optional ``redis`` package (``uv add "sillo[cache]"``).
     The import is lazy so importing :mod:`sillo.cache` never fails without it.
 
     Redis mapping:
@@ -580,7 +580,7 @@ class RedisCache(BaseCache):
         if aioredis is None:
             raise CacheError(
                 "The 'redis' package is required for RedisCache. "
-                "Install it with: pip install sillo[cache]"
+                "Install it with: uv add \"sillo[cache]\""
             )
         if self._url:
             self._client = aioredis.from_url(

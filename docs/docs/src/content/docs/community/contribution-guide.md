@@ -51,7 +51,7 @@ Thank you for your interest in contributing to sillo! This guide will help you g
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.10 or higher
 - Git
 - A GitHub account
 - **uv** - Modern Python package installer. See the [uv documentation](https://docs.astral.sh/uv/).

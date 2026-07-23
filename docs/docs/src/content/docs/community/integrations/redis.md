@@ -21,17 +21,17 @@ Redis integration for sillo web framework, providing seamless caching, session s
 ## Installation
 
 ```bash
-# Install with pip
+# Install the Redis contrib package
 uv add "sillo-contrib-redis[redis]"
 
-# Or with uv (recommended)
+# Or install from the contrib meta package
 uv add sillo-contrib[redis]
 ```
 
 ### Requirements
 
-- Python 3.9+
-- sillo 2.11.3+
+- Python 3.10+
+- sillo 0.0.1a1+
 - Redis server (4.0+ recommended)
 - redis-py (auto-installed)
 

@@ -47,8 +47,8 @@ uv sync
 
 ## Requirements
 
-- **Python 3.9+**
-- **sillo 2.11.3+** (or 3.0.0+ for latest features)
+- **Python 3.10+**
+- **sillo 0.0.1a1+**
 
 Some contrib packages may have additional requirements:
 

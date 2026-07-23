@@ -672,7 +672,7 @@ wheels = [
 
 [[package]]
 name = "sillo"
-version = "0.0.1"
+version = "0.0.1a1"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -691,6 +691,7 @@ all = [
     { name = "pyjwt" },
     { name = "python-multipart" },
     { name = "redis" },
+    { name = "strawberry-graphql" },
     { name = "tortoise-orm" },
     { name = "uvicorn" },
 ]
@@ -713,6 +714,7 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "python-multipart" },
     { name = "ruff" },
+    { name = "strawberry-graphql" },
     { name = "ty" },
     { name = "typing-extensions" },
     { name = "uvicorn" },
@@ -749,6 +751,7 @@ dev = [
     { name = "pydantic" },
     { name = "pytest" },
     { name = "python-multipart" },
+    { name = "strawberry-graphql" },
 ]
 
 [package.metadata]
@@ -785,6 +788,8 @@ requires-dist = [
     { name = "redis", marker = "extra == 'cache'", specifier = ">=5.0.0" },
     { name = "redis", marker = "extra == 'events'", specifier = ">=5.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.0.256" },
+    { name = "strawberry-graphql", marker = "extra == 'all'", specifier = ">=0.219.0" },
+    { name = "strawberry-graphql", marker = "extra == 'dev'", specifier = ">=0.219.0" },
     { name = "strawberry-graphql", marker = "extra == 'graphql'", specifier = ">=0.219.0" },
     { name = "tortoise-orm", marker = "extra == 'all'", specifier = ">=0.20.0" },
     { name = "tortoise-orm", marker = "extra == 'record'", specifier = ">=0.20.0" },
@@ -805,6 +810,7 @@ dev = [
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "python-multipart", specifier = ">=0.0.20" },
+    { name = "strawberry-graphql", specifier = ">=0.219.0" },
 ]
 
 [[package]]

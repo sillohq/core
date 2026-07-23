@@ -62,5 +62,5 @@ Some examples require additional dependencies:
 
 Install extras:
 ```bash
-pip install sillo[all]
+uv add "sillo[all]"
 ```

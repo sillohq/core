@@ -14,7 +14,7 @@ Quick start:
     ```
 
 Backends: :class:`MemoryCache` (no deps) and :class:`RedisCache`
-(``pip install sillo[cache]``). Configure at the domain level via
+(``uv add "sillo[cache]"``). Configure at the domain level via
 :func:`configure_cache`; the decorator falls back to that default unless you
 pass ``backend=`` explicitly.
 """
