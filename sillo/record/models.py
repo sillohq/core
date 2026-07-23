@@ -14,7 +14,17 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Annotated, Any, ClassVar, Dict, Iterable, List, Optional, Type, TypeVar
+from typing import (
+    Annotated,
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from tortoise import Model as _TortoiseModel
 from tortoise import fields
@@ -98,7 +108,9 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
                 if field_object.pk and field_object.generated:
                     self._custom_generated_pk = True
                 if value is None and not field_object.null:
-                    raise ValueError(f"{key} is non nullable field, but null was passed")
+                    raise ValueError(
+                        f"{key} is non nullable field, but null was passed"
+                    )
                 if key not in casts:
                     value = field_object.to_python_value(value)
                 setattr(self, key, value)
@@ -144,7 +156,9 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
                 object.__setattr__(self, model_field, value)
                 inited_keys.add(key)
             for key, model_field, field in meta.db_complex_fields:
-                object.__setattr__(self, model_field, field.to_python_value(kwargs[key]))
+                object.__setattr__(
+                    self, model_field, field.to_python_value(kwargs[key])
+                )
                 inited_keys.add(key)
         except KeyError:
             object.__setattr__(self, "_partial", True)
@@ -310,7 +324,9 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
     @classmethod
     async def bulk_create(
         cls: Type[T],
-        items: Annotated[Iterable[Dict[str, Any] | T], Doc("Field dicts or instances.")],
+        items: Annotated[
+            Iterable[Dict[str, Any] | T], Doc("Field dicts or instances.")
+        ],
         batch_size: Annotated[int, Doc("Insert this many per query.")] = 100,
         *,
         ignore_conflicts: bool = False,
