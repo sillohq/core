@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from sillo import silloApp
-from sillo.templating import TemplateConfig, render
+from sillo.templating import TemplateConfig, TemplateEngine, render
 
 app = silloApp()
 
@@ -12,7 +12,7 @@ template_config = TemplateConfig(
     lstrip_blocks=True,  # Clean whitespace handling
 )
 
-app.config.templating = template_config
+TemplateEngine().setup_environment(template_config)
 
 
 @app.get("/")

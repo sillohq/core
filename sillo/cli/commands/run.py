@@ -84,8 +84,8 @@ def run(
 
     Supports both Uvicorn (development) and Granian (production) servers.
     You can also pass additional options as key=value arguments. The command
-    merges default configuration values with any CLI-provided key=value overrides,
-    constructs the appropriate server command, and executes it as a subprocess.
+    merges command defaults with CLI-provided key=value overrides, constructs
+    the appropriate server command, and executes it as a subprocess.
 
     Args:
         host: The hostname or IP address to bind the server to. Validated to
@@ -101,7 +101,7 @@ def run(
         workers: The number of worker processes to spawn. Primarily used with
             the granian server. Defaults to 1.
         cli_options: Additional unprocessed CLI arguments passed as key=value
-            pairs. These override the default configuration values.
+            pairs. These override command defaults.
 
     Returns:
         None. The function starts the server as a subprocess and blocks until

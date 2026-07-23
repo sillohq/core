@@ -8,7 +8,6 @@ from typing import Any, Callable, Dict, Optional, Union
 import jinja2
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from sillo.core.config import ConfigBase
 from sillo.core.http.response import HTMLResponse
 from sillo.types import Request
 
@@ -17,7 +16,7 @@ from .middleware import template_context
 engine: Union["TemplateEngine", None] = None
 
 
-class TemplateConfig(ConfigBase):
+class TemplateConfig:
     """Template configuration settings."""
 
     def __init__(
@@ -51,19 +50,28 @@ class TemplateConfig(ConfigBase):
         Raises:
             [description]
         """
-        super().__init__(
-            {
-                "template_dir": template_dir,
-                "cache_size": cache_size,
-                "auto_reload": auto_reload,
-                "encoding": encoding,
-                "enable_async": enable_async,
-                "trim_blocks": trim_blocks,
-                "lstrip_blocks": lstrip_blocks,
-                "custom_filters": custom_filters,
-                "custom_globals": custom_globals,
-            }
-        )
+        self.template_dir = template_dir
+        self.cache_size = cache_size
+        self.auto_reload = auto_reload
+        self.encoding = encoding
+        self.enable_async = enable_async
+        self.trim_blocks = trim_blocks
+        self.lstrip_blocks = lstrip_blocks
+        self.custom_filters = custom_filters
+        self.custom_globals = custom_globals
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "template_dir": self.template_dir,
+            "cache_size": self.cache_size,
+            "auto_reload": self.auto_reload,
+            "encoding": self.encoding,
+            "enable_async": self.enable_async,
+            "trim_blocks": self.trim_blocks,
+            "lstrip_blocks": self.lstrip_blocks,
+            "custom_filters": self.custom_filters,
+            "custom_globals": self.custom_globals,
+        }
 
 
 class TemplateEngine:

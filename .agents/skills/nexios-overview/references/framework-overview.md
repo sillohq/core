@@ -67,33 +67,22 @@ if __name__ == "__main__":
 Installation options:
 
 ```bash
-pip install sillo
+uv add sillo
 ```
 
-```bash
-uv pip install sillo
-```
+## Application Metadata Example
 
-## Configuration Example
-
-Use configuration when teaching that sillo scales beyond a toy app:
+Use explicit constructor arguments for application metadata:
 
 ```python
-from sillo import silloApp, MakeConfig
-
-config = MakeConfig({
-    "debug": True,
-    "allowed_hosts": ["localhost", "example.com"]
-})
+from sillo import silloApp
 
 app = silloApp(
-    config=config,
+    debug=True,
     title="My API",
     version="1.0.0"
 )
 ```
-
-Key idea: sillo supports explicit configuration without forcing a large project skeleton.
 
 ## Request Lifecycle
 

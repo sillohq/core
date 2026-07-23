@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
-from sillo import Depend, MakeConfig, silloApp
+from sillo import Depend, silloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Router
 from sillo.websockets import WebSocket, WebSocketDisconnect
@@ -245,30 +245,18 @@ async def chat_websocket(websocket: WebSocket):
         print(f"Client disconnected from room {room_id}")
 
 
-# Create application with enhanced configuration
 def create_app() -> silloApp:
     """
-    Create and configure the sillo application.
+    Create the sillo application.
 
     This function demonstrates:
-    - Application configuration
     - Route registration
     - Middleware setup
     - OpenAPI documentation
     """
 
-    # Create configuration with validation
-    config = MakeConfig(
-        {
-            "debug": True,
-            "database": {"url": "postgresql://localhost/sillo_demo", "pool_size": 10},
-            "redis": {"url": "redis://localhost:6379", "max_connections": 20},
-        }
-    )
-
     # Create application with OpenAPI documentation
     app = silloApp(
-        config=config,
         title="Enhanced sillo API Demo",
         version="1.0.0",
         description="Demonstration of sillo framework with comprehensive documentation",

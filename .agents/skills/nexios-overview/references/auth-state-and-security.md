@@ -150,8 +150,6 @@ Basic documented setup:
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
 
-app.config.secret_key = "your-secure-secret-key"
-
 session_config = SessionConfig(
     session_cookie_name="sillo_session",
     cookie_secure=True,
@@ -160,7 +158,9 @@ session_config = SessionConfig(
     session_expiration_time=86400
 )
 
-app.add_middleware(SessionMiddleware(config=session_config))
+app.add_middleware(
+    SessionMiddleware(config=session_config, secret_key="your-secure-secret-key")
+)
 ```
 
 Session usage:

@@ -1,10 +1,9 @@
 from typing import Literal
 from typing import Any, Optional
 
-from sillo.core.config.base import ConfigBase
 
 
-class SessionConfig(ConfigBase):
+class SessionConfig:
     """
     Typed configuration for Session middleware.
     All session settings should be passed here - only secret_key comes from app-level config.
@@ -59,7 +58,16 @@ class SessionConfig(ConfigBase):
             "session_file_storage_path": session_file_storage_path,
             "manager": manager,
         }
-        super().__init__(config=config, **kwargs)
+        config.update(kwargs)
+        self._config = config
+
+    def __getattr__(self, name: str):
+        if name == "_config":
+            raise AttributeError(name)
+        return self._config.get(name)
+
+    def to_dict(self) -> dict[str, Any]:
+        return dict(self._config)
 
     @property
     def session_cookie_name(self) -> str:

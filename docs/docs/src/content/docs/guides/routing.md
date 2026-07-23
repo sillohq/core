@@ -1070,8 +1070,7 @@ Enable debug mode to see route information:
 ```python
 from sillo import silloApp
 
-app = silloApp()
-app.config.debug = True
+app = silloApp(debug=True)
 
 # In debug mode, you'll see detailed route information
 # and better error messages for route matching issues

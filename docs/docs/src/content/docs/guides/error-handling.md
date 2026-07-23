@@ -145,14 +145,10 @@ app = silloApp(server_error_handler=server_error_handler)
 Enable debug mode for detailed error responses:
 
 ```python
+from sillo import silloApp
 
+app = silloApp(debug=True)
 ```
-
-::: tip 🥹Tip
-
-You can modify the app config simply as
-app.config.debug = True
-:::
 
 ##  Customizing 404 Not Found Responses
 

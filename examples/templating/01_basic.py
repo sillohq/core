@@ -1,5 +1,5 @@
 from sillo import silloApp
-from sillo.templating import TemplateConfig, render
+from sillo.templating import TemplateConfig, TemplateEngine, render
 from sillo.templating.middleware import template_context
 
 app = silloApp()
@@ -11,8 +11,7 @@ template_config = TemplateConfig(
     enable_async=True,  # Enable async rendering
 )
 
-# Apply template configuration
-app.config.templating = template_config
+TemplateEngine().setup_environment(template_config)
 
 
 # Add template context middleware

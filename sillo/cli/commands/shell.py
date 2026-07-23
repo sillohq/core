@@ -42,7 +42,7 @@ def shell(app_path: str, ipython: bool = False):
     This provides an interactive environment where you can:
     - Access your app instance as 'app'
     - Test routes and handlers
-    - Inspect app configuration
+    - Inspect app state
     - Debug and experiment with your application
 
     The shell automatically attempts to import and expose useful classes such
@@ -83,7 +83,6 @@ def shell(app_path: str, ipython: bool = False):
         shell_vars = {
             "app": app,
             "silloApp": type(app),
-            "config": getattr(app, "config", {}),
         }
 
         # Try to import common modules that might be useful
@@ -134,7 +133,6 @@ sillo Interactive Shell
 =======================
 Available variables:
 - app: Your sillo application instance
-- config: Application configuration
 - Client: Test client for making requests
 - Request: Request class
 - Response: Response class
@@ -147,7 +145,6 @@ Examples:
       
   # Inspect app
   print(app.routes)
-  print(app.config)
 """
 
     shell = InteractiveShellEmbed(banner1=banner)
@@ -167,7 +164,6 @@ sillo Interactive Shell
 =======================
 Available variables:
 - app: Your sillo application instance
-- config: Application configuration
 - Client: Test client for making requests
 - Request: Request class
 - Response: Response class

@@ -70,7 +70,6 @@ export default defineConfig({
                     items: [
                         { label: 'Introduction', link: '/guides/introduction/' },
                         { label: 'Installation', link: '/guides/installation/' },
-                        { label: 'Configuration', link: '/guides/configuration/' },
                         { label: 'sillo CLI Guide', link: '/guides/cli/' },
                         { label: 'Customize the Theme', link: '/guides/theming/' },
                     ],

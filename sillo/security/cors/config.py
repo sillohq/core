@@ -1,9 +1,8 @@
 from typing import Any, Callable, Dict, List, Optional
 
-from sillo.core.config.base import ConfigBase
 
 
-class CorsConfig(ConfigBase):
+class CorsConfig:
     """
     Typed configuration for CORS middleware.
     """
@@ -67,7 +66,16 @@ class CorsConfig(ConfigBase):
             "custom_error_status": custom_error_status,
             "custom_error_messages": None,
         }
-        super().__init__(config=config, **kwargs)
+        config.update(kwargs)
+        self._config = config
+
+    def __getattr__(self, name: str):
+        if name == "_config":
+            raise AttributeError(name)
+        return self._config.get(name)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return dict(self._config)
 
     @property
     def allow_origins(self) -> List[str]:

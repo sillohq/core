@@ -55,7 +55,7 @@ def new(
 
     Creates a new sillo project with the given name in the specified directory.
     The project will be initialized with the selected template structure including
-    configuration files and a main application file. Template variables such as
+    a main application file. Template variables such as
     project name, display title, and version are substituted during file copying.
 
     Available template types:

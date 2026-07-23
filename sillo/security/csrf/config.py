@@ -1,10 +1,9 @@
 import typing
 from typing import Any, List, Optional
 
-from sillo.core.config.base import ConfigBase
 
 
-class CSRFConfig(ConfigBase):
+class CSRFConfig:
     """
     Typed configuration for CSRF middleware.
     """
@@ -64,7 +63,16 @@ class CSRFConfig(ConfigBase):
             "header_name": header_name,
             "secret_key": secret_key,
         }
-        super().__init__(config=config, **kwargs)
+        config.update(kwargs)
+        self._config = config
+
+    def __getattr__(self, name: str):
+        if name == "_config":
+            raise AttributeError(name)
+        return self._config.get(name)
+
+    def to_dict(self) -> dict[str, Any]:
+        return dict(self._config)
 
     @property
     def enabled(self) -> bool:

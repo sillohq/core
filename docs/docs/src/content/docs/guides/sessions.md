@@ -64,7 +64,6 @@ from sillo.session.middleware import SessionMiddleware
 from sillo.session.file import FileSessionManager
 
 app = silloApp()
-app.config.secret_key = "secret-key"
 
 session_config = SessionConfig(
     session_cookie_name="sillo_session",
@@ -79,7 +78,7 @@ session_config = SessionConfig(
     session_file_name="session_"
 )
 
-app.use(SessionMiddleware(config=session_config))
+app.use(SessionMiddleware(config=session_config, secret_key="secret-key"))
 
 ```
 
@@ -269,10 +268,12 @@ Session management requires careful attention to security:
 import secrets
 
 # Generate a secure random key
-app.config.secret_key = secrets.token_hex(32)
+secret_key = secrets.token_hex(32)
 
 # For production, store this in environment variables
-app.config.secret_key = os.environ.get("SECRET_KEY")
+secret_key = os.environ.get("SECRET_KEY")
+
+app.use(SessionMiddleware(secret_key=secret_key))
 ```
 
 #### Enable Secure Cookies
