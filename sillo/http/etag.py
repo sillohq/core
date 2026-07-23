@@ -94,7 +94,9 @@ def is_fresh(request: Request, response: Response, weak_compare: bool = True) ->
     current = response.headers.get("etag")
     if not current:
         return False
-    return etag_matches(current, parse_if_none_match(request), weak_compare=weak_compare)
+    return etag_matches(
+        current, parse_if_none_match(request), weak_compare=weak_compare
+    )
 
 
 class ETagMiddleware(BaseMiddleware):
