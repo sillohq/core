@@ -71,7 +71,6 @@ export default defineConfig({
                         { label: 'Introduction', link: '/guides/introduction/' },
                         { label: 'Installation', link: '/guides/installation/' },
                         { label: 'sillo CLI Guide', link: '/guides/cli/' },
-                        { label: 'Customize the Theme', link: '/guides/theming/' },
                     ],
                 },
                 {

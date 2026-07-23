@@ -31,7 +31,7 @@ Create reference when the reader already knows what they are looking for. Tables
 
 ## Inline Elements
 
-This paragraph includes **bold text**, *italic text*, `inline code`, and a [link to the theme guide](/lucode-starlight-theme/guides/theming/). It also includes a keyboard hint: press <kbd>Ctrl</kbd> + <kbd>K</kbd> to open search.
+This paragraph includes **bold text**, *italic text*, `inline code`, and a [link to the component showcase](/lucode-starlight-theme/showcase/starlight-components/). It also includes a keyboard hint: press <kbd>Ctrl</kbd> + <kbd>K</kbd> to open search.
 
 Use inline code for file names like `astro.config.mjs`, package names like `lucode-starlight`, and token names like `--code-background`.
 
