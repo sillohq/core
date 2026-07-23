@@ -103,7 +103,7 @@ class CacheStats:
             return 0.0
         return self.hits / self.total
 
-    def as_dict(self) -> Dict[str, int]:
+    def as_dict(self) -> Dict[str, Any]:
         """Serialize the statistics into a plain dictionary.
 
         Produces a dictionary suitable for JSON serialization or logging,

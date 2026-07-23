@@ -134,9 +134,16 @@ export default defineConfig({
                         { label: 'Cache', link: '/guides/cache/' },
                     ],
             },
-            {
-                label: 'Work',
-                collapsed: false,
+                {
+                    label: 'HTTP Client',
+                    collapsed: false,
+                    items: [
+                        { label: 'Overview', link: '/guides/http/client/' },
+                    ],
+                },
+                {
+                    label: 'Work',
+                    collapsed: false,
                 items: [
                     { label: 'Overview', link: '/guides/work/' },
                     { label: 'Background Tasks', link: '/guides/work/background/' },
