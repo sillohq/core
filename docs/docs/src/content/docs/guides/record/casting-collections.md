@@ -37,6 +37,28 @@ hits the database.  This is Python-side logic — there is NO database-level
 casting.  The database column must be a compatible type (TEXT for JSON and
 encrypted, DATETIME for datetime, BOOLEAN for bool, etc.).
 
+### Accessors and Mutators
+
+Define `get_<field>_attribute(self, value)` to transform a value when it is
+read, and `set_<field>_attribute(self, value)` to normalize a value when it
+is assigned. Mutators run before persistence; accessors run after casts.
+
+```python
+class User(Model):
+    email = fields.CharField(max_length=255, unique=True)
+    name = fields.CharField(max_length=100)
+
+    def set_email_attribute(self, value: str) -> str:
+        return value.strip().lower()
+
+    def get_name_attribute(self, value: str) -> str:
+        return value.title()
+
+user = await User.create(email="  ALICE@EXAMPLE.COM ", name="alice smith")
+user.email  # "alice@example.com"
+user.name   # "Alice Smith"
+```
+
 ### Built-in Cast Types
 
 | Type | Encoder | Decoder | Best DB Column |

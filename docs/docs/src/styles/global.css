@@ -8,9 +8,155 @@
 		Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--sl-font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
 		'Liberation Mono', monospace;
+
+	/* Sillo brand palette, shared with the marketing site. */
+	--sillo-primary: #fc0345;
+	--sillo-primary-bright: #ff285f;
+	--sillo-primary-dark: #c00236;
+	--sillo-redis: #dc382d;
+	--sillo-bg: #050505;
+	--sillo-elevated: #0b0b0c;
+	--sillo-surface: #111112;
+	--sillo-surface-2: #171719;
+	--sillo-text: #f7f7f5;
+	--sillo-muted: #8b8b91;
+	--sillo-dimmed: #55555b;
+	--sillo-border: rgba(255, 255, 255, 0.1);
+	--sillo-border-strong: rgba(255, 255, 255, 0.16);
+
+	--sl-color-accent-low: #3a0010;
+	--sl-color-accent: var(--sillo-primary);
+	--sl-color-accent-high: #ffd7e0;
+	--sl-color-white: var(--sillo-text);
+	--sl-color-gray-1: #f7f7f5;
+	--sl-color-gray-2: #d8d8d4;
+	--sl-color-gray-3: #a7a7ad;
+	--sl-color-gray-4: var(--sillo-muted);
+	--sl-color-gray-5: var(--sillo-dimmed);
+	--sl-color-gray-6: var(--sillo-surface-2);
+	--sl-color-black: var(--sillo-bg);
+	--sl-color-bg: var(--sillo-bg);
+	--sl-color-bg-nav: rgba(5, 5, 5, 0.82);
+	--sl-color-bg-sidebar: var(--sillo-bg);
+	--sl-color-bg-inline-code: rgba(252, 3, 69, 0.12);
+	--sl-color-hairline-light: var(--sillo-border);
+	--sl-color-hairline: var(--sillo-border);
+	--sl-color-hairline-shade: rgba(0, 0, 0, 0.5);
 }
 
 /* Bump the base font size a bit (16px -> 17px) so all rem-based text scales up slightly */
 html {
 	font-size: 17px;
+	background: var(--sillo-bg);
+	color: var(--sillo-text);
+}
+
+body {
+	background:
+		radial-gradient(ellipse 50% 35% at 80% 0%, rgba(252, 3, 69, 0.08), transparent 65%),
+		var(--sillo-bg);
+}
+
+::selection {
+	background: var(--sillo-primary);
+	color: white;
+}
+
+a {
+	text-decoration-color: rgba(252, 3, 69, 0.45);
+}
+
+a:hover {
+	color: var(--sillo-primary-bright);
+}
+
+header.header {
+	border-bottom: 1px solid var(--sillo-border);
+	background: rgba(5, 5, 5, 0.82);
+	backdrop-filter: blur(18px);
+}
+
+.sidebar-pane,
+.right-sidebar,
+.main-pane {
+	border-color: var(--sillo-border) !important;
+}
+
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='true'] {
+	color: var(--sillo-text);
+	background: rgba(220, 56, 45, 0.11);
+}
+
+.sidebar-content a[aria-current='page']::before,
+.sidebar-content a[aria-current='true']::before,
+.sidebar-content .is-active::before,
+.sidebar-content [data-current-parent]::before {
+	background: var(--sillo-redis) !important;
+	box-shadow: 0 0 18px rgba(220, 56, 45, 0.7);
+}
+
+.sidebar-content .is-active,
+.sidebar-content [data-current-parent] {
+	color: var(--sillo-text) !important;
+}
+
+.sidebar-content .is-active > a,
+.sidebar-content [data-current-parent] > a {
+	color: var(--sillo-text) !important;
+}
+
+.sidebar-content a:hover {
+	background: rgba(255, 255, 255, 0.045);
+}
+
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3 {
+	letter-spacing: -0.045em;
+}
+
+.sl-markdown-content h1 {
+	font-size: clamp(2.6rem, 5vw, 4.6rem);
+	line-height: 0.98;
+}
+
+.sl-markdown-content h2 {
+	border-top-color: var(--sillo-border);
+}
+
+.sl-markdown-content code:not(:where(pre *)) {
+	border: 1px solid rgba(252, 3, 69, 0.18);
+	border-radius: 0.35rem;
+	background: rgba(252, 3, 69, 0.1);
+	color: #ffd7e0;
+	font-family: var(--sl-font-mono);
+}
+
+.sl-markdown-content pre,
+.expressive-code .frame {
+	border: 1px solid var(--sillo-border) !important;
+	border-radius: 0.9rem !important;
+	background: var(--sillo-surface) !important;
+	box-shadow: 0 26px 80px rgba(0, 0, 0, 0.34);
+}
+
+.card,
+.starlight-aside,
+.sl-link-card {
+	border-color: var(--sillo-border) !important;
+	background: rgba(17, 17, 18, 0.72) !important;
+}
+
+.card:hover,
+.sl-link-card:hover {
+	border-color: var(--sillo-border-strong) !important;
+	background: var(--sillo-surface-2) !important;
+}
+
+button,
+input,
+select,
+textarea {
+	font-family: inherit;
 }

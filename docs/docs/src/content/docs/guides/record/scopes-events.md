@@ -82,6 +82,12 @@ users = await TenantModel.all()  # WHERE tenant_id = ?
 users = await TenantModel.without_global_scopes().all()
 ```
 
+`without_global_scopes()` returns a normal queryset, so you can keep chaining:
+
+```python
+users = await TenantModel.without_global_scopes().filter(tenant_id=42)
+```
+
 ## Model Events
 
 Lifecycle events let you hook into specific moments in a model's

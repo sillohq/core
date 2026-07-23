@@ -29,7 +29,7 @@ from .models import Model
 from .pagination import TortoiseDataHandler, SyncTortoiseDataHandler
 from .pydantic import pydantic_model_from_tortoise
 from .queries import PaginatedResult, count_by, explain, find_by_ids, iter_all, paginate
-from .scopes import HasScopes, ScopeRegistry
+from .scopes import HasScopes, RecordManager, RecordQuerySet, ScopeRegistry
 from .transactions import TransactionContext, begin, commit, rollback, transaction
 
 __all__ = [
@@ -50,6 +50,8 @@ __all__ = [
     "ValidatesBeforeSaveMixin",
     "CascadesDeletesMixin",
     "HasScopes",
+    "RecordManager",
+    "RecordQuerySet",
     "ScopeRegistry",
     "HasEvents",
     "ModelObserver",

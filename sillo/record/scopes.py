@@ -7,7 +7,10 @@ automatically applied to every query on a model.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, List, Optional
+
+from tortoise.manager import Manager
+from tortoise.queryset import QuerySet
 
 
 class ScopeRegistry:
@@ -76,8 +79,7 @@ class HasScopes:
     @classmethod
     def without_global_scopes(cls):
         """Return a queryset without global scopes applied."""
-        queryset = cls.all()
-        return queryset
+        return cls._meta.manager.without_global_scopes()
 
     @classmethod
     def apply_scopes(cls, queryset):
@@ -95,3 +97,39 @@ class HasScopes:
         if cls._scope_registry is not None:
             return cls._scope_registry.apply(queryset)
         return queryset
+
+
+class RecordQuerySet(QuerySet):
+    """Tortoise QuerySet with chainable ``scope_*`` model methods."""
+
+    def __getattr__(self, name: str):
+        scope = getattr(self.model, f"scope_{name}", None)
+        if scope is None:
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
+
+        def apply_local_scope(*args, **kwargs):
+            return scope(self, *args, **kwargs)
+
+        return apply_local_scope
+
+    def without_global_scopes(self):
+        """Return this queryset rebuilt without model-level global scopes."""
+        queryset = self.__class__(self.model)
+        queryset._db = self._db
+        return queryset
+
+
+class RecordManager(Manager):
+    """Default manager that applies model global scopes."""
+
+    def get_queryset(self) -> RecordQuerySet:
+        queryset = RecordQuerySet(self._model)
+        apply_scopes = getattr(self._model, "apply_scopes", None)
+        if apply_scopes is not None:
+            return apply_scopes(queryset)
+        return queryset
+
+    def without_global_scopes(self) -> RecordQuerySet:
+        return RecordQuerySet(self._model)

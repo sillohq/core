@@ -206,7 +206,9 @@ class HasCasts:
             name, kwargs = cast_def[0], cast_def[1] if len(cast_def) > 1 else {}
             if name == "encrypted":
                 return _encrypted_factory(**kwargs)
-        return Callable, Callable
+        if callable(cast_def):
+            return cast_def()
+        return None, None
 
     def cast_get(self, field_name: str, value: Any) -> Any:
         """Cast Get

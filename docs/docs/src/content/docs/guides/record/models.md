@@ -17,7 +17,7 @@ What the base class adds:
 - Serialization: `to_dict()`, `to_json()`
 - Bulk updates: `update_from_dict()`
 - Soft-delete: `soft_delete()`, `restore()`, `force_delete()`
-- Query shortcuts: `get_or_none()`, `get_or_create()`, `bulk_create()`
+- Query shortcuts: `get_or_none()`, `get_or_create()`, `bulk_create()`, `upsert()`, `bulk_upsert()`
 
 ### Auto-Fields
 
@@ -123,6 +123,33 @@ user, created = await User.get_or_create(    # (instance, bool)
 users = await User.bulk_create([...])       # multi-row INSERT
 count = await User.count_active()            # WHERE deleted_at IS NULL
 ```
+
+### Native Upserts
+
+`upsert()` and `bulk_upsert()` delegate to Tortoise ORM's native conflict
+support (`ON CONFLICT` / backend equivalent) instead of doing a read-then-write
+loop in Python.
+
+```python
+user = await User.upsert(
+    {"email": "a@b.com", "name": "Alice"},
+    conflict_fields=["email"],
+    update_fields=["name"],
+)
+
+await User.bulk_upsert(
+    [
+        {"email": "a@b.com", "name": "Alice"},
+        {"email": "c@d.com", "name": "Chris"},
+    ],
+    conflict_fields=["email"],
+    update_fields=["name"],
+)
+```
+
+`conflict_fields` must identify a unique constraint or primary key supported
+by your database. `update_fields` defaults to every non-primary-key field that
+is not part of the conflict target.
 
 ## Mixins — Composable Behaviors
 
