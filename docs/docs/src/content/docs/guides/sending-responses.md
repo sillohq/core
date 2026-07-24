@@ -166,8 +166,8 @@ from sillo import silloApp
 app = silloApp()
 
 @app.get("/")
-async def home(req, res):
-    res.status(200).set_cookie("session_id", "123").json({"message": "Hello, World!"})
+async def home(request, response):
+    response.status(200).set_cookie("session_id", "123").json({"message": "Hello, World!"})
 ```
 
 ::: tip Method Chaining vs Sequential Calls
@@ -177,8 +177,8 @@ You have two options when working with the response object:
 **Option 1: Method Chaining (Recommended)**
 ```python
 @app.get("/api/data")
-async def get_data(req, res):
-    return (res
+async def get_data(request, response):
+    return (response
             .status(200)
             .set_cookie("session", "abc123")
             .set_header("X-API-Version", "1.0")
@@ -188,12 +188,12 @@ async def get_data(req, res):
 **Option 2: Sequential Calls**
 ```python
 @app.get("/api/data")
-async def get_data(req, res):
-    res.json({"data": "success"})  # Set response type first
-    res.set_cookie("session", "abc123")
-    res.set_header("X-API-Version", "1.0")
-    res.status(200)
-    return res
+async def get_data(request, response):
+    response.json({"data": "success"})  # Set response type first
+    response.set_cookie("session", "abc123")
+    response.set_header("X-API-Version", "1.0")
+    response.status(200)
+    return response
 ```
 
 Both approaches work, but chaining is more readable and ensures the response type is set before other operations.
@@ -282,9 +282,9 @@ To send a JSON response, use the `.json()` method. It automatically sets the `Co
 
 ```python
 @app.get("/users")
-async def get_users(req, res):
+async def get_users(request, response):
     users = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
-    res.json(users)
+    response.json(users)
 ```
 
 ### HTML Responses
@@ -293,9 +293,9 @@ To send an HTML response, use the `.html()` method. This will set the `Content-T
 
 ```python
 @app.get("/welcome")
-async def welcome(req, res):
+async def welcome(request, response):
     html_content = "<h1>Welcome to our website!</h1>"
-    res.html(html_content)
+    response.html(html_content)
 ```
 
 ### Plain Text Responses
@@ -304,8 +304,8 @@ For plain text responses, use the `.text()` method. The `Content-Type` will be s
 
 ```python
 @app.get("/status")
-async def status(req, res):
-    res.text("Service is running.")
+async def status(request, response):
+    response.text("Service is running.")
 ```
 
 ### Redirects
@@ -314,21 +314,21 @@ To redirect the client to a different URL, use the `.redirect()` method.
 
 ```python
 @app.get("/old-path")
-async def old_path(req, res):
-    res.redirect("/new-path", status_code=301) # Permanent redirect
+async def old_path(request, response):
+    response.redirect("/new-path", status_code=301) # Permanent redirect
 ```
 
 You can also redirect by route name instead of URL:
 
 ```python
 @app.get("/user/{user_id}", name="user_profile")
-async def get_user(req, res):
-    res.json({"user_id": req.path_params.get("user_id")})
+async def get_user(request, response):
+    response.json({"user_id": request.path_params.get("user_id")})
 
 @app.get("/users")
-async def list_users(req, res):
+async def list_users(request, response):
     # Redirect by route name - generates absolute URL
-    res.redirect(name="user_profile", user_id=42)
+    response.redirect(name="user_profile", user_id=42)
 ```
 
 ##  Customizing the Response
@@ -341,9 +341,9 @@ Use the `.status()` method to set the HTTP status code.
 
 ```python
 @app.post("/create-user")
-async def create_user(req, res):
+async def create_user(request, response):
     # some logic to create a user
-    res.status(201).json({"message": "User created successfully"})
+    response.status(201).json({"message": "User created successfully"})
 ```
 
 ### Setting Headers
@@ -352,8 +352,8 @@ Use the `.set_header()` method to add or modify HTTP headers.
 
 ```python
 @app.get("/data")
-async def get_data(req, res):
-    res.set_header("Cache-Control", "no-cache").json({"data": "some data"})
+async def get_data(request, response):
+    response.set_header("Cache-Control", "no-cache").json({"data": "some data"})
 ```
 
 ### Setting Cookies
@@ -362,8 +362,8 @@ Use the `.set_cookie()` method to set a cookie on the client's browser.
 
 ```python
 @app.post("/login")
-async def login(req, res):
-    res.set_cookie(
+async def login(request, response):
+    response.set_cookie(
         key="user_token",
         value="secret-token",
         httponly=True,
@@ -377,9 +377,9 @@ sillo allows you to send files as responses using the `.file()` method. This is 
 
 ```python
 @app.get("/download-report")
-async def download_report(req, res):
+async def download_report(request, response):
     file_path = "path/to/your/report.pdf"
-    res.file(file_path, content_disposition_type="attachment")
+    response.file(file_path, content_disposition_type="attachment")
 ```
 
 By setting `content_disposition_type="attachment"`, you prompt the browser to download the file instead of displaying it.
@@ -390,7 +390,7 @@ For simple cases, you can return a `dict`, `list`, or `str` directly from your h
 
 ```python
 @app.get("/simple")
-async def simple_response(req, res):
+async def simple_response(request, response):
     return {"message": "This is a simple response."}
 ```
 
@@ -410,14 +410,14 @@ async def simple_response(req, res):
 ```python
 # Simple case - direct return
 @app.get("/users")
-async def get_users(req, res):
+async def get_users(request, response):
     return [{"id": 1, "name": "John"}, {"id": 2, "name": "Jane"}]
 
 # Complex case - response object
 @app.get("/users-with-metadata")
-async def get_users_with_metadata(req, res):
+async def get_users_with_metadata(request, response):
     users = [{"id": 1, "name": "John"}, {"id": 2, "name": "Jane"}]
-    return (res
+    return (response
             .status(200)
             .set_header("X-Total-Count", str(len(users)))
             .set_cookie("page", "1")
@@ -427,7 +427,7 @@ async def get_users_with_metadata(req, res):
 :::
 
 ::: tip  Recommended
-For clarity and to leverage the full power of sillo's response handling, we recommend using the `res` object to build your responses, especially when you need to set custom headers, cookies, or status codes.
+For clarity and to leverage the full power of sillo's response handling, we recommend using the `response` object to build your responses, especially when you need to set custom headers, cookies, or status codes.
 :::
 
 ##  Advanced Usage: Response Classes
@@ -436,7 +436,7 @@ For more advanced use cases, sillo allows you to work directly with `Response` c
 
 ### Using Built-in Response Classes
 
-Instead of using the `res` object's methods, you can return an instance of a response class directly from your handler. sillo provides several built-in response classes in the `sillo.http.response` module.
+Instead of using the `response` object's methods, you can return an instance of a response class directly from your handler. sillo provides several built-in response classes in the `sillo.http.response` module.
 
 *   `JSONResponse`
 *   `HTMLResponse`
@@ -454,12 +454,12 @@ from sillo.http.response import JSONResponse, HTMLResponse
 app = silloApp()
 
 @app.get("/users-json")
-async def get_users_json(req, res):
+async def get_users_json(request, response):
     users = [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}]
     return JSONResponse(users, status_code=200)
 
 @app.get("/welcome-html")
-async def welcome_html(req, res):
+async def welcome_html(request, response):
     html_content = "<h1>Welcome from a Response class!</h1>"
     return HTMLResponse(html_content)
 ```
@@ -484,7 +484,7 @@ class XMLResponse(BaseResponse):
 app = silloApp()
 
 @app.get("/data.xml")
-async def get_xml_data(req, res):
+async def get_xml_data(request, response):
     data = {"user": {"name": "John Doe", "id": "123"}}
     return XMLResponse(data)
 

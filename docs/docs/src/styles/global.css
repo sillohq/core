@@ -44,6 +44,37 @@
 	--sl-color-hairline-shade: rgba(0, 0, 0, 0.5);
 }
 
+:root[data-theme='light'] {
+	--sillo-bg: #fafafa;
+	--sillo-elevated: #f5f5f5;
+	--sillo-surface: #efefef;
+	--sillo-surface-2: #e5e5e5;
+	--sillo-text: #1a1a1a;
+	--sillo-muted: #6b6b6b;
+	--sillo-dimmed: #a3a3a3;
+	--sillo-border: rgba(0, 0, 0, 0.08);
+	--sillo-border-strong: rgba(0, 0, 0, 0.14);
+
+	--sl-color-accent-low: #ffe3e8;
+	--sl-color-accent: var(--sillo-primary);
+	--sl-color-accent-high: #8f001f;
+	--sl-color-white: var(--sillo-text);
+	--sl-color-gray-1: #1a1a1a;
+	--sl-color-gray-2: #404040;
+	--sl-color-gray-3: #6b6b6b;
+	--sl-color-gray-4: var(--sillo-muted);
+	--sl-color-gray-5: var(--sillo-dimmed);
+	--sl-color-gray-6: var(--sillo-surface-2);
+	--sl-color-black: var(--sillo-bg);
+	--sl-color-bg: var(--sillo-bg);
+	--sl-color-bg-nav: rgba(250, 250, 250, 0.88);
+	--sl-color-bg-sidebar: var(--sillo-bg);
+	--sl-color-bg-inline-code: rgba(252, 3, 69, 0.08);
+	--sl-color-hairline-light: var(--sillo-border);
+	--sl-color-hairline: var(--sillo-border);
+	--sl-color-hairline-shade: rgba(0, 0, 0, 0.12);
+}
+
 /* Bump the base font size a bit (16px -> 17px) so all rem-based text scales up slightly */
 html {
 	font-size: 17px;
@@ -55,6 +86,10 @@ body {
 	background:
 		radial-gradient(ellipse 50% 35% at 80% 0%, rgba(252, 3, 69, 0.08), transparent 65%),
 		var(--sillo-bg);
+}
+
+:root[data-theme='light'] body {
+	background: var(--sillo-bg);
 }
 
 ::selection {
@@ -133,12 +168,18 @@ header.header {
 	font-family: var(--sl-font-mono);
 }
 
+:root[data-theme='light'] .sl-markdown-content code:not(:where(pre *)) {
+	background: rgba(252, 3, 69, 0.07);
+	color: #b3002d;
+	border-color: rgba(252, 3, 69, 0.15);
+}
+
 .sl-markdown-content pre,
 .expressive-code .frame {
 	border: 1px solid var(--sillo-border) !important;
 	border-radius: 0.9rem !important;
 	background: var(--sillo-surface) !important;
-	box-shadow: 0 26px 80px rgba(0, 0, 0, 0.34);
+	box-shadow: none;
 }
 
 .card,

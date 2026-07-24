@@ -118,7 +118,7 @@ backend only — the synchronous `emit`:
 
 ```python {3}
 @app.post("/users")
-async def create_user(req, res):
+async def create_user(request, response):
     await app.events.emit_async("user.created", {"name": "Bob"})
     ...
 ```

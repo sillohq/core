@@ -32,11 +32,11 @@ async def index(request, response):
 
 Two things to notice:
 
-1. The handler is `async` and takes **at least two positional parameters** — `request` and `response`. Their names are yours to choose (`req, res` works too), but order matters: request first, response second.
+1. The handler is `async` and takes **at least two positional parameters** — `request` and `response`. Their names are yours to choose (`request, response` works too), but order matters: request first, response second.
 2. Returning a plain `str` is enough. sillo wraps it in a `200 OK` JSON-or-text response for you. For anything beyond the simplest case, use the `response` object.
 
 <aside type="tip" title="Name them what you like">
-The framework binds the first two handler parameters by position, not by name. `async def index(req, res)` and `async def index(request, response)` are identical. Pick names that read well in your codebase.
+The framework binds the first two handler parameters by position, not by name. `async def index(request, response)` and `async def index(request, response)` are identical. Pick names that read well in your codebase.
 </aside>
 
 ## The request and response objects
@@ -77,7 +77,7 @@ For finer control — or when building routes programmatically — use the `Rout
 ```python
 from sillo.routing import Route
 
-async def dynamic_handler(req, res):
+async def dynamic_handler(request, response):
     return "Hello, world!"
 
 # Methods defaults to ["GET"] when omitted

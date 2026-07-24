@@ -17,13 +17,13 @@ head:
 
 ```python
 @app.get("/example")
-async def example_handler(req: Request, res):
+async def example_handler(request: Request, response):
     # Basic request information
-    method = req.method        # HTTP method (GET, POST, etc.)
-    url = req.url              # Full URL object
-    path = req.path            # Request path (/example)
-    headers = req.headers      # Headers dictionary
-    client_ip = req.client     # Client address (IP, port)
+    method = request.method        # HTTP method (GET, POST, etc.)
+    url = request.url              # Full URL object
+    path = request.path            # Request path (/example)
+    headers = request.headers      # Headers dictionary
+    client_ip = request.client     # Client address (IP, port)
 ```
 
 ##  Query Parameters
@@ -32,11 +32,11 @@ Access URL query parameters (after the `?` in the URL):
 
 ```python
 @app.get("/search")
-async def search_handler(req: Request, res):
+async def search_handler(request: Request, response):
     # For URL: /search?q=sillo&page=2
-    query = req.query_params.get("q")       # "sillo"
-    page = req.query_params.get("page")     # "2"
-    all_params = dict(req.query_params)    # {'q': 'sillo', 'page': '2'}
+    query = request.query_params.get("q")       # "sillo"
+    page = request.query_params.get("page")     # "2"
+    all_params = dict(request.query_params)    # {'q': 'sillo', 'page': '2'}
 ```
 
 ##  Path Parameters
@@ -45,9 +45,9 @@ Access named parameters from the route path:
 
 ```python
 @app.get("/users/{user_id}")
-async def user_handler(req: Request, res):
+async def user_handler(request: Request, response):
     # For URL: /users/123
-    user_id = req.path_params["user_id"]  # "123"
+    user_id = request.path_params["user_id"]  # "123"
     # Or directly as function parameter (shown above)
 ```
 
@@ -57,16 +57,16 @@ async def user_handler(req: Request, res):
 
 ```python
 @app.post("/data")
-async def data_handler(req: Request, res):
-    json_data = await req.json  # Parses JSON body
+async def data_handler(request: Request, response):
+    json_data = await request.json  # Parses JSON body
 ```
 
 ### Form Data
 
 ```python
 @app.post("/submit")
-async def submit_handler(req: Request, res):
-    form_data = await req.form  # Parses both URL-encoded and multipart forms
+async def submit_handler(request: Request, response):
+    form_data = await request.form  # Parses both URL-encoded and multipart forms
     username = form_data.get("username")
 ```
 
@@ -74,8 +74,8 @@ async def submit_handler(req: Request, res):
 
 ```python
 @app.post("/upload")
-async def upload_handler(req: Request, res):
-    files = await req.files      # Dictionary of uploaded files
+async def upload_handler(request: Request, response):
+    files = await request.files      # Dictionary of uploaded files
     file = files.get("document") # Access specific file
     if file:
         filename = file.filename
@@ -86,46 +86,46 @@ async def upload_handler(req: Request, res):
 
 ```python
 @app.post("/raw")
-async def raw_handler(req: Request, res):
-    body_bytes = await req.body  # Raw bytes
-    body_text = await req.text  # Decoded text
+async def raw_handler(request: Request, response):
+    body_bytes = await request.body  # Raw bytes
+    body_text = await request.text  # Decoded text
 ```
 
 ##  Cookies
 
 ```python
 @app.get("/profile")
-async def profile_handler(req: Request, res):
-    session_id = req.cookies.get("session_id")
+async def profile_handler(request: Request, response):
+    session_id = request.cookies.get("session_id")
 ```
 
 ##  Client Information
 
 ```python
 @app.get("/client-info")
-async def client_info_handler(req: Request, res):
-    user_agent = req.user_agent
-    client_ip = req.client.host if req.client else None
-    origin = req.origin
+async def client_info_handler(request: Request, response):
+    user_agent = request.user_agent
+    client_ip = request.client.host if request.client else None
+    origin = request.origin
 ```
 
 ##  State and Middleware Data
 
 ```python
 @app.get("/auth")
-async def auth_handler(req: Request, res):
+async def auth_handler(request: Request, response):
     # Access data added by middleware
-    user = req.user
-    session = req.session  # Requires session middleware
-    custom_data = req.state.get("custom_data")
+    user = request.user
+    session = request.session  # Requires session middleware
+    custom_data = request.state.get("custom_data")
 ```
 
 ##  URL Construction
 
 ```python
 @app.get("/links")
-async def links_handler(req: Request, res):
-    absolute_url = req.build_absolute_uri("/api/resource")
+async def links_handler(request: Request, response):
+    absolute_url = request.build_absolute_uri("/api/resource")
     # Returns full URL like "https://example.com/api/resource"
 ```
 
@@ -138,19 +138,19 @@ sillo provides convenient properties to quickly check the type and characteristi
 
 ```python
 @app.post("/api/endpoint")
-async def handle_request(req: Request, res):
+async def handle_request(request: Request, response):
     # Check content type
-    if req.is_json:
-        data = await req.json
+    if request.is_json:
+        data = await request.json
         # Handle JSON data
-    elif req.is_form:
-        data = await req.form
+    elif request.is_form:
+        data = await request.form
         # Handle form data
-    elif req.is_multipart:
-        files = await req.files
+    elif request.is_multipart:
+        files = await request.files
         # Handle file uploads
-    elif req.is_urlencoded:
-        data = await req.form
+    elif request.is_urlencoded:
+        data = await request.form
         # Handle URL-encoded form data
 ```
 
@@ -158,26 +158,26 @@ async def handle_request(req: Request, res):
 
 ```python
 @app.post("/process")
-async def process_request(req: Request, res):
+async def process_request(request: Request, response):
     # Check if request has various components
-    if req.has_cookie:
-        session_id = req.cookies.get("session")
+    if request.has_cookie:
+        session_id = request.cookies.get("session")
 
-    if req.has_files:
-        files = await req.files
+    if request.has_files:
+        files = await request.files
         # Process uploaded files
 
-    if req.has_body:
+    if request.has_body:
         # Request contains body data
-        if req.content_length > 1000000:  # 1MB
-            return res.status(413).text("File too large")
+        if request.content_length > 1000000:  # 1MB
+            return response.status(413).text("File too large")
 
-    if req.is_authenticated:
-        user_id = req.user.id
+    if request.is_authenticated:
+        user_id = request.user.id
         # Handle authenticated request
 
-    if req.has_session:
-        session_data = req.session
+    if request.has_session:
+        session_data = request.session
         # Access session data
 ```
 
@@ -185,15 +185,15 @@ async def process_request(req: Request, res):
 
 | Property | Description | Example |
 |----------|-------------|---------|
-| `req.is_json` | True if Content-Type is `application/json` | JSON API requests |
-| `req.is_form` | True if Content-Type is form data (URL-encoded or multipart) | HTML forms |
-| `req.is_multipart` | True if Content-Type is `multipart/form-data` | File uploads |
-| `req.is_urlencoded` | True if Content-Type is `application/x-www-form-urlencoded` | Simple forms |
-| `req.has_cookie` | True if request contains cookies | Session management |
-| `req.has_files` | True if request contains uploaded files | File upload detection |
-| `req.has_body` | True if request has a body | POST/PUT/PATCH requests |
-| `req.is_authenticated` | True if user is authenticated | Authenticated requests |
-| `req.has_session` | True if session middleware is available | Session-enabled requests |
+| `request.is_json` | True if Content-Type is `application/json` | JSON API requests |
+| `request.is_form` | True if Content-Type is form data (URL-encoded or multipart) | HTML forms |
+| `request.is_multipart` | True if Content-Type is `multipart/form-data` | File uploads |
+| `request.is_urlencoded` | True if Content-Type is `application/x-www-form-urlencoded` | Simple forms |
+| `request.has_cookie` | True if request contains cookies | Session management |
+| `request.has_files` | True if request contains uploaded files | File upload detection |
+| `request.has_body` | True if request has a body | POST/PUT/PATCH requests |
+| `request.is_authenticated` | True if user is authenticated | Authenticated requests |
+| `request.has_session` | True if session middleware is available | Session-enabled requests |
 
 ### Existing Request Flags
 
@@ -201,46 +201,46 @@ sillo also provides additional request detection properties:
 
 ```python
 @app.get("/responsive")
-async def responsive_handler(req: Request, res):
+async def responsive_handler(request: Request, response):
     # Check request characteristics
-    if req.is_ajax:
-        return res.json({"message": "AJAX request"})
+    if request.is_ajax:
+        return response.json({"message": "AJAX request"})
 
-    if req.is_secure:
-        return res.json({"protocol": "HTTPS"})
+    if request.is_secure:
+        return response.json({"protocol": "HTTPS"})
 
-    if req.accepts_json:
-        return res.json({"format": "JSON preferred"})
+    if request.accepts_json:
+        return response.json({"format": "JSON preferred"})
 
-    if req.accepts_html:
-        return res.html("<h1>HTML Response</h1>")
+    if request.accepts_html:
+        return response.html("<h1>HTML Response</h1>")
 ```
 
 ### Header Utilities
 
 ```python
 @app.get("/headers")
-async def header_handler(req: Request, res):
+async def header_handler(request: Request, response):
     # Check for specific headers
-    if req.has_header("authorization"):
-        token = req.get_header("authorization")
+    if request.has_header("authorization"):
+        token = request.get_header("authorization")
 
     # Get header with default value
-    api_version = req.get_header("x-api-version", "v1")
+    api_version = request.get_header("x-api-version", "v1")
 
     # Check if header exists
-    if req.has_header("x-custom-header"):
-        custom_value = req.get_header("x-custom-header")
+    if request.has_header("x-custom-header"):
+        custom_value = request.get_header("x-custom-header")
 ```
 
 | Method/Property | Description | Example |
 |----------------|-------------|---------|
-| `req.has_header(name)` | Check if header exists (case-insensitive) | `req.has_header("content-type")` |
-| `req.get_header(name, default)` | Get header value with default | `req.get_header("x-api-key", "none")` |
-| `req.is_ajax` | True if X-Requested-With is XMLHttpRequest | AJAX requests |
-| `req.is_secure` | True if request uses HTTPS | Secure connections |
-| `req.accepts_json` | True if client accepts JSON | API responses |
-| `req.accepts_html` | True if client accepts HTML | Web page responses |
+| `request.has_header(name)` | Check if header exists (case-insensitive) | `request.has_header("content-type")` |
+| `request.get_header(name, default)` | Get header value with default | `request.get_header("x-api-key", "none")` |
+| `request.is_ajax` | True if X-Requested-With is XMLHttpRequest | AJAX requests |
+| `request.is_secure` | True if request uses HTTPS | Secure connections |
+| `request.accepts_json` | True if client accepts JSON | API responses |
+| `request.accepts_html` | True if client accepts HTML | Web page responses |
 
 ##  Advanced Features
 
@@ -250,8 +250,8 @@ For handling large uploads:
 
 ```python
 @app.post("/stream")
-async def stream_handler(req: Request, res):
-    async for chunk in req.stream:
+async def stream_handler(request: Request, response):
+    async for chunk in request.stream:
         # Process each chunk of the request body
         process_chunk(chunk)
 ```
@@ -260,8 +260,8 @@ async def stream_handler(req: Request, res):
 
 ```python
 @app.get("/push")
-async def push_handler(req: Request, res):
-    await req.send_push_promise("/static/style.css")
+async def push_handler(request: Request, response):
+    await request.send_push_promise("/static/style.css")
 ```
 
 The sillo `Request` object provides a rich interface for working with incoming HTTP requests, with support for all common web standards and convenient access to request data. 

@@ -34,12 +34,12 @@ app = silloApp()
 v1 = Router(prefix="/v1")
 
 @v1.get("/users")
-async def list_users(req, res):
-    return res.json({"users": []})
+async def list_users(request, response):
+    return response.json({"users": []})
 
 @v1.get("/users/{user_id}")
-async def get_user(req, res, user_id):
-    return res.json({"user_id": user_id})
+async def get_user(request, response, user_id):
+    return response.json({"user_id": user_id})
 
 app.mount_router(v1)
 ```
@@ -80,12 +80,12 @@ v1 = Router(prefix="/v1")
 users = Router(prefix="/users")
 
 @users.get("/")
-async def users_index(req, res):
-    return res.text("User root")
+async def users_index(request, response):
+    return response.text("User root")
 
 @users.get("/{id}")
-async def users_detail(req, res, id):
-    return res.json({"user": id})
+async def users_detail(request, response, id):
+    return response.json({"user": id})
 
 # nest: /v1/users/*
 v1.mount_router(users)
@@ -114,8 +114,8 @@ def require_staff(request):
     return True
 
 @admin.get("/dashboard")
-async def dashboard(req, res, _staff=Depend(require_staff)):
-    return res.text("secret dashboard")
+async def dashboard(request, response, _staff=Depend(require_staff)):
+    return response.text("secret dashboard")
 
 app.mount_router(admin)
 ```
@@ -136,8 +136,8 @@ main_app = silloApp()
 admin_app = silloApp()
 
 @admin_app.get("/dashboard")
-async def dashboard(req, res):
-    return res.text("Welcome to the admin panel")
+async def dashboard(request, response):
+    return response.text("Welcome to the admin panel")
 
 admin_group = Group(path="/admin", app=admin_app)
 main_app.add_route(admin_group)
@@ -153,11 +153,11 @@ from sillo import silloApp
 
 users = Router()
 
-async def list_users(req, res):
-    return res.json(["John", "Jane"])
+async def list_users(request, response):
+    return response.json(["John", "Jane"])
 
-async def get_user(req, res, id):
-    return res.json({"user": id})
+async def get_user(request, response, id):
+    return response.json({"user": id})
 
 group = Group(
     path="/users",
@@ -204,13 +204,13 @@ Routes (and routers) accept a `name=` used with `url_for` to build URLs without 
 
 ```python
 @v1.get("/users/{user_id}", name="get-user")
-async def get_user(req, res, user_id):
-    return res.json({"user_id": user_id})
+async def get_user(request, response, user_id):
+    return response.json({"user_id": user_id})
 
 @app.get("/home")
-async def home(req, res):
-    url = req.url_for("get-user", user_id=42)   # -> /v1/users/42
-    return res.json({"link": str(url)})
+async def home(request, response):
+    url = request.url_for("get-user", user_id=42)   # -> /v1/users/42
+    return response.json({"link": str(url)})
 ```
 
 When a route lives under a router prefix, `url_for` includes that prefix automatically. Name routes once and generate links everywhere.
@@ -227,15 +227,15 @@ app = silloApp()
 api = Router(prefix="/api/v1", tags=["api"])
 
 @api.get("/health")
-async def health(req, res):
-    return res.json({"status": "ok"})
+async def health(request, response):
+    return response.json({"status": "ok"})
 
 # admin sub-app
 admin = silloApp()
 
 @admin.get("/stats")
-async def stats(req, res):
-    return res.json({"requests": 0})
+async def stats(request, response):
+    return response.json({"requests": 0})
 
 # compose
 app.mount_router(api)

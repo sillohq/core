@@ -127,8 +127,8 @@ In route handlers, prefer passing headers as arguments to response methods for c
 ```python
 # Clean approach for handlers
 @app.get("/api/data")
-async def get_data(req, res):
-    return res.json(
+async def get_data(request, response):
+    return response.json(
         {"data": "success"}, 
         headers={
             "X-API-Version": "1.0",

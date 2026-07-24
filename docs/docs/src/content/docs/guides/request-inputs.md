@@ -24,80 +24,80 @@ from sillo import silloApp
 app = silloApp()
 
 @app.post("/submit")
-async def submit_data(req, res):
-    data = await req.json          # parse the body as JSON
+async def submit_data(request, response):
+    data = await request.json          # parse the body as JSON
     return {"received": data}
 ```
 
-`req.json` is an **awaitable property** — `await` it once and the body is cached for the rest of the request. It runs `json.loads` on the raw bytes, so it works for any body that is valid JSON regardless of the `Content-Type` header.
+`request.json` is an **awaitable property** — `await` it once and the body is cached for the rest of the request. It runs `json.loads` on the raw bytes, so it works for any body that is valid JSON regardless of the `Content-Type` header.
 
 <aside type="tip" title="Content-Type is not enforced">
-Unlike some frameworks, `req.json` does not check the `Content-Type` header — it just parses the bytes as JSON. If the body isn't valid JSON you'll get a `json.JSONDecodeError`. For typed, validated input, prefer Pydantic (see below).
+Unlike some frameworks, `request.json` does not check the `Content-Type` header — it just parses the bytes as JSON. If the body isn't valid JSON you'll get a `json.JSONDecodeError`. For typed, validated input, prefer Pydantic (see below).
 </aside>
 
 ## JSON data
 
 ```python
 @app.post("/submit")
-async def submit_data(req, res):
-    data = await req.json
+async def submit_data(request, response):
+    data = await request.json
     name = data.get("name")
     return {"hello": name}
 ```
 
 Common accessors:
 
-- `await req.json` — parsed JSON as a `dict`/`list` (raises on invalid JSON).
-- `await req.text` — the raw body decoded as text (UTF-8, falling back to latin-1).
-- `await req.body` — the raw body as `bytes`.
+- `await request.json` — parsed JSON as a `dict`/`list` (raises on invalid JSON).
+- `await request.text` — the raw body decoded as text (UTF-8, falling back to latin-1).
+- `await request.body` — the raw body as `bytes`.
 
 ## Form data
 
-sillo parses both `application/x-www-form-urlencoded` and `multipart/form-data` into a `FormData` object, accessible via `req.form` (awaitable property) or the `req.form_data` context manager.
+sillo parses both `application/x-www-form-urlencoded` and `multipart/form-data` into a `FormData` object, accessible via `request.form` (awaitable property) or the `request.form_data` context manager.
 
 ```python
 @app.post("/submit-form")
-async def submit_form(req, res):
-    form = await req.form          # FormData object
+async def submit_form(request, response):
+    form = await request.form          # FormData object
     username = form.get("username")
     return {"received": username}
 ```
 
-For forms, use `req.form`. For multipart uploads (files), read on below.
+For forms, use `request.form`. For multipart uploads (files), read on below.
 
 ## File uploads
 
-Uploaded files ride along inside `multipart/form-data`. Access them through `req.files` (awaitable property), which returns a dict of `UploadedFile` objects keyed by field name.
+Uploaded files ride along inside `multipart/form-data`. Access them through `request.files` (awaitable property), which returns a dict of `UploadedFile` objects keyed by field name.
 
 ```python
 @app.post("/upload")
-async def upload_file(req, res):
-    files = await req.files
+async def upload_file(request, response):
+    files = await request.files
     document = files.get("document")
     if document is None:
-        return res.json({"error": "no file"}, status_code=400)
+        return response.json({"error": "no file"}, status_code=400)
 
     content = await document.read()           # bytes
     filename = document.filename
-    return res.json({"saved": filename, "bytes": len(content)})
+    return response.json({"saved": filename, "bytes": len(content)})
 ```
 
-`UploadedFile` exposes `filename`, `content_type`, and an async `read()` coroutine. Always `await` `req.files` (and `document.read()`) — both are async.
+`UploadedFile` exposes `filename`, `content_type`, and an async `read()` coroutine. Always `await` `request.files` (and `document.read()`) — both are async.
 
 ## Streaming request bodies
 
-For very large uploads you can consume the body in chunks instead of buffering it all. `req.stream` is an async generator of `bytes`:
+For very large uploads you can consume the body in chunks instead of buffering it all. `request.stream` is an async generator of `bytes`:
 
 ```python
 @app.post("/stream")
-async def stream_data(req, res):
+async def stream_data(request, response):
     total = 0
-    async for chunk in req.stream:           # async generator, NOT a method call
+    async for chunk in request.stream:           # async generator, NOT a method call
         total += len(chunk)
     return {"bytes_received": total}
 ```
 
-Because the body is consumed as you iterate, you cannot also call `await req.json` or `await req.form` on the same request afterward — pick one strategy per request.
+Because the body is consumed as you iterate, you cannot also call `await request.json` or `await request.form` on the same request afterward — pick one strategy per request.
 
 ## Validating inputs with Pydantic
 
@@ -111,14 +111,14 @@ class UserSchema(BaseModel):
     email: EmailStr
 
 @app.post("/create-user")
-async def create_user(req, res):
+async def create_user(request, response):
     try:
-        payload = await req.json
+        payload = await request.json
         user = UserSchema(**payload)
     except ValidationError as e:
-        return res.json({"error": e.errors()}, status_code=422)
+        return response.json({"error": e.errors()}, status_code=422)
 
-    return res.json({"user": user.model_dump()})
+    return response.json({"user": user.model_dump()})
 ```
 
 sillo also ships the `request_model` hook on routes for automatic validation — see [Request Parameters](/guides/request-parameters/) and the dependency injection guides for that pattern.

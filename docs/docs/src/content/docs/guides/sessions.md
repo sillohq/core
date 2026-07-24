@@ -45,13 +45,13 @@ With this minimal setup, sillo will use the default cookie-based session backend
 
 ```python
 @app.get("/")
-async def index(req, res):
+async def index(request, response):
     # Access the session
-    counter = req.session.get("counter", 0)
+    counter = request.session.get("counter", 0)
     counter += 1
-    req.session["counter"] = counter
+    request.session["counter"] = counter
     
-    return res.text(f"You've visited this page {counter} times")
+    return response.text(f"You've visited this page {counter} times")
 ```
 
 ##  Session Configuration Options
@@ -99,27 +99,27 @@ app.use(SessionMiddleware(config=session_config, secret_key="secret-key"))
 
 ```python
 @app.get("/session-demo")
-async def session_demo(req, res):
+async def session_demo(request, response):
     # Get a value with default if not present
-    user_id = req.session.get("user_id", None)
+    user_id = request.session.get("user_id", None)
     
     # Set a value
-    req.session["last_visit"] = time.time()
+    request.session["last_visit"] = time.time()
     
     # Check if a key exists
-    if "preferences" in req.session:
-        preferences = req.session["preferences"]
+    if "preferences" in request.session:
+        preferences = request.session["preferences"]
     
     # Remove a key
-    if "temporary_data" in req.session:
-        del req.session["temporary_data"]
+    if "temporary_data" in request.session:
+        del request.session["temporary_data"]
     
     # Clear the entire session
-    # req.session.clear()
+    # request.session.clear()
     
-    return res.json({
+    return response.json({
         "user_id": user_id,
-        "session_keys": list(req.session.keys())
+        "session_keys": list(request.session.keys())
     })
 ```
 
@@ -153,14 +153,14 @@ app.use(SessionMiddleware(config=session_config))
 
 # Or set per-session expiration time
 @app.post("/login")
-async def login(req, res):
+async def login(request, response):
     # Authenticate user...
-    req.session["user_id"] = user.id
+    request.session["user_id"] = user.id
     
     # Set this specific session to expire in 30 minutes
-    req.session.set_expiry(1800)
+    request.session.set_expiry(1800)
     
-    return res.json({"success": True})
+    return response.json({"success": True})
 ```
 
 ##  Session Backends
@@ -293,11 +293,11 @@ app.use(SessionMiddleware(config=session_config))
 ```python
 # Short expiration for sensitive operations
 @app.post("/banking/transfer")
-async def transfer(req, res):
+async def transfer(request, response):
     # Verify authentication is recent
-    auth_time = req.session.get("auth_time", 0)
+    auth_time = request.session.get("auth_time", 0)
     if time.time() - auth_time > 300:  # 5 minutes
-        return res.redirect("/re-authenticate")
+        return response.redirect("/re-authenticate")
     
     # Process transfer...
 ```
@@ -306,11 +306,11 @@ async def transfer(req, res):
 
 ```python
 @app.post("/logout")
-async def logout(req, res):
+async def logout(request, response):
     # Clear session and remove cookie
-    req.session.clear()
+    request.session.clear()
     
-    return res.redirect("/login")
+    return response.redirect("/login")
 ```
 
 ##  Practical Examples
@@ -319,69 +319,69 @@ async def logout(req, res):
 
 ```python
 @app.post("/login")
-async def login(req, res):
-    data = await req.form
+async def login(request, response):
+    data = await request.form
     username = data.get("username")
     password = data.get("password")
     
     # Authenticate user (pseudo-code)
     user = authenticate_user(username, password)
     if not user:
-        return res.redirect("/login?error=invalid_credentials")
+        return response.redirect("/login?error=invalid_credentials")
     
     # Store user info in session
-    req.session["user_id"] = user.id
-    req.session["username"] = user.username
-    req.session["auth_time"] = time.time()
-    req.session["is_admin"] = user.is_admin
+    request.session["user_id"] = user.id
+    request.session["username"] = user.username
+    request.session["auth_time"] = time.time()
+    request.session["is_admin"] = user.is_admin
     
     
     
-    return res.redirect("/dashboard")
+    return response.redirect("/dashboard")
 
 @app.get("/dashboard")
-async def dashboard(req, res):
+async def dashboard(request, response):
     # Check if user is logged in
-    if "user_id" not in req.session:
-        return res.redirect("/login")
+    if "user_id" not in request.session:
+        return response.redirect("/login")
     
-    username = req.session["username"]
-    return res.html(f"<h1>Welcome, {username}!</h1>")
+    username = request.session["username"]
+    return response.html(f"<h1>Welcome, {username}!</h1>")
 
 @app.post("/logout")
-async def logout(req, res):
-    req.session.clear()
-    return res.redirect("/login?message=logged_out")
+async def logout(request, response):
+    request.session.clear()
+    return response.redirect("/login?message=logged_out")
 ```
 
 #### Example 2: Shopping Cart
 
 ```python
 @app.get("/cart")
-async def view_cart(req, res):
+async def view_cart(request, response):
     # Initialize cart if it doesn't exist
-    cart = req.session.get("cart", {})
+    cart = request.session.get("cart", {})
     
     # Calculate total
     total = sum(item["price"] * item["quantity"] for item in cart.values())
     
-    return res.json({
+    return response.json({
         "items": cart,
         "total": total
     })
 
 @app.post("/cart/add/{product_id}")
-async def add_to_cart(req, res):
-    product_id = req.path_params.product_id
-    quantity = int(req.query_params.get("quantity", 1))
+async def add_to_cart(request, response):
+    product_id = request.path_params.product_id
+    quantity = int(request.query_params.get("quantity", 1))
     
     # Get product details (pseudo-code)
     product = get_product(product_id)
     if not product:
-        return res.json({"error": "Product not found"}, status_code=404)
+        return response.json({"error": "Product not found"}, status_code=404)
     
     # Get or initialize cart
-    cart = req.session.get("cart", {})
+    cart = request.session.get("cart", {})
     
     # Add or update product in cart
     if product_id in cart:
@@ -394,38 +394,38 @@ async def add_to_cart(req, res):
         }
     
     # Save cart to session
-    req.session["cart"] = cart
+    request.session["cart"] = cart
     
-    return res.json({"success": True, "cart": cart})
+    return response.json({"success": True, "cart": cart})
 
 @app.post("/cart/clear")
-async def clear_cart(req, res):
-    if "cart" in req.session:
-        del req.session["cart"]
+async def clear_cart(request, response):
+    if "cart" in request.session:
+        del request.session["cart"]
     
-    return res.json({"success": True})
+    return response.json({"success": True})
 ```
 
 #### Example 3: Multi-step Form with Session Data
 
 ```python
 @app.get("/wizard/step1")
-async def wizard_step1(req, res):
+async def wizard_step1(request, response):
     # Initialize or get form data
-    form_data = req.session.get("wizard_data", {})
+    form_data = request.session.get("wizard_data", {})
     
-    return res.html_template("wizard/step1.html", form_data=form_data)
+    return response.html_template("wizard/step1.html", form_data=form_data)
 
 @app.post("/wizard/step1")
-async def wizard_step1_post(req, res):
-    form_data = await req.form
+async def wizard_step1_post(request, response):
+    form_data = await request.form
     
     # Validate form (pseudo-code)
     if not validate_step1(form_data):
-        return res.redirect("/wizard/step1?error=invalid_data")
+        return response.redirect("/wizard/step1?error=invalid_data")
     
     # Initialize wizard data if not exists
-    wizard_data = req.session.get("wizard_data", {})
+    wizard_data = request.session.get("wizard_data", {})
     
     # Update with step 1 data
     wizard_data.update({
@@ -434,21 +434,21 @@ async def wizard_step1_post(req, res):
     })
     
     # Save back to session
-    req.session["wizard_data"] = wizard_data
+    request.session["wizard_data"] = wizard_data
     
     # Proceed to next step
-    return res.redirect("/wizard/step2")
+    return response.redirect("/wizard/step2")
 
 @app.post("/wizard/complete")
-async def wizard_complete(req, res):
+async def wizard_complete(request, response):
     # Get all wizard data
-    wizard_data = req.session.get("wizard_data", {})
+    wizard_data = request.session.get("wizard_data", {})
     
     # Process the complete submission
     result = process_wizard_submission(wizard_data)
     
     # Clear wizard data from session
-    del req.session["wizard_data"]
+    del request.session["wizard_data"]
     
-    return res.redirect(f"/wizard/success?id={result.id}")
+    return response.redirect(f"/wizard/success?id={result.id}")
 ```
