@@ -24,6 +24,7 @@ from sillo import silloApp
 
 app = silloApp()
 
+
 @app.ws_route("/ws")
 async def ws_handler(ws):
     await ws.accept()
@@ -37,9 +38,12 @@ async def ws_handler(ws):
 from sillo.routing import Router
 
 router = Router(prefix="/ws")
+
+
 async def chat_socket(ws):
     await ws.accept()
     await ws.send_text("connected")
+
 
 router.add_ws_route(path="/chat", handler=chat_socket)
 app.mount_router(router)
@@ -60,11 +64,8 @@ sillo documents automatic API docs with `/docs`, `/redoc`, and `/openapi.json`.
 ```python
 from sillo import silloApp
 
-app = silloApp(
-    title="My API",
-    version="1.0.0",
-    description="A documented API"
-)
+app = silloApp(title="My API", version="1.0.0", description="A documented API")
+
 
 @app.get("/users/{user_id}", summary="Get a user", tags=["Users"])
 async def get_user(request, response, user_id: int):
@@ -87,9 +88,11 @@ sillo documents both manual validation and request-model-based validation patter
 ```python
 from pydantic import BaseModel, EmailStr
 
+
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
+
 
 @app.post("/users")
 async def create_user(request, response):
@@ -104,6 +107,7 @@ async def create_user(request, response):
 class UserInput(BaseModel):
     username: str
     email: EmailStr
+
 
 @app.post("/users", request_model=UserInput)
 async def create_user(request, response):
@@ -122,11 +126,14 @@ from sillo.testclient import TestClient
 
 app = silloApp()
 
+
 @app.get("/")
 async def home(request, response):
     return response.json({"message": "Hello"})
 
+
 client = TestClient(app)
+
 
 def test_home():
     result = client.get("/")
@@ -172,6 +179,7 @@ from sillo.templating import TemplateEngine, render
 
 engine = TemplateEngine()
 engine.setup_environment()
+
 
 @app.get("/")
 async def home(request, response):

@@ -25,10 +25,9 @@ from sillo.auth.middleware import AuthenticationMiddleware
 
 app = silloApp()
 
-app.add_middleware(AuthenticationMiddleware(
-    user_model=SimpleUser,
-    backend=JWTAuthBackend()
-))
+app.add_middleware(
+    AuthenticationMiddleware(user_model=SimpleUser, backend=JWTAuthBackend())
+)
 ```
 
 Key mental model:
@@ -43,20 +42,23 @@ Key mental model:
 @app.get("/profile")
 @auth()
 async def profile(request, response):
-    return response.json({
-        "user": request.user.display_name,
-        "authenticated": request.user.is_authenticated
-    })
+    return response.json(
+        {
+            "user": request.user.display_name,
+            "authenticated": request.user.is_authenticated,
+        }
+    )
 
 
 @app.get("/profile")
-@auth(scope =["jwt"]) #for scoped auth
+@auth(scope=["jwt"])  # for scoped auth
 async def profile(request, response):
-    return response.json({
-        "user": request.user.display_name,
-        "authenticated": request.user.is_authenticated
-    })
-
+    return response.json(
+        {
+            "user": request.user.display_name,
+            "authenticated": request.user.is_authenticated,
+        }
+    )
 ```
 
 
@@ -68,20 +70,20 @@ from sillo.auth.backends.session import SessionAuthBackend
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
 
-app.add_middleware(AuthenticationMiddleware(
-    user_model=SimpleUser,
-    backend=JWTAuthBackend()
-))
+app.add_middleware(
+    AuthenticationMiddleware(user_model=SimpleUser, backend=JWTAuthBackend())
+)
 
-app.add_middleware(AuthenticationMiddleware(
-    user_model=SimpleUser,
-    backend=SessionAuthBackend() #require session middleware
-))
+app.add_middleware(
+    AuthenticationMiddleware(
+        user_model=SimpleUser,
+        backend=SessionAuthBackend(),  # require session middleware
+    )
+)
 
-app.add_middleware(AuthenticationMiddleware(
-    user_model=SimpleUser,
-    backend=APIKeyAuthBackend()
-))
+app.add_middleware(
+    AuthenticationMiddleware(user_model=SimpleUser, backend=APIKeyAuthBackend())
+)
 ```
 
 ### Backend Explanations
@@ -92,13 +94,12 @@ app.add_middleware(AuthenticationMiddleware(
 
 
 ```python
-
-
 class CustomAuthBackend(BaseAuthBackend):
     async def authenticate(self, request):
         # custom authentication logic here
         if request.headers.get("X-API-Key") == "your-super-secret-key":
             return CustomUser(request, "Super User")
+
 
 class CustomUser(BaseUser):
     def __init__(self, request, name):
@@ -125,10 +126,10 @@ class CustomUser(BaseUser):
     def auth_type(self):
         return "custom"
 
-app.add_middleware(AuthenticationMiddleware(
-    user_model=CustomUser,
-    backend=CustomAuthBackend()
-))
+
+app.add_middleware(
+    AuthenticationMiddleware(user_model=CustomUser, backend=CustomAuthBackend())
+)
 ```
 
 The above code snippet demonstrates how to add a custom authentication backend to sillo. It defines a custom authentication backend by subclassing `BaseAuthBackend` and implementing the `authenticate` method. The `authenticate` method is responsible for verifying the user's credentials and returning a `BaseUser` subclass instance if authentication is successful. In the example, the custom authentication backend checks for the presence of a specific API key in the request headers. If the API key is present and matches a hard-coded value, a `CustomUser` instance is returned.
@@ -155,7 +156,7 @@ session_config = SessionConfig(
     cookie_secure=True,
     cookie_httponly=True,
     cookie_samesite="lax",
-    session_expiration_time=86400
+    session_expiration_time=86400,
 )
 
 app.add_middleware(
@@ -194,17 +195,13 @@ async def whoami(request, response):
 ```python
 @app.get("/set-cookie")
 async def set_cookie(request, response):
-    return (
-        response
-        .json({"status": "ok"})
-        .set_cookie(
-            key="auth_token",
-            value="abc123",
-            max_age=3600,
-            httponly=True,
-            secure=True,
-            samesite="strict"
-        )
+    return response.json({"status": "ok"}).set_cookie(
+        key="auth_token",
+        value="abc123",
+        max_age=3600,
+        httponly=True,
+        secure=True,
+        samesite="strict",
     )
 ```
 
@@ -229,10 +226,12 @@ Teach these best practices:
 ```python
 @app.get("/headers")
 async def show_headers(request, response):
-    return response.json({
-        "user_agent": request.headers.get("user-agent"),
-        "accept_language": request.headers.get("accept-language")
-    })
+    return response.json(
+        {
+            "user_agent": request.headers.get("user-agent"),
+            "accept_language": request.headers.get("accept-language"),
+        }
+    )
 ```
 
 ### Set Response Headers
@@ -240,15 +239,19 @@ async def show_headers(request, response):
 ```python
 @app.get("/custom")
 async def custom(request, response):
-    return response.text("ok",headers = {"X-Content-Type-Options": "nosniff",
-                                        "X-Frame-Options": "DENY",
-                                        "X-XSS-Protection": "1; mode=block"})
+    return response.text(
+        "ok",
+        headers={
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "X-XSS-Protection": "1; mode=block",
+        },
+    )
     # another way to set headers after setting response type
     # response = response.text("ok")
     # response.set_header("X-Frame-Options", "DENY")
     # response.set_header("X-XSS-Protection", "1; mode=block")
     # return response
-    
 ```
 
 In middleware, set headers after `await next()` or the equivalent response-producing step.
@@ -264,7 +267,9 @@ async def set_headers_after_middleware(request, response, next):
     strem = await next()
     response.set_header("X-Frame-Options", "DENY")
     response.set_header("X-XSS-Protection", "1; mode=block")
-    return stream 
+    return stream
+
+
 app.add_middleware(set_headers_after_middleware)
 ```
 
@@ -292,12 +297,11 @@ The docs present a configurable security middleware:
 ```python
 from sillo.middleware.security import SecurityMiddleware
 
-app.add_middleware(SecurityMiddleware(
-    csp_enabled=True,
-    hsts_enabled=True,
-    ssl_redirect=True,
-    frame_options="DENY"
-))
+app.add_middleware(
+    SecurityMiddleware(
+        csp_enabled=True, hsts_enabled=True, ssl_redirect=True, frame_options="DENY"
+    )
+)
 ```
 
 This is the right concept cluster for:

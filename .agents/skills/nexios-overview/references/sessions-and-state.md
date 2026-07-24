@@ -24,7 +24,7 @@ session_config = SessionConfig(
     cookie_secure=True,
     cookie_httponly=True,
     cookie_samesite="lax",
-    session_expiration_time=86400
+    session_expiration_time=86400,
 )
 
 app.add_middleware(
@@ -45,10 +45,9 @@ async def session_demo(request, response):
     if "temporary_data" in request.session:
         del request.session["temporary_data"]
 
-    return response.json({
-        "user_id": user_id,
-        "session_keys": list(request.session.keys())
-    })
+    return response.json(
+        {"user_id": user_id, "session_keys": list(request.session.keys())}
+    )
 ```
 
 Useful session operations to mention:
@@ -65,9 +64,7 @@ Useful session operations to mention:
 Global expiry:
 
 ```python
-session_config = SessionConfig(
-    session_expiration_time=3600
-)
+session_config = SessionConfig(session_expiration_time=3600)
 ```
 
 Per-session expiry:
@@ -89,9 +86,7 @@ Use this when explaining browser state lifetimes and login flows.
 ```python
 from sillo.session.signed_cookies import SignedSessionManager
 
-session_config = SessionConfig(
-    manager=SignedSessionManager
-)
+session_config = SessionConfig(manager=SignedSessionManager)
 ```
 
 Good for:
@@ -111,7 +106,7 @@ from sillo.session.file import FileSessionManager
 session_config = SessionConfig(
     manager=FileSessionManager,
     session_file_storage_path="sessions",
-    session_file_name="session_"
+    session_file_name="session_",
 )
 ```
 

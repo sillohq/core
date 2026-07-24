@@ -28,8 +28,9 @@ Dependency injection pattern:
 from sillo import Depend
 from sillo_contrib.redis import get_redis
 
+
 @app.get("/user/{user_id}")
-async def get_user(request, response, user_id: str, redis = Depend(get_redis)):
+async def get_user(request, response, user_id: str, redis=Depend(get_redis)):
     cached_user = await redis.json_get(f"user:{user_id}")
     return response.json({"user": cached_user})
 ```
@@ -61,6 +62,7 @@ Creating a task from a route:
 async def process_data(data: dict) -> dict:
     return {"status": "completed", "data": data}
 
+
 @app.post("/process")
 async def start_processing(request, response):
     data = await request.json
@@ -73,8 +75,11 @@ Dependency injection variant:
 ```python
 from sillo_contrib.tasks import TaskDependency
 
+
 @app.post("/process-with-deps")
-async def process_with_deps(request, response, task_dep: TaskDependency = TaskDependency()):
+async def process_with_deps(
+    request, response, task_dep: TaskDependency = TaskDependency()
+):
     data = await request.json
     task = await task_dep.create(func=process_data, data=data, name="data_processing")
     return response.json({"task_id": task.id})
@@ -89,13 +94,16 @@ from sillo import silloApp
 from sillo_contrib.mail import setup_mail, MailConfig
 
 app = silloApp()
-mail_client = setup_mail(app, config=MailConfig(
-    smtp_host="smtp.gmail.com",
-    smtp_port=587,
-    smtp_username="your-email@gmail.com",
-    smtp_password="your-app-password",
-    use_tls=True
-))
+mail_client = setup_mail(
+    app,
+    config=MailConfig(
+        smtp_host="smtp.gmail.com",
+        smtp_port=587,
+        smtp_username="your-email@gmail.com",
+        smtp_password="your-app-password",
+        use_tls=True,
+    ),
+)
 ```
 
 Direct send example:
@@ -105,7 +113,7 @@ result = await mail_client.send_email(
     to="recipient@example.com",
     subject="Hello World",
     body="Plain text",
-    html_body="<h1>Hello World</h1>"
+    html_body="<h1>Hello World</h1>",
 )
 ```
 
@@ -125,7 +133,7 @@ init_tortoise(
     app,
     db_url="sqlite://db.sqlite3",
     modules={"models": ["app.models"]},
-    generate_schemas=True
+    generate_schemas=True,
 )
 ```
 
@@ -135,10 +143,9 @@ Handler example:
 @app.get("/users")
 async def list_users(request, response):
     users = await User.all()
-    return response.json([
-        {"id": user.id, "name": user.name, "email": user.email}
-        for user in users
-    ])
+    return response.json(
+        [{"id": user.id, "name": user.name, "email": user.email} for user in users]
+    )
 ```
 
 Teach this integration as the ORM bridge for async model-based persistence.

@@ -19,11 +19,13 @@ Function-style middleware is great for teaching pipeline flow:
 ```python
 from datetime import datetime
 
+
 async def timing_middleware(request, response, next):
     request.state.started_at = datetime.utcnow()
     result = await next()
     response.set_header("X-Processed", "true")
     return result
+
 
 app.add_middleware(timing_middleware)
 ```
@@ -48,6 +50,7 @@ Use class-based middleware when the logic has clear pre/post stages:
 ```python
 from sillo.middleware import BaseMiddleware
 
+
 class RequestLogger(BaseMiddleware):
     async def process_request(self, request, response, cnext):
         print("Incoming:", request.method, request.url)
@@ -65,8 +68,10 @@ Use `Depend(...)` to keep handlers clean:
 ```python
 from sillo import Depend
 
+
 def get_settings():
     return {"debug": True, "version": "1.0.0"}
+
 
 @app.get("/config")
 async def show_config(request, response, settings: dict = Depend(get_settings)):
@@ -79,11 +84,13 @@ async def show_config(request, response, settings: dict = Depend(get_settings)):
 async def get_db_config():
     return {"dsn": "sqlite:///app.db"}
 
+
 async def get_db(config: dict = Depend(get_db_config)):
     return Database(**config)
 
+
 @app.get("/users")
-async def list_users(request, response, db = Depend(get_db)):
+async def list_users(request, response, db=Depend(get_db)):
     users = await db.query("SELECT * FROM users")
     return response.json(users)
 ```
@@ -112,8 +119,10 @@ sillo documents app-level and router-level dependencies.
 ```python
 from sillo import silloApp, Depend
 
+
 def global_dep():
     return "global-value"
+
 
 app = silloApp(dependencies=[Depend(global_dep)])
 ```
@@ -123,8 +132,10 @@ app = silloApp(dependencies=[Depend(global_dep)])
 ```python
 from sillo.routing import Router
 
+
 def router_dep():
     return "router-value"
+
 
 api = Router(prefix="/api", dependencies=[Depend(router_dep)])
 ```
@@ -162,11 +173,13 @@ When the user wants one place for startup and shutdown:
 from contextlib import asynccontextmanager
 from sillo import silloApp
 
+
 @asynccontextmanager
 async def app_lifespan(app):
     print("App started")
     yield
     print("App shutting down")
+
 
 app = silloApp(lifespan=app_lifespan)
 ```
@@ -181,6 +194,7 @@ sillo documents an event system for side effects and loose coupling:
 @app.events.on("user.created")
 async def handle_user_created(user):
     print(f"Created user: {user['name']}")
+
 
 @app.post("/users")
 async def create_user(request, response):

@@ -89,8 +89,7 @@ Compact chained style:
 @app.get("/api/data")
 async def get_data(request, response):
     return (
-        response
-        .json({"data": "success"})
+        response.json({"data": "success"})
         .set_cookie("session", "abc123")
         .set_header("X-API-Version", "1.0")
         .status(200)
@@ -115,6 +114,7 @@ async def numbers(request, response):
     async def stream():
         for i in range(5):
             yield f"{i}\n"
+
     return response.stream(stream())
 ```
 

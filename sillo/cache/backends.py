@@ -580,7 +580,7 @@ class RedisCache(BaseCache):
         if aioredis is None:
             raise CacheError(
                 "The 'redis' package is required for RedisCache. "
-                "Install it with: uv add \"sillo[cache]\""
+                'Install it with: uv add "sillo[cache]"'
             )
         if self._url:
             self._client = aioredis.from_url(

@@ -22,6 +22,7 @@ from sillo import silloApp
 
 app = silloApp()
 
+
 @app.get("/health")
 async def health(request, response):
     return response.json({"status": "ok"})
@@ -92,23 +93,28 @@ async def list_users(request, response):
 async def plain(request, response):
     return response.text("hello")
 
+
 @app.get("/page")
 async def page(request, response):
     return response.html("<h1>Hello</h1>")
+
 
 @app.get("/download")
 async def download(request, response):
     return response.file("report.pdf")
 
+
 @app.get("/go-home")
 async def go_home(request, response):
     return response.redirect("/")
+
 
 @app.get("/stream")
 async def stream_numbers(request, response):
     async def generator():
         for i in range(3):
             yield f"{i}\n"
+
     return response.stream(generator())
 ```
 
@@ -118,8 +124,7 @@ async def stream_numbers(request, response):
 @app.post("/login")
 async def login(request, response):
     return (
-        response
-        .json({"ok": True})
+        response.json({"ok": True})
         .set_cookie("session_id", "abc123", httponly=True, secure=True)
         .status(200)
     )
@@ -139,15 +144,18 @@ The decorator API is the default way to teach sillo routing:
 async def index(request, response):
     return response.json({"message": "Hello"})
 
+
 @app.post("/items")
 async def create_item(request, response):
     data = await request.json
     return response.json(data, status_code=201)
 
+
 @app.put("/items/{item_id}")
 async def update_item(request, response, item_id: str):
     data = await request.json
     return response.json({"id": item_id, **data})
+
 
 @app.delete("/items/{item_id}")
 async def delete_item(request, response, item_id: str):
@@ -177,16 +185,20 @@ Use `Route` when teaching explicit route objects:
 ```python
 from sillo.routing import Route
 
+
 async def get_user_handler(request, response, user_id: int):
     return response.json({"user_id": user_id})
 
-app.add_route(Route(
-    path="/users/{user_id:int}",
-    handler=get_user_handler,
-    methods=["GET"],
-    name="get_user",
-    summary="Get user by ID"
-))
+
+app.add_route(
+    Route(
+        path="/users/{user_id:int}",
+        handler=get_user_handler,
+        methods=["GET"],
+        name="get_user",
+        summary="Get user by ID",
+    )
+)
 ```
 
 Use `Router` when teaching organization:
@@ -196,9 +208,11 @@ from sillo.routing import Router
 
 api = Router(prefix="/api", tags=["API"])
 
+
 @api.get("/users")
 async def list_users(request, response):
     return response.json([])
+
 
 app.mount_router(api)
 ```
@@ -258,6 +272,7 @@ Example with a custom strategy:
 
 ```python
 from sillo.pagination import PageNumberPagination
+
 
 @app.get("/products")
 async def products(request, response):

@@ -21,6 +21,7 @@ from sillo import silloApp
 
 app = silloApp()
 
+
 @app.events.on("user.created")
 async def handle_user_created(user):
     print(f"User created: {user['name']}")
@@ -63,6 +64,7 @@ from sillo.events import EventEmitter
 
 emitter = EventEmitter("custom")
 
+
 @emitter.on("cache.warmed")
 async def handle_cache_warmed(payload):
     print(payload)
@@ -75,6 +77,7 @@ Use this when you want a separate event surface from `app.events`.
 ```python
 async def temporary_handler(data):
     print(data)
+
 
 app.events.on("data.received", temporary_handler)
 app.events.off("data.received", temporary_handler)
@@ -104,6 +107,7 @@ async def first_login(user):
 
 ```python
 ui = emitter.namespace("ui")
+
 
 @ui.on("button.click")
 async def handle_click(button):

@@ -56,9 +56,11 @@ import uvicorn
 
 app = silloApp()
 
+
 @app.get("/")
 async def home(request, response):
     return response.json({"message": "Hello from sillo!"})
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
@@ -77,11 +79,7 @@ Use explicit constructor arguments for application metadata:
 ```python
 from sillo import silloApp
 
-app = silloApp(
-    debug=True,
-    title="My API",
-    version="1.0.0"
-)
+app = silloApp(debug=True, title="My API", version="1.0.0")
 ```
 
 ## Request Lifecycle

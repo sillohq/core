@@ -29,8 +29,10 @@ from sillo import silloApp, Depend
 
 app = silloApp()
 
+
 def get_settings():
     return {"debug": True, "version": "1.0.0"}
+
 
 @app.get("/config")
 async def show_config(request, response, settings: dict = Depend(get_settings)):
@@ -47,11 +49,13 @@ Dependencies can depend on other dependencies:
 async def get_db_config():
     return {"host": "localhost", "port": 5432}
 
+
 async def get_db_connection(config: dict = Depend(get_db_config)):
     return Database(**config)
 
+
 @app.get("/users")
-async def list_users(request, response, db = Depend(get_db_connection)):
+async def list_users(request, response, db=Depend(get_db_connection)):
     return response.json(await db.query("SELECT * FROM users"))
 ```
 
@@ -68,6 +72,7 @@ def get_resource():
         yield resource
     finally:
         release(resource)
+
 
 async def get_async_resource():
     resource = await acquire_async()
@@ -87,18 +92,17 @@ Teaching point:
 sillo docs also describe injecting request-aware context.
 
 ```python
-
 from sillo.dependencies import Context
 
-def get_user(ctx = Context()):
+
+def get_user(ctx=Context()):
     request = ctx.request
     token = request.headers.get("token")
     return get_user_from_token(token)
 
 
-
 @app.get("/context-demo")
-async def context_demo(request, response, user = Depend(get_user)):
+async def context_demo(request, response, user=Depend(get_user)):
     return response.json({"user": user.data()})
 ```
 
@@ -108,8 +112,10 @@ Deeper propagation:
 async def dep_a(context=Context()):
     return f"A: {context.request.url.path}"
 
+
 async def dep_b(a=Depend(dep_a), context=Context()):
     return f"B: {a}, {context.request.url.path}"
+
 
 @app.get("/deep-context")
 async def deep_context(request, response, b=Depend(dep_b)):
@@ -126,6 +132,7 @@ Teach this as the clean way to access request-specific state without global vari
 def global_dep():
     return "global-value"
 
+
 app = silloApp(dependencies=[Depend(global_dep)])
 ```
 
@@ -134,8 +141,10 @@ app = silloApp(dependencies=[Depend(global_dep)])
 ```python
 from sillo.routing import Router
 
+
 def router_dep():
     return "router-value"
+
 
 api = Router(prefix="/api", dependencies=[Depend(router_dep)])
 ```
@@ -154,10 +163,12 @@ class AuthService:
     async def __call__(self, token: str):
         return await self.verify_token(token)
 
+
 auth = AuthService(secret_key="my-secret")
 
+
 @app.get("/protected")
-async def protected_route(request, response, user = Depend(auth)):
+async def protected_route(request, response, user=Depend(auth)):
     return response.json({"message": f"Welcome {user.name}"})
 ```
 
