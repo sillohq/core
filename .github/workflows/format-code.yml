@@ -2,7 +2,7 @@ name: Format Python
 
 on:
   push:
-    branches-ignore:
+    branches:
       - main
 
 permissions:
