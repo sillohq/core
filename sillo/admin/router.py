@@ -13,6 +13,7 @@ from .routes import (
     list_view,
     login_view,
     logout_view,
+    query_view,
     update_view,
 )
 
@@ -45,6 +46,12 @@ def build_routes(site) -> list:
             _dashboard_handler(site),
             methods=["GET"],
             name="admin-dashboard",
+        ),
+        Route(
+            f"{p}/query/",
+            _query_handler(site),
+            methods=["GET", "POST"],
+            name="admin-query",
         ),
     ]
     for model_cls, admin_cls in site.registry:
@@ -180,6 +187,37 @@ def _dashboard_handler(site):
             [description]
         """
         return await dashboard_view(request, response, site)
+
+    return handler
+
+
+def _query_handler(site):
+    """Query Handler
+
+    Args:
+        site: [description]
+
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    async def handler(request, response):
+        """Handler
+
+        Args:
+            request: [description]
+            response: [description]
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+        """
+        return await query_view(request, response, site)
 
     return handler
 

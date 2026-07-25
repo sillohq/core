@@ -19,7 +19,7 @@ from typing import List, Any
 
 import math
 
-from tortoise import fields as tf
+from tortoise import connections, fields as tf
 from tortoise.expressions import Q
 from tortoise.fields.relational import (
     BackwardFKRelation,
@@ -455,6 +455,26 @@ def _forbidden(response, site_prefix):
     return response.redirect(f"{site_prefix}/", status_code=302)
 
 
+async def _current_admin_user(request, site):
+    """Load the full logged-in user record for the current session.
+
+    The session only stores ``{"id", "display_name"}``; this fetches the
+    real row through ``site.auth.user_model`` for checks that need more
+    than identity, e.g. ``is_superuser``.
+    """
+    session = getattr(request, "session", None)
+    data = session.get("user") if session else None
+    if not data:
+        return None
+    user_model = getattr(site.auth, "user_model", None)
+    if user_model is None:
+        return None
+    try:
+        return await user_model.load_user(data.get("id"))
+    except Exception:
+        return None
+
+
 async def _log(request, action, model_name, site, object_id=None, detail=None):
     """Log
 
@@ -880,6 +900,66 @@ async def dashboard_view(request, response, site):
         else []
     )
     return response.html(_render("dashboard.html", **ctx))
+
+
+async def query_view(request, response, site):
+    """Query View — run raw SQL against the app's database from the admin.
+
+    Gated on ``is_superuser`` (rather than just "logged in") since it grants
+    full read/write access to every table, not just the ones registered
+    with the admin.
+
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
+
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+    user = await _current_admin_user(request, site)
+    if user is None or not getattr(user, "is_superuser", False):
+        return _forbidden(response, site.prefix)
+
+    tables = sorted(
+        {
+            (
+                getattr(admin_cls, "verbose_name", None) or m.__name__,
+                m._meta.db_table,
+            )
+            for m, admin_cls in site.registry
+        },
+        key=lambda t: t[0],
+    )
+
+    ctx = base_ctx(request, site, "Query", "query")
+    ctx["title"] = "Query"
+    ctx["tables"] = [{"name": n, "table": t} for n, t in tables]
+    ctx["sql"] = ""
+    ctx["error"] = ""
+    ctx["columns"] = []
+    ctx["rows"] = []
+    ctx["rowcount"] = None
+
+    if request.method == "POST":
+        get, _ = await _collect_form(request)
+        sql = (get("sql") or "").strip()
+        ctx["sql"] = sql
+        if sql:
+            try:
+                conn = connections.get("default")
+                rows, rowcount = await conn.execute_query_dict_with_affected(sql)
+                ctx["rows"] = rows
+                ctx["columns"] = list(rows[0].keys()) if rows else []
+                ctx["rowcount"] = rowcount
+                await _log(request, "query", "SQL", site, None, sql[:2000])
+            except Exception as e:
+                ctx["error"] = str(e)
+
+    return response.html(_render("query.html", **ctx))
 
 
 async def list_view(request, response, site, model_cls, admin_cls):

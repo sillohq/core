@@ -302,6 +302,18 @@
         .combo-opt:last-child { border-bottom: none; }
         .combo-opt:hover, .combo-opt.active { background: var(--accent-subtle); color: var(--accent); }
         .combo-opt.muted { color: var(--text3); }
+        /* SQL query editor */
+        .sql-editor { position: relative; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); overflow: hidden; }
+        .sql-editor pre, .sql-editor textarea { margin: 0; padding: 14px 16px; font-family: 'SF Mono', 'Fira Code', Menlo, Consolas, monospace; font-size: 13.5px; line-height: 1.65; white-space: pre; word-wrap: normal; overflow: auto; box-sizing: border-box; }
+        .sql-highlight { position: absolute; inset: 0; color: var(--text); pointer-events: none; z-index: 1; }
+        .sql-highlight code { font: inherit; }
+        .sql-input { position: relative; z-index: 2; width: 100%; min-height: 180px; resize: vertical; background: transparent; color: transparent; caret-color: var(--text); border: none; outline: none; }
+        .sql-input::selection { background: var(--accent-subtle); }
+        .tok-kw { color: var(--accent); font-weight: 600; }
+        .tok-str { color: var(--green); }
+        .tok-num { color: var(--amber); }
+        .tok-com { color: var(--text3); font-style: italic; }
+        .tok-fn { color: var(--blue); }
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar { width: 100%; position: relative; border-right: none; border-bottom: 1px solid var(--border); max-height: 50vh; }
@@ -323,6 +335,10 @@
             <a href="{{ site_prefix }}/">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
                 Dashboard
+            </a>
+            <a href="{{ site_prefix }}/query/">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+                Query
             </a>
             <div class="sidebar-section">Models</div>
             {% for m in model_links %}
@@ -432,6 +448,50 @@
         }
         document.querySelectorAll('input.row-check').forEach(function(x){x.addEventListener('change',bulkUpdate);});
         bulkUpdate();
+
+        /* SQL query editor: syntax highlight overlay */
+        var SQL_KEYWORDS=['select','from','where','insert','into','values','update','set','delete','join','left','right','inner','outer','full','cross','on','group','by','order','limit','offset','and','or','not','null','is','in','like','ilike','as','distinct','create','table','drop','alter','add','column','index','primary','key','foreign','references','default','unique','case','when','then','else','end','union','all','having','exists','asc','desc','between','if','begin','commit','rollback','transaction','with','returning'];
+        var SQL_FUNCS=['count','sum','avg','min','max','coalesce','cast','upper','lower','substr','length','round','now','date','strftime','concat'];
+        function sqlEsc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+        function sqlHighlight(src){
+            var re=/(--[^\n]*)|(\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|(\b\d+\.?\d*\b)|([a-zA-Z_][a-zA-Z0-9_]*)|([\s\S])/g;
+            var out='',m;
+            while((m=re.exec(src))!==null){
+                if(m[1]||m[2])out+='<span class="tok-com">'+sqlEsc(m[0])+'</span>';
+                else if(m[3])out+='<span class="tok-str">'+sqlEsc(m[0])+'</span>';
+                else if(m[4])out+='<span class="tok-num">'+sqlEsc(m[0])+'</span>';
+                else if(m[5]){
+                    var low=m[0].toLowerCase();
+                    if(SQL_KEYWORDS.indexOf(low)!==-1)out+='<span class="tok-kw">'+sqlEsc(m[0])+'</span>';
+                    else if(SQL_FUNCS.indexOf(low)!==-1)out+='<span class="tok-fn">'+sqlEsc(m[0])+'</span>';
+                    else out+=sqlEsc(m[0]);
+                }
+                else out+=sqlEsc(m[0]);
+            }
+            return out+'​';
+        }
+        function sqlEditorInit(box){
+            var ta=box.querySelector('.sql-input');
+            var pre=box.querySelector('.sql-highlight');
+            var code=pre.querySelector('code');
+            function render(){code.innerHTML=sqlHighlight(ta.value);}
+            ta.addEventListener('input',render);
+            ta.addEventListener('scroll',function(){pre.scrollTop=ta.scrollTop;pre.scrollLeft=ta.scrollLeft;});
+            ta.addEventListener('keydown',function(e){
+                if(e.key==='Tab'){
+                    e.preventDefault();
+                    var s=ta.selectionStart,en=ta.selectionEnd;
+                    ta.value=ta.value.slice(0,s)+'  '+ta.value.slice(en);
+                    ta.selectionStart=ta.selectionEnd=s+2;
+                    render();
+                }else if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){
+                    e.preventDefault();
+                    var f=ta.closest('form');if(f)f.requestSubmit?f.requestSubmit():f.submit();
+                }
+            });
+            render();
+        }
+        document.querySelectorAll('.sql-editor').forEach(sqlEditorInit);
     </script>
 </body>
 </html>
