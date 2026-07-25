@@ -1,5 +1,5 @@
 """
-sillo.services.admin.auth — Authentication for the admin panel.
+sillo.admin.auth — Authentication for the admin panel.
 
 Provides a pluggable auth backend system.  Ships with :class:`SessionAuth`
 which uses sillo's session middleware.  Bring-your-own-auth by
@@ -63,37 +63,20 @@ class SessionAuth(AuthBackend):
         self.user_model = user_model
 
     async def authenticate(self, request) -> bool:
-        """Authenticate
+        """Check whether the current request carries a valid admin session.
 
-        Args:
-            request: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+        Looks for user data stored by ``sillo.auth.session_auth.login``
+        (default key ``"user"``) or the legacy ``"admin_user"`` key.
         """
         session = getattr(request, "session", None)
         if session:
-            return session.get("admin_authenticated", False)
+            return bool(session.get("admin_user") or session.get("user"))
         return False
 
     async def get_user(self, request) -> Optional[dict]:
-        """Get User
-
-        Args:
-            request: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Return the current admin user dict from the session, or None."""
         session = getattr(request, "session", None)
         if session:
-            # Support both the legacy admin_user key and Sillo's default session key
             return session.get("admin_user") or session.get("user")
         return None
 
@@ -111,7 +94,7 @@ class SessionAuth(AuthBackend):
         if not verify_password(password, getattr(user, "password", "")):
             return False
 
-        # Use Sillo's official session authentication helper to store user identity
+        # Store user identity in the session using Sillo's official helper.
         from sillo.auth.session_auth import login as sillo_login
 
         class _UserWrapper:
@@ -124,24 +107,13 @@ class SessionAuth(AuthBackend):
 
             @property
             def display_name(self):
-                # Prefer username, fall back to email
                 return getattr(self._u, "username", self._u.email)
 
         sillo_login(request, _UserWrapper(user))
         return True
 
     async def logout(self, request) -> None:
-        """Logout
-
-        Args:
-            request: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Clear all admin-related session keys."""
         session = getattr(request, "session", None)
         if session:
             session.pop("admin_authenticated", None)

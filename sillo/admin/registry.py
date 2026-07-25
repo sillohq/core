@@ -1,5 +1,5 @@
 """
-sillo.services.admin.registry — ModelAdmin registration system.
+sillo.admin.registry — ModelAdmin registration system.
 
 Handles registration of models with their admin configuration classes.
 Each registered model gets a :class:`ModelAdmin` that controls the

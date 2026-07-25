@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 from .config import MailConfig
 from .models import EmailMessage, EmailResult
 
-logger = logging.getLogger("sillo.services.mail")
+logger = logging.getLogger("sillo.mail")
 
 try:
     import jinja2

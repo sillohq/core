@@ -1,6 +1,6 @@
 import asyncio
 import pytest
-from sillo.services.mail import (
+from sillo.mail import (
     MailConfig,
     MailClient,
     EmailMessage,

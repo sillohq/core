@@ -1,4 +1,4 @@
-"""Django-admin-level tests for sillo.services.admin.
+"""Django-admin-level tests for sillo.admin.
 
 Covers: hashed-password login, password fields (hashing + confirmation +
 mismatch/short rejection), M2M persistence with visual chips, O2O/FK
@@ -19,8 +19,8 @@ from sillo import silloApp
 from sillo.record import Model, setup_record, DatabaseConfig
 from sillo.record.fields import PasswordField
 from sillo.session import SessionMiddleware, SessionConfig
-from sillo.services.admin import setup_admin, ModelAdmin
-from sillo.services.admin.models import AdminUser, AdminRole, AdminActivity
+from sillo.admin import setup_admin, ModelAdmin
+from sillo.admin.models import AdminUser, AdminRole, AdminActivity
 from sillo.helpers.hashing import verify_password
 from sillo.testclient import TestClient
 
@@ -104,7 +104,7 @@ def _make_app(db_path):
     setup_record(
         app,
         DatabaseConfig.sqlite(str(db_path)),
-        model_modules=["sillo.services.admin.models", __name__],
+        model_modules=["sillo.admin.models", __name__],
     )
     admin = setup_admin(app, title="Admin Test", prefix="/admin")
 

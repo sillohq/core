@@ -1,4 +1,4 @@
-"""sillo.services.admin.views — Template-based view handlers.
+"""sillo.admin.views — Template-based view handlers.
 
 A Django-admin-level interface for sillo models:
 

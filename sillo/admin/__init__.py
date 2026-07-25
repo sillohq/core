@@ -1,5 +1,5 @@
 """
-sillo.services.admin — Recorder Admin Panel (Django Admin-level).
+sillo.admin — Recorder Admin Panel (Django Admin-level).
 
 A full-featured admin interface for sillo applications. Register your
 models, customize list displays, add filters, actions, and search — all
@@ -8,7 +8,7 @@ with a modern dark-themed UI.
 Usage::
 
     from sillo import silloApp
-    from sillo.services.admin import AdminSite, ModelAdmin, setup_admin
+    from sillo.admin import AdminSite, ModelAdmin, setup_admin
 
     app = silloApp()
     admin = setup_admin(app, title="My App Admin")

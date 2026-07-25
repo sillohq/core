@@ -1,4 +1,4 @@
-"""sillo.services.admin.router — Admin URL routing and view dispatch."""
+"""sillo.admin.router — Admin URL routing and view dispatch."""
 
 from __future__ import annotations
 

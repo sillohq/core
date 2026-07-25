@@ -1,5 +1,5 @@
 """
-sillo.services.admin.models — Admin-specific models for activity logging and RBAC.
+sillo.admin.models — Admin-specific models for activity logging and RBAC.
 """
 
 from tortoise import fields

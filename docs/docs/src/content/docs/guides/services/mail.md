@@ -1,12 +1,12 @@
 ---
 title: Mail Service
-description: Send emails with SMTP, templates, and attachments via sillo.services.mail.
+description: Send emails with SMTP, templates, and attachments via sillo.mail.
 ---
 
-# Mail (`sillo.services.mail`)
+# Mail (`sillo.mail`)
 
 ```python
-from sillo.services.mail import MailConfig, MailClient, EmailMessage, setup_mail
+from sillo.mail import MailConfig, MailClient, EmailMessage, setup_mail
 
 # Setup at startup
 mail = setup_mail(app, config=MailConfig.for_gmail("user@gmail.com", "app-password"))

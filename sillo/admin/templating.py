@@ -1,4 +1,4 @@
-"""sillo.services.admin.templating — Jinja2 template rendering for admin views."""
+"""sillo.admin.templating — Jinja2 template rendering for admin views."""
 
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
