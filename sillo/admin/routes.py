@@ -974,8 +974,15 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
 
     meta = model_cls._meta
     fields = []
-    # Show all model fields (except hidden/internal ones) on the detail view, ignoring any list_display restriction
-    display_cols = [c for c in meta.fields_map.keys() if not _should_skip_field(c)]
+    # Show all model fields (except hidden/internal ones) on the detail view, ignoring any list_display restriction.
+    # Backward relations (reverse FK/O2O) are rendered separately in the
+    # "Related Objects" section below — including them here would stringify
+    # the unawaited Tortoise relation manager (e.g. "<ReverseRelation object at ...>").
+    display_cols = [
+        c
+        for c in meta.fields_map.keys()
+        if not _should_skip_field(c) and not _is_backward_relation(meta.fields_map[c])
+    ]
     for f in display_cols:
         label = _field_label(f)
         field_obj = meta.fields_map.get(f)
