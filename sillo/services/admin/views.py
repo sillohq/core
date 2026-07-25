@@ -950,7 +950,8 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
 
     meta = model_cls._meta
     fields = []
-    display_cols = [c for c in admin_cls.list_display if not _should_skip_field(c)]
+    # Show all model fields (except hidden/internal ones) on the detail view, ignoring any list_display restriction
+    display_cols = [c for c in meta.fields_map.keys() if not _should_skip_field(c)]
     for f in display_cols:
         label = _field_label(f)
         field_obj = meta.fields_map.get(f)
