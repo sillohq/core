@@ -58,7 +58,6 @@ async def record_db():
         await Tortoise.close_connections()
     except Exception:
         pass
-    Tortoise._inited = False
 
 
 async def test_accessors_mutators_and_casts_round_trip():

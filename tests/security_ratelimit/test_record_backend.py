@@ -35,7 +35,6 @@ async def record_backend():
         await Tortoise.close_connections()
     except Exception:
         pass
-    Tortoise._inited = False
 
 
 async def test_record_backend_roundtrip(record_backend):

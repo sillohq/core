@@ -62,7 +62,6 @@ async def db():
         await Tortoise.close_connections()
     except Exception:
         pass
-    Tortoise._inited = False
 
 
 async def make_user(db, **kw):
