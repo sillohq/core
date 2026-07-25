@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sillo.core.routing import Route
 
-from .views import (
+from .routes import (
     bulk_view,
     create_view,
     dashboard_view,
