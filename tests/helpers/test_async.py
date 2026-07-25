@@ -1,4 +1,5 @@
 import functools
+import sys
 
 import pytest
 
@@ -8,6 +9,12 @@ from sillo.core.helpers.async_helpers import (
     collapse_excgroups,
     is_async_callable,
 )
+
+if sys.version_info < (3, 11):
+    try:
+        from exceptiongroup import BaseExceptionGroup
+    except ImportError:
+        pass
 
 
 async def _async_fn():

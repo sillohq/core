@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 import pytest
 
 from tortoise import Tortoise, run_async
@@ -9,13 +11,18 @@ from sillo.security.ratelimit.backends import RecordBackend
 from sillo.security.ratelimit.models import RateLimitCounter
 from sillo.security.ratelimit.strategies import TokenBucketStrategy
 
+_has_global_fallback = "_enable_global_fallback" in inspect.signature(Tortoise.init).parameters
+
 
 @pytest.fixture
 async def record_backend():
-    await Tortoise.init(
+    init_kwargs = dict(
         db_url="sqlite://:memory:",
         modules={"models": ["sillo.security.ratelimit.models"]},
     )
+    if _has_global_fallback:
+        init_kwargs["_enable_global_fallback"] = True
+    await Tortoise.init(**init_kwargs)
     await Tortoise.generate_schemas(safe=True)
     backend = RecordBackend()
     yield backend
@@ -24,6 +31,11 @@ async def record_backend():
         await Tortoise._drop_databases()
     except ConfigurationError:
         pass
+    try:
+        await Tortoise.close_connections()
+    except Exception:
+        pass
+    Tortoise._inited = False
 
 
 async def test_record_backend_roundtrip(record_backend):

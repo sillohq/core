@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 import pytest
 
 from tortoise import Tortoise
@@ -16,6 +18,8 @@ from sillo.permissions import (
 from sillo.users.base import UserBaseModel
 from sillo.users.managers import UserManager
 from sillo.users.password import make_password
+
+_has_global_fallback = "_enable_global_fallback" in inspect.signature(Tortoise.init).parameters
 
 
 class PermUser(PermissionMixin, UserBaseModel):
@@ -36,7 +40,7 @@ class NoPermUser(UserBaseModel):
 
 @pytest.fixture
 async def db():
-    await Tortoise.init(
+    init_kwargs = dict(
         db_url="sqlite://:memory:",
         modules={
             "models": [
@@ -45,12 +49,20 @@ async def db():
             ]
         },
     )
+    if _has_global_fallback:
+        init_kwargs["_enable_global_fallback"] = True
+    await Tortoise.init(**init_kwargs)
     await Tortoise.generate_schemas(safe=True)
     yield
     try:
         await Tortoise._drop_databases()
     except ConfigurationError:
         pass
+    try:
+        await Tortoise.close_connections()
+    except Exception:
+        pass
+    Tortoise._inited = False
 
 
 async def make_user(db, **kw):

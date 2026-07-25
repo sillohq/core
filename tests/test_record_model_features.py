@@ -1,8 +1,12 @@
+import inspect
+
 import pytest
 from tortoise import Tortoise, fields
 from tortoise.exceptions import ConfigurationError
 
 from sillo.record import Model
+
+_has_global_fallback = "_enable_global_fallback" in inspect.signature(Tortoise.init).parameters
 
 
 class RecordFeatureUser(Model):
@@ -36,10 +40,13 @@ class RecordFeatureUser(Model):
 
 @pytest.fixture(autouse=True)
 async def record_db():
-    await Tortoise.init(
+    init_kwargs = dict(
         db_url="sqlite://:memory:",
         modules={"models": ["tests.test_record_model_features"]},
     )
+    if _has_global_fallback:
+        init_kwargs["_enable_global_fallback"] = True
+    await Tortoise.init(**init_kwargs)
     await Tortoise.generate_schemas()
     yield
     RecordFeatureUser._scope_registry = None
@@ -47,6 +54,11 @@ async def record_db():
         await Tortoise._drop_databases()
     except ConfigurationError:
         pass
+    try:
+        await Tortoise.close_connections()
+    except Exception:
+        pass
+    Tortoise._inited = False
 
 
 async def test_accessors_mutators_and_casts_round_trip():
