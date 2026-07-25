@@ -84,6 +84,7 @@ class QueryParams(ImmutableMultiDict[str, str]):
         Raises:
             None: No exceptions are raised during encoding.
         """
+        return urlencode(self._list)
 
     def __repr__(self) -> str:
         """
@@ -100,6 +101,7 @@ class QueryParams(ImmutableMultiDict[str, str]):
         Raises:
             None: No exceptions are raised during representation.
         """
+        return f"QueryParams('{urlencode(self._list)}')"
 
     def __call__(self, *args: Any, **kwds: Any) -> Dict[str, Any]:
         """
@@ -197,6 +199,7 @@ class Headers(typing.Mapping[str, str]):
             List[Tuple[bytes, bytes]]: A list of lowercase header name and
             value byte pairs representing all stored headers.
         """
+        return list(self._list)
 
     def keys(self):
         """

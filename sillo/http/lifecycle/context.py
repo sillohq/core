@@ -107,7 +107,7 @@ class RequestContext:
         Raises:
             None.
         """
-        _current_context.reset(self._token)
+        _current_context.reset(self._token)  # ty: ignore[invalid-argument-type]
 
     def __getitem__(self, key: str) -> Any:
         """Retrieve a value from the context's data namespace by key.

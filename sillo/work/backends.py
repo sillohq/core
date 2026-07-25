@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 try:
     import redis.asyncio as aioredis  # type: ignore[import-untyped]
 except ImportError:
-    aioredis = None  # type: ignore[assignment]
+    aioredis = None  # ty: ignore[invalid-assignment]
 
 from .task import Task
 from .types import (

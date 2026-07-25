@@ -60,7 +60,7 @@ class PermissionMixin:
         """
         direct: set[str] = set()
         assignments = await UserPermission.filter(
-            user_id=self.identity
+            user_id=self.identity  # ty: ignore[unresolved-attribute]
         ).prefetch_related("permission")
         for a in assignments:
             direct.add(a.permission.name)

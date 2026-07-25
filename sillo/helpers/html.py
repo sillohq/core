@@ -107,8 +107,8 @@ def strip_tags(html: str) -> str:
 
 def sanitize_html(
     html: str,
-    allowed_tags: Optional[set] = None,
-    allowed_attrs: Optional[set] = None,
+    allowed_tags: Optional[set[str] | frozenset[str]] = None,
+    allowed_attrs: Optional[set[str] | frozenset[str]] = None,
     strip: bool = True,
 ) -> str:
     """Sanitize an HTML string by removing disallowed tags and dangerous attributes.

@@ -47,7 +47,7 @@ def _make_provider(key: str):
         Raises:
             [description]
         """
-        app = req.base_app
+        app = req.base_app  # ty: ignore[unresolved-attribute]
         return app.state.get(key) if hasattr(app, "state") else None
 
     return provider

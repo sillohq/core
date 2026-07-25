@@ -36,7 +36,7 @@ def pydantic_model_from_tortoise(
     exclude = exclude or []
     include = include or []
     optional_fields = optional_fields or []
-    meta = model_class._meta
+    meta = model_class._meta  # ty: ignore[unresolved-attribute]
     fields: Dict[str, Any] = {}
 
     for field_name, field_obj in meta.fields_map.items():
@@ -50,7 +50,7 @@ def pydantic_model_from_tortoise(
         is_required = not field_obj.null and not field_obj.pk
 
         if field_name in optional_fields or field_obj.null:
-            py_type = Optional[py_type]
+            py_type = Optional[py_type]  # ty: ignore[invalid-type-form]
             default = None
 
         if is_required and not field_obj.null:

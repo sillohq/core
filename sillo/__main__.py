@@ -15,7 +15,7 @@ ascii_art = f"""
 try:
     from sillo.cli import cli
 except ImportError:
-    cli = None  # type: ignore[assignment]
+    cli = None  # ty: ignore[invalid-assignment]
 
 if __name__ == "__main__":
     print(ascii_art)

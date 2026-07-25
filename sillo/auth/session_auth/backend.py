@@ -55,9 +55,9 @@ def login(
             indicating that the session middleware has not been installed.
     """
     assert "session" in request.scope, "No Session Middleware Installed"
-    if request.session.get(session_key):
-        del request.session[session_key]
-    request.session[session_key] = {
+    if request.session.get(session_key):  # ty: ignore[unresolved-attribute]
+        del request.session[session_key]  # ty: ignore[unresolved-attribute]
+    request.session[session_key] = {  # ty: ignore[unresolved-attribute]
         identifier: user.identity,
         "display_name": user.display_name,
     }
@@ -88,7 +88,7 @@ def logout(request: Request, session_key: str = DEFAULT_SESSION_KEY):
             indicating that the session middleware has not been installed.
     """
     assert "session" in request.scope, "No Session Middleware Installed"
-    del request.session[session_key]
+    del request.session[session_key]  # ty: ignore[unresolved-attribute]
 
 
 class SessionAuthBackend(AuthenticationBackend):

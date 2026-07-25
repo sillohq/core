@@ -251,7 +251,7 @@ def collapse_excgroups() -> typing.Generator[None, None, None]:
         yield
     except BaseException as exc:
         if has_exceptiongroups:
-            while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
-                exc = exc.exceptions[0]  # pragma: no cover
+            while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:  # ty: ignore[unresolved-attribute]
+                exc = exc.exceptions[0]  # ty: ignore[unresolved-attribute]  # pragma: no cover
 
         raise exc

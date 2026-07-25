@@ -43,7 +43,7 @@ from typing import TYPE_CHECKING, Optional
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.exceptions import AuthenticationFailed, PermissionDenied
-from sillo.users.base import UserProtocol
+from sillo.users.base import BaseUser, UserProtocol
 from sillo.users.simple import SimpleUser
 
 if TYPE_CHECKING:
@@ -137,7 +137,7 @@ class useAuth:
         self.scopes: list[str] = scopes or []
         self.permissions: list[str] = permissions or []
         self.backends: Optional[list[AuthenticationBackend]] = backends
-        self.user_model: type[BaseUser] = user_model  # type: ignore[assignment]
+        self.user_model: type[BaseUser] = user_model  # ty: ignore[invalid-assignment]
         self.required: bool = required
 
     async def authenticate(self, request: "Request") -> bool:
@@ -232,7 +232,7 @@ class useAuth:
         """
         user_model = self._resolve_user_model()
 
-        for backend in self.backends:  # type: ignore[union-attr]
+        for backend in self.backends:  # ty: ignore[not-iterable]
             try:
                 result = await backend.authenticate(request)
                 if result.success:

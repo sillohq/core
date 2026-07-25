@@ -116,7 +116,7 @@ class EmailMessage:
         Raises:
             [description]
         """
-        self.attachments.append(
+        self.attachments.append(  # ty: ignore[unresolved-attribute]
             EmailAttachment(
                 filename=filename,
                 content=content,
@@ -138,7 +138,7 @@ class EmailMessage:
         Raises:
             [description]
         """
-        self.headers[name] = value
+        self.headers[name] = value  # ty: ignore[invalid-assignment]
 
     def to_mime_message(self, from_email: Optional[str] = None) -> MIMEMultipart:
         """To Mime Message
@@ -165,14 +165,14 @@ class EmailMessage:
             mapping = {1: "High", 3: "Normal", 5: "Low"}
             msg["X-Priority"] = str(self.priority)
             msg["Priority"] = mapping.get(self.priority, "Normal")
-        for name, value in self.headers.items():
+        for name, value in self.headers.items():  # ty: ignore[unresolved-attribute]
             msg[name] = value
         if self.body:
             msg.attach(MIMEText(self.body, "plain", "utf-8"))
         if self.html_body:
             msg.attach(MIMEText(self.html_body, "html", "utf-8"))
-        for att in self.attachments:
-            part = MIMEBase(*att.content_type.split("/", 1))
+        for att in self.attachments:  # ty: ignore[not-iterable]
+            part = MIMEBase(*att.content_type.split("/", 1))  # ty: ignore[unresolved-attribute]
             part.set_payload(att.content)
             import email.encoders
 

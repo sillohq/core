@@ -18,7 +18,7 @@ from .config import DatabaseConfig
 try:
     from tortoise.context import _current_context
 except ModuleNotFoundError:
-    _current_context = None  # type: ignore[assignment]
+    _current_context = None  # ty: ignore[invalid-assignment]
 
 logger = logging.getLogger("sillo.record")
 

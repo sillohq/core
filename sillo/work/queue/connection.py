@@ -23,7 +23,7 @@ logger = logging.getLogger("sillo.work.queue.connection")
 try:
     import redis.asyncio as aioredis  # type: ignore[import-untyped]
 except ImportError:
-    aioredis = None  # type: ignore[assignment]
+    aioredis = None  # ty: ignore[invalid-assignment]
 
 
 class QueueConnection(ABC):

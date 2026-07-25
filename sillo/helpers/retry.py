@@ -5,7 +5,7 @@ import functools
 import inspect
 import random
 import time
-from typing import Any, Callable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, List, Optional, Tuple, Type, TypeVar, Union, cast
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -25,7 +25,7 @@ class RetryError(Exception):
         last_exception: The last exception caught before retries were exhausted.
     """
 
-    def __init__(self, message: str, last_exception: Optional[Exception] = None):
+    def __init__(self, message: str, last_exception: Optional[BaseException] = None):
         """Initialize a RetryError with a message and optional wrapped exception.
 
         Args:
@@ -171,8 +171,8 @@ def retry(
             raise RetryError("Unexpected retry exit", last_exc)
 
         if inspect.iscoroutinefunction(func):
-            return async_wrapper  # type: ignore[return-value]
-        return wrapper  # type: ignore[return-value]
+            return cast(F, async_wrapper)
+        return cast(F, wrapper)
 
     return decorator
 

@@ -15,7 +15,7 @@ try:
 except ImportError:
     _crypto_available = False
     Fernet = None  # type: ignore
-    PBKDF2 = None  # type: ignore
+    PBKDF2 = None
     hashes = None  # type: ignore
 
 
@@ -55,7 +55,7 @@ def generate_key() -> bytes:
         ImportError: If the ``cryptography`` package is not installed.
     """
     _ensure_crypto()
-    return Fernet.generate_key()
+    return Fernet.generate_key()  # ty: ignore[unresolved-attribute]
 
 
 def encrypt(value: str, key: bytes) -> str:
@@ -77,7 +77,7 @@ def encrypt(value: str, key: bytes) -> str:
         ImportError: If the ``cryptography`` package is not installed.
     """
     _ensure_crypto()
-    f = Fernet(key)
+    f = Fernet(key)  # ty: ignore[call-non-callable]
     return f.encrypt(value.encode()).decode()
 
 
@@ -103,7 +103,7 @@ def decrypt(token: str, key: bytes) -> str:
             with, or was encrypted with a different key.
     """
     _ensure_crypto()
-    f = Fernet(key)
+    f = Fernet(key)  # ty: ignore[call-non-callable]
     return f.decrypt(token.encode()).decode()
 
 
@@ -142,8 +142,8 @@ def derive_key(
     _ensure_crypto()
     if salt is None:
         salt = secrets.token_bytes(16)
-    kdf = PBKDF2(
-        algorithm=hashes.SHA256(),
+    kdf = PBKDF2(  # ty: ignore[call-non-callable]
+        algorithm=hashes.SHA256(),  # ty: ignore[unresolved-attribute]
         length=length,
         salt=salt,
         iterations=iterations,
@@ -170,13 +170,19 @@ def sign_value(value: str, secret: str, algorithm: str = "sha256") -> str:
     Returns:
         A signed token string in the format ``"<base64url_payload>.<hex_signature>"``.
     """
+    secret_bytes: bytes
+    value_bytes: bytes
     if isinstance(secret, str):
-        secret = secret.encode()
+        secret_bytes = secret.encode()
+    else:
+        secret_bytes = secret
     if isinstance(value, str):
-        value = value.encode()
+        value_bytes = value.encode()
+    else:
+        value_bytes = value
 
-    signature = _hmac.new(secret, value, algorithm).hexdigest()
-    payload = base64.urlsafe_b64encode(value).decode().rstrip("=")
+    signature = _hmac.new(secret_bytes, value_bytes, algorithm).hexdigest()
+    payload = base64.urlsafe_b64encode(value_bytes).decode().rstrip("=")
     return f"{payload}.{signature}"
 
 
@@ -209,14 +215,17 @@ def unsign_value(
         BadSignature: If the signature is invalid, the token format is
             malformed, or the secret does not match.
     """
+    secret_bytes: bytes
     if isinstance(secret, str):
-        secret = secret.encode()
+        secret_bytes = secret.encode()
+    else:
+        secret_bytes = secret
 
     try:
         payload_b64, _, signature = signed.rpartition(".")
         value = base64.urlsafe_b64decode(payload_b64 + "==").decode()
 
-        expected = _hmac.new(secret, value.encode(), algorithm).hexdigest()
+        expected = _hmac.new(secret_bytes, value.encode(), algorithm).hexdigest()
         if not _hmac.compare_digest(expected, signature):
             raise BadSignature("Invalid signature")
     except Exception:

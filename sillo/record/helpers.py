@@ -24,7 +24,7 @@ from typing import Annotated, Any, Dict, List, Optional
 
 from typing_extensions import Doc
 
-from aerich import Command  # type: ignore[import-untyped]
+from aerich import Command
 
 
 class Seeder:
@@ -69,7 +69,7 @@ class Seeder:
         """Execute all registered seeds. Returns number of rows created."""
         count = 0
         for model, data in self._records:
-            await model.create(**data)
+            await model.create(**data)  # ty: ignore[unresolved-attribute]
             count += 1
         return count
 
@@ -204,7 +204,7 @@ class MigrationHelper:
             app="models",
             location=self._location,
         )
-        await cmd.downgrade(target_version=target)
+        await cmd.downgrade(target, delete=False)  # ty: ignore[invalid-argument-type]
 
     async def history(self) -> list:
         """Show migration history."""

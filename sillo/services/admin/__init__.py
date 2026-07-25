@@ -111,7 +111,7 @@ class AdminSite:
         """Register auth middleware, static files, and routes on startup."""
         app.use(self.auth.middleware)
         self._mount_static(app)
-        app.on_startup(lambda: self._register_routes(app))
+        app.on_startup(lambda: self._register_routes(app))  # ty: ignore[invalid-argument-type]
         self._setup = True
 
     def _mount_static(self, app: silloApp) -> None:

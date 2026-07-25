@@ -160,7 +160,7 @@ class auth(RouteDecorator):
                 return await handler(*args, **kwargs)
             return handler(*args, **kwargs)
 
-        wrapper._is_wrapped = True
+        wrapper._is_wrapped = True  # ty: ignore[unresolved-attribute]
         return wrapper
 
 
@@ -273,5 +273,5 @@ class has_permission(RouteDecorator):
                 return await handler(*args, **kwargs)
             return handler(*args, **kwargs)
 
-        wrapper._is_wrapped = True
+        wrapper._is_wrapped = True  # ty: ignore[unresolved-attribute]
         return wrapper

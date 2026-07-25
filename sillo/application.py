@@ -62,7 +62,7 @@ import warnings
 try:
     import uvicorn  # type: ignore[import-untyped]
 except ImportError:
-    uvicorn = None  # type: ignore[assignment]
+    uvicorn = None  # type: ignore[assignment]  # ty: ignore[invalid-assignment]
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
@@ -554,9 +554,9 @@ class silloApp:
                         # If a lifespan context manager is provided, use it
                         self.lifespan_manager: Any = self.lifespan_context(self)
                         if self._is_async_context_manager(self.lifespan_manager):
-                            returned_state = await self.lifespan_manager.__aenter__()
+                            returned_state = await self.lifespan_manager.__aenter__()  # ty: ignore[unresolved-attribute]
                         else:
-                            returned_state = self.lifespan_manager.__enter__()
+                            returned_state = self.lifespan_manager.__enter__()  # ty: ignore[unresolved-attribute]
                         if returned_state:
                             self.state.update(returned_state)
                     else:
@@ -572,9 +572,9 @@ class silloApp:
                     if self.lifespan_context:
                         # If a lifespan context manager is provided, use it
                         if self._is_async_context_manager(self.lifespan_manager):
-                            await self.lifespan_manager.__aexit__(None, None, None)
+                            await self.lifespan_manager.__aexit__(None, None, None)  # ty: ignore[unresolved-attribute]
                         else:
-                            self.lifespan_manager.__exit__(None, None, None)
+                            self.lifespan_manager.__exit__(None, None, None)  # ty: ignore[unresolved-attribute]
                     else:
                         # Otherwise, fall back to the default shutdown handlers
                         await self._shutdown()

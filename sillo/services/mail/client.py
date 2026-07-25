@@ -57,7 +57,7 @@ class MailClient:
         Raises:
             [description]
         """
-        path = Path(self.config.template_directory)
+        path = Path(self.config.template_directory)  # ty: ignore[invalid-argument-type]
         if not path.exists():
             logger.warning(f"Template directory not found: {path}")
             return
@@ -220,7 +220,7 @@ class MailClient:
                 if isinstance(att, dict):
                     message.add_attachment(**att)
                 else:
-                    message.add_attachment(att)
+                    message.add_attachment(att)  # ty: ignore[missing-argument]
         return await self.send_message(message)
 
     async def send_template_email(
@@ -277,9 +277,9 @@ class MailClient:
             mime_message = message.to_mime_message(from_email)
             if self.config.default_cc and not message.cc:
                 mime_message["Cc"] = ", ".join(self.config.default_cc)
-                message.cc.extend(self.config.default_cc)
+                message.cc.extend(self.config.default_cc)  # ty: ignore[unresolved-attribute]
             if self.config.default_bcc and not message.bcc:
-                message.bcc.extend(self.config.default_bcc)
+                message.bcc.extend(self.config.default_bcc)  # ty: ignore[unresolved-attribute]
             recipients = list(message.to)
             if message.cc:
                 recipients.extend(message.cc)
@@ -348,10 +348,10 @@ class MailClient:
             return
         try:
             html = self._template_env.get_template(f"{message.template_name}.html")
-            message.html_body = html.render(**message.template_context)
+            message.html_body = html.render(**message.template_context)  # ty: ignore[invalid-argument-type]
             try:
                 text = self._template_env.get_template(f"{message.template_name}.txt")
-                message.body = text.render(**message.template_context)
+                message.body = text.render(**message.template_context)  # ty: ignore[invalid-argument-type]
             except jinja2.TemplateNotFound:
                 pass
         except jinja2.TemplateNotFound as e:

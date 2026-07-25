@@ -43,8 +43,8 @@ class CacheConfig:
     ttl: int = 300
     key_prefix: Optional[str] = None
     tags: Optional[list[str]] = None
-    status_codes: set[int] = frozenset({200})
-    methods: set[str] = frozenset({"GET"})
+    status_codes: set[int] = frozenset({200})  # ty: ignore[invalid-assignment]
+    methods: set[str] = frozenset({"GET"})  # ty: ignore[invalid-assignment]
     include_query: bool = True
     include_headers: bool = False
     cache_key_headers: Optional[list[str]] = None

@@ -373,7 +373,7 @@ class Group(Model):
     # ── lifecycle ─────────────────────────────────────────────────
 
     @classmethod
-    async def get_or_create(cls, name: str, description: str = None) -> Group:
+    async def get_or_create(cls, name: str, description: str = None) -> Group:  # ty: ignore[invalid-method-override]
         """Fetch an existing group by name or create a new one if it does not exist.
 
         Delegates to the parent class's ``get_or_create`` via ``super()`` to

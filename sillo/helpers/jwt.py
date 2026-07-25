@@ -17,9 +17,9 @@ try:
 except ImportError:
     _jwt_available = False
     pyjwt = None  # type: ignore
-    ExpiredSignatureError = Exception
-    InvalidTokenError = Exception
-    DecodeError = Exception
+    ExpiredSignatureError = Exception  # ty: ignore[invalid-assignment]
+    InvalidTokenError = Exception  # ty: ignore[invalid-assignment]
+    DecodeError = Exception  # ty: ignore[invalid-assignment]
 
 
 class TokenError(Exception):
@@ -149,7 +149,7 @@ def decode(
             token,
             secret,
             algorithms=algorithms or ["HS256"],
-            options=options,
+            options=options,  # ty: ignore[invalid-argument-type]
             audience=audience,
             issuer=issuer,
             leeway=leeway,
@@ -267,7 +267,7 @@ def get_unverified_claims(token: str) -> Optional[Dict[str, Any]]:
     _ensure_jwt()
     try:
         return json.loads(
-            pyjwt.utils.base64url_decode(token.split(".")[1].encode()).decode()
+            pyjwt.utils.base64url_decode(token.split(".")[1].encode()).decode()  # ty: ignore[possibly-missing-submodule]
         )
     except Exception:
         return None

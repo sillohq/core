@@ -182,7 +182,7 @@ class UserProtocol:
         Raises:
             [description]
         """
-        return self.is_active and self.is_staff  # pyright: ignore[reportAttributeAccessIssue]
+        return self.is_active and self.is_staff  # ty: ignore[unresolved-attribute]  # pyright: ignore[reportAttributeAccessIssue]
 
     def __str__(self) -> str:
         """Str

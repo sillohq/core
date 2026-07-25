@@ -372,7 +372,7 @@ class Collection:
         """
         return list(self._items)
 
-    def to_dict(self) -> List[Dict[str, Any]]:
+    def to_dict(self) -> List[Any]:
         """To Dict
 
         Returns:

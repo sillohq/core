@@ -63,7 +63,7 @@ class CSRFConfig:
             "secret_key": secret_key,
         }
         config.update(kwargs)
-        self._config = config
+        self._config: dict[str, Any] = config
 
     def __getattr__(self, name: str):
         if name == "_config":

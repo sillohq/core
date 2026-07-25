@@ -69,7 +69,7 @@ class Supervisor:
         self.max_restarts = max_restarts
         self.base_delay = base_delay
         self.max_delay = max_delay
-        self.name = name or func.__name__
+        self.name = name or func.__name__  # ty: ignore[unresolved-attribute]
         self._restarts = 0
         self._current_task: Optional[BackgroundTask] = None
         self._running = False

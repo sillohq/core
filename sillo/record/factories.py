@@ -29,7 +29,7 @@ class Factory:
     returning a dict of default attributes).
     """
 
-    model: Type = None
+    model: Optional[Type] = None
     definition: Callable[[], Dict[str, Any]] = lambda: {}
 
     @classmethod
@@ -41,7 +41,7 @@ class Factory:
     ) -> Any:
         """Create an unsaved model instance."""
         data = {**cls.definition(), **(overrides or {})}
-        return cls.model(**data)
+        return cls.model(**data)  # ty: ignore[call-non-callable]
 
     @classmethod
     async def create(

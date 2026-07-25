@@ -24,7 +24,7 @@ from typing import Any, Callable, Dict, Optional
 class CastRegistry:
     """Registry of named casters."""
 
-    _builtins: Dict[str, Callable] = {}
+    _builtins: Dict[str, tuple[Callable, Callable]] = {}
 
     @classmethod
     def register(cls, name: str, encoder: Callable, decoder: Callable) -> None:

@@ -32,7 +32,7 @@ from .base import (
 try:
     import redis.asyncio as aioredis  # type: ignore[import-untyped]
 except ImportError:
-    aioredis = None  # type: ignore[assignment]
+    aioredis = None  # ty: ignore[invalid-assignment]
 
 if typing.TYPE_CHECKING:
     pass
@@ -103,7 +103,7 @@ class MemoryCache(BaseCache):
         )
         self.max_size = max_size
         # OrderedDict doubles as the LRU: most-recently-used at the end.
-        self._store: collections.OrderedDict[str, "_Entry"] = collections.OrderedDict()
+        self._store: collections.OrderedDict[str, "_Entry"] = collections.OrderedDict()  # ty: ignore[unresolved-reference]
         self._tags: Dict[str, set] = {}
 
     # ---- internal entry type ---------------------------------------

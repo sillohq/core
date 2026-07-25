@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 try:
     import ulid
 except ImportError:
-    ulid = None  # type: ignore[assignment]
+    ulid = None  # ty: ignore[invalid-assignment]
 
 
 class SoftDeletesMixin:
@@ -31,7 +31,7 @@ class SoftDeletesMixin:
             [description]
         """
         self.deleted_at = datetime.now(timezone.utc)
-        await self.save(update_fields=["deleted_at"])
+        await self.save(update_fields=["deleted_at"])  # ty: ignore[unresolved-attribute]
 
     async def restore(self) -> None:
         """Restore
@@ -43,7 +43,7 @@ class SoftDeletesMixin:
             [description]
         """
         self.deleted_at = None
-        await self.save(update_fields=["deleted_at"])
+        await self.save(update_fields=["deleted_at"])  # ty: ignore[unresolved-attribute]
 
     async def force_delete(self) -> None:
         """Force Delete
@@ -54,7 +54,7 @@ class SoftDeletesMixin:
         Raises:
             [description]
         """
-        await self.delete()
+        await self.delete()  # ty: ignore[unresolved-attribute]
 
     @classmethod
     def active(cls):
@@ -66,7 +66,7 @@ class SoftDeletesMixin:
         Raises:
             [description]
         """
-        return cls.filter(deleted_at__isnull=True)
+        return cls.filter(deleted_at__isnull=True)  # ty: ignore[unresolved-attribute]
 
     @classmethod
     def only_trashed(cls):
@@ -78,7 +78,7 @@ class SoftDeletesMixin:
         Raises:
             [description]
         """
-        return cls.filter(deleted_at__isnull=False)
+        return cls.filter(deleted_at__isnull=False)  # ty: ignore[unresolved-attribute]
 
     @classmethod
     def with_trashed(cls):
@@ -90,7 +90,7 @@ class SoftDeletesMixin:
         Raises:
             [description]
         """
-        return cls.all()
+        return cls.all()  # ty: ignore[unresolved-attribute]
 
     @property
     def is_trashed(self) -> bool:
@@ -116,7 +116,7 @@ class TimestampsMixin:
     async def touch(self) -> None:
         """Update ``updated_at`` to now and save."""
         self.updated_at = datetime.now(timezone.utc)
-        await self.save(update_fields=["updated_at"])
+        await self.save(update_fields=["updated_at"])  # ty: ignore[unresolved-attribute]
 
     def set_created_at(self) -> None:
         """Set Created At
@@ -143,7 +143,7 @@ class HasUlidMixin:
         Raises:
             [description]
         """
-        return str(ulid.new())
+        return str(ulid.new())  # ty: ignore[unresolved-attribute]
 
 
 class SerializesToDictMixin:
@@ -165,7 +165,7 @@ class SerializesToDictMixin:
             [description]
         """
         data = {}
-        for field_name in self._meta.fields:
+        for field_name in self._meta.fields:  # ty: ignore[unresolved-attribute]
             if exclude and field_name in exclude:
                 continue
             if include and field_name not in include:
@@ -211,7 +211,7 @@ class ValidatesBeforeSaveMixin:
             [description]
         """
         await self.validate()
-        return await super().save(*args, **kwargs)
+        return await super().save(*args, **kwargs)  # ty: ignore[unresolved-attribute]
 
 
 class CascadesDeletesMixin:
@@ -237,4 +237,4 @@ class CascadesDeletesMixin:
             if related is not None:
                 if hasattr(related, "delete"):
                     await related.delete()
-        return await super().delete()
+        return await super().delete()  # ty: ignore[unresolved-attribute]

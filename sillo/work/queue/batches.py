@@ -124,7 +124,7 @@ class Batch:
         self._finished = True
         self._done.set()
         if self._on_complete:
-            asyncio.create_task(self._on_complete(self))
+            asyncio.create_task(self._on_complete(self))  # ty: ignore[invalid-argument-type]
 
     async def wait(self, timeout: Optional[float] = None) -> None:
         """Block until the batch completes or times out."""

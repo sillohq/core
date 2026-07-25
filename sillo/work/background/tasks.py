@@ -85,7 +85,7 @@ class BackgroundTask:
         self._task_obj = Task(
             func,
             *args,
-            name=name or func.__name__,
+            name=name or func.__name__,  # ty: ignore[unresolved-attribute]
             metadata=metadata,
             timeout=timeout,
             **kwargs,

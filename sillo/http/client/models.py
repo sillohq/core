@@ -107,7 +107,7 @@ class ResponseValidator:
         except ValidationError as exc:
             raise HTTPValidationError(
                 f"Response validation failed: {exc}",
-                validation_errors=exc.errors(),
+                validation_errors=exc.errors(),  # ty: ignore[invalid-argument-type]
                 response_body=response_body,
             ) from exc
 

@@ -116,7 +116,7 @@ async def wrap_http_exceptions(
                 exc.status_code
             )
             if handler:
-                return await handler(request, response, exc)
+                return await handler(request, response, exc)  # ty: ignore[invalid-await]
 
         if handler is None:
             handler = _lookup_exception_handler(exception_handlers, exc)

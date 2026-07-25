@@ -159,7 +159,7 @@ class CompoundTrigger:
         """Calculate the next fire time based on the compound logic."""
         candidates = []
         for t in self.triggers:
-            nf = t.next_fire(last_fire)
+            nf = t.next_fire(last_fire)  # ty: ignore[unresolved-attribute]
             if nf is not None:
                 candidates.append(nf)
         if not candidates:

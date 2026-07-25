@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Awaitable, Callable, Dict, List
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Optional
 
 logger = logging.getLogger("sillo.record.events")
 
@@ -246,7 +246,7 @@ class HasEvents:
             Raises:
                 [description]
             """
-            cls._events.on(event, func)
+            cls._events.on(event, func)  # ty: ignore[unresolved-attribute]
             return func
 
         return decorator
@@ -255,7 +255,7 @@ class HasEvents:
     def observe(cls, observer: ModelObserver) -> None:
         """Register an observer."""
         cls._ensure_events()
-        cls._events.observe(observer)
+        cls._events.observe(observer)  # ty: ignore[unresolved-attribute]
 
     @classmethod
     async def fire_event(cls, event: str, instance) -> None:

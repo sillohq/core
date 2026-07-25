@@ -78,7 +78,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_cookie_name", "session_id")
+        return str(self._config.get("session_cookie_name", "session_id"))
 
     @property
     def session_expiration_time(self) -> int:
@@ -90,7 +90,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_expiration_time", 86400)
+        return int(self._config.get("session_expiration_time", 86400))  # ty: ignore[invalid-argument-type]
 
     @property
     def session_permanent(self) -> bool:
@@ -102,7 +102,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_permanent", True)
+        return bool(self._config.get("session_permanent", True))
 
     @property
     def session_refresh_each_request(self) -> bool:
@@ -114,7 +114,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_refresh_each_request", True)
+        return bool(self._config.get("session_refresh_each_request", True))
 
     @property
     def session_cookie_secure(self) -> bool:
@@ -126,7 +126,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_cookie_secure", True)
+        return bool(self._config.get("session_cookie_secure", True))
 
     @property
     def session_cookie_httponly(self) -> bool:
@@ -138,7 +138,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_cookie_httponly", True)
+        return bool(self._config.get("session_cookie_httponly", True))
 
     @property
     def session_cookie_samesite(self) -> Literal["lax", "strict", "none"]:
@@ -150,7 +150,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_cookie_samesite", "lax")
+        return str(self._config.get("session_cookie_samesite", "lax"))  # ty: ignore[invalid-return-type]
 
     @property
     def session_cookie_path(self) -> str:
@@ -162,7 +162,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_cookie_path", "/")
+        return str(self._config.get("session_cookie_path", "/"))
 
     @property
     def session_cookie_domain(self) -> Optional[str]:
@@ -174,7 +174,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_cookie_domain")
+        return self._config.get("session_cookie_domain")  # ty: ignore[invalid-return-type]
 
     @property
     def session_file_storage_path(self) -> Optional[str]:
@@ -186,7 +186,7 @@ class SessionConfig:
         Raises:
             [description]
         """
-        return self._config.get("session_file_storage_path")
+        return self._config.get("session_file_storage_path")  # ty: ignore[invalid-return-type]
 
     @property
     def manager(self) -> Optional[Any]:

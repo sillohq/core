@@ -84,8 +84,8 @@ def listen(*events: Type[Event], priority: int = 0) -> Callable:
         Raises:
             [description]
         """
-        func._listens_to = events
-        func._listener_priority = priority
+        func._listens_to = events  # ty: ignore[unresolved-attribute]
+        func._listener_priority = priority  # ty: ignore[unresolved-attribute]
         return func
 
     return decorator
@@ -143,7 +143,7 @@ class EventDispatcher:
             callback=callback,
             event_type=event_type,
             priority=priority,
-            name=name or callback.__name__,
+            name=name or callback.__name__,  # ty: ignore[unresolved-attribute]
         )
         if event_type not in self._listeners:
             self._listeners[event_type] = []
@@ -162,7 +162,7 @@ class EventDispatcher:
                 callback=callback,
                 event_type=Event,
                 priority=priority,
-                name=callback.__name__,
+                name=callback.__name__,  # ty: ignore[unresolved-attribute]
             )
         )
         self._wildcards.sort(key=lambda r: -r.priority)

@@ -172,13 +172,13 @@ class CSRFMiddleware(BaseMiddleware):
 
     def _generate_csrf_token(self) -> str:
         """Generate a secure CSRF token."""
-        return self.serializer.dumps(secrets.token_urlsafe(32))
+        return self.serializer.dumps(secrets.token_urlsafe(32))  # ty: ignore[unresolved-attribute]
 
     def _csrf_tokens_match(self, token1: str, token2: str) -> bool:
         """Compare two CSRF tokens securely."""
         try:
-            decoded1 = self.serializer.loads(token1)
-            decoded2 = self.serializer.loads(token2)
+            decoded1 = self.serializer.loads(token1)  # ty: ignore[unresolved-attribute]
+            decoded2 = self.serializer.loads(token2)  # ty: ignore[unresolved-attribute]
             return secrets.compare_digest(decoded1, decoded2)
         except BadSignature:
             return False

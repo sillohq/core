@@ -98,8 +98,8 @@ def shell(app_path: str, ipython: bool = False):
             from sillo.core.http.request import Request
             from sillo.core.http.response import Response
 
-            shell_vars["Request"] = Request
-            shell_vars["Response"] = Response
+            shell_vars["Request"] = Request  # ty: ignore[invalid-assignment]
+            shell_vars["Response"] = Response  # ty: ignore[invalid-assignment]
             _echo_info("Request/Response classes available")
         except ImportError:
             pass

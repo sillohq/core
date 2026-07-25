@@ -157,7 +157,7 @@ class HTTPClient:
             headers["user-agent"] = self._config.user_agent
 
         self._state.client = httpx.AsyncClient(
-            base_url=self._config.base_url or None,
+            base_url=self._config.base_url or None,  # ty: ignore[invalid-argument-type]
             timeout=timeout,
             limits=pool_config.build_limits(),
             verify=self._config.verify_ssl,
@@ -230,7 +230,7 @@ class HTTPClient:
             method=method,
             url=url,
             content=content,
-            data=data,
+            data=data,  # ty: ignore[invalid-argument-type]
             json=json,
             files=files,
             params=params,
@@ -264,7 +264,7 @@ class HTTPClient:
         try:
             if mw_chain and mw_chain._middlewares:
                 response = None
-                async for r in mw_chain.run(request, self._http_client.send):
+                async for r in mw_chain.run(request, self._http_client.send):  # ty: ignore[invalid-argument-type]
                     response = r
                 if response is None:
                     raise HTTPStatusError(

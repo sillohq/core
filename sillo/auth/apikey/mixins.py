@@ -53,7 +53,7 @@ class ApiKeyUserMixin:
                 an integer for database storage.
         """
         return await ApiKeyManager().create_key(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             name=name,
             scopes=scopes,
             expires_at=expires_at,
@@ -78,7 +78,7 @@ class ApiKeyUserMixin:
             ValueError: If the user identity cannot be converted to
                 an integer for the database query.
         """
-        return await ApiKeyManager().get_for_user(int(str(self.identity)))
+        return await ApiKeyManager().get_for_user(int(str(self.identity)))  # ty: ignore[unresolved-attribute]
 
     async def revoke_all_api_keys(self) -> int:
         """Revoke every active API key belonging to the current user.
@@ -97,7 +97,7 @@ class ApiKeyUserMixin:
             ValueError: If the user identity cannot be converted to
                 an integer for the database operation.
         """
-        return await ApiKeyManager().revoke_all_for_user(int(str(self.identity)))
+        return await ApiKeyManager().revoke_all_for_user(int(str(self.identity)))  # ty: ignore[unresolved-attribute]
 
     async def revoke_api_key(self, key_id: int) -> bool:
         """Revoke a single API key by its database identifier.
@@ -123,7 +123,7 @@ class ApiKeyUserMixin:
         """
         apikey = await ApiKey.filter(
             id=key_id,
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             is_active=True,
         ).first()
         if apikey:

@@ -147,8 +147,8 @@ def deprecated(
             return await func(*args, **kwargs)
 
         if inspect.iscoroutinefunction(func):
-            return async_wrapper  # type: ignore[return-value]
-        return wrapper  # type: ignore[return-value]
+            return async_wrapper  # ty: ignore[invalid-return-type]
+        return wrapper  # ty: ignore[invalid-return-type]
 
     return decorator
 
@@ -202,7 +202,7 @@ def deprecate_parameter(
             return await func(*args, **kwargs)
 
         if inspect.iscoroutinefunction(func):
-            return async_wrapper  # type: ignore[return-value]
-        return wrapper  # type: ignore[return-value]
+            return async_wrapper  # ty: ignore[invalid-return-type]
+        return wrapper  # ty: ignore[invalid-return-type]
 
     return decorator

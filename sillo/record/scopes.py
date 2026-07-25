@@ -79,7 +79,7 @@ class HasScopes:
     @classmethod
     def without_global_scopes(cls):
         """Return a queryset without global scopes applied."""
-        return cls._meta.manager.without_global_scopes()
+        return cls._meta.manager.without_global_scopes()  # ty: ignore[unresolved-attribute]
 
     @classmethod
     def apply_scopes(cls, queryset):
@@ -125,11 +125,11 @@ class RecordManager(Manager):
     """Default manager that applies model global scopes."""
 
     def get_queryset(self) -> RecordQuerySet:
-        queryset = RecordQuerySet(self._model)
+        queryset = RecordQuerySet(self._model)  # ty: ignore[invalid-argument-type]
         apply_scopes = getattr(self._model, "apply_scopes", None)
         if apply_scopes is not None:
             return apply_scopes(queryset)
         return queryset
 
     def without_global_scopes(self) -> RecordQuerySet:
-        return RecordQuerySet(self._model)
+        return RecordQuerySet(self._model)  # ty: ignore[invalid-argument-type]

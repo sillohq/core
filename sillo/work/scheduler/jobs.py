@@ -92,7 +92,7 @@ class ScheduledJob:
             [description]
         """
         self.id = id or str(uuid4())
-        self.name = name or func.__name__
+        self.name = name or func.__name__  # ty: ignore[unresolved-attribute]
         self.func = func
         self.trigger = trigger
         self.args = args

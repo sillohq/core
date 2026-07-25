@@ -129,7 +129,7 @@ class RateLimitMiddleware(BaseMiddleware):
             [description]
         """
         if callable(self.config.on_exceed):
-            return self.config.on_exceed(request, response, result)
+            return self.config.on_exceed(request, response, result)  # ty: ignore[call-top-callable, too-many-positional-arguments]
         retry_after = max(int(result.retry_after), 1)
         return response.json(
             {

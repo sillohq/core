@@ -167,7 +167,7 @@ def cache(
             if key_prefix:
                 key_parts.append(key_prefix)
             # Module + qualname gives global uniqueness across the codebase.
-            key_parts.append(f"{func.__module__}.{func.__qualname__}")
+            key_parts.append(f"{func.__module__}.{func.__qualname__}")  # ty: ignore[unresolved-attribute]
             call_args = list(args)
             if _has_self:
                 call_args = call_args[1:]  # drop bound instance/class
@@ -345,8 +345,8 @@ def cache(
             return await effective_backend.delete(build_key(args, kwargs))
 
         wrapper = _async_wrapper if func_is_async else _sync_wrapper
-        wrapper.cache_backend = backend  # type: ignore[attr-defined]
-        wrapper.invalidate = _invalidate  # type: ignore[attr-defined]
+        wrapper.cache_backend = backend  # ty: ignore[invalid-assignment]
+        wrapper.invalidate = _invalidate  # ty: ignore[invalid-assignment]
         return wrapper
 
     return decorator

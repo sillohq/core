@@ -52,7 +52,7 @@ class SessionUserMixin:
             be converted to an integer for the foreign key lookup.
         """
         return await Session.create(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             session_key=session_key,
             ip_address=ip_address,
             user_agent=user_agent,
@@ -82,7 +82,7 @@ class SessionUserMixin:
         """
         now = datetime.now(timezone.utc)
         return await Session.filter(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             is_active=True,
             expires_at__gt=now,
         ).all()
@@ -105,7 +105,7 @@ class SessionUserMixin:
             ValueError: If the user's ``identity`` attribute cannot
             be converted to an integer for the database query.
         """
-        return await Session.terminate_all_for_user(int(str(self.identity)))
+        return await Session.terminate_all_for_user(int(str(self.identity)))  # ty: ignore[unresolved-attribute]
 
     async def logout_session(self, session_key: str) -> bool:
         """Terminate a specific session identified by its session key.
@@ -128,7 +128,7 @@ class SessionUserMixin:
             be converted to an integer for the database query.
         """
         session = await Session.filter(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             session_key=session_key,
             is_active=True,
         ).first()
@@ -158,7 +158,7 @@ class SessionUserMixin:
         """
         now = datetime.now(timezone.utc)
         return await Session.filter(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             is_active=True,
             expires_at__gt=now,
         ).count()

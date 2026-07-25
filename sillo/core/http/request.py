@@ -553,6 +553,9 @@ async def empty_receive() -> typing.NoReturn:
         RuntimeError: Always raised with a message indicating that the
             receive channel has not been made available.
     """
+    raise RuntimeError(
+        "Cannot receive. No receive channel has been made available."
+    )
 
 
 async def empty_send(message: Message) -> typing.NoReturn:
@@ -576,6 +579,9 @@ async def empty_send(message: Message) -> typing.NoReturn:
         RuntimeError: Always raised with a message indicating that the
             send channel has not been made available.
     """
+    raise RuntimeError(
+        "Cannot send. No send channel has been made available."
+    )
 
 
 class Request(HTTPConnection):

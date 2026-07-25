@@ -53,9 +53,9 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         print(user.to_dict())
     """
 
-    created_at: ClassVar[CreatedAtField] = CreatedAtField()
-    updated_at: ClassVar[UpdatedAtField] = UpdatedAtField()
-    deleted_at: ClassVar[SoftDeleteField] = SoftDeleteField()
+    created_at: ClassVar[CreatedAtField] = CreatedAtField()  # ty: ignore[invalid-assignment]
+    updated_at: ClassVar[UpdatedAtField] = UpdatedAtField()  # ty: ignore[invalid-assignment]
+    deleted_at: ClassVar[SoftDeleteField] = SoftDeleteField()  # ty: ignore[invalid-assignment]
 
     class Meta:
         """Meta
@@ -263,7 +263,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         """Serialize to JSON string."""
         return json.dumps(self.to_dict(**kwargs), indent=indent, default=str)
 
-    async def update_from_dict(
+    async def update_from_dict(  # ty: ignore[invalid-method-override]
         self,
         data: Annotated[
             Dict[str, Any], Doc("Dict to apply, e.g. from pydantic model_dump().")
@@ -281,12 +281,12 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
 
     async def soft_delete(self) -> None:
         """Mark as deleted without removing the row."""
-        self.deleted_at = datetime.now(timezone.utc)
+        self.deleted_at = datetime.now(timezone.utc)  # ty: ignore[invalid-attribute-access]
         await self.save(update_fields=["deleted_at"])
 
     async def restore(self) -> None:
         """Clear deleted_at to undelete."""
-        self.deleted_at = None
+        self.deleted_at = None  # ty: ignore[invalid-attribute-access]
         await self.save(update_fields=["deleted_at"])
 
     @classmethod
@@ -300,7 +300,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         return cls.filter(deleted_at__isnull=False)
 
     @classmethod
-    async def get_or_none(cls: Type[T], **kwargs) -> Optional[T]:
+    async def get_or_none(cls: Type[T], **kwargs) -> Optional[T]:  # ty: ignore[invalid-method-override]
         """Return the first matching row, or None."""
         try:
             return await cls.get(**kwargs)
@@ -314,7 +314,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
             Optional[Dict[str, Any]], Doc("Values to use when creating.")
         ] = None,
         **kwargs,
-    ) -> tuple[T, bool]:
+    ) -> tuple[T, bool]:  # ty: ignore[invalid-method-override]
         """Return existing or create new. Returns (instance, created)."""
         instance = await cls.get_or_none(**kwargs)
         if instance:
@@ -333,9 +333,9 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         update_fields: Optional[Iterable[str]] = None,
         on_conflict: Optional[Iterable[str]] = None,
         using_db=None,
-    ) -> List[T]:
+    ) -> List[T]:  # ty: ignore[invalid-method-override]
         """Insert multiple rows efficiently."""
-        instances = [item if isinstance(item, cls) else cls(**item) for item in items]
+        instances = [item if isinstance(item, cls) else cls(**item) for item in items]  # ty: ignore[invalid-argument-type]
         for i in range(0, len(instances), batch_size):
             batch = instances[i : i + batch_size]
             with cls._encoded_instances(batch):
@@ -372,7 +372,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         using_db=None,
     ) -> List[T]:
         """Insert rows or update them using database-native conflict handling."""
-        instances = [item if isinstance(item, cls) else cls(**item) for item in items]
+        instances = [item if isinstance(item, cls) else cls(**item) for item in items]  # ty: ignore[invalid-argument-type]
         conflict_fields = tuple(conflict_fields)
         if update_fields is None:
             update_fields = tuple(

@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import secrets
 from datetime import datetime, timezone
-from typing import ClassVar, Optional
+from typing import Optional
 
 from tortoise import fields
 
@@ -107,7 +107,7 @@ class ApiKey(Model, TimestampsMixin):
     key_hash = fields.CharField(max_length=255, unique=True, index=True)
     last_used_at = fields.DatetimeField(null=True, default=None)
     expires_at = fields.DatetimeField(null=True, default=None)
-    is_active: ClassVar[fields.BooleanField] = fields.BooleanField(default=True)
+    is_active = fields.BooleanField(default=True)
     scopes = fields.JSONField(null=True, default=None)
     user_id = fields.IntField(index=True)
 
@@ -175,7 +175,7 @@ class ApiKey(Model, TimestampsMixin):
             tortoise.exceptions.OperationalError: If the database update fails
                 due to a connection or integrity issue.
         """
-        self.is_active = False
+        self.is_active = False  # ty: ignore[invalid-assignment]
         await self.save(update_fields=["is_active"])
 
 

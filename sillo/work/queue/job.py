@@ -87,7 +87,7 @@ class Dispatchable:
     def dispatch_sync(cls, *args: Any, **kwargs: Any) -> Any:
         """Execute the job immediately in the current process (bypasses the queue)."""
         instance = cls(*args, **kwargs)
-        return asyncio.get_event_loop().run_until_complete(instance.handle())
+        return asyncio.get_event_loop().run_until_complete(instance.handle())  # ty: ignore[unresolved-attribute]
 
 
 class Job(Dispatchable):

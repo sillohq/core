@@ -57,14 +57,14 @@ class JWTUserMixin:
         refresh = tokens.refresh_token(refresh_expires or timedelta(days=7))
         now = datetime.now(timezone.utc)
         await JWTToken.create(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             token_jti=access_jti,
             token_family=family,
             token_type="access",
             expires_at=now + (access_expires or timedelta(minutes=15)),
         )
         await JWTToken.create(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             token_jti=refresh_jti,
             token_family=family,
             token_type="refresh",
@@ -134,14 +134,14 @@ class JWTUserMixin:
         refresh = tokens.refresh_token(refresh_expires)
         now = datetime.now(timezone.utc)
         await JWTToken.create(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             token_jti=access_jti,
             token_family=family,
             token_type="access",
             expires_at=now + access_expires,
         )
         await JWTToken.create(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             token_jti=refresh_jti,
             token_family=family,
             token_type="refresh",
@@ -168,7 +168,7 @@ class JWTUserMixin:
             tortoise.exceptions.OperationalError: If the database update
                 fails due to a connection or integrity issue.
         """
-        return await JWTToken.revoke_all_for_user(int(str(self.identity)))
+        return await JWTToken.revoke_all_for_user(int(str(self.identity)))  # ty: ignore[unresolved-attribute]
 
     async def blacklist_token(self, token: str, secret: str) -> bool:
         """Add a token's JTI to the blacklist table to prevent future use.
@@ -224,7 +224,7 @@ class JWTUserMixin:
                 fails due to a connection issue.
         """
         return await JWTToken.filter(
-            user_id=int(str(self.identity)),
+            user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
             revoked=False,
             expires_at__gt=datetime.now(timezone.utc),
         ).count()

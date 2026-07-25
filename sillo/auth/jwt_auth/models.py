@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import ClassVar, Optional
+from typing import Optional
 
 from tortoise import fields
 
@@ -37,12 +37,12 @@ class JWTToken(Model, TimestampsMixin):
     user_id = fields.IntField(index=True)
     token_jti = fields.CharField(max_length=255, unique=True, index=True)
     token_family = fields.CharField(max_length=64, index=True)
-    token_type: ClassVar[fields.CharField] = fields.CharField(
+    token_type = fields.CharField(
         max_length=16, default="access"
     )
     expires_at = fields.DatetimeField()
     consumed_at = fields.DatetimeField(null=True, default=None)
-    revoked: ClassVar[fields.BooleanField] = fields.BooleanField(default=False)
+    revoked = fields.BooleanField(default=False)
 
     class Meta:
         """Tortoise ORM metadata configuration for the JWTToken model.
@@ -114,7 +114,7 @@ class JWTToken(Model, TimestampsMixin):
         Returns:
             None: This method does not return a value.
         """
-        self.revoked = True
+        self.revoked = True  # ty: ignore[invalid-assignment]
         await self.save(update_fields=["revoked"])
 
     @classmethod

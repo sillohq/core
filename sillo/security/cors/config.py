@@ -66,7 +66,7 @@ class CorsConfig:
             "custom_error_messages": None,
         }
         config.update(kwargs)
-        self._config = config
+        self._config: Dict[str, Any] = config
 
     def __getattr__(self, name: str):
         if name == "_config":

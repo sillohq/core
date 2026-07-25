@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import ClassVar, Optional
+from typing import Optional
 
 from tortoise import fields
 
@@ -28,7 +28,7 @@ class Session(Model, TimestampsMixin):
     user_agent = fields.TextField(null=True, default=None)
     last_activity = fields.DatetimeField(auto_now=True)
     expires_at = fields.DatetimeField()
-    is_active: ClassVar[fields.BooleanField] = fields.BooleanField(default=True)
+    is_active = fields.BooleanField(default=True)
     device_name = fields.CharField(max_length=255, null=True, default=None)
 
     class Meta:
@@ -106,7 +106,7 @@ class Session(Model, TimestampsMixin):
             None: Database errors from the underlying ORM save
             operation propagate to the caller unchanged.
         """
-        self.is_active = False
+        self.is_active = False  # ty: ignore[invalid-assignment]
         await self.save(update_fields=["is_active"])
 
     async def extend(self, duration_seconds: int = 3600) -> None:
@@ -180,6 +180,6 @@ class Session(Model, TimestampsMixin):
         now = datetime.now(timezone.utc)
         expired = await cls.filter(is_active=True, expires_at__lt=now).all()
         for session in expired:
-            session.is_active = False
+            session.is_active = False  # ty: ignore[invalid-assignment]
             await session.save(update_fields=["is_active"])
         return len(expired)

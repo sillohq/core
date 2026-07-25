@@ -85,7 +85,7 @@ class AdminUser(Model):
     is_active = fields.BooleanField(default=True)
     is_superuser = fields.BooleanField(default=False)
     last_login = fields.DatetimeField(null=True)
-    role: fields.ForeignKeyRelation[AdminRole] = fields.ForeignKeyField(
+    role: fields.ForeignKeyRelation[AdminRole] = fields.ForeignKeyField(  # ty: ignore[invalid-assignment]
         "models.AdminRole", null=True
     )
 

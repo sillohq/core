@@ -47,7 +47,7 @@ class MiddlewareChain:
             next_middleware = await _build_chain(index + 1)
 
             async def _chain(req: Request) -> AsyncGenerator[Response, None]:
-                async for response in middleware.handle(req, next_middleware):
+                async for response in middleware.handle(req, next_middleware):  # ty: ignore[not-iterable]
                     yield response
 
             return _chain
@@ -65,7 +65,7 @@ class LoggingMiddleware(HTTPMiddleware):
 
         self._logger = logger or logging.getLogger("sillo.http")
 
-    async def handle(
+    async def handle(  # ty: ignore[invalid-method-override]
         self,
         request: Request,
         next_call: NextCall,
@@ -91,7 +91,7 @@ class HeaderInjectionMiddleware(HTTPMiddleware):
     def __init__(self, headers: dict[str, str]) -> None:
         self._headers = headers
 
-    async def handle(
+    async def handle(  # ty: ignore[invalid-method-override]
         self,
         request: Request,
         next_call: NextCall,
@@ -110,7 +110,7 @@ class BaseURLMiddleware(HTTPMiddleware):
 
         self._base_url = URL(base_url)
 
-    async def handle(
+    async def handle(  # ty: ignore[invalid-method-override]
         self,
         request: Request,
         next_call: NextCall,
