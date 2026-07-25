@@ -4,9 +4,10 @@ import starlight from '@astrojs/starlight';
 import lucode from 'lucode-starlight';
 
 // https://astro.build/config
-const docsBasePath = process.env.DOCS_BASE_PATH ?? '/lucode-starlight-theme';
+const docsBaseUrl = process.env.DOCS_BASE_URL ?? '/';
 
 export default defineConfig({
+    base: docsBaseUrl,
     site: 'https://sillo.build',
     redirects: {
         '/': {
@@ -41,7 +42,7 @@ export default defineConfig({
             favicon: '/favicon.svg',
             customCss: ['./src/styles/global.css'],
             editLink: {
-                baseUrl: 'https://github.com/sillo-labs/sillo/edit/main/docs',
+                baseUrl: 'https://github.com/sillohq/core/edit/main/docs',
             },
             lastUpdated: true,
             plugins: [
@@ -61,7 +62,7 @@ export default defineConfig({
                 {
                     icon: 'github',
                     label: 'GitHub',
-                    href: 'https://github.com/sillo-labs/sillo',
+                    href: 'https://github.com/sillohq/core',
                 },
             ],
             sidebar: [

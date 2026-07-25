@@ -47,17 +47,17 @@ Use this page as a regression checklist when changing tokens or component overri
 <CardGrid>
     <LinkCard
         title="Installation"
-        href="/lucode-starlight-theme/guides/installation/"
+        href={`${import.meta.env.BASE_URL}guides/installation/`}
         description="Install the theme, add the plugin, and extend the docs schema."
     />
     <LinkCard
         title="Typography"
-        href="/lucode-starlight-theme/showcase/typography/"
+        href={`${import.meta.env.BASE_URL}showcase/typography/`}
         description="Preview headings, paragraphs, inline code, and long-form reading states."
     />
     <LinkCard
         title="Plugin API"
-        href="/lucode-starlight-theme/reference/plugin-api/"
+        href={`${import.meta.env.BASE_URL}reference/plugin-api/`}
         description="Review plugin options, frontmatter extensions, and package exports."
     />
 </CardGrid>
@@ -134,11 +134,11 @@ Use this page as a regression checklist when changing tokens or component overri
 
 ## Link Buttons
 
-<LinkButton href="/lucode-starlight-theme/guides/installation/">Install</LinkButton>
-<LinkButton href="/lucode-starlight-theme/showcase/typography/" variant="secondary">
+<LinkButton href={`${import.meta.env.BASE_URL}guides/installation/`}>Install</LinkButton>
+<LinkButton href={`${import.meta.env.BASE_URL}showcase/typography/`} variant="secondary">
     Typography
 </LinkButton>
-<LinkButton href="/lucode-starlight-theme/reference/components/" variant="minimal" icon="right-arrow">
+<LinkButton href={`${import.meta.env.BASE_URL}reference/components/`} variant="minimal" icon="right-arrow">
     Theme Components
 </LinkButton>
 <LinkButton
