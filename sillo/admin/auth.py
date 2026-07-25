@@ -10,8 +10,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sillo.helpers.hashing import verify_password
-
 from .models import AdminUser
 
 
@@ -53,9 +51,16 @@ class SessionAuth(AuthBackend):
     Requires ``sillo.middleware.sessions.SessionMiddleware`` to be
     registered on the app.
 
+    Authenticates through :meth:`sillo.users.UserBaseModel.verify_credentials`,
+    so ``user_model`` may be any subclass of
+    :class:`sillo.users.UserBaseModel` — the default :class:`AdminUser`, a
+    project's own extension of it, or a bare ``UserBaseModel`` subclass.
+
     Usage::
 
         admin = setup_admin(app, auth_backend=SessionAuth())
+        # or, to use your own user model:
+        admin = setup_admin(app, user_model=MyAdminUser)
     """
 
     def __init__(self, user_model=AdminUser):
@@ -81,35 +86,17 @@ class SessionAuth(AuthBackend):
         return None
 
     async def login(self, request, username: str, password: str) -> bool:
-        """Authenticate against the ``AdminUser`` table with hashed passwords."""
+        """Authenticate against ``user_model`` via the shared user contract."""
         if not username or not password:
             return False
-        # Use the configured user model
-        user = await self.user_model.get_or_none(email=username)
+        user = await self.user_model.verify_credentials(username, password)
         if user is None:
-            user = await self.user_model.get_or_none(username=username)
-        if user is None or not getattr(user, "is_active", True):
-            return False
-        # Verify password
-        if not verify_password(password, getattr(user, "password", "")):
             return False
 
         # Store user identity in the session using Sillo's official helper.
         from sillo.auth.session_auth import login as sillo_login
 
-        class _UserWrapper:
-            def __init__(self, u):
-                self._u = u
-
-            @property
-            def identity(self):
-                return str(self._u.pk)
-
-            @property
-            def display_name(self):
-                return getattr(self._u, "username", self._u.email)
-
-        sillo_login(request, _UserWrapper(user))
+        sillo_login(request, user)
         return True
 
     async def logout(self, request) -> None:

@@ -30,6 +30,7 @@ from sillo.core.routing import Group
 from sillo.static import StaticFiles
 from .registry import ModelAdmin, Registry
 from .auth import AuthBackend, SessionAuth
+from .models import AdminUser
 from .router import build_routes
 
 
@@ -44,6 +45,11 @@ class AdminSite:
         URL prefix for all admin routes (default ``/admin``).
     auth_backend:
         Authentication backend. Defaults to :class:`SessionAuth`.
+    user_model:
+        Model backing admin login — any subclass of
+        :class:`sillo.users.UserBaseModel`. Defaults to :class:`AdminUser`.
+        Ignored if ``auth_backend`` is passed explicitly (build your own
+        ``SessionAuth(user_model=...)`` there instead).
     """
 
     def __init__(
@@ -51,6 +57,7 @@ class AdminSite:
         title: str = "Recorder Admin",
         prefix: str = "/admin",
         auth_backend: Optional[AuthBackend] = None,
+        user_model: Optional[Type] = None,
     ):
         """Init
 
@@ -58,6 +65,7 @@ class AdminSite:
             title: [description]
             prefix: [description]
             auth_backend: [description]
+            user_model: [description]
 
         Returns:
             [description]
@@ -68,7 +76,7 @@ class AdminSite:
         self.title = title
         self.prefix = prefix.rstrip("/")
         self.registry = Registry()
-        self.auth = auth_backend or SessionAuth()
+        self.auth = auth_backend or SessionAuth(user_model=user_model or AdminUser)
         self._build_routes = build_routes
         self._setup = False
 
@@ -153,6 +161,7 @@ def setup_admin(
     title: str = "Recorder Admin",
     prefix: str = "/admin",
     auth_backend: Optional[AuthBackend] = None,
+    user_model: Optional[Type] = None,
 ) -> AdminSite:
     """Setup Admin
 
@@ -161,6 +170,16 @@ def setup_admin(
         title: [description]
         prefix: [description]
         auth_backend: [description]
+        user_model: Subclass of :class:`sillo.users.UserBaseModel` to
+            authenticate admin logins against. Defaults to :class:`AdminUser`.
+            Build your own to add fields or change RBAC, e.g.::
+
+                class MyAdminUser(UserBaseModel):
+                    department = fields.CharField(max_length=100, null=True)
+                    class Meta:
+                        table = "my_admin_users"
+
+                admin = setup_admin(app, user_model=MyAdminUser)
 
     Returns:
         [description]
@@ -168,6 +187,8 @@ def setup_admin(
     Raises:
         [description]
     """
-    site = AdminSite(title=title, prefix=prefix, auth_backend=auth_backend)
+    site = AdminSite(
+        title=title, prefix=prefix, auth_backend=auth_backend, user_model=user_model
+    )
     site.mount(app)
     return site

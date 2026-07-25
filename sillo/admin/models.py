@@ -5,7 +5,7 @@ sillo.admin.models — Admin-specific models for activity logging and RBAC.
 from tortoise import fields
 from sillo.record import Model
 from sillo.record.fields import PasswordField
-from sillo.helpers.hashing import verify_password
+from sillo.users import UserBaseModel
 
 
 class AdminActivity(Model):
@@ -76,15 +76,24 @@ class AdminRole(Model):
         return self.name
 
 
-class AdminUser(Model):
-    """Admin user with role-based access control."""
+class AdminUser(UserBaseModel):
+    """Admin user with role-based access control.
 
-    email = fields.CharField(max_length=255, unique=True)
-    username = fields.CharField(max_length=100, unique=True)
+    Extends :class:`sillo.users.UserBaseModel` — sillo's shared user/auth
+    contract — so admin login goes through the same
+    ``set_password``/``check_password``/``verify_credentials`` machinery as
+    the rest of the app. ``password`` is overridden to a :class:`PasswordField`
+    so it keeps auto-hashing plaintext on assignment (``AdminUser(password="x")``),
+    which is the same bcrypt scheme ``UserBaseModel.check_password`` verifies
+    against.
+
+    This is only the *default* admin user model. Build your own by
+    subclassing :class:`sillo.users.UserBaseModel` (or this class, to keep
+    the role/permission scaffolding) and pass it to ``setup_admin(app,
+    user_model=YourAdminUser)``.
+    """
+
     password = PasswordField()
-    is_active = fields.BooleanField(default=True)
-    is_superuser = fields.BooleanField(default=False)
-    last_login = fields.DatetimeField(null=True)
     role: fields.ForeignKeyRelation[AdminRole] = fields.ForeignKeyField(  # ty: ignore[invalid-assignment]
         "models.AdminRole", null=True
     )
@@ -129,10 +138,6 @@ class AdminUser(Model):
         if self.role and hasattr(self.role, "permissions"):
             return permission in (self.role.permissions or [])
         return False
-
-    def check_password(self, plain: str) -> bool:
-        """Return True if *plain* matches this user's stored password hash."""
-        return verify_password(plain, self.password)
 
     def to_dict(self, **kwargs):
         """To Dict

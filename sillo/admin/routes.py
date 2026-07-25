@@ -15,6 +15,7 @@ A Django-admin-level interface for sillo models:
 """
 
 from __future__ import annotations
+from typing import List, Any
 
 import math
 
@@ -432,9 +433,9 @@ def base_ctx(request, site, model_name="", model_slug=""):
         "model_name": model_name,
         "model_slug": model_slug,
         "model_links": model_links_html(site),
-        "user_email": getattr(request, "session", {})
-        .get("admin_user", {})
-        .get("email", "Admin"),
+        "user_email": (getattr(request, "session", {}) or {})
+        .get("user", {})
+        .get("display_name", "Admin"),
         "has_admin_users": True,
         "has_roles": True,
     }
@@ -787,10 +788,11 @@ async def login_view(request, response, site):
         ok = await site.auth.login(request, get("email") or "", get("password") or "")
         if ok:
             try:
+                user_model = getattr(site.auth, "user_model", None)
                 await AdminActivity.create(
                     user_email=get("email") or "unknown",
                     action="login",
-                    model_name="AdminUser",
+                    model_name=user_model.__name__ if user_model else "AdminUser",
                 )
             except Exception:
                 pass
