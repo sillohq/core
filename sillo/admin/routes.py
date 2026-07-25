@@ -662,7 +662,8 @@ async def _build_reverse_relation_fields(meta, model_cls, obj):
             {
                 "pk": getattr(r, "pk", getattr(r, "id", None)),
                 "label": str(r),
-                "selected": str(getattr(r, "pk", getattr(r, "id", None))) in current_ids,
+                "selected": str(getattr(r, "pk", getattr(r, "id", None)))
+                in current_ids,
             }
             for r in all_recs
         ]
