@@ -146,7 +146,13 @@ class AdminSite:
 
             class _ActivityAdmin(ModelAdmin):
                 verbose_name = "Activity Log"
-                list_display = ["id", "user_email", "action", "model_name", "created_at"]
+                list_display = [
+                    "id",
+                    "user_email",
+                    "action",
+                    "model_name",
+                    "created_at",
+                ]
                 search_fields = ["user_email", "action", "model_name"]
                 ordering = ["-created_at"]
 

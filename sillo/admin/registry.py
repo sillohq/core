@@ -30,7 +30,9 @@ class ModelAdmin:
     """
 
     # ── Display ────────────────────────────────────────────────────────
-    verbose_name: Optional[str] = None  # sidebar/header label; defaults to the model's class name
+    verbose_name: Optional[str] = (
+        None  # sidebar/header label; defaults to the model's class name
+    )
 
     # ── List view configuration ───────────────────────────────────────
     list_display: List[str] = ["__str__"]
