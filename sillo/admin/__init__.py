@@ -30,7 +30,7 @@ from sillo.core.routing import Group
 from sillo.static import StaticFiles
 from .registry import ModelAdmin, Registry
 from .auth import AuthBackend, SessionAuth
-from .models import AdminUser
+from .models import AdminUser, AdminActivity
 from .router import build_routes
 
 
@@ -117,10 +117,40 @@ class AdminSite:
 
     def mount(self, app: silloApp) -> None:
         """Register auth middleware, static files, and routes on startup."""
+        self._register_system_models()
         app.use(self.auth.middleware)
         self._mount_static(app)
         app.on_startup(lambda: self._register_routes(app))  # ty: ignore[invalid-argument-type]
         self._setup = True
+
+    def _register_system_models(self) -> None:
+        """Always register the configured user model + activity log.
+
+        These are the admin's own system models — every admin site needs a
+        way to browse who can log in and what they did, so they're
+        registered unconditionally rather than left for the app to opt
+        into. Roles/permissions (``AdminRole``) are deliberately NOT
+        auto-registered here; register those yourself if you use them.
+        """
+        user_model = getattr(self.auth, "user_model", None)
+        if user_model is not None and user_model not in self.registry:
+
+            class _AuthAdmin(ModelAdmin):
+                verbose_name = "Auth"
+                list_display = ["id", "email", "username", "is_active", "is_superuser"]
+                search_fields = ["email", "username"]
+
+            self.registry.register(user_model, _AuthAdmin)
+
+        if AdminActivity not in self.registry:
+
+            class _ActivityAdmin(ModelAdmin):
+                verbose_name = "Activity Log"
+                list_display = ["id", "user_email", "action", "model_name", "created_at"]
+                search_fields = ["user_email", "action", "model_name"]
+                ordering = ["-created_at"]
+
+            self.registry.register(AdminActivity, _ActivityAdmin)
 
     def _mount_static(self, app: silloApp) -> None:
         """Mount Static

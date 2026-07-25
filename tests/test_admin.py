@@ -128,9 +128,8 @@ def _make_app(db_path):
     class _AccountAdmin(AccountAdmin):
         pass
 
-    @admin.register(AdminUser)
-    class _AdminUserAdmin(ModelAdmin):
-        list_display = ["id", "email", "username", "is_active"]
+    # AdminUser / AdminActivity are auto-registered by setup_admin() itself —
+    # no manual @admin.register() needed (see AdminSite._register_system_models).
 
     @app.on_startup
     async def _seed():

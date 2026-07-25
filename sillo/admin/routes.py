@@ -405,9 +405,9 @@ def model_links_html(site):
         [description]
     """
     links = []
-    for m in site.registry.models:
-        name = m.__name__
-        slug = name.lower()
+    for m, admin_cls in site.registry:
+        name = getattr(admin_cls, "verbose_name", None) or m.__name__
+        slug = m.__name__.lower()
         links.append({"name": name, "slug": slug})
     return links
 
@@ -436,8 +436,6 @@ def base_ctx(request, site, model_name="", model_slug=""):
         "user_email": (getattr(request, "session", {}) or {})
         .get("user", {})
         .get("display_name", "Admin"),
-        "has_admin_users": True,
-        "has_roles": True,
     }
 
 
@@ -859,7 +857,7 @@ async def dashboard_view(request, response, site):
             pass
         dashboard_models.append(
             {
-                "name": m.__name__,
+                "name": getattr(admin_cls, "verbose_name", None) or m.__name__,
                 "slug": m.__name__.lower(),
                 "count": count,
                 "can_add": can_add,
@@ -903,8 +901,8 @@ async def list_view(request, response, site, model_cls, admin_cls):
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
 
-    model_name = model_cls.__name__
-    model_slug = model_name.lower()
+    model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
+    model_slug = model_cls.__name__.lower()
     ctx = base_ctx(request, site, model_name, model_slug)
     ctx["title"] = model_name
     meta = model_cls._meta
@@ -1114,8 +1112,8 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
 
-    model_name = model_cls.__name__
-    model_slug = model_name.lower()
+    model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
+    model_slug = model_cls.__name__.lower()
     ctx = base_ctx(request, site, model_name, model_slug)
     try:
         obj = await model_cls.get(pk=id)
@@ -1235,8 +1233,8 @@ async def create_view(request, response, site, model_cls, admin_cls):
     if not admin_cls.has_add_permission(request):
         return _forbidden(response, site.prefix)
 
-    model_name = model_cls.__name__
-    model_slug = model_name.lower()
+    model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
+    model_slug = model_cls.__name__.lower()
     ctx = base_ctx(request, site, model_name, model_slug)
     ctx["title"] = f"Add {model_name}"
     ctx["error"] = ""
@@ -1326,8 +1324,8 @@ async def update_view(request, response, site, model_cls, admin_cls, id):
     if not admin_cls.has_change_permission(request):
         return _forbidden(response, site.prefix)
 
-    model_name = model_cls.__name__
-    model_slug = model_name.lower()
+    model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
+    model_slug = model_cls.__name__.lower()
     ctx = base_ctx(request, site, model_name, model_slug)
     ctx["error"] = ""
     try:
@@ -1411,8 +1409,8 @@ async def delete_view(request, response, site, model_cls, admin_cls, id):
     if not admin_cls.has_delete_permission(request):
         return _forbidden(response, site.prefix)
 
-    model_name = model_cls.__name__
-    model_slug = model_name.lower()
+    model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
+    model_slug = model_cls.__name__.lower()
     ctx = base_ctx(request, site, model_name, model_slug)
     try:
         obj = await model_cls.get(pk=id)
@@ -1443,8 +1441,8 @@ async def bulk_view(request, response, site, model_cls, admin_cls):
     Raises:
         [description]
     """
-    model_name = model_cls.__name__
-    model_slug = model_name.lower()
+    model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
+    model_slug = model_cls.__name__.lower()
     if request.method != "POST":
         return response.redirect(f"{site.prefix}/{model_slug}/", status_code=302)
     if not admin_cls.has_delete_permission(request):
