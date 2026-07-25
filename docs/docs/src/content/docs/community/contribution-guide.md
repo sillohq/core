@@ -19,7 +19,7 @@ Thank you for your interest in contributing to sillo! This guide will help you g
 
 ## Quick Start
 
-1. **Fork the repository**: https://github.com/sillo-labs/sillo
+1. **Fork the repository**: https://github.com/sillohq/core
 2. **Clone your fork**: 
    ```bash
    git clone https://github.com/YOUR_USERNAME/sillo.git
@@ -60,7 +60,7 @@ Thank you for your interest in contributing to sillo! This guide will help you g
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/sillo-labs/sillo.git
+   git clone https://github.com/sillohq/core.git
    cd sillo
    ```
 
@@ -191,7 +191,7 @@ Closes #123
 
 Want to create a library that extends sillo? We provide a project template to help you get started:
 
-**Project Template**: https://github.com/sillo-labs/project-template
+**Project Template**: https://github.com/sillohq/project-template
 
 This template includes:
 - Standard project structure
@@ -331,8 +331,8 @@ For feature requests, include:
 ### Getting Help
 
 - **Discord**: Join our [Discord community](https://discord.gg/sillo) for real-time help
-- **GitHub Discussions**: Use [GitHub Discussions](https://github.com/sillo-labs/sillo/discussions) for longer conversations
-- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/sillo-labs/sillo/issues)
+- **GitHub Discussions**: Use [GitHub Discussions](https://github.com/sillohq/core/discussions) for longer conversations
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/sillohq/core/issues)
 
 ### Code of Conduct
 

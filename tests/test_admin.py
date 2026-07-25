@@ -182,6 +182,8 @@ def client(tmp_path):
         finally:
             try:
                 c.portal.call(Tortoise._drop_databases)
+            except Exception:
+                pass
             finally:
                 if ctx is not None:
                     ctx.__exit__(None, None, None)

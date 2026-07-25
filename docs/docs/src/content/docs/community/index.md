@@ -23,7 +23,7 @@ We're thrilled to have you here! The sillo community is a place for developers t
 sillo is proudly **100% open source** and community-driven. We believe in the power of collaboration and transparency in building great software. Our entire ecosystem is built on open source principles:
 
 - **Core Framework**: The main sillo framework is completely open source under the MIT license
-- **Community Contributions**: The [sillo-contrib](https://github.com/sillo-labs/sillo-contrib) package provides community-driven extensions and middleware
+- **Community Contributions**: The [sillo-contrib](https://github.com/sillohq/sillo-contrib) package provides community-driven extensions and middleware
 - **Transparent Development**: All development happens in the open on GitHub with public discussions and roadmaps
 
 ### sillo Contrib Package
@@ -42,7 +42,7 @@ Install all contrib packages at once:
 uv add sillo-contrib
 ```
 
-Or explore individual packages in the [sillo-contrib repository](https://github.com/sillo-labs/sillo-contrib).
+Or explore individual packages in the [sillo-contrib repository](https://github.com/sillohq/sillo-contrib).
 
 ### Open Source Philosophy
 
@@ -57,13 +57,13 @@ We believe that great software is built by communities, not just companies. That
 ## Get Involved
 
 ### Core Framework
-- **GitHub Discussions**: [Join the conversation](https://github.com/orgs/sillo-labs/discussions)
-- **Report Issues**: [GitHub Issues](https://github.com/sillo-labs/sillo/issues)
+- **GitHub Discussions**: [Join the conversation](https://github.com/orgs/sillohq/discussions)
+- **Report Issues**: [GitHub Issues](https://github.com/sillohq/sillo/issues)
 - **Contribute**: Check out our [Contributing Guide](/community/contribution-guide)
 
 ### Community Contributions (sillo-contrib)
-- **Contribute Packages**: [sillo-contrib repository](https://github.com/sillo-labs/sillo-contrib)
-- **Package Issues**: [Report contrib-specific issues](https://github.com/sillo-labs/sillo-contrib/issues)
+- **Contribute Packages**: [sillo-contrib repository](https://github.com/sillohq/sillo-contrib)
+- **Package Issues**: [Report contrib-specific issues](https://github.com/sillohq/sillo-contrib/issues)
 - **Package Ideas**: Share your middleware and extension ideas in discussions
 
 ### Ways to Contribute
@@ -75,12 +75,12 @@ We believe that great software is built by communities, not just companies. That
 
 ## Stay Updated
 
-- **GitHub**: Star and watch our [GitHub repository](https://github.com/sillo-labs/sillo)
+- **GitHub**: Star and watch our [GitHub repository](https://github.com/sillohq/sillo)
 - **Twitter**: Follow us [@silloLabs](https://twitter.com/silloLabs) for updates
 
 ## Code of Conduct
 
-Please review our [Code of Conduct](https://github.com/sillo-labs/sillo/CODE_OF_CONDUCT.md) to help us maintain a welcoming and inclusive community.
+Please review our [Code of Conduct](https://github.com/sillohq/sillo/CODE_OF_CONDUCT.md) to help us maintain a welcoming and inclusive community.
 
 ---
 

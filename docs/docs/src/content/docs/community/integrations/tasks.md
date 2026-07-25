@@ -918,4 +918,4 @@ config = TaskConfig(
 task_manager = setup_tasks(app, config=config)
 ```
 
-Built with ❤️ by the [@sillo-labs](https://github.com/sillo-labs) community.
+Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.

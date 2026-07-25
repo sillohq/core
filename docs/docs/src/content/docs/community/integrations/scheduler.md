@@ -360,4 +360,4 @@ if __name__ == "__main__":
 4. **Set `misfire_grace_time`** — Prevents stale jobs from running if the scheduler was delayed.
 5. **Name your jobs** — Meaningful names make debugging and monitoring easier.
 
-Built with ❤️ by the [@sillo-labs](https://github.com/sillo-labs) community.
+Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.

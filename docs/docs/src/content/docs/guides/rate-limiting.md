@@ -240,4 +240,4 @@ To reset between cases, call `backend.clear()` (the memory backend supports it) 
   workers can't double-count.
 - The token-bucket refill rate is `limit / window` tokens per second.
 
-Built with ❤️ by the [@sillo-labs](https://github.com/sillo-labs) community.
+Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.

@@ -417,4 +417,4 @@ async def timeout_debug(request, response, call_next):
         raise
 ```
 
-Built with ❤️ by the [@sillo-labs](https://github.com/sillo-labs) community.
+Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.

@@ -289,4 +289,4 @@ trusted.TrustedHost(
 - Include all ports your application runs on
 - Consider load balancer port forwarding
 
-Built with ❤️ by the [@sillo-labs](https://github.com/sillo-labs) community.
+Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.

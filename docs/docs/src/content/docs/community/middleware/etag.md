@@ -158,4 +158,4 @@ async def conditional_response(request, response):
 - ETags enable efficient caching, reducing server load for repeated requests
 - Use with appropriate `Cache-Control` headers for optimal caching behavior
 
-Built with ❤️ by the [@sillo-labs](https://github.com/sillo-labs) community.
+Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.

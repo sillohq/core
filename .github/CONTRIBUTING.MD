@@ -166,7 +166,7 @@ feat(router): add support for dynamic route parameters
 
 ## Reporting Issues
 
-If you find a bug or have a feature request, please [open an issue](https://github.com/sillo-labs/sillo/issues/new/choose). Be sure to include:
+If you find a bug or have a feature request, please [open an issue](https://github.com/sillohq/core/issues/new/choose). Be sure to include:
 
 - A clear title and description
 - Steps to reproduce the issue
@@ -178,8 +178,8 @@ If you find a bug or have a feature request, please [open an issue](https://gith
 
 For questions and discussions, please:
 
-1. Check the [documentation](https://sillo-labs.github.io/sillo/)
-2. Search the [existing issues](https://github.com/sillo-labs/sillo/issues)
+1. Check the [documentation](https://sillohq.github.io/sillo/)
+2. Search the [existing issues](https://github.com/sillohq/core/issues)
 3. If you still can't find an answer, open a new discussion or issue
 
 ## Development Tips

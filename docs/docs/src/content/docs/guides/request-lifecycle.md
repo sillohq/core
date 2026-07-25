@@ -339,4 +339,4 @@ async def http_exception_handler(request, response, exc):
 2. Use custom ID generation for better performance
 3. Profile your application to find bottlenecks
 
-Built with ❤️ by the [@sillo-labs](https://github.com/sillo-labs) community.
+Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.

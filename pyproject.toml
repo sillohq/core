@@ -10,8 +10,8 @@ authors = [
     {name = "Chidebele Dunamis", email = "techwithdunamix@gmail.com"}
 ]
 license = "BSD-3-Clause"
-homepage = "https://github.com/sillo-labs/sillo"
-repository = "https://github.com/sillo-labs/sillo"
+homepage = "https://github.com/sillohq/core"
+repository = "https://github.com/sillohq/core"
 documentation = "https://sillolabs.com"
 readme = "README.md"
 keywords = [

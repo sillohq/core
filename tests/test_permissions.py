@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from tortoise import Tortoise
+from tortoise.exceptions import ConfigurationError
 
 from sillo.permissions import (
     Permission,
@@ -46,7 +47,10 @@ async def db():
     )
     await Tortoise.generate_schemas(safe=True)
     yield
-    await Tortoise._drop_databases()
+    try:
+        await Tortoise._drop_databases()
+    except ConfigurationError:
+        pass
 
 
 async def make_user(db, **kw):

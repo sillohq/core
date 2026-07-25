@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from tortoise import Tortoise, run_async
+from tortoise.exceptions import ConfigurationError
 
 from sillo.security.ratelimit.backends import RecordBackend
 from sillo.security.ratelimit.models import RateLimitCounter
@@ -19,7 +20,10 @@ async def record_backend():
     backend = RecordBackend()
     yield backend
     await backend.clear()
-    await Tortoise._drop_databases()
+    try:
+        await Tortoise._drop_databases()
+    except ConfigurationError:
+        pass
 
 
 async def test_record_backend_roundtrip(record_backend):

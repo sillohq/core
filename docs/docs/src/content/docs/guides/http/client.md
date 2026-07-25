@@ -335,7 +335,7 @@ async with HTTPClient(
     user_agent="MyApp/1.0",
 ) as client:
     repos = await client.get(
-        "/repos/sillo-labs/sillo",
+        "/repos/sillohq/core",
         response_model=Repo,
     )
     print(repos.full_name)

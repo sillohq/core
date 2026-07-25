@@ -543,4 +543,4 @@ import logging
 logging.getLogger("sillo.redis").setLevel(logging.DEBUG)
 ```
 
-Built with ❤️ by the [@sillo-labs](https://github.com/sillo-labs) community.
+Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.

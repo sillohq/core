@@ -1,5 +1,6 @@
 import pytest
 from tortoise import Tortoise, fields
+from tortoise.exceptions import ConfigurationError
 
 from sillo.record import Model
 
@@ -42,7 +43,10 @@ async def record_db():
     await Tortoise.generate_schemas()
     yield
     RecordFeatureUser._scope_registry = None
-    await Tortoise._drop_databases()
+    try:
+        await Tortoise._drop_databases()
+    except ConfigurationError:
+        pass
 
 
 async def test_accessors_mutators_and_casts_round_trip():
