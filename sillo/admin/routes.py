@@ -200,6 +200,22 @@ async def _get_m2m_options(field_obj, current_ids=None):
     return name, slug, options
 
 
+def _find_forward_field(rel_model, target_model_cls):
+    """Find the FK/O2O field on *rel_model* that points back at *target_model_cls*.
+
+    Used to translate a backward relation (e.g. ``Supplier.products``) into
+    the concrete field on the other side (``Product.supplier``) that has to
+    be written to attach/detach a row.
+    """
+    for fn, fo in rel_model._meta.fields_map.items():
+        if (
+            isinstance(fo, (ForeignKeyFieldInstance, OneToOneFieldInstance))
+            and getattr(fo, "related_model", None) is target_model_cls
+        ):
+            return fn, fo
+    return None, None
+
+
 def _field_widget(field_obj, name: str = "") -> str:
     """Field Widget
 
@@ -606,6 +622,141 @@ async def _build_form_fields(meta, admin, obj=None, is_create=True):
             }
         )
     return fields
+
+
+async def _build_reverse_relation_fields(meta, model_cls, obj):
+    """Build editable widgets for backward FK / O2O relations.
+
+    Reuses the exact same "relation" (searchable combobox) and "m2m" (chip
+    multi-select) widgets already used for forward FK/O2O/M2M fields, so the
+    template needs no new markup. Field names are prefixed with ``rev__`` so
+    :func:`_apply_reverse_relations` can tell them apart from the model's own
+    columns on submit — see that function for the attach/detach semantics.
+
+    Only meaningful once *obj* already exists, so this is only called from
+    the update (edit) view, never create.
+    """
+    relations = []
+    back_fk = list(getattr(meta, "backward_fk_fields", set()))
+    back_o2o = list(getattr(meta, "backward_o2o_fields", set()))
+    for bf in back_fk + back_o2o:
+        field_obj = meta.fields_map.get(bf)
+        rel_model = getattr(field_obj, "related_model", None)
+        if rel_model is None:
+            continue
+        fwd, fwd_obj = _find_forward_field(rel_model, model_cls)
+        if fwd is None:
+            continue
+
+        try:
+            related = await getattr(obj, bf).all()
+        except Exception:
+            related = []
+        current_ids = {str(getattr(r, "pk", getattr(r, "id", None))) for r in related}
+
+        try:
+            all_recs = await rel_model.all()
+        except Exception:
+            all_recs = []
+        options = [
+            {
+                "pk": getattr(r, "pk", getattr(r, "id", None)),
+                "label": str(r),
+                "selected": str(getattr(r, "pk", getattr(r, "id", None))) in current_ids,
+            }
+            for r in all_recs
+        ]
+
+        nullable = bool(getattr(fwd_obj, "null", False))
+        label = f"{_field_label(bf)} ({rel_model.__name__})"
+        help_text = (
+            "Attach existing records; removing one unlinks it."
+            if nullable
+            else "Attach existing records. This relation is required on the "
+            f"{rel_model.__name__} side, so removing one deletes it."
+        )
+
+        if bf in back_o2o:
+            current_val = next(iter(current_ids), "")
+            relations.append(
+                {
+                    "widget": "relation",
+                    "kind": "o2o",
+                    "name": f"rev__{bf}",
+                    "label": label,
+                    "rel_name": rel_model.__name__,
+                    "options": options,
+                    "value": current_val,
+                    "required": False,
+                    "readonly": False,
+                    "help": help_text,
+                }
+            )
+        else:
+            relations.append(
+                {
+                    "widget": "m2m",
+                    "name": f"rev__{bf}",
+                    "label": label,
+                    "rel_name": rel_model.__name__,
+                    "options": options,
+                    "value": [],
+                    "required": False,
+                    "readonly": False,
+                    "help": help_text,
+                }
+            )
+    return relations
+
+
+async def _apply_reverse_relations(meta, model_cls, obj, get, getlist):
+    """Persist edits made through :func:`_build_reverse_relation_fields`.
+
+    For each backward FK/O2O relation, diffs the submitted set of related
+    pks against the currently attached ones: newly-added pks get their
+    forward FK pointed at *obj*; removed pks are unlinked (set to null) if
+    the forward field allows it, otherwise the row is deleted outright since
+    it cannot exist without a parent.
+    """
+    back_fk = list(getattr(meta, "backward_fk_fields", set()))
+    back_o2o = list(getattr(meta, "backward_o2o_fields", set()))
+    for bf in back_fk + back_o2o:
+        field_obj = meta.fields_map.get(bf)
+        rel_model = getattr(field_obj, "related_model", None)
+        if rel_model is None:
+            continue
+        fwd, fwd_obj = _find_forward_field(rel_model, model_cls)
+        if fwd is None:
+            continue
+
+        form_name = f"rev__{bf}"
+        is_o2o = bf in back_o2o
+        nullable = bool(getattr(fwd_obj, "null", False))
+
+        try:
+            current = await getattr(obj, bf).all()
+        except Exception:
+            current = []
+        current_ids = {str(getattr(r, "pk", getattr(r, "id", None))) for r in current}
+
+        if is_o2o:
+            raw = get(form_name)
+            desired_ids = {raw} if raw else set()
+        else:
+            desired_ids = {x for x in getlist(form_name) if x}
+
+        for pk in desired_ids - current_ids:
+            child = await rel_model.get(pk=int(pk))
+            setattr(child, f"{fwd}_id", obj.pk)
+            await child.save()
+
+        for pk in current_ids - desired_ids:
+            child = await rel_model.get(pk=int(pk))
+            if nullable:
+                setattr(child, f"{fwd}_id", None)
+                await child.save()
+            else:
+                await child.delete()
 
 
 # ── Route functions ──────────────────────────────────────────────────────
@@ -1032,14 +1183,7 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
                 related = await manager.all()
             else:
                 related = list(manager) if manager else []
-            fwd = None
-            for fn, fo in rel_model._meta.fields_map.items():
-                if (
-                    isinstance(fo, (ForeignKeyFieldInstance, OneToOneFieldInstance))
-                    and getattr(fo, "related_model", None) is model_cls
-                ):
-                    fwd = fn
-                    break
+            fwd, _fwd_obj = _find_forward_field(rel_model, model_cls)
             list_link = (
                 f"{site.prefix}/{slug}/?f_{fwd}={obj.pk}"
                 if fwd
@@ -1193,6 +1337,7 @@ async def update_view(request, response, site, model_cls, admin_cls, id):
     meta = model_cls._meta
     fields = await _build_form_fields(meta, admin_cls, obj=obj, is_create=False)
     ctx["fields"] = fields
+    ctx["relation_fields"] = await _build_reverse_relation_fields(meta, model_cls, obj)
 
     if request.method == "POST":
         get, getlist = await _collect_form(request)
@@ -1228,6 +1373,7 @@ async def update_view(request, response, site, model_cls, admin_cls, id):
                     else:
                         setattr(obj, f_name, get(f_name) or None)
             await obj.save()
+            await _apply_reverse_relations(meta, model_cls, obj, get, getlist)
             await _log(request, "update", model_name, site, id)
             return response.redirect(
                 f"{site.prefix}/{model_slug}/{id}/", status_code=302
