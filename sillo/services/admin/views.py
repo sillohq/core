@@ -31,6 +31,7 @@ from sillo.record.fields import PasswordField
 from sillo.helpers.hashing import hash_password, verify_password
 from .templating import render as _render
 from .models import AdminActivity
+from sillo.pagination import AsyncPaginator, PageNumberPagination, AsyncDataHandler
 
 FKAliases = (ForeignKeyFieldInstance, OneToOneFieldInstance)
 M2MAlias = ManyToManyFieldInstance
@@ -821,10 +822,37 @@ async def list_view(request, response, site, model_cls, admin_cls):
     except Exception:
         pass
 
-    total = await qs.count()
-    total_pages = max(1, math.ceil(total / page_size))
-    offset = (page - 1) * page_size
-    items = await qs.offset(offset).limit(page_size)
+    # Use Sillo's async pagination system
+    class _QSAsyncDataHandler(AsyncDataHandler):
+        def __init__(self, qs):
+            self.qs = qs
+
+        async def get_total_items(self) -> int:
+            return await self.qs.count()
+
+        async def get_items(self, offset: int, limit: int) -> List[Any]:
+            return await self.qs.offset(offset).limit(limit)
+
+    data_handler = _QSAsyncDataHandler(qs)
+    strategy = PageNumberPagination()
+    paginator = AsyncPaginator(
+        data_handler=data_handler,
+        pagination_strategy=strategy,
+        base_url=str(request.url),
+        request_params=dict(request.query_params),
+    )
+    paginated = await paginator.paginate()
+    items = paginated["items"]
+    pagination_meta = paginated["pagination"]
+    total = pagination_meta["total_items"]
+    page = pagination_meta["page"]
+    page_size = pagination_meta["page_size"]
+    total_pages = pagination_meta["total_pages"]
+    page_range = (
+        list(range(max(1, page - 2), min(total_pages, page + 2) + 1))
+        if total_pages > 1
+        else []
+    )
 
     columns = [c for c in admin_cls.list_display if not _should_skip_field(c)]
     column_info = []
@@ -906,11 +934,7 @@ async def list_view(request, response, site, model_cls, admin_cls):
             "can_add": bool(admin_cls.has_add_permission(request)),
             "can_change": bool(admin_cls.has_change_permission(request)),
             "can_delete": bool(admin_cls.has_delete_permission(request)),
-            "page_range": (
-                list(range(max(1, page - 2), min(total_pages, page + 2) + 1))
-                if total_pages > 1
-                else []
-            ),
+            "page_range": page_range,
         }
     )
     return response.html(_render("list.html", **ctx))
