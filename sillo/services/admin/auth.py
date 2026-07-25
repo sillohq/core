@@ -130,7 +130,6 @@ class SessionAuth(AuthBackend):
         sillo_login(request, _UserWrapper(user))
         return True
 
-
     async def logout(self, request) -> None:
         """Logout
 
