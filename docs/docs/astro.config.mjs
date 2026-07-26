@@ -94,6 +94,7 @@ export default defineConfig({
                     items: [
                         { label: 'Request Information', link: '/guides/request-info/' },
                         { label: 'Handling Inputs', link: '/guides/request-inputs/' },
+                        { label: 'Validation', link: '/guides/validation/' },
                         { label: 'Request Parameters', link: '/guides/request-parameters/' },
                         { label: 'Headers', link: '/guides/headers/' },
                         { label: 'Sending Responses', link: '/guides/sending-responses/' },

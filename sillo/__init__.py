@@ -8,7 +8,7 @@ middleware, auth, CORS, CSRF, sessions, caching, GraphQL — ships as first-part
 Key Features:
 - ASGI-based, async/await throughout
 - Dependency injection with pre-flattened execution plan (zero recursion at runtime)
-- Pydantic request validation via request_model — no type annotations needed
+- Pydantic validation on every input and output — no type annotations needed
 - Fluent Responder for building HTTP responses (json, html, file, stream, redirect)
 - Middleware system: CORS, CSRF, sessions, auth, rate limiting, compression
 - Depend(get_request=True) to inject the raw Request into any dependency
@@ -30,15 +30,38 @@ Quick Start:
 
 Common Patterns:
 
-1. Request Validation (zero annotations):
+1. Validation (zero annotations — the type lives on the declaration):
+    from sillo import Query, Path, Form, File
+
     class UserCreate(BaseModel):
         name: str
         email: str
 
-    @app.post("/users", request_model=UserCreate)
-    async def create_user(request, response):
-        user = request.validated_data   # already a Pydantic model
-        return response.json(user.model_dump(), status_code=201)
+    @app.post("/teams/{team_id}/users",
+              request_model=UserCreate,       # JSON body
+              response_model=UserOut)         # shapes the reply
+    async def create_user(request, response, user,       # <- the body
+                          team_id=Path(type=int),        # path segment
+                          notify=Query(False, type=bool),
+                          db=Depend(get_db)):
+        return await save(user, team_id, db)
+
+    The JSON body is declared once, on the decorator, with request_model=. It
+    is injected into the first plain parameter after request/response, and also
+    available as request.validated_data. It composes freely with Depend and
+    with parameter markers.
+
+    Every other location has a marker: Query, Header, Cookie, Path, Form, File.
+    Constraints go on the marker — Query(1, type=int, ge=1, le=100) — and feed
+    both validation and the generated OpenAPI schema, so the published contract
+    and the enforced one cannot drift apart.
+
+    Bad input returns 422 naming the location that failed:
+        {"detail": [{"loc": ["query", "page"], "msg": "...", "type": "..."}]}
+
+    Markers written the old way — Query(1), Header(), Cookie("dark") — keep
+    their original behavior. Pass silloApp(strict_validation=True) to validate
+    those too, and to get the unified error shape for request_model bodies.
 
 2. Dependency Injection:
     from sillo import Depend
@@ -83,7 +106,17 @@ from sillo.core.routing import Route, Router
 from .application import silloApp
 from .frontend import FrontendApp
 from sillo.core.dependencies import Depend
-from .parameters import Query, Header, Cookie
+from .validation import (
+    Cookie,
+    File,
+    Form,
+    Header,
+    Path,
+    Query,
+    RequestValidationError,
+    ResponseValidationError,
+    UploadFile,
+)
 
 __all__ = [
     "silloApp",
@@ -94,4 +127,10 @@ __all__ = [
     "Query",
     "Header",
     "Cookie",
+    "Path",
+    "Form",
+    "File",
+    "UploadFile",
+    "RequestValidationError",
+    "ResponseValidationError",
 ]

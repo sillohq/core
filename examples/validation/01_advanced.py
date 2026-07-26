@@ -1,16 +1,27 @@
+"""Advanced validation with sillo's built-in Pydantic engine.
+
+Everything here is framework-native: request bodies, path and query
+parameters, form uploads, and response shaping. No middleware, no manual
+try/except around ValidationError, and no type annotations required.
+
+JSON bodies are declared once on the decorator with ``request_model=`` and
+injected into the handler's first plain parameter. Every other location uses a
+marker, with the type on the marker itself.
+
+Run with:  uvicorn 01_advanced:app --reload
+"""
+
 from datetime import date, datetime
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, ValidationError, constr
+from pydantic import BaseModel, EmailStr, Field, constr
 
-from sillo import silloApp
-from sillo.core.http import Request, Response
+from sillo import File, Form, Path, Query, silloApp
 
-app = silloApp()
+app = silloApp(title="Validation Example", version="1.0.0")
 
 
-# Enums for validation
 class UserRole(str, Enum):
     ADMIN = "admin"
     USER = "user"
@@ -23,7 +34,6 @@ class UserStatus(str, Enum):
     SUSPENDED = "suspended"
 
 
-# Request Models
 class UserCreate(BaseModel):
     username: constr(min_length=3, max_length=50)
     email: EmailStr
@@ -41,77 +51,40 @@ class UserUpdate(BaseModel):
     status: Optional[UserStatus] = None
 
 
-# Response Models
 class UserResponse(BaseModel):
+    """Note the absence of ``password`` — response_model drops it for us."""
+
     id: int
     username: str
     email: EmailStr
     full_name: str
-    birth_date: Optional[date]
+    birth_date: Optional[date] = None
     role: UserRole
     status: UserStatus
     created_at: datetime
 
 
-# Custom validation middleware
-class ValidationMiddleware:
-    def __init__(self, request_model=None, response_model=None):
-        self.request_model = request_model
-        self.response_model = response_model
-
-    def __call__(self, handler):
-        async def wrapper(request, response):
-            # Validate request data if model is provided
-            if self.request_model:
-                try:
-                    data = await request.json
-                    validated_data = self.request_model(**data)
-                    request.validated_data = validated_data
-                except ValidationError as e:
-                    return response.json(
-                        {"error": "Validation error", "details": e.errors()},
-                        status_code=422,
-                    )
-
-            # Call handler
-            result = await handler(request, response)
-
-            # Validate response data if model is provided
-            if self.response_model and not isinstance(result, Response):
-                try:
-                    validated_response = self.response_model(**result)
-                    return response.json(validated_response.dict())
-                except ValidationError:
-                    return response.json(
-                        {"error": "Response validation error"}, status_code=500
-                    )
-
-            return result
-
-        return wrapper
+# ---------------------------------------------------------------------------
+# Request body validation
+# ---------------------------------------------------------------------------
 
 
-# Example routes with validation
-@app.post("/users")
-@ValidationMiddleware(request_model=UserCreate, response_model=UserResponse)
-async def create_user(request: Request, response: Response) -> dict:
-    data = request.validated_data
+@app.post("/users", request_model=UserCreate, response_model=UserResponse)
+async def create_user(request, response, user):
+    """Validate the body against UserCreate and shape the reply as UserResponse.
 
-    # Simulate user creation
-    user = {"id": 1, **data.dict(), "created_at": datetime.now()}
+    A bad payload never reaches this function; it returns 422 with the failing
+    fields under ``loc: ["body", ...]``. The password is present on ``user``
+    but is dropped on the way out because UserResponse does not declare it.
+    """
+    return {"id": 1, **user.model_dump(), "created_at": datetime.now()}
 
-    return user
 
-
-@app.put("/users/{user_id}")
-@ValidationMiddleware(request_model=UserUpdate, response_model=UserResponse)
-async def update_user(request: Request, response: Response) -> dict:
-    user_id = request.path_params["user_id"]
-    data = request.validated_data
-
-    # Simulate user update
+@app.put("/users/{user_id}", request_model=UserUpdate, response_model=UserResponse)
+async def update_user(request, response, changes, user_id=Path(type=int)):
+    """Combine a validated path parameter with a partial body model."""
     user = {
-        "id": int(user_id),
+        "id": user_id,
         "username": "existing_user",
         "email": "user@example.com",
         "full_name": "Existing User",
@@ -120,57 +93,78 @@ async def update_user(request: Request, response: Response) -> dict:
         "status": UserStatus.ACTIVE,
         "created_at": datetime.now(),
     }
-
-    # Update fields
-    for field, value in data.dict(exclude_unset=True).items():
-        user[field] = value
-
+    user.update(changes.model_dump(exclude_unset=True))
     return user
 
 
-# Example of validation with query parameters
-class PaginationParams(BaseModel):
-    page: int = Field(ge=1, default=1)
-    limit: int = Field(ge=1, le=100, default=10)
-    sort_by: str = Field(default="created_at")
-    order: str = Field(default="desc")
+# ---------------------------------------------------------------------------
+# Query parameter validation
+# ---------------------------------------------------------------------------
 
 
-@app.get("/users")
-async def list_users(request: Request, response: Response) -> Response:
-    try:
-        # Validate query parameters
-        params = PaginationParams(
-            page=int(request.query_params.get("page", 1)),
-            limit=int(request.query_params.get("limit", 10)),
-            sort_by=request.query_params.get("sort_by", "created_at"),
-            order=request.query_params.get("order", "desc"),
-        )
-    except ValidationError as e:
-        return response.json(
-            {"error": "Invalid query parameters", "details": e.errors()},
-            status_code=422,
-        )
+@app.get("/users", response_model=UserResponse, response_model_many=True)
+async def list_users(
+    request,
+    response,
+    page=Query(1, type=int, ge=1, description="Page number"),
+    limit=Query(10, type=int, ge=1, le=100, description="Items per page"),
+    roles=Query([], type=List[UserRole], description="Filter by role"),
+    order=Query("desc", type=str, pattern="^(asc|desc)$"),
+):
+    """Constraints are enforced and published to OpenAPI from one declaration.
 
-    # Simulate paginated response
-    users = [
+    ``?page=0`` returns 422 rather than a 500 or a silently wrong query, and
+    ``?roles=admin&roles=user`` arrives as a list of validated enum members.
+    """
+    return [
         {
             "id": i,
             "username": f"user{i}",
             "email": f"user{i}@example.com",
             "full_name": f"User {i}",
-            "role": UserRole.USER,
+            "role": roles[0] if roles else UserRole.USER,
             "status": UserStatus.ACTIVE,
             "created_at": datetime.now(),
         }
-        for i in range(1, 6)
+        for i in range(1, limit + 1)
     ]
 
-    return response.json(
-        {
-            "items": users,
-            "total": len(users),
-            "page": params.page,
-            "limit": params.limit,
-        }
-    )
+
+# ---------------------------------------------------------------------------
+# Forms and uploads
+# ---------------------------------------------------------------------------
+
+
+class Credentials(BaseModel):
+    username: str
+    password: constr(min_length=8)
+
+
+class Token(BaseModel):
+    access_token: str
+    expires_in: int = Field(description="Lifetime in seconds")
+
+
+@app.post("/login", request_model=Credentials, response_model=Token)
+async def login(request, response, creds):
+    """request_model composes with everything — here it is the only input."""
+    return {"access_token": f"token-for-{creds.username}", "expires_in": 3600}
+
+
+@app.post("/users/{user_id}/avatar")
+async def upload_avatar(
+    request,
+    response,
+    user_id=Path(type=int),
+    caption=Form("", type=str, max_length=140),
+    avatar=File(..., description="Profile image"),
+):
+    """Declaring Form/File switches the route to multipart parsing."""
+    content = await avatar.read()
+    return {
+        "user_id": user_id,
+        "caption": caption,
+        "filename": avatar.filename,
+        "content_type": avatar.content_type,
+        "size": len(content),
+    }

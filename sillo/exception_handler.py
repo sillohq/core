@@ -20,6 +20,7 @@ from sillo.exceptions import HTTPException, NotFoundException
 from sillo.handlers.not_found import handle_404_error
 from sillo.core.http import Request, Response
 from sillo.types import ExceptionHandlerType
+from sillo.validation import RequestValidationError, ResponseValidationError
 
 logger = logging.getLogger("sillo")
 
@@ -180,6 +181,8 @@ class ExceptionMiddleware:
             AuthenticationFailed: AuthErrorHandler,
             NotFoundException: handle_404_error,
             ValidationError: pydantic_validation_error_handler,
+            RequestValidationError: request_validation_error_handler,
+            ResponseValidationError: response_validation_error_handler,
         }
 
     def add_exception_handler(
@@ -293,6 +296,66 @@ class ExceptionMiddleware:
         return response.json(
             exc.detail, status_code=exc.status_code, headers=exc.headers
         )
+
+
+async def request_validation_error_handler(
+    request: Request, response: Response, exc: "RequestValidationError"
+) -> Response:
+    """Handle a request validation failure with a 422 response.
+
+    This is the unified error contract for parameters declared with sillo's
+    validation markers. Every failure carries a ``loc`` whose first element
+    names the request location it came from, so a client can tell a bad query
+    string from a malformed body without guessing::
+
+        {"detail": [{"loc": ["query", "page"], "msg": "...", "type": "..."}]}
+
+    All failures across all locations are reported together rather than one per
+    round trip.
+
+    Args:
+        request: The incoming request whose data failed validation.
+        response: The response builder used to construct the error response.
+        exc: The ``RequestValidationError`` carrying the location-prefixed
+            error dictionaries.
+
+    Returns:
+        A ``Response`` with status 422 and a ``detail`` list of errors.
+    """
+    return response.json({"detail": exc.errors}, status_code=422)
+
+
+async def response_validation_error_handler(
+    request: Request, response: Response, exc: "ResponseValidationError"
+) -> Response:
+    """Handle a response validation failure with a 500 response.
+
+    A handler returned something its declared ``response_model`` does not
+    permit. The caller did nothing wrong, so this is reported as a server
+    error; returning 422 here would wrongly blame the client and would mislead
+    clients that retry on 4xx.
+
+    The offending value is deliberately not echoed to the client, since it may
+    contain data the response model was there to filter out in the first place.
+
+    Args:
+        request: The incoming request being served.
+        response: The response builder used to construct the error response.
+        exc: The ``ResponseValidationError`` describing the contract violation.
+
+    Returns:
+        A ``Response`` with status 500 and a generic error body.
+    """
+    logger.error(
+        "Response validation failed for %s %s: %s",
+        request.method,
+        request.url.path,
+        exc.errors,
+    )
+    return response.json(
+        {"error": "Internal Server Error", "detail": "Response validation failed"},
+        status_code=500,
+    )
 
 
 async def pydantic_validation_error_handler(

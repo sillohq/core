@@ -6,5 +6,6 @@ from sillo.core.dependencies.base import (
     _collect_kwargs,
     _execute_dependency,
     get_dependant,
+    resolve_validated_params,
     solve_dependencies,
 )

@@ -13,6 +13,24 @@ head:
     content: sillo provides seamless integration with Pydantic, offering a flexible way to handle data validation and serialization. Unlike some frameworks that force you to use type hints, sillo gives
       you the freedom to choose between dynamic typing and strict type validation.
 ---
+:::tip[Pydantic is now the core validation engine]
+Pydantic no longer sits beside sillo — it *is* how sillo validates. Every request location and every response can be validated by declaring the type on a marker, with no type annotations required, and your OpenAPI schema is generated from the same models. Start with the [Validation guide](/guides/validation/).
+
+```python
+from sillo import Path, Query
+
+@app.post("/teams/{team_id}/users",
+          request_model=UserCreate,
+          response_model=UserOut)
+async def create_user(request, response, user,
+                      team_id=Path(type=int),
+                      page=Query(1, type=int, ge=1)):
+    ...
+```
+
+`request_model=` is now the single way to declare a JSON body, and it composes with dependencies, markers, and path parameters. Everything else on this page still works unchanged.
+:::
+
 ##  Why Pydantic with sillo?
 
 - **Flexible Validation**: Use Pydantic when you need it, without being forced into a type-hinted architecture

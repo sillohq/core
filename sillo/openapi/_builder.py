@@ -9,6 +9,7 @@ from sillo.openapi.models import Reference
 from sillo.core.routing import Route, Router
 from sillo.core.routing.grouping import Group
 from sillo.parameters import Query, Header, Cookie, SolvedParamDependency
+from sillo.validation import ParameterLocation
 
 from .config import OpenAPIConfig
 from .models import (
@@ -279,7 +280,16 @@ class APIDocumentation:
     ) -> Optional[RequestBody]:
         """
         Build request body specification for the route.
+
+        Form and multipart bodies are documented from the models compiled to
+        validate them. JSON bodies come from ``request_model``, which is the
+        single way to declare one, so its schema is likewise the schema that is
+        enforced at runtime.
         """
+        marker_body = self._build_marker_body_spec(route)
+        if marker_body is not None:
+            return marker_body
+
         if route.request_model:
             if isinstance(route.request_model, dict):
                 # Extract the first model from the dict for schema generation
@@ -327,13 +337,76 @@ class APIDocumentation:
             )
         return None
 
+    def _build_marker_body_spec(self, route: Route) -> Optional[RequestBody]:
+        """
+        Build a request body spec from ``Form`` and ``File`` markers.
+
+        JSON bodies are documented from ``request_model`` instead; this covers
+        only form-encoded and multipart payloads, which have no ``request_model``
+        equivalent.
+
+        Args:
+            route: The route whose compiled validators should be inspected.
+
+        Returns:
+            A ``RequestBody`` describing the declared form payload, or ``None``
+            when the route declares no form markers and the caller should fall
+            back to the ``request_model`` path.
+        """
+        for validator in self._collect_validators(route):
+            if validator.form_spec is None:
+                continue
+
+            spec = validator.form_spec
+            raw = spec.model.model_json_schema(
+                by_alias=True, ref_template="#/$defs/{model}"
+            )
+            schema_dict = self._extract_and_add_nested_schemas(raw)
+            properties = dict(schema_dict.get("properties") or {})
+            # File markers bypass Pydantic, so they are absent from the
+            # generated model and must be described explicitly.
+            for param_name, alias in spec.passthrough.items():
+                properties[alias] = {"type": "string", "format": "binary"}
+            schema_dict["properties"] = properties
+            content_type = (
+                "multipart/form-data"
+                if spec.passthrough
+                else "application/x-www-form-urlencoded"
+            )
+            return RequestBody(
+                required=True,
+                content={content_type: MediaType(spec=Schema(**schema_dict))},
+            )
+
+        return None
+
     def _build_responses_spec(
         self, route: Route
     ) -> Dict[str, OpenAPIResponse | Reference]:
         """
         Build response specifications for the route.
+
+        A declared ``response_model`` takes precedence over the ``responses``
+        mapping for the success status, because it is the schema the framework
+        actually enforces on the way out.
         """
         responses_spec = {}
+
+        response_model = getattr(route, "response_model", None)
+        if response_model is not None:
+            model = (
+                List[response_model]  # type: ignore[valid-type]
+                if getattr(route, "response_model_many", False)
+                else response_model
+            )
+            responses_spec["200"] = self._create_response_spec(model, 200)
+            if route.responses and isinstance(route.responses, dict):
+                for status_code, extra in route.responses.items():
+                    if str(status_code) != "200":
+                        responses_spec[str(status_code)] = self._create_response_spec(
+                            extra, status_code
+                        )
+            return responses_spec
 
         if route.responses:
             if isinstance(route.responses, dict):
@@ -474,17 +547,67 @@ class APIDocumentation:
             content={"application/json": MediaType(spec=Schema(type="object"))},
         )
 
+    def _collect_validators(self, route: Route) -> List[Any]:
+        """
+        Collect every compiled validator reachable from a route.
+
+        Parameters may be declared on the handler itself or on any dependency
+        it pulls in, and all of them belong in the route's documentation. This
+        walks the pre-computed execution plan, which already visits the whole
+        dependency tree in order, rather than re-traversing it recursively.
+
+        Args:
+            route: The route whose handler and dependency tree to inspect.
+
+        Returns:
+            A list of ``CompiledValidator`` instances, one per callable in the
+            tree that declared validated parameters.
+        """
+        validators = []
+        dependants = [getattr(route, "dependant", None)]
+        dependants.extend(getattr(route, "_router_dependants", []) or [])
+
+        for dependant in dependants:
+            if dependant is None:
+                continue
+            for step in dependant._execution_plan:
+                validator = getattr(step.dependant, "validator", None)
+                if validator is not None:
+                    validators.append(validator)
+        return validators
+
     def _build_parameters_spec(self, route: Route) -> List[Parameter]:
         """
         Build parameter specifications for the route.
+
+        Parameters come from two sources that are merged here: markers left on
+        the legacy extraction path, whose schema is inferred from their default
+        value, and markers compiled into Pydantic models, whose schema is the
+        very JSON Schema used to validate them. The latter is why documented
+        constraints cannot drift from enforced ones.
         """
         parameters = []
+        documented: set = set()
 
-        # Add path parameters using the specific Path type
+        # Path parameters declared with a ``Path`` marker carry a real schema;
+        # collect them first so the generic fallback below skips them.
+        path_schemas: Dict[str, Schema] = {}
+        for validator in self._collect_validators(route):
+            for spec in validator.specs:
+                if spec.location is not ParameterLocation.PATH:
+                    continue
+                for name, schema in self._schemas_for_spec(spec).items():
+                    path_schemas[name] = schema
+
         for param_name in route.param_names:
             parameters.append(
-                OpenAPIPath(name=param_name, required=True, spec=Schema(type="string"))
+                OpenAPIPath(
+                    name=param_name,
+                    required=True,
+                    spec=path_schemas.get(param_name, Schema(type="string")),
+                )
             )
+            documented.add(("path", param_name))
 
         # Add Query, Header, Cookie parameters from resolved_params
         if hasattr(route, "resolved_params") and route.resolved_params:
@@ -492,12 +615,80 @@ class APIDocumentation:
                 openapi_param = self._convert_param_dependency(param_dep)
                 if openapi_param:
                     parameters.append(openapi_param)
+                    documented.add((openapi_param.in_, openapi_param.name))
+
+        for validator in self._collect_validators(route):
+            for spec in validator.specs:
+                if spec.location is ParameterLocation.PATH:
+                    continue
+                parameters.extend(
+                    self._convert_location_spec(spec, documented)
+                )
 
         # Add any additional parameters defined on the route
         if hasattr(route, "parameters") and route.parameters:
             parameters.extend(route.parameters)
 
         return parameters
+
+    def _schemas_for_spec(self, spec: Any) -> Dict[str, Schema]:
+        """
+        Extract a per-parameter JSON Schema from a compiled location model.
+
+        Args:
+            spec: The ``LocationSpec`` whose synthetic Pydantic model should be
+                converted to JSON Schema.
+
+        Returns:
+            A mapping of wire parameter name to its ``Schema``. Nested model
+            definitions are lifted into ``components.schemas`` on the way out.
+        """
+        raw = spec.model.model_json_schema(by_alias=True, ref_template="#/$defs/{model}")
+        processed = self._extract_and_add_nested_schemas(raw)
+        return {
+            name: Schema(**prop)
+            for name, prop in (processed.get("properties") or {}).items()
+        }
+
+    def _convert_location_spec(self, spec: Any, documented: set) -> List[Parameter]:
+        """
+        Convert one compiled location model into OpenAPI parameter entries.
+
+        Args:
+            spec: The ``LocationSpec`` to convert.
+            documented: Already-emitted ``(location, name)`` pairs, used to
+                avoid documenting a parameter twice when it is declared on both
+                a handler and one of its dependencies.
+
+        Returns:
+            A list of OpenAPI ``Parameter`` objects for this location.
+        """
+        param_class = {
+            ParameterLocation.QUERY: OpenAPIQuery,
+            ParameterLocation.HEADER: OpenAPIHeader,
+            ParameterLocation.COOKIE: OpenAPICookie,
+        }.get(spec.location)
+        if param_class is None:
+            return []
+
+        raw = spec.model.model_json_schema(by_alias=True, ref_template="#/$defs/{model}")
+        processed = self._extract_and_add_nested_schemas(raw)
+        required_names = set(processed.get("required") or [])
+
+        out: List[Parameter] = []
+        for name, prop in (processed.get("properties") or {}).items():
+            key = (spec.location.value, name)
+            if key in documented:
+                continue
+            documented.add(key)
+            out.append(
+                param_class(
+                    name=name,
+                    spec=Schema(**prop),
+                    required=name in required_names,
+                )
+            )
+        return out
 
     def _convert_param_dependency(
         self, param_dep: SolvedParamDependency

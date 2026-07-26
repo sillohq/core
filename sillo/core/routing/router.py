@@ -40,6 +40,11 @@ from sillo.core.dependencies import (
     solve_dependencies,
 )
 from sillo.parameters import ParameterExtractor, SolvedParamDependency
+from sillo.validation import (
+    RequestValidationError,
+    ResponseModelValidator,
+    prefix_errors,
+)
 from sillo.events import EventEmitter
 from sillo.exceptions import NotFoundException, HTTPException
 from sillo.core.http import Request, Response
@@ -58,7 +63,7 @@ from sillo.types import (
 from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.utils.concurrency import run_in_threadpool
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
@@ -171,6 +176,18 @@ class Route(BaseRoute):
                 "Content type for the request body in OpenAPI docs. Defaults to 'application/json'."
             ),
         ] = "application/json",
+        response_model: Annotated[
+            Optional[ArgsType],
+            Doc(
+                "A Pydantic model describing this endpoint's successful response. When set, the handler's return value is validated against it, undeclared fields are dropped, and the OpenAPI response schema is generated from it — so the published contract is enforced rather than merely documented."
+            ),
+        ] = None,
+        response_model_many: bool = False,
+        response_model_exclude_none: bool = False,
+        response_model_exclude_unset: bool = False,
+        response_model_exclude_defaults: bool = False,
+        response_model_by_alias: bool = True,
+        strict_validation: bool = False,
         tags: Optional[Sequence[str]] = None,
         security: Optional[List[Dict[str, List[str]]]] = None,
         operation_id: Optional[str] = None,
@@ -179,7 +196,7 @@ class Route(BaseRoute):
         middleware: Optional[List[Any]] = None,
         exclude_from_schema: bool = False,
         auth: Optional[Any] = None,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         """Initialize a Route instance with full endpoint configuration.
 
@@ -212,6 +229,23 @@ class Route(BaseRoute):
                 defining the expected request payload structure.
             request_content_type: Content type for the request body in
                 OpenAPI docs. Defaults to ``"application/json"``.
+            response_model: Pydantic model describing the successful response.
+                When provided the handler's return value is validated and
+                shaped against it before encoding, so fields the model does
+                not declare never reach the client.
+            response_model_many: Set when the handler returns a list of
+                ``response_model`` rather than a single instance.
+            response_model_exclude_none: Omit response fields whose value
+                is ``None``.
+            response_model_exclude_unset: Omit response fields that were
+                never explicitly set.
+            response_model_exclude_defaults: Omit response fields still equal
+                to their declared default.
+            response_model_by_alias: Serialize the response using field
+                aliases. Defaults to ``True``.
+            strict_validation: Compile parameters written in the pre-Pydantic
+                style onto the validated path as well, so missing or malformed
+                values produce a 422 rather than the historical 500.
             tags: Sequence of OpenAPI tags for grouping this endpoint in
                 generated documentation.
             security: List of security requirement dicts for OpenAPI docs.
@@ -242,7 +276,7 @@ class Route(BaseRoute):
         self.auth = auth
         self.handler_signature = inspect.signature(handler)
         self.name = name
-        self.dependant = get_dependant(handler)
+        self.dependant = get_dependant(handler, strict_validation=strict_validation)
         self._router_dependants: List[Dependant] = []
 
         self.route_info = RouteBuilder.create_pattern(path)
@@ -257,6 +291,21 @@ class Route(BaseRoute):
         self.responses = responses
         self.request_model = request_model
         self.request_content_type = request_content_type
+        self.strict_validation = strict_validation
+        self.response_model = response_model
+        self.response_model_many = response_model_many
+        self.response_validator = (
+            ResponseModelValidator(
+                response_model,
+                many=response_model_many,
+                exclude_none=response_model_exclude_none,
+                exclude_unset=response_model_exclude_unset,
+                exclude_defaults=response_model_exclude_defaults,
+                by_alias=response_model_by_alias,
+            )
+            if response_model is not None
+            else None
+        )
         self.kwargs = kwargs
         self.tags = tags
         self.security = security
@@ -268,13 +317,7 @@ class Route(BaseRoute):
         if "GET" in self.methods:
             self.methods.add("HEAD")
 
-        self._validated_param_name: Optional[str] = None
-        if self.request_model is not None:
-            params = list(self.handler_signature.parameters.keys())
-            if len(params) >= 3:
-                third_param = self.handler_signature.parameters[params[2]]
-                if not isinstance(third_param.default, (Depend, ParameterExtractor)):
-                    self._validated_param_name = params[2]
+        self._validated_param_name: Optional[str] = self._find_body_param()
 
         async def _route_asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
             """Serve as the base ASGI application for this route.
@@ -301,7 +344,13 @@ class Route(BaseRoute):
                 request, response_manager, **request.path_params
             )
             if isinstance(func_result, (BaseResponse, Responder)):
+                # The handler built its own response — status, headers, and
+                # body are its business, so the response model is not applied.
                 response = func_result
+            elif self.response_validator is not None:
+                response = JSONResponse(
+                    content=self.response_validator.validate(func_result)
+                )
             else:
                 encoded = jsonable_encoder(func_result)
                 if isinstance(encoded, str):
@@ -338,6 +387,63 @@ class Route(BaseRoute):
             return app
 
         self.app = apply_middleware(route_handler_as_asgi_app)
+
+    def _find_body_param(self) -> Optional[str]:
+        """Find the handler parameter that should receive the validated body.
+
+        ``request_model`` declares a body on the decorator, so something has to
+        decide which parameter receives it. The rule is name-agnostic and
+        composes with everything else a handler can declare:
+
+        A candidate is any parameter after ``request`` and ``response`` that is
+        not filled by some other mechanism — so ``Depend`` and parameter
+        markers are skipped because dependency injection fills them, and path
+        parameter names are skipped because the router already passes those in
+        as keyword arguments. Of the remaining candidates the **first parameter
+        with no default** wins: Python requires such parameters to come first,
+        and nothing else in the framework would ever fill one, so binding it is
+        unambiguous.
+
+        Failing that, a parameter sitting immediately after ``response`` and
+        carrying a plain default is accepted, which preserves the behavior of
+        handlers written against the original positional rule.
+
+        Returns:
+            The parameter name to inject the validated body into, or ``None``
+            when the handler takes the body off ``request.validated_data``
+            instead.
+        """
+        if self.request_model is None:
+            return None
+
+        candidates = [
+            param
+            for param in list(self.handler_signature.parameters.values())[2:]
+            if param.kind
+            not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+            and param.name not in self.param_names
+            and not isinstance(param.default, (Depend, ParameterExtractor))
+        ]
+
+        for param in candidates:
+            if param.default is inspect.Parameter.empty:
+                return param.name
+
+        if candidates and candidates[0].name == self._third_param_name():
+            return candidates[0].name
+        return None
+
+    def _third_param_name(self) -> Optional[str]:
+        """Return the name of the handler's third parameter, if it has one.
+
+        Used only to preserve the original positional binding rule for
+        handlers that declare the body parameter with a default.
+
+        Returns:
+            The third parameter's name, or ``None`` for shorter signatures.
+        """
+        names = list(self.handler_signature.parameters.keys())
+        return names[2] if len(names) >= 3 else None
 
     @property
     def resolved_params(self) -> List[SolvedParamDependency]:
@@ -478,17 +584,20 @@ class Route(BaseRoute):
         injected.update(handler_values)
 
         if self.request_model is not None:
-            body = await request.json
-            try:
-                validated = self.request_model(**body)
-            except ValidationError as e:
-                raise HTTPException(status_code=422, detail=e.errors())
+            validated = await self._validate_body(request)
             request._validated_data = validated
             if self._validated_param_name:
                 injected[self._validated_param_name] = validated
 
         if self.auth is not None:
             await self.auth.authenticate(request)
+
+        # Path parameters reach the handler as **kwargs. When one is also
+        # declared with a validation marker, the validated value supersedes the
+        # raw captured one — without this the handler would receive the same
+        # keyword twice.
+        if injected:
+            kwargs = {k: v for k, v in kwargs.items() if k not in injected}
 
         try:
             if is_async_callable(self.handler):
@@ -501,6 +610,60 @@ class Route(BaseRoute):
                 result = cleanup()
                 if inspect.isawaitable(result):
                     await result
+
+    async def _validate_body(self, request: Request) -> Any:
+        """Read and validate the JSON request body against ``request_model``.
+
+        Args:
+            request: The incoming request whose body should be validated.
+
+        Returns:
+            The validated model instance, or the raw decoded payload when
+            ``request_model`` is not a Pydantic model class (it may be a
+            documentation-only mapping of status codes to models).
+
+        Raises:
+            RequestValidationError: When ``strict_validation`` is enabled and
+                the body is malformed or fails validation. Reports errors in
+                the unified shape, prefixed with the ``body`` location.
+            HTTPException: Otherwise, a 422 whose detail is the bare list of
+                Pydantic errors — the shape sillo has always returned for
+                ``request_model``, preserved for existing clients.
+        """
+        try:
+            payload = await request.json
+        except Exception:
+            errors = [
+                {
+                    "loc": ["body"],
+                    "msg": "Request body is not valid JSON",
+                    "type": "json_invalid",
+                }
+            ]
+            # Malformed JSON used to escape as an unhandled decode error and
+            # surface as a 500. It is a client mistake, so it is a 422 in both
+            # modes; only the payload shape differs.
+            if self.strict_validation:
+                raise RequestValidationError(errors)
+            raise HTTPException(status_code=422, detail=errors)
+
+        if not (
+            isinstance(self.request_model, type)
+            and issubclass(self.request_model, BaseModel)
+        ):
+            return payload
+
+        try:
+            # model_validate rather than the historical ``Model(**payload)``
+            # splat: a JSON array or scalar body now reports as a validation
+            # error instead of raising TypeError and becoming a 500.
+            return self.request_model.model_validate(payload)
+        except ValidationError as exc:
+            if self.strict_validation:
+                raise RequestValidationError(
+                    prefix_errors(exc, "body"), body=payload
+                ) from exc
+            raise HTTPException(status_code=422, detail=exc.errors()) from exc
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Process an incoming HTTP request using the route's middleware stack.
@@ -573,6 +736,7 @@ class Router(BaseRouter):
         name: Optional[str] = None,
         dependencies: Optional[list[Depend]] = None,
         route_class: Type[Route] = Route,
+        strict_validation: bool = False,
     ):
         """Initialize the router with configuration options.
 
@@ -599,6 +763,9 @@ class Router(BaseRouter):
                 generation with dot-separated notation.
             dependencies: List of dependency injection definitions that
                 apply to all routes in this router.
+            strict_validation: Propagated to every route created by this
+                router, opting parameters declared in the pre-Pydantic style
+                into full validation so bad input returns 422 rather than 500.
             route_class: The Route class to use when creating new routes
                 via decorator methods. Defaults to the standard Route class.
         """
@@ -608,6 +775,7 @@ class Router(BaseRouter):
         self.middleware: typing.List[Middleware] = []
         self.sub_routers: Dict[str, Union[Router, ASGIApp]] = {}
         self.route_class = route_class
+        self.strict_validation = strict_validation
         self.tags = tags or []
         self.exclude_from_schema = exclude_from_schema
         self.name = name
@@ -834,7 +1002,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-head-only": True}
@@ -894,6 +1062,7 @@ class Router(BaseRouter):
                 raise ValueError(
                     "path and handler are required if route is not provided"
                 )
+            kwargs.setdefault("strict_validation", self.strict_validation)
             route = Route(
                 path=path,
                 handler=handler,
@@ -1075,7 +1244,7 @@ class Router(BaseRouter):
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional route metadata.
                 Example: {"x-internal": True}
@@ -1304,7 +1473,7 @@ class Router(BaseRouter):
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-audit-log": True}
@@ -1500,7 +1669,7 @@ class Router(BaseRouter):
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-destructive": True}
@@ -1706,7 +1875,7 @@ class Router(BaseRouter):
             """),
         ] = "application/json",
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-idempotent": True}
@@ -1915,7 +2084,7 @@ class Router(BaseRouter):
             """),
         ] = "application/json",
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-partial-update": True}
@@ -2110,7 +2279,7 @@ class Router(BaseRouter):
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-cors": True}
@@ -2305,7 +2474,7 @@ class Router(BaseRouter):
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-head-only": True}
@@ -2503,7 +2672,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional route metadata that will be available in the request scope.
                 Useful for custom extensions or plugin-specific data.
@@ -2605,7 +2774,7 @@ class Router(BaseRouter):
                 parameters=parameters,
                 exclude_from_schema=exclude_from_schema,
                 auth=auth,
-                **kwargs,
+                **{"strict_validation": self.strict_validation, **kwargs},
             )
             self.add_route(route_instance)
 
@@ -3128,7 +3297,7 @@ class Router(BaseRouter):
                 "An ASGI middleware class or callable that takes an app as its first argument and returns an ASGI app"
             ),
         ],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         """Wrap the entire router with an ASGI-level middleware.
 

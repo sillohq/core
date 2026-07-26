@@ -217,6 +217,16 @@ class silloApp:
                     The class used to create routes. This can be a custom route class that inherits from `Route`.
                 """),
         ] = Route,
+        strict_validation: Annotated[
+            bool,
+            Doc("""
+                    Validate every declared parameter with Pydantic, including those
+                    written in the pre-Pydantic style that only supply a default.
+                    Missing or malformed values then return 422 instead of the
+                    historical 500. Off by default so existing applications keep
+                    their current behavior; recommended for new applications.
+                """),
+        ] = False,
     ) -> None:
         """
         Initialize the sillo application with all core subsystems.
@@ -257,6 +267,10 @@ class silloApp:
             route_class: The class used to instantiate new routes. Allows
                 substitution of a custom ``Route`` subclass. Defaults to
                 :class:`Route`.
+            strict_validation: When ``True``, parameters declared in the
+                pre-Pydantic style are validated too, so a missing or malformed
+                value produces a 422 rather than a 500. Defaults to ``False``
+                to preserve the behavior of existing applications.
 
         Returns:
             None
@@ -274,8 +288,12 @@ class silloApp:
         self.server_error_handler = server_error_handler
 
         self.route_class = route_class
+        self.strict_validation = strict_validation
         self.app = Router(
-            routes=routes, dependencies=self.dependencies, route_class=self.route_class
+            routes=routes,
+            dependencies=self.dependencies,
+            route_class=self.route_class,
+            strict_validation=strict_validation,
         )
         self.exceptions_handler = ExceptionMiddleware()
         self.router = self.app
@@ -962,7 +980,7 @@ class silloApp:
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional route metadata.
                 Example: {"x-internal": True}
@@ -1156,7 +1174,7 @@ class silloApp:
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-audit-log": True}
@@ -1330,7 +1348,7 @@ class silloApp:
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-destructive": True}
@@ -1513,7 +1531,7 @@ class silloApp:
             """),
         ] = "application/json",
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-idempotent": True}
@@ -1702,7 +1720,7 @@ class silloApp:
             """),
         ] = "application/json",
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-partial-update": True}
@@ -1877,7 +1895,7 @@ class silloApp:
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-cors": True}
@@ -2046,7 +2064,7 @@ class silloApp:
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-head-only": True}
@@ -2238,7 +2256,7 @@ class silloApp:
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
-            Dict[str, Any],
+            Any,
             Doc("""
                 Additional metadata.
                 Example: {"x-head-only": True}
@@ -2367,7 +2385,7 @@ class silloApp:
                 "An ASGI middleware class or callable that takes an app as its first argument and returns an ASGI app"
             ),
         ],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> None:
         """
         Wraps the entire application with an ASGI middleware.

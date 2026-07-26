@@ -5,10 +5,12 @@ from dataclasses import dataclass, field
 from inspect import signature
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Tuple
 
-from sillo.parameters import (
-    Header,
+from sillo.validation import (
+    CompiledValidator,
     ParameterExtractor,
     SolvedParamDependency,
+    compile_validator,
+    raise_if_errors,
 )
 
 if TYPE_CHECKING:
@@ -156,6 +158,10 @@ class Dependant:
             single request return the cached value. ``None`` disables caching.
         use_cache: Whether to use caching for this dependency. Defaults to
             ``True``.
+        validator: The ``CompiledValidator`` holding the Pydantic models built
+            for this callable's validated parameters, or ``None`` when it
+            declares none. Compiled once here at registration so request-time
+            validation performs no signature introspection.
         _execution_plan: A pre-computed flat list of ``ExecutionStep`` objects
             representing the depth-first traversal order for iterative solving.
     """
@@ -165,6 +171,7 @@ class Dependant:
     dependencies: List["Dependant"] = field(default_factory=list)
     request_param_names: List[str] = field(default_factory=list)
     param_extractors: List[SolvedParamDependency] = field(default_factory=list)
+    validator: Optional[CompiledValidator] = None
     is_coroutine: bool = False
     is_generator: bool = False
     is_async_generator: bool = False
@@ -181,6 +188,8 @@ class Dependant:
 def get_dependant(
     call: Callable[..., Any],
     name: Optional[str] = None,
+    *,
+    strict_validation: bool = False,
 ) -> Dependant:
     """
     Analyze a callable's signature and build a Dependant dependency tree.
@@ -200,6 +209,11 @@ def get_dependant(
         name: An optional name to assign to this dependant node. Typically
             corresponds to the parameter name in the parent callable's
             signature. Used as the key when storing resolved values.
+        strict_validation: When ``True``, markers written in the pre-Pydantic
+            style are compiled onto the validated path as well, so missing or
+            malformed values produce a 422 instead of the historical 500.
+            Propagates to nested dependencies so a whole application validates
+            consistently.
 
     Returns:
         A fully constructed ``Dependant`` instance with its dependency tree,
@@ -218,7 +232,7 @@ def get_dependant(
     sig = signature(call)
     deps: List[Dependant] = []
     request_params: List[str] = []
-    extractors: List[SolvedParamDependency] = []
+    markers: List[Tuple[str, ParameterExtractor]] = []
     cache_key_parts: List[str] = []
 
     for param_name, param in sig.parameters.items():
@@ -228,21 +242,27 @@ def get_dependant(
             if default.get_request and default.dependency is None:
                 request_params.append(param_name)
             else:
-                sub = get_dependant(default.dependency, param_name)
+                sub = get_dependant(
+                    default.dependency,
+                    param_name,
+                    strict_validation=strict_validation,
+                )
                 deps.append(sub)
                 cache_key_parts.append(param_name)
 
         elif isinstance(default, ParameterExtractor):
-            extractor = default
-            extractor.param_name = param_name
-            if not extractor.alias:
-                if isinstance(extractor, Header):
-                    extractor.alias = extractor._convert_param_to_header_name(
-                        param_name
-                    )
-                else:
-                    extractor.alias = param_name
-            extractors.append(SolvedParamDependency(extractor, param_name))
+            markers.append((param_name, default))
+
+    # Compiling here partitions the markers: those written in the pre-Pydantic
+    # style stay on the synchronous extractor path they have always used, while
+    # the rest are folded into per-location Pydantic models. Both halves are
+    # produced by a single pass so the two paths cannot disagree about aliases.
+    validator = compile_validator(
+        markers,
+        name=getattr(call, "__name__", "handler"),
+        strict=strict_validation,
+    )
+    extractors = list(validator.legacy)
 
     cache_key: Any = None
     if cache_key_parts:
@@ -254,6 +274,7 @@ def get_dependant(
         dependencies=deps,
         request_param_names=request_params,
         param_extractors=extractors,
+        validator=validator if validator.is_active else None,
         is_coroutine=inspect.iscoroutinefunction(call),
         is_generator=inspect.isgeneratorfunction(call),
         is_async_generator=inspect.isasyncgenfunction(call),
@@ -300,6 +321,7 @@ def _collect_kwargs(
     node: Dependant,
     values: Dict[str, Any],
     request: Optional["Request"],
+    validated: Optional[Dict[int, Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
     Collect keyword arguments for executing a dependency node.
@@ -316,6 +338,10 @@ def _collect_kwargs(
             by dependency name. Sub-dependency values are looked up here.
         request: The current ``Request`` object, or ``None`` if not available.
             Used to satisfy parameter extractors and raw request parameters.
+        validated: Values produced by the Pydantic validators, keyed by the
+            id of the ``Dependant`` they belong to. Resolved ahead of this
+            call because body and form parsing are asynchronous, whereas this
+            function is deliberately synchronous.
 
     Returns:
         A dictionary of keyword arguments ready to be unpacked into the
@@ -328,9 +354,71 @@ def _collect_kwargs(
     }
     for ext in node.param_extractors:
         kwargs[ext.param_name] = ext.extractor.extract(request)
+    if validated is not None:
+        node_values = validated.get(id(node))
+        if node_values:
+            kwargs.update(node_values)
     for rp in node.request_param_names:
         kwargs[rp] = request
     return kwargs
+
+
+async def resolve_validated_params(
+    dependant: Dependant,
+    request: Optional["Request"],
+) -> Dict[int, Dict[str, Any]]:
+    """
+    Run every Pydantic validator in a dependency tree against the request.
+
+    Walks the pre-computed execution plan and validates each node that
+    declared validated parameters. Failures from every node and every request
+    location are accumulated and reported together, so a client with a bad
+    query parameter *and* a malformed body learns about both in one response
+    rather than one per round trip.
+
+    Form payloads are read through the request's own caching accessor, so
+    declaring form fields across several dependencies parses the payload only
+    once. JSON bodies are not handled here — they are declared with the
+    ``request_model=`` route argument and validated by the route.
+
+    Args:
+        dependant: The root ``Dependant`` whose execution plan should be
+            walked. Nodes without a validator are skipped.
+        request: The current ``Request``. When ``None`` there is nothing to
+            validate against and an empty mapping is returned.
+
+    Returns:
+        A mapping from ``id(dependant_node)`` to the validated keyword
+        arguments for that node. Empty when no node declares validated
+        parameters.
+
+    Raises:
+        RequestValidationError: If any declared parameter failed validation.
+    """
+    if request is None:
+        return {}
+
+    resolved: Dict[int, Dict[str, Any]] = {}
+    errors: List[Dict[str, Any]] = []
+
+    for step in dependant._execution_plan:
+        node = step.dependant
+        validator = node.validator
+        if validator is None:
+            continue
+
+        node_values, node_errors = validator.validate_sync(request)
+        errors.extend(node_errors)
+
+        if validator.needs_form:
+            form_values, form_errors = validator.validate_form(await request.form)
+            node_values.update(form_values)
+            errors.extend(form_errors)
+
+        resolved[id(node)] = node_values
+
+    raise_if_errors(errors)
+    return resolved
 
 
 DependencyCache = Dict[Tuple[Callable[..., Any], Tuple[str, ...]], Any]
@@ -379,6 +467,7 @@ async def solve_dependencies(
         cleanup_callbacks if cleanup_callbacks is not None else []
     )
     values: Dict[str, Any] = {}
+    validated = await resolve_validated_params(dependant, request)
 
     for step in dependant._execution_plan:
         sub = step.dependant
@@ -388,7 +477,7 @@ async def solve_dependencies(
                 values[sub.name] = cache[sub.cache_key]
             continue
 
-        kwargs = _collect_kwargs(sub, values, request)
+        kwargs = _collect_kwargs(sub, values, request, validated)
 
         if step.is_root:
             return kwargs
