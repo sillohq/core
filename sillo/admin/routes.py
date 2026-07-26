@@ -17,7 +17,12 @@ A Django-admin-level interface for sillo models:
 from __future__ import annotations
 from typing import List, Any
 
+import csv
+import io
+import json
 import math
+from datetime import date, datetime, timezone
+from decimal import Decimal
 
 from tortoise import connections, fields as tf
 from tortoise.expressions import Q
@@ -779,6 +784,65 @@ async def _apply_reverse_relations(meta, model_cls, obj, get, getlist):
                 await child.delete()
 
 
+# ── Export helpers ───────────────────────────────────────────────────────
+
+_EXPORT_ROW_CAP = 10000
+
+
+def _csv_cell(v):
+    """Coerce a raw cell value into something ``csv.writer`` can write safely."""
+    if v is None:
+        return ""
+    if isinstance(v, (str, int, float, bool)):
+        return v
+    if isinstance(v, (datetime, date)):
+        return v.isoformat()
+    if isinstance(v, Decimal):
+        return float(v)
+    if isinstance(v, (bytes, bytearray)):
+        return v.hex()
+    return str(v)
+
+
+def _csv_export(response, columns, rows, filename):
+    """Render *rows* (dicts) as a downloadable CSV attachment."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(columns)
+    for row in rows:
+        writer.writerow([_csv_cell(row.get(c)) for c in columns])
+    return response.text(
+        buf.getvalue(),
+        headers={
+            "content-type": "text/csv; charset=utf-8",
+            "content-disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
+def _json_export_default(value):
+    """``json.dumps(default=...)`` handler for types SQL/ORM rows may contain."""
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (bytes, bytearray)):
+        return value.hex()
+    return str(value)
+
+
+def _json_export(response, rows, filename):
+    """Render *rows* (dicts) as a downloadable JSON attachment."""
+    body = json.dumps(list(rows), indent=2, default=_json_export_default)
+    return response.text(
+        body,
+        headers={
+            "content-type": "application/json; charset=utf-8",
+            "content-disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
 # ── Route functions ──────────────────────────────────────────────────────
 
 
@@ -947,6 +1011,7 @@ async def query_view(request, response, site):
     if request.method == "POST":
         get, _ = await _collect_form(request)
         sql = (get("sql") or "").strip()
+        export_fmt = get("export") or ""
         ctx["sql"] = sql
         if sql:
             try:
@@ -956,10 +1021,112 @@ async def query_view(request, response, site):
                 ctx["columns"] = list(rows[0].keys()) if rows else []
                 ctx["rowcount"] = rowcount
                 await _log(request, "query", "SQL", site, None, sql[:2000])
+                if export_fmt in ("csv", "json"):
+                    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+                    if export_fmt == "json":
+                        return _json_export(response, rows, f"query_{stamp}.json")
+                    return _csv_export(response, ctx["columns"], rows, f"query_{stamp}.csv")
             except Exception as e:
                 ctx["error"] = str(e)
 
     return response.html(_render("query.html", **ctx))
+
+
+async def export_view(request, response, site, model_cls, admin_cls):
+    """Export View — download a model's (optionally filtered) list as CSV or JSON.
+
+    Honors the same ``q`` (search) and ``f_<field>`` (list_filter) query
+    params as :func:`list_view` so "export what I'm looking at" works, but
+    ignores pagination and instead caps the result at ``_EXPORT_ROW_CAP``
+    rows to avoid an unbounded dump.
+
+    Args:
+        request: [description]
+        response: [description]
+        site: [description]
+        model_cls: [description]
+        admin_cls: [description]
+
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+    if not admin_cls.has_view_permission(request):
+        return _forbidden(response, site.prefix)
+
+    model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
+    model_slug = model_cls.__name__.lower()
+    meta = model_cls._meta
+    qs = model_cls.all()
+
+    query = request.query_params.get("q", "")
+    if query and admin_cls.search_fields:
+        q_filter = Q()
+        for f in admin_cls.search_fields:
+            q_filter |= Q(**{f"{f}__icontains": query})
+        qs = qs.filter(q_filter)
+
+    for f in admin_cls.get_list_filter():
+        if f not in meta.fields_map:
+            continue
+        val = request.query_params.get(f"f_{f}", "")
+        if not val:
+            continue
+        fobj = meta.fields_map[f]
+        ftype = _field_kind(fobj, f)
+        if isinstance(fobj, tf.BooleanField):
+            qs = qs.filter(**{f: val == "1"})
+        elif ftype in ("fk", "o2o"):
+            qs = qs.filter(**{f + "_id": int(val)})
+        else:
+            qs = qs.filter(**{f: val})
+
+    sort = request.query_params.get("sort", "id")
+    d = request.query_params.get("dir", "asc")
+    dir_prefix = "-" if d == "desc" else ""
+    try:
+        qs = qs.order_by(f"{dir_prefix}{sort}")
+    except Exception:
+        pass
+
+    items = await qs.limit(_EXPORT_ROW_CAP)
+
+    columns = [c for c in admin_cls.list_display if not _should_skip_field(c)]
+    column_info = []
+    for col in columns:
+        field_obj = meta.fields_map.get(col)
+        kind = _field_kind(field_obj, col) if field_obj else "text"
+        if kind == "password":
+            continue
+        column_info.append({"name": col, "type": kind, "field_obj": field_obj})
+
+    out_rows = []
+    for item in items:
+        row = {}
+        for ci in column_info:
+            name = ci["name"]
+            if ci["type"] in ("fk", "o2o") and ci["field_obj"]:
+                label, _link = await _resolve_fk_value(
+                    item, name, ci["field_obj"], site, as_link=False
+                )
+                row[name] = label
+            elif ci["type"] == "m2m" and ci["field_obj"]:
+                related = await _resolve_m2m_value(item, name, ci["field_obj"], site)
+                row[name] = "; ".join(label for label, _link in related)
+            else:
+                row[name] = getattr(item, name, None)
+        out_rows.append(row)
+
+    out_columns = [ci["name"] for ci in column_info]
+    fmt = (request.query_params.get("format") or "csv").lower()
+    await _log(request, "export", model_name, site, None, f"{fmt}:{len(out_rows)} rows")
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    if fmt == "json":
+        return _json_export(response, out_rows, f"{model_slug}_{stamp}.json")
+    return _csv_export(response, out_columns, out_rows, f"{model_slug}_{stamp}.csv")
 
 
 async def list_view(request, response, site, model_cls, admin_cls):

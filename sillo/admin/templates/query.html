@@ -25,8 +25,10 @@
             </div>
             <div class="field-help">⌘/Ctrl + Enter to run. Any valid SQL is executed directly against the database — including writes.</div>
         </div>
-        <div class="form-actions">
+        <div class="form-actions" style="display:flex;gap:10px;">
             <button type="submit" class="btn btn-primary btn-lg">Run Query</button>
+            <button type="submit" name="export" value="csv" class="btn btn-secondary btn-lg">Export CSV</button>
+            <button type="submit" name="export" value="json" class="btn btn-secondary btn-lg">Export JSON</button>
         </div>
     </form>
 </div>

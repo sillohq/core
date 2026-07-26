@@ -10,6 +10,7 @@ from .routes import (
     dashboard_view,
     delete_view,
     detail_view,
+    export_view,
     list_view,
     login_view,
     logout_view,
@@ -69,6 +70,12 @@ def build_routes(site) -> list:
                 _create_handler(site, model_cls, admin_cls),
                 methods=["GET", "POST"],
                 name=f"admin-{name}-create",
+            ),
+            Route(
+                f"{b}export/",
+                _export_handler(site, model_cls, admin_cls),
+                methods=["GET"],
+                name=f"admin-{name}-export",
             ),
             Route(
                 f"{b}{{id}}/",
@@ -218,6 +225,39 @@ def _query_handler(site):
             [description]
         """
         return await query_view(request, response, site)
+
+    return handler
+
+
+def _export_handler(site, model_cls, admin_cls):
+    """Export Handler
+
+    Args:
+        site: [description]
+        model_cls: [description]
+        admin_cls: [description]
+
+    Returns:
+        [description]
+
+    Raises:
+        [description]
+    """
+
+    async def handler(request, response):
+        """Handler
+
+        Args:
+            request: [description]
+            response: [description]
+
+        Returns:
+            [description]
+
+        Raises:
+            [description]
+        """
+        return await export_view(request, response, site, model_cls, admin_cls)
 
     return handler
 

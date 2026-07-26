@@ -6,6 +6,8 @@
         <div class="subtitle">{{ total }} record(s){% if active_filter_count %} · {{ active_filter_count }} filter(s) active{% endif %}</div>
     </div>
     <div class="toolbar-actions">
+        <a href="{{ site_prefix }}/{{ model_slug }}/export/?format=csv&sort={{ sort }}&dir={{ dir }}&q={{ query }}{% for f in filters %}{% if f.value %}&{{ f.param }}={{ f.value }}{% endif %}{% endfor %}" class="btn btn-secondary">Export CSV</a>
+        <a href="{{ site_prefix }}/{{ model_slug }}/export/?format=json&sort={{ sort }}&dir={{ dir }}&q={{ query }}{% for f in filters %}{% if f.value %}&{{ f.param }}={{ f.value }}{% endif %}{% endfor %}" class="btn btn-secondary">Export JSON</a>
         {% if can_add %}<a href="{{ site_prefix }}/{{ model_slug }}/create/" class="btn btn-primary">+ Add {{ model_name }}</a>{% endif %}
     </div>
 </div>
