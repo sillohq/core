@@ -57,6 +57,7 @@ from .types import (
 if TYPE_CHECKING:
     from sillo.core.http import Request, Response
 
+import json
 import warnings
 
 try:
@@ -289,6 +290,8 @@ class silloApp:
 
         self.route_class = route_class
         self.strict_validation = strict_validation
+        # Serialized OpenAPI document per mount prefix, built once.
+        self._openapi_documents: Dict[str, str] = {}
         self.app = Router(
             routes=routes,
             dependencies=self.dependencies,
@@ -347,12 +350,14 @@ class silloApp:
             None
         """
 
+        from sillo.core.http.response import BaseResponse
+
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)
         async def serve_openapi(request: "Request", response: "Response"):
             root_path = request.scope.get("root_path", "")
-
-            return response.json(
-                self.openapi.get_openapi(self.router, current_prefix=root_path)
+            return BaseResponse(
+                body=self.build_openapi(root_path),
+                content_type="application/json",
             )
 
         @self.get(self.openapi.swagger_url, exclude_from_schema=True)
@@ -368,6 +373,34 @@ class silloApp:
             root_path = request.scope.get("root_path", "")
             openapi_url = root_path + self.openapi.openapi_url
             return response.html(self.openapi._generate_redoc_ui(openapi_url))
+
+    def build_openapi(self, root_path: str = "") -> str:
+        """Build the OpenAPI document and return it as a JSON string.
+
+        Generating the document walks every route and produces JSON Schema for
+        every model, so it is built once — during startup, or on first access
+        for a mount prefix not seen at startup — and the serialized result is
+        kept. Serving it afterwards writes a stored string, doing no
+        generation and no encoding per request.
+
+        Routes are registered before the application starts serving, so there
+        is nothing to invalidate; a prefix is built at most once.
+
+        Args:
+            root_path: The ASGI mount prefix the document should describe.
+                Documents are stored per prefix, since the same application can
+                be mounted at more than one path.
+
+        Returns:
+            The serialized OpenAPI document.
+        """
+        cached = self._openapi_documents.get(root_path)
+        if cached is None:
+            cached = json.dumps(
+                self.openapi.get_openapi(self.router, current_prefix=root_path)
+            )
+            self._openapi_documents[root_path] = cached
+        return cached
 
     def on_startup(
         self, handler: Callable[[], Awaitable[None]]
@@ -483,6 +516,10 @@ class silloApp:
                 to the caller, which typically results in a
                 ``lifespan.startup.failed`` ASGI message.
         """
+        # All routes are registered by the time the application starts, so the
+        # OpenAPI document is built here, once, rather than on a request.
+        self.build_openapi()
+
         for handler in self.startup_handlers:
             if is_async_callable(handler):
                 await handler()

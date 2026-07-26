@@ -64,6 +64,9 @@ class APIDocumentation:
         self.swagger_url = swagger_url
         self.redoc_url = redoc_url
         self.openapi_url = openapi_url
+        # Per-build memo of each route's compiled validators, so the parameter,
+        # request-body, and response sections do not each re-collect them.
+        self._validator_memo: Dict[int, List[Any]] = {}
 
     def _generate_redoc_ui(self, openapi_url: str | None = None) -> str:
         """Generate ReDoc UI HTML"""
@@ -136,7 +139,14 @@ class APIDocumentation:
         """
         Recursively extract all Route with their full paths, automatically add them to OpenAPI spec,
         and return the complete OpenAPI specification as a dictionary.
+
+        Building the document walks every route and generates JSON Schema for
+        every model. It is called once, after routes are registered, and the
+        result handed to the serving route — see ``silloApp.build_openapi``.
         """
+        # Memo is scoped to a single build.
+        self._validator_memo = {}
+
         # First, collect all routes with their full paths
         routes_with_paths = self._collect_routes_with_paths(route, current_prefix)
 
@@ -147,8 +157,9 @@ class APIDocumentation:
             ):
                 self._add_route_to_openapi_spec(full_path, route_obj)
 
-        # Return the complete OpenAPI spec as dictionary
-        return self.config.openapi_spec.model_dump(by_alias=True, exclude_none=True)
+        spec = self.config.openapi_spec.model_dump(by_alias=True, exclude_none=True)
+        self._validator_memo = {}
+        return spec
 
     def _collect_routes_with_paths(
         self, route: Union[Route, Router, Group, Any], current_prefix: str = ""
@@ -552,9 +563,12 @@ class APIDocumentation:
         Collect every compiled validator reachable from a route.
 
         Parameters may be declared on the handler itself or on any dependency
-        it pulls in, and all of them belong in the route's documentation. This
-        walks the pre-computed execution plan, which already visits the whole
-        dependency tree in order, rather than re-traversing it recursively.
+        it pulls in, and all of them belong in the route's documentation. The
+        pre-computed validator plan already lists them, so this is a lookup
+        rather than a tree walk.
+
+        Results are memoized for the duration of one document build, since the
+        parameter, request-body, and response sections all need the same list.
 
         Args:
             route: The route whose handler and dependency tree to inspect.
@@ -563,6 +577,11 @@ class APIDocumentation:
             A list of ``CompiledValidator`` instances, one per callable in the
             tree that declared validated parameters.
         """
+        key = id(route)
+        cached = self._validator_memo.get(key)
+        if cached is not None:
+            return cached
+
         validators = []
         dependants = [getattr(route, "dependant", None)]
         dependants.extend(getattr(route, "_router_dependants", []) or [])
@@ -570,10 +589,10 @@ class APIDocumentation:
         for dependant in dependants:
             if dependant is None:
                 continue
-            for step in dependant._execution_plan:
-                validator = getattr(step.dependant, "validator", None)
-                if validator is not None:
-                    validators.append(validator)
+            for _, validator in getattr(dependant, "_validator_plan", ()):
+                validators.append(validator)
+
+        self._validator_memo[key] = validators
         return validators
 
     def _build_parameters_spec(self, route: Route) -> List[Parameter]:

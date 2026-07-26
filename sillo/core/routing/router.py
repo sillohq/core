@@ -348,8 +348,13 @@ class Route(BaseRoute):
                 # body are its business, so the response model is not applied.
                 response = func_result
             elif self.response_validator is not None:
+                # Pydantic already serialized to JSON-safe primitives, so the
+                # encoder is skipped: running it here would walk the entire
+                # payload a second time, at a cost that grows with response
+                # size rather than staying constant.
                 response = JSONResponse(
-                    content=self.response_validator.validate(func_result)
+                    content=self.response_validator.validate(func_result),
+                    use_encoder=False,
                 )
             else:
                 encoded = jsonable_encoder(func_result)

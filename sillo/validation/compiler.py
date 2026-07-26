@@ -3,7 +3,8 @@ from __future__ import annotations
 import typing
 from copy import copy
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from operator import attrgetter
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
@@ -37,6 +38,17 @@ _SYNC_LOCATIONS = (
     ParameterLocation.HEADER,
     ParameterLocation.COOKIE,
 )
+
+
+#: Maps each synchronously-readable location to a C-level attribute getter for
+#: the request attribute holding its values. Resolved once at registration so
+#: the request path never branches to find its source.
+_SOURCE_GETTERS = {
+    ParameterLocation.QUERY: attrgetter("query_params"),
+    ParameterLocation.HEADER: attrgetter("headers"),
+    ParameterLocation.COOKIE: attrgetter("cookies"),
+    ParameterLocation.PATH: attrgetter("path_params"),
+}
 
 
 def _is_sequence_type(tp: Any) -> bool:
@@ -83,8 +95,27 @@ class LocationSpec:
     list_aliases: frozenset = frozenset()
     passthrough: Dict[str, str] = field(default_factory=dict)
 
+    # --- Precomputed at registration; read-only at request time. -------------
+    #: ``request`` attribute holding this location's values, as a C-level
+    #: attrgetter so the hot path does no branching to find its source.
+    source_getter: Optional[Callable[[Any], Any]] = None
+    #: Wire names read with a plain ``get``.
+    scalar_aliases: Tuple[str, ...] = ()
+    #: Wire names read with ``getlist`` because the field is a sequence. Almost
+    #: always empty, which lets the hot path skip that branch entirely.
+    list_plan: Tuple[str, ...] = ()
+    #: ``(param_name, alias, default, is_required)`` for markers that bypass
+    #: Pydantic — currently uploaded files.
+    passthrough_plan: Tuple[Tuple[str, str, Any, bool], ...] = ()
+    #: ``self.location.value``, resolved once to keep enum lookups off the
+    #: error path.
+    location_value: str = ""
+
     def gather(self, source: Any) -> Dict[str, Any]:
         """Pull this location's raw values out of a request mapping.
+
+        Walks precomputed alias tuples rather than re-deriving names, list-ness,
+        and passthrough membership from the markers on every request.
 
         Absent keys are deliberately omitted from the result rather than set to
         ``None``, so Pydantic can distinguish "not supplied" (apply the default,
@@ -102,24 +133,27 @@ class LocationSpec:
         if source is None:
             return data
 
-        getlist = getattr(source, "getlist", None)
-        for param_name, marker in self.markers.items():
-            if param_name in self.passthrough:
-                continue
-            alias = marker._get_param_name()
-            if alias is None:
-                continue
-            if alias in self.list_aliases and getlist is not None:
+        get = source.get
+        for alias in self.scalar_aliases:
+            value = get(alias)
+            if value is not None:
+                data[alias] = value
+
+        if self.list_plan:
+            getlist = getattr(source, "getlist", None)
+            for alias in self.list_plan:
+                if getlist is None:
+                    value = get(alias)
+                    if value is not None:
+                        data[alias] = value
+                    continue
                 values = getlist(alias)
                 if values:
                     data[alias] = values
-            else:
-                value = source.get(alias)
-                if value is not None:
-                    data[alias] = value
+
         return data
 
-    def validate(self, source: Any) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    def validate(self, source: Any) -> Tuple[Dict[str, Any], Any]:
         """Validate this location and produce handler keyword arguments.
 
         Args:
@@ -127,48 +161,54 @@ class LocationSpec:
 
         Returns:
             A two-tuple of the validated values keyed by *handler parameter
-            name*, and a list of location-prefixed error dictionaries. On
-            success the error list is empty; on failure the value dictionary is
-            empty and every failure in this location is reported.
+            name*, and location-prefixed error dictionaries. On success the
+            error sequence is empty; on failure the value dictionary is empty
+            and every failure in this location is reported.
         """
-        values: Dict[str, Any] = {}
-
-        for param_name, alias in self.passthrough.items():
-            if source is not None:
-                found = source.get(alias)
-                if found is not None:
-                    values[param_name] = found
-
         try:
             validated = self.model.model_validate(self.gather(source))
         except ValidationError as exc:
-            return {}, prefix_errors(exc, self.location.value)
+            return {}, prefix_errors(exc, self.location_value)
 
-        for param_name in self.markers:
-            if param_name in self.passthrough:
-                continue
-            values[param_name] = getattr(validated, param_name)
+        # Field names are the handler parameter names by construction, so the
+        # model's instance dict is already the kwargs mapping. Copying it beats
+        # a getattr per field.
+        values = dict(validated.__dict__)
 
+        if not self.passthrough_plan:
+            return values, ()
+
+        missing = None
+        for param_name, alias, default, required in self.passthrough_plan:
+            found = source.get(alias) if source is not None else None
+            if found is not None:
+                values[param_name] = found
+            elif required:
+                if missing is None:
+                    missing = []
+                missing.append((alias,))
+            else:
+                values[param_name] = default
+
+<<<<<<< Updated upstream
         missing = [
             param_name
             for param_name in self.passthrough
             if param_name not in values and self.markers[param_name].default is ...
         ]
+=======
+>>>>>>> Stashed changes
         if missing:
             return {}, [
                 {
-                    "loc": [self.location.value, self.passthrough[param_name]],
+                    "loc": [self.location_value, alias],
                     "msg": "Field required",
                     "type": "missing",
                 }
-                for param_name in missing
+                for (alias,) in missing
             ]
 
-        for param_name in self.passthrough:
-            if param_name not in values:
-                values[param_name] = self.markers[param_name].default
-
-        return values, []
+        return values, ()
 
 
 @dataclass(slots=True)
@@ -235,10 +275,10 @@ class CompiledValidator:
         errors: List[Dict[str, Any]] = []
 
         for spec in self.specs:
-            source = _source_for(request, spec.location)
-            spec_values, spec_errors = spec.validate(source)
+            spec_values, spec_errors = spec.validate(spec.source_getter(request))
             values.update(spec_values)
-            errors.extend(spec_errors)
+            if spec_errors:
+                errors.extend(spec_errors)
 
         return values, errors
 
@@ -256,28 +296,6 @@ class CompiledValidator:
         if self.form_spec is None:
             return {}, []
         return self.form_spec.validate(form)
-
-
-def _source_for(request: "Request", location: ParameterLocation) -> Any:
-    """Select the request mapping corresponding to a parameter location.
-
-    Args:
-        request: The incoming request.
-        location: The location to read.
-
-    Returns:
-        The matching mapping on the request, or ``None`` for locations that are
-        not synchronously readable.
-    """
-    if location is ParameterLocation.QUERY:
-        return request.query_params
-    if location is ParameterLocation.HEADER:
-        return request.headers
-    if location is ParameterLocation.COOKIE:
-        return request.cookies
-    if location is ParameterLocation.PATH:
-        return request.path_params
-    return None
 
 
 def _build_spec(
@@ -319,12 +337,39 @@ def _build_spec(
         model_name, __config__=_MODEL_CONFIG, **definitions
     )
 
+    # Flatten everything the request path would otherwise re-derive: which wire
+    # name each field reads, whether it needs getlist, and what a missing
+    # passthrough value should fall back to.
+    scalar_aliases = []
+    list_plan = []
+    for param_name in definitions:
+        alias = by_name[param_name]._get_param_name() or param_name
+        if alias in list_aliases:
+            list_plan.append(alias)
+        else:
+            scalar_aliases.append(alias)
+
+    passthrough_plan = tuple(
+        (
+            param_name,
+            alias,
+            by_name[param_name].default,
+            by_name[param_name].default is ...,
+        )
+        for param_name, alias in passthrough.items()
+    )
+
     return LocationSpec(
         location=location,
         model=model,
         markers=by_name,
         list_aliases=frozenset(list_aliases),
         passthrough=passthrough,
+        source_getter=_SOURCE_GETTERS.get(location),
+        scalar_aliases=tuple(scalar_aliases),
+        list_plan=tuple(list_plan),
+        passthrough_plan=passthrough_plan,
+        location_value=location.value,
     )
 
 

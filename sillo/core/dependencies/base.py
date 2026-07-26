@@ -164,6 +164,14 @@ class Dependant:
             validation performs no signature introspection.
         _execution_plan: A pre-computed flat list of ``ExecutionStep`` objects
             representing the depth-first traversal order for iterative solving.
+        _validator_plan: A pre-computed tuple of ``(node id, validator)`` pairs
+            for every node in the execution plan that declares validated
+            parameters. Empty for the common case, which lets request handling
+            skip validation with a single truth test instead of walking the
+            tree. Built once, at registration.
+        _needs_form: Whether any node in the tree declares form or file
+            parameters, so the form body is parsed once per request rather than
+            being checked for per node.
     """
 
     call: Optional[Callable[..., Any]] = None
@@ -178,6 +186,8 @@ class Dependant:
     cache_key: Optional[Tuple[Callable[..., Any], Tuple[str, ...]]] = None
     use_cache: bool = True
     _execution_plan: List[ExecutionStep] = field(default_factory=list)
+    _validator_plan: Tuple[Tuple[int, CompiledValidator], ...] = ()
+    _needs_form: bool = False
 
 
 # =============================================================================
@@ -282,6 +292,18 @@ def get_dependant(
         use_cache=True,
     )
     dependant._execution_plan = _build_execution_plan(dependant)
+
+    # Flatten the validators out of the execution plan once, so a request only
+    # has to test a tuple for emptiness rather than walk the tree looking for
+    # work that usually is not there.
+    validator_plan = tuple(
+        (id(step.dependant), step.dependant.validator)
+        for step in dependant._execution_plan
+        if step.dependant.validator is not None
+    )
+    dependant._validator_plan = validator_plan
+    dependant._needs_form = any(v.needs_form for _, v in validator_plan)
+
     return dependant
 
 
@@ -354,7 +376,7 @@ def _collect_kwargs(
     }
     for ext in node.param_extractors:
         kwargs[ext.param_name] = ext.extractor.extract(request)
-    if validated is not None:
+    if validated:
         node_values = validated.get(id(node))
         if node_values:
             kwargs.update(node_values)
@@ -395,33 +417,36 @@ async def resolve_validated_params(
     Raises:
         RequestValidationError: If any declared parameter failed validation.
     """
-    if request is None:
-        return {}
-
     resolved: Dict[int, Dict[str, Any]] = {}
     errors: List[Dict[str, Any]] = []
 
-    for step in dependant._execution_plan:
-        node = step.dependant
-        validator = node.validator
-        if validator is None:
-            continue
+    # Parsed once for the whole tree rather than per node; the request caches
+    # the result anyway, but this also keeps the await off the per-node path.
+    form = await request.form if dependant._needs_form else None
 
+    for node_id, validator in dependant._validator_plan:
         node_values, node_errors = validator.validate_sync(request)
-        errors.extend(node_errors)
+        if node_errors:
+            errors.extend(node_errors)
 
-        if validator.needs_form:
-            form_values, form_errors = validator.validate_form(await request.form)
+        if validator.form_spec is not None:
+            form_values, form_errors = validator.validate_form(form)
             node_values.update(form_values)
-            errors.extend(form_errors)
+            if form_errors:
+                errors.extend(form_errors)
 
-        resolved[id(node)] = node_values
+        resolved[node_id] = node_values
 
-    raise_if_errors(errors)
+    if errors:
+        raise_if_errors(errors)
     return resolved
 
 
 DependencyCache = Dict[Tuple[Callable[..., Any], Tuple[str, ...]], Any]
+
+#: Shared empty mapping returned when a tree declares no validated parameters.
+#: Only ever read, never mutated, so one instance is safe to share.
+_NO_VALIDATED: Dict[int, Dict[str, Any]] = {}
 
 
 async def solve_dependencies(
@@ -467,7 +492,13 @@ async def solve_dependencies(
         cleanup_callbacks if cleanup_callbacks is not None else []
     )
     values: Dict[str, Any] = {}
-    validated = await resolve_validated_params(dependant, request)
+    # The overwhelmingly common case is a route with nothing to validate. Test
+    # the precomputed plan first so those requests never allocate a coroutine.
+    validated = (
+        await resolve_validated_params(dependant, request)
+        if dependant._validator_plan and request is not None
+        else _NO_VALIDATED
+    )
 
     for step in dependant._execution_plan:
         sub = step.dependant

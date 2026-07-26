@@ -648,6 +648,33 @@ async def _build_form_fields(meta, admin, obj=None, is_create=True):
     return fields
 
 
+async def _fetch_reverse_related(obj, bf):
+    """Fetch the rows attached to *obj* through a backward relation.
+
+    Normalizes the two shapes Tortoise returns. A backward FK resolves to a
+    list, but a backward one-to-one resolves to a single instance — or to
+    ``None`` when nothing is linked yet, which raises no exception and so
+    cannot be caught.
+
+    Args:
+        obj: The parent model instance.
+        bf: The backward relation's field name.
+
+    Returns:
+        A list of related instances, empty when nothing is attached or the
+        relation could not be read.
+    """
+    try:
+        related = await getattr(obj, bf).all()
+    except Exception:
+        return []
+    if related is None:
+        return []
+    if not isinstance(related, (list, tuple)):
+        return [related]
+    return related
+
+
 async def _build_reverse_relation_fields(meta, model_cls, obj):
     """Build editable widgets for backward FK / O2O relations.
 
@@ -672,10 +699,7 @@ async def _build_reverse_relation_fields(meta, model_cls, obj):
         if fwd is None:
             continue
 
-        try:
-            related = await getattr(obj, bf).all()
-        except Exception:
-            related = []
+        related = await _fetch_reverse_related(obj, bf)
         current_ids = {str(getattr(r, "pk", getattr(r, "id", None))) for r in related}
 
         try:
@@ -758,10 +782,7 @@ async def _apply_reverse_relations(meta, model_cls, obj, get, getlist):
         is_o2o = bf in back_o2o
         nullable = bool(getattr(fwd_obj, "null", False))
 
-        try:
-            current = await getattr(obj, bf).all()
-        except Exception:
-            current = []
+        current = await _fetch_reverse_related(obj, bf)
         current_ids = {str(getattr(r, "pk", getattr(r, "id", None))) for r in current}
 
         if is_o2o:
