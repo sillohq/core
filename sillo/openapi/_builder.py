@@ -621,9 +621,7 @@ class APIDocumentation:
             for spec in validator.specs:
                 if spec.location is ParameterLocation.PATH:
                     continue
-                parameters.extend(
-                    self._convert_location_spec(spec, documented)
-                )
+                parameters.extend(self._convert_location_spec(spec, documented))
 
         # Add any additional parameters defined on the route
         if hasattr(route, "parameters") and route.parameters:
@@ -643,7 +641,9 @@ class APIDocumentation:
             A mapping of wire parameter name to its ``Schema``. Nested model
             definitions are lifted into ``components.schemas`` on the way out.
         """
-        raw = spec.model.model_json_schema(by_alias=True, ref_template="#/$defs/{model}")
+        raw = spec.model.model_json_schema(
+            by_alias=True, ref_template="#/$defs/{model}"
+        )
         processed = self._extract_and_add_nested_schemas(raw)
         return {
             name: Schema(**prop)
@@ -671,7 +671,9 @@ class APIDocumentation:
         if param_class is None:
             return []
 
-        raw = spec.model.model_json_schema(by_alias=True, ref_template="#/$defs/{model}")
+        raw = spec.model.model_json_schema(
+            by_alias=True, ref_template="#/$defs/{model}"
+        )
         processed = self._extract_and_add_nested_schemas(raw)
         required_names = set(processed.get("required") or [])
 

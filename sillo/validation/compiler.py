@@ -152,8 +152,7 @@ class LocationSpec:
         missing = [
             param_name
             for param_name in self.passthrough
-            if param_name not in values
-            and self.markers[param_name].default is ...
+            if param_name not in values and self.markers[param_name].default is ...
         ]
         if missing:
             return {}, [
@@ -219,7 +218,9 @@ class CompiledValidator:
         """
         return bool(self.specs) or self.needs_form
 
-    def validate_sync(self, request: "Request") -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    def validate_sync(
+        self, request: "Request"
+    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
         """Validate every location available without awaiting the body.
 
         Args:

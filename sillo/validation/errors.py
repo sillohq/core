@@ -80,9 +80,7 @@ class RequestValidationError(Exception):
             Useful for debugging and for handlers that want to echo it back.
     """
 
-    def __init__(
-        self, errors: List[Dict[str, Any]], *, body: Any = None
-    ) -> None:
+    def __init__(self, errors: List[Dict[str, Any]], *, body: Any = None) -> None:
         """Initialize the error with prefixed error dicts and optional payload.
 
         Args:
@@ -110,9 +108,7 @@ class ResponseValidationError(Exception):
         body: The offending value the handler returned.
     """
 
-    def __init__(
-        self, errors: List[Dict[str, Any]], *, body: Any = None
-    ) -> None:
+    def __init__(self, errors: List[Dict[str, Any]], *, body: Any = None) -> None:
         """Initialize the error with prefixed error dicts and the bad value.
 
         Args:
