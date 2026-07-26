@@ -16,7 +16,7 @@ from sillo.work.dependency import events, queue_connection, scheduler
 from sillo.work.queue.payloads import PayloadSerializer
 from sillo.work.queue.workers import QueueWorker, WorkerOptions
 
-from tests.work.work_jobs import FLIGHTS, SENT_EMAILS, SendEmail
+from tests.test_work.work_jobs import FLIGHTS, SENT_EMAILS, SendEmail
 
 
 def _make_app():
@@ -60,7 +60,7 @@ async def test_route_dispatches_job_consumed_by_worker():
         to = request.query_params.get("to", "nobody")
         payload = json.dumps(
             {
-                "job": "tests.work.work_jobs.SendEmail",
+                "job": "tests.test_work.work_jobs.SendEmail",
                 "data": {"to": to, "subject": "Route"},
             }
         )

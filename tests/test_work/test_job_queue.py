@@ -18,14 +18,14 @@ from sillo.work.queue.payloads import PayloadSerializer
 def test_payload_serializer_roundtrip():
     ser = PayloadSerializer()
     raw = ser.serialize(
-        "tests.work.work_jobs.SendEmail",
+        "tests.test_work.work_jobs.SendEmail",
         {"to": "a@b.com", "subject": "Hi"},
         max_tries=2,
         timeout=15,
         queue="emails",
     )
     decoded = ser.deserialize(raw)
-    assert decoded["job_class"] == "tests.work.work_jobs.SendEmail"
+    assert decoded["job_class"] == "tests.test_work.work_jobs.SendEmail"
     assert decoded["data"] == {"to": "a@b.com", "subject": "Hi"}
     assert decoded["max_tries"] == 2
     assert decoded["queue"] == "emails"
@@ -107,7 +107,7 @@ class SlowJob(Job):
 
 
 async def test_job_fire_runs_handle_directly():
-    from tests.work.work_jobs import SendEmail
+    from tests.test_work.work_jobs import SendEmail
 
     job = SendEmail(to="x@y.com")
     result = await job.fire()

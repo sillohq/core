@@ -930,8 +930,13 @@ class ServerErrorMiddleware(BaseMiddleware):
             return await call_next()
         except Exception as exc:
             if self.handler:
+                # A user-supplied handler owns the response outright. This is
+                # an elif rather than a second if: previously the handler ran
+                # and its result was then overwritten by the debug page or the
+                # default 500, so a configured server_error_handler had no
+                # observable effect.
                 response = await self.handler(request, response, exc)
-            if self.debug:
+            elif self.debug:
                 response = self.get_debug_response(request, response, exc)
             else:
                 response = self.error_response(response)

@@ -11,7 +11,7 @@ from sillo.work.queue.connection import ConnectionManager, SyncConnection
 from sillo.work.queue.failed import FailedJob, MemoryFailedRepository
 from sillo.work.queue.payloads import PayloadSerializer
 from sillo.work.queue.workers import QueueWorker, WorkerOptions, WorkerPool
-from tests.work.work_jobs import FLIGHTS, SENT_EMAILS, SendEmail
+from tests.test_work.work_jobs import FLIGHTS, SENT_EMAILS, SendEmail
 
 
 async def test_worker_consumes_job_and_runs_handle():
@@ -30,7 +30,7 @@ async def test_worker_consumes_job_and_runs_handle():
 
     payload = json.dumps(
         {
-            "job": "tests.work.work_jobs.SendEmail",
+            "job": "tests.test_work.work_jobs.SendEmail",
             "data": {"to": "end@to.end", "subject": "E2E"},
         }
     )
@@ -65,7 +65,7 @@ async def test_worker_logs_failed_jobs():
     # A job class that does not exist -> resolution failure -> logged
     import json
 
-    payload = json.dumps({"job": "tests.work.work_jobs.NoSuchJob", "data": {}})
+    payload = json.dumps({"job": "tests.test_work.work_jobs.NoSuchJob", "data": {}})
     await conn.push("default", payload)
 
     task = asyncio.create_task(worker.run())
@@ -78,7 +78,7 @@ async def test_worker_logs_failed_jobs():
 
     failed = (await repo.all())[0]
     assert isinstance(failed, FailedJob)
-    assert failed.job_class == "tests.work.work_jobs.NoSuchJob"
+    assert failed.job_class == "tests.test_work.work_jobs.NoSuchJob"
     assert failed.exception
     assert isinstance(failed.id, str) and failed.id
 
@@ -98,7 +98,7 @@ async def test_worker_pause_resume_stops_consumption():
     SENT_EMAILS.clear()
     payload = json.dumps(
         {
-            "job": "tests.work.work_jobs.SendEmail",
+            "job": "tests.test_work.work_jobs.SendEmail",
             "data": {"to": "p@u", "subject": "P"},
         }
     )
@@ -140,7 +140,7 @@ async def test_worker_pool_runs_multiple_workers():
             "default",
             json.dumps(
                 {
-                    "job": "tests.work.work_jobs.RecordFlight",
+                    "job": "tests.test_work.work_jobs.RecordFlight",
                     "data": {"flight": f"F{i}"},
                 }
             ),

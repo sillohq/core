@@ -42,7 +42,7 @@ class RecordFeatureUser(Model):
 async def record_db():
     init_kwargs = dict(
         db_url="sqlite://:memory:",
-        modules={"models": ["tests.test_record_model_features"]},
+        modules={"models": ["tests.test_record.test_model_features"]},
     )
     if _has_global_fallback:
         init_kwargs["_enable_global_fallback"] = True

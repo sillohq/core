@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 def test_static_file_serving():
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -29,7 +29,7 @@ def test_static_file_serving():
 
 def test_static_file_types():
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -53,7 +53,7 @@ def test_static_file_types():
 
 def test_static_file_subdirectories():
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -69,7 +69,7 @@ def test_static_file_subdirectories():
 
 def test_static_file_http_methods():
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -87,7 +87,7 @@ def test_static_file_http_methods():
 
 def test_static_file_cache_headers():
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -100,7 +100,7 @@ def test_static_file_cache_headers():
 
 def test_static_file_range_requests():
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -117,7 +117,7 @@ def test_static_file_range_requests():
 
 def test_static_file_error_cases():
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -132,7 +132,7 @@ def test_static_file_error_cases():
 
 def test_static_file_query_params():
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -150,7 +150,7 @@ def test_static_file_query_params():
 def test_static_file_allowed_extensions():
     """Test allowed extensions filtering"""
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir, allowed_extensions=["txt", "css"])
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -174,7 +174,7 @@ def test_static_file_allowed_extensions():
 def test_static_file_forbidden_extensions():
     """Test that dangerous extensions are blocked"""
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(
         directory=static_dir, allowed_extensions=["txt", "css", "html"]
     )
@@ -204,7 +204,7 @@ def test_static_file_custom_404_handler():
         )
 
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir, custom_404_handler=custom_404)
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)
@@ -219,7 +219,7 @@ def test_static_file_custom_404_handler():
 def test_static_file_cache_control():
     """Test cache control headers"""
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(
         directory=static_dir, cache_control="public, max-age=3600"
     )
@@ -235,8 +235,8 @@ def test_static_file_cache_control():
 def test_static_file_multiple_directories():
     """Test serving from multiple directories"""
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
-    static_dir2 = Path(__file__).parent / "static" / "subfolder"
+    static_dir = Path(__file__).parent.parent / "static"
+    static_dir2 = Path(__file__).parent.parent / "static" / "subfolder"
 
     static_files = StaticFiles(directories=[static_dir, static_dir2])
     static_group = Group(path="/static", app=static_files)
@@ -257,7 +257,7 @@ def test_static_file_multiple_directories():
 def test_static_file_extension_case_insensitive():
     """Test that extension filtering is case insensitive"""
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
 
     # Create test files with different cases
     (static_dir / "test.TXT").write_text("uppercase extension")
@@ -287,7 +287,7 @@ def test_static_file_extension_case_insensitive():
 def test_static_file_empty_extension_list():
     """Test that empty extension list allows all files"""
     app = silloApp()
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent.parent / "static"
     static_files = StaticFiles(directory=static_dir, allowed_extensions=[])
     static_group = Group(path="/static", app=static_files)
     app.add_route(static_group)

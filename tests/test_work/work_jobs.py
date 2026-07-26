@@ -1,6 +1,6 @@
 """Resolvable Job subclasses for sillo.work queue tests.
 
-These are imported by qualified name (``tests.work.work_jobs.SendEmail``)
+These are imported by qualified name (``tests.test_work.work_jobs.SendEmail``)
 so that ``QueueWorker._resolve_job_class`` can reconstruct them from a
 serialised payload, mirroring how real multi-process workers find jobs.
 """

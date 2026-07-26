@@ -44,7 +44,7 @@ async def db():
         db_url="sqlite://:memory:",
         modules={
             "models": [
-                "tests.test_permissions",
+                "tests.test_permissions.test_permissions",
                 "sillo.permissions.models",
             ]
         },

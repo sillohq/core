@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 
 from pydantic import Field
 from pydantic.fields import FieldInfo
+from pydantic_core import PydanticUndefined
 
 if typing.TYPE_CHECKING:
     from sillo.core.http import Request
@@ -520,7 +521,11 @@ class Path(ParameterExtractor):
             A required ``FieldInfo`` carrying this parameter's constraints.
         """
         info = super().to_field_info()
-        info.default = ...
+        # Assigning ``...`` here would not work: Ellipsis is only meaningful to
+        # ``Field()``, which translates it. Assigned directly it becomes a
+        # literal default value, leaving the field optional and able to inject
+        # Ellipsis into a handler. PydanticUndefined is what marks it required.
+        info.default = PydanticUndefined
         return info
 
 
