@@ -1,0 +1,345 @@
+---
+title: Generated documentation
+description: Your OpenAPI schema is generated from the same models that validate the request, so what you publish is exactly what you enforce. Includes how Pydantic maps types and constraints to JSON Schema.
+---
+
+Parameter schemas, request bodies, and response schemas in `/openapi.json` are produced from the very models that perform validation. A constraint you declare is a constraint that appears in your docs **and** is enforced at runtime — there is no synchronization step to forget, and no way for the two to disagree.
+
+## Parameters
+
+```python
+page = Query(1, type=int, ge=1, le=99, description="Page number")
+```
+
+```json
+{
+  "name": "page",
+  "in": "query",
+  "required": false,
+  "schema": {
+    "type": "integer",
+    "minimum": 1,
+    "maximum": 99,
+    "default": 1,
+    "description": "Page number"
+  }
+}
+```
+
+## How constraints map to JSON Schema
+
+Pydantic translates each constraint to its JSON Schema equivalent, so tooling that reads your spec — client generators, mock servers, contract tests — sees the real rules:
+
+| Constraint | JSON Schema |
+| --- | --- |
+| `ge` | `minimum` |
+| `gt` | `exclusiveMinimum` |
+| `le` | `maximum` |
+| `lt` | `exclusiveMaximum` |
+| `multiple_of` | `multipleOf` |
+| `min_length` (string) | `minLength` |
+| `max_length` (string) | `maxLength` |
+| `min_length` (collection) | `minItems` |
+| `max_length` (collection) | `maxItems` |
+| `pattern` | `pattern` |
+
+## How types map to JSON Schema
+
+| Python type | `type` | `format` |
+| --- | --- | --- |
+| `int` | `integer` | — |
+| `float` | `number` | `double` |
+| `str` | `string` | — |
+| `bool` | `boolean` | — |
+| `Decimal` | `string` | — |
+| `datetime` | `string` | `date-time` |
+| `date` | `string` | `date` |
+| `time` | `string` | `time` |
+| `timedelta` | `string` | `duration` |
+| `UUID` | `string` | `uuid` |
+| `EmailStr` | `string` | `email` |
+| `HttpUrl` / `AnyUrl` | `string` | `uri` |
+| `IPvAnyAddress` | `string` | `ipvanyaddress` |
+| `bytes` | `string` | `binary` |
+| `Enum` | `string` + `enum` | — |
+| `Literal[...]` | `enum` | — |
+| `list[T]` | `array` with `items` | — |
+| `dict[str, T]` | `object` with `additionalProperties` | — |
+
+An enum publishes its permitted values, so consumers see them without reading your source:
+
+```python
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+order = Query(SortOrder.DESC, type=SortOrder)
+```
+
+```json
+{"name": "order", "in": "query",
+ "schema": {"$ref": "#/components/schemas/SortOrder", "default": "desc"}}
+```
+
+```json
+"SortOrder": {"type": "string", "enum": ["asc", "desc"], "title": "SortOrder"}
+```
+
+A list parameter documents its element type:
+
+```python
+tags = Query([], type=List[str])
+```
+
+```json
+{"name": "tags", "in": "query",
+ "schema": {"type": "array", "items": {"type": "string"}}}
+```
+
+## Path parameters
+
+A `Path` marker types the segment. Without one, the parameter is still documented, just as a string:
+
+```python
+item_id = Path(type=int, ge=1)
+```
+
+```json
+{"name": "item_id", "in": "path", "required": true,
+ "schema": {"type": "integer", "minimum": 1}}
+```
+
+## Request bodies
+
+Generated from `request_model`, with nested models lifted into `components.schemas` and `$ref`s rewritten accordingly:
+
+```python
+class Address(BaseModel):
+    city: str
+    postcode: str
+
+class UserCreate(BaseModel):
+    name: str
+    address: Address
+
+@app.post("/users", request_model=UserCreate)
+```
+
+```json
+"requestBody": {
+  "required": true,
+  "content": {"application/json": {"schema": {
+    "type": "object",
+    "required": ["name", "address"],
+    "properties": {
+      "name":    {"type": "string", "title": "Name"},
+      "address": {"$ref": "#/components/schemas/Address"}
+    }}}}}
+```
+
+`Address` is emitted once under `components.schemas` and referenced wherever it appears, so a model used by twenty endpoints is documented once.
+
+## Enriching what gets published
+
+### Titles, descriptions, examples
+
+On a marker:
+
+```python
+q = Query(type=str,
+          title="Search",
+          description="Full-text search across names and emails",
+          example="widgets",
+          deprecated=True)
+```
+
+On a model field:
+
+```python
+class UserCreate(BaseModel):
+    email: str = Field(
+        description="Primary contact address",
+        examples=["ada@example.com"],
+    )
+```
+
+Docstrings become schema descriptions automatically:
+
+```python
+class UserCreate(BaseModel):
+    """A new user account."""
+    name: str
+```
+
+```json
+"UserCreate": {"description": "A new user account.", "type": "object", ...}
+```
+
+### Whole-model examples
+
+```python
+from pydantic import ConfigDict
+
+class UserCreate(BaseModel):
+    model_config = ConfigDict(json_schema_extra={
+        "examples": [{"name": "Ada", "email": "ada@example.com", "age": 36}]
+    })
+    name: str
+    email: str
+    age: int
+```
+
+Swagger UI pre-fills its "Try it out" form from this, which makes an endpoint genuinely explorable rather than requiring the reader to invent valid input.
+
+### Arbitrary schema keys
+
+Anything JSON Schema supports but Pydantic has no dedicated argument for:
+
+```python
+class Item(BaseModel):
+    sku: str = Field(json_schema_extra={
+        "x-internal-id": True,
+        "externalDocs": {"url": "https://wiki.example.com/skus"},
+    })
+```
+
+Vendor extensions (`x-…`) pass through untouched, which is how you feed hints to code generators and gateways.
+
+## Discriminated unions
+
+A discriminated union produces a proper `oneOf` with a discriminator mapping, so generated clients build a correct tagged type rather than an opaque union:
+
+```python
+class Payment(BaseModel):
+    method: Union[Card, BankTransfer] = Field(discriminator="kind")
+```
+
+```json
+"method": {
+  "oneOf": [{"$ref": "#/components/schemas/Card"},
+            {"$ref": "#/components/schemas/BankTransfer"}],
+  "discriminator": {"propertyName": "kind",
+                    "mapping": {"card": "…/Card", "bank": "…/BankTransfer"}}}
+```
+
+## Forms and uploads
+
+Files are documented as binary, and the content type reflects whether any upload is declared:
+
+```python
+title  = Form(type=str)
+avatar = File(...)
+```
+
+```json
+"requestBody": {"required": true, "content": {
+  "multipart/form-data": {"schema": {
+    "properties": {
+      "title":  {"type": "string"},
+      "avatar": {"type": "string", "format": "binary"}
+    }}}}}
+```
+
+With no `File` marker the content type is `application/x-www-form-urlencoded` instead.
+
+## Responses
+
+`response_model` documents and enforces the success response. Other status codes come from `responses=`:
+
+```python
+@app.get("/users/{user_id}",
+         response_model=UserOut,
+         responses={404: {"description": "Not found"},
+                    403: {"description": "Forbidden"}})
+```
+
+The `200` entry is generated from `UserOut`; the others are passed through as written. With `response_model_many=True` the schema becomes an array of the model.
+
+Computed fields are included, so a derived value is documented like any other:
+
+```python
+@computed_field
+@property
+def full_name(self) -> str: ...
+```
+
+The return annotation is what determines the published type, which is why it is required.
+
+## Dependencies are documented too
+
+Parameters declared on an injected callable belong to every route that uses it, and appear there:
+
+```python
+def pagination(page=Query(1, type=int, ge=1), size=Query(20, type=int, le=100)):
+    return {"page": page, "size": size}
+
+@app.get("/items")
+async def list_items(request, response, pager=Depend(pagination)):
+    ...
+```
+
+`/items` documents both `page` and `size`. A parameter declared on both a handler and one of its dependencies is documented once.
+
+## Documentation-only parameters
+
+For an input consumed by middleware, or one you read manually, `parameters=` adds an entry with no runtime behavior:
+
+```python
+from sillo.openapi.models import Query as OpenAPIQuery, Schema
+
+@app.get("/items", parameters=[
+    OpenAPIQuery(name="legacy_flag", spec=Schema(type="boolean"), required=False)
+])
+async def items(request, response):
+    flag = request.query_params.get("legacy_flag")     # you extract it yourself
+```
+
+Nothing validates these — they are claims, not contracts, and the only entries in your document that can drift from reality. They are appended without deduplication, so declaring the same name via both a marker and `parameters=` produces two entries.
+
+The same caveat applies to `responses=`: those schemas are decoration. Only `response_model` is enforced.
+
+## Excluding a route
+
+```python
+@app.get("/internal/metrics", exclude_from_schema=True)
+async def metrics(request, response):
+    ...
+```
+
+## When the document is built
+
+The OpenAPI document is generated **once**, at application startup, after all routes are registered, and the serialized result is stored. Serving `/openapi.json` writes that stored string — no generation and no encoding happens per request.
+
+Because routes are registered before the application starts serving, there is nothing to invalidate.
+
+If you need the document outside a request — to write it to a file in CI, or to generate a client:
+
+```python
+doc = app.build_openapi()      # the serialized JSON string
+
+with open("openapi.json", "w") as f:
+    f.write(doc)
+```
+
+Checking that file into version control turns an unintended API change into a visible diff during review.
+
+## The interactive UIs
+
+Three routes are mounted by default, all configurable on `silloApp`:
+
+| Path | What it serves |
+| --- | --- |
+| `/docs` | Swagger UI — interactive, with a request runner |
+| `/redoc` | ReDoc — a cleaner read, no runner |
+| `/openapi.json` | The raw document |
+
+```python
+app = silloApp(
+    title="My API",
+    version="2.1.0",
+    description="What this service does",
+    swagger_docs="/docs",
+    redoc_docs="/redoc",
+    openapi_url="/openapi.json",
+)
+```

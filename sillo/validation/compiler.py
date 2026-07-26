@@ -190,14 +190,6 @@ class LocationSpec:
             else:
                 values[param_name] = default
 
-<<<<<<< Updated upstream
-        missing = [
-            param_name
-            for param_name in self.passthrough
-            if param_name not in values and self.markers[param_name].default is ...
-        ]
-=======
->>>>>>> Stashed changes
         if missing:
             return {}, [
                 {

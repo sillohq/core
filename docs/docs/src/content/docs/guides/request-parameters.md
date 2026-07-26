@@ -25,7 +25,7 @@ async def search(
 ```
 
 :::note[Looking for validation?]
-This page covers extraction and the type coercion sillo infers from a default value. To get real validation — constraints, proper 422 responses, `Path`/`Body`/`Form`/`File` parameters, and response models — add a `type=` or a constraint to any marker on this page and see the [Validation guide](/guides/validation/).
+This page covers extraction and the type coercion sillo infers from a default value. For real validation — constraints, proper 422 responses, `Path`/`Form`/`File` parameters, and response models — add a `type=` or a constraint to any marker on this page and see the [Validation](/guides/validation/) section.
 
 ```python
 page = Query(1, type=int, ge=1, le=100)   # validated, 422 on bad input

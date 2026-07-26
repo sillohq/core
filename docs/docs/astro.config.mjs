@@ -94,12 +94,23 @@ export default defineConfig({
                     items: [
                         { label: 'Request Information', link: '/guides/request-info/' },
                         { label: 'Handling Inputs', link: '/guides/request-inputs/' },
-                        { label: 'Validation', link: '/guides/validation/' },
                         { label: 'Request Parameters', link: '/guides/request-parameters/' },
                         { label: 'Headers', link: '/guides/headers/' },
                         { label: 'Sending Responses', link: '/guides/sending-responses/' },
                         { label: 'Streaming Responses', link: '/guides/streaming-response/' },
                         { label: 'Error Handling', link: '/guides/error-handling/' },
+                    ],
+                },
+                {
+                    label: 'Validation',
+                    items: [
+                        { label: 'Overview', link: '/guides/validation/' },
+                        { label: 'Parameters', link: '/guides/validation/parameters/' },
+                        { label: 'Request Bodies', link: '/guides/validation/request-bodies/' },
+                        { label: 'Forms & File Uploads', link: '/guides/validation/forms-and-files/' },
+                        { label: 'Response Models', link: '/guides/validation/response-models/' },
+                        { label: 'Validation Errors', link: '/guides/validation/errors/' },
+                        { label: 'Generated Docs', link: '/guides/validation/openapi/' },
                     ],
                 },
                 {
@@ -132,7 +143,6 @@ export default defineConfig({
                         { label: 'Thread Pool', link: '/guides/concurrency/' },
                         { label: 'Pagination', link: '/guides/pagination/' },
                         { label: 'Event System', link: '/guides/events/' },
-                        { label: 'Pydantic Integration', link: '/guides/pydantic-integration/' },
                         { label: 'Static Files', link: '/guides/static-files/' },
                         { label: 'File Upload', link: '/guides/file-upload/' },
                         { label: 'Frontend (SPA)', link: '/guides/frontend/' },
