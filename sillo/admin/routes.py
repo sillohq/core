@@ -1025,7 +1025,9 @@ async def query_view(request, response, site):
                     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
                     if export_fmt == "json":
                         return _json_export(response, rows, f"query_{stamp}.json")
-                    return _csv_export(response, ctx["columns"], rows, f"query_{stamp}.csv")
+                    return _csv_export(
+                        response, ctx["columns"], rows, f"query_{stamp}.csv"
+                    )
             except Exception as e:
                 ctx["error"] = str(e)
 
