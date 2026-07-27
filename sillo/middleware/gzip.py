@@ -113,6 +113,8 @@ class GZipResponder:
         self.send: Send = unattached_send
         self.initial_message: Message = {}
         self.started = False
+        self.declared_length: int | None = None
+        self.passthrough = False
         self.content_encoding_set = False
         self.gzip_buffer = io.BytesIO()
         self.gzip_file = gzip.GzipFile(
@@ -140,6 +142,48 @@ class GZipResponder:
         with self.gzip_buffer, self.gzip_file:
             await self.app(scope, receive, self.send_with_gzip)
 
+    @staticmethod
+    def _declared_length(start_message: Message) -> "int | None":
+        """Read the Content-Length a response declared up front, if any.
+
+        Args:
+            start_message: The ``http.response.start`` ASGI message.
+
+        Returns:
+            The declared body length, or ``None`` when the response did not
+            declare one (a genuinely streamed response, whose total size cannot
+            be known in advance).
+        """
+        for key, value in start_message.get("headers", []):
+            if key.lower() == b"content-length":
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    def _below_threshold(self, body: bytes, more_body: bool) -> bool:
+        """Whether this response is too small to be worth compressing.
+
+        A response that declares its Content-Length can be measured even when
+        its body arrives in several chunks. Checking only ``len(body)`` was not
+        enough: any sender that sets ``more_body`` on the first chunk — which
+        sillo's own responses do — bypassed the size check entirely, so every
+        response was compressed no matter how small. gzip framing alone costs
+        roughly twenty bytes, so short bodies came out *larger* than they went
+        in, having spent CPU to get there.
+
+        Args:
+            body: The first body chunk.
+            more_body: Whether further chunks follow.
+
+        Returns:
+            ``True`` when the response should be passed through uncompressed.
+        """
+        if self.declared_length is not None:
+            return self.declared_length < self.minimum_size
+        return len(body) < self.minimum_size and not more_body
+
     async def send_with_gzip(self, message: Message) -> None:
         """
         Processes an outgoing ASGI message and applies GZip compression as needed.
@@ -162,6 +206,7 @@ class GZipResponder:
             # Don't send the initial message until we've determined how to
             # modify the outgoing headers correctly.
             self.initial_message = message
+            self.declared_length = self._declared_length(message)
             headers = Headers(raw=self.initial_message["headers"])
             self.content_encoding_set = "content-encoding" in headers
         elif message_type == "http.response.body" and self.content_encoding_set:
@@ -169,12 +214,20 @@ class GZipResponder:
                 self.started = True
                 await self.send(self.initial_message)
             await self.send(message)
+        elif message_type == "http.response.body" and self.passthrough:
+            # Once this response has been judged too small to compress, every
+            # remaining chunk must pass through too. Without this, the trailing
+            # chunk that senders emit to close the body fell through to the
+            # streaming branch below and appended gzip framing to an otherwise
+            # plain response, corrupting it.
+            await self.send(message)
         elif message_type == "http.response.body" and not self.started:
             self.started = True
             body = message.get("body", b"")
             more_body = message.get("more_body", False)
-            if len(body) < self.minimum_size and not more_body:
+            if self._below_threshold(body, more_body):
                 # Don't apply GZip to small outgoing responses.
+                self.passthrough = True
                 await self.send(self.initial_message)
                 await self.send(message)
             elif not more_body:

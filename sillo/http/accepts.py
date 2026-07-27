@@ -1291,14 +1291,18 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
         )
         accept_header = request.headers.get("Accept")
         if accept_header and best_type not in self.available_types:
-            response.status(406)
-            response.set_header("Content-Type", "application/json")
+            # The status must be passed to json() rather than set beforehand:
+            # json() builds a fresh response, so an earlier status(406) was
+            # discarded and this shipped a "Not Acceptable" body under a 200,
+            # leaving clients to treat the error as a successful payload.
+            # json() also sets the content type, so no header call is needed.
             return response.json(
                 {
                     "error": "Not Acceptable",
                     "message": "Client does not accept any available content types",
                     "available_types": self.available_types,
-                }
+                },
+                status_code=406,
             )
         setattr(request, "negotiated_content_type", best_type)
         best_language = self.negotiate_language(

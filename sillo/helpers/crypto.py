@@ -9,13 +9,13 @@ from typing import Optional, Tuple
 try:
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
-    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
     _crypto_available = True
 except ImportError:
     _crypto_available = False
     Fernet = None  # type: ignore
-    PBKDF2 = None
+    PBKDF2HMAC = None
     hashes = None  # type: ignore
 
 
@@ -142,7 +142,7 @@ def derive_key(
     _ensure_crypto()
     if salt is None:
         salt = secrets.token_bytes(16)
-    kdf = PBKDF2(  # ty: ignore[call-non-callable]
+    kdf = PBKDF2HMAC(  # ty: ignore[call-non-callable]
         algorithm=hashes.SHA256(),  # ty: ignore[unresolved-attribute]
         length=length,
         salt=salt,
