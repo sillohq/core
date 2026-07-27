@@ -1,15 +1,31 @@
 ---
 title: Async Helpers
-description: Async introspection and awaitable utilities — detecting async callables and wrapping coroutines as async context managers.
+description: Detecting async callables through partials and async __call__, adapting coroutines into async context managers, and collapsing single-item exception groups.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Async Helpers
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Detecting async callables through partials and async __call__, adapting coroutines into async context managers, and collapsing single-item exception groups.
 ---
 
-# Async Helpers (`sillo.helpers.async_helpers`)
+#  Async Helpers (`sillo.core.helpers.async_helpers`)
 
 ```python
-from sillo.helpers.async_helpers import is_async_callable
-from sillo.helpers.async_helpers import AwaitableOrContextManagerWrapper
-from sillo.helpers.async_helpers import collapse_excgroups
+from sillo.core.helpers.async_helpers import is_async_callable
+from sillo.core.helpers.async_helpers import AwaitableOrContextManagerWrapper
+from sillo.core.helpers.async_helpers import collapse_excgroups
 ```
+
+:::caution[Import from `sillo.core.helpers`, not `sillo.helpers`]
+This module lives under `sillo.core.helpers`. The shorter `sillo.helpers.async_helpers`
+path does not exist and raises `ModuleNotFoundError`. The same applies to
+[Deprecation](/guides/helpers/deprecation/); every other module in this section is
+under `sillo.helpers`.
+:::
 
 These helpers are the smallest, most internal utilities in sillo. They solve two
 problems that appear everywhere in an ASGI framework:
@@ -32,7 +48,7 @@ either because it is a coroutine function, or because calling it produces a
 coroutine.
 
 ```python
-from sillo.helpers.async_helpers import is_async_callable
+from sillo.core.helpers.async_helpers import is_async_callable
 
 
 async def handler():
@@ -56,7 +72,7 @@ Two cases break a naive check:
   checks `obj.__call__` as a fallback.
 
   ```python
-  from sillo.helpers.async_helpers import is_async_callable
+  from sillo.core.helpers.async_helpers import is_async_callable
 
 
   class Controller:
@@ -74,7 +90,7 @@ Two cases break a naive check:
 
   ```python
   from functools import partial
-  from sillo.helpers.async_helpers import is_async_callable
+  from sillo.core.helpers.async_helpers import is_async_callable
 
 
   async def greet(name):
@@ -120,7 +136,7 @@ def is_async_callable(obj):
 When you accept a callback from a user and must decide how to invoke it:
 
 ```python
-from sillo.helpers.async_helpers import is_async_callable
+from sillo.core.helpers.async_helpers import is_async_callable
 
 
 async def run_maybe_async(fn, *args):
@@ -151,7 +167,7 @@ async with open_thing() as resource:   # use it as a context manager
 context and call `.close()` on exit.
 
 ```python
-from sillo.helpers.async_helpers import AwaitableOrContextManagerWrapper
+from sillo.core.helpers.async_helpers import AwaitableOrContextManagerWrapper
 
 
 class Connection:
@@ -224,7 +240,7 @@ exception than a group that wraps exactly one item. `collapse_excgroups` is a
 context manager that unwraps single-element exception groups.
 
 ```python
-from sillo.helpers.async_helpers import collapse_excgroups
+from sillo.core.helpers.async_helpers import collapse_excgroups
 
 
 try:
@@ -259,6 +275,134 @@ contains exactly one exception, so a group-of-one-of-one collapses fully.
 so that a middleware raising a single exception is reported as that exception,
 not as a noisy `BaseExceptionGroup`.
 
+## Why sync and async cannot be treated the same
+
+The reason this module exists is that Python gives you no way to call a function without first knowing which kind it is.
+
+Calling an async function does not run it. It builds a coroutine object and returns immediately:
+
+```python
+async def work():
+    print("running")
+
+work()          # prints nothing, returns <coroutine object>
+await work()    # prints "running"
+```
+
+Awaiting a sync function fails the other way:
+
+```python
+def work():
+    return "done"
+
+await work()    # TypeError: object str can't be used in 'await' expression
+```
+
+So dispatching code that accepts arbitrary callables must branch, and the branch has to be right for every shape a callable can take. That is three shapes, not one: a plain `async def`, an instance whose `__call__` is `async def`, and a `functools.partial` wrapping either. `is_async_callable` collapses all three into one boolean.
+
+The consequence of getting it wrong is worth stating plainly. If you call an async function without awaiting, nothing runs and nothing raises — you get a `RuntimeWarning` on stderr and silently missing behaviour. That is a bug that reaches production, because the code path "works" in the sense that it returns without error.
+
+## When you actually need these
+
+Most application code never imports this module. sillo calls `is_async_callable` for you when it dispatches a handler, and the framework wires up the wrapper and the exception-group collapse internally. You reach for these directly in three situations:
+
+**You are writing a plugin or an extension point.** Any API that accepts a user-supplied callback has to decide whether to `await` the result. Hardcoding one or the other forces your users into a style they may not want.
+
+**You are building middleware that wraps arbitrary handlers.** Middleware sits between the framework and code it does not control, so it inherits the same dispatch problem.
+
+**You are writing a library that returns a closeable resource.** The wrapper lets callers choose between `await` and `async with` without you shipping two APIs.
+
+If you are writing route handlers and business logic, you will not need any of it.
+
+## Anti-patterns
+
+:::danger[Do not call an async function without awaiting it]
+The single most common async bug in Python, and it fails silently:
+
+```python
+async def send_email(to: str): ...
+
+# Wrong: creates a coroutine object and throws it away.
+send_email("a@example.com")
+# RuntimeWarning: coroutine 'send_email' was never awaited
+```
+
+Nothing happens. No email, no exception, just a warning on stderr that is easy to miss in production logs. The `is_async_callable` check exists so dispatching code never makes this mistake:
+
+```python
+result = await fn(*args) if is_async_callable(fn) else fn(*args)
+```
+:::
+
+:::caution[Do not use `callable()` or `inspect.iscoroutinefunction` on their own]
+`callable(obj)` is true for both sync and async, so it tells you nothing about dispatch.
+
+`asyncio.iscoroutinefunction(obj)` is closer but returns `False` for two shapes sillo supports: a class instance whose `__call__` is async, and a `functools.partial` wrapping an async function. Both appear constantly in framework code — class-based views are the first, and binding default arguments to a handler is the second.
+
+`is_async_callable` handles all three. Use it rather than reimplementing the check.
+:::
+
+:::caution[Do not reuse an `AwaitableOrContextManagerWrapper` instance]
+A wrapper holds one coroutine and tracks one entered resource. Awaiting it and then entering it as a context manager reuses a coroutine that has already run, which raises `RuntimeError: cannot reuse already awaited coroutine`.
+
+Wrap a fresh coroutine each time:
+
+```python
+# Wrong
+awaiter = AwaitableOrContextManagerWrapper(open_connection())
+conn = await awaiter
+async with awaiter as conn2:      # RuntimeError
+    ...
+
+# Right
+conn = await AwaitableOrContextManagerWrapper(open_connection())
+async with AwaitableOrContextManagerWrapper(open_connection()) as conn2:
+    ...
+```
+:::
+
+:::caution[`__aexit__` does not suppress exceptions]
+The wrapper closes the resource and then lets the exception propagate. That is the correct default — silently swallowing errors inside an `async with` block hides bugs — but it means you still need your own `try`/`except` if a failure is expected.
+
+Cleanup is guaranteed either way: the resource is closed whether the block exits normally or by exception.
+:::
+
+:::caution[`collapse_excgroups` only collapses groups of exactly one]
+A group containing two or more exceptions is re-raised untouched, because there is no single exception to collapse to. Code that catches a specific type after this context manager still needs to handle `BaseExceptionGroup` for the multi-error case:
+
+```python
+try:
+    with collapse_excgroups():
+        await run_concurrent_tasks()
+except ValueError:
+    ...                      # one task failed
+except BaseExceptionGroup:
+    ...                      # several failed at once
+```
+
+On Python below 3.11 without the `exceptiongroup` backport installed, `has_exceptiongroups` is `False` and nothing is collapsed at all. Do not rely on the collapse for correctness on older runtimes.
+:::
+
+## Performance
+
+`is_async_callable` is a `while` loop over `partial` layers plus one or two `iscoroutinefunction` checks. That is nanoseconds, but it is not free, and it runs on a value that never changes for a given handler.
+
+sillo resolves it once at route registration rather than per request, which is why handler dispatch has no introspection cost at request time. If you write your own dispatcher, do the same:
+
+```python
+class Dispatcher:
+    def __init__(self, fn):
+        self.fn = fn
+        self.is_async = is_async_callable(fn)   # once, at construction
+
+    async def __call__(self, *args):
+        return await self.fn(*args) if self.is_async else self.fn(*args)
+```
+
+Checking inside the hot path instead means paying for introspection on every request to compute an answer that was decided when the route was registered.
+
+`AwaitableOrContextManagerWrapper` uses `__slots__`, so instances are small and allocation is cheap. `collapse_excgroups` costs nothing on the success path — the `try` block is free in CPython until an exception is actually raised.
+
 ## Summary
 
 | Helper | Purpose | Returns / Type |
@@ -268,3 +412,11 @@ not as a noisy `BaseExceptionGroup`.
 | `SupportsAsyncClose` | Protocol: has `async def close()` | `Protocol` |
 | `AwaitableOrContextManagerWrapper(aw)` | Adapter: coroutine → awaitable + async CM | wrapper instance |
 | `collapse_excgroups()` | Context manager unwrapping single-exception groups | context manager |
+
+## Related
+
+- [Handlers](/guides/handlers/) — how sillo dispatches sync and async route handlers
+- [Middleware](/guides/middleware/) — the main place these helpers appear in user code
+- [Concurrency](/guides/concurrency/) — running blocking work without stalling the loop
+- [Retry](/guides/helpers/retry/) — uses `is_async_callable` to pick a wrapper
+- [Request Lifecycle](/guides/request-lifecycle/) — where dispatch decisions are made
