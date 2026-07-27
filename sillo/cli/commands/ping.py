@@ -15,6 +15,7 @@ from sillo.cli.utils import (
     _load_app_from_path,
 )
 
+
 def _resolve_client():
     """Import the test client, returning ``None`` when it is unavailable.
 
