@@ -64,7 +64,7 @@ Streaming responses allow you to send data to the client as it becomes available
 
 Before diving into the code, it's important to understand how async generators work in Python. An async generator is a special type of function that yields values asynchronously, allowing you to process and send data in chunks rather than all at once. This is particularly useful for streaming scenarios where you want to send data as it becomes available.
 
-### Key Characteristics of Async Generators:
+###  Key Characteristics of Async Generators:
 
 1. Defined using `async def` and contains at least one `yield` statement
 2. Returns an async generator object when called
@@ -72,7 +72,7 @@ Before diving into the code, it's important to understand how async generators w
 4. Maintains its state between yields
 5. Must be consumed using `async for` or `anext()`
 
-### Basic Streaming Example
+###  Basic Streaming Example
 
 Here's how to create a simple streaming endpoint using an async generator. This example demonstrates the basic pattern you'll use for most streaming responses:
 
@@ -95,14 +95,14 @@ async def stream_data(request, response):
 
 Chunked transfer encoding is a streaming data transfer mechanism available in HTTP/1.1. It allows a server to start sending the response before knowing its total size, which is perfect for streaming scenarios where the total size might not be known in advance.
 
-### How Chunked Encoding Works:
+###  How Chunked Encoding Works:
 
 1. The server breaks the response into a series of chunks
 2. Each chunk is preceded by its size in hexadecimal
 3. A zero-length chunk marks the end of the response
 4. The client receives and processes each chunk as it arrives
 
-### Implementing Chunked Responses
+###  Implementing Chunked Responses
 
 In sillo, you don't need to manually implement chunking - it's handled automatically when you use the `stream()` method. Here's how to create a chunked response:
 
@@ -127,7 +127,7 @@ async def chunked_response(request, response):
 
 Server-Sent Events (SSE) is a standard that allows a web server to push real-time updates to the client over HTTP. Unlike WebSockets, SSE is a one-way communication channel from server to client, making it simpler and more efficient for certain use cases.
 
-### Key Features of SSE:
+###  Key Features of SSE:
 
 - Simple text-based protocol
 - Automatic reconnection
@@ -135,7 +135,7 @@ Server-Sent Events (SSE) is a standard that allows a web server to push real-tim
 - Browser EventSource API for easy client-side handling
 - Works over standard HTTP/HTTPS
 
-### SSE Message Format:
+###  SSE Message Format:
 
 Each message consists of one or more lines of text in the format:
 
@@ -146,7 +146,7 @@ id: <message_id>
 retry: <milliseconds>
 ```
 
-### Implementing SSE in sillo
+###  Implementing SSE in sillo
 
 Here's how to implement an SSE endpoint. The key is to use the `text/event-stream` content type and follow the SSE message format:
 
@@ -179,21 +179,21 @@ async def sse_events(request, response):
 
 Streaming files is essential when dealing with large files that shouldn't be loaded entirely into memory. This approach is memory-efficient and provides a better user experience as the client can start processing the file before the entire download is complete.
 
-### Benefits of File Streaming:
+###  Benefits of File Streaming:
 
 - Memory efficiency: Only a small portion of the file is in memory at any time
 - Faster time-to-first-byte: Clients can start processing data immediately
 - Better handling of large files: No memory limits based on file size
 - Support for resumable downloads
 
-### How File Streaming Works:
+###  How File Streaming Works:
 
 1. File is opened in binary read mode
 2. Data is read in fixed-size chunks (e.g., 8KB)
 3. Each chunk is yielded to the client
 4. Process continues until the entire file is sent
 
-### Implementing File Downloads with Streaming
+###  Implementing File Downloads with Streaming
 
 Here's how to implement a file download endpoint that streams the file efficiently:
 
@@ -234,18 +234,18 @@ async def download_file(request, response, filename: str):
 4. **Connection Pooling**: Reuse connections for better performance.
 5. **Compression**: Consider using compression for text-based streams.
 
-## ⚠️ Understanding Error Handling in Streams
+##  ⚠️ Understanding Error Handling in Streams
 
 Error handling in streaming responses requires special consideration because the response is sent incrementally. Unlike regular HTTP responses where you can return an error status code at the beginning, with streaming, you need to handle errors that might occur mid-stream.
 
-### Key Considerations for Error Handling:
+###  Key Considerations for Error Handling:
 
 1. **Immediate vs. Graceful Errors**: Some errors (like invalid authentication) should fail immediately, while others (like data processing errors) might allow for graceful degradation.
 2. **Client-Side Handling**: Clients must be prepared to handle partial responses and error conditions that occur mid-stream.
 3. **Resource Cleanup**: Ensure all resources (files, database connections) are properly cleaned up if an error occurs.
 4. **Error Signaling**: Decide how to signal errors to the client (e.g., special error messages, HTTP trailers).
 
-### Implementing Error Handling
+###  Implementing Error Handling
 
 Here's how to implement robust error handling in a streaming endpoint:
 
@@ -276,14 +276,14 @@ async def safe_stream(request, response):
 
 A real-time data pipeline processes and delivers data as it's generated, making it ideal for analytics, monitoring, and live dashboards. This example demonstrates how to build such a pipeline using sillo streaming capabilities.
 
-### Pipeline Architecture
+###  Pipeline Architecture
 
 1. **Data Ingestion**: Continuously fetch data from a source
 2. **Processing**: Transform or analyze the data
 3. **Delivery**: Stream processed data to clients in real-time
 4. **Monitoring**: Track pipeline health and performance
 
-### Implementation Details
+###  Implementation Details
 
 This example shows a complete data pipeline that:
 
@@ -359,6 +359,83 @@ async def data_pipeline(request, response):
     )
 ```
 
-### Client-Side Processing
+###  Client-Side Processing
 
 Clients can consume this stream using libraries like `aiohttp` or the browser's `EventSource` API. The newline-delimited JSON format makes it easy to parse each message individually as it arrives.
+
+
+##  Choosing between streaming, SSE, and WebSockets
+
+Three ways to send data over time, with different costs.
+
+**A streamed response** is one HTTP response whose body arrives in
+pieces. Right for large payloads — a CSV export, a log tail, a generated
+file — where you want constant memory rather than building the whole body
+first. The connection closes when the body ends.
+
+**Server-Sent Events** is a streamed response with a message framing
+convention and automatic browser reconnection. Right for one-directional
+push: notifications, progress, live counters. It runs over plain HTTP, so
+proxies, CDNs, and corporate firewalls handle it the way they handle
+everything else.
+
+**A WebSocket** is a persistent bidirectional connection. Right only when
+the client also needs to push at arbitrary times — chat, collaborative
+editing, multiplayer. See [WebSockets](/guides/websockets/).
+
+Reach for the simplest one that fits. SSE is dramatically less
+operational work than a WebSocket and covers most "live updates" needs.
+
+##  What breaks in front of a proxy
+
+A streamed response only streams if everything between you and the client
+agrees to stream it.
+
+**Buffering proxies** collect the whole response before forwarding, which
+turns your stream into a single delayed delivery. nginx does this by
+default; `proxy_buffering off` for the location, or the
+`X-Accel-Buffering: no` response header, disables it.
+
+**Compression** buffers by nature — a gzip encoder needs input before it
+emits output. Disable compression on streaming endpoints or accept the
+latency.
+
+**Idle timeouts** close a connection that sends nothing for too long,
+typically between 30 and 120 seconds. A stream with quiet periods needs a
+keepalive — for SSE, a comment line every 20–30 seconds is the
+conventional answer.
+
+**HTTP/1.1 connection limits** cap a browser at roughly six connections
+per origin. Six open streams and the seventh request blocks entirely.
+HTTP/2 removes this, and it is the strongest practical argument for
+enabling it before relying on long-lived streams.
+
+##  Backpressure and cleanup
+
+If the client stops reading and you keep producing, the data queues in
+buffers until something runs out of memory. An `async` generator that
+awaits its writes gets backpressure for free — the await does not return
+until the transport accepts the chunk. A generator that produces without
+awaiting does not.
+
+Cleanup matters more than in a normal handler, because a stream ends by
+disconnection at least as often as by completion. Put the release in a
+`finally`:
+
+```python title="a stream that always cleans up"
+async def tail_log(path):
+    handle = open(path)
+    try:
+        while True:
+            line = handle.readline()
+            if not line:
+                await asyncio.sleep(0.5)
+                continue
+            yield line
+    finally:
+        handle.close()
+```
+
+Without the `finally`, every client that navigates away leaks a file
+descriptor, and the process runs out of them after a few thousand
+disconnects.

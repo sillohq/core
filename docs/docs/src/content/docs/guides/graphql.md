@@ -3,11 +3,11 @@ title: GraphQL Integration
 description: Add GraphQL support to your sillo application using Strawberry GraphQL.
 ---
 
-# GraphQL Integration
+#  GraphQL Integration
 
 Add GraphQL support to your sillo application using [Strawberry](https://strawberry.rocks/).
 
-## What is GraphQL?
+##  What is GraphQL?
 
 GraphQL is a query language for APIs and a runtime for fulfilling those queries with your existing data. It provides a complete and understandable description of the data in your API, gives clients the power to ask for exactly what they need and nothing more, makes it easier to evolve APIs over time, and enables powerful developer tools.
 
@@ -17,7 +17,7 @@ GraphQL is a query language for APIs and a runtime for fulfilling those queries 
 - **GraphiQL Interface**: Built-in interactive in-browser GraphQL IDE.
 - **Async Support**: Full support for async resolvers.
 
-## Installation
+##  Installation
 
 GraphQL support ships with sillo as a first-party module. Install with the graphql extra:
 
@@ -27,9 +27,9 @@ uv add "sillo[graphql]"
 
 This installs `strawberry-graphql` alongside sillo.
 
-## Quick Start
+##  Quick Start
 
-### Basic Server Setup
+###  Basic Server Setup
 
 Here is a simple example of how to set up a GraphQL server with sillo:
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
 Now you can visit `http://localhost:8000/graphql` to see the GraphiQL interface and execute queries.
 
-### Example Query
+###  Example Query
 
 In the GraphiQL interface, you can run the following query:
 
@@ -82,7 +82,7 @@ Response:
 }
 ```
 
-## Configuration
+##  Configuration
 
 The `GraphQL` class accepts the following arguments:
 
@@ -91,7 +91,7 @@ The `GraphQL` class accepts the following arguments:
 - `path` (str, optional): The path to mount the GraphQL endpoint. Defaults to `/graphql`.
 - `graphiql` (bool, optional): Whether to enable the GraphiQL interface. Defaults to `True`.
 
-### Custom Path
+###  Custom Path
 
 You can change the path where the GraphQL endpoint is mounted:
 
@@ -99,7 +99,7 @@ You can change the path where the GraphQL endpoint is mounted:
 GraphQL(app, schema, path="/api/graphql")
 ```
 
-### Disabling GraphiQL
+###  Disabling GraphiQL
 
 For production environments, you might want to disable the GraphiQL interface:
 
@@ -107,7 +107,7 @@ For production environments, you might want to disable the GraphiQL interface:
 GraphQL(app, schema, graphiql=False)
 ```
 
-## Async Resolvers
+##  Async Resolvers
 
 sillo fully supports async resolvers in Strawberry.
 
@@ -120,7 +120,7 @@ class Query:
         return await db.get_user(id)
 ```
 
-## Context
+##  Context
 
 The `request` and `response` objects are available in the GraphQL context.
 
@@ -133,7 +133,7 @@ class Query:
         return request.headers.get("user-agent", "Unknown")
 ```
 
-## How a query is handled
+##  How a query is handled
 
 `GraphQL(app, schema)` registers a single `Route` at `path` (default `/graphql`) accepting `GET` and `POST`:
 
@@ -142,7 +142,7 @@ class Query:
 
 The schema is executed asynchronously, so resolver `await`s run on the event loop like any other sillo handler.
 
-## Testing
+##  Testing
 
 Drive queries through `TestClient` with a `POST` of a JSON `{"query": ...}` body:
 
@@ -179,14 +179,14 @@ def test_invalid_json_body():
 
 For resolvers that hit the database, use your normal async fixtures in the test app — the `request`/`response` context flows through `schema.execute` unchanged.
 
-## Errors and edge cases
+##  Errors and edge cases
 
 - **Malformed body** — a non-JSON or non-object `POST` yields `400` with `{"errors": [...]}`. GraphiQL itself is unaffected (it uses `GET`).
 - **GraphiQL in production** — leaving `graphiql=True` exposes an in-browser IDE. Set `graphiql=False` for production endpoints you don't want browsable.
 - **Auth** — `GraphQL` does not enforce authentication. Protect the route by registering auth middleware or checking `info.context["request"]` inside resolvers.
 - **Extra dependency** — `strawberry-graphql` is required. Install with `uv add "sillo[graphql]"` (or your lockfile equivalent); importing `sillo.graphql` without it raises at runtime.
 
-## Related topics
+##  Related topics
 
 - [Request Inputs](/guides/request-inputs/) — JSON body parsing used by the `POST` handler
 - [Authentication](/guides/authentication/) — protecting the `/graphql` route

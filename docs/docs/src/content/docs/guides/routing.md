@@ -163,7 +163,7 @@ The `Route` constructor is used to define a route within the sillo application. 
 - **exclude_from_schema**: A boolean indicating whether to exclude the route from OpenAPI documentation.
 - **kwargs**: Additional metadata for the route.
 
-```python
+```text
 Route(
     path: str,                                    # URL path pattern
     handler: Optional[HandlerType] = None,        # Request handler function
@@ -306,9 +306,9 @@ app.mount_router(admin_router)
 # If your middleware raises an exception, the request will be interrupted and a 500 error will be returned. Use try/except in middleware for graceful error handling.
 ```
 
-### Router Class Constructor
+###  Router Class Constructor
 
-```python
+```text
 Router(
     prefix: Optional[str] = None,                 # URL prefix for all routes
     routes: Optional[List[Route]] = None,        # Initial routes to add
@@ -318,7 +318,7 @@ Router(
 )
 ```
 
-::: tip HTTP Method Best Practices
+:::tip[HTTP Method Best Practices]
 
 - **GET**: For retrieving data (should be idempotent)
 - **POST**: For creating new resources
@@ -327,9 +327,8 @@ Router(
 - **DELETE**: For removing resources
 - **HEAD**: For metadata without body
 - **OPTIONS**: For CORS preflight requests
-  :::
-
-## Dynamic Route
+:::
+##  Dynamic Route
 
 A dynamic route in sillo is a route pattern that can capture parts of the URL as variables, similar to how Express.js or FastAPI handle route parameters.
 
@@ -423,7 +422,7 @@ async def get_order(request, response, order_id: int):
 
 
 
-### Available Converters
+###  Available Converters
 
 | Converter | Type    | Pattern                                                                           | Description                  |
 | --------- | ------- | --------------------------------------------------------------------------------- | ---------------------------- |
@@ -466,7 +465,7 @@ async def get_user_by_email(request, response, email: str):
 # If your custom converter raises a ValueError, sillo will return a 422 error with your message.
 ```
 
-### Creating Custom Converters
+###  Creating Custom Converters
 
 To create a custom converter:
 
@@ -488,7 +487,7 @@ class MyConvertor(Convertor[YourType]):
 register_url_convertor("converter_name", MyConvertor())
 ```
 
-### Example: Version Converter
+###  Example: Version Converter
 
 ```python
 class VersionConvertor(Convertor[str]):
@@ -511,7 +510,7 @@ async def get_users(request, response, version: str):
     return response.json({"version": version})
 ```
 
-:::caution Converter Registration
+:::caution[Converter Registration]
 Custom converters must be registered before they can be used in routes. It's recommended to register them during application startup.
 :::
 
@@ -525,11 +524,12 @@ When creating custom converters:
 3. Provide meaningful error messages
 4. Consider performance implications
 5. Test thoroughly with edge cases
-   :::
+
+</details>
 
 ##  Route Metadata and Documentation
 
-### Using Pydantic Models for Responses
+###  Using Pydantic Models for Responses
 
 sillo provides excellent integration with Pydantic models for response documentation and validation. Using Pydantic models instead of dictionaries provides:
 
@@ -539,7 +539,7 @@ sillo provides excellent integration with Pydantic models for response documenta
 - **IDE Support**: Better autocomplete and error detection
 - **Consistency**: Standardized response formats across your API
 
-#### Basic Response Models
+####  Basic Response Models
 
 ```python
 from pydantic import BaseModel, EmailStr
@@ -607,7 +607,7 @@ async def list_users(request, response):
     })
 ```
 
-#### Advanced Response Models
+####  Advanced Response Models
 
 ```python
 from pydantic import BaseModel, Field, validator
@@ -671,7 +671,7 @@ async def delete_user(request, response, user_id: int):
     })
 ```
 
-#### Response Model Inheritance
+####  Response Model Inheritance
 
 ```python
 # Base models for common fields
@@ -725,7 +725,7 @@ async def list_users_summary(request, response):
     pass
 ```
 
-#### Response Model with Computed Fields
+####  Response Model with Computed Fields
 
 ```python
 from pydantic import BaseModel, computed_field
@@ -836,9 +836,9 @@ async def login(request, response):
     return response.json({"token": "jwt_token"})
 ```
 
-## URL Generation
+##  URL Generation
 
-## Using Route Names
+##  Using Route Names
 
 You can generate URLs using route names:
 
@@ -859,7 +859,7 @@ print(user_url)  # /users/123
 print(post_url)  # /posts/456
 ```
 
-## URL Generation with Query Parameters
+##  URL Generation with Query Parameters
 
 ```python
 from sillo.objects import URLPath
@@ -881,7 +881,7 @@ print(url)  # /users/123?page=1&limit=10
 
 ##  Advanced Routing Patterns
 
-## Route Factories
+##  Route Factories
 
 You can create routes programmatically:
 
@@ -981,7 +981,7 @@ for route in user_routes + post_routes:
     app.add_route(route)
 ```
 
-## Dynamic Route Registration
+##  Dynamic Route Registration
 
 You can register routes dynamically:
 
@@ -1023,7 +1023,7 @@ for route_config in routes_config:
 
 ##  Route Testing and Debugging
 
-## Getting All Route
+##  Getting All Route
 
 You can inspect all registered routes:
 
@@ -1039,7 +1039,7 @@ for route in routes:
     print("---")
 ```
 
-## Route Matching
+##  Route Matching
 
 You can test route matching:
 
@@ -1063,7 +1063,7 @@ print(f"Method allowed: {allowed}")  # False
 # If a route does not match the path or method, sillo will return a 404 or 405 error as appropriate.
 ```
 
-## Route Debugging
+##  Route Debugging
 
 Enable debug mode to see route information:
 
@@ -1077,9 +1077,9 @@ app = silloApp(debug=True)
 # In debug mode, route matching errors will include detailed information about why a route did not match.
 ```
 
-## Performance Considerations
+##  Performance Considerations
 
-## Route Grouping with `Group`
+##  Route Grouping with `Group`
 
 The `Group` class in sillo provides a powerful way to organize related routes and middleware under a common path prefix. It's particularly useful for:
 
@@ -1088,7 +1088,7 @@ The `Group` class in sillo provides a powerful way to organize related routes an
 - Mounting external ASGI applications with a path prefix
 - Creating reusable route collections
 
-### Basic Group Usage
+###  Basic Group Usage
 
 ```python
 from sillo.routing import Group, Route
@@ -1115,7 +1115,7 @@ This creates the following endpoints:
 - `GET /users/{user_id}` - Get a specific user
 - `POST /users/` - Create a new user
 
-### Groups with Middleware
+###  Groups with Middleware
 
 You can apply middleware to all routes within a group:
 
@@ -1137,7 +1137,7 @@ api_group = Group(
 )
 ```
 
-### Mounting External ASGI Applications
+###  Mounting External ASGI Applications
 
 Groups can be used to mount external ASGI applications:
 
@@ -1156,7 +1156,7 @@ group = Group(path="/external", app=fastapi_app)
 app.add_route(group)
 ```
 
-### Nested Groups
+###  Nested Groups
 
 Groups can be nested to create hierarchical route structures:
 
@@ -1188,7 +1188,7 @@ This creates the following endpoints:
 - `POST /v1/auth/login`
 - `POST /v1/auth/register`
 
-### Group vs Router
+###  Group vs Router
 
 While both `Group` and `Router` can be used to organize routes, they serve different purposes:
 
@@ -1201,7 +1201,7 @@ While both `Group` and `Router` can be used to organize routes, they serve diffe
 | Route methods   |     |      |
 | Standalone app  |     |      |
 
-### Best Practices
+###  Best Practices
 
 1. **Use Groups for**:
 

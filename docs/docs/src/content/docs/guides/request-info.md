@@ -53,7 +53,7 @@ async def user_handler(request: Request, response):
 
 ##  Request Body
 
-### JSON Data
+###  JSON Data
 
 ```python
 @app.post("/data")
@@ -61,7 +61,7 @@ async def data_handler(request: Request, response):
     json_data = await request.json  # Parses JSON body
 ```
 
-### Form Data
+###  Form Data
 
 ```python
 @app.post("/submit")
@@ -70,7 +70,7 @@ async def submit_handler(request: Request, response):
     username = form_data.get("username")
 ```
 
-### File Uploads
+###  File Uploads
 
 ```python
 @app.post("/upload")
@@ -82,7 +82,7 @@ async def upload_handler(request: Request, response):
         content = await file.read()
 ```
 
-### Raw Body
+###  Raw Body
 
 ```python
 @app.post("/raw")
@@ -134,7 +134,7 @@ async def links_handler(request: Request, response):
 
 sillo provides convenient properties to quickly check the type and characteristics of incoming requests:
 
-### Content Type Flags
+###  Content Type Flags
 
 ```python
 @app.post("/api/endpoint")
@@ -154,7 +154,7 @@ async def handle_request(request: Request, response):
         # Handle URL-encoded form data
 ```
 
-### Request State Flags
+###  Request State Flags
 
 ```python
 @app.post("/process")
@@ -181,7 +181,7 @@ async def process_request(request: Request, response):
         # Access session data
 ```
 
-### Request Type Properties
+###  Request Type Properties
 
 | Property | Description | Example |
 |----------|-------------|---------|
@@ -195,7 +195,7 @@ async def process_request(request: Request, response):
 | `request.is_authenticated` | True if user is authenticated | Authenticated requests |
 | `request.has_session` | True if session middleware is available | Session-enabled requests |
 
-### Existing Request Flags
+###  Existing Request Flags
 
 sillo also provides additional request detection properties:
 
@@ -216,7 +216,7 @@ async def responsive_handler(request: Request, response):
         return response.html("<h1>HTML Response</h1>")
 ```
 
-### Header Utilities
+###  Header Utilities
 
 ```python
 @app.get("/headers")
@@ -244,7 +244,7 @@ async def header_handler(request: Request, response):
 
 ##  Advanced Features
 
-### Streaming Requests
+###  Streaming Requests
 
 For handling large uploads:
 
@@ -256,7 +256,7 @@ async def stream_handler(request: Request, response):
         process_chunk(chunk)
 ```
 
-### Server Push
+###  Server Push
 
 ```python
 @app.get("/push")
@@ -265,3 +265,197 @@ async def push_handler(request: Request, response):
 ```
 
 The sillo `Request` object provides a rich interface for working with incoming HTTP requests, with support for all common web standards and convenient access to request data. 
+
+##  What the request tells you, and how much to trust it
+
+Everything on a request comes from the client except the connection
+address, and even that is unreliable behind a proxy. A short trust
+ranking, most trustworthy first.
+
+**The transport peer address** — who actually connected. Correct, and
+behind a load balancer it is the balancer, not the user.
+
+**Path and method** — set by the client but validated by routing, so by
+the time your handler runs they match a route you declared.
+
+**Headers** — entirely client-controlled. `User-Agent`, `Referer`,
+`Origin`, and every `X-` header are whatever the caller typed. Useful for
+analytics, never for authorization.
+
+**Forwarded headers** — `X-Forwarded-For`, `X-Real-IP`,
+`X-Forwarded-Proto`. Trustworthy only if a proxy you control sets them
+and strips any the client sent. Otherwise a client can claim any address.
+See [Network helpers](/guides/helpers/network/) for the trusted-proxy
+handling this needs.
+
+**The body** — client-controlled, and the reason
+[validation](/guides/validation/) exists.
+
+##  Identifying a client
+
+The three things people reach for and what each is actually worth.
+
+**IP address** identifies a network path, not a person. Mobile networks
+share addresses across thousands of users; corporate NAT does the same;
+a user moving between wifi and cellular changes address mid-session.
+Adequate for coarse rate limiting, useless for identity.
+
+**`User-Agent`** is a string the client chooses. Fine for
+"which browsers do our users have"; worthless as a control, because
+anything can send anything.
+
+**A session or token** is the only real answer. If a decision depends on
+who the caller is, it depends on authentication.
+
+##  Correlating requests
+
+A request id threaded through logs is the difference between debugging a
+production issue in minutes and in hours. Accept one from the caller if
+present, generate one if not, put it in `request.state`, log it
+everywhere, and return it in the response.
+
+```python title="request correlation"
+import uuid
+
+
+async def request_id_middleware(request, response, call_next):
+    rid = request.headers.get("x-request-id") or uuid.uuid4().hex
+    request.state.request_id = rid
+    result = await call_next()
+    result.headers["X-Request-ID"] = rid
+    return result
+```
+
+Returning it matters as much as logging it: a user reporting a failure
+can quote the id, and you can find the exact request.
+
+Accepting a client-supplied id is convenient for tracing across services
+and means the value is attacker-controlled — bound its length and strip
+anything that is not alphanumeric before it reaches a log line.
+
+
+##  Proxies change everything
+
+Behind a load balancer, an ingress controller, or a CDN, several
+properties of the request are no longer what they appear.
+
+The peer address is the proxy's. The scheme may be `http` even though the
+client used `https`, because TLS terminated upstream. The `Host` header
+may be the internal service name rather than the public domain. Each has
+a `X-Forwarded-*` header carrying the original value, and each of those
+headers is forgeable unless the proxy overwrites it.
+
+Two rules make this safe. Configure an explicit list of trusted proxy
+addresses, and only read forwarded headers when the immediate peer is one
+of them. And ensure the outermost proxy **replaces** rather than appends
+to headers a client may have set — otherwise a client can prepend a fake
+entry to `X-Forwarded-For`.
+
+Getting this wrong has concrete consequences: rate limits keyed on a
+spoofable IP are trivially bypassed, and audit logs record whatever the
+attacker chose.
+
+##  Reading the body
+
+`request.body`, `request.json`, `request.form`, and `request.files` each
+consume the request stream. Reading one and then another may give you
+nothing, because the bytes are gone.
+
+Where middleware needs the body — logging, signature verification — read
+it once, cache it on `request.state`, and have downstream code use the
+cached copy. And bound it: a body read into memory is memory a client
+chose the size of, which is why the size limit belongs at the proxy as
+well as in your code.
+
+
+##  Practical checks
+
+Three things worth asserting in a test, because they break silently
+behind infrastructure changes.
+
+That the client IP your code resolves matches the real client when the
+expected forwarded headers are present, and does **not** follow a
+client-supplied header when they are absent.
+
+That the scheme resolves to `https` behind a TLS-terminating proxy, since
+redirect URLs and secure-cookie decisions depend on it.
+
+That reading the body twice in your middleware chain does not leave the
+handler with an empty payload.
+
+
+##  Related
+
+- [Headers](/guides/headers/) — reading and setting them safely
+- [Network helpers](/guides/helpers/network/) — client IP resolution and trusted proxies
+- [Middleware](/guides/middleware/) — where request correlation belongs
+- [Request Lifecycle](/guides/request-lifecycle/) — when each of these values becomes available
+- [Security](/guides/security/) — what not to trust from a request
+
+
+##  Content negotiation inputs
+
+`Accept`, `Accept-Language`, and `Accept-Encoding` are the headers a
+client uses to state preferences, each a weighted list rather than a
+single value. Parsing them naively — taking the first entry, or
+substring-matching — produces wrong answers for any client that sends
+real quality values.
+
+Anything whose response varies by one of these must set `Vary` naming it,
+or a shared cache will serve one representation to everyone. See
+[Content Negotiation](/guides/content-negotiation/).
+
+
+##  Debugging what actually arrived
+
+When behaviour depends on a header you cannot see, dump the raw picture
+once rather than guessing:
+
+```python title="a temporary diagnostic endpoint"
+@app.get("/_debug/echo")
+async def echo(request, response):
+    return response.json({
+        "method": request.method,
+        "path": request.url.path,
+        "query": dict(request.query_params),
+        "headers": dict(request.headers),
+        "client": request.client,
+    })
+```
+
+Remove it before shipping, or protect it — it reflects headers including
+`Authorization` and `Cookie`, which is a credential-disclosure endpoint
+if it survives into production.
+
+
+##  Related reading in the standard specs
+
+The behaviours on this page are defined outside sillo, and the specs are
+short enough to be worth knowing about: forwarded headers are described
+by RFC 7239, the `Forwarded` header being the standardised replacement
+for the `X-Forwarded-*` family; content negotiation and `Vary` are in
+RFC 9110. Where a proxy's behaviour surprises you, the answer is usually
+there rather than in framework code.
+
+
+##  Summary
+
+Trust the transport peer, trust what routing validated, and treat
+everything else as input. Forwarded headers are usable only with an
+explicit trusted-proxy configuration; identity comes from a credential
+rather than an address or a user agent; and a request id threaded through
+your logs pays for itself the first time something goes wrong in
+production.
+
+
+##  Where each value comes from
+
+| Value | Source | Trust |
+|---|---|---|
+| `request.method` / `request.url` | Request line | Validated by routing |
+| `request.path_params` | Route match | Validated by convertors |
+| `request.query_params` | Query string | Client-controlled |
+| `request.headers` | Headers | Client-controlled |
+| `request.cookies` | `Cookie` header | Client-controlled |
+| `request.client` | Transport peer | The proxy, behind one |
+| `request.state` | Middleware | Yours |

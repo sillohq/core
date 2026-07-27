@@ -123,7 +123,7 @@ async def session_demo(request, response):
     })
 ```
 
-#### Session Properties and Methods
+####  Session Properties and Methods
 
 Sessions in sillo behave similar to dictionaries but with additional methods:
 
@@ -140,7 +140,7 @@ Sessions in sillo behave similar to dictionaries but with additional methods:
 | `session.is_empty()`             | Check if session has no data                           |
 | `session.modified`               | Whether session has been modified                      |
 
-#### Session Expiration
+####  Session Expiration
 
 By default, sessions expire after 24 hours (86400 seconds). You can customize this:
 
@@ -262,7 +262,7 @@ class RedisSessionInterface(BaseSessionInterface):
 
 Session management requires careful attention to security:
 
-#### Generate a Strong Secret Key
+####  Generate a Strong Secret Key
 
 ```python
 import secrets
@@ -276,7 +276,7 @@ secret_key = os.environ.get("SECRET_KEY")
 app.use(SessionMiddleware(secret_key=secret_key))
 ```
 
-#### Enable Secure Cookies
+####  Enable Secure Cookies
 
 ```python
 # Using recommended approach for secure cookies
@@ -288,7 +288,7 @@ session_config = SessionConfig(
 app.use(SessionMiddleware(config=session_config))
 ```
 
-#### Use Appropriate Session Expiration
+####  Use Appropriate Session Expiration
 
 ```python
 # Short expiration for sensitive operations
@@ -302,7 +302,7 @@ async def transfer(request, response):
     # Process transfer...
 ```
 
-#### Implement Session Invalidation
+####  Implement Session Invalidation
 
 ```python
 @app.post("/logout")
@@ -315,7 +315,7 @@ async def logout(request, response):
 
 ##  Practical Examples
 
-#### Example 1: User Authentication Flow
+####  Example 1: User Authentication Flow
 
 ```python
 @app.post("/login")
@@ -354,7 +354,7 @@ async def logout(request, response):
     return response.redirect("/login?message=logged_out")
 ```
 
-#### Example 2: Shopping Cart
+####  Example 2: Shopping Cart
 
 ```python
 @app.get("/cart")
@@ -406,7 +406,7 @@ async def clear_cart(request, response):
     return response.json({"success": True})
 ```
 
-#### Example 3: Multi-step Form with Session Data
+####  Example 3: Multi-step Form with Session Data
 
 ```python
 @app.get("/wizard/step1")
@@ -452,3 +452,88 @@ async def wizard_complete(request, response):
     
     return response.redirect(f"/wizard/success?id={result.id}")
 ```
+
+
+##  What belongs in a session
+
+A session should hold identity and a small amount of state that is
+genuinely per-user and per-browser: the user id, a CSRF token, a flash
+message, a partially completed multi-step form.
+
+It should not hold a shopping cart of arbitrary size, a cached user
+object, search results, or anything you could re-derive from the
+database. Every one of those grows the session, and where the session
+lives decides what that growth costs.
+
+**Cookie-backed sessions** put the data in the browser. There is no
+server storage and no lookup, and the limit is hard: roughly 4 KB per
+cookie including overhead, sent on *every request to the domain*. A 3 KB
+session is 3 KB of upload on every image request too.
+
+**Server-backed sessions** store data server-side and put only an
+identifier in the cookie. Size is bounded by your storage, invalidation
+is immediate, and every request costs a lookup.
+
+The decision is usually made for you by one requirement: if you need to
+revoke a session immediately — a logout that must take effect everywhere,
+or an admin disabling an account — you need server-side storage. A signed
+cookie remains valid until it expires no matter what you do.
+
+##  Session security essentials
+
+**Regenerate the session id on privilege change.** Logging in must issue
+a new id. Without it, an attacker who can set a victim's session cookie
+before login shares the session after it — session fixation, and it is
+still common.
+
+**Set the cookie flags.** `HttpOnly` keeps JavaScript out, which contains
+the damage from an XSS. `Secure` keeps it off plaintext connections.
+`SameSite=Lax` blocks the cross-site POST case. All three, always.
+
+**Expire on two clocks.** An idle timeout closes abandoned sessions on
+shared machines; an absolute lifetime bounds how long a stolen session is
+useful. Neither alone is sufficient.
+
+**Never trust session contents to be current.** A permission cached in a
+session at login is a permission the user keeps after you revoke it.
+Store the identity in the session and look up authorization fresh.
+
+
+##  Sessions and multiple processes
+
+A cookie-backed session works identically across processes because the
+data travels with the request. A server-backed session does not, unless
+the store is shared.
+
+An in-memory session backend is per-process: with four workers, a user
+is logged in on one and logged out on the other three, and the symptom is
+"login randomly does not work". Any deployment beyond a single process
+needs Redis or a database behind the session store.
+
+The same applies to invalidation. Clearing a session in one process does
+nothing to the copy in another unless the store is shared.
+
+##  Sessions versus tokens
+
+A cookie session is convenient for a browser application: the browser
+manages it, it survives navigation, and revocation is immediate with a
+server-side store. It brings CSRF exposure with it, which is why the two
+guides sit next to each other.
+
+A bearer token suits API clients and mobile apps: nothing is automatic,
+which removes CSRF entirely, and the client controls storage. Revocation
+is the hard part — a stateless token stays valid until it expires unless
+you keep a denylist, which puts the state back.
+
+Most applications end up with both: sessions for the browser, tokens for
+the API. That is fine, provided each endpoint is clear about which it
+accepts. An endpoint accepting either is an endpoint whose CSRF exposure
+depends on how the caller authenticated.
+
+
+##  Rotating the signing key
+
+A cookie-backed session is only as good as the key that signs it, and a
+leaked key means forgeable sessions. Rotating requires accepting the old
+key for verification while signing with the new one, for at least one
+session lifetime — otherwise every logged-in user is logged out at once.

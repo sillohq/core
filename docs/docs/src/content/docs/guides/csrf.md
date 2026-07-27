@@ -12,13 +12,13 @@ head:
     content: Learn how to use csrf utilities in sillo
 ---
 
-# Understanding CSRF Protection in sillo
+#  Understanding CSRF Protection in sillo
 
-## What is CSRF?
+##  What is CSRF?
 
 Cross-Site Request Forgery (CSRF) is a security vulnerability that tricks users into performing unwanted actions on web applications where they're authenticated. Attackers can force users to execute state-changing requests (like changing passwords, making purchases, or transferring funds) without their knowledge.
 
-## ⚠️ Why CSRF Protection Matters
+##  ⚠️ Why CSRF Protection Matters
 
 Imagine this scenario:
 
@@ -29,7 +29,7 @@ Imagine this scenario:
 
 Without CSRF protection, these malicious requests could perform harmful actions on your behalf.
 
-## How CSRF Protection Works
+##  How CSRF Protection Works
 
 sillo implements the "Synchronizer Token Pattern":
 
@@ -38,7 +38,7 @@ sillo implements the "Synchronizer Token Pattern":
 3. **Token Validation**: Required for state-changing requests (POST, PUT, DELETE, etc.)
 4. **Request Verification**: Server verifies the token matches the session
 
-## Basic Setup
+##  Basic Setup
 
 ```python
 from sillo import silloApp
@@ -57,11 +57,11 @@ app = silloApp()
 app.use(CSRFMiddleware(config=csrf_config))
 ```
 
-## Configuration Options
+##  Configuration Options
 
 sillo provides flexible configuration to customize CSRF protection for your application's needs. Here's a detailed breakdown of each option:
 
-### Core Settings
+###  Core Settings
 
 - **`enabled`** (boolean, default: `False`)
   - Enables or disables CSRF protection globally
@@ -73,7 +73,7 @@ sillo provides flexible configuration to customize CSRF protection for your appl
   - **Security Note**: Keep this secret and consistent across application restarts
   - Example: `CSRFConfig(secret_key="your-secure-key-123")`
 
-### URL Configuration
+###  URL Configuration
 
 - **`required_urls`** (list of strings, default: `["*"]`)
   - URL patterns that require CSRF protection
@@ -85,14 +85,14 @@ sillo provides flexible configuration to customize CSRF protection for your appl
   - Takes precedence over `required_urls`
   - Example: `["/api/public/*", "/webhooks/stripe"]`
 
-### HTTP Methods
+###  HTTP Methods
 
 - **`safe_methods`** (list of strings, default: `["GET", "HEAD", "OPTIONS"]`)
   - HTTP methods that don't require CSRF tokens
   - These should be idempotent and have no side effects
   - Example: `["GET", "HEAD", "OPTIONS", "TRACE"]`
 
-### Cookie Settings
+###  Cookie Settings
 
 - **`cookie_name`** (string, default: `"csrftoken"`)
   - Name of the cookie that stores the CSRF token
@@ -115,7 +115,7 @@ sillo provides flexible configuration to customize CSRF protection for your appl
   - Note: `"none"` requires `secure=True`
   - Example: `CSRFConfig(cookie_samesite="lax")`
 
-### Headers and Forms
+###  Headers and Forms
 
 - **`header_name`** (string, default: `"X-CSRFToken"`)
   - HTTP header name for sending CSRF tokens in AJAX requests
@@ -130,11 +130,11 @@ sillo provides flexible configuration to customize CSRF protection for your appl
   - Path for which the cookie is valid
   - Example: `CSRFConfig(cookie_path="/api")`
 
-## Using CSRF with Templates
+##  Using CSRF with Templates
 
 When working with sillo templates, you can easily include CSRF tokens in your forms. The CSRF token is automatically added to the request state and can be accessed in your templates.
 
-### 1. Basic Form with CSRF Token
+###  1. Basic Form with CSRF Token
 
 First, ensure you have a template file (e.g., `templates/login.html`):
 
@@ -166,7 +166,7 @@ First, ensure you have a template file (e.g., `templates/login.html`):
 </html>
 ```
 
-### 2. Route Handler with Template Rendering
+###  2. Route Handler with Template Rendering
 
 In your route handler, use the `render` function to render the template with the CSRF token:
 
@@ -189,7 +189,7 @@ async def login_post(request, response):
     return "Invalid credentials"
 ```
 
-### 3. Using Template Context Middleware (Recommended)
+###  3. Using Template Context Middleware (Recommended)
 
 For better organization, use the `TemplateContextMiddleware` to automatically inject the CSRF token into all your templates:
 
@@ -202,7 +202,7 @@ app.use(TemplateContextMiddleware())
 # Now all templates will have access to the CSRF token as `{{ csrf_token }}`
 ```
 
-### 4. AJAX Requests with CSRF
+###  4. AJAX Requests with CSRF
 
 For AJAX requests, include the CSRF token in your JavaScript:
 
@@ -227,7 +227,7 @@ For AJAX requests, include the CSRF token in your JavaScript:
 </script>
 ```
 
-### 5. Customizing the CSRF Field Name
+###  5. Customizing the CSRF Field Name
 
 If you need to use a different field name for the CSRF token in your forms, you can customize it in your configuration:
 
@@ -248,7 +248,7 @@ Then update your form to use the custom field name:
 </form>
 ```
 
-## Best Practices
+##  Best Practices
 
 1. **Always use HTTPS** in production to protect the CSRF token in transit.
 2. **Don't expose the CSRF token** in logs or error messages.
@@ -256,9 +256,9 @@ Then update your form to use the custom field name:
 4. **Protect all state-changing endpoints** (POST, PUT, DELETE, PATCH) with CSRF tokens.
 5. **Use the same-site cookie attribute** to provide additional protection against CSRF attacks.
 
-## Client-Side Implementation
+##  Client-Side Implementation
 
-### 1. HTML Forms
+###  1. HTML Forms
 
 For traditional form submissions, include the CSRF token in a hidden field. The token should be included in every form that performs state-changing operations (POST, PUT, DELETE, etc.).
 
@@ -291,7 +291,7 @@ For traditional form submissions, include the CSRF token in a hidden field. The 
 </form>
 ```
 
-### 2. JavaScript (AJAX) Requests
+###  2. JavaScript (AJAX) Requests
 
 For AJAX requests, you'll need to:
 
@@ -314,7 +314,7 @@ async function submitForm() {
 }
 ```
 
-## How a request is checked
+##  How a request is checked
 
 `CSRFMiddleware.process_request` runs this sequence for every request (only when `enabled=True`):
 
@@ -328,7 +328,7 @@ async function submitForm() {
 
 On the way out, `process_response` sets the `csrftoken` cookie so the next request can present a matching header. The cookie is `HttpOnly` by default, so JavaScript cannot read it — the token must travel in the header (or form field), which is what makes the pattern resistant to cross-site forgery.
 
-## Testing
+##  Testing
 
 Drive CSRF through `TestClient`: fetch a token-bearing response, then replay the cookie + header on a `POST`.
 
@@ -374,8 +374,76 @@ def test_missing_token_rejected():
 `CSRFConfig(enabled=True)` without `secret_key` leaves `self.secret` as `None`, so token signing has no key and protection is broken. Set `secret_key` to a stable secret (env var, not a literal in source) and keep it identical across restarts — rotating it invalidates every outstanding token at once.
 </aside>
 
-## Related topics
+##  Related topics
 
 - [Security Headers (Shield)](/guides/security/) — defensive response headers
 - [CORS](/guides/cors/) — cross-origin access control
 - [Authentication](/guides/authentication/) — who the caller is
+
+
+##  Why CSRF exists, precisely
+
+A browser attaches cookies to a request based on its destination, not its
+origin. A form on `evil.example` that posts to `bank.example/transfer`
+carries the user's `bank.example` session cookie, and from the server's
+perspective the request is indistinguishable from a legitimate one.
+
+That is the entire attack. The defence is to require something the
+attacker's page cannot read or guess.
+
+Two properties make CSRF specifically a *cookie* problem. A form POST
+needs no JavaScript, so no CORS preflight blocks it. And cookies are sent
+automatically, so the attacker never needs to steal one.
+
+An API authenticating with an `Authorization` header is not vulnerable in
+the same way — the attacker's page cannot set that header cross-origin,
+and attempting to triggers a preflight that CORS refuses. **If your
+session lives in a cookie, you need CSRF protection. If it lives in a
+header, you largely do not.**
+
+##  `SameSite` is a strong defence, not a complete one
+
+`SameSite=Lax` stops cookies riding along on cross-site POSTs, which
+removes the classic attack. It is a genuine improvement and worth setting
+on every session cookie.
+
+It is not a replacement for tokens. `Lax` still sends cookies on
+top-level `GET` navigations, so any state-changing `GET` remains
+exposed — which is one more reason `GET` must never change state.
+Browser support is universal now but the enforcement details vary, and a
+subdomain you do not control is same-site for cookie purposes.
+
+Defence in depth: set `SameSite=Lax` (or `Strict` where the UX allows),
+**and** validate a token on every state-changing request.
+
+##  Where the token has to appear
+
+The token must be somewhere the attacker cannot read: a form field, or a
+request header. It must **not** be in a cookie alone, because the
+attacker's page causes that cookie to be sent without ever seeing it.
+
+The double-submit pattern — token in a cookie *and* in a header, compared
+server-side — works because reading the cookie to copy it into the header
+requires same-origin JavaScript. It is weaker than a server-side session
+token when subdomains are involved, since a compromised subdomain can
+write cookies for the parent domain.
+
+Three things that must be exempt or handled specially: webhook endpoints,
+which have no browser and no token; login itself, where no session exists
+yet; and anything authenticating by header rather than cookie.
+
+
+##  Failure modes
+
+Two things go wrong with CSRF protection, in opposite directions.
+
+**Too strict** breaks legitimate flows: a token that expires with a short
+session means a user who leaves a form open gets an error on submit. Give
+the token the session's lifetime, and return a clear, specific message —
+"your session expired, reload and try again" — rather than a bare 403,
+which users read as "you are not allowed".
+
+**Too permissive** is the exemption list. Every exempt endpoint is an
+endpoint without protection, and exemptions accumulate: one for a
+webhook, one for a legacy client, one added during an incident. Review
+the list periodically and require a reason for each entry.

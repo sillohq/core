@@ -1,9 +1,18 @@
 ---
 title: HTTP Client
-description: Production-grade async HTTP client with caching, retry, Pydantic validation, and middleware — built on httpx.
+description: Calling other services from sillo — the httpx-based client with caching, retry, Pydantic validation and middleware, plus the failure modes of talking to a network you do not control.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: HTTP Client
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Calling other services from sillo — the httpx-based client with caching, retry, Pydantic validation and middleware, plus the failure modes of talking to a network you do not control.
 ---
 
-# HTTP Client (`sillo.http.client`)
+#  HTTP Client (`sillo.http.client`)
 
 A robust async HTTP client built on top of httpx. Ships with base URL support, response caching (via the `sillo.cache` subsystem), Pydantic response validation, retry with exponential backoff (via `sillo.helpers.retry`), a middleware pipeline, connection pooling, and request statistics.
 
@@ -21,7 +30,7 @@ async with HTTPClient("https://jsonplaceholder.typicode.com") as client:
     print(user)
 ```
 
-## Quick start
+##  Quick start
 
 The client accepts a `base_url` so you can use relative paths for every request:
 
@@ -37,7 +46,7 @@ async with HTTPClient("https://api.example.com") as client:
 
 All standard HTTP methods are available as async shorthands — `get`, `post`, `put`, `patch`, `delete`, `head`, and `options`.
 
-## Configuration
+##  Configuration
 
 Pass configuration either as keyword arguments to `HTTPClient` or via an `HTTPClientConfig` object:
 
@@ -80,7 +89,7 @@ async with HTTPClient(config=config) as client:
 | `cache_tags` | `None` | Invalidation tags for cached responses |
 | `middlewares` | `[]` | Ordered list of middleware instances |
 
-## Response validation with Pydantic
+##  Response validation with Pydantic
 
 Pass a Pydantic model to deserialise responses automatically:
 
@@ -119,7 +128,7 @@ result = await client.get("/data")       # dict or list from JSON
 text = await client.get("/text-page")    # raw string
 ```
 
-## Caching
+##  Caching
 
 The HTTP client integrates with the `sillo.cache` subsystem. Pass any `BaseCache` backend (e.g. `MemoryCache` or `RedisCache`) and responses matching the configured cache policy are stored and served automatically:
 
@@ -137,7 +146,7 @@ async with HTTPClient(
     await client.invalidate_cache("https://api.example.com/users/1")
 ```
 
-### Cache policies
+###  Cache policies
 
 | Policy | Behaviour |
 |---|---|
@@ -159,7 +168,7 @@ config = CacheConfig(
 )
 ```
 
-### Cache management
+###  Cache management
 
 ```python
 await client.invalidate_cache("https://api.example.com/slow-endpoint")
@@ -167,7 +176,7 @@ await client.invalidate_cache_tags("users", "profiles")
 await client.clear_cache()
 ```
 
-## Retry with exponential backoff
+##  Retry with exponential backoff
 
 Configure automatic retries by passing a `RetryStrategy`:
 
@@ -197,11 +206,11 @@ async with HTTPClient("https://api.example.com", retry_strategy=strategy) as cli
 
 The retry mechanism uses `sillo.helpers.retry` under the hood.
 
-## Middleware
+##  Middleware
 
 The middleware pipeline lets you intercept requests and responses for cross-cutting concerns.
 
-### Built-in middleware
+###  Built-in middleware
 
 ```python
 from sillo.http.client import (
@@ -220,7 +229,7 @@ async with HTTPClient(middlewares=middlewares) as client:
     ...
 ```
 
-### Custom middleware
+###  Custom middleware
 
 Implement `HTTPMiddleware` with a `handle` method that yields a response:
 
@@ -237,7 +246,7 @@ class TimingMiddleware(HTTPMiddleware):
             yield response
 ```
 
-## HTTP errors
+##  HTTP errors
 
 All errors inherit from `HTTPClientError`:
 
@@ -262,7 +271,7 @@ except HTTPStatusError as e:
     print(f"HTTP {e.status_code}: {e.response_body}")
 ```
 
-## Connection pooling
+##  Connection pooling
 
 Configure the underlying httpx connection pool:
 
@@ -276,7 +285,7 @@ pool = ConnectionPoolConfig(
 )
 ```
 
-## Statistics
+##  Statistics
 
 Track request success rates, cache efficiency, and retry counts:
 
@@ -296,7 +305,7 @@ print(stats.as_dict())
 client.reset_stats()
 ```
 
-## Utilities
+##  Utilities
 
 ```python
 from sillo.http.client import (
@@ -307,7 +316,7 @@ from sillo.http.client import (
 )
 ```
 
-## Full example
+##  Full example
 
 ```python
 from pydantic import BaseModel
@@ -341,7 +350,7 @@ async with HTTPClient(
     print(repos.full_name)
 ```
 
-## API reference
+##  API reference
 
 | Symbol | Kind | Purpose |
 |---|---|---|
@@ -370,3 +379,195 @@ async with HTTPClient(
 | `HTTPValidationError` | exception | Pydantic validation failure |
 | `HTTPRedirectError` | exception | Redirect loop or max redirects |
 | `HTTPDecodeError` | exception | Response body decode failure |
+
+
+---
+
+##  Calling a network you do not control
+
+Everything above is API surface. This section is about the part that
+actually causes incidents: the other service.
+
+###  Every outbound call needs a timeout
+
+An HTTP call without a timeout can hang forever. One hung call holds a
+connection, a task, and — if it happens inside a request handler — a
+client waiting on your endpoint. A dependency that stops responding
+without closing connections will exhaust your worker pool in minutes,
+and your service goes down without ever having an error.
+
+`HTTPClientConfig` exposes granular timeouts because the phases fail
+differently:
+
+| Phase | Typical value | What a timeout here means |
+|---|---|---|
+| connect | 2–5s | The host is unreachable or overloaded |
+| read | 5–30s | Connected, but the response is slow |
+| write | 5–10s | Your request body is uploading slowly |
+| pool | 1–5s | You are out of connections locally |
+
+A pool timeout is the one that surprises people: it means *your* client
+is saturated, not that the remote is slow. Seeing them is a signal to
+raise `max_connections` or reduce concurrency, not to raise the read
+timeout.
+
+Set the total budget below your own endpoint's budget. If your API
+promises a response in two seconds, an upstream call with a 30-second
+read timeout cannot honour that — the timeout is a promise you are making
+to your own callers.
+
+###  Retry only what is safe to repeat
+
+Retrying is the default reflex and it is wrong for anything
+non-idempotent. `GET`, `HEAD`, `PUT`, and `DELETE` are safe to repeat by
+definition. `POST` is not — a retried payment is a double charge.
+
+Retry these:
+
+- Connection errors and timeouts where no response was received
+- `429 Too Many Requests`, respecting `Retry-After`
+- `502`, `503`, `504` — the upstream is failing, not you
+
+Do not retry these:
+
+- `400`, `422` — the request is wrong and will be wrong again
+- `401`, `403` — refresh credentials instead
+- `404` — it will still not exist
+- `409` — resolve the conflict
+
+For a `POST` you must retry, send an idempotency key the upstream
+honours, so a duplicate request is deduplicated on their side rather than
+executed twice.
+
+###  Backoff needs jitter
+
+Exponential backoff without jitter synchronises your clients. If fifty
+workers all fail at the same moment and all retry after exactly two
+seconds, the upstream receives fifty simultaneous requests at exactly the
+moment it is least able to serve them — and the cycle repeats, louder,
+at four seconds.
+
+Jitter breaks the synchronisation. The arithmetic and the tradeoffs
+between full, equal, and decorrelated jitter are covered in the
+[retry helpers guide](/guides/helpers/retry/).
+
+Cap total attempts and total elapsed time, not just the delay. Three
+attempts over ten seconds is a policy; "retry with exponential backoff"
+without a ceiling is an unbounded wait.
+
+###  Stop calling a service that is down
+
+Retrying a service that is comprehensively down converts one failure into
+several, multiplies load on something already struggling, and turns a
+fast failure into a slow one. A circuit breaker fixes this: after N
+consecutive failures, fail immediately without making the call, and probe
+occasionally to see whether it has recovered.
+
+The user-visible difference is large. Without a breaker, an outage in a
+dependency makes every one of your endpoints take thirty seconds to fail.
+With one, they fail in a millisecond and you can serve a degraded
+response instead.
+
+Design the degraded response before you need it. A recommendations
+service being down should mean a page without recommendations, not a 500.
+
+###  Never log the URL directly
+
+Query strings carry API keys, tokens, and signed parameters, and logs are
+copied into places credentials should never reach.
+
+```python
+logger.info("calling %s", sanitize_url_for_log(url))
+```
+
+`sanitize_url_for_log` is exported for exactly this. Apply the same care
+to headers — an `Authorization` header dumped into a debug log is a
+credential leak with a timestamp on it.
+
+###  Validate the response, do not trust it
+
+`response_model=` runs the payload through Pydantic and raises
+`HTTPValidationError` when the shape is wrong. That converts a silent
+`KeyError` three layers away into an immediate, specific failure at the
+boundary.
+
+The cost is coupling: your model must accept every field the upstream
+sends today and might send tomorrow. Model only the fields you use and
+let Pydantic ignore the rest, so a new field upstream is not an outage
+for you.
+
+###  Cache reads, never writes
+
+`cache_ttl` caches successful `GET` responses. That is a large win for
+data that changes slowly — currency rates, feature flags, catalogue
+lookups — and turns a network call into a dictionary lookup.
+
+Two rules. Cache only idempotent methods; caching a `POST` response
+means a later `POST` returns a stale result without doing anything. And
+key the cache on everything that changes the response, including the
+`Authorization` header — a cache keyed on URL alone will serve one user's
+data to another, which is the worst bug in this entire guide.
+
+##  What not to do
+
+**Do not make an HTTP call without a timeout.** One hung dependency
+exhausts your workers.
+
+**Do not retry `POST` without an idempotency key.** You will duplicate
+side effects.
+
+**Do not retry 4xx.** The request will be just as wrong the second time.
+
+**Do not use exponential backoff without jitter.** You synchronise your
+own clients into a thundering herd.
+
+**Do not log raw URLs.** Query strings carry credentials.
+
+**Do not cache authenticated responses on the URL alone.** You will serve
+one user another user's data.
+
+**Do not let an upstream timeout exceed your own response budget.**
+
+**Do not create a client per request.** You lose connection pooling and
+pay a TLS handshake every time.
+
+##  Performance notes
+
+Connection reuse is the single biggest lever. A new TLS connection costs
+one to three round trips before any bytes of your request move; a pooled
+one costs zero. Create the client once at startup, store it in
+`app.state`, and close it on shutdown.
+
+```python title="one client for the process"
+@app.on_startup
+async def open_http_client():
+    app.state["http"] = HTTPClient(base_url="https://api.example.com")
+
+
+@app.on_shutdown
+async def close_http_client():
+    await app.state["http"].aclose()
+```
+
+`max_connections` caps total sockets and `max_keepalive_connections` caps
+idle ones. Setting keepalive too low means reconnecting constantly;
+setting total too high means you can overwhelm an upstream that has its
+own limits.
+
+Concurrent calls that do not depend on each other should be gathered
+rather than awaited in sequence — three 100 ms calls take 300 ms
+sequentially and 100 ms concurrently. Use `asyncio.gather` with
+`return_exceptions=True` so one failure does not cancel the others.
+
+Statistics from `HTTPClientStats` are per-client and in memory. Export
+them to your metrics system rather than reading them from an endpoint;
+per-process counters are not a monitoring strategy.
+
+##  Related
+
+- [Retry helpers](/guides/helpers/retry/) — backoff, jitter, and retry policy in detail
+- [Cache](/guides/cache/) — the backends the response cache uses
+- [Network helpers](/guides/helpers/network/) — client IP handling and SSRF considerations
+- [Concurrency](/guides/concurrency/) — gathering independent calls
+- [Startup & Shutdown](/guides/startups-and-shutdowns/) — where to open and close the client
+- [Error Handling](/guides/error-handling/) — turning upstream failures into your own status codes

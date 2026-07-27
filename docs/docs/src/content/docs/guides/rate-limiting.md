@@ -3,14 +3,14 @@ title: Rate Limiting
 description: Protect your sillo application with pluggable, distributed-ready rate limiting.
 ---
 
-# Rate Limiting
+#  Rate Limiting
 
 `sillo.security.ratelimit` provides first-party request rate limiting with
 **pluggable algorithms** and **pluggable backends**. Use it to protect against
 abuse, brute-force login attempts, and accidental client loops, and to enforce
 fair usage quotas across your API.
 
-## Quick Start
+##  Quick Start
 
 ```python
 from sillo import silloApp
@@ -25,7 +25,7 @@ app.use(RateLimit(limit=100, window=60))
 That's it. Clients exceeding the limit receive `429 Too Many Requests` with a
 `Retry-After` header and `X-RateLimit-*` headers describing their quota.
 
-## Algorithms (Strategies)
+##  Algorithms (Strategies)
 
 | Strategy | Name | Behavior |
 |---|---|---|
@@ -37,7 +37,7 @@ That's it. Clients exceeding the limit receive `429 Too Many Requests` with a
 app.use(RateLimit(limit=100, window=60, strategy="sliding"))
 ```
 
-## Backends
+##  Backends
 
 | Backend | Name | Use case |
 |---|---|---|
@@ -66,7 +66,7 @@ setup_record(
 app.use(RateLimit(limit=100, window=60, backend="record"))
 ```
 
-## Configuration
+##  Configuration
 
 `RateLimitConfig` (or the `RateLimit(...)` kwargs) accepts:
 
@@ -85,7 +85,7 @@ app.use(RateLimit(limit=100, window=60, backend="record"))
 - **`on_exceed`** — `"deny"` (default, returns `429`) or a callable
   `fn(request, response, result)` returning a custom response.
 
-### Custom identity (per API key, per user)
+###  Custom identity (per API key, per user)
 
 ```python
 def key_by_api_key(request):
@@ -94,7 +94,7 @@ def key_by_api_key(request):
 app.use(RateLimit(limit=1000, window=60, key_func=key_by_api_key))
 ```
 
-### Custom deny response
+###  Custom deny response
 
 ```python
 def custom_deny(request, response, result):
@@ -106,14 +106,14 @@ def custom_deny(request, response, result):
 app.use(RateLimit(limit=10, window=60, on_exceed=custom_deny))
 ```
 
-### Weighted (costly) routes
+###  Weighted (costly) routes
 
 ```python
 # A report endpoint costs 10 tokens per hit
 app.use(RateLimit(limit=100, window=60, cost=10))
 ```
 
-## Response Headers
+##  Response Headers
 
 When `include_headers=True`, every response carries:
 
@@ -125,7 +125,7 @@ X-RateLimit-Reset: 1718668800
 
 Denied responses additionally include `Retry-After: <seconds>`.
 
-## Failure Modes
+##  Failure Modes
 
 - **`fail_open=True`** (default): if the backend is unreachable (Redis down,
   DB error), requests are **allowed** and no limit headers are attached.
@@ -133,7 +133,7 @@ Denied responses additionally include `Retry-After: <seconds>`.
 - **`fail_open=False`**: backend failure causes the request to **fail** (a
   `500` surfaces via the app error handler). Prioritizes correctness/safety.
 
-## How a request is decided
+##  How a request is decided
 
 For each request, the middleware runs this sequence:
 
@@ -145,7 +145,7 @@ For each request, the middleware runs this sequence:
 
 Backends store an **opaque state dict**; strategies are stateless and interpret that state. That separation is why `memory`, `redis`, and `record` are drop-in replacements for each other.
 
-## A realistic scenario: protecting a login endpoint
+##  A realistic scenario: protecting a login endpoint
 
 Brute-force protection wants a tight limit keyed by the target account (or IP), strict enough to matter but `fail_open=True` so a Redis blip doesn't lock users out:
 
@@ -176,14 +176,14 @@ async def login(request, response):
 
 Keyed by IP, the limit applies across every login attempt from that address. Swap `backend="redis"` and the same counter is shared across all app instances behind a load balancer.
 
-## Works with
+##  Works with
 
 - **`sillo.security` Shield/CSRF/CORS** — rate limiting is a sibling middleware; order them so rate limiting runs early (cheap to reject) and CSRF validation runs only on accepted requests.
 - **Authentication / sessions** — pass `key_func` that reads the authenticated identity (`request.state.user.id`) to rate-limit *per account* rather than per IP, which is harder for an attacker to rotate.
 - **Dependency injection** — a dependency can compute the identity and stash it on `request.state` for `key_func` to read, keeping route handlers free of limiting logic.
 - **`sillo.record`** — the `"record"` backend persists counters as `sillo_ratelimit_counters` rows; no Redis required, at the cost of DB round-trips per request.
 
-## Testing
+##  Testing
 
 Drive the middleware through `TestClient` and assert status codes and headers. Memory backend state is process-local, so repeated `client.get` calls accumulate against the same counter.
 
@@ -224,7 +224,7 @@ def test_quota_headers():
 
 To reset between cases, call `backend.clear()` (the memory backend supports it) or use a fresh `silloApp()` per test. For `fail_open=False`, assert that taking the backend down yields a `500` rather than `429`.
 
-## Production considerations
+##  Production considerations
 
 - **Backend choice** — `memory` is per-process; behind multiple workers/instances it under-counts, so use `redis` or `record` for real fairness.
 - **`fail_open`** — `True` favors availability (a backend outage lets traffic through); `False` favors safety (outage denies everything). Pick based on what a flood costs you.
@@ -232,7 +232,7 @@ To reset between cases, call `backend.clear()` (the memory backend supports it) 
 - **`X-RateLimit-Reset`** is a Unix timestamp; clients use it to schedule retries. Keep `include_headers=True` so well-behaved clients back off instead of hammering.
 - **Cost** — set `cost > 1` on expensive routes so one heavy call consumes more of the quota.
 
-## Design Notes
+##  Design Notes
 
 - Strategies are **stateless**; backends store opaque state. This keeps
   memory, Redis, and Record interchangeable.

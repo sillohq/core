@@ -77,7 +77,7 @@ The `fallback` parameter controls what happens when a requested file is not foun
 | `"app.html"` | Falls back to the specified file (e.g. `app.html`) |
 | `None` or `False` | No fallback — returns a 404 JSON response |
 
-### `"auto"` Mode
+###  `"auto"` Mode
 
 ```python
 spa = FrontendApp(directory="./dist", fallback="auto")
@@ -89,7 +89,7 @@ sillo looks for a fallback file in this order:
 
 This is useful if you want a distinct error page for invalid routes without overriding the main app shell.
 
-### Custom Fallback File
+###  Custom Fallback File
 
 ```python
 spa = FrontendApp(directory="./dist", fallback="app.html")
@@ -97,7 +97,7 @@ spa = FrontendApp(directory="./dist", fallback="app.html")
 
 All unknown paths will serve `dist/app.html`.
 
-### Disable Fallback
+###  Disable Fallback
 
 ```python
 spa = FrontendApp(directory="./dist", fallback=None)
@@ -167,9 +167,9 @@ Only `GET` requests are allowed — `POST`, `PUT`, `DELETE`, and other methods r
 
 ##  Reference
 
-### `FrontendApp`
+###  `FrontendApp`
 
-```python
+```text
 class FrontendApp(
     directory: Union[str, Path],
     fallback: Optional[Union[str, bool]] = "auto",
@@ -177,9 +177,9 @@ class FrontendApp(
 )
 ```
 
-### `silloApp.frontend()`
+###  `silloApp.frontend()`
 
-```python
+```text
 def app.frontend(
     path: str = "/",
     directory: Union[str, Path] = "dist",
@@ -189,6 +189,6 @@ def app.frontend(
 ) -> None
 ```
 
-### `BaseRouter.frontend()`
+###  `BaseRouter.frontend()`
 
 Router and sub-applications also expose `frontend()` with the same signature, so you can mount a frontend on a sub-router if needed.

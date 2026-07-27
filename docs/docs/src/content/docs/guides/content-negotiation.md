@@ -3,7 +3,7 @@ title: Content Negotiation
 description: Negotiate Accept headers with the sillo.http.accepts module.
 ---
 
-# Content Negotiation
+#  Content Negotiation
 
 A comprehensive content negotiation middleware for sillo, shipped as the first-party `sillo.http.accepts` module. It parses `Accept`, `Accept-Language`, `Accept-Charset`, and `Accept-Encoding` headers and performs RFC 7231 content negotiation.
 
@@ -15,7 +15,7 @@ It automatically:
 - Provides utilities for manual content negotiation
 - Supports strict negotiation with `406 Not Acceptable` responses
 
-## Quick Start
+##  Quick Start
 
 ```python
 from sillo import silloApp
@@ -34,9 +34,9 @@ async def home(request, response):
     }
 ```
 
-## Content Negotiation Examples
+##  Content Negotiation Examples
 
-### Basic Usage
+###  Basic Usage
 
 ```python
 from sillo import silloApp
@@ -53,7 +53,7 @@ async def get_data(request, response):
     return data
 ```
 
-### Manual Content Negotiation
+###  Manual Content Negotiation
 
 ```python
 from sillo import silloApp
@@ -78,7 +78,7 @@ async def get_content(request, response):
         return "<h1>HTML format</h1>"
 ```
 
-### Language Negotiation
+###  Language Negotiation
 
 ```python
 from sillo import silloApp
@@ -101,7 +101,7 @@ async def get_greetings(request, response):
     }
 ```
 
-### Strict Content Negotiation
+###  Strict Content Negotiation
 
 ```python
 from sillo import silloApp
@@ -128,9 +128,9 @@ async def strict_api(request, response):
     }
 ```
 
-## Configuration Options
+##  Configuration Options
 
-### AcceptsMiddleware Options
+###  AcceptsMiddleware Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -140,16 +140,16 @@ async def strict_api(request, response):
 | `set_vary_header` | `bool` | `True` | Automatically set `Vary` headers |
 | `store_accepts_info` | `bool` | `True` | Store parsed accepts info in request object |
 
-### StrictContentNegotiationMiddleware Options
+###  StrictContentNegotiationMiddleware Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `available_types` | `List[str]` | Required | Content types this application can serve |
 | `available_languages` | `List[str]` | `["en"]` | Languages this application supports |
 
-## Usage Examples
+##  Usage Examples
 
-### Basic Setup
+###  Basic Setup
 
 ```python
 from sillo import silloApp
@@ -159,7 +159,7 @@ app = silloApp()
 app.use(Accepts())
 ```
 
-### Custom Configuration
+###  Custom Configuration
 
 ```python
 from sillo import silloApp
@@ -177,7 +177,7 @@ app.use(
 )
 ```
 
-### Accessing Accept Information
+###  Accessing Accept Information
 
 ```python
 @app.get("/debug/accepts")
@@ -193,7 +193,7 @@ async def debug_accepts(request, response):
     }
 ```
 
-### Content Negotiation Utilities
+###  Content Negotiation Utilities
 
 ```python
 from sillo.http.accepts import get_best_match, negotiate_content_type
@@ -215,23 +215,23 @@ async def negotiate_example(request, response):
     }
 ```
 
-## Supported Headers
+##  Supported Headers
 
-### Input Headers (Parsed)
+###  Input Headers (Parsed)
 
 - **`Accept`**: Media types (e.g., `text/html, application/json;q=0.9`)
 - **`Accept-Language`**: Languages (e.g., `en-US, en;q=0.9, es;q=0.8`)
 - **`Accept-Charset`**: Character sets (e.g., `utf-8, iso-8859-1;q=0.9`)
 - **`Accept-Encoding`**: Content encodings (e.g., `gzip, deflate, br`)
 
-### Output Headers (Set)
+###  Output Headers (Set)
 
 - **`Vary`**: Automatically set to include relevant Accept headers
 - **`Content-Type`**: Automatically negotiated based on Accept header
 
-## Content Negotiation Algorithm
+##  Content Negotiation Algorithm
 
-### Media Type Matching
+###  Media Type Matching
 
 Follows RFC 7231 content negotiation rules:
 
@@ -241,15 +241,15 @@ Follows RFC 7231 content negotiation rules:
 4. **Quality Factor**: Items are sorted by q-value (0.0 to 1.0)
 5. **Specificity**: More specific types are preferred over generic ones
 
-### Language Matching
+###  Language Matching
 
 1. **Exact Match**: `en-US` matches `en-US`
 2. **Prefix Match**: `en` matches `en-US`, `en-GB`
 3. **Fallback**: First available language if no match
 
-## Helper Functions
+##  Helper Functions
 
-### Parsing Accept Headers
+###  Parsing Accept Headers
 
 ```python
 from sillo.http.accepts import parse_accept_header, parse_accept_language
@@ -261,7 +261,7 @@ lang_items = parse_accept_language("en-US, en;q=0.9, es;q=0.8")
 # [AcceptItem("en-US", 1.0), AcceptItem("en", 0.9), AcceptItem("es", 0.8)]
 ```
 
-### Content Negotiation
+###  Content Negotiation
 
 ```python
 from sillo.http.accepts import negotiate_content_type, negotiate_language
@@ -276,7 +276,7 @@ best_lang = negotiate_language("en-US, fr;q=0.8", ["en", "fr", "es"])
 # "en" (prefix match)
 ```
 
-### Best Match Selection
+###  Best Match Selection
 
 ```python
 from sillo.http.accepts import get_best_match
@@ -288,9 +288,9 @@ best = get_best_match(
 # "application/json"
 ```
 
-## Advanced Usage
+##  Advanced Usage
 
-### Custom Content Negotiation
+###  Custom Content Negotiation
 
 ```python
 from sillo import silloApp
@@ -317,7 +317,7 @@ app = silloApp()
 app.use(CustomNegotiationMiddleware())
 ```
 
-### API Versioning with Content Negotiation
+###  API Versioning with Content Negotiation
 
 ```python
 from sillo import silloApp
@@ -337,7 +337,7 @@ async def get_users(request, response):
         return {"users": [], "version": "v1"}
 ```
 
-### Internationalization (i18n)
+###  Internationalization (i18n)
 
 ```python
 from sillo import silloApp
@@ -362,7 +362,7 @@ async def get_messages(request, response):
     return messages
 ```
 
-## How negotiation resolves a type
+##  How negotiation resolves a type
 
 `negotiate_content_type(header, available)` walks the client's `Accept` items in order and returns the first `available` type that matches:
 
@@ -373,7 +373,7 @@ async def get_messages(request, response):
 
 Quality values (`q`) do **not** override specificity: `text/html, application/json;q=0.9` still yields `text/html` on an exact match, because the first matching item in client order is returned before quality is consulted for ordering. `matches_media_type` is the single source of truth for the match rules above.
 
-## Errors and edge cases
+##  Errors and edge cases
 
 - **No `Accept` header** — `negotiate_content_type` returns the first available type (or `default_content_type` in the middleware). Clients that omit `Accept` get your default format.
 - **No acceptable match** — with `Accepts`/`ContentNegotiationMiddleware` the response uses `default_content_type`; with `StrictContentNegotiationMiddleware` the request is short-circuited with **`406 Not Acceptable`** and a JSON body listing `available_types`. The 406 is returned before your handler runs.
@@ -381,7 +381,7 @@ Quality values (`q`) do **not** override specificity: `text/html, application/js
 - **`*/*` wildcard** — matches any available type, so an API client sending `Accept: */*` receives your default format, not necessarily the most specific one.
 - **`Vary` header** — `Accepts` appends `Accept`, `Accept-Language`, `Accept-Charset`, `Accept-Encoding` (only those present on the request) to `Vary`. Reverse proxies and CDNs use this to cache per-negotiated variant; disabling it (`set_vary_header=False`) means negotiated responses can be served to the wrong client.
 
-## Testing
+##  Testing
 
 Drive negotiation through `TestClient` by setting request headers. Assert both the chosen format and the `Content-Type`/`Vary` response headers.
 
@@ -439,7 +439,7 @@ def test_stores_accepts_info():
     assert resp.json()["types"] == ["text/html", "application/json"]
 ```
 
-## Production considerations
+##  Production considerations
 
 - **Caching** — keep `set_vary_header=True` so CDNs and browser caches key on the negotiated headers. Returning JSON to a client that asked for HTML (or vice versa) is a classic misconfiguration caused by a missing `Vary`.
 - **Public API boundaries** — use `StrictContentNegotiationMiddleware` when your API only serves a fixed set of types; the `406` makes unsupported `Accept` values explicit instead of silently downgrading.
@@ -447,7 +447,7 @@ def test_stores_accepts_info():
 - **Ordering of middleware** — `Accepts` sets `Content-Type` only when the response has none, during `process_response`. Place it where downstream middleware won't overwrite `Content-Type` afterward.
 - **Language vs content type** — `negotiate_language` only *computes* a language; you must set `Content-Language` and select localized content yourself, as shown in the i18n example above.
 
-## Best Practices
+##  Best Practices
 
 1. **Always set Vary headers** when using content negotiation for proper caching
 2. **Provide sensible defaults** for content type and language
@@ -456,7 +456,7 @@ def test_stores_accepts_info():
 5. **Cache negotiated responses** — use Vary headers to ensure proper cache keys
 6. **Support multiple formats** for better API compatibility
 
-### Example Production Configuration
+###  Example Production Configuration
 
 ```python
 from sillo import silloApp
@@ -484,27 +484,27 @@ async def content_negotiation_logger(request, response, call_next):
     return await call_next()
 ```
 
-## Troubleshooting
+##  Troubleshooting
 
-### Content-Type Not Being Set
+###  Content-Type Not Being Set
 
 1. Check that Accepts middleware is added to your app
 2. Verify the Accept header is being sent by the client
 3. Ensure `default_content_type` is set correctly
 
-### Vary Headers Too Broad
+###  Vary Headers Too Broad
 
 1. Set `set_vary_header=False` if you don't need automatic Vary headers
 2. Manually set specific Vary headers as needed
 3. Consider caching implications when using content negotiation
 
-### Language Fallback Issues
+###  Language Fallback Issues
 
 1. Verify Accept-Language header is being sent
 2. Check that your available languages list is correct
 3. Ensure proper language codes (e.g., `"en-US"`, not `"en_US"`)
 
-### Debug Accept Headers
+###  Debug Accept Headers
 
 ```python
 @app.get("/debug/headers")
@@ -519,3 +519,35 @@ async def debug_headers(request, response):
 ```
 
 Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.
+
+
+##  Negotiation is a contract, not a guess
+
+Content negotiation lets one URL serve several representations, and the
+failure mode is subtle: a client that gets a format it did not expect
+usually does not error, it misparses.
+
+Three rules keep it predictable.
+
+**Default deterministically.** When a client sends no `Accept` header, or
+sends `*/*`, pick one format and always pick the same one. JSON is the
+right default for an API. A default that varies by route makes clients
+defensive everywhere.
+
+**Reject what you cannot produce.** A client asking for
+`application/xml` from an endpoint that only speaks JSON should get a
+`406 Not Acceptable`, not JSON with an XML content type and not a silent
+fallback. Silence here means the client ships a bug you could have
+surfaced.
+
+**Vary on what you negotiate.** Any response whose body depends on a
+request header must carry `Vary` naming that header. Without it, a shared
+cache stores the first representation and serves it to everyone —
+including the client that asked for the other one.
+
+```python title="the header that prevents cache poisoning"
+response.headers["Vary"] = "Accept, Accept-Encoding"
+```
+
+This is the single most commonly omitted header in negotiated APIs, and
+the bug it causes appears only once a CDN is in front of you.

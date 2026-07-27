@@ -3,14 +3,14 @@ title: Request Lifecycle
 description: Request ID generation and request-scoped context with the sillo.lifecycle module.
 ---
 
-# Request Lifecycle
+#  Request Lifecycle
 
 The `sillo.lifecycle` module provides first‑party middleware and helpers for request‑scoped concerns:
 
 - **`RequestId`** — generates and propagates a unique ID per request
 - **`RequestContext`** — a request‑scoped context manager for sharing data across your call chain
 
-## Quick Start
+##  Quick Start
 
 ```python
 from sillo import silloApp
@@ -33,7 +33,7 @@ async def home(request, response):
 
 Every request now carries a unique request ID usable for tracing and debugging.
 
-## RequestId Configuration
+##  RequestId Configuration
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
@@ -43,9 +43,9 @@ Every request now carries a unique request ID usable for tracing and debugging.
 | `request_attribute_name` | `str` | `"request_id"` | Attribute name used to store the ID on the request |
 | `include_in_response` | `bool` | `True` | Echo the request ID back in the response headers |
 
-## Usage Examples
+##  Usage Examples
 
-### Basic Usage
+###  Basic Usage
 
 ```python
 from sillo import silloApp
@@ -55,7 +55,7 @@ app = silloApp()
 app.use(RequestId())
 ```
 
-### Custom Configuration
+###  Custom Configuration
 
 ```python
 from sillo import silloApp
@@ -74,7 +74,7 @@ app.use(
 )
 ```
 
-### Using Helper Functions
+###  Using Helper Functions
 
 ```python
 from sillo.lifecycle import (
@@ -88,7 +88,7 @@ req_id = get_or_generate_request_id(request)
 is_valid = validate_request_id(some_request_id)
 ```
 
-### Accessing Request ID in Handlers
+###  Accessing Request ID in Handlers
 
 ```python
 @app.get("/api/users")
@@ -100,7 +100,7 @@ async def get_users(request, response):
     return {"users": [], "request_id": request_id}
 ```
 
-## Features
+##  Features
 
 - **Automatic Generation**: UUID4‑based request IDs
 - **Header Support**: Extracts IDs from incoming request headers
@@ -110,7 +110,7 @@ async def get_users(request, response):
 - **Validation**: Built‑in format validation
 - **Thread Safe**: Safe under concurrent ASGI execution
 
-## RequestContext
+##  RequestContext
 
 `RequestContext` is a request‑scoped context manager backed by a `ContextVar`. Anything you set inside the `with` block is available anywhere in the same request, without threading objects through every function call.
 
@@ -136,9 +136,9 @@ def some_deep_helper():
 
 `RequestContext()` (used as a `with` block) creates *and activates* a new context for the current request. To read it later from a function that did not open the block, call the classmethod `RequestContext.current()` — do **not** write `RequestContext()` outside a `with` block, because that constructs a fresh, empty context instead of returning the active one. The context resets automatically when the `with` block exits, so values do not leak across requests.
 
-## Advanced Usage
+##  Advanced Usage
 
-### Logging with Request ID
+###  Logging with Request ID
 
 ```python
 import logging
@@ -162,7 +162,7 @@ async def logging_middleware(request, response, call_next):
 app.use(logging_middleware)
 ```
 
-### Custom Request ID Format
+###  Custom Request ID Format
 
 ```python
 import uuid
@@ -179,7 +179,7 @@ class CustomRequestIdMiddleware(RequestIdMiddleware):
 app.use(CustomRequestIdMiddleware(prefix="api"))
 ```
 
-### Distributed Tracing Integration
+###  Distributed Tracing Integration
 
 ```python
 from sillo.lifecycle import RequestId
@@ -198,7 +198,7 @@ async def tracing_middleware(request, response, call_next):
 app.use(tracing_middleware)
 ```
 
-### Request ID Propagation
+###  Request ID Propagation
 
 ```python
 import httpx
@@ -215,7 +215,7 @@ async def call_external_api(request, response):
     return {"external_data": external_response.json(), "request_id": request_id}
 ```
 
-## Best Practices
+##  Best Practices
 
 1. **Include request IDs in logs** for better debugging and tracing
 2. **Use consistent header names** across your microservices
@@ -224,7 +224,7 @@ async def call_external_api(request, response):
 5. **Validate request IDs** from external sources before trusting them
 6. **Propagate request IDs** to downstream services for distributed tracing
 
-### Production Configuration
+###  Production Configuration
 
 ```python
 from sillo import silloApp
@@ -265,9 +265,9 @@ async def structured_logging(request, response, call_next):
 app.use(structured_logging)
 ```
 
-## Integration Examples
+##  Integration Examples
 
-### With Database Queries
+###  With Database Queries
 
 ```python
 import asyncpg
@@ -284,7 +284,7 @@ async def get_user(request, response, user_id: int):
     return {"user": dict(user), "request_id": request_id}
 ```
 
-### With Background Tasks
+###  With Background Tasks
 
 ```python
 from sillo.lifecycle import get_request_id_from_request
@@ -303,7 +303,7 @@ async def process_data_async(data, request_id):
     logger.info("Background processing completed")
 ```
 
-### With Error Handling
+###  With Error Handling
 
 ```python
 from sillo.exceptions import HTTPException
@@ -320,23 +320,178 @@ async def http_exception_handler(request, response, exc):
     }, exc.status_code
 ```
 
-## Troubleshooting
+##  Troubleshooting
 
-### Request ID Not Appearing
+###  Request ID Not Appearing
 
 1. Ensure the middleware is added to your app
 2. Check that `store_in_request=True`
 3. Verify the middleware is added early in the chain
 
-### Duplicate Request IDs
+###  Duplicate Request IDs
 
 1. Check if `force_generate=True` is needed
 2. Verify client‑supplied IDs are unique
 
-### Performance Issues
+###  Performance Issues
 
 1. Consider shorter ID formats
 2. Use custom ID generation for better performance
 3. Profile your application to find bottlenecks
 
 Built with ❤️ by the [@sillohq](https://github.com/sillohq) community.
+
+
+##  The full path of a request
+
+Understanding the order explains most "why does this not work" questions,
+because nearly all of them are something happening earlier or later than
+expected.
+
+1. The ASGI server accepts the connection and builds a `scope`
+2. sillo constructs a `Request`
+3. Middleware runs, outermost first
+4. The router matches the path and extracts path parameters
+5. Dependencies resolve
+6. Query, header, cookie, and path values are validated
+7. The body is read and validated, if anything declared it
+8. Your handler runs
+9. `response_model` validates the return value
+10. The result is encoded
+11. Middleware unwinds, innermost first
+12. The server writes the response
+
+Four consequences worth internalising.
+
+**Middleware sees raw values.** It runs before validation, so
+`request.query_params["page"]` is the string `"2"`, not the integer `2`.
+
+**A validation failure skips your handler entirely.** Nothing in it runs,
+so logging rejected requests belongs in an exception handler.
+
+**The body is read at most once and only if requested.** A route that
+declares no body never awaits it, which is why an endpoint ignoring a
+posted body is not slowed by it. Reading it twice requires caching it
+yourself.
+
+**Middleware unwinds in reverse on the way out.** The first middleware
+registered is the last to touch the response, which is why response
+rewriting belongs innermost and header injection outermost.
+
+##  Where to put what
+
+| You want to… | Put it in |
+|---|---|
+| Run on every request, regardless of route | [Middleware](/guides/middleware/) |
+| Produce a value the handler uses | [A dependency](/guides/dependency-injection/) |
+| Reject bad input | [Validation](/guides/validation/) |
+| Run once per process | [A lifespan hook](/guides/startups-and-shutdowns/) |
+| Do work after responding | [A background task](/guides/work/background/) |
+
+The most common misplacement is putting per-request work in a lifespan
+hook, or per-process work in a dependency. The first produces stale
+shared state; the second recreates something expensive on every request.
+
+##  Cancellation
+
+If a client disconnects mid-request, the server cancels the task running
+your handler. The handler sees `asyncio.CancelledError` at its next
+`await`.
+
+That means work after the disconnect does not happen, and a database
+transaction in flight is rolled back by the connection's cleanup. It also
+means anything in a `finally` still runs, which is where cleanup belongs.
+
+Never suppress `CancelledError`. Catching it to "keep going" leaves a
+task running after its response can no longer be delivered, and at scale
+those accumulate into a process that is busy doing nothing useful.
+
+
+##  Timing and where latency comes from
+
+Measuring the handler alone will mislead you. A request spends time in
+five places, and the handler is often not the largest.
+
+**The server** parsing the request — small, and proportional to header
+count and body size.
+
+**Middleware** — every layer, on every request, including 404s. Ten
+layers at one millisecond each is ten milliseconds on your fastest
+endpoint, and it does not appear in handler timings.
+
+**Dependency resolution** — anything that queries in a dependency is
+latency before your handler starts.
+
+**The handler** — usually dominated by whatever it awaits, not by your
+code.
+
+**Serialization** — proportional to response size, and pure CPU on the
+event loop.
+
+The way to find the real cost is to measure the whole thing at the
+outermost middleware and compare it against the handler's own timing. A
+large gap points at the layers around it, which is exactly where people
+do not look.
+
+##  Debugging a request end to end
+
+Three tools, in the order they usually help.
+
+`sillo urls` confirms the route exists and matches what you think.
+
+A request id threaded through every log line ties the messages from
+middleware, handler, and background work into one story — see
+[Request Info](/guides/request-info/).
+
+The test client reproduces a request in-process, which removes the
+network, the proxy, and the server from consideration. If it works there
+and not in production, the difference is one of those three, and that is
+a much smaller search.
+
+
+##  Streaming and long-lived requests
+
+Not every request follows the linear path above. A
+[streamed response](/guides/streaming-response/) returns from the handler
+before the body has finished being produced, so middleware unwinds while
+data is still being written — anything measuring duration in middleware
+will report the wrong number, and anything closing a resource there will
+close it too early.
+
+A [WebSocket](/guides/websockets/) leaves the request lifecycle entirely
+after the handshake. HTTP middleware does not run per message, and the
+connection may outlive many ordinary requests.
+
+
+##  Summary
+
+The order is fixed and knowable: middleware outward-in, routing,
+dependencies, validation, handler, response validation, encoding,
+middleware inward-out. Nearly every confusing behaviour in an application
+resolves to something running at a different point in that sequence than
+expected — usually middleware seeing unvalidated values, or per-process
+state being built per request.
+
+
+##  Related
+
+- [Middleware](/guides/middleware/) — the layers wrapping every request
+- [Routing](/guides/routing/) — how a path becomes a handler
+- [Validation](/guides/validation/) — where input is checked
+- [Handlers](/guides/handlers/) — what runs at the centre
+- [Concurrency](/guides/concurrency/) — what the loop is doing meanwhile
+- [Startup & Shutdown](/guides/startups-and-shutdowns/) — what happens before the first request
+
+
+##  Background work happens after the response
+
+Anything you launch with [`BackgroundTask`](/guides/work/background/)
+runs after the response has been sent, on the same event loop. Two
+consequences: the client is not waiting for it, which is the point; and
+it is not covered by any middleware, so request-scoped context —
+`request.state`, a correlation id, an open transaction — is gone unless
+you captured what you need before launching.
+
+Capture values, not the request. A closure holding the request object
+keeps the whole request alive, including its body buffer, for as long as
+the task runs.

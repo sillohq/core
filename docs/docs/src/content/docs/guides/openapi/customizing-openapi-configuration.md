@@ -425,7 +425,7 @@ app.openapi_config.add_example(
 
 ##  Advanced Customization
 
-### Custom OpenAPI Extensions
+###  Custom OpenAPI Extensions
 
 Add custom extensions for specific tooling or documentation needs:
 
@@ -463,7 +463,7 @@ async def get_product(request, response, product_id: int):
     return response.json({"id": product_id, "name": "Product Name"})
 ```
 
-### Conditional Documentation
+###  Conditional Documentation
 
 Show different documentation based on user roles or API versions:
 
@@ -558,7 +558,7 @@ async def custom_docs(request, response):
 
 ##  Best Practices
 
-### Configuration Management
+###  Configuration Management
 
 ```python
 # Use environment variables for configuration
@@ -593,7 +593,7 @@ app.openapi_config.openapi_spec.info.license = License(
 app.openapi_config.openapi_spec.info.termsOfService = APIConfig.TERMS_URL
 ```
 
-### Version Management
+###  Version Management
 
 ```python
 # Semantic versioning with detailed information
@@ -618,7 +618,7 @@ app = silloApp(
 )
 ```
 
-### Documentation Testing
+###  Documentation Testing
 
 ```python
 def test_openapi_spec():
@@ -642,3 +642,92 @@ def test_openapi_spec():
 ```
 
 Customizing your OpenAPI configuration is essential for creating professional, comprehensive API documentation that serves both your development team and API consumers effectively. Proper configuration enhances developer experience, reduces support overhead, and ensures compliance with enterprise standards.
+
+
+##  Servers, environments, and the URL problem
+
+The `servers` list tells clients where to send requests, and it is the
+field most often wrong. A schema generated in CI and served from staging
+that lists `https://api.example.com` will send every integrator
+experimenting in your staging docs to production.
+
+Derive it from configuration rather than hard-coding:
+
+```python title="servers per environment"
+import os
+
+SERVERS = {
+    "production": [{"url": "https://api.example.com", "description": "Production"}],
+    "staging": [{"url": "https://staging-api.example.com", "description": "Staging"}],
+    "development": [{"url": "http://localhost:8000", "description": "Local"}],
+}[os.getenv("ENV", "development")]
+```
+
+List production first when you list several. Interactive UIs default to
+the first entry, and the default is what most people will use without
+noticing there was a choice.
+
+##  Versioning the document
+
+The `version` field is the version of your **API**, not of your
+application. Bumping it because you deployed is noise; bumping it because
+the contract changed is signal.
+
+Two workable conventions. Semantic versioning of the contract, where the
+major version increments only on a breaking change, gives clients a
+single number that answers "will my code still work". Date-based
+versioning — `2026-03-01` — suits APIs that ship changes continuously and
+lets clients pin to a date they tested against.
+
+Whichever you choose, the important part is that it changes when the
+contract changes and not otherwise. A version that increments on every
+deploy carries no information, and clients learn to ignore it.
+
+##  Tags are the navigation
+
+Beyond about twenty endpoints, the tag list is how anyone finds anything.
+Two rules make it work.
+
+**Tag by resource, not by layer.** `Orders`, `Customers`, `Invoices` —
+not `GET endpoints`, `Admin`, `V2`. A reader arrives looking for a noun.
+
+**Order tags deliberately.** Declaring tag metadata at the application
+level fixes the order in the UI and lets each tag carry a description.
+Without it, tags appear in whatever order routes were registered, which
+is an implementation detail leaking into your documentation's navigation.
+
+A tag description is a good place for the prose the schema cannot carry:
+the lifecycle of the resource, the states it moves through, and the
+endpoints that must be called in order.
+
+##  Deciding what not to publish
+
+Not every route belongs in the document. Exclude health checks, metrics
+endpoints, internal callbacks, and anything mounted for operational
+tooling. They add noise for integrators and surface for attackers, and
+nobody generates a client for `/healthz`.
+
+The same applies to fields. A response model that includes an internal
+correlation id documents an implementation detail clients will start
+depending on. Publishing a field is a commitment to keep sending it.
+
+
+##  Contact, licence, and terms
+
+Three fields nobody fills in and every integrator eventually needs.
+
+`contact` is where someone goes when the documentation does not answer
+their question. An address that reaches a human beats a perfect schema
+with no escape hatch.
+
+`license` matters for public APIs, because it tells consumers what they
+may do with responses — an API returning data under an open licence and
+one returning proprietary data look identical without it.
+
+`termsOfService` is a link, and having one saves the conversation about
+rate limits, acceptable use, and what happens when you deprecate
+something.
+
+None of these change behaviour. All of them appear at the top of the
+rendered documentation, which is exactly where someone deciding whether
+to integrate is looking.

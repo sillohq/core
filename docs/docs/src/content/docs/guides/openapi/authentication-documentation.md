@@ -57,7 +57,7 @@ async def delete_post(request, response, post_id: int):
     return response.json({"deleted": True}, status=204)
 ```
 
-### Custom Bearer Token Configuration
+###  Custom Bearer Token Configuration
 
 Customize the bearer token scheme for specific requirements:
 
@@ -86,11 +86,11 @@ async def admin_list_users(request, response):
     return response.json({"users": []})
 ```
 
-## 🗝️ API Key Authentication
+##  🗝️ API Key Authentication
 
 API keys provide simple authentication for programmatic access. They can be passed in headers, query parameters, or cookies:
 
-### Header-Based API Keys
+###  Header-Based API Keys
 
 ```python
 from sillo.openapi.models import APIKey
@@ -139,7 +139,7 @@ async def admin_cleanup(request, response):
     return response.json({"cleaned": True})
 ```
 
-### Query Parameter API Keys
+###  Query Parameter API Keys
 
 ```python
 # API key in query parameter
@@ -164,7 +164,7 @@ async def get_public_stats(request, response):
     return response.json({"stats": {"users": 1000, "posts": 5000}})
 ```
 
-### Cookie-Based API Keys
+###  Cookie-Based API Keys
 
 ```python
 # API key in cookie
@@ -193,7 +193,7 @@ async def get_dashboard(request, response):
 
 OAuth2 provides secure, delegated access and is ideal for third-party integrations. sillo supports all OAuth2 flows:
 
-### Authorization Code Flow
+###  Authorization Code Flow
 
 ```python
 from sillo.openapi.models import OAuth2
@@ -247,7 +247,7 @@ async def oauth_delete_user(request, response, user_id: int):
     return response.json({"deleted": True})
 ```
 
-### Client Credentials Flow
+###  Client Credentials Flow
 
 ```python
 # OAuth2 client credentials for machine-to-machine
@@ -278,7 +278,7 @@ async def get_service_data(request, response):
     return response.json({"data": "service data"})
 ```
 
-### Password Flow (Resource Owner)
+###  Password Flow (Resource Owner)
 
 ```python
 # OAuth2 password flow (use with caution)
@@ -312,7 +312,7 @@ async def get_internal_data(request, response):
 
 Support multiple authentication methods to provide flexibility:
 
-### Alternative Authentication
+###  Alternative Authentication
 
 ```python
 # Either Bearer token OR API key
@@ -337,7 +337,7 @@ async def flexible_auth_endpoint(request, response):
     return response.json({"auth_type": auth_type, "data": "protected data"})
 ```
 
-### Combined Authentication Requirements
+###  Combined Authentication Requirements
 
 ```python
 # Require BOTH Bearer token AND API key
@@ -359,7 +359,7 @@ async def high_security_endpoint(request, response):
 
 ##  Advanced Authentication Patterns
 
-### Role-Based Access Control
+###  Role-Based Access Control
 
 ```python
 # Custom security scheme with roles
@@ -392,7 +392,7 @@ async def moderator_content(request, response):
     return response.json({"content": []})
 ```
 
-### Conditional Authentication
+###  Conditional Authentication
 
 ```python
 @app.get(
@@ -428,7 +428,7 @@ async def get_content(request, response, content_id: int):
 
 ##  Security Best Practices
 
-### Comprehensive Error Responses
+###  Comprehensive Error Responses
 
 ```python
 from pydantic import BaseModel
@@ -474,7 +474,7 @@ async def get_secure_data(request, response):
     return response.json({"data": "secure information"})
 ```
 
-### Authentication Middleware Integration
+###  Authentication Middleware Integration
 
 ```python
 # Example authentication middleware
@@ -513,7 +513,7 @@ app.use(auth_middleware)
 
 ##  Documentation Best Practices
 
-### Clear Security Descriptions
+###  Clear Security Descriptions
 
 ```python
 @app.get(
@@ -531,9 +531,14 @@ app.use(auth_middleware)
     **Rate Limits:**
     - 100 requests per minute per user
     - 1000 requests per hour per API key
-    
+
     **Example Request:**
-    ```
+        GET /api/users?limit=20
+        Authorization: Bearer <token>
+    """,
+)
+async def list_users(request, response): ...
+```
     GET /api/users?limit=20&offset=0
     Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
     ```
@@ -541,7 +546,7 @@ app.use(auth_middleware)
 )
 ```
 
-### Security Scheme Documentation
+###  Security Scheme Documentation
 
 ```python
 # Well-documented security schemes
@@ -572,3 +577,90 @@ app.openapi_config.add_security_scheme(
 ```
 
 Authentication documentation is crucial for API adoption and security. Clear, comprehensive documentation helps developers integrate quickly while maintaining security best practices.
+
+
+##  What the schema can and cannot enforce
+
+A security scheme in the OpenAPI document is a **description**, not a
+control. Declaring `bearerAuth` on a route does not make sillo check for
+a token — that is what dependencies and middleware are for. The schema
+tells clients what to send; your code decides what to accept.
+
+The gap matters in both directions. A route documented as requiring auth
+but not actually protected is a vulnerability that reads as secure. A
+route protected but not documented is an integration failure that reads
+as a bug in the client.
+
+Keep them together structurally. If authentication is applied by a
+dependency, attach the security requirement in the same place the
+dependency is declared, so adding one without the other is visibly
+incomplete.
+
+##  Documenting the token lifecycle
+
+The scheme declaration says "send a bearer token". It does not say where
+one comes from, and that is the first thing an integrator needs.
+
+Put the full lifecycle in the scheme description: which endpoint issues a
+token, what credentials it takes, how long the token lasts, how to
+refresh it, and what a client should do when it expires. A client that
+does not know a token expires in fifteen minutes will write code that
+breaks fifteen minutes into every session.
+
+Document the failure responses too. A 401 with `WWW-Authenticate` means
+"authenticate and retry"; a 403 means "you are authenticated and still
+not allowed" and retrying is pointless. Clients that conflate them
+produce infinite refresh loops against endpoints they will never be
+permitted to call.
+
+##  Scopes, and why they belong per endpoint
+
+If your tokens carry scopes, the schema is where a client learns which
+ones a given call needs. Declaring the scheme globally without per-route
+scopes tells integrators nothing, and the rational response is to request
+every scope available — which is precisely the outcome scopes exist to
+prevent.
+
+Attach the minimum scope per route. It costs one line and it means a
+generated client, a security review, and an integrator all see the same
+answer to "what does this endpoint need".
+
+##  Security hygiene in the document itself
+
+Three things that leak through documentation rather than through code.
+
+**Do not put real credentials in examples.** An example API key in a
+published schema is a published API key. Use obviously fake values with a
+recognisable prefix.
+
+**Do not document internal endpoints publicly.** Admin routes, debug
+handlers, and internal health checks in a public schema are a map for
+someone enumerating your surface. Exclude them from the document.
+
+**Do not describe your rate limits so precisely that they become a
+targeting guide** — but do describe them well enough that a legitimate
+client can respect them. The shape that works: state the limit and the
+window, document the `429` response and `Retry-After`, and leave the
+enforcement details out.
+
+
+##  Testing that documented auth matches enforced auth
+
+The drift between "documented as protected" and "actually protected" is
+invisible until someone exploits it. One test closes the gap for the
+whole API:
+
+```python title="every documented-secure route must reject anonymous calls"
+def test_secured_routes_reject_anonymous():
+    schema = app.openapi()
+    for path, methods in schema["paths"].items():
+        for method, operation in methods.items():
+            if not operation.get("security"):
+                continue
+            response = client.request(method.upper(), path.replace("{id}", "1"))
+            assert response.status_code in (401, 403), f"{method} {path} is not protected"
+```
+
+The inverse test is worth having too: routes that enforce authentication
+but declare no `security` in the schema are undocumented, and integrators
+will hit a 401 they had no way to anticipate.

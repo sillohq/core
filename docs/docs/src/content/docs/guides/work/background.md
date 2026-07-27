@@ -1,95 +1,422 @@
 ---
 title: Background Tasks
-description: Fire-and-forget tasks with result tracking, callbacks, drain, supervision, and sync wrapping.
+description: Fire-and-forget async work inside a request handler — result tracking, callbacks, drain-on-shutdown, supervision, and the unbounded registry you need to know about.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Background Tasks
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Fire-and-forget async work inside a request handler — result tracking, callbacks, drain-on-shutdown, supervision, and the unbounded registry you need to know about.
 ---
 
-# Background Tasks (`sillo.work.background`)
+#  Background Tasks
 
-## Basic Usage
+`BackgroundTask` runs an async function without waiting for it. The
+request returns immediately; the work continues in the same process, on
+the same event loop.
 
-```python
+```python title="the common case"
 from sillo.work.background import BackgroundTask
+
 
 @app.post("/signup")
 async def signup(request, response):
-    user = await create_user(...)
-    BackgroundTask.run(send_welcome_email, user.email, user.name)
-    return response.json({"ok": True}, status_code=201)
+    user = await create_user(request.validated_data)
+    BackgroundTask.run(send_welcome_email, user.email)
+    return response.json({"id": user.id}, status_code=201)
 ```
 
-## Result Tracking & Callbacks
+The user gets their 201 in fifty milliseconds instead of waiting two
+seconds for an SMTP handshake.
 
-```python
+##  When to reach for this — and when not to
+
+Use a background task for work that is fast, roughly idempotent, and
+genuinely optional: sending a notification, warming a cache, writing an
+analytics row, invalidating a CDN path.
+
+:::danger[Background tasks do not survive a restart]
+The task runs in your web process, on your web process's event loop, in
+memory. When that process exits — a deploy, a crash, an OOM kill, a
+scale-in event, a `SIGTERM` from your orchestrator — every in-flight
+background task disappears. There is no persistence, no retry across
+restarts, and no record that the work was ever attempted.
+
+Deploys are the common case, not the exotic one. If you deploy twice a
+day and a task takes thirty seconds, you are silently losing work every
+day.
+
+Never use a background task for anything that must happen: a payment
+capture, an order confirmation, a webhook delivery, a data migration
+step. Those belong in the [queue](/guides/work/queue/), which persists
+jobs and retries them.
+
+The test: if you would be paged when this work is silently skipped, it
+does not belong here.
+:::
+
+The other limit is that background tasks share the event loop with your
+request handlers. CPU-bound work — image resizing, PDF generation, large
+JSON parsing — blocks every concurrent request in that process for as
+long as it runs. Hand that to a worker process, or to a thread with
+`asyncio.to_thread`.
+
+##  Launching
+
+```python title="run and run_sync"
+bt = BackgroundTask.run(async_function, arg1, arg2, kwarg=value)
+bt = BackgroundTask.run_sync(sync_function, arg)   # wraps a sync callable
+```
+
+`run()` requires a running event loop and raises
+`RuntimeError: BackgroundTask.run() requires an async context` otherwise —
+so it works inside handlers and startup hooks, and fails at module import.
+
+`run_sync()` wraps a non-async callable in a coroutine. Note that this
+does **not** move the work off the event loop: a blocking sync function
+still blocks everything. For genuinely blocking work, offload it:
+
+```python title="keeping blocking work off the loop"
+BackgroundTask.run(asyncio.to_thread, resize_image, path)
+```
+
+###  Options
+
+```python title="the full option set"
 bt = BackgroundTask.run(
-    process_upload, file_id,
-    on_success=lambda r: notify(f"Done in {r.duration_ms}ms"),
-    on_failure=lambda r: alert(f"Failed: {r.error}"),
+    process_upload,
+    file_id,
+    name=f"upload-{file_id}",
     timeout=120,
-    metadata={"file_id": file_id, "user_id": user_id},
+    metadata={"user_id": user.id},
+    on_success=mark_complete,
+    on_failure=alert_ops,
+    on_done=record_metric,
 )
-
-await bt.wait(timeout=120)
-bt.cancel()
-print(bt.id, bt.name, bt.done, bt.elapsed, bt.to_dict())
 ```
 
-## Monitoring & Drain
+| Option | Effect |
+|---|---|
+| `name` | Label used in `to_dict()` and logs; defaults to `func.__name__` |
+| `timeout` | Seconds before the task is cancelled and marked failed |
+| `metadata` | Arbitrary dict carried on the `TaskResult` |
+| `on_success` | Called with the `TaskResult` on success |
+| `on_failure` | Called with the `TaskResult` on failure |
+| `on_done` | Called on both — registered as success *and* failure |
+
+Callbacks receive a `TaskResult`, not the return value. Exceptions raised
+inside a callback are logged and swallowed; a broken callback never takes
+down the task.
+
+:::caution[Option names collide with your function's parameters]
+`name`, `timeout`, `metadata`, `on_success`, `on_failure`, and `on_done`
+are consumed by `BackgroundTask` before the remaining `**kwargs` are
+forwarded. A function with a parameter called `name` or `timeout` will
+never receive it:
 
 ```python
-BackgroundTask.count()   # {"total": 12, "running": 3, "done": 8, "pending": 1}
+async def create_report(name: str, timeout: float): ...
 
+BackgroundTask.run(create_report, name="Q3", timeout=30)
+# create_report() missing 2 required positional arguments
+```
+
+Pass them positionally, or bind them with `functools.partial`:
+
+```python
+from functools import partial
+
+BackgroundTask.run(partial(create_report, name="Q3", timeout=30))
+```
+:::
+
+##  Inspecting a task
+
+```python title="state accessors"
+bt.id          # str
+bt.name        # str
+bt.done        # bool
+bt.running     # bool
+bt.result      # TaskResult | None
+bt.elapsed     # float seconds since launch
+bt.to_dict()   # id, name, done, running, elapsed, status, result
+```
+
+All of these except `to_dict()` are **properties**, not methods.
+`bt.done()` raises `TypeError: 'bool' object is not callable` — a mistake
+that is easy to make and easy to spot once you know it.
+
+```python title="awaiting a result"
+try:
+    value = await bt.wait(timeout=30)
+except WorkError as exc:
+    logger.error("task failed: %s", exc)
+```
+
+:::caution[`wait()` wraps the original exception]
+The docstring says it "raises the original exception if the task failed".
+It does not — the failure is re-raised as `sillo.work.types.WorkError`
+with the original message embedded:
+
+```
+WorkError: ValueError: nope
+```
+
+Catch `WorkError`, not `ValueError`. If you need the original type, read
+it off `bt.result` instead of relying on the exception class.
+:::
+
+Awaiting a background task in the handler that launched it defeats the
+purpose — if you need the value before responding, await the function
+directly.
+
+##  Draining on shutdown
+
+Without a drain, a `SIGTERM` cancels every in-flight task mid-execution.
+`drain()` gives them a bounded window to finish.
+
+```python title="graceful shutdown"
 @app.on_shutdown
-async def cleanup():
-    result = await BackgroundTask.drain(timeout=10, cancel_remaining=True)
-    logger.info("Drain: %r", result)
+async def finish_background_work():
+    summary = await BackgroundTask.drain(timeout=10, cancel_remaining=True)
+    logger.info("drained background tasks: %r", summary)
+    # {'total': 12, 'completed': 11, 'cancelled': 1}
 ```
 
-## Real-World: Bulk Export
+Pick a timeout shorter than your orchestrator's grace period —
+Kubernetes defaults to 30 seconds between `SIGTERM` and `SIGKILL`, so a
+10-second drain leaves room for the rest of shutdown. A drain longer than
+the grace period is worse than none: the process gets killed mid-drain
+and you lose the tasks anyway, plus you delayed the rollout.
+
+`cancel_remaining=False` leaves stragglers running, which only helps if
+something else is keeping the process alive.
+
+:::danger[The task registry is never cleaned]
+`BackgroundTask._instances` is a plain `set` — strong references, added
+on construction, removed never. Not a `WeakSet`, and `drain()` does not
+clear it:
 
 ```python
-@app.post("/export", request_model=ExportForm)
-async def start_export(request, response):
-    export_id = await create_export(request.validated_data)
+await BackgroundTask.drain(timeout=1)
+BackgroundTask.count()
+# {'total': 2, 'running': 0, 'done': 2, 'pending': 0}   ← still 2
+```
 
-    BackgroundTask.run(
-        execute_export, export_id,
-        name=f"export-{export_id}",
-        on_success=lambda r: mark_complete(export_id),
-        on_failure=lambda r: mark_failed(export_id, r.error),
+Every task object stays alive for the life of the process, along with its
+`TaskResult`, its arguments, and anything those close over. An endpoint
+that fires one background task per request retains one object per
+request. At a thousand requests a minute, that is 1.44 million retained
+objects a day.
+
+`count()["total"]` is therefore a lifetime counter, not a gauge — useful
+for "how many have I ever launched", useless for "how many are running
+now". Use `running` and `pending` for that.
+
+Until this is fixed, either recycle workers on a schedule, or avoid
+`BackgroundTask` on your highest-traffic endpoints and use the queue,
+which does not retain completed jobs in memory. If you want the
+fire-and-forget shape without the retention, `asyncio.create_task` with
+your own error handling is three lines and retains nothing:
+
+```python
+def fire(coro):
+    task = asyncio.create_task(coro)
+    task.add_done_callback(
+        lambda t: logger.error("background failure", exc_info=t.exception())
+        if not t.cancelled() and t.exception()
+        else None
     )
-    return response.json({"export_id": export_id, "status": "processing"}, status_code=202)
+    return task
+```
+:::
 
-@app.get("/admin/tasks")
-async def task_overview(request, response):
+##  Monitoring
+
+```python title="an ops endpoint"
+@app.get("/admin/background")
+async def background_status(request, response):
     return response.json(BackgroundTask.count())
 ```
 
-## Supervisor — Auto-Restart
+Read the numbers correctly given the registry behaviour above: `running`
+and `pending` are live gauges, `total` and `done` only ever grow. A
+`running` count that climbs and never falls means tasks are hanging —
+check whether they have timeouts.
 
-```python
-from sillo.work.background import Supervisor, RestartPolicy
+##  Supervision
+
+`Supervisor` keeps a long-lived task alive by restarting it when it
+fails. It is for daemon-shaped work: a queue consumer, a pub/sub
+listener, a polling loop.
+
+```python title="supervising a long-lived listener"
+import asyncio
+
+from sillo.work.background import RestartPolicy, Supervisor
 
 supervisor = Supervisor(
-    fragile_api_call,
+    consume_events,
     RestartPolicy.EXPONENTIAL_BACKOFF,
-    max_restarts=5, base_delay=1.0, max_delay=60.0,
+    max_restarts=5,
+    base_delay=1.0,
+    max_delay=60.0,
 )
-await supervisor.start(api_key="secret")
-supervisor.stop()
-await supervisor.wait(5)
+
+
+@app.on_startup
+async def start_consumer():
+    app.state["consumer"] = asyncio.create_task(supervisor.start())
+
+
+@app.on_shutdown
+async def stop_consumer():
+    supervisor.stop()
+    await supervisor.wait(timeout=5)
 ```
 
-| Policy | Behavior |
-|---|---|
-| `NEVER` | Run once, never restart |
-| `ALWAYS` | Always restart |
-| `ON_FAILURE` | Restart on exception |
-| `EXPONENTIAL_BACKOFF` | Restart with increasing delays |
-
-## Sync Functions
+:::caution[`start()` blocks until the supervisor stops]
+`Supervisor.start()` is a loop that awaits the supervised task, restarts
+it, and awaits again. It returns only when the policy gives up or
+`stop()` is called.
 
 ```python
-def heavy(x): return x * 2
-bt = BackgroundTask.run_sync(heavy, 42)
-result = await bt.wait()  # 84
+await supervisor.start()      # never returns — your startup hook hangs
 ```
+
+Wrap it in `asyncio.create_task`, as above, and keep a reference so it is
+not garbage-collected mid-flight.
+:::
+
+| Policy | On failure | On success |
+|---|---|---|
+| `NEVER` | Stop | Stop |
+| `ON_FAILURE` | Restart, up to `max_restarts` | Stop |
+| `ALWAYS` | Restart, up to `max_restarts` | **Restart immediately** |
+| `EXPONENTIAL_BACKOFF` | Restart, up to `max_restarts` | **Restart immediately** |
+
+`max_restarts=0` means unlimited.
+
+Two things the table makes visible. `ALWAYS` and `EXPONENTIAL_BACKOFF`
+behave identically — the delay `min(base_delay * 2 ** restarts, max_delay)`
+is applied on the failure path regardless of which you pick, so the names
+describe intent rather than behaviour. And on the *success* path both
+restart with **no delay at all**: a supervised function that returns
+quickly becomes a busy loop that pins a core. Supervise functions that
+are supposed to run forever, and put the `sleep` inside them.
+
+The restart counter resets only when `start()` is called again, so a task
+that fails five times over a week still exhausts `max_restarts=5`. For
+genuinely long-lived processes, prefer `max_restarts=0` plus alerting on
+the restart count from `to_dict()`.
+
+##  A worked example
+
+An export endpoint that responds immediately, tracks progress in the
+database rather than in memory, and degrades sanely if the process dies.
+
+```python title="a defensible use of a background task"
+@app.post("/exports")
+async def start_export(request, response):
+    export = await Export.create(
+        user_id=request.user.id, status="pending", requested_at=now()
+    )
+
+    BackgroundTask.run(
+        run_export,
+        export.id,
+        name=f"export-{export.id}",
+        timeout=600,
+        on_failure=lambda result: logger.error(
+            "export %s failed: %s", export.id, result.error
+        ),
+    )
+    return response.json({"export_id": export.id, "status": "pending"}, status_code=202)
+
+
+async def run_export(export_id: int) -> None:
+    await Export.filter(id=export_id).update(status="running")
+    try:
+        url = await build_export_file(export_id)
+    except Exception:
+        await Export.filter(id=export_id).update(status="failed")
+        raise
+    await Export.filter(id=export_id).update(status="done", url=url)
+```
+
+The state lives in the `exports` table, so a restart leaves a row stuck
+in `running` rather than losing the request entirely — and a periodic
+[scheduled job](/guides/work/scheduler/) can find rows stuck in `running`
+for over an hour and re-queue them. That reconciliation loop is what
+makes a background task acceptable for work that matters; without it, use
+the queue.
+
+##  What not to do
+
+**Do not use a background task for work that must happen.** A restart
+loses it.
+
+**Do not run CPU-bound work in one.** It blocks every concurrent request
+in the process.
+
+**Do not call `bt.done()`.** It is a property.
+
+**Do not catch the original exception from `wait()`.** It is wrapped in
+`WorkError`.
+
+**Do not pass `name`, `timeout`, or `metadata` to a function that
+declares them.** They are consumed by the constructor.
+
+**Do not read `count()["total"]` as a live gauge.** It only grows.
+
+**Do not fire background tasks per request on a high-traffic endpoint.**
+The registry retains them.
+
+**Do not `await supervisor.start()` in a startup hook.** It never
+returns.
+
+**Do not supervise a fast-returning function** with `ALWAYS` or
+`EXPONENTIAL_BACKOFF`. It becomes a busy loop.
+
+##  Performance notes
+
+A background task is one `asyncio.Task` plus a `Task` wrapper — cheap to
+create, and it competes with request handling for the same event loop.
+Hundreds are fine; thousands of concurrent tasks each holding a database
+connection will exhaust the pool long before they exhaust the CPU.
+
+Set `timeout` on anything touching the network. Without one, a hung HTTP
+call keeps a task, its memory, and any connection it holds alive for the
+life of the process.
+
+The registry behaviour above is the failure mode that presents as "memory
+grows steadily, restarts fix it". Check `count()["total"]` against your
+request count if you are debugging that shape of problem.
+
+##  API reference
+
+| Member | Signature | Notes |
+|---|---|---|
+| `BackgroundTask.run` | `(func, *args, name=None, timeout=None, metadata=None, on_success=None, on_failure=None, on_done=None, **kwargs)` | Requires a running loop |
+| `BackgroundTask.run_sync` | same | Wraps a sync callable; does not offload it |
+| `.wait` | `(timeout=None) -> Any` | Raises `WorkError` on failure |
+| `.cancel` | `() -> bool` | `False` if already finished |
+| `.done` / `.running` / `.result` / `.id` / `.name` / `.elapsed` | properties | Not methods |
+| `.to_dict` | `() -> dict` | |
+| `BackgroundTask.drain` | `(timeout=10.0, cancel_remaining=True) -> dict` | Does not clear the registry |
+| `BackgroundTask.count` | `() -> dict` | `total` and `done` only grow |
+| `Supervisor` | `(func, policy=ON_FAILURE, *, max_restarts=3, base_delay=1.0, max_delay=60.0, name=None)` | |
+| `Supervisor.start` | `(*args, **kwargs)` | **Blocks** until stopped |
+| `Supervisor.stop` / `.wait` / `.to_dict` | | `stop()` cancels the current task |
+
+##  Related
+
+- [Work Overview](/guides/work/) — choosing between the background, queue, and scheduler layers
+- [Queue System](/guides/work/queue/) — durable, retryable, cross-process work
+- [Jobs](/guides/work/jobs/) — the dispatchable job class
+- [Scheduler](/guides/work/scheduler/) — periodic work, including reconciliation loops
+- [Concurrency](/guides/concurrency/) — how sillo schedules tasks on the loop
+- [Startup & Shutdown](/guides/startups-and-shutdowns/) — where `drain` belongs

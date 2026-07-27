@@ -1,163 +1,400 @@
 ---
 title: WebSockets
-icon: websocket
-description: 'WebSockets enable real-time, bidirectional communication between clients and servers, making them ideal for applications like chat systems, live dashboards, and notifications. sillo provides
-  a robust WebSocket implementation with intuitive APIs for managing connections, channels, and groups.
-
-  '
+description: Bidirectional real-time connections in sillo — routing, the WebSocket object, the connection lifecycle, the state machine that governs it, and what breaks when you run more than one worker.
 head:
-- tag: meta
-  attrs:
-    property: og:title
-    content: WebSockets
-- tag: meta
-  attrs:
-    property: og:description
-    content: WebSockets enable real-time, bidirectional communication between clients and servers, making them ideal for applications like chat systems, live dashboards, and notifications. sillo provides
-      a robust WebSocket implementation with intuitive APIs for managing connections, channels, and groups.
+  - tag: meta
+    attrs:
+      property: og:title
+      content: WebSockets
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Bidirectional real-time connections in sillo — routing, the WebSocket object, the connection lifecycle, the state machine that governs it, and what breaks when you run more than one worker.
 ---
+
 #  WebSockets
 
-```python
+A WebSocket is a long-lived, bidirectional connection between a client
+and your server. Unlike an HTTP request, which ends when the response is
+sent, a WebSocket stays open and either side can send at any time. That
+makes it the right tool for chat, live dashboards, collaborative editing,
+multiplayer state, and push notifications.
+
+sillo's WebSocket support has four layers, each building on the one
+below:
+
+| Layer | What it gives you | Guide |
+|---|---|---|
+| `WebSocket` | The raw connection: accept, send, receive, close | This page |
+| `Channel` | A connection plus a payload type and an expiry | [Channels](/guides/websockets/channels/) |
+| `ChannelBox` | Named groups of channels and broadcast | [Groups](/guides/websockets/groups/) |
+| `WebSocketConsumer` | A class with lifecycle hooks and group helpers | [Consumers](/guides/websockets/consumer/) |
+
+Start at the bottom. Most real applications end up using consumers, but
+understanding the raw connection first makes the rest obvious rather than
+magical.
+
+##  When to reach for a WebSocket
+
+Use one when the *server* needs to initiate messages, and often — a chat
+room, a price ticker, a progress feed, a presence indicator.
+
+Do not use one when the client drives everything. A form submission, a
+search, a file upload, a CRUD API: all of these are request/response, and
+HTTP does request/response better, with caching, retries, status codes,
+and every piece of debugging tooling ever built.
+
+Consider Server-Sent Events instead when the traffic is one-directional
+server-to-client. SSE runs over plain HTTP, reconnects automatically in
+the browser, survives proxies that mangle upgrades, and needs no special
+infrastructure. See [Streaming Responses](/guides/streaming-response/).
+Reach for a WebSocket when you genuinely need the client to push too.
+
+##  Routing
+
+Register a WebSocket endpoint with the `ws_route` decorator:
+
+```python title="a minimal echo endpoint"
 from sillo import silloApp
-from sillo.routing import WebsocketRoute
+from sillo.websockets import WebSocket, WebSocketDisconnect
+
 app = silloApp()
-@app.ws_route("/ws")
-async def ws_handler(ws):
-    await ws.accept()
+
+
+@app.ws_route("/ws/echo")
+async def echo(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            message = await websocket.receive_text()
+            await websocket.send_text(f"echo: {message}")
+    except WebSocketDisconnect:
+        pass
+```
+
+The handler takes exactly one argument — the `WebSocket`. It is not
+called with `request` and `response`, and it does not return anything.
+The connection ends when the handler returns.
+
+There is no `@app.websocket(...)` decorator. The name is `ws_route`.
+
+Three equivalent registration forms:
+
+```python title="the three ways to register"
+@app.ws_route("/ws/chat")
+async def chat(websocket): ...
+
+app.add_ws_route(path="/ws/chat", handler=chat)
+
+from sillo.core.routing import WebsocketRoute
+app.add_ws_route(WebsocketRoute("/ws/chat", chat))
+```
+
+###  Path parameters
+
+Declared the same way as HTTP routes, and read off the connection rather
+than injected as arguments:
+
+```python title="path parameters"
+@app.ws_route("/ws/room/{room_id}")
+async def room(websocket: WebSocket):
+    await websocket.accept()
+    room_id = websocket.path_params["room_id"]      # '42' — a str
+    await websocket.send_json({"room": room_id})
+```
+
+:::caution[Index individual parameters; do not serialize the mapping]
+`websocket.path_params["room_id"]` gives you a plain `str`. The mapping
+itself is not directly JSON-serializable — passing it whole to
+`send_json` raises `TypeError: Object of type RouteParam is not JSON serializable`
+and, because that happens inside the connection handler, closes the
+socket.
+
+```python
+await websocket.send_json(websocket.path_params)          # breaks
+await websocket.send_json(dict(websocket.path_params))    # also risky
+await websocket.send_json({"room": websocket.path_params["room_id"]})   # fine
+```
+:::
+
+###  Grouping routes on a router
+
+```python title="a websocket router"
+from sillo.core.routing import Router
+
+ws_router = Router(prefix="/ws")
+ws_router.add_ws_route(path="/chat", handler=chat)
+ws_router.add_ws_route(path="/presence", handler=presence)
+
+app.mount_router(ws_router)
+```
+
+`mount_router` does not take a prefix — set it on the `Router`. And
+`add_ws_route` wants either a `WebsocketRoute` instance or the
+`path=`/`handler=` keyword pair; a bare positional function will not do.
+
+##  The connection lifecycle
+
+Every WebSocket goes through the same four phases.
+
+**Handshake.** The client sends an HTTP request with `Upgrade: websocket`.
+Your handler is invoked, and nothing can be sent yet.
+
+**Accept.** You call `await websocket.accept()`. Until this happens the
+client is waiting; if you return without accepting or closing, the
+connection is rejected.
+
+**Exchange.** Both sides send and receive freely until one stops.
+
+**Close.** Either side closes. A client disconnect raises
+`WebSocketDisconnect` from whatever receive call is in flight.
+
+```python title="the full shape"
+@app.ws_route("/ws/session")
+async def session(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        async for message in websocket.iter_json():
+            await handle(message)
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await cleanup()
+```
+
+`iter_json()`, `iter_text()`, and `iter_bytes()` are async generators that
+loop until disconnect and then stop cleanly — they swallow
+`WebSocketDisconnect` internally, so the `except` above is belt and
+braces for anything raised by `handle`.
+
+###  Do work before accepting when you need to reject
+
+Authentication belongs before `accept()`. Once accepted, a rejection
+costs the client a round trip and looks like an error rather than a
+refusal.
+
+```python title="authenticating before accept"
+@app.ws_route("/ws/private")
+async def private(websocket: WebSocket):
+    token = websocket.query_params.get("token")
+    user = await authenticate(token)
+    if user is None:
+        await websocket.close(code=1008)   # policy violation
+        return
+    await websocket.accept()
     ...
 ```
 
-Websocket routing follows the same pattern as other http routes making it easy to use.
+Browsers cannot set custom headers on a WebSocket handshake, which is why
+tokens usually arrive as a query parameter or in the first message after
+accept. A query parameter ends up in access logs and proxy logs — prefer
+a short-lived, single-use ticket over a long-lived session token, and
+treat it as compromised the moment it is used.
 
-::: tip WebSocket Lifecycle
+##  The state machine
 
-1. **Connection**: Client initiates WebSocket connection
-2. **Acceptance**: Server accepts the connection
-3. **Communication**: Bidirectional message exchange
-4. **Disconnection**: Connection closes (graceful or abrupt)
-5. **Cleanup**: Resources are cleaned up
-   :::
+`WebSocket` tracks two states — `client_state` and `application_state` —
+and enforces legal transitions. This is why the error messages are
+specific rather than mysterious.
 
-Websocket also provides a `WebsocketRoute` class for more complex routing needs
+| Attempt | Result |
+|---|---|
+| `receive_text()` before `accept()` | `RuntimeError: WebSocket is not connected. Need to call "accept" first.` |
+| `send_text()` after `close()` | `RuntimeError: Cannot call "send" once a close message has been sent.` |
+| `receive()` after a disconnect message | `RuntimeError: Cannot call "receive" once a disconnect message has been received.` |
+| `send()` when the peer is gone (`OSError`) | `WebSocketDisconnect(code=1006)` |
 
-You can use it like this
-
-```python
-from sillo import silloApp
-from sillo.routing import WebsocketRoute
-app = silloApp()
-async def ws_handler(ws):
-    await ws.accept()
-    ...
-app.add_ws_route(WebsocketRoute("/ws", ws_handler))
-```
-
-## WebSocket Router
-
-Use a `Router` to group WebSocket routes:
+Two of these matter in practice. Accepting exactly once is easy to get
+wrong when a base class also accepts — see the consumer guide. And
+`is_connected()` is a **method**, not a property:
 
 ```python
-from sillo.routing import Router
+if websocket.is_connected():      # correct
+    await websocket.send_text("still here")
 
-router = Router(prefix="/ws")
-router.add_ws_route(path="/chat", handler=ws_handler)
-
-app.mount_router(router)
+if websocket.is_connected:        # always truthy — this is a bound method
+    await websocket.send_text("sent even after the peer is gone")
 ```
 
-::: tip
-`app.mount_router` does not take a prefix. Use `Router(prefix="/...")` instead.
+The second form is always true and silently defeats whatever guard you
+wrote it for.
+
+##  Sending and receiving
+
+```python title="the message API"
+await websocket.send_text("hello")
+await websocket.send_bytes(b"\x00\x01")
+await websocket.send_json({"type": "ping"})
+await websocket.send_json(payload, mode="binary")   # JSON over a binary frame
+
+text = await websocket.receive_text()
+data = await websocket.receive_bytes()
+obj = await websocket.receive_json()
+obj = await websocket.receive_json(mode="binary")
+```
+
+`send_json` serializes with `separators=(",", ":")` and
+`ensure_ascii=False` — compact output, and non-ASCII characters sent as
+real UTF-8 rather than escapes.
+
+Frame type must match on both ends. Calling `receive_text()` when the
+client sent a binary frame raises `KeyError: 'text'`, because the ASGI
+message has a `bytes` key instead. Pick one encoding per endpoint and
+document it, or use `receive()` and branch on what arrived:
+
+```python title="handling either frame type"
+message = await websocket.receive()
+if message["type"] == "websocket.disconnect":
+    return
+payload = message.get("text") or message["bytes"].decode()
+```
+
+##  Closing
+
+```python
+await websocket.close(code=1000, reason="session ended")
+```
+
+The close codes worth knowing, all available as constants in
+`sillo.websockets.status`:
+
+| Code | Constant | Meaning |
+|---|---|---|
+| 1000 | `WS_1000_NORMAL_CLOSURE` | Done, no error |
+| 1001 | `WS_1001_GOING_AWAY` | Server shutting down |
+| 1003 | `WS_1003_UNSUPPORTED_DATA` | Wrong frame type or unparseable payload |
+| 1008 | `WS_1008_POLICY_VIOLATION` | Auth failure, rate limit |
+| 1011 | `WS_1011_INTERNAL_ERROR` | Unhandled exception |
+
+Codes in the 4000–4999 range are yours to define. Use them for
+application-level reasons the client should act on differently — "token
+expired, refresh and reconnect" versus "you were banned, do not
+reconnect".
+
+Note that browsers do not expose the close *reason* reliably and, for
+abnormal closures, report code 1006 regardless of what you sent. Anything
+the client must act on should be a normal message sent before closing.
+
+##  Scaling
+
+:::danger[Groups live in one process's memory]
+`ChannelBox.CHANNEL_GROUPS` is a plain class-level dictionary. It is not
+shared between processes, workers, or machines.
+
+Run `uvicorn --workers 4` and you have four independent group registries.
+A user connected to worker 1 will never receive a broadcast issued on
+worker 3. In development with one worker everything appears to work; the
+bug appears only under the deployment configuration you actually ship.
+
+Three ways out, in increasing order of effort:
+
+**One worker per process, sticky by room.** Route each room to a fixed
+worker at the load balancer. Simple, and it caps a room's size at one
+process.
+
+**A Redis pub/sub fan-out layer.** Every worker subscribes to the rooms
+its local connections care about, and `broadcast` publishes to Redis
+instead of iterating a local dict. This is what Django Channels' channel
+layer does, and it is roughly a hundred lines here.
+
+**A dedicated realtime service.** Move WebSocket termination out of the
+application entirely.
+
+Whichever you choose, decide before you ship — retrofitting the fan-out
+means touching every broadcast call site.
 :::
 
-:::caution
-`Router.add_ws_route` expects either a `WebsocketRoute` instance or keyword args (`path=...`, `handler=...`).
-:::
+The other scaling limit is per-connection memory. Each open WebSocket
+holds a task, two ASGI callables, and whatever your handler keeps in
+scope. Ten thousand connections holding a loaded user object each is a
+memory profile worth measuring rather than assuming.
+
+##  Testing
+
+`TestClient` speaks WebSocket, so endpoints are testable without a
+running server. The connection is a context manager and the send/receive
+calls are synchronous.
+
+```python title="testing a websocket endpoint"
+from sillo.testclient import TestClient
 
 
-##  Sending Messages
+def test_echo():
+    with TestClient(app) as client:
+        with client.websocket_connect("/ws/echo") as ws:
+            ws.send_text("hello")
+            assert ws.receive_text() == "echo: hello"
 
-the `WebSocket` class has some methods that can be used to send messages to a connected client.
 
-```python
-from sillo.websockets.base import WebSocket
-
-async def ws_handler(ws):
-    await ws.accept()
-    await ws.send_text("Hello World")
-    # await ws.send_json({"message": "Hello World"})
-    # await ws.send_bytes(b"Hello World")
+def test_room_path_param():
+    with TestClient(app) as client:
+        with client.websocket_connect("/ws/room/42") as ws:
+            assert ws.receive_json() == {"room": "42"}
 ```
 
-##  Receiving Messages
+Leaving the inner block closes the connection, which is how you exercise
+disconnect handling — assert on whatever your `finally` was supposed to
+clean up. A rejected connection surfaces as `WebSocketDisconnect` raised
+by `websocket_connect`, so an auth test wraps it in `pytest.raises`.
 
-The `WebSocket` class has some methods that can be used to receive messages from a connected client.
+##  What not to do
 
-```python
-from sillo.websockets.base import WebSocket
+**Do not use `@app.websocket(...)`.** It does not exist; use `ws_route`.
 
-async def ws_handler(ws):
-    await ws.accept()
-    message = await ws.receive_text()
-    # message = await ws.receive_json()
-    # message = await ws.receive_bytes()
-    print(message)
-```
+**Do not treat `is_connected` as a property.** It is a method, and the
+un-called form is always truthy.
 
-sillo supports three primary message formats:
+**Do not accept before authenticating** when the endpoint is private.
 
-**1. Text Messages**
+**Do not send a `path_params` mapping to `send_json`.** Index the values.
 
-```python
-text_data = await ws.receive_text()
-await ws.send_text(f"Received: {text_data}")
-```
+**Do not mix frame types on one endpoint** without branching on
+`receive()`.
 
-**2. Binary Messages**
+**Do not rely on the close reason reaching the browser.** Send a normal
+message first.
 
-```python
-binary_data = await ws.receive_bytes()
-await ws.send_bytes(binary_data)  # Echo binary data
-```
+**Do not run multiple workers with in-memory groups.** Broadcasts will
+silently reach a fraction of your users.
 
-**3. JSON Messages**
+**Do not do slow work inside the receive loop.** A blocking call stalls
+that connection entirely; hand it to a background task.
 
-```python
-json_data = await ws.receive_json()
-await ws.send_json({"status": "success", "data": json_data})
-```
+##  Performance notes
 
----
+Each connection is one asyncio task. Idle connections cost almost
+nothing; the cost is in what you keep alive alongside them.
 
-##  Connection Lifecycle
+`send_json` serializes on every call. Broadcasting one payload to a
+thousand channels currently serializes it a thousand times, because
+`Channel._send` calls `websocket.send_json(payload)` per channel. For
+large payloads to large groups, pre-serialize once and use text channels.
 
-A WebSocket connection follows a clear lifecycle:
+Backpressure is the failure mode that surprises people. If a client stops
+reading and you keep sending, the frames queue in the server's buffers
+until memory runs out. Cap what you queue per connection and drop or
+disconnect a client that falls too far behind — a slow consumer must not
+be allowed to degrade the process.
 
-**Accept the Connection**
+##  API reference
 
-```python
-await ws.accept()
-```
+| Member | Signature | Notes |
+|---|---|---|
+| `accept` | `(subprotocol=None, headers=None)` | Waits for `websocket.connect` first |
+| `receive_text` / `receive_bytes` | `() -> str` / `bytes` | Raise if the frame type differs |
+| `receive_json` | `(mode="text") -> Any` | `mode` is `"text"` or `"binary"` |
+| `iter_text` / `iter_bytes` / `iter_json` | async generators | Stop cleanly on disconnect |
+| `send_text` / `send_bytes` | `(data)` | |
+| `send_json` | `(data, mode="text")` | Compact separators, `ensure_ascii=False` |
+| `close` | `(code=1000, reason=None)` | |
+| `is_connected` | `() -> bool` | **Method**, not a property |
+| `path_params` / `query_params` / `headers` | mappings | Inherited from `HTTPConnection` |
 
-### Receive Messages (Loop)
+##  Related
 
-```python
-while True:
-    data = await ws.receive()
-    # Process data
-```
-
-##  Handle Disconnections
-
-```python
-from sillo.websockets.base import WebSocketDisconnect
-except WebSocketDisconnect:
-    print("Client disconnected")
-```
-
-### Close the Connection
-
-```python
-finally:
-    await ws.close()
-```
+- [Consumers](/guides/websockets/consumer/) — the class-based API with lifecycle hooks
+- [Channels](/guides/websockets/channels/) — wrapping a connection with a payload type and expiry
+- [Groups](/guides/websockets/groups/) — broadcasting to many connections
+- [Events](/guides/websockets/events/) — routing messages to handlers by type
+- [Streaming Responses](/guides/streaming-response/) — SSE, for one-directional push
+- [Routing](/guides/routing/) — how paths and parameters are matched

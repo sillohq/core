@@ -15,7 +15,7 @@ A validation failure returns **422 Unprocessable Entity** with every problem fou
 }
 ```
 
-## The shape of an error
+##  The shape of an error
 
 Every entry has the same four keys:
 
@@ -28,7 +28,7 @@ Every entry has the same four keys:
 
 Build client-side handling on `type`, never on `msg` — messages are wording and may be improved; types are a contract.
 
-## Reading `loc`
+##  Reading `loc`
 
 The first element names the location that failed, so a client can tell a malformed query string from a malformed body without guessing:
 
@@ -52,7 +52,7 @@ Remaining elements are the field path, which nests for nested models and indexes
 
 The name reported is the **wire** name. If a parameter called `page_num` has `alias="page"`, errors say `page` — what the client actually sent, not your internal identifier.
 
-## Nothing short-circuits
+##  Nothing short-circuits
 
 A request with a bad query parameter *and* a malformed body reports both. Clients fix everything in one round trip rather than discovering problems one at a time:
 
@@ -66,11 +66,11 @@ A request with a bad query parameter *and* a malformed body reports both. Client
 
 The one exception is forms: if a `Form` field fails, missing-file checks for that request are not also reported.
 
-## The error-type catalog
+##  The error-type catalog
 
 These are the `type` values you will actually encounter. Knowing them makes client-side handling straightforward.
 
-### Presence and structure
+###  Presence and structure
 
 | `type` | Cause |
 | --- | --- |
@@ -80,7 +80,7 @@ These are the `type` values you will actually encounter. Knowing them makes clie
 | `model_type` | A non-object body where an object was declared |
 | `model_attributes_type` | The value could not be read as a model or object |
 
-### Type coercion
+###  Type coercion
 
 | `type` | Cause |
 | --- | --- |
@@ -97,7 +97,7 @@ These are the `type` values you will actually encounter. Knowing them makes clie
 | `enum` | Not one of the enum's members |
 | `literal_error` | Not one of the `Literal` values |
 
-### Constraints
+###  Constraints
 
 | `type` | Constraint |
 | --- | --- |
@@ -111,14 +111,14 @@ These are the `type` values you will actually encounter. Knowing them makes clie
 | `string_pattern_mismatch` | `pattern` |
 | `too_short` / `too_long` | length constraints on a collection |
 
-### Custom validation
+###  Custom validation
 
 | `type` | Cause |
 | --- | --- |
 | `value_error` | A `ValueError` raised in your validator |
 | `assertion_error` | A failed `assert` in your validator |
 
-## Custom messages
+##  Custom messages
 
 Raising `ValueError` in a validator puts your text in `msg`, prefixed with `Value error,`:
 
@@ -165,7 +165,7 @@ def no_reserved(cls, v: str) -> str:
 
 A stable custom `type` is what lets a client show a translated message of its own.
 
-## Customizing the response
+##  Customizing the response
 
 Register a handler for `RequestValidationError`:
 
@@ -188,7 +188,7 @@ The exception carries:
 - `exc.errors` — the list of error dicts, already location-prefixed
 - `exc.body` — the raw payload that failed, when available
 
-### Field-keyed errors
+###  Field-keyed errors
 
 Many frontends expect errors keyed by form field:
 
@@ -206,7 +206,7 @@ async def flat_errors(request, response, exc):
             "address.postcode": ["String should match pattern '^[0-9]{5}$'"]}}
 ```
 
-### Redacting the input
+###  Redacting the input
 
 `input` echoes the rejected value, which is convenient in development and undesirable when the field is a password:
 
@@ -225,7 +225,7 @@ async def redacted(request, response, exc):
 
 Declaring such fields as `SecretStr` is the more thorough fix, since it protects logs and tracebacks too.
 
-## Response validation errors
+##  Response validation errors
 
 When a handler's return value violates its `response_model`, sillo raises `ResponseValidationError` and returns **500** — the caller did nothing wrong. The offending value is logged and never echoed to the client. Customize it the same way:
 
@@ -241,7 +241,7 @@ app.add_exception_handler(ResponseValidationError, on_response_invalid)
 
 These are worth alerting on rather than merely logging. Each one means your API is documented as returning something it did not return.
 
-## Raising validation errors yourself
+##  Raising validation errors yourself
 
 For a rule that cannot live in a model — a uniqueness check against the database, say — raise the same error so the client sees one consistent shape:
 
@@ -259,7 +259,7 @@ async def create_user(request, response, user):
     ...
 ```
 
-## A `pydantic.ValidationError` from your own code
+##  A `pydantic.ValidationError` from your own code
 
 If you validate a model by hand and let the error escape, sillo catches it and returns a nested object:
 
@@ -281,7 +281,7 @@ app = silloApp(strict_validation=True)
 {"detail": [{"loc": ["body", "age"], "msg": "Field required", "type": "missing"}]}
 ```
 
-## Which status code
+##  Which status code
 
 | Situation | Status | Why |
 | --- | --- | --- |
@@ -293,3 +293,95 @@ app = silloApp(strict_validation=True)
 | Authentication failed | 401 | Resolved before validation runs |
 
 Validation runs after routing and authentication, so a 404 or 401 is never masked by a 422 — and an unauthenticated caller never learns which of your fields are required.
+
+
+##  Designing error responses clients can use
+
+A 422 body is an API surface. Clients parse it, display it, and depend on
+its shape — which means changing it later is a breaking change, and
+getting it right early is worth the ten minutes.
+
+Three properties make a validation error usable.
+
+**It is machine-readable.** `loc` and `type` are stable identifiers a
+client can branch on. A message is for humans and may be reworded; a
+`type` of `greater_than_equal` will not change under you.
+
+**It reports everything at once.** A form with four bad fields should
+produce four errors in one response, not four round trips. sillo's
+validator collects across every location before responding, which is what
+makes single-pass form rendering possible.
+
+**It maps to the client's own field names.** `loc` uses the alias when a
+field has one, so a client sending `user_name` sees `user_name` in the
+error rather than the internal `username`. That is the behaviour you
+want; it means aliases are part of the contract, not an implementation
+detail.
+
+```python title="turning a 422 into form errors"
+def to_field_errors(detail: list[dict]) -> dict[str, str]:
+    """Map a sillo 422 body into {field: message} for a form renderer."""
+    errors = {}
+    for item in detail:
+        # loc is like ["body", "address", "postcode"] — take the last segment
+        field = ".".join(str(p) for p in item["loc"][1:]) or item["loc"][0]
+        errors.setdefault(field, item["msg"])
+    return errors
+```
+
+Taking `loc[1:]` drops the location prefix, and `setdefault` keeps the
+first error per field — showing four messages under one input is worse
+than showing one.
+
+##  What to log, and what not to
+
+A validation failure is a client mistake, not a server fault, so logging
+every one at ERROR will bury real problems. Log them at INFO or DEBUG,
+and alert on the *rate* rather than on individual events: a sudden spike
+in 422s usually means a client deployed a change, and that is worth
+knowing.
+
+Never log the rejected value. A 422 on a `password` field means the log
+line contains a password; a 422 on a `card_number` field means it
+contains a card number. Log the `loc` and the `type`, which identify what
+was wrong without reproducing it.
+
+```python title="safe validation logging"
+@app.add_exception_handler(RequestValidationError)
+async def on_validation_error(request, response, exc):
+    logger.info(
+        "validation failed on %s: %s",
+        request.url.path,
+        [(e["loc"], e["type"]) for e in exc.errors],   # no values
+    )
+    return response.json({"detail": exc.errors}, status_code=422)
+```
+
+The same rule applies to the response body. Pydantic's default messages
+sometimes embed the input — `Input should be a valid integer, unable to
+parse string as an integer` is safe, but a custom message that
+interpolates the value is not. Check any message you write yourself.
+
+##  422 versus 400 versus 409
+
+The status code tells a client what kind of fix is needed, and three
+codes get confused.
+
+**422** — the request was well-formed and understood, but a value is
+unacceptable. A string where an integer belongs, a missing required
+field, a number out of range. The client should fix the value and retry.
+
+**400** — the request itself is malformed: unparseable JSON, a broken
+multipart boundary, a header that cannot be decoded. The client should
+fix how it constructs the request.
+
+**409** — the request is entirely valid and conflicts with current state.
+An email that is already registered, a version that has moved on. Nothing
+about the request is wrong; the world changed. Retrying unchanged will
+fail again.
+
+The one people reach for wrongly is 422 for uniqueness. "Email already
+taken" is not a validation error — the value is a perfectly good email —
+and returning 422 tells a client to fix the format of something that is
+correctly formatted. Use 409, and let the database constraint be what
+detects it.

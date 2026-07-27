@@ -12,11 +12,11 @@ head:
     content: Read and validate incoming request data in sillo — JSON bodies, form data, uploaded files, and streaming bodies.
 ---
 
-# Handling Request Inputs
+#  Handling Request Inputs
 
 sillo gives every handler a `Request` object (the first parameter) that lazily parses the incoming body the moment you ask for it. This guide covers the four input shapes you'll handle: JSON, form data, uploaded files, and raw/streaming bodies — plus how to validate them with Pydantic.
 
-## The smallest useful form
+##  The smallest useful form
 
 ```python
 from sillo import silloApp
@@ -35,7 +35,7 @@ async def submit_data(request, response):
 Unlike some frameworks, `request.json` does not check the `Content-Type` header — it just parses the bytes as JSON. If the body isn't valid JSON you'll get a `json.JSONDecodeError`. For typed, validated input, prefer Pydantic (see below).
 </aside>
 
-## JSON data
+##  JSON data
 
 ```python
 @app.post("/submit")
@@ -51,7 +51,7 @@ Common accessors:
 - `await request.text` — the raw body decoded as text (UTF-8, falling back to latin-1).
 - `await request.body` — the raw body as `bytes`.
 
-## Form data
+##  Form data
 
 sillo parses both `application/x-www-form-urlencoded` and `multipart/form-data` into a `FormData` object, accessible via `request.form` (awaitable property) or the `request.form_data` context manager.
 
@@ -65,7 +65,7 @@ async def submit_form(request, response):
 
 For forms, use `request.form`. For multipart uploads (files), read on below.
 
-## File uploads
+##  File uploads
 
 Uploaded files ride along inside `multipart/form-data`. Access them through `request.files` (awaitable property), which returns a dict of `UploadedFile` objects keyed by field name.
 
@@ -84,7 +84,7 @@ async def upload_file(request, response):
 
 `UploadedFile` exposes `filename`, `content_type`, and an async `read()` coroutine. Always `await` `request.files` (and `document.read()`) — both are async.
 
-## Streaming request bodies
+##  Streaming request bodies
 
 For very large uploads you can consume the body in chunks instead of buffering it all. `request.stream` is an async generator of `bytes`:
 
@@ -99,7 +99,7 @@ async def stream_data(request, response):
 
 Because the body is consumed as you iterate, you cannot also call `await request.json` or `await request.form` on the same request afterward — pick one strategy per request.
 
-## Validating inputs with Pydantic
+##  Validating inputs with Pydantic
 
 For structured input, validate with a Pydantic v2 model. Parse the JSON yourself, then construct the model and let Pydantic handle coercion and errors.
 
@@ -123,14 +123,14 @@ async def create_user(request, response):
 
 sillo also ships the `request_model` hook on routes for automatic validation — see [Request Parameters](/guides/request-parameters/) and the dependency injection guides for that pattern.
 
-## Works with
+##  Works with
 
 - [Request Parameters](/guides/request-parameters/) — `Query`, `Header`, `Cookie` extractors
 - [Request Information](/guides/request-info/) — headers, cookies, client IP, type flags
 - [Sending Responses](/guides/sending-responses/) — returning data, errors, files
 - [File Uploads](/guides/file-upload/) — the dedicated file-upload guide
 
-## Related topics
+##  Related topics
 
 - [Error Handling](/guides/error-handling/) — returning structured 4xx/5xx responses
 - [Middleware](/guides/middleware/) — reading the body inside middleware

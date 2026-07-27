@@ -13,7 +13,7 @@ head:
     content: sillo provides a robust and flexible error handling system that allows you to manage exceptions gracefully and return appropriate responses to clients. This documentation covers all aspects
       of error handling in sillo applications.
 ---
-# ⚠️ Error Handling
+#  ⚠️ Error Handling
 
 sillo provides a robust and flexible error handling system that allows you to manage exceptions gracefully and return appropriate responses to clients. This documentation covers all aspects of error handling in sillo applications.
 
@@ -128,7 +128,7 @@ async def get_premium_content(request, response):
 
 In the provided example, we demonstrate how to create a custom exception handler for handling specific exceptions in a sillo application. We define a custom exception handler `handle_payment_required_exception`, which returns a JSON response with an error message and a status code when a `PaymentRequiredException` is raised. This handler is registered with the application using `app.add_exception_handler()`. This approach allows for granular control over error responses, improving the user experience by providing clear feedback for specific scenarios, such as when a user tries to access premium content without a subscription.
 
-## 🖥️ Server Error Handler
+##  🖥️ Server Error Handler
 sillo provides a way to register a custom server error handler using the `server_error_handler` parameter from `silloApp`. This allows you to define custom error handling behavior for server errors.
 
 ```python
@@ -154,23 +154,23 @@ app = silloApp(debug=True)
 
 sillo allows you to control how 404 Not Found errors are handled and presented to users. This is useful for providing a more user-friendly experience, matching your API or website style, or giving developers more debugging information during development.
 
-### What is a 404 Not Found Error?
+###  What is a 404 Not Found Error?
 A **404 Not Found** error is a standard HTTP response code. It means the client (browser, API consumer, etc.) tried to access a URL or resource that doesn’t exist on your server. This could be a mistyped URL, a deleted resource, or a route that was never defined.
 
-### Why Customize 404 Responses?
+###  Why Customize 404 Responses?
 - **User Experience:** Show a branded or helpful error page/message.
 - **API Consistency:** Ensure all errors follow your API's response format.
 - **Debugging:** Show more details (like tracebacks) in development, but hide them in production.
 - **Security:** In production, you may want to hide technical details to avoid leaking information about your app’s structure.
 
-### How sillo Handles 404s by Default
+###  How sillo Handles 404s by Default
 - If a route isn’t found, sillo raises a `NotFoundException`.
 - The default handler returns a simple JSON or HTML message, depending on the request and debug mode.
 
-### How to Customize 404 Handling
+###  How to Customize 404 Handling
 You can add a `not_found` section to your application config. This controls the format and content of 404 responses. This is **not** a route or a handler you write yourself, but a set of options that tell sillo how to respond when a 404 happens.
 
-#### Available Options
+####  Available Options
 | Option           | Type   | What it Does                                                                 | When to Use It                        |
 |------------------|--------|------------------------------------------------------------------------------|---------------------------------------|
 | `return_json`    | bool   | If `True`, respond with JSON. If `False`, use HTML or plain text.            | APIs: `True`, Websites: `False`       |
@@ -178,8 +178,52 @@ You can add a `not_found` section to your application config. This controls the 
 | `show_traceback` | bool   | If `True` and debug is on, include a Python traceback in the response.       | Development only                      |
 | `use_html`       | bool   | If `True`, use an HTML error page (if not returning JSON).                   | Websites, or pretty error pages       |
 
-#### Example: Custom 404 Config
+####  Example: Custom 404 Config
+
+:::danger[The `not_found` configuration is not read]
+`sillo/handlers/not_found.py` assigns `settings = None` unconditionally
+before the branch that would read your configuration:
+
+```python title="sillo/handlers/not_found.py"
+try:
+    settings = None
+except Exception:
+    settings = None
+
+if settings:
+    debug = settings.debug
+    not_found_config = settings.not_found
+else:
+    debug = True
+    not_found_config = None
+```
+
+The `if settings:` branch is unreachable, so every option below —
+`return_json`, `custom_message`, `show_traceback`, `use_html` — has no
+effect. The handler always uses its fallback: JSON output, and
+`debug = True`, which means the raw `exception.detail` is returned rather
+than your custom message.
+
+That last part matters for more than cosmetics: a 404 detail can carry
+the resource identifier or path that was not found, and it is emitted
+regardless of environment.
+
+Until this is fixed, register your own handler for 404 instead:
+
 ```python
+@app.add_exception_handler(404)
+async def not_found(request, response, exc):
+    return response.json(
+        {"status": 404, "error": "Not Found", "message": "That page does not exist."},
+        status_code=404,
+    )
+```
+
+A registered handler takes precedence and gives you full control over the
+body, the status text, and what is disclosed.
+:::
+
+```text
 from sillo import silloApp
 
     # ... other config options ...
@@ -193,7 +237,7 @@ from sillo import silloApp
 
 ```
 
-#### How it Works
+####  How it Works
 - If `return_json` is `True`, the response will be JSON:
   ```json
   {"status": 404, "error": "Not Found", "message": "Sorry, this page does not exist."}
@@ -202,10 +246,10 @@ from sillo import silloApp
 - If both are `False`, a plain text message is returned.
 - If `show_traceback` is `True` and debug mode is on, the response (JSON or HTML) will include a Python traceback, which helps you debug why the route wasn’t found.
 
-#### Real-World Scenarios
+####  Real-World Scenarios
 **A. API-First Project**
 You want all errors, including 404s, to be JSON so your frontend or mobile app can handle them consistently.
-```python
+```text
     "not_found": {
         "return_json": True,
         "custom_message": "Resource not found.",
@@ -217,7 +261,7 @@ You want all errors, including 404s, to be JSON so your frontend or mobile app c
 
 **B. Marketing Website**
 You want a pretty, branded HTML error page for users who mistype a URL.
-```python
+```text
     "not_found": {
         "return_json": False,
         "custom_message": "Oops! We couldn't find that page.",
@@ -229,7 +273,7 @@ You want a pretty, branded HTML error page for users who mistype a URL.
 
 **C. Developer Debugging**
 You want to see tracebacks for 404s while developing, but not in production.
-```python
+```text
     "debug": True,
     "not_found": {
         "return_json": True,
@@ -240,7 +284,7 @@ You want to see tracebacks for 404s while developing, but not in production.
 })
 ```
 
-#### Summary Table
+####  Summary Table
 | Use Case         | return_json | use_html | show_traceback | custom_message                |
 |------------------|-------------|----------|---------------|-------------------------------|
 | API              | True        | False    | False         | "Resource not found."         |
@@ -248,3 +292,86 @@ You want to see tracebacks for 404s while developing, but not in production.
 | Debugging        | True/False  | Any      | True          | Any                           |
 
 > **Tip:** You can change these settings at runtime by updating your config and calling `set_config()`.
+
+
+##  What clients need from an error
+
+An error response has one job: tell the caller what to do next. Three
+pieces of information do that.
+
+**A status code they can branch on.** The distinction that matters most
+is retryable versus not. 429 and 503 mean "wait and try again"; 400, 403,
+404, and 422 mean "do not". Getting this wrong produces clients that
+either give up on transient failures or hammer you forever on permanent
+ones.
+
+**A stable machine-readable identifier.** Human-readable messages get
+reworded; a `code` field does not. A client localising your errors, or
+branching on a specific failure, needs something that will not change.
+
+```json
+{"error": {"code": "insufficient_funds", "message": "Balance too low", "detail": {...}}}
+```
+
+**Enough detail to act, and no more.** A validation error should name the
+field. An internal error should name nothing — a stack trace, a SQL
+fragment, or a file path in a production response is reconnaissance you
+handed over for free.
+
+##  Never leak internals in production
+
+The default sillo behaviour returns detail that is useful in development
+and dangerous in production: exception text, and in some paths a
+traceback.
+
+Register a catch-all that logs everything and returns nothing:
+
+```python title="the handler every production app needs"
+@app.add_exception_handler(Exception)
+async def unhandled(request, response, exc):
+    request_id = request.headers.get("x-request-id", "-")
+    logger.exception("unhandled error [%s] on %s", request_id, request.url.path)
+    return response.json(
+        {"error": {"code": "internal_error", "request_id": request_id}},
+        status_code=500,
+    )
+```
+
+The `request_id` is the important half. It gives a user something to
+quote to support, and it gives you a key to find the full traceback in
+your logs — all the debuggability, none of the disclosure.
+
+##  Log once, at the boundary
+
+An exception logged in the handler, again in a middleware, and again in
+the catch-all produces three stack traces for one failure and makes error
+rates meaningless. Log where you handle, and re-raise everywhere else.
+
+Log at the level the situation deserves: a 404 is INFO, a 422 is INFO, a
+403 is WARNING if it is unexpected, and only genuine 5xx failures are
+ERROR. An alert threshold built on a log level that includes client
+mistakes will never be actionable.
+
+
+##  Testing error paths
+
+Error paths are the least-tested code in most applications and the most
+likely to be wrong when they run, because they run rarely and under
+stress.
+
+Three tests worth writing per application, not per endpoint. That an
+unhandled exception produces your generic 500 body and not a traceback.
+That a validation failure produces the documented 422 shape. And that a
+404 for a missing resource is distinguishable from a 404 for a missing
+route, since clients often need to tell them apart.
+
+Assert on the body shape, not just the status. A 500 that returns a
+stack trace still has status 500.
+
+
+##  Timeouts produce errors too
+
+An operation that never returns is an error you have not classified. Put
+a timeout on every network call and decide what its expiry means: a 504
+if you were proxying, a 503 if the dependency is optional and you can
+degrade, a 500 if it means your own logic is stuck.

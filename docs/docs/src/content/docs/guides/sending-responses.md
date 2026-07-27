@@ -156,7 +156,7 @@ async def getUsers(request, response):
 For clarity and to leverage the full power of sillo's response handling, we recommend using the `response` object to build your responses, especially when you need to set custom headers, cookies, or status codes.
 :::
 
-### Chainable Responses
+###  Chainable Responses
 
 You can chain multiple methods together to configure the response before sending it. This makes your code more concise and expressive.
 
@@ -213,7 +213,7 @@ Because they raise, the framework's exception middleware catches them and
 renders a consistent error envelope (JSON by default; HTML for 404 when
 configured). You never call `return` after them.
 
-### `response.abort()`
+###  `response.abort()`
 
 ```python
 from sillo import silloApp
@@ -241,7 +241,7 @@ async def login(request, response):
     return response.json({"ok": True})
 ```
 
-### `response.not_found()`
+###  `response.not_found()`
 
 `not_found()` is a 404 shorthand. It raises `NotFoundException`, which the
 framework routes through the registered 404 handler (supporting JSON, HTML, or
@@ -259,7 +259,7 @@ async def get_item(request, response, item_id: int):
 A request to `/items/99` when no such item exists returns `404` with a JSON
 body such as `{"status": 404, "error": "Not Found", "message": "Item 99 not found"}`.
 
-### When to use `abort` vs building a response
+###  When to use `abort` vs building a response
 
 Use `abort` / `not_found` when you want the **framework's error handling** to
 apply (consistent envelopes, the configured 404 page, and centralized
@@ -276,7 +276,7 @@ code after them will not run.
 
 sillo provides several methods for sending different types of responses.
 
-### JSON Responses
+###  JSON Responses
 
 To send a JSON response, use the `.json()` method. It automatically sets the `Content-Type` header to `application/json`.
 
@@ -287,7 +287,7 @@ async def get_users(request, response):
     response.json(users)
 ```
 
-### HTML Responses
+###  HTML Responses
 
 To send an HTML response, use the `.html()` method. This will set the `Content-Type` header to `text/html`.
 
@@ -298,7 +298,7 @@ async def welcome(request, response):
     response.html(html_content)
 ```
 
-### Plain Text Responses
+###  Plain Text Responses
 
 For plain text responses, use the `.text()` method. The `Content-Type` will be set to `text/plain`.
 
@@ -308,7 +308,7 @@ async def status(request, response):
     response.text("Service is running.")
 ```
 
-### Redirects
+###  Redirects
 
 To redirect the client to a different URL, use the `.redirect()` method.
 
@@ -335,7 +335,7 @@ async def list_users(request, response):
 
 You can customize the response by setting the status code, headers, and cookies.
 
-### Setting the Status Code
+###  Setting the Status Code
 
 Use the `.status()` method to set the HTTP status code.
 
@@ -346,7 +346,7 @@ async def create_user(request, response):
     response.status(201).json({"message": "User created successfully"})
 ```
 
-### Setting Headers
+###  Setting Headers
 
 Use the `.set_header()` method to add or modify HTTP headers.
 
@@ -356,7 +356,7 @@ async def get_data(request, response):
     response.set_header("Cache-Control", "no-cache").json({"data": "some data"})
 ```
 
-### Setting Cookies
+###  Setting Cookies
 
 Use the `.set_cookie()` method to set a cookie on the client's browser.
 
@@ -434,7 +434,7 @@ For clarity and to leverage the full power of sillo's response handling, we reco
 
 For more advanced use cases, sillo allows you to work directly with `Response` classes. This gives you the ultimate flexibility to control the response sent to the client. You can either use the built-in response classes or create your own.
 
-### Using Built-in Response Classes
+###  Using Built-in Response Classes
 
 Instead of using the `response` object's methods, you can return an instance of a response class directly from your handler. sillo provides several built-in response classes in the `sillo.http.response` module.
 
@@ -464,7 +464,7 @@ async def welcome_html(request, response):
     return HTMLResponse(html_content)
 ```
 
-### Creating Custom Response Classes
+###  Creating Custom Response Classes
 
 You can create your own custom response classes by inheriting from `sillo.http.response.BaseResponse`. This is useful when you need to send responses in a format that is not supported out of the box, such as XML.
 
@@ -497,3 +497,51 @@ In this example:
 3.  Finally, we return an instance of our `XMLResponse` from the route handler.
 
 By creating custom response classes, you can encapsulate response logic and reuse it across your application, leading to cleaner and more maintainable code.
+
+
+##  Choosing a status code
+
+The code is the part of a response that clients branch on, and a handful
+of distinctions carry most of the weight.
+
+**201 versus 200.** A created resource is a 201 with a `Location` header
+pointing at it. Returning 200 loses the client's ability to follow the
+new resource without constructing the URL themselves.
+
+**202 versus 200.** Work that has been accepted but not finished is a
+202. Returning 200 tells the client the work is done, and they will
+believe you.
+
+**204 versus 200 with an empty body.** A 204 says "no content, do not
+parse". Some clients will attempt to parse an empty 200 body and throw.
+
+**404 versus 403.** A 404 for a resource that exists but is not yours
+hides its existence, which is sometimes what you want; a 403 confirms it
+exists. Pick deliberately — the choice is an information-disclosure
+decision, not a cosmetic one.
+
+**409 versus 422.** A conflict with current state is a 409; an
+unacceptable value is a 422. Returning 422 for "email already taken"
+tells a client to fix a correctly-formatted email.
+
+**500 versus 503.** A 500 is your bug and retrying will not help. A 503
+is temporary and retryable, and pairs with `Retry-After`. Clients back
+off on 503 and give up on 500, which is exactly the behaviour you want
+from each.
+
+##  Headers worth setting deliberately
+
+`Cache-Control` decides whether anything between you and the client keeps
+a copy. Its absence is not "no caching" — intermediaries apply heuristics.
+Say what you mean, especially `no-store` on anything authenticated.
+
+`Content-Disposition` decides whether a browser renders or downloads.
+`attachment` on user-supplied files prevents an uploaded HTML file
+executing with your origin's cookies.
+
+`X-Content-Type-Options: nosniff` stops browsers second-guessing your
+content type, which is what turns a mislabeled upload into script
+execution.
+
+`Location` on 201 and on redirects. Relative is fine and avoids leaking
+your internal hostname.

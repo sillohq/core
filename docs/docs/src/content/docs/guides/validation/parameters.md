@@ -28,7 +28,7 @@ async def list_items(request, response,
 
 `Form` and `File` are covered in [Forms and file uploads](/guides/validation/forms-and-files/).
 
-## Declaring the type
+##  Declaring the type
 
 The type goes on the marker, as `type=`:
 
@@ -41,7 +41,7 @@ when = Query(None, type=datetime)      # anything Pydantic understands
 
 If you omit `type=`, sillo infers it from the default value — `Query(1)` is an integer, `Query("")` a string. See [Both declaration styles](#both-declaration-styles) at the end of this page.
 
-## Why coercion matters here
+##  Why coercion matters here
 
 Everything in a URL is text. `?page=2` gives you the string `"2"`, never the number `2`; a header is a string; a cookie is a string. Declaring `type=int` is what turns that text into the value you actually want, and rejects the text that cannot become one.
 
@@ -56,11 +56,11 @@ Pydantic's *lax mode* (the default) does this conversion where intent is unambig
 
 Set `strict=True` to switch a parameter to strict mode, where no conversion happens at all. For query parameters this is rarely what you want — the incoming value is always a string, so `Query(type=int, strict=True)` rejects every request. It is useful mainly for JSON body fields, where the client can send a real number.
 
-## The type catalog
+##  The type catalog
 
 Anything Pydantic can validate works as a `type=`. The types that come up in URLs, headers, and cookies:
 
-### Numbers and text
+###  Numbers and text
 
 ```python
 count  = Query(0, type=int)
@@ -71,7 +71,7 @@ active = Query(False, type=bool)
 
 Booleans accept `true`, `1`, `yes`, `on`, `t`, `y` (and their false counterparts), case-insensitively. Anything else is a `bool_parsing` error — so `?active=maybe` is rejected rather than silently treated as false.
 
-### Dates and times
+###  Dates and times
 
 ```python
 from datetime import datetime, date, time, timedelta
@@ -84,7 +84,7 @@ window = Query(None, type=timedelta)  # PT1H (ISO 8601 duration), or seconds
 
 ISO 8601 is parsed natively. `datetime` also accepts a Unix timestamp.
 
-### Identifiers and precise numbers
+###  Identifiers and precise numbers
 
 ```python
 from uuid import UUID
@@ -96,7 +96,7 @@ amount   = Query(None, type=Decimal)   # "1.10" stays exactly 1.10
 
 Use `Decimal` for money. A `float` cannot represent `0.1` exactly; `Decimal` can, and Pydantic parses it from the string without ever going through a float.
 
-### Enums
+###  Enums
 
 An enum restricts a parameter to a fixed set and documents those values in your OpenAPI schema:
 
@@ -112,7 +112,7 @@ order = Query(SortOrder.DESC, type=SortOrder)
 
 `?order=asc` produces `SortOrder.ASC`; `?order=sideways` is a 422 listing the permitted values. Inheriting from `str` as well as `Enum` means the member behaves like a string everywhere else in your code.
 
-### Literals
+###  Literals
 
 For a small fixed set with no enum class:
 
@@ -122,7 +122,7 @@ from typing import Literal
 mode = Query("compact", type=Literal["compact", "full"])
 ```
 
-### Optional values
+###  Optional values
 
 ```python
 from typing import Optional
@@ -132,7 +132,7 @@ q = Query(None, type=Optional[str])
 
 `Optional[str]` means "a string or null". In practice a marker with a `None` default already behaves this way, so you rarely need it explicitly for query parameters.
 
-### Network and web types
+###  Network and web types
 
 ```python
 from pydantic import AnyUrl, HttpUrl, EmailStr, IPvAnyAddress
@@ -144,7 +144,7 @@ client   = Header(None, type=IPvAnyAddress) # IPv4 or IPv6
 
 `EmailStr` needs the optional `email-validator` package. The others are built in.
 
-### Secrets
+###  Secrets
 
 ```python
 from pydantic import SecretStr
@@ -154,11 +154,11 @@ token = Header(type=SecretStr)
 
 A `SecretStr` renders as `**********` in logs, tracebacks, and `repr()`. Call `token.get_secret_value()` to read it. Useful for anything you do not want appearing in an error report.
 
-## Constraints
+##  Constraints
 
 Constraints are plain keyword arguments on the marker.
 
-### Numeric
+###  Numeric
 
 ```python
 page  = Query(1, type=int, ge=1)              # >= 1
@@ -174,7 +174,7 @@ from datetime import date
 after = Query(None, type=date, ge=date(2020, 1, 1))
 ```
 
-### Strings
+###  Strings
 
 ```python
 name = Query(type=str, min_length=2, max_length=50)
@@ -183,7 +183,7 @@ slug = Query(type=str, pattern=r"^[a-z0-9-]+$")
 
 `pattern` is a regular expression, searched from the start of the string. Anchor it with `$` if you mean the whole string, as above — without the `$`, `pattern=r"^[a-z]+"` would accept `"abc123"`.
 
-### Collections
+###  Collections
 
 `min_length` and `max_length` apply to lists too:
 
@@ -191,13 +191,13 @@ slug = Query(type=str, pattern=r"^[a-z0-9-]+$")
 tags = Query([], type=List[str], min_length=1, max_length=10)
 ```
 
-### Strictness
+###  Strictness
 
 ```python
 count = Query(type=int, strict=True)     # rejects "5"; requires a real int
 ```
 
-### The complete set
+###  The complete set
 
 | Constraint | Applies to | Meaning |
 | --- | --- | --- |
@@ -213,7 +213,7 @@ count = Query(type=int, strict=True)     # rejects "5"; requires a real int
 
 Supplying any constraint opts the parameter into full validation, so bad values return 422 rather than a server error.
 
-## Documentation keywords
+##  Documentation keywords
 
 These enrich the generated OpenAPI entry and **never** change validation behavior:
 
@@ -227,7 +227,7 @@ q = Query(type=str,
 
 The separation is deliberate: adding a description to a live endpoint can never alter how it validates.
 
-## Required and optional
+##  Required and optional
 
 A marker with a default is optional; one without is required.
 
@@ -244,7 +244,7 @@ GET /items
 
 An absent parameter is not the same as an empty one. `?q=` supplies an empty string, which passes a plain `type=str` but fails `min_length=1`.
 
-## Aliases
+##  Aliases
 
 When the wire name is not a valid Python identifier, or you simply want a different one:
 
@@ -258,7 +258,7 @@ Errors report the **wire** name, since that is what the client sent:
 {"detail": [{"loc": ["query", "page"], "msg": "...", "type": "int_parsing"}]}
 ```
 
-### Header casing is automatic
+###  Header casing is automatic
 
 Header parameters convert snake_case to Header-Case, so you rarely need an alias:
 
@@ -268,7 +268,7 @@ x_api_key = Header(type=str)      # reads the X-Api-Key header
 
 Header lookup is case-insensitive regardless, per the HTTP specification.
 
-## Lists and repeated parameters
+##  Lists and repeated parameters
 
 A list-typed parameter collects every occurrence of the key:
 
@@ -308,7 +308,7 @@ tags = Query(type=Set[str])              # deduplicated
 pair = Query(type=Tuple[int, int])       # fixed length
 ```
 
-## Path parameters
+##  Path parameters
 
 `Path` layers declared types and constraints onto a URL segment:
 
@@ -322,7 +322,7 @@ This is independent of the `{item_id:int}` convertor syntax in the route pattern
 
 A path parameter is always required — a request lacking it could not have matched the route — so any default is ignored.
 
-## Parameters in dependencies
+##  Parameters in dependencies
 
 Markers work in any injected callable, not only handlers:
 
@@ -340,7 +340,7 @@ async def list_items(request, response, pager=Depend(pagination)):
 
 They are validated with the rest of the request and documented on every route that uses the dependency, which makes shared concerns like pagination or filtering a single definition.
 
-## Reusing a marker
+##  Reusing a marker
 
 A marker held in a module constant binds independently per handler, so this is safe:
 
@@ -355,7 +355,7 @@ async def b(request, response, offset=PAGE):   # reads ?offset=, not ?page=
     ...
 ```
 
-## Both declaration styles
+##  Both declaration styles
 
 sillo has always let you declare a parameter with only a default, inferring the type from it. That still works:
 
@@ -391,3 +391,88 @@ To validate everything in an application, including parameters written the short
 ```python
 app = silloApp(strict_validation=True)
 ```
+
+
+##  Parameters are attacker-controlled
+
+Every value on this page arrives from outside. Validation bounds the
+shape; it does not make the value safe to use. Four places where that
+distinction matters.
+
+**Sort and order parameters.** A `sort` parameter interpolated into a
+query is SQL injection whether or not it validated as a string. Map it
+through an allowlist:
+
+```python title="the only safe way to accept a sort field"
+SORTABLE = {"created": "created_at", "name": "name", "price": "price_cents"}
+
+
+@app.get("/products")
+async def products(request, response, sort: str = Query("created", type=str)):
+    column = SORTABLE.get(sort)
+    if column is None:
+        return response.json({"error": "unknown sort field"}, status_code=422)
+    return response.json(await Product.all().order_by(column))
+```
+
+A `pattern=` constraint that permits `[a-z_]+` still permits `password`,
+`is_admin`, and any other column name. The allowlist is the control; the
+pattern is a convenience.
+
+**Redirect targets.** A `next` or `return_to` parameter that you redirect
+to is an open redirect — an attacker sends a link to your domain that
+lands on theirs, which is the front half of most phishing. Accept only
+relative paths, and reject anything containing `//` or a scheme.
+
+**Identifiers you look up.** `Path(type=int)` guarantees `user_id` is an
+integer. It does not guarantee the caller may see that user. An
+`IDOR` — reading someone else's record by changing a number — passes
+every validator you can write. Scope the query by the authenticated user
+rather than checking after the fetch.
+
+**Anything reaching a filesystem path.** A `Query(type=str)` for a
+filename validates fine and still contains `../`. Resolve and confirm
+containment before opening anything.
+
+##  Cost and cardinality
+
+Two parameter-design decisions have outsized operational effects.
+
+**Unbounded page sizes.** `Query(20, type=int)` with no `le=` lets a
+client ask for a million rows. Always cap:
+`Query(20, type=int, ge=1, le=100)`. The `le=` is what stands between a
+curious client and an out-of-memory kill.
+
+**High-cardinality filters.** A parameter that becomes part of a cache
+key multiplies your cache entries by its cardinality. A `timestamp`
+filter with second precision produces a distinct cache entry per second,
+which is a cache with a zero percent hit rate and the memory cost of one
+that works. Round to a bucket, or exclude the parameter from the key.
+
+Similarly, every distinct parameter combination is a distinct query plan
+for the database. Six optional filters means sixty-four possible
+`WHERE` shapes; the ones that are rare are also the ones the query
+planner has never optimised. Fewer, better-chosen filters beat a
+combinatorial surface.
+
+##  Naming that survives a version bump
+
+Parameter names are permanent in a way handler code is not — clients
+hard-code them, and changing one breaks every caller silently, because a
+query parameter nobody sends is just a default.
+
+Use lowercase with underscores or hyphens, consistently. Pick one and
+never mix, because `page_size` and `page-size` are different parameters
+and supporting both accidentally is worse than supporting either.
+
+Use `alias=` when the public name should differ from the Python
+identifier — a parameter named `from` cannot be a Python variable:
+
+```python
+start: str = Query(None, type=str, alias="from")
+```
+
+Prefer additive change. Adding an optional parameter is safe; renaming
+one is not. When a rename is unavoidable, accept both for a release with
+the old one marked `deprecated=True`, so the generated documentation
+tells clients before the removal does.

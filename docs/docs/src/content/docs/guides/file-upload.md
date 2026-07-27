@@ -13,7 +13,7 @@ head:
 ---
 #  File Upload Documentation
 
-### Single File Upload
+###  Single File Upload
 
 To handle a single file upload in sillo:
 
@@ -35,7 +35,7 @@ async def upload_file(request: Request, response: Response):
     return response.json({"filename": file.filename, "size": len(file_content)})
 ```
 
-### Multiple File Uploads
+###  Multiple File Uploads
 
 For handling multiple files from the same field:
 
@@ -62,7 +62,7 @@ async def upload_files(request: Request, response: Response):
 
 
 
-### File Type Validation
+###  File Type Validation
 
 Validate file extensions and MIME types:
 
@@ -114,7 +114,7 @@ async def update_profile(request: Request, response: Response):
 
 ##  Advanced Configuration
 
-### Custom Upload Handlers
+###  Custom Upload Handlers
 
 Create middleware for file upload processing:
 
@@ -129,7 +129,7 @@ async def file_upload_middleware(request: Request, response: Response, call_next
 app.use(file_upload_middleware)
 ```
 
-### Streaming Large Files
+###  Streaming Large Files
 
 For handling very large files without memory issues:
 

@@ -12,7 +12,7 @@ head:
     content: sillo authentication model — middleware, backends, useAuth, identity flow, and JWT/session/API-key strategies.
 ---
 
-# Authentication
+#  Authentication
 
 sillo authentication has a clean two-layer shape:
 
@@ -21,7 +21,7 @@ sillo authentication has a clean two-layer shape:
 
 The middleware is **backend-driven**: each backend knows how to read exactly one credential type — a JWT, a session cookie, or an API key. You compose backends to support several auth strategies in one app.
 
-## The smallest working integration
+##  The smallest working integration
 
 This is the whole thing: a JWT backend that resolves `request.user`, and a protected `/me` route.
 
@@ -66,9 +66,9 @@ Two things to internalize from this snippet:
 - **`identifier="sub"` is required** for sillo-issued tokens. `TokenForUser` writes the user id into the JWT `sub` claim, and the backend reads the claim named by `identifier`. The backend defaults to `identifier="id"`, which won't match — leaving you with an empty identity and an unauthenticated user. Always pin `identifier="sub"` unless you issue tokens with a different claim.
 - **`useAuth()` with no args means "any authenticated user."** Without it, the handler runs even for anonymous callers (with `AnonymousUser` as `request.user`). The middleware resolves; the gate enforces.
 
-## The two layers, in detail
+##  The two layers, in detail
 
-### Layer 1 — AuthenticationMiddleware resolves the user
+###  Layer 1 — AuthenticationMiddleware resolves the user
 
 For every request, the middleware walks its backends in order and stops at the first that succeeds:
 
@@ -84,7 +84,7 @@ On success a backend returns an `AuthResult(identity, scope)`. The middleware th
 
 So the central arrow in sillo auth is: **credential → identity string → `load_user` → `request.user`**. Everything else is a way of producing that identity.
 
-### Layer 2 — useAuth enforces policy
+###  Layer 2 — useAuth enforces policy
 
 `useAuth` runs *after* the middleware, right before your handler. It inspects `request.user` and `request.scope["auth"]` and decides yes/no:
 
@@ -93,6 +93,7 @@ So the central arrow in sillo auth is: **credential → identity string → `loa
 @app.get("/api", auth=useAuth(scopes=["jwt"]))           # only JWT callers
 @app.get("/users", auth=useAuth(permissions=["read:users"]))
 @app.get("/feed", auth=useAuth(required=False))          # runs either way
+async def handler(request, response): ...
 ```
 
 On failure it raises `AuthenticationFailed` (401) or `PermissionDenied` (403). See [Protecting Routes](/guides/protecting-routes/) for the full gate reference.
@@ -101,7 +102,7 @@ On failure it raises `AuthenticationFailed` (401) or `PermissionDenied` (403). S
 `AuthenticationMiddleware` only *resolves* the user. It deliberately never rejects a request — an anonymous caller still reaches your handler with `request.user.is_authenticated == False`. Rejecting unauthorized callers is the job of `useAuth`. Put `auth=useAuth()` (or a stricter variant) on every protected route rather than hand-checking `request.user` inside the handler — it's the single, testable boundary.
 </aside>
 
-## Scope strings
+##  Scope strings
 
 Each backend stamps a `scope` on `request.scope["auth"]`. That string is what `useAuth(scopes=[...])` checks against:
 
@@ -113,7 +114,7 @@ Each backend stamps a `scope` on `request.scope["auth"]`. That string is what `u
 
 `scopes=[]` (the default) accepts *any* method. `scopes=["jwt"]` restricts a route to JWT callers — self-documenting and a useful guard against the wrong credential type reaching a handler.
 
-## Combining backends
+##  Combining backends
 
 Pass a list to accept more than one credential type. **Order matters** — the first backend that succeeds wins:
 
@@ -129,7 +130,7 @@ app.use(AuthenticationMiddleware(
 
 A request with a valid bearer token authenticates as `"jwt"`; one with only a session cookie as `"session"`; one with neither gets `AnonymousUser` and `request.scope["auth"]` is `None`. Combining JWT + session is common for an app that serves both a browser UI and a JSON API.
 
-## Choosing a strategy
+##  Choosing a strategy
 
 | Strategy | Credential | Best for |
 | --- | --- | --- |
@@ -143,13 +144,13 @@ You are not limited to one — compose them as above. Each has its own page:
 - [Session Authentication](/guides/session-auth/)
 - [API Keys](/guides/api-keys/)
 
-## What a user object looks like
+##  What a user object looks like
 
 Every `user_model` satisfies the `UserProtocol` contract: `is_authenticated`, `identity`, `display_name`, `has_permission`, and a `load_user(identity)` classmethod. sillo ships a ready `User` model (Record/Tortoise-backed, built on `UserBaseModel`), a `SimpleUser` for tests, and `AnonymousUser` as the unauthenticated sentinel. The identity the middleware hands to `load_user` is a **string** (the backend's choice — for JWT it's the `sub` claim; for session, the stored user id; for API keys, the `user_id`).
 
 See [Users & User Models](/guides/users/) for the built-in `User`, building custom users, permissions, and password hashing.
 
-## Writing a custom backend
+##  Writing a custom backend
 
 A backend is just `authenticate(request) -> AuthResult`. Return `AuthResult(success=True, identity=..., scope=...)` to accept, or `AuthResult(success=False, ...)` to decline (so the next backend gets a turn). This is how you'd add, say, a Bearer-token-vs-API-key-within-one-header scheme, or an OAuth introspection backend:
 
@@ -168,7 +169,7 @@ class HeaderBackend(AuthenticationBackend):
 
 Register it like any built-in: `AuthenticationMiddleware(user_model=User, backend=HeaderBackend())`. The scope string `"service"` then becomes available to `useAuth(scopes=["service"])`.
 
-## Error handling
+##  Error handling
 
 Both auth failures surface as HTTP exceptions you can catch and reformat like any other:
 
@@ -186,7 +187,7 @@ async def on_401(request, response, exc):
 | Scope mismatch | 401 | `AuthenticationFailed` |
 | Permission denied | 403 | `PermissionDenied` |
 
-## How it all connects
+##  How it all connects
 
 ```
 credential (token / cookie / key)
@@ -199,10 +200,130 @@ useAuth()  ── checks is_authenticated / scope / permissions ──►  401 /
 
 If you keep that diagram in mind, every other auth feature in sillo is just a different way of producing the credential or the identity on the left.
 
-## Next steps
+##  Next steps
 
 - [Protecting Routes](/guides/protecting-routes/) — every `useAuth` option, scopes, permissions, subclassing
 - [Users & User Models](/guides/users/) — `User`, `UserProtocol`, `UserBaseModel`, `SimpleUser`, passwords
 - [JWT Authentication](/guides/jwt-auth/) — issuing and verifying tokens
 - [Session Authentication](/guides/session-auth/) — `SessionGuard` and cookie login
 - [API Keys](/guides/api-keys/) — scoped, hashed keys
+
+
+##  Choosing an authentication strategy
+
+The decision is driven by what the client is, not by preference.
+
+**A browser application you also build.** Cookie sessions. The browser
+manages storage, `HttpOnly` keeps the credential away from JavaScript,
+and revocation is immediate with a server-side store. The cost is
+[CSRF](/guides/csrf/) exposure, which is a solved problem.
+
+**A mobile app or a third-party API client.** Bearer tokens. Nothing is
+automatic, which removes CSRF entirely, and the client controls storage.
+The cost is revocation — a stateless token is valid until it expires
+unless you keep a denylist.
+
+**Machine-to-machine.** [API keys](/guides/api-keys/). Long-lived,
+scoped, revocable, and issued per integration rather than per user.
+
+**Someone else's identity provider.** OAuth2 or OIDC. You stop storing
+passwords, which is the single largest reduction in risk available, and
+you take on redirect-flow complexity.
+
+Most applications end up with two: sessions for the browser, tokens or
+keys for the API. That is fine as long as each endpoint is explicit about
+which it accepts — an endpoint accepting either has the CSRF exposure of
+whichever the caller used.
+
+##  What authentication must never do
+
+**Never store a password recoverably.** Hash with bcrypt, scrypt, or
+Argon2 — never a general-purpose hash, however many rounds. See
+[Hashing helpers](/guides/helpers/hashing/).
+
+**Never reveal which half of a credential was wrong.** "No such user" and
+"wrong password" together are a user-enumeration oracle. One message for
+both, and the same response time — an early return on a missing user is
+measurably faster and is itself the oracle.
+
+**Never trust a client-supplied identity.** A user id in a header, a body
+field, or a query parameter is a value the client chose. Identity comes
+from a verified credential and nowhere else.
+
+**Never leave authentication endpoints unlimited.** Login, password
+reset, and token refresh are where credential stuffing lands. Rate limit
+by IP and by account, and lock or delay after repeated failures. See
+[Rate Limiting](/guides/rate-limiting/).
+
+**Never log credentials.** A password in a request body, a token in a
+URL, an `Authorization` header in a debug dump — each is a credential
+with a timestamp on it.
+
+##  Sessions after login
+
+Two things happen at login that are easy to omit and hard to notice.
+
+**Regenerate the session identifier.** Reusing the pre-login id means an
+attacker who could set the victim's cookie beforehand shares the session
+afterwards. This is session fixation, and it is still common.
+
+**Record enough to revoke.** Storing the session with its user id, issue
+time, and a device label lets you build "sign out everywhere", which
+users expect and which is impossible after the fact if you did not store
+it.
+
+Expire on two clocks — an idle timeout for abandoned sessions on shared
+machines, and an absolute lifetime that bounds how long a stolen session
+is useful. Neither alone is sufficient.
+
+
+##  Testing authentication
+
+Three tests per protected endpoint, and the middle one is the one that
+finds bugs: anonymous is rejected, the wrong user is rejected, the right
+user succeeds.
+
+Build the credentials through your real login path rather than by
+constructing a session or signing a token in the test. A helper that
+fabricates a valid token will keep passing after the verification code
+breaks, which is precisely backwards.
+
+For the negative cases, cover the specific failures: an expired
+credential, one signed with the wrong key, one for a different audience,
+and a malformed one. Each takes a different branch in the verifier, and
+a verifier that accepts any of them is broken in a way the happy path
+cannot reveal.
+
+
+##  Related
+
+- [Protecting Routes](/guides/protecting-routes/) — declaring the requirement
+- [Permissions](/guides/permissions/) — what an authenticated caller may do
+- [Sessions](/guides/sessions/) — cookie-based credentials
+- [JWT Auth](/guides/jwt-auth/) — token-based credentials
+- [API Keys](/guides/api-keys/) — machine-to-machine credentials
+- [Hashing helpers](/guides/helpers/hashing/) — storing passwords correctly
+- [Rate Limiting](/guides/rate-limiting/) — protecting the login path
+
+
+##  Migrating an authentication scheme
+
+Changing how users authenticate is a migration, not a deploy. The pattern
+that works: accept both old and new credentials for a period, issue only
+new ones, measure how many old ones are still in use, then stop accepting
+them.
+
+For a password-hash change — bcrypt to Argon2, or a cost increase — you
+cannot rehash without the plaintext, which you only have at login. Verify
+against the old hash, and on success rehash with the new parameters and
+store it. After enough logins, the remainder are dormant accounts that
+can be forced through a reset.
+
+
+##  Summary
+
+Pick the credential type from the client, not from preference. Hash
+passwords with a password hash. Never let identity come from something
+the caller supplied. Rate limit the login path. Regenerate session
+identifiers on privilege change. And test the negative cases, because the
+happy path passes without them.

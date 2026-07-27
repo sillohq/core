@@ -3,7 +3,7 @@ title: Cache
 description: Advanced caching subsystem — pluggable backends, a @cache decorator, TTLs, tags, versioning, LRU eviction, and stats.
 ---
 
-# Cache (`sillo.cache`)
+#  Cache (`sillo.cache`)
 
 sillo ships an advanced, backend-agnostic caching subsystem. It is deliberately
 **decoupled from the application object** — you configure a backend at the
@@ -20,7 +20,7 @@ async def get_product(product_id: int):
     return await db.products.get(product_id)
 ```
 
-## Installation & backends
+##  Installation & backends
 
 Two backends ship today:
 
@@ -37,7 +37,7 @@ If `redis` is not installed, `RedisCache` still imports — the `redis.asyncio`
 dependency is loaded lazily and only errors when you actually construct a
 `RedisCache`.
 
-## Configuring a default backend
+##  Configuring a default backend
 
 Call `configure_cache()` once at startup to register a process-wide default.
 Any `@cache()` with no `backend=` argument uses it:
@@ -72,11 +72,11 @@ configured independently. This keeps cached functions testable and reusable
 outside the web layer (CLI commands, workers, background tasks).
 :::
 
-## The `@cache` decorator
+##  The `@cache` decorator
 
 Decorate any callable — sync or async, function or bound method.
 
-### Async function
+###  Async function
 
 ```python
 from sillo.cache import cache
@@ -86,7 +86,7 @@ async def get_user(user_id: int):
     return await db.users.get(user_id)
 ```
 
-### Sync function
+###  Sync function
 
 The decorator bridges to the async backend automatically, so you can use the
 same `@cache` on a plain function:
@@ -97,7 +97,7 @@ def price_lookup(sku: str):
     return catalog.lookup(sku)
 ```
 
-### Bound methods
+###  Bound methods
 
 `self` / `cls` are **excluded from the cache key**, so all instances of a class
 share one cache for the same arguments. Be careful: the cached value does not
@@ -110,7 +110,7 @@ class ReportService:
         return self.run_query(quarter)
 ```
 
-### Decorator options
+###  Decorator options
 
 | Option | Effect |
 |---|---|
@@ -125,7 +125,7 @@ class ReportService:
 | `serializer` | `"json"` (default) or `"pickle"` for this function's values. |
 | `settings` | A `CacheSettings` object providing shared defaults. |
 
-### Manual invalidation
+###  Manual invalidation
 
 Every decorated function gains an `.invalidate(*args, **kwargs)` coroutine that
 deletes just that call's key:
@@ -134,7 +134,7 @@ deletes just that call's key:
 await get_user.invalidate(42)   # drop the cached entry for user 42
 ```
 
-### Skipping the cache conditionally
+###  Skipping the cache conditionally
 
 ```python
 @cache(ttl=60, skip_cache_if=lambda x: x < 0)
@@ -145,7 +145,7 @@ async def compute(x):
 When `skip_cache_if` returns `True`, the function runs and its result is
 returned **without** being stored.
 
-## Using a backend directly (on the fly)
+##  Using a backend directly (on the fly)
 
 You don't need the decorator — the `BaseCache` API works as a key-value store:
 
@@ -165,9 +165,9 @@ await cache.clear()                        # drop keys in this namespace
 `get` returns the module-level sentinel `_MISSING` on a miss or expiry (not
 `None`), so caching `None` as a real value is safe.
 
-## Advanced features
+##  Advanced features
 
-### TTL — absolute vs sliding
+###  TTL — absolute vs sliding
 
 * **Absolute** (default): the entry expires `ttl` seconds after it was written.
 * **Sliding**: each read resets the expiry window to `ttl` seconds, so an
@@ -177,7 +177,7 @@ await cache.clear()                        # drop keys in this namespace
 await cache.set("hot", data, ttl=300, sliding=True)
 ```
 
-### Tag-based invalidation
+###  Tag-based invalidation
 
 Attach one or more tags to entries, then drop every key with a tag at once:
 
@@ -199,7 +199,7 @@ async def get_product(product_id: int):
 await product_cache.invalidate_tags("product")
 ```
 
-### Versioning
+###  Versioning
 
 Bump `version` to expire an entire key space instantly without tracking tags:
 
@@ -212,7 +212,7 @@ async def list_catalog():
 Changing `version="v2"` to `version="v3"` produces different keys, so old
 entries are effectively dead (and eventually evicted by TTL).
 
-### LRU & max-size eviction (MemoryCache)
+###  LRU & max-size eviction (MemoryCache)
 
 Set `max_size` to bound memory. When the store exceeds `max_size`, the
 least-recently-used entry is evicted first. Reading an entry marks it recently
@@ -225,7 +225,7 @@ await cache.set("b", 2)
 await cache.set("c", 3)   # evicts "a" (oldest)
 ```
 
-### Serialization: JSON vs pickle
+###  Serialization: JSON vs pickle
 
 * `serializer="json"` (default) is safe and cross-language but only handles
   JSON-compatible data. Complex Python objects are best-effort converted.
@@ -237,7 +237,7 @@ pickle_cache = MemoryCache(serializer="pickle")
 await pickle_cache.set("obj", {"set": {1, 2, 3}})
 ```
 
-### Hit/miss statistics
+###  Hit/miss statistics
 
 Every backend tracks `hits`, `misses`, `sets`, `deletes`, and `evictions`,
 exposed via `.stats()`:
@@ -249,7 +249,7 @@ print(stats.as_dict())
 cache.reset_stats()
 ```
 
-## Redis backend
+##  Redis backend
 
 The async Redis backend maps concepts onto Redis primitives:
 
@@ -277,7 +277,7 @@ await redis_cache.invalidate_tags("t1")
 Use `RedisCache` as a shared backend across multiple processes/workers so they
 cooperate on one cache.
 
-## Full example
+##  Full example
 
 ```python
 from sillo import silloApp
@@ -298,7 +298,7 @@ async def get_product(product_id: int):
     return {"id": product_id}
 ```
 
-## API reference
+##  API reference
 
 | Symbol | Kind | Purpose |
 |---|---|---|
@@ -313,3 +313,124 @@ async def get_product(product_id: int):
 | `cache(...)` | decorator | Cache a function/method's result. |
 | `build_key(...)` | function | Deterministic key construction. |
 | `tag_key(...)` | function | Storage key for a tag set. |
+
+
+##  Naming keys
+
+A cache key is an interface between the code that writes and the code
+that reads, and unstructured keys become unmanageable at about the tenth
+one.
+
+A workable convention has four parts: a namespace, an entity, an
+identifier, and a version — `myapp:user:42:v2`. The namespace prevents
+collisions with anything else sharing the store. The version lets you
+invalidate an entire class of entries by bumping it, which is far easier
+than finding and deleting them.
+
+Include everything that changes the value. A key that omits the locale
+serves French content to English users; one that omits the user id on
+personalised data serves one user's data to another, which is the worst
+outcome available in a cache and is always caused by an incomplete key.
+
+Keep keys bounded. A key built from a free-text search query has
+unlimited cardinality, so the hit rate approaches zero while memory
+approaches the size of every query anyone has ever run. Hash long inputs
+and cap what you cache.
+
+##  Invalidation, ranked by reliability
+
+**Expiry** is the only strategy that cannot leave you permanently wrong.
+Everything else should be layered on top of a TTL, never instead of one —
+a cache entry with no TTL and a missed invalidation is stale forever.
+
+**Write-through invalidation** — deleting the key when the underlying
+data changes — is the common approach and its failure mode is a write
+path you forgot. Every place that mutates the entity must invalidate, and
+the one in a migration script will not.
+
+**Versioned keys** avoid deletion entirely: bump a version and old
+entries age out naturally. This survives missed invalidations and is much
+easier to reason about across multiple processes.
+
+##  The failure modes worth designing for
+
+**Stampede.** A popular key expires and a thousand concurrent requests
+all miss and all recompute. The fix is a lock so one request recomputes
+while the others wait or serve stale.
+
+**Penetration.** Repeated requests for something that does not exist miss
+every time and hit the database every time. Cache the negative result,
+briefly.
+
+**Cache as a dependency.** A cache outage should degrade you, not break
+you. Treat a cache error as a miss — read through to the source and log
+it — rather than letting it raise. An application that 500s when Redis
+restarts has made a cache into a hard dependency by accident.
+
+
+##  What to cache, and what not to
+
+Cache things that are expensive to produce, read far more often than they
+change, and identical for many callers. Reference data, rendered
+fragments shared across users, the result of an aggregate query, an
+upstream API response with a slow provider.
+
+Do not cache things that are cheap to produce — a cache lookup is not
+free, and for a primary-key fetch it is often slower than the query. Do
+not cache per-user data with low reuse: one entry per user with a hit
+rate near zero is memory spent for nothing. And do not cache anything
+where serving a stale value is a correctness problem — permissions,
+balances, inventory at the point of sale.
+
+The question that settles most cases: **how wrong is a value that is
+sixty seconds old?** If the answer is "not at all", cache it. If the
+answer is "it could authorise something it should not", do not.
+
+##  Measuring whether it works
+
+A cache with no hit-rate metric is a guess. Track hits, misses, and
+evictions, and read them together — a low hit rate with high eviction
+means the cache is too small; a low hit rate with no eviction means the
+keys are too specific.
+
+Track the latency of the cached path against the uncached one too. A
+cache that saves two milliseconds on a query that takes three is
+overhead with extra failure modes, and knowing that early saves you
+maintaining it.
+
+
+##  Layering caches
+
+An application usually ends up with three tiers: a per-request memo, a
+per-process in-memory cache, and a shared store like Redis. Each is
+faster and less shared than the one below it.
+
+Read through them in order and write back up. The per-request layer costs
+nothing and eliminates the duplicate lookup within one handler; the
+in-process layer avoids the network hop; the shared layer is the one that
+survives a restart and is consistent across workers.
+
+The hazard is invalidation, which must reach every tier. A per-process
+cache with a long TTL will happily serve data that Redis knows is stale,
+and there is no mechanism to tell it otherwise short of a short TTL or a
+pub/sub invalidation channel. Keep in-process TTLs measured in seconds
+for anything that changes.
+
+##  HTTP caching is a different tool
+
+Everything above is server-side. `Cache-Control`, `ETag`, and
+`Last-Modified` push caching out to the browser and any CDN in between,
+where a hit costs you nothing at all — no request, no process, no
+database.
+
+They solve different problems and compose well. A response cached at the
+CDN for sixty seconds removes most of your traffic; a server-side cache
+makes the requests that do arrive cheap. Use `ETag` with conditional
+requests for large responses that change rarely, so an unchanged resource
+costs a 304 rather than a body.
+
+The two rules that prevent incidents: never set a public
+`Cache-Control` on an authenticated response, and always set `Vary` on
+anything that differs by header. Both mistakes have the same
+consequence — one user's data served to another from a cache you do not
+control.

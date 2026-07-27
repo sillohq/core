@@ -76,7 +76,7 @@ The `links` section provides ready-to-use URLs for navigating between pages. The
 
 sillo supports three main pagination strategies, each suited for different use cases:
 
-### 1. Page Number Pagination (Default)
+###  1. Page Number Pagination (Default)
 
 The most common pagination style, using page numbers and page sizes. Perfect for traditional web applications.
 
@@ -103,7 +103,7 @@ async def get_items(request, response):
 - `/items?page_size=50` - First page with 50 items per page
 - `/items` - Uses defaults (page 1, 20 items per page)
 
-### 2. Limit-Offset Pagination
+###  2. Limit-Offset Pagination
 
 Traditional SQL-style pagination using limit and offset. Ideal for database queries and APIs that follow REST conventions.
 
@@ -129,7 +129,7 @@ async def get_items(request, response):
 - `/items?limit=50` - First 50 items
 - `/items?offset=100` - Items starting from 101 (uses default limit)
 
-### 3. Cursor Pagination
+###  3. Cursor Pagination
 
 Cursor-based pagination for consistent pagination with changing datasets. Perfect for real-time feeds, infinite scroll, and large datasets.
 
@@ -162,7 +162,7 @@ Cursors are base64-encoded JSON objects containing the sort field value. This ma
 
 ##  Advanced Configuration
 
-### Custom Strategy Parameters
+###  Custom Strategy Parameters
 
 You can customize pagination strategies by passing strategy instances instead of strings:
 
@@ -199,7 +199,7 @@ async def get_items_cursor(request, response):
     return response.paginate(data, strategy=strategy)
 ```
 
-### Error Handling
+###  Error Handling
 
 sillo provides built-in error handling for invalid pagination parameters:
 
@@ -228,7 +228,7 @@ async def get_items(request, response):
 - `InvalidPageSizeError`: Page size < 1 or limit < 0
 - `InvalidCursorError`: Malformed cursor encoding
 
-### Filtering and Sorting
+###  Filtering and Sorting
 
 Pagination works seamlessly with filtering and sorting:
 
@@ -276,9 +276,9 @@ Pagination links automatically preserve non-pagination query parameters, so filt
 
 Data handlers abstract the data source, allowing pagination to work with any type of data storage. sillo provides built-in handlers for in-memory lists and async operations.
 
-### Built-in Data Handlers
+###  Built-in Data Handlers
 
-#### SyncDataHandler
+####  SyncDataHandler
 Base class for synchronous data handlers with two required methods:
 - `get_total_items() -> int`: Returns total item count
 - `get_items(offset: int, limit: int) -> List[Any]`: Returns paginated items
@@ -286,7 +286,7 @@ Base class for synchronous data handlers with two required methods:
 **Built-in Implementation:**
 - `SyncListDataHandler`: Handles in-memory lists
 
-#### AsyncDataHandler  
+####  AsyncDataHandler  
 Base class for asynchronous data handlers with two required methods:
 - `async get_total_items() -> int`: Returns total item count
 - `async get_items(offset: int, limit: int) -> List[Any]`: Returns paginated items
@@ -302,10 +302,10 @@ By default, `.paginate()` uses `AsyncListDataHandler` for async functions and `S
 
 Create custom data handlers to integrate with databases, external APIs, or any data source:
 
-### Database Integration Examples
+###  Database Integration Examples
 
 
-#### Tortoise ORM Example
+####  Tortoise ORM Example
 ```python {6}
 from sillo import silloApp
 from sillo.pagination import AsyncDataHandler
@@ -336,7 +336,7 @@ async def get_items(request, response):
 
 Create custom pagination strategies by subclassing `BasePaginationStrategy`:
 
-### Custom Strategy Example
+###  Custom Strategy Example
 ```python {6}
 from sillo import silloApp
 from sillo.pagination import BasePaginationStrategy
@@ -389,7 +389,7 @@ async def get_items_seek(request, response):
     return response.paginate(data, strategy=SeekPagination())
 ```
 
-### Overridable Methods
+###  Overridable Methods
 
 When creating custom strategies, you can override these methods:
 
@@ -397,7 +397,7 @@ When creating custom strategies, you can override these methods:
 - `calculate_offset_limit(*args) -> Tuple[int, int]`: Convert parameters to offset/limit
 - `generate_metadata(total_items, items, base_url, request_params) -> Dict[str, Any]`: Create pagination metadata
 
-### Advanced Custom Strategy
+###  Advanced Custom Strategy
 ```python {6}
 from sillo.pagination import BasePaginationStrategy, LinkBuilder
 from typing import Any, Dict, Tuple
@@ -464,3 +464,62 @@ class HybridPagination(BasePaginationStrategy):
         
         return metadata
 ```
+
+##  Stable ordering is not optional
+
+Pagination over an unordered query returns rows in whatever order the
+database finds convenient, and that order can differ between the two
+queries that produce page one and page two. The result is rows that
+appear twice and rows that never appear at all.
+
+Always order by something unique. A non-unique sort column needs a
+tiebreaker:
+
+```python
+rows = await Post.all().order_by("-created_at", "id").limit(20)
+```
+
+Two rows sharing a timestamp then have a defined relative order, which is
+what makes the page boundary stable.
+
+##  Offset pagination degrades; keyset does not
+
+`OFFSET 100000` makes the database read and discard a hundred thousand
+rows before returning twenty. Page one is instant, page five thousand is
+a table scan, and no index fixes it — the offset must be counted.
+
+Keyset pagination replaces the offset with a `WHERE` clause on the last
+row seen, which an index can satisfy directly:
+
+```python title="constant-time paging"
+qs = Post.all().order_by("-id")
+if after:
+    qs = qs.filter(id__lt=int(after))
+rows = await qs.limit(21)
+```
+
+Fetching one extra row tells you whether a next page exists without a
+`COUNT(*)`, which is the other expensive half of offset pagination.
+
+The tradeoff is that keyset paging cannot jump to an arbitrary page —
+there is no "page 47". For feeds, timelines, and infinite scroll that is
+no loss. For an admin table where users click page numbers, offset is the
+right tool and the page count is bounded by the filter.
+
+
+##  Total counts are expensive
+
+`COUNT(*)` over a filtered set cannot use a covering index the way a
+limited `SELECT` can, and on a large table it is frequently the slower
+half of a paginated response.
+
+Three ways out, in increasing order of how much you give up. Cache the
+count for a few seconds — most users cannot tell a stale total from a
+fresh one. Return an approximate count from table statistics for
+unfiltered lists. Or drop the total entirely and return only "is there a
+next page", which is all an infinite-scroll UI needs and costs one extra
+row rather than a full count.
+
+Whatever you choose, be consistent about it in the response shape.
+Sometimes-present metadata is harder for clients than metadata that is
+reliably absent.

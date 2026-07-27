@@ -1,18 +1,16 @@
 ---
 title: Templating
 icon: template
-description: 'sillo provides a powerful templating system built on top of Jinja2, offering features like template inheritance, context management, custom filters, and more.
-
-  '
+description: Server-rendered HTML with Jinja2 — engine setup, the global-singleton design, autoescaping, context injection, and the caching and reload settings that matter in production.
 head:
-- tag: meta
-  attrs:
-    property: og:title
-    content: Templating
-- tag: meta
-  attrs:
-    property: og:description
-    content: sillo provides a powerful templating system built on top of Jinja2, offering features like template inheritance, context management, custom filters, and more.
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Templating
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Server-rendered HTML with Jinja2 — engine setup, the global-singleton design, autoescaping, context injection, and the caching and reload settings that matter in production.
 ---
 #  Templating
 
@@ -50,7 +48,7 @@ Without setting up the templating engine , the render function throws a Notimpem
 
 There are several ways to customize the templating system:
 
-### 1. Using setup_environment
+###  1. Using setup_environment
 
 The simplest way is to set template options in your app configuration:
 
@@ -64,24 +62,7 @@ template_config = TemplateConfig(
 engine.setup_environment(template_config)
 ```
 
-### 2. Using App Config
-
-You can also sillo app config optionally
-
-```python
-from sillo.templating import  TemplateConfig
-
-    {
-        "templating" : TemplateConfig(
-            template_dir = "templates"
-        )
-    }
-)
-
-app = silloApp()
-```
-
-### 3. Runtime Configuration Updates
+###  2. Runtime Configuration Updates
 
 You can update configuration at runtime:
 
@@ -169,26 +150,29 @@ app.use(template_context(
 ))
 ```
 
-## Utility Functions
+##  Utility Functions
 
 The templating system includes several utility functions:
 
-```python
+```python title="registering the utilities as filters"
+from sillo.templating import TemplateConfig
 from sillo.templating.utils import (
-    truncate,
     format_datetime,
+    merge_dicts,
     static_hash,
-    merge_dicts
+    truncate,
 )
 
-# Truncate text
+config = TemplateConfig(
+    custom_filters={"truncate": truncate, "format_datetime": format_datetime},
+    custom_globals={"static_hash": static_hash, "merge_dicts": merge_dicts},
+)
+```
+
+```html title="using them in a template"
 {{ long_text|truncate(100) }}
-
-# Format dates
 {{ date|format_datetime("%Y-%m-%d") }}
-
-# Cache busting for static files
-{{ static_url('style.css') }}?v={{ static_hash('static/style.css') }}
+<link rel="stylesheet" href="/static/style.css?v={{ static_hash('static/style.css') }}">
 ```
 
 ##  Best Practices
@@ -218,9 +202,9 @@ from sillo.templating.utils import (
 
 ##  API Reference
 
-### Render Function
+###  Render Function
 
-```python
+```text
 async def render(
     template_name: str,
     context: Dict[str, Any] = None,
@@ -231,9 +215,9 @@ async def render(
 ) -> Response
 ```
 
-### Template Context Middleware
+###  Template Context Middleware
 
-```python
+```text
 def template_context(
     default_context: Optional[Dict[str, Any]] = None,
     context_processor: Optional[
@@ -242,9 +226,9 @@ def template_context(
 ) -> TemplateContextMiddleware
 ```
 
-### Utility Functions
+###  Utility Functions
 
-```python
+```text
 def truncate(text: str, length: int = 100, suffix: str = "...") -> str
 def format_datetime(value: datetime, fmt: str = "%Y-%m-%d %H:%M:%S") -> str
 def static_hash(filepath: str) -> str
@@ -385,7 +369,7 @@ app.use(template_context(
 ))
 ```
 
-## Template Caching
+##  Template Caching
 
 :::caution
 sillo does not ship a cache module. Use your preferred cache library, or a simple in-memory cache as shown below.
@@ -434,7 +418,7 @@ Usage in templates:
 {% endif %}
 ```
 
-## ⚠️ Error Handling
+##  ⚠️ Error Handling
 
 Custom error templates and handling:
 
@@ -498,3 +482,189 @@ async def test_context_middleware(client: TestClient):
     assert response.status_code == 200
     assert "Welcome, Test User!" in response.text
 ```
+
+
+---
+
+##  How the engine is wired
+
+`TemplateEngine` is not per-application. `setup_environment()` assigns
+the instance to a **module-level global** in `sillo.templating`, and the
+`render()` function reads that global:
+
+```python title="sillo/templating/__init__.py"
+engine: Union["TemplateEngine", None] = None
+
+class TemplateEngine:
+    def setup_environment(self, config=TemplateConfig()):
+        global engine
+        ...
+        engine = self
+```
+
+Three things follow from that design.
+
+**`render()` fails until setup runs.** Calling it first raises
+`NotImplementedError: Template Engine Has not been set`. Call
+`setup_environment()` at import time or in a startup hook, before any
+request can arrive.
+
+**There is one engine per process.** Two applications in one process
+share it, and the second `setup_environment()` call silently replaces the
+first — including its template directory. If you mount two apps that both
+render templates, they must share a template root or use separate
+processes.
+
+**Reconfiguring is global and immediate.** `engine.setup_environment(new_config)`
+swaps the environment for every in-flight and future render. That is fine
+at startup and a race in production.
+
+:::caution[`setup_environment` creates the template directory]
+It calls `template_dir.mkdir(parents=True, exist_ok=True)`. A typo in
+`template_dir` does not raise — it silently creates an empty directory,
+and the first render fails with `TemplateNotFound` pointing at a path
+that now exists and is empty. Check the path if templates "cannot be
+found" in a directory you can see.
+:::
+
+##  Autoescaping
+
+The environment is built with `select_autoescape(["html", "xml"])`.
+Variables rendered into `.html` and `.xml` templates are escaped;
+variables in any other extension are **not**.
+
+```html title="escaped, because the file is .html"
+<p>{{ user_supplied }}</p>
+```
+
+```text title="NOT escaped — a .txt or .j2 template"
+Hello {{ user_supplied }}
+```
+
+That is correct behaviour for plain-text output and a trap when a
+template is named `email.j2` or `page.tmpl` but produces HTML. Name HTML
+templates `.html`, always.
+
+Never reach for `|safe` on anything a user can influence. It disables
+escaping for that expression and is the standard way cross-site scripting
+gets into an otherwise careful codebase. When you genuinely need to
+render stored HTML — a rich-text field, a Markdown render — sanitize it
+with a real parser first. See the
+[HTML helpers guide](/guides/helpers/html/) for why the built-in
+`sanitize_html` is not sufficient for that job.
+
+##  Context injection
+
+`render(..., request=request)` populates three variables automatically,
+each with `setdefault` so your own value always wins:
+
+| Variable | Source | Present when |
+|---|---|---|
+| `request` | the request object | `request=` is passed |
+| `url_for` | `request.base_app.url_for` | the app exposes it |
+| `csrf_token` | `request.state.csrf_token` | CSRF middleware has run |
+
+It then merges `request.state.template_context`, which is what
+`TemplateContextMiddleware` populates. The merge happens **after**
+`setdefault`, so middleware context overwrites the per-call context —
+worth knowing if a variable is mysteriously not what you passed.
+
+```python title="global context for every template"
+from sillo.templating.middleware import template_context
+
+
+async def user_context(request):
+    return {"current_user": await get_current_user(request)}
+
+
+app.use(template_context(
+    default_context={"site_name": "Example", "version": "2.1.0"},
+    context_processor=user_context,
+))
+```
+
+The processor runs on **every request**, including ones that render
+nothing. Keep it cheap: a database query in a context processor is a
+query added to every static-file request that passes through the
+middleware stack.
+
+Forgetting `request=request` is the single most common templating bug.
+Without it there is no `csrf_token`, so form posts start failing CSRF
+validation, and no `url_for`, so link generation raises `UndefinedError`.
+
+##  Production settings
+
+Two config values behave very differently in development and production.
+
+`auto_reload=True` stats every template file on every render to detect
+changes. That is what makes editing a template take effect without a
+restart, and it is a filesystem call per render per template — including
+every `{% include %}` and `{% extends %}`. Turn it off in production.
+
+`cache_size=100` caps how many compiled templates are held. An
+application with more than a hundred templates will evict and recompile
+constantly at the default. Set it above your template count, or to `-1`
+for an unbounded cache, which is safe because the number of templates is
+fixed at deploy time.
+
+```python title="a production configuration"
+import os
+
+is_dev = os.getenv("ENV") == "development"
+
+config = TemplateConfig(
+    template_dir="templates",
+    auto_reload=is_dev,
+    cache_size=-1 if not is_dev else 100,
+    enable_async=True,
+)
+engine.setup_environment(config)
+```
+
+`enable_async=True` compiles templates for `render_async`, which is what
+lets a template await a coroutine in an expression. Leave it on — sillo's
+`render()` calls `render_async` when it is set, and the synchronous
+fallback blocks the event loop for the duration of the render.
+
+##  What not to do
+
+**Do not call `render()` before `setup_environment()`.** It raises
+`NotImplementedError`.
+
+**Do not run two apps with different template roots in one process.**
+The engine is a module-level global.
+
+**Do not give an HTML template a non-`.html` extension.** Autoescaping is
+selected by suffix.
+
+**Do not use `|safe` on user-influenced values.** That is the XSS.
+
+**Do not forget `request=request`.** You lose `csrf_token` and
+`url_for`.
+
+**Do not query the database in a context processor** without checking
+which requests it runs for.
+
+**Do not leave `auto_reload=True` in production.** It stats files on
+every render.
+
+**Do not leave `cache_size` below your template count.** You will
+recompile on every request.
+
+##  Performance notes
+
+Template compilation is expensive; rendering a compiled template is not.
+The cache is what stands between you and paying compilation on every
+request, so sizing it correctly matters more than any other setting here.
+
+`trim_blocks` and `lstrip_blocks` are both on by default. They affect
+whitespace in the output, not speed — but they change rendered output, so
+turning them off later will alter every page.
+
+Inheritance chains are resolved per render. A template that extends a
+base that includes four partials is five cache lookups, which is cheap
+when cached and five compilations when not.
+
+For pages that are expensive to build and rarely change, cache the
+rendered HTML rather than tuning the template engine. See
+[Cache](/guides/cache/).

@@ -12,11 +12,11 @@ head:
     content: sillo API key auth — backend, ApiKey model, ApiKeyManager, ApiKeyUserMixin, hashing and scopes.
 ---
 
-# API Keys
+#  API Keys
 
 API keys are for **server-to-server** and **programmatic** access: a long-lived secret sent in a header, scoped to specific permissions, and stored hashed (never plaintext). sillo gives you the full lifecycle — generate, verify, list, revoke.
 
-## 1. Protecting routes with the backend
+##  1. Protecting routes with the backend
 
 ```python
 from sillo.auth import AuthenticationMiddleware, useAuth
@@ -47,7 +47,7 @@ With `verify_with_manager=False`, the backend only checks the prefix and that *s
 
 On success, `request.scope["auth"]` becomes `"apikey"`.
 
-## 2. Storing keys — ApiKey & ApiKeyManager
+##  2. Storing keys — ApiKey & ApiKeyManager
 
 Keys are hashed with SHA-256 before storage. You never persist the raw key.
 
@@ -76,7 +76,7 @@ await ApiKeyManager().revoke_all_for_user(1)
 
 `ApiKey` fields: `name`, `key_hash` (unique), `user_id`, `scopes` (JSON list), `last_used_at`, `expires_at`, `is_active`. Helpers: `mark_used()`, `revoke()`, and the property `is_expired`.
 
-## 3. Issuing keys from a user — ApiKeyUserMixin
+##  3. Issuing keys from a user — ApiKeyUserMixin
 
 Add `ApiKeyUserMixin` to your user class so a user can self-service keys:
 
@@ -104,7 +104,7 @@ await user.revoke_all_api_keys()            # revoke all for this user
 
 `create_api_key` returns `(full_key, ApiKey)` — `full_key` is shown once; afterwards only the hash exists in the database.
 
-## 4. Scopes and the auth gate
+##  4. Scopes and the auth gate
 
 The backend confirms *that* the key is valid but does **not** expose the key's `scopes` on the request — so scope enforcement is your job. Re-verify the presented key in the handler to get the `ApiKey` row (which carries `scopes`):
 
@@ -124,7 +124,7 @@ async def data(request, response):
 Unlike JWT/session (where `scope` is a fixed method string like `"apikey"`), an API key's `scopes` are application-defined permission strings stored on the `ApiKey` row. `useAuth(scopes=["apikey"])` only confirms the call came via an API key. To enforce *which* scopes, look the key up with `ApiKeyManager().verify(raw)` and branch on `apikey.scopes`, or write a small `useAuth` subclass that does it once.
 </aside>
 
-## 5. Combining with other backends
+##  5. Combining with other backends
 
 API keys commonly sit alongside JWT/session so the same endpoints serve both humans and machines:
 
@@ -141,7 +141,7 @@ app.use(AuthenticationMiddleware(
 
 A request with `X-API-Key` authenticates as `"apikey"`; one with a bearer token as `"jwt"`; one with a cookie as `"session"`. Routes can pin a method with `useAuth(scopes=["apikey"])` or accept any with `useAuth()`.
 
-## Related
+##  Related
 
 - [Authentication](/guides/authentication/) — middleware + backend model
 - [Protecting Routes](/guides/protecting-routes/) — `useAuth(scopes=["apikey"])`

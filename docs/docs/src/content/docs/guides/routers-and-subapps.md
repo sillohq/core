@@ -12,7 +12,7 @@ head:
     content: Modular routing in sillo with Router prefixes, nested routers, and Group-mounted sub-apps.
 ---
 
-# Routers & Sub-Applications
+#  Routers & Sub-Applications
 
 As an app grows, a single flat list of `@app.get(...)` decorators becomes hard to navigate. sillo lets you group routes into **`Router`** objects with their own path prefix, mount them under the main app, and nest them arbitrarily. You can also mount an entire **sub-application** — another `silloApp`, or any ASGI app such as a FastAPI service — under a path using a **`Group`**.
 
@@ -23,7 +23,7 @@ The mental model:
 
 Both flatten into the app's route table at startup, so nesting adds no per-request overhead.
 
-## The smallest useful form
+##  The smallest useful form
 
 ```python
 from sillo import silloApp
@@ -50,7 +50,7 @@ app.mount_router(v1)
 The prefix lives on the `Router`, not on `mount_router`. You cannot pass a prefix to `app.mount_router(...)`. Set it once with `Router(prefix="/v1")` and reuse the router everywhere.
 </aside>
 
-## Router options
+##  Router options
 
 `Router(...)` accepts more than a prefix:
 
@@ -69,7 +69,7 @@ v1 = Router(
 - **`middleware`** — functions applied to requests matching this router's routes.
 - **`name`** — an identifier for the router (mostly for referencing in tooling/URL generation within the router tree).
 
-## Nesting routers
+##  Nesting routers
 
 A router can mount another router, building a deep prefix tree:
 
@@ -95,7 +95,7 @@ app.mount_router(v1)
 
 Final paths: `/v1/users/` and `/v1/users/{id}`. You can nest as deeply as you like — `v1.mount_router(users)`, `users.mount_router(posts)`, and so on. sillo resolves the full prefix by walking the tree at startup.
 
-## Per-router middleware and dependencies
+##  Per-router middleware and dependencies
 
 Middleware and dependencies declared on a router run only for routes under that router. This is how you scope "require auth for everything under `/admin`" without touching each handler:
 
@@ -122,11 +122,11 @@ app.mount_router(admin)
 
 Here `require_staff` resolves for every route registered on `admin`. (You can also pass `dependencies=[Depend(require_staff)]` to the `Router` constructor to apply it uniformly.)
 
-## Groups: mounting a sub-application
+##  Groups: mounting a sub-application
 
 When the thing you want to mount is itself an app — a separate `silloApp`, or any ASGI app — use `Group`. A `Group` takes either `app=` (an ASGI app) or `routes=` (a list of `Route` objects), plus a `path` prefix.
 
-### Mounting another silloApp
+###  Mounting another silloApp
 
 ```python
 from sillo import silloApp
@@ -145,7 +145,7 @@ main_app.add_route(admin_group)
 
 Now `/admin/dashboard` is served by `admin_app`. The sub-app keeps its own routes, handlers, and (if you add them) its own middleware — useful when different teams own different parts of a system.
 
-### Mounting a list of routes
+###  Mounting a list of routes
 
 ```python
 from sillo.routing import Router, Group, Route
@@ -172,7 +172,7 @@ app.add_route(group)
 
 This answers `/users` and `/users/{id}`. `Group` with `routes=` is essentially a prefix wrapper around a set of `Route` objects; `Group` with `app=` mounts a whole app.
 
-## Mounting external ASGI apps
+##  Mounting external ASGI apps
 
 Because a `Group` accepts any ASGI app, you can mount a FastAPI (or Starlette, Quart, …) service under a path without rewriting it:
 
@@ -198,7 +198,7 @@ Requests to `/service2/ping` are delegated to `fast_app`, whose own routing and 
 A `Group`'s `path` should start with `/`. If it doesn't, sillo warns and prepends one. Consistent leading slashes keep nested prefixes from collapsing (`/v1` + `/users` → `/v1/users`, not `/v1users`).
 </aside>
 
-## Route names and URL generation
+##  Route names and URL generation
 
 Routes (and routers) accept a `name=` used with `url_for` to build URLs without hard-coding paths:
 
@@ -215,7 +215,7 @@ async def home(request, response):
 
 When a route lives under a router prefix, `url_for` includes that prefix automatically. Name routes once and generate links everywhere.
 
-## Putting it together: a modular app
+##  Putting it together: a modular app
 
 ```python
 from sillo import silloApp, Depend
@@ -244,7 +244,7 @@ app.add_route(Group(path="/admin", app=admin))
 
 This gives you `/api/v1/health` and `/admin/stats` from two independently-defined pieces.
 
-## Works with
+##  Works with
 
 - [Routing](/guides/routing/) — path syntax, converters, `name=`, and all route options
 - [Handlers](/guides/handlers/) — the handler contract used inside routers
@@ -252,7 +252,7 @@ This gives you `/api/v1/health` and `/admin/stats` from two independently-define
 - [Handlers](/guides/handlers/) — define function handlers for router endpoints
 - [Dependency Injection](/guides/dependency-injection/) — router-level `dependencies=`
 
-## Related topics
+##  Related topics
 
 - [Startup & Shutdown](/guides/startups-and-shutdowns/) — run setup when the composed app boots
 - [Error Handling](/guides/error-handling/) — exception handlers registered per app vs. globally

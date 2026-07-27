@@ -38,7 +38,7 @@ app.add_route(static_group)
 
 With this setup, a file at `static/css/style.css` would be accessible at `/static/css/style.css`.
 
-### Single Directory
+###  Single Directory
 
 The simplest configuration uses a single directory for all static files:
 
@@ -72,7 +72,7 @@ app.register(static_files, prefix="/assets")  # Serve files at /assets/ instead 
 
 ##  Examples
 
-### Complete Application Setup
+###  Complete Application Setup
 
 ```python
 from sillo import silloApp
@@ -142,7 +142,7 @@ app.register(static_files, prefix="/static")
 
 ##  Performance & Caching
 
-### Cache Control
+###  Cache Control
 
 Configure caching headers for better performance:
 

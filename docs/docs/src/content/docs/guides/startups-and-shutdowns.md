@@ -1,17 +1,15 @@
 ---
-title: Startup And Shutdowns ⏻
-description: In ASGI (Asynchronous Server Gateway Interface), startup and shutdown refer to the lifecycle events of an application. These events allow you to perform initialization and cleanup tasks when
-  the application starts up or shuts down.
+title: Startup & Shutdown
+description: The ASGI lifespan — running code before the first request and after the last, ordering guarantees, what a failed hook does to your deploy, and how to shut down without dropping work.
 head:
-- tag: meta
-  attrs:
-    property: og:title
-    content: Startup And Shutdowns ⏻
-- tag: meta
-  attrs:
-    property: og:description
-    content: In ASGI (Asynchronous Server Gateway Interface), startup and shutdown refer to the lifecycle events of an application. These events allow you to perform initialization and cleanup tasks when
-      the application starts up or shuts down.
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Startup & Shutdown
+  - tag: meta
+    attrs:
+      property: og:description
+      content: The ASGI lifespan — running code before the first request and after the last, ordering guarantees, what a failed hook does to your deploy, and how to shut down without dropping work.
 ---
 #  Startup And Shutdowns 
 In ASGI (Asynchronous Server Gateway Interface), startup and shutdown refer to the lifecycle events of an application. These events allow you to perform initialization and cleanup tasks when the application starts up or shuts down.
@@ -19,28 +17,30 @@ In ASGI (Asynchronous Server Gateway Interface), startup and shutdown refer to t
 
 The sillo framework provides a simple way to run code during startup and shutdown. The ``on_startup`` and ``on_shutdown`` functions are the two main functions that are used to do this.
 
-## ⬆️ Startup
+##  ⬆️ Startup
 
 The ``on_startup`` function is used to run code when the application is starting up. It can be used to setup the database connection, setup the routes, and other things.
 
 
 ```python {3}
-from sillo import NexioApp
-app = NexioApp()
+from sillo import silloApp
+
+app = silloApp()
 @app.on_startup
 async def startup():
     print("Application starting up...")
     # Do something when the application starts up
 ```
 
-## ⬇️ Shutdown
+##  ⬇️ Shutdown
 
 The ``on_shutdown`` function is used to run code when the application is shutting down. It can be used to close database connections, free resources, and other things.
 
 
 ```python {3}
-from sillo import NexioApp
-app = NexioApp()
+from sillo import silloApp
+
+app = silloApp()
 @app.on_shutdown
 async def shutdown():
     print("Application shutting down...")
@@ -60,7 +60,7 @@ sillo also supports using an asynchronous context manager to handle both startup
 
 
 ```python
-from sillo import NexioApp
+from sillo import silloApp
 from contextlib import asynccontextmanager
 
 
@@ -72,7 +72,7 @@ async def app_lifespan(app):
     # Application shutdown logic
     print("Application shutting down...")
 
-app = NexioApp(lifespan=app_lifespan)
+app = silloApp(lifespan=app_lifespan)
 ```
 
 ::: tip Tip
@@ -80,7 +80,7 @@ app = NexioApp(lifespan=app_lifespan)
 You cannot use ``on_startup`` and ``on_shutdown`` together with ``lifespan`` But You can use this trick 
 
 ```py
-from sillo import NexioApp
+from sillo import silloApp
 from contextlib import asynccontextmanager
 
 
@@ -95,7 +95,329 @@ async def app_lifespan(app):
     await app._shutdown()
     print("Application shutting down...")
 
-app = NexioApp(lifespan=app_lifespan)
+app = silloApp(lifespan=app_lifespan)
 
 ```
 :::
+
+---
+
+##  What the lifespan actually is
+
+The ASGI server sends your application two messages before any request
+and one after the last: `lifespan.startup`, then requests, then
+`lifespan.shutdown`. sillo turns those into your registered hooks.
+
+Two guarantees follow, and both matter.
+
+**Startup completes before the first request is accepted.** A handler can
+assume every startup hook has finished. That is why connecting a database
+in a startup hook is safe and connecting it lazily on first use is not
+— the lazy version races with concurrent first requests.
+
+**Shutdown runs after the last response.** In-flight requests are allowed
+to finish first, so a shutdown hook that closes a connection pool does
+not pull it out from under a request still using it.
+
+Neither guarantee survives a hard kill. `SIGKILL`, an OOM kill, or a
+crashed process runs nothing — shutdown hooks are a graceful path, not a
+durability mechanism. Anything that must survive belongs in a database or
+a [queue](/guides/work/queue/), not in a shutdown handler.
+
+##  Ordering
+
+Startup hooks run in registration order; shutdown hooks run in
+registration order too, **not** reversed. That second half surprises
+people coming from frameworks that unwind like a stack.
+
+```python title="ordering is registration order in both directions"
+@app.on_startup
+async def connect_db(): ...          # runs 1st
+
+@app.on_startup
+async def warm_cache(): ...          # runs 2nd, and can use the database
+
+
+@app.on_shutdown
+async def close_db(): ...            # runs 1st
+
+@app.on_shutdown
+async def flush_metrics(): ...       # runs 2nd — after the DB is closed
+```
+
+If a shutdown hook depends on something another one tears down, register
+it first or combine them. The lifespan context manager makes the
+dependency explicit and is the better tool when order matters.
+
+##  The lifespan context manager
+
+One function, with setup before the `yield` and teardown after:
+
+```python title="setup and teardown together"
+from contextlib import asynccontextmanager
+
+from sillo import silloApp
+
+
+@asynccontextmanager
+async def lifespan(app):
+    pool = await create_pool()
+    app.state["pool"] = pool
+    try:
+        yield
+    finally:
+        await pool.close()
+
+
+app = silloApp(lifespan=lifespan)
+```
+
+Two advantages over paired hooks. The teardown sits next to the setup, so
+neither can be edited without seeing the other. And the `finally`
+guarantees cleanup runs even if something between raised — a pair of
+independent hooks has no such link.
+
+Nest context managers with `AsyncExitStack` when there are several
+resources, and they unwind in reverse automatically:
+
+```python title="several resources, correct unwind order"
+from contextlib import AsyncExitStack, asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app):
+    async with AsyncExitStack() as stack:
+        app.state["db"] = await stack.enter_async_context(database())
+        app.state["cache"] = await stack.enter_async_context(cache_client())
+        app.state["http"] = await stack.enter_async_context(http_client())
+        yield
+```
+
+The cache closes before the database because it was entered after it,
+which is what you want when one depends on the other.
+
+##  Failure during startup
+
+:::danger[A failing startup hook stops the server from starting]
+An exception in a startup hook is reported to the ASGI server as
+`lifespan.startup.failed`, and the server exits. The application never
+serves a request.
+
+This is correct behaviour and it has a deployment consequence: a startup
+hook that reaches out to a dependency makes your service unable to start
+whenever that dependency is down. A cache warm-up that queries an API,
+a migration check that needs the database, a config fetch from a remote
+store — each converts a partial outage into a total one, and worse, into
+one where your replicas cannot come back.
+
+Decide per hook whether the dependency is genuinely required:
+
+```python title="fail on what you need, tolerate what you do not"
+@app.on_startup
+async def connect_database():
+    await db.init()                    # required — fail loudly
+
+
+@app.on_startup
+async def warm_cache():
+    try:
+        await preload_reference_data()
+    except Exception:
+        logger.warning("cache warm-up failed; serving cold", exc_info=True)
+```
+
+The database is load-bearing; the cache is an optimisation. Treating both
+as fatal means an optional dependency can take you down.
+:::
+
+Keep startup fast for the same reason. Orchestrators have startup
+timeouts, and a hook that takes ninety seconds turns a rolling deploy
+into a rollback. Anything slow that is not required to serve traffic
+belongs in a background task started by the hook, not in the hook.
+
+##  Shutting down without dropping work
+
+A clean shutdown has three parts, in order.
+
+**Stop accepting new work.** Your orchestrator removes the instance from
+the load balancer, usually a few seconds before `SIGTERM`. Nothing to do
+in code, but it is why a short delay at the start of shutdown can help —
+it lets in-flight connections drain before you tear anything down.
+
+**Finish what is in flight.** The server waits for open requests. Your
+own background work does not get this for free — drain it explicitly:
+
+```python title="a shutdown that does not lose work"
+@app.on_shutdown
+async def drain():
+    await BackgroundTask.drain(timeout=10)
+    await ChannelBox.close_all_connections()
+    await connections.close_all()
+```
+
+**Release resources.** Close pools, flush buffers, deregister from
+service discovery.
+
+The total must fit inside your orchestrator's grace period — Kubernetes
+defaults to 30 seconds between `SIGTERM` and `SIGKILL`. A drain longer
+than that is worse than none: you get killed mid-drain and lose the work
+anyway, having also delayed the rollout.
+
+##  What belongs in a lifespan hook
+
+**Yes:** connection pools, HTTP clients, message-bus subscriptions,
+background schedulers, warm caches, metrics exporters, feature-flag
+clients.
+
+**No:** database migrations — run them as a separate deploy step so
+replicas do not race. Long-running loops — start them as tasks and keep
+the reference. Anything per-request — that is
+[middleware](/guides/middleware/) or a
+[dependency](/guides/dependency-injection/).
+
+The test for a startup hook: does every request need this, and does it
+cost something to create? Both yes means the lifespan. Only the first
+means a module-level constant. Only the second means a dependency with
+caching.
+
+##  Sharing state between hooks and handlers
+
+`app.state` is the mapping a startup hook writes to and a handler reads
+from. It is a plain dictionary living on the application object, so
+anything you put there survives for the process's lifetime and is shared
+across every request.
+
+```python title="the pattern every subsystem uses"
+@app.on_startup
+async def open_pool():
+    app.state["pool"] = await create_pool()
+
+
+@app.get("/users")
+async def list_users(request, response):
+    pool = request.app.state["pool"]
+    ...
+```
+
+That is exactly what `setup_record`, `setup_work`, and `setup_mail` do —
+each stores its object under a known key so handlers and other
+subsystems can find it without importing a module-level singleton.
+
+Two rules keep this from turning into a global-variable pile. Namespace
+your keys — `"pool"` collides, `"myapp.pool"` does not, and a library
+storing under a generic name will eventually overwrite yours. And treat
+the contents as read-mostly: mutating shared state from a handler is a
+data race across concurrent requests, and the failure is intermittent and
+extremely hard to reproduce.
+
+For per-request state, use `request.state` instead. It is created fresh
+per request and discarded after, which is what request-scoped data
+actually wants.
+
+##  Testing
+
+`TestClient` used as a context manager runs the lifespan. Used without
+one, it does not:
+
+```python title="the difference that catches people"
+with TestClient(app) as client:      # startup runs, shutdown runs on exit
+    client.get("/users")
+
+client = TestClient(app)             # no lifespan — app.state is empty
+client.get("/users")                 # fails if the handler needs a pool
+```
+
+Almost every "works in production, fails in tests" report about missing
+`app.state` entries is this. Use the context-manager form.
+
+That also makes the lifespan itself testable — assert on `app.state`
+inside the block, and assert that resources were released after it.
+
+##  Multiple workers
+
+Every lifespan hook runs once **per process**. With four uvicorn workers,
+your startup hook runs four times, in four separate memory spaces.
+
+That is fine for anything per-process — a connection pool, an HTTP
+client, a metrics exporter. It is wrong for anything that should happen
+once globally:
+
+**Schedulers.** Four processes means a nightly job runs four times. See
+[Scheduler](/guides/work/scheduler/) for leader election and locking.
+
+**Migrations.** Four processes racing on `ALTER TABLE` is how you corrupt
+a schema. Run them as a separate step.
+
+**One-time seeds.** Idempotent seeds are safe; anything that appends is
+not.
+
+**Warm-ups that hammer a dependency.** Four workers each fetching the
+same configuration on boot is a four-times spike at exactly the moment
+your service is least healthy.
+
+The general fix is to move genuinely-once work out of the application
+process — a job, an init container, a deploy step — and keep the lifespan
+for things each process needs its own copy of.
+
+##  What not to do
+
+**Do not make an optional dependency fatal at startup.** You lose the
+ability to start at all.
+
+**Do not run migrations in a startup hook.** Replicas race.
+
+**Do not assume shutdown hooks reverse.** They run in registration order.
+
+**Do not rely on shutdown for durability.** `SIGKILL` runs nothing.
+
+**Do not exceed the orchestrator's grace period.** You get killed
+mid-drain.
+
+**Do not start a long-running loop without keeping its task reference.**
+It can be garbage collected.
+
+**Do not use `TestClient` without the context manager** when a handler
+needs startup state.
+
+##  Related
+
+- [Middleware](/guides/middleware/) — per-request work, as opposed to per-process
+- [Dependency Injection](/guides/dependency-injection/) — per-request resources
+- [Record Overview](/guides/record/) — `setup_record` and the hooks it registers
+- [Background Tasks](/guides/work/background/) — draining before exit
+- [Work Overview](/guides/work/) — the scheduler's start and stop hooks
+- [CLI](/guides/cli/) — why `sillo shell` does not run these
+
+
+##  Health checks and readiness
+
+An orchestrator asks two different questions and they need two different
+answers.
+
+**Liveness** — "is this process alive?" — should be cheap and check
+nothing external. A liveness probe that queries the database restarts
+your pods during a database outage, turning a degraded service into no
+service at all.
+
+**Readiness** — "should this receive traffic?" — should check the
+dependencies a request actually needs. Failing readiness during startup
+keeps traffic away until the lifespan has finished; failing it later
+takes the instance out of rotation without killing it.
+
+```python title="two probes, two behaviours"
+@app.get("/healthz")
+async def liveness(request, response):
+    return response.json({"status": "ok"})
+
+
+@app.get("/readyz")
+async def readiness(request, response):
+    db = request.app.state["record"]
+    if not await db.health():
+        return response.json({"status": "not ready"}, status_code=503)
+    return response.json({"status": "ready"})
+```
+
+Because startup completes before the first request is served, a readiness
+endpoint that responds at all already proves the lifespan finished — the
+dependency check is about staying healthy, not about starting.

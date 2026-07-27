@@ -1,158 +1,433 @@
 ---
 title: WebSocket Channels
-description: 'WebSocket connections in sillo are managed using the Channel class, which provides enhanced functionality for handling real-time communication with features like metadata, expiration, and
-  structured message handling.
-
-  '
+description: The Channel class — what it actually holds, how payload types and expiry work, the idle-timeout behaviour that removes live connections from groups, and how to build on it safely.
 head:
-- tag: meta
-  attrs:
-    property: og:title
-    content: WebSocket Channels
-- tag: meta
-  attrs:
-    property: og:description
-    content: WebSocket connections in sillo are managed using the Channel class, which provides enhanced functionality for handling real-time communication with features like metadata, expiration, and
-      structured message handling.
+  - tag: meta
+    attrs:
+      property: og:title
+      content: WebSocket Channels
+  - tag: meta
+    attrs:
+      property: og:description
+      content: The Channel class — what it actually holds, how payload types and expiry work, the idle-timeout behaviour that removes live connections from groups, and how to build on it safely.
 ---
 
 #  Channels
 
-WebSocket connections in sillo are managed using the `Channel` class, which provides enhanced functionality for handling real-time communication. Channels wrap WebSocket connections with additional features like metadata, expiration, and structured message handling.
+A `Channel` is a thin wrapper around a `WebSocket` that adds three
+things: an identity, a declared payload type, and an optional expiry. It
+exists so that `ChannelBox` has something addressable to keep in a group,
+and so that broadcasting does not have to know whether a given connection
+wants JSON, text, or bytes.
 
-##  Channel Features
+It is deliberately small. Understanding exactly how small saves you from
+writing code against methods that do not exist.
 
-- **Automatic Message Serialization**: Supports JSON, text, and binary payloads
-- **Connection Lifecycle Management**: Built-in handling for connection states
-- **Metadata Storage**: Attach custom data to channels
-- **Expiration**: Automatic cleanup of inactive channels
-- **Error Handling**: Built-in error handling and cleanup
+```python title="the whole public surface"
+channel = Channel(websocket=ws, payload_type="json", expires=3600)
 
-##  Creating and Using a Channel
+channel.uuid          # UUID4, generated at construction
+channel.created       # float, time.time() at construction
+channel.expires       # int seconds, or None
+channel.payload_type  # 'json' | 'text' | 'bytes'
+channel.websocket     # the underlying WebSocket
+```
 
-###  Basic Channel Creation
+That is all of it. There is no `channel.id`, no `channel.metadata`, no
+`channel.is_active`, no `channel.touch()`, no `channel.receive()`, and no
+`channel.close()`. Sending is `_send()`, and expiry testing is
+`_is_expired()` — both underscore-prefixed, both the only way to do those
+things.
 
-```python
-from datetime import timedelta
-from sillo.websockets.channels import Channel, PayloadTypeEnum
-from sillo.websockets.base import WebSocketDisconnect
+##  When to reach for a channel
 
-@app.websocket("/chat")
-async def chat_handler(ws: WebSocket):
-    # Accept the WebSocket connection
-    await ws.accept()
+You usually do not construct one yourself.
+[`WebSocketConsumer`](/guides/websockets/consumer/) builds one per
+connection automatically, and that covers the common case.
 
-    # Create a channel with JSON payload and 30-minute expiration
-    channel = Channel(
-        websocket=ws,
-        payload_type=PayloadTypeEnum.JSON,  # Can be JSON, TEXT, or BINARY
-        expires=1800,  # 30 minutes (optional)
-        metadata={"username": "anonymous"}  # Optional metadata
-    )
+Construct one directly when you are writing a plain `ws_route` handler
+and want group broadcasting, or when you need an expiry other than the
+consumer's hard-coded hour. Everything below assumes that case.
+
+##  Constructing a channel
+
+```python title="a plain handler that joins a group"
+from sillo.websockets import Channel, ChannelBox, WebSocket, WebSocketDisconnect
+
+
+@app.ws_route("/ws/room/{room_id}")
+async def room(websocket: WebSocket):
+    await websocket.accept()
+
+    channel = Channel(websocket=websocket, payload_type="json", expires=None)
+    group = f"room:{websocket.path_params['room_id']}"
+    await ChannelBox.add_channel_to_group(channel, group)
 
     try:
-        while True:
-            # Receive and process messages
-            data = await channel.receive()  # Automatically deserializes based on payload_type
-
-            # Send a response (automatically serializes based on payload_type)
-            await channel.send({"response": data, "timestamp": datetime.utcnow().isoformat()})
-
-            # Update channel metadata if needed
-            if "username" in data:
-                channel.metadata["username"] = data["username"]
-
+        async for message in websocket.iter_json():
+            await ChannelBox.group_send(group, {"said": message})
     except WebSocketDisconnect:
-        print(f"Client disconnected: {channel.id}")
-    except Exception as e:
-        print(f"Error in chat handler: {e}")
+        pass
     finally:
-        # Clean up resources
-        await channel.close()
+        try:
+            await ChannelBox.remove_channel_from_group(channel, group)
+        except UnboundLocalError:
+            pass
 ```
 
-###  Channel Methods and Properties
+The constructor asserts on all three arguments. `websocket` must be a
+`WebSocket` instance, `expires` must be an `int` if given, and
+`payload_type` must be exactly one of `"json"`, `"text"`, or `"bytes"` —
+the string, not the enum member:
 
 ```python
-# Get channel information
-channel_id = channel.id  # UUID of the channel
-is_active = channel.is_active  # Check if channel is still connected
-created_at = channel.created  # When the channel was created
-expires_at = channel.expires  # When the channel will expire
-
-# Send different types of messages
-await channel.send({"type": "message", "content": "Hello!"})  # JSON
-await channel.send_text("Hello!")  # Plain text
-await channel.send_bytes(b"binary_data")  # Binary data
-
-# Receive messages (auto-deserialized based on payload_type)
-data = await channel.receive()  # For JSON payloads
-text = await channel.receive_text()  # For text payloads
-binary = await channel.receive_bytes()  # For binary payloads
-
-# Close the channel with an optional status code and reason
-await channel.close(code=1000, reason="User left the chat")
+Channel(websocket=ws, payload_type=PayloadTypeEnum.JSON)         # AssertionError
+Channel(websocket=ws, payload_type=PayloadTypeEnum.JSON.value)   # fine
+Channel(websocket=ws, payload_type="json")                       # fine
 ```
 
-###  Channel Expiration and Heartbeats
+Passing the enum itself fails the assertion, because the check compares
+against `.value` strings. Use the plain string or remember the `.value`.
 
-Channels can be configured to expire after a period of inactivity. To keep a channel alive, you can implement a heartbeat mechanism:
+:::caution[Assertions vanish under `python -O`]
+Every validity check in the `Channel` constructor is an `assert`. Running
+your application with `python -O` or `PYTHONOPTIMIZE=1` strips them, and
+an invalid `payload_type` then fails much later, inside `_send`, as a
+silently-taken fallback branch. Do not rely on the constructor to
+validate input that came from outside your code.
+:::
 
-```python
-@app.websocket("/chat-with-heartbeat")
-async def chat_handler(ws: WebSocket):
-    await ws.accept()
+##  Payload types
 
-    # Channel with 5-minute expiration
-    channel = Channel(
-        websocket=ws,
-        payload_type=PayloadTypeEnum.JSON,
-        expires=300  # 5 minutes
+`payload_type` decides which `WebSocket` method `_send` calls:
+
+| `payload_type` | Sends via | Give it |
+|---|---|---|
+| `"json"` | `websocket.send_json(payload)` | any JSON-serializable object |
+| `"text"` | `websocket.send_text(payload)` | `str` |
+| `"bytes"` | `websocket.send_bytes(payload)` | `bytes` |
+| anything else | `websocket.send(payload)` | a raw ASGI message dict |
+
+The last row is the fallback that assertions normally prevent you from
+reaching. It passes the payload straight to the ASGI send callable, which
+expects a dict with a `type` key — anything else raises deep inside the
+protocol layer.
+
+Note the type coupling: a group containing both a `"json"` channel and a
+`"text"` channel cannot be broadcast to with a single payload.
+`group_send` passes the same object to every channel, so a dict reaches
+`send_text` and raises. Keep one payload type per group.
+
+##  `_send` swallows `RuntimeError`
+
+```python title="sillo/websockets/channels.py"
+try:
+    ...
+except RuntimeError as error:
+    logging.debug(error)
+
+self.created = time.time()
+```
+
+Sending to a channel whose socket has already closed raises
+`RuntimeError` from the state machine, and `_send` logs it at DEBUG and
+continues. In production, where DEBUG is usually off, the send silently
+does nothing.
+
+This is deliberate — one dead connection in a group of five hundred
+should not abort the broadcast — but it means `group_send` returning
+`GROUP_SEND` tells you the loop ran, not that anyone received anything.
+If delivery matters, have clients acknowledge and track that yourself.
+
+Note also that `self.created` is reset **after** every send attempt,
+successful or not. That is what makes expiry an idle timer.
+
+##  Expiry
+
+`expires` is a number of seconds. `_is_expired()` returns
+`(expires + int(created)) < time.time()`, and `created` is refreshed on
+every `_send`. So a channel expires only after `expires` seconds with no
+outbound traffic.
+
+`expires=None` means never — the check short-circuits.
+
+:::danger[Expiry removes live connections from their groups]
+`ChannelBox._clean_expired()` deletes expired channels from
+`CHANNEL_GROUPS` and drops groups that become empty. It does **not**
+close the underlying socket.
+
+The result is a connection that is still open, still readable, still
+sending — and no longer a member of any group. The client sees a working
+connection that has silently stopped receiving broadcasts. Nothing is
+logged at a level you would notice.
+
+`_clean_expired()` runs on every `remove_channel_from_group` call, so on
+a busy server it runs constantly.
+
+Consumers hard-code `expires=3600`, which makes this reachable for any
+connection that goes an hour without receiving a broadcast — a presence
+socket, a notification feed, a dashboard nobody is looking at.
+
+Two defences:
+
+**Use `expires=None`** when you construct channels yourself, and remove
+them explicitly on disconnect. Your `finally` block is more reliable than
+a timer.
+
+**Send a server-side heartbeat** well inside the window. This also keeps
+load balancers and reverse proxies from closing idle connections, which
+they typically do between 30 and 120 seconds.
+
+```python title="a heartbeat task"
+import asyncio
+
+
+async def heartbeat(group: str, interval: int = 30):
+    while True:
+        await asyncio.sleep(interval)
+        await ChannelBox.group_send(group, {"type": "ping"})
+```
+:::
+
+##  Identity
+
+`channel.uuid` is a fresh UUID4 per channel, and it is the only handle
+`ChannelBox.send_to` accepts. It is not a user id and it does not survive
+a reconnect — a client that drops and reconnects is a new channel with a
+new UUID.
+
+If you want to message a user rather than a connection, keep your own
+mapping and update it on connect and disconnect:
+
+```python title="addressing users instead of connections"
+CONNECTIONS: dict[int, set[Channel]] = {}
+
+
+async def register(user_id: int, channel: Channel) -> None:
+    CONNECTIONS.setdefault(user_id, set()).add(channel)
+
+
+async def unregister(user_id: int, channel: Channel) -> None:
+    conns = CONNECTIONS.get(user_id)
+    if conns:
+        conns.discard(channel)
+        if not conns:
+            del CONNECTIONS[user_id]
+
+
+async def notify(user_id: int, payload: dict) -> None:
+    for channel in list(CONNECTIONS.get(user_id, ())):
+        await channel._send(payload)
+```
+
+A `set` rather than a single channel, because one user commonly has
+several tabs open. Iterating over a copy matters — `_send` can trigger
+cleanup that mutates the collection.
+
+This is also considerably faster than `ChannelBox.send_to`, which scans
+every group and every channel looking for a UUID match.
+
+##  Channels are hashable by identity
+
+`Channel` defines no `__hash__` or `__eq__`, so it uses object identity.
+That is what lets `ChannelBox` store channels as dictionary keys, and it
+has one consequence worth knowing: two `Channel` objects wrapping the
+same socket are different keys. Construct one channel per connection and
+keep a reference to it; constructing a second to "remove" the first will
+not match.
+
+##  Building your own channel type
+
+Because the surface is small, subclassing is practical when you want
+per-connection metadata — the thing the class conspicuously lacks.
+
+```python title="a channel that carries context"
+from sillo.websockets import Channel
+
+
+class UserChannel(Channel):
+    def __init__(self, websocket, user_id: int, **kwargs):
+        super().__init__(websocket=websocket, payload_type="json", **kwargs)
+        self.user_id = user_id
+        self.joined_at = time.time()
+
+
+channel = UserChannel(websocket, user_id=user.id, expires=None)
+await ChannelBox.add_channel_to_group(channel, "lobby")
+```
+
+`ChannelBox` only ever calls `_send` and `_is_expired`, so any subclass
+that keeps those working slots in unchanged. Now a broadcast loop can
+filter:
+
+```python title="filtering a broadcast by channel metadata"
+for channel in await ChannelBox.CHANNEL_GROUPS.get("lobby", {}):
+    if channel.user_id not in blocked_ids:
+        await channel._send(payload)
+```
+
+Overriding `_send` is the other useful hook — pre-serialization, metrics,
+or per-channel rate limiting all belong there:
+
+```python title="a channel that counts what it sends"
+class MeteredChannel(Channel):
+    async def _send(self, payload):
+        self.sent = getattr(self, "sent", 0) + 1
+        await super()._send(payload)
+```
+
+##  A worked example: presence
+
+Presence — "who is in this room right now" — is the case that exercises
+every part of the channel API at once, and the one where the expiry
+behaviour bites hardest, because a presence connection is idle by
+definition.
+
+```python title="a presence endpoint built on channels"
+import asyncio
+import time
+
+from sillo.websockets import Channel, ChannelBox, WebSocket, WebSocketDisconnect
+
+
+class PresenceChannel(Channel):
+    def __init__(self, websocket, user_id: int, display_name: str):
+        # expires=None: this connection is idle by design and must never
+        # be swept out of its group by the cleaner.
+        super().__init__(websocket=websocket, payload_type="json", expires=None)
+        self.user_id = user_id
+        self.display_name = display_name
+        self.joined_at = time.time()
+
+
+async def roster(group: str) -> list[dict]:
+    return [
+        {"user_id": c.user_id, "name": c.display_name, "since": c.joined_at}
+        for c in ChannelBox.CHANNEL_GROUPS.get(group, {})
+    ]
+
+
+@app.ws_route("/ws/presence/{room_id}")
+async def presence(websocket: WebSocket):
+    user = await authenticate(websocket.query_params.get("ticket"))
+    if user is None:
+        await websocket.close(code=1008)
+        return
+
+    await websocket.accept()
+    group = f"presence:{websocket.path_params['room_id']}"
+    channel = PresenceChannel(websocket, user.id, user.name)
+    await ChannelBox.add_channel_to_group(channel, group)
+
+    # Tell the newcomer who is already here, then tell everyone else.
+    await websocket.send_json({"type": "roster", "users": await roster(group)})
+    await ChannelBox.group_send(
+        group, {"type": "join", "user_id": user.id, "name": user.name}
     )
 
     try:
-        while True:
-            data = await channel.receive()
-
-            # Handle heartbeat messages
-            if data.get("type") == "heartbeat":
-                # Reset the expiration timer
-                channel.touch()
-                await channel.send({"type": "heartbeat_ack"})
+        async for message in websocket.iter_json():
+            if message.get("type") == "pong":
                 continue
-
-            # Process other messages...
-
     except WebSocketDisconnect:
-        print("Client disconnected")
+        pass
     finally:
-        await channel.close()
+        try:
+            await ChannelBox.remove_channel_from_group(channel, group)
+        except UnboundLocalError:
+            pass
+        await ChannelBox.group_send(group, {"type": "leave", "user_id": user.id})
 ```
 
-##  Best Practices for Channels
+Four decisions in there are worth copying. `expires=None`, because an
+idle presence socket must not be swept. The subclass carrying `user_id`
+and `display_name`, because `Channel` has nowhere to put them. The
+roster built by reading the group directly, because there is no API for
+"list a group with metadata". And the guarded removal in `finally`,
+because `remove_channel_from_group` raises on a path this code can reach.
 
-1. **Always Close Connections**
+The `pong` branch pairs with a server-side heartbeat that keeps proxies
+from closing the connection — it does nothing but prove the client is
+alive, and its absence over two intervals is your cue to close.
 
-   - Use try/finally blocks to ensure channels are properly closed
-   - Handle WebSocketDisconnect exceptions gracefully
+##  Channels versus the raw WebSocket
 
-2. **Use Appropriate Payload Types**
+| | `WebSocket` | `Channel` |
+|---|---|---|
+| Send | `send_text` / `send_json` / `send_bytes` | `_send`, dispatching on `payload_type` |
+| Receive | Yes | **No** — go through `channel.websocket` |
+| Close | Yes | **No** — go through `channel.websocket` |
+| Identity | None | `uuid` |
+| Group membership | Not possible | Via `ChannelBox` |
+| Errors on a dead socket | Raises | Swallowed and logged at DEBUG |
 
-   - Use JSON for structured data
-   - Use TEXT for simple string messages
-   - Use BINARY for file transfers or raw binary data
+The division is: receive on the `WebSocket`, send through the `Channel`
+when the message is a broadcast, and send on the `WebSocket` directly
+when the message is for this client only. Mixing the two is normal —
+`channel.websocket` is public precisely so you can.
 
-3. **Implement Heartbeats**
+##  What not to do
 
-   - Keep long-lived connections alive with periodic heartbeats
-   - Handle timeouts and reconnections on the client side
+**Do not call methods that do not exist.** There is no `channel.send()`,
+`receive()`, `close()`, `touch()`, `metadata`, `id`, or `is_active`.
 
-4. **Validate Input**
+**Do not pass `PayloadTypeEnum.JSON`.** Pass its `.value`, or the plain
+string.
 
-   - Always validate and sanitize incoming messages
-   - Use Pydantic models for message validation
+**Do not rely on the constructor's assertions** under `-O`.
 
-5. **Monitor Channel Health**
-   - Track active channels and their status
-   - Log connection events and errors
-   - Implement rate limiting if needed
+**Do not mix payload types within a group.** One payload goes to all of
+them.
+
+**Do not treat `GROUP_SEND` as delivery confirmation.** Failed sends are
+logged at DEBUG and swallowed.
+
+**Do not use `expires` as a connection timeout.** It removes the channel
+from groups without closing the socket.
+
+**Do not construct two channels for one socket.** Identity is the key.
+
+**Do not use `channel.uuid` as a user identifier.** It changes on every
+reconnect.
+
+##  Performance notes
+
+A `Channel` is three attributes and a UUID — negligible. The cost is in
+`_send`, which serializes independently per channel. Broadcasting one
+JSON payload to a thousand channels performs a thousand `json.dumps`
+calls of the same object.
+
+For large groups, serialize once and use text channels:
+
+```python title="serialize once for a large group"
+import json
+
+blob = json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
+await ChannelBox.group_send(group, blob)     # channels created with "text"
+```
+
+`_clean_expired()` iterates every group and every channel on each call,
+and it is called from `remove_channel_from_group`. With ten thousand
+channels and a high disconnect rate, that is a full O(n) sweep per
+disconnect. If your connection churn is high, manage group membership
+yourself rather than through `ChannelBox`.
+
+##  API reference
+
+| Member | Signature | Notes |
+|---|---|---|
+| `Channel` | `(websocket, payload_type, expires=None)` | All three validated by `assert` |
+| `.uuid` | `UUID` | Per-channel; changes on reconnect |
+| `.created` | `float` | Reset by every `_send` |
+| `.expires` | `int \| None` | Seconds of idleness |
+| `.payload_type` | `str` | `"json"`, `"text"`, `"bytes"` |
+| `._send` | `(payload)` | Swallows `RuntimeError` |
+| `._is_expired` | `() -> bool` | `False` when `expires` is `None` |
+| `PayloadTypeEnum` | enum | `.JSON`, `.TEXT`, `.BYTES` — pass `.value` |
+
+##  Related
+
+- [WebSockets](/guides/websockets/) — the underlying connection
+- [Consumers](/guides/websockets/consumer/) — where channels get built for you
+- [Groups](/guides/websockets/groups/) — `ChannelBox`, broadcast, and history
+- [Events](/guides/websockets/events/) — dispatching messages by type

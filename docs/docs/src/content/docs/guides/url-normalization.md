@@ -3,7 +3,7 @@ title: URL Normalization
 description: Keep URLs consistent — trailing slashes, double slashes, and case — with the first-party sillo.normalize middleware.
 ---
 
-# URL Normalization
+#  URL Normalization
 
 `sillo.normalize` is a first-party module that rewrites inconsistent request paths into a single canonical form before routing runs. It handles three problems:
 
@@ -13,7 +13,7 @@ description: Keep URLs consistent — trailing slashes, double slashes, and case
 
 Use it to avoid duplicate content, broken bookmarks, and split analytics, and to keep API clients from guessing which URL shape is "correct."
 
-## The smallest useful form
+##  The smallest useful form
 
 ```python
 from sillo import silloApp
@@ -30,7 +30,7 @@ async def users(request, response):
 
 With the default `REDIRECT_REMOVE`, a request to `/users/` is answered with a **`301`** redirect to `/users`; `//users//123` is cleaned to `/users/123` before the redirect target is computed. The handler only ever sees the canonical path.
 
-## How a request is normalized
+##  How a request is normalized
 
 `NormalizeMiddleware.process_request` runs this sequence for every request:
 
@@ -42,7 +42,7 @@ With the default `REDIRECT_REMOVE`, a request to `/users/` is answered with a **
 
 Because silent modes rewrite `request.scope["path"]`, the router matches the cleaned path with no extra round trip. Redirect modes send the client to the canonical URL and stop there.
 
-## Slash actions
+##  Slash actions
 
 | Action | Behavior |
 | --- | --- |
@@ -52,7 +52,7 @@ Because silent modes rewrite `request.scope["path"]`, the router matches the cle
 | `ADD` | Appends the trailing slash silently (no redirect) |
 | `IGNORE` | Leaves slashes as-is; still collapses double slashes |
 
-## Configuration
+##  Configuration
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -61,7 +61,7 @@ Because silent modes rewrite `request.scope["path"]`, the router matches the cle
 | `redirect_status_code` | `int` | `301` | Status for redirect modes |
 | `normalize_case` | `bool` | `False` | Lowercase the path |
 
-## Scenarios
+##  Scenarios
 
 **SEO-friendly public site** — pick one form and redirect to it so search engines index a single URL:
 
@@ -87,7 +87,7 @@ app.use(Normalize(slash_action=SlashAction.IGNORE, normalize_case=True))
 Lowercasing rewrites the path for *every* request. If your routes are case-sensitive (e.g. `/Users/{id}` vs `/users/{id}` are different handlers), `normalize_case=True` will collapse them and route to the wrong handler. Only enable it when all your routes are intentionally lowercase.
 </aside>
 
-## Helper functions
+##  Helper functions
 
 The same logic is available as pure functions for building URLs outside the request lifecycle:
 
@@ -99,14 +99,14 @@ has_trailing_slash("/path/")        # True
 clean_url_path("https://x.com//a//b")  # "https://x.com/a/b"
 ```
 
-## Errors and edge cases
+##  Errors and edge cases
 
 - **Infinite redirect loops** — happen when a redirect mode disagrees with your route definitions. If routes are registered *with* a trailing slash but `slash_action=REDIRECT_REMOVE`, the middleware redirects away from the only matching route. Make the slash action match how routes are defined.
 - **Static files and assets** — paths containing a `.` (e.g. `/static/app.js`) are skipped, so asset URLs are never rewritten.
 - **Skipped paths** — anything with `?` or `#` is passed through untouched; normalization only touches the path segment.
 - **`normalize_case` + mixed-case routes** — as noted above, this silently merges distinct routes.
 
-## Testing
+##  Testing
 
 Use `TestClient` and assert the redirect (or the served path) for redirect vs silent modes:
 
@@ -146,20 +146,20 @@ def test_silent_remove():
     assert seen["path"] == "/api/users"
 ```
 
-## Works with
+##  Works with
 
 - **Routing** — normalization runs in `process_request`, so the router always sees the canonical path. Place `Normalize` early in the middleware chain.
 - **Static files** — asset paths are auto-skipped, so normalization never interferes with `static()` mounts.
 - **Security middleware** — run `Normalize` before CSRF/Shield so they evaluate the cleaned path consistently.
 
-## Production considerations
+##  Production considerations
 
 - **Pick one slash behavior** and apply it everywhere; mixing `REMOVE` and `ADD` across services splits your URL space.
 - **Use `301` for permanent policy** (SEO-cached by browsers/CDNs); use `302` only for temporary experiments.
 - **Silent modes avoid latency** from redirect round trips, which matters for high-throughput APIs.
 - **Monitor redirects** in staging — a loop between the middleware and a route is the most common misconfiguration.
 
-## Related topics
+##  Related topics
 
 - [Routing](/guides/routing/) — how the canonical path is matched
 - [Static Files](/guides/static-files/) — assets skipped by normalization

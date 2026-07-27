@@ -29,14 +29,16 @@ curl -X POST localhost:8000/users \
 
 There is exactly one way to declare a body, so there is never a question of which mechanism a route is using.
 
-## How the body reaches your handler
+##  How the body reaches your handler
 
 sillo injects the validated model into the **first plain parameter** after `request` and `response` — a parameter with no default, which nothing else in the framework would fill. The name is entirely yours:
 
 ```python
-async def create_user(request, response, user):     # all equivalent
-async def create_user(request, response, data):
-async def create_user(request, response, payload):
+# All equivalent — the third positional parameter receives the validated
+# model regardless of what you call it.
+async def create_user(request, response, user): ...
+async def create_user(request, response, data): ...
+async def create_user(request, response, payload): ...
 ```
 
 It is also always available on the request, which is what you want when the handler has no spare parameter:
@@ -47,7 +49,7 @@ async def create_user(request, response):
     user = request.validated_data
 ```
 
-### It composes with everything
+###  It composes with everything
 
 Dependencies, markers, and path parameters are skipped when choosing the body parameter, so they mix freely:
 
@@ -73,11 +75,11 @@ async def create_user(request, response, team_id, user):
 
 ---
 
-# Writing models
+#  Writing models
 
 The rest of this page is Pydantic. Everything here applies equally to `response_model`.
 
-## Fields
+##  Fields
 
 A model declares its fields with ordinary type annotations. Fields without a default are required:
 
@@ -91,7 +93,7 @@ class UserCreate(BaseModel):
 
 Mutable defaults are safe here — Pydantic copies them per instance, so unlike a plain Python function default, `tags` is not shared between requests.
 
-### `str | None` versus a default
+###  `str | None` versus a default
 
 These mean different things, and the difference shows in your API:
 
@@ -101,7 +103,7 @@ bio: str | None = None     # optional and nullable: omitting it is valid
 bio: str = ""              # optional, never null
 ```
 
-### `Field` for constraints and metadata
+###  `Field` for constraints and metadata
 
 ```python
 from pydantic import BaseModel, Field
@@ -124,7 +126,7 @@ name: str = Field(..., min_length=2)     # required, explicit
 name: str = Field(min_length=2)          # required, same thing
 ```
 
-### Types
+###  Types
 
 Everything from the [parameter type catalog](/guides/validation/parameters/#the-type-catalog) works in a model, plus the container types that only make sense in JSON:
 
@@ -146,7 +148,7 @@ class Order(BaseModel):
     coords: tuple[float, float]          # fixed-length
 ```
 
-## Nested models
+##  Nested models
 
 Nesting needs no special handling — declare one model as another's field type:
 
@@ -179,7 +181,7 @@ Errors point at the exact path that failed, including list indices:
 
 Nested models are lifted into `components.schemas` in your OpenAPI document automatically.
 
-### Self-referencing models
+###  Self-referencing models
 
 A model may reference itself, using a string annotation:
 
@@ -189,11 +191,11 @@ class Comment(BaseModel):
     replies: list["Comment"] = []
 ```
 
-## Custom validation
+##  Custom validation
 
 When a constraint cannot express your rule, write a validator.
 
-### Field validators
+###  Field validators
 
 ```python
 from pydantic import BaseModel, field_validator
@@ -242,7 +244,7 @@ def strip_strings(cls, v):
     return v.strip() if isinstance(v, str) else v
 ```
 
-### Before and after
+###  Before and after
 
 By default a validator runs *after* Pydantic has coerced the value to the declared type, so `v` is already the right type. Use `mode="before"` to see the raw input instead — useful for accepting a format Pydantic does not know:
 
@@ -255,7 +257,7 @@ def split_csv(cls, v):
     return v
 ```
 
-### Model validators
+###  Model validators
 
 To check fields against each other, validate the whole model:
 
@@ -284,7 +286,7 @@ def unwrap_envelope(cls, data):
     return data
 ```
 
-## Aliases
+##  Aliases
 
 When the wire format differs from your Python naming:
 
@@ -317,7 +319,7 @@ class UserCreate(BaseModel):
     postal_code: str       # accepts "postalCode"
 ```
 
-## Model configuration
+##  Model configuration
 
 `model_config` changes how a model behaves as a whole:
 
@@ -332,7 +334,7 @@ class UserCreate(BaseModel):
     )
 ```
 
-### `extra` is worth a decision
+###  `extra` is worth a decision
 
 | Value | Behavior |
 | --- | --- |
@@ -349,7 +351,7 @@ class UserCreate(BaseModel):
 
 The trade-off is strictness against forward compatibility: with `"forbid"`, an older server rejects payloads from a newer client that added a field.
 
-## Unions and discriminated unions
+##  Unions and discriminated unions
 
 A field can accept more than one shape:
 
@@ -378,7 +380,7 @@ class Payment(BaseModel):
 
 Now `{"kind": "card", ...}` goes straight to `Card`, and an unknown `kind` produces one clear error rather than a list of failures from every branch. Your OpenAPI document gains a proper `oneOf` with a discriminator mapping.
 
-## Computed fields
+##  Computed fields
 
 To expose a derived value without storing it:
 
@@ -397,7 +399,7 @@ class User(BaseModel):
 
 Computed fields are included when serializing and appear in the generated schema. They are most useful on a `response_model`.
 
-## Reusing shape across models
+##  Reusing shape across models
 
 Ordinary inheritance works, and is the usual way to keep an input and output model in step:
 
@@ -413,7 +415,7 @@ class UserOut(UserBase):
     id: int                  # returned, and password is absent by construction
 ```
 
-## Errors
+##  Errors
 
 A body that fails validation returns **422** with the bare list of Pydantic errors:
 
@@ -429,7 +431,7 @@ Under `strict_validation=True` it becomes the unified envelope that every other 
 
 See [Validation errors](/guides/validation/errors/) for the full contract and the complete error-type catalog.
 
-### Malformed and wrong-shaped payloads
+###  Malformed and wrong-shaped payloads
 
 Both return 422:
 
@@ -441,7 +443,7 @@ curl -X POST localhost:8000/users -H 'Content-Type: application/json' -d '["a","
 # -> 422, "Input should be a valid dictionary or instance of UserCreate"
 ```
 
-## Reading the raw body as well
+##  Reading the raw body as well
 
 Body parsing is cached on the request, so reading it yourself costs nothing extra:
 
@@ -458,6 +460,108 @@ This is how you detect which optional fields a client actually sent, if `model_f
 user.model_fields_set     # {"name", "email"} — the fields explicitly provided
 ```
 
-## Do not mix with forms
+##  Do not mix with forms
 
 A request has one body, and it is either JSON or a form — never both. Declaring `request_model=` alongside `Form` or `File` parameters on the same route means one of them always receives nothing. Pick the encoding per endpoint.
+
+
+##  Modelling input separately from storage
+
+The most consequential decision on this page is whether your request
+model is also your database model. It should not be.
+
+A table has columns a client must never set — `id`, `created_at`,
+`owner_id`, `is_admin`, `balance`. A request model derived from that
+table inherits every one of them, and Pydantic will happily populate them
+from the request body. That is mass assignment, and it is the mechanism
+behind a long history of privilege escalation bugs.
+
+```python title="the input model is a subset, deliberately"
+class ArticleCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    body: str
+    tags: list[str] = Field(default_factory=list, max_length=10)
+    # No id. No author_id. No published_at. No view_count.
+
+
+@app.post("/articles", request_model=ArticleCreate)
+async def create_article(request, response):
+    data = request.validated_data
+    article = await Article.create(
+        **data.model_dump(),
+        author_id=request.user.id,        # from the session, never the body
+        published_at=None,
+    )
+    return response.json({"id": article.id}, status_code=201)
+```
+
+The server-controlled fields are set explicitly, from server-controlled
+sources. Nothing a client sends can reach them, because they are not in
+the model.
+
+The second reason to separate them is churn. A table changes for storage
+reasons — a column split, an index, a denormalisation — and none of those
+should break your API. Keeping the two independent means a migration is a
+migration rather than a breaking API change.
+
+##  Create and update are different shapes
+
+A `POST` body and a `PATCH` body describe different things. `POST` says
+"here is the complete object"; `PATCH` says "change these fields and
+leave the rest". Using one model for both forces a choice between
+required fields that break PATCH and optional fields that let POST create
+half an object.
+
+```python title="two models, one base"
+class ArticleBase(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    body: str
+
+
+class ArticleCreate(ArticleBase):
+    pass                                 # everything required
+
+
+class ArticleUpdate(BaseModel):
+    title: str | None = Field(None, min_length=1, max_length=200)
+    body: str | None = None
+```
+
+Then, crucially, apply an update with `exclude_unset=True`:
+
+```python
+await article.update_from_dict(request.validated_data.model_dump(exclude_unset=True))
+```
+
+Without `exclude_unset`, a PATCH that sends only `title` also sends
+`body=None`, and the update nulls the body. This is the single most
+common bug in partial-update endpoints, and it is silent — the request
+succeeds and data disappears.
+
+`exclude_unset` distinguishes "not sent" from "sent as null", which is
+exactly the distinction PATCH needs. If clients must be able to null a
+field explicitly, that works too: an explicitly-sent `null` counts as
+set.
+
+##  Size and depth limits
+
+A JSON body is parsed before it is validated, so a body large enough to
+exhaust memory does so before any of your constraints apply.
+
+Enforce a byte limit at the proxy — `client_max_body_size` in nginx — so
+oversized requests never reach Python. Inside the application, bound the
+collections your models accept:
+
+```python
+tags: list[str] = Field(default_factory=list, max_length=50)
+items: list[LineItem] = Field(max_length=500)
+```
+
+An unbounded `list[LineItem]` accepts a hundred thousand items and
+validates every one of them, which is a CPU denial of service with a
+valid request.
+
+Deeply nested models have the same shape of problem: a recursive model
+with no depth limit lets a client send a structure a thousand levels
+deep. If a model can contain itself, bound the recursion explicitly
+rather than trusting clients not to.

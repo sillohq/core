@@ -1,87 +1,383 @@
 ---
-title: sillo CLI Guide
-description: Run, inspect, and debug Sillo applications from the command line.
+title: CLI
+description: The sillo command line — scaffolding a project, running a server, listing routes, probing an endpoint, and opening a shell with your application loaded.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: CLI
+  - tag: meta
+    attrs:
+      property: og:description
+      content: The sillo command line — scaffolding a project, running a server, listing routes, probing an endpoint, and opening a shell with your application loaded.
 ---
 
-# sillo CLI Guide
+#  CLI
 
-The Sillo CLI runs and inspects your application directly from command arguments. It does not use a project configuration file.
+The `sillo` command runs and inspects an application from the shell. It
+has five subcommands and no configuration file — everything is passed as
+arguments, so what a command does is visible from the command itself.
 
-## Installation
+```bash
+sillo --help
+sillo --version
+```
 
-Install the CLI extra with `uv`:
+| Command | Purpose |
+|---|---|
+| `sillo new` | Scaffold a new project |
+| `sillo run` | Start an ASGI server |
+| `sillo urls` | Print every registered route |
+| `sillo ping` | Send one request to a route |
+| `sillo shell` | Open a REPL with the app loaded |
+
+:::caution[There is no `sillo dev`]
+Auto-reload is a flag on `run`, not a separate command:
+
+```bash
+sillo run --app main:app --reload
+```
+:::
+
+##  Installing
 
 ```bash
 uv add "sillo[cli]"
 ```
 
-## Basic Commands
+The CLI needs `click`. `sillo run` additionally needs whichever server
+you ask for — `uvicorn` (the default) or `granian`.
+
+##  Specifying the application
+
+Every command except `new` needs to know where your application object
+lives, given as `module:attribute`:
 
 ```bash
-# Show help and available commands
-sillo --help
-
-# Run main:app on the default port
-sillo run main:app
-
-# Run with auto-reload during development
-sillo dev main:app
-
-# List registered routes
-sillo urls main:app
-
-# Check if a route exists
-sillo ping main:app /api/status
-
-# Start an interactive shell with the app loaded
-sillo shell main:app
+sillo urls --app main:app
+sillo urls --app src.myproject.main:app
+sillo urls --app myproject.asgi:application
 ```
 
-## Run an App
+This is an **option**, not a positional argument, and it is required.
+`sillo run main:app` does not work; `sillo run --app main:app` does.
 
-Pass your app as `module:variable`:
+The module is imported, which means everything at import time runs —
+including `setup_record`, route registration, and any module-level side
+effects. It also means the current directory must be on `sys.path`. Run
+these commands from your project root, and if imports fail there,
+`PYTHONPATH=. sillo urls --app main:app` usually resolves it.
+
+##  `sillo new` — scaffolding
 
 ```bash
-sillo run main:app --host 127.0.0.1 --port 8000
+sillo new myproject
+sillo new myproject --template standard
+sillo new myproject --output-dir ~/code --title "My Project"
 ```
 
-For development:
+| Option | Effect |
+|---|---|
+| `-t, --template` | `basic` (default), `standard`, or `beta` |
+| `-o, --output-dir` | Where to create the directory |
+| `--title` | Display title; defaults to the project name |
+
+`basic` is a single-file application — the right starting point when you
+are learning the framework or building something small. `standard` lays
+out a structure with modules separated, which is what you would otherwise
+build by hand on day three of a real project.
+
+Scaffolding is a starting point, not a commitment. Read what it
+generates before building on it; a layout you did not choose is a layout
+you will fight later.
+
+##  `sillo run` — serving
 
 ```bash
-sillo dev main:app --port 5000
+sillo run --app main:app
+sillo run --app main:app --host 0.0.0.0 --port 8080 --reload
+sillo run --app main:app --server granian --workers 4
 ```
 
-## Inspect Routes
+| Option | Default | Notes |
+|---|---|---|
+| `-a, --app` | required | `module:attribute` |
+| `-h, --host` | `127.0.0.1` | Validated as a hostname |
+| `-p, --port` | `8000` | Must be 1–65535 |
+| `--reload` | off | **uvicorn only** |
+| `-s, --server` | `uvicorn` | `uvicorn` or `granian` |
+| `-w, --workers` | `1` | **granian only** |
 
-Use `urls` to print every registered route:
+`run` builds a server command and executes it as a subprocess, so it is a
+convenience wrapper rather than a server of its own. Unrecognised
+`key=value` arguments are passed through to the underlying server, which
+is how you reach options `sillo run` does not expose.
+
+Two defaults worth understanding.
+
+**`--host 127.0.0.1` means localhost only.** Nothing outside the machine
+can connect, which is correct for development and wrong inside a
+container — Docker port mapping cannot reach a process bound to loopback.
+Use `--host 0.0.0.0` there, and only there.
+
+**`--reload` watches the filesystem and restarts on change.** It costs
+noticeable CPU, it restarts on any save including one that leaves a
+syntax error, and it must never run in production — a reload mid-request
+drops that request.
+
+:::caution[`--workers` and `--reload` belong to different servers]
+`--workers` applies only to granian and `--reload` only to uvicorn, so
+passing both means one is silently ignored. Pick a server first, then its
+options.
+
+Note also that multiple workers means multiple processes, and anything
+sillo keeps in process memory stops being shared: WebSocket
+[groups](/guides/websockets/groups/), the
+[scheduler](/guides/work/scheduler/), in-memory caches, and rate-limit
+counters all become per-worker. Each has its own page explaining what
+that breaks.
+:::
+
+For production, prefer running the server directly under a process
+manager — systemd, supervisor, or your orchestrator — rather than through
+`sillo run`. A wrapper process between your supervisor and your server is
+one more thing that can fail to forward a signal.
+
+##  `sillo urls` — what is registered
 
 ```bash
-sillo urls main:app
+sillo urls --app main:app
 ```
 
-Use `ping` to verify one route:
+Prints a table of every route: allowed methods, the raw path pattern, the
+endpoint name, and its summary. Missing values render as `-`.
+
+This is the fastest answer to "why is this 404-ing". Four causes it finds
+immediately:
+
+**The route is not there at all.** The module defining it was never
+imported, or a router was never mounted.
+
+**The path is not what you thought.** A router prefix applied twice, a
+trailing slash you did not expect, a parameter name typo.
+
+**The method is wrong.** The path exists but only accepts `POST` and you
+are sending `GET`.
+
+**Two routes collide.** The same pattern registered twice means the first
+one wins and the second is unreachable — visible immediately in the list.
+
+Piping it through `grep` is the normal workflow on an application with a
+few hundred routes.
+
+##  `sillo ping` — probing one route
 
 ```bash
-sillo ping main:app /users
+sillo ping /users --app main:app
+sillo ping /orders --app main:app --method POST
 ```
 
-## Shell
+Sends a real request through the test client — in-process, no server
+running — and reports the status code with a plain-language verdict:
+reachable, not found, or an unexpected status.
 
-Open an interactive shell with your application imported:
+Because it goes through the full middleware stack, it exercises more than
+routing. A `ping` that returns 401 tells you the route exists and your
+auth middleware is working. One that returns 500 tells you the handler is
+broken, not that the route is missing.
+
+It sends no body and no headers, so any route requiring either reports a
+4xx. That is a limitation, not a bug — `ping` answers "does this route
+exist and respond", and anything more belongs in a test.
+
+##  `sillo shell` — the REPL
 
 ```bash
-sillo shell main:app
+sillo shell --app main:app
+sillo shell --app main:app --ipython
 ```
 
-## Best Practices
+Opens an interactive interpreter with your application imported and a
+small namespace preloaded:
 
-- Keep the app entrypoint explicit: `main:app`, `src.main:app`, or similar.
-- Use `sillo dev` locally for auto-reload.
-- Use `sillo run` for direct local serving.
-- Use your deployment platform or process manager for production options.
+| Name | What it is |
+|---|---|
+| `app` | Your application instance |
+| `Client` | The test client class |
+| `Request` | The request class |
+| `Response` | The response class |
 
-## Further Reading
+IPython is used when available; `--ipython` forces it and warns if it is
+not installed. Otherwise you get the standard `code` REPL.
 
-- [Routing](./routing.md)
-- [Middleware](./middleware.md)
-- [Installation](./installation.md)
+```python title="what a shell session looks like"
+client = Client(app)
+client.get("/users").json()
+# [{'id': 1, 'name': 'Alice'}]
+
+app.state.keys()
+# dict_keys(['record', 'mail_client'])
+
+[r.raw_path for r in app.router.routes][:5]
+# ['/', '/users', '/users/{user_id}', '/health', '/docs']
+```
+
+The shell is the fastest way to answer questions about a running
+configuration: what is in `app.state`, which middleware is installed,
+what a route actually returns for a given input.
+
+:::caution[The shell has no lifespan]
+Importing the module registers your startup hooks; it does not run them.
+So `app.state["record"]` exists but the database is not connected, and
+the first query raises a configuration error.
+
+Using `Client(app)` as a context manager runs the lifespan properly,
+which is the easier path:
+
+```python
+with Client(app) as client:
+    client.get("/users").json()
+```
+
+Or call the hook yourself when you only need one subsystem:
+
+```python
+import asyncio
+
+asyncio.run(app.state["record"].init())
+```
+:::
+
+##  What not to do
+
+**Do not pass the app positionally.** `--app` is a required option.
+
+**Do not look for `sillo dev`.** It is `run --reload`.
+
+**Do not use `--reload` in production.** It restarts mid-request.
+
+**Do not bind to `127.0.0.1` in a container.** Nothing outside can reach
+it.
+
+**Do not combine `--reload` and `--workers`.** They belong to different
+servers and one will be ignored.
+
+**Do not assume the shell has run startup.** Use `Client(app)` as a
+context manager, or call the hooks yourself.
+
+**Do not run production traffic through `sillo run`.** Invoke the server
+directly under a process manager.
+
+##  Related
+
+- [Installation](/guides/installation/) — installing sillo and its extras
+- [Routing](/guides/routing/) — what `sillo urls` is listing
+- [Routers & Sub-apps](/guides/routers-and-subapps/) — why a prefix might not be what you expect
+- [Startup & Shutdown](/guides/startups-and-shutdowns/) — the hooks the shell does not run
+- [Middleware](/guides/middleware/) — the stack `sillo ping` passes through
+
+
+##  Common workflows
+
+**"Why is my route 404-ing?"** — `sillo urls --app main:app | grep users`.
+Nine times in ten the path is not what you wrote, the module was never
+imported, or the method is wrong. All three are visible in the table.
+
+**"Did my middleware break something?"** — `sillo ping /health --app main:app`.
+A route that works in a unit test and fails here is failing in the
+middleware stack, which narrows the search enormously.
+
+**"What is actually configured?"** — `sillo shell --app main:app`, then
+`app.state.keys()`. It answers whether `setup_record` ran, which
+subsystems are wired, and what they were given, without adding a debug
+endpoint.
+
+**"Does this handler do what I think?"** — the shell again, with
+`Client(app)` as a context manager so the lifespan runs. Faster than a
+test for exploratory work, and the code you end up with usually becomes
+one.
+
+##  Running it in CI
+
+The CLI is useful outside a terminal. `sillo urls` in a pipeline catches
+a route that stopped being registered because an import moved. Piping it
+to a file and diffing against a committed copy turns accidental route
+removal into a failed build, which is the same trick that works for
+OpenAPI schemas.
+
+`sillo ping` makes a reasonable smoke test after a deploy, provided the
+route you probe needs no authentication — it exercises routing,
+middleware, and the handler in one command with no test framework.
+
+Neither replaces a test suite. Both catch the class of breakage that
+tests miss because tests import modules directly and never notice that
+the application entry point stopped assembling correctly.
+
+
+##  When the CLI cannot import your app
+
+`ModuleNotFoundError` from any of these commands is nearly always one of
+three things.
+
+**The working directory.** The CLI imports `module:attribute` using the
+normal import machinery, so `main:app` requires `main.py` to be
+importable from where you are standing. `PYTHONPATH=. sillo urls --app main:app`
+fixes it from a subdirectory.
+
+**A src layout.** A project with `src/myapp/main.py` needs
+`--app myapp.main:app` and an installed package, or `PYTHONPATH=src`.
+
+**An import-time failure.** If the module raises while importing —
+a missing environment variable read at module level, a database
+connection attempted at import — the CLI reports that exception, not a
+routing problem. Reading the traceback rather than the first line usually
+identifies it immediately.
+
+The general fix for the last one is to do less at import time. A module
+that only defines things imports everywhere; a module that connects to a
+database on import only works where that database is reachable.
+
+
+##  Extending the CLI
+
+The commands here are built on Click, and nothing stops you adding your
+own. A project-level CLI that imports your application once and exposes
+domain commands — seeding, backfills, one-off maintenance — is usually
+worth the twenty lines it takes.
+
+```python title="myproject/cli.py"
+import asyncio
+
+import click
+
+from myproject.main import app
+
+
+@click.group()
+def cli():
+    """Project commands."""
+
+
+@cli.command()
+@click.argument("email")
+def promote(email):
+    """Grant admin rights to a user."""
+    async def run():
+        await app.state["record"].init()
+        await User.filter(email=email).update(is_admin=True)
+        click.echo(f"promoted {email}")
+    asyncio.run(run())
+```
+
+Note the explicit `init()` — a CLI command does not run the ASGI
+lifespan, so anything a startup hook would have set up has to be started
+by hand. That is the same limitation the shell has, for the same reason.
+
+
+##  Related tooling
+
+`sillo urls` and `sillo ping` overlap with what a test suite does, and
+neither replaces it. The distinction is that the CLI operates on your
+real application entry point, assembled exactly as it will be in
+production, while tests usually import pieces. Both are useful; the CLI
+catches the assembly errors.

@@ -28,7 +28,7 @@ If the row is `{"id": "7", "name": "Ada", "password_hash": "…"}`, the client r
 
 Two things happened: `"7"` was coerced to `7`, and `password_hash` **never left the process**.
 
-## Why this matters
+##  Why this matters
 
 The leak protection is the point. Without a response model, a column added to that table next year starts appearing in your API the moment someone adds it to the database — no code change, no review, no notice. Password hashes, internal flags, soft-delete timestamps, another tenant's identifiers: all of it ships the instant it exists.
 
@@ -36,7 +36,7 @@ With a response model, the response can only ever contain what the model declare
 
 The same mechanism gives you a second guarantee: the response **matches its documented type**. A handler that returns `{"id": None}` for a field declared `int` fails loudly instead of shipping a null your clients will crash on.
 
-## Collections
+##  Collections
 
 ```python
 @app.get("/users", response_model=UserOut, response_model_many=True)
@@ -50,7 +50,7 @@ Every element is validated and shaped independently. An error in one element nam
 {"loc": ["response", 3, "id"], "msg": "Input should be a valid integer"}
 ```
 
-## ORM objects work directly
+##  ORM objects work directly
 
 Validation reads attributes, so database rows need no manual conversion:
 
@@ -64,11 +64,11 @@ This works because sillo validates with `from_attributes` enabled. Any object wi
 
 ---
 
-# Shaping the output
+#  Shaping the output
 
 The rest of this page is Pydantic serialization. The same techniques apply to any model you dump by hand.
 
-## Designing output models
+##  Designing output models
 
 The usual pattern is a shared base with input and output models diverging from it:
 
@@ -88,7 +88,7 @@ class UserOut(UserBase):
 
 That last line is the discipline worth adopting. Excluding a sensitive field is something you can forget; never declaring it is not.
 
-## Serialization options
+##  Serialization options
 
 ```python
 @app.get("/users", response_model=UserOut,
@@ -97,6 +97,7 @@ That last line is the discipline worth adopting. Excluding a sensitive field is 
          response_model_exclude_unset=True,
          response_model_exclude_defaults=True,
          response_model_by_alias=True)
+async def list_users(request, response): ...
 ```
 
 | Option | Effect |
@@ -125,7 +126,7 @@ Item(name="a", tag=None, count=0) # tag set to None, count set to its default
 
 `exclude_unset` is the one to reach for in a PATCH-style response, where you want to echo back only what changed.
 
-## Aliases
+##  Aliases
 
 Output aliases are how you present camelCase to JavaScript clients while writing snake_case Python:
 
@@ -157,7 +158,7 @@ class UserOut(BaseModel):
 
 Since `response_model_by_alias` defaults to `True`, aliases apply automatically. Set it to `False` to emit the Python names instead.
 
-## Computed fields
+##  Computed fields
 
 To include a derived value without storing it:
 
@@ -180,7 +181,7 @@ class UserOut(BaseModel):
 
 Computed fields appear in the generated OpenAPI schema, so clients see them documented. The return annotation is required — it is what determines the published type.
 
-## Custom serializers
+##  Custom serializers
 
 To control exactly how a field is rendered:
 
@@ -213,7 +214,7 @@ class Money(BaseModel):
 
 Be aware that a custom serializer can diverge from the declared schema — Pydantic will not stop you returning a string from a model documented as an object. Use `@field_serializer(..., return_type=str)` or annotate the serializer so the generated schema stays truthful.
 
-## How types are rendered
+##  How types are rendered
 
 Response models serialize in JSON mode, which converts Python types to JSON-compatible ones:
 
@@ -231,7 +232,7 @@ Response models serialize in JSON mode, which converts Python types to JSON-comp
 
 `Decimal` becoming a string is deliberate and correct — rendering `19.99` as a JSON number would round-trip through a float and lose precision. Clients handling money should parse the string.
 
-## Handler-built responses pass through
+##  Handler-built responses pass through
 
 When a handler builds its own response it keeps full control, and the model is not applied:
 
@@ -248,7 +249,7 @@ Once you have taken over status, headers, and body, sillo does not second-guess 
 
 The same applies to redirects, file responses, and streams.
 
-## Contract violations are a 500
+##  Contract violations are a 500
 
 A handler whose return value does not satisfy its own `response_model` produces **500**, not 422:
 
@@ -276,7 +277,7 @@ async def on_response_invalid(request, response, exc):
 app.add_exception_handler(ResponseValidationError, on_response_invalid)
 ```
 
-## Documentation
+##  Documentation
 
 The response schema in your OpenAPI document is generated from the same model that enforces it, so the two cannot disagree. Other status codes still come from `responses=`:
 
@@ -284,8 +285,136 @@ The response schema in your OpenAPI document is generated from the same model th
 @app.get("/users/{user_id}",
          response_model=UserOut,                        # enforced, documents 200
          responses={404: {"description": "Not found"}})  # documented only
+async def get_user(request, response): ...
 ```
 
-## Performance
+##  Performance
 
 A response model costs one validation plus one serialization pass. Because Pydantic already emits JSON-safe primitives, sillo skips its own encoder for these routes rather than walking the payload a second time — so a large collection is not penalized twice. Measured at roughly 2.9 µs for a small object, scaling linearly with size.
+
+
+##  The output model is your public contract
+
+An input model protects you from clients. An output model protects
+clients from you — and protects you from leaking things you did not mean
+to.
+
+The leak is the more urgent half. A handler that returns an ORM object
+directly returns every column: password hashes, internal flags, soft-delete
+timestamps, the notes field an admin wrote about that customer. Nothing
+warns you, because the serializer's job is to serialize.
+
+`response_model` inverts the default. Fields not declared are dropped, so
+adding a column to a table cannot leak it through an endpoint:
+
+```python title="an allowlist by construction"
+class UserOut(BaseModel):
+    id: int
+    name: str
+    joined_at: datetime
+    # password_hash exists on the model and can never appear here
+
+
+@app.get("/users/{user_id}", response_model=UserOut)
+async def get_user(request, response, user_id: int = Path(type=int)):
+    return await User.get(id=user_id)     # extra fields are dropped
+```
+
+This is the strongest argument for declaring output models on every
+public endpoint, even ones where it feels redundant. The endpoint you
+declared today is the one that will not leak the column somebody adds in
+eighteen months.
+
+##  Evolving an output model without breaking clients
+
+Response schemas are harder to change than request schemas, because
+clients depend on what you send in ways you cannot see.
+
+**Adding a field is safe.** A well-behaved client ignores unknown keys.
+Publish it and move on.
+
+**Removing a field is breaking.** Something out there reads it. Deprecate
+first — mark it in the schema, keep sending it for a release or two, and
+measure whether anyone still reads it if you can.
+
+**Changing a type is breaking, quietly.** An `int` id that becomes a
+`str` id passes every one of your tests and breaks a client that does
+arithmetic on it. Treat a type change as a new field with a new name.
+
+**Renaming is two changes.** Add the new name, send both, remove the old
+one later. `alias` and `serialization_alias` make the transition
+mechanical.
+
+The version boundary worth drawing: shape changes go in a new endpoint or
+a new version; additions do not need one. Versioning every addition
+produces `v7` within a year and teaches clients that upgrading is
+routine, which is the opposite of what versions are for.
+
+##  Nullability is part of the contract
+
+`str | None` and `str` are different promises, and clients write different
+code for them. A field declared non-optional that occasionally serializes
+as `null` will crash a typed client — TypeScript, Swift, Kotlin — at the
+point of use, far from your endpoint.
+
+Be deliberate. If a field can be absent, say so in the model. If it
+cannot, make the handler guarantee it rather than letting `None` through
+and hoping.
+
+`exclude_none=True` interacts with this badly if used casually: it turns
+a declared-but-null field into a missing key, which a client expecting
+the key will read as `undefined`. Omitting a key and sending `null` are
+different messages. Pick one per field and stay consistent across the
+API — mixed conventions are the thing that makes client code defensive
+everywhere.
+
+##  Lists, envelopes, and pagination
+
+A bare JSON array as a top-level response is a decision you cannot undo
+cheaply. The moment you need to add pagination metadata, a total, or a
+warning, there is nowhere to put it without breaking every client.
+
+An envelope leaves room:
+
+```python title="room to grow"
+class UserListOut(BaseModel):
+    items: list[UserOut]
+    total: int
+    page: int
+    page_size: int
+```
+
+The cost is one level of nesting; the benefit is that adding `has_next`
+later is additive rather than breaking. Endpoints that return a
+collection should almost always use an envelope, and the exception —
+a genuinely fixed, small, complete set — is rarer than it feels when you
+are writing it.
+
+
+##  Testing that the contract holds
+
+A response model is only a contract if something checks it. Three tests
+worth having on any endpoint that returns data to someone else.
+
+**Assert the exact key set**, not just presence. A test that checks
+`"id" in body` passes when you accidentally add `password_hash` beside
+it. A test that checks `set(body) == {"id", "name", "joined_at"}` fails,
+which is the point.
+
+```python title="the test that catches a leak"
+def test_user_response_shape():
+    body = client.get("/users/1").json()
+    assert set(body) == {"id", "name", "joined_at"}
+```
+
+**Assert on types, not just values.** An `id` that silently becomes a
+string breaks typed clients and passes any test that compares it to
+`"1"` loosely. `assert isinstance(body["id"], int)` costs nothing.
+
+**Test the null cases.** A field declared non-optional that can be `None`
+in practice will only show up on the record where it is null. Seed one
+deliberately.
+
+These are cheap tests that catch expensive bugs, and they are the reason
+to declare `response_model` even on endpoints where the shape feels
+obvious — the model gives the test something to be a contract against.

@@ -202,7 +202,7 @@ async def get_active_users(request, response):
 
 ##  Advanced Response Patterns
 
-### Nested Response Models
+###  Nested Response Models
 
 Handle complex, hierarchical data:
 
@@ -268,7 +268,7 @@ async def get_detailed_user(request, response, user_id: int):
     pass
 ```
 
-### Generic Response Wrappers
+###  Generic Response Wrappers
 
 Create consistent response formats:
 
@@ -332,7 +332,7 @@ async def get_user_wrapped(request, response, user_id: int):
 
 ##  Response Customization
 
-### Custom Serialization
+###  Custom Serialization
 
 Handle special data types and formats:
 
@@ -377,7 +377,7 @@ async def get_account(request, response, account_id: int):
     return response.json(account.dict())
 ```
 
-### Response Headers
+###  Response Headers
 
 Document custom response headers:
 
@@ -423,7 +423,7 @@ async def export_user_data(request, response, user_id: int):
 
 ##  Best Practices
 
-### Model Organization
+###  Model Organization
 
 ```python
 # models/responses.py
@@ -450,7 +450,7 @@ class UserDetailResponse(UserBaseResponse):
     updated_at: datetime
 ```
 
-### Error Response Consistency
+###  Error Response Consistency
 
 ```python
 class StandardErrorResponse(BaseModel):
@@ -479,7 +479,7 @@ class StandardErrorResponse(BaseModel):
         )
 ```
 
-### Testing Response Models
+###  Testing Response Models
 
 ```python
 def test_user_response_serialization():
@@ -505,3 +505,111 @@ def test_error_response_factory():
 ```
 
 Response models are crucial for creating consistent, well-documented APIs. They ensure that your API returns predictable data structures and provide clear contracts for API consumers, making integration easier and more reliable.
+
+
+##  Documenting failure is more valuable than documenting success
+
+Every endpoint documents its 200 because the response model does it
+automatically. Few document the failures, and failures are what an
+integrator has to write code for.
+
+The 200 shape is usually inferable from the endpoint's name. The 404 is
+not — a client cannot guess whether a missing order returns a 404 with a
+body, a 404 with nothing, or a 200 with `null`. Each requires different
+client code.
+
+Declare a shared set of error responses and spread it into every route,
+so consistency is structural rather than remembered:
+
+```python title="one error contract, everywhere"
+COMMON_ERRORS = {
+    401: {"description": "Missing or invalid credentials"},
+    403: {"description": "Authenticated but not permitted"},
+    422: {"description": "Validation failed", "content": {
+        "application/json": {"example": {"detail": [
+            {"loc": ["body", "email"], "msg": "value is not a valid email address",
+             "type": "value_error"}
+        ]}}
+    }},
+    429: {"description": "Rate limit exceeded; see Retry-After"},
+}
+
+
+@app.get("/orders/{order_id}", response_model=OrderOut,
+         responses={**COMMON_ERRORS, 404: {"description": "No such order"}})
+async def get_order(request, response): ...
+```
+
+The 422 example is the one worth including in full. Clients need to
+parse that shape, and an example is faster to understand than a schema.
+
+##  Status codes carry meaning clients act on
+
+The set worth using precisely, because each implies different client
+behaviour:
+
+| Code | Meaning | What a client should do |
+|---|---|---|
+| 200 | Here is the result | Use it |
+| 201 | Created; `Location` points at it | Follow the header |
+| 202 | Accepted, not finished | Poll or wait for a callback |
+| 204 | Done, nothing to return | Do not parse a body |
+| 400 | Malformed request | Fix how the request is built |
+| 401 | Not authenticated | Authenticate and retry |
+| 403 | Authenticated, not permitted | Do not retry |
+| 404 | Not found | Do not retry |
+| 409 | Conflicts with current state | Re-read and reconcile |
+| 422 | Well-formed, values unacceptable | Fix the values |
+| 429 | Too many requests | Back off per `Retry-After` |
+| 503 | Temporarily unavailable | Retry with backoff |
+
+The distinction that saves the most client code is 403 versus 401 — one
+is retryable after refreshing credentials and the other never is. Getting
+it wrong produces infinite refresh loops.
+
+##  Documenting asynchronous results
+
+An endpoint that returns 202 is making a promise it has not yet kept, and
+the schema needs to say how the client finds out. Document the polling
+endpoint, the shape of its status response, the terminal states, and the
+expected timescale.
+
+```python title="a 202 that tells the client what to do next"
+class AcceptedOut(BaseModel):
+    job_id: str
+    status: Literal["queued"]
+    poll_url: str
+```
+
+Returning the `poll_url` in the body rather than making clients construct
+it means you can change the polling route without breaking anyone — the
+kind of small decision that determines whether an API is pleasant to
+integrate against three versions later.
+
+##  Headers are part of the response contract
+
+`Location` on a 201, `Retry-After` on a 429 and 503, `ETag` and
+`Cache-Control` on cacheable reads, pagination links on collections —
+each is something a client must read, and none appear in a response model.
+
+Document them explicitly in the route's `responses`. A client that does
+not know an `ETag` is available will not send `If-None-Match`, and the
+conditional-request support you built goes unused.
+
+
+##  Deprecating a response field
+
+Removing a field from a response is the change most likely to break a
+client silently, because the client keeps working until the code path
+that reads that field runs.
+
+The sequence that works: mark it deprecated in the schema and keep
+sending it; announce the removal date in the field description; measure
+usage if you can; remove it a release after the date. The deprecation
+appears in generated clients as a compile-time or lint warning, which is
+the only notice most consumers will actually see.
+
+Adding a replacement alongside the deprecated field, rather than changing
+the old one's meaning, is what makes the transition safe. A field that
+keeps its name and changes its type or units is worse than a removal —
+clients keep parsing it and get wrong answers.

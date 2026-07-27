@@ -1,11 +1,20 @@
 ---
 title: Queue System
-description: Complete production guide — every concept, method, parameter, edge case, and architectural decision in sillo.work.queue.
+description: Durable background work — connections, jobs, workers, middleware, batches, chains, and failed-job handling, with the dispatch defect and the operational limits spelled out.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Queue System
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Durable background work — connections, jobs, workers, middleware, batches, chains, and failed-job handling, with the dispatch defect and the operational limits spelled out.
 ---
 
-# Queue System (`sillo.work.queue`)
+#  Queue System (`sillo.work.queue`)
 
-## What Problem Does This Solve?
+##  What Problem Does This Solve?
 
 When a user hits your API, they expect a response in milliseconds — not
 seconds.  But many operations take seconds: sending emails, generating
@@ -28,11 +37,11 @@ and typing conventions.
 
 ---
 
-## System Architecture
+##  System Architecture
 
-### The Dispatch Path (Handler → Queue)
+###  The Dispatch Path (Handler → Queue)
 
-### The Worker Path (Queue → Execution)
+###  The Worker Path (Queue → Execution)
 
 
 
@@ -41,7 +50,7 @@ object, converts it to a portable JSON string via the
 `PayloadSerializer`, pushes it onto a `Connection`, and responds
 immediately.  Total handler time: milliseconds.
 
-### The Worker Path (Queue → Execution)
+###  The Worker Path (Queue → Execution)
 
 
 
@@ -49,7 +58,7 @@ The worker loops forever: pop, decode, instantiate, execute through
 middleware, ack.  If the job fails, retry with backoff.  If all retries
 are exhausted, log to the failed job repository.
 
-### Why Separate Processes?
+###  Why Separate Processes?
 
 You can run the worker in the same process as the HTTP server (using a
 `SyncConnection`), but for production you run workers in separate
@@ -61,13 +70,13 @@ processes — or separate machines — connected by Redis.  This gives you:
 
 ---
 
-## Connections
+##  Connections
 
 A **Connection** is a named backend that stores serialized job payloads
 between dispatch and execution.  Every connection must implement five
 operations in the `QueueConnection` abstract class.
 
-### The Five-Operation Contract
+###  The Five-Operation Contract
 
 | Method | Args | Returns | Called By |
 |---|---|---|---|
@@ -77,7 +86,7 @@ operations in the `QueueConnection` abstract class.
 | `ack` | `queue_name, job_id` | `None` | Worker |
 | `fail` | `queue_name, job_id, payload, exception` | `None` | Worker |
 
-### SyncConnection — In-Process, Non-Persistent
+###  SyncConnection — In-Process, Non-Persistent
 
 Uses an `asyncio.PriorityQueue` internally.  Delayed jobs are held in a
 time-sorted list and released when their delay expires.  All state is
@@ -105,7 +114,7 @@ pending = await conn.size("emails")
 await conn.clear("emails")
 ```
 
-### RedisConnection — Persistent, Cross-Process
+###  RedisConnection — Persistent, Cross-Process
 
 Stores jobs in Redis.  Delayed jobs use sorted sets (scored by wake
 time).  Active jobs use lists.  Workers block on `BRPOP` rather than
@@ -131,7 +140,7 @@ result = await conn.pop("critical", timeout=30)
 | Active jobs | `myapp:queue:emails` (Redis list) |
 | Delayed jobs | `myapp:queue:emails:delayed` (sorted set) |
 
-### ConnectionManager — The Broker
+###  ConnectionManager — The Broker
 
 Registers named connections and provides access by name:
 
@@ -149,11 +158,11 @@ conn = mgr.connection("redis")
 
 ---
 
-## Jobs
+##  Jobs
 
 A **Job** is a class that encapsulates one unit of work.
 
-### Defining a Job
+###  Defining a Job
 
 ```python
 from sillo.work.queue import Job
@@ -179,7 +188,7 @@ class SendWelcomeEmail(Job):
         await alert(f"Welcome email permanently failed for {self.user_id}: {exception}")
 ```
 
-### Why Classes, Not Functions?
+###  Why Classes, Not Functions?
 
 A class carries **state** (constructor arguments) and **metadata** (class
 attributes) together.  When a worker deserializes a job from JSON, it
@@ -187,7 +196,7 @@ can reconstruct it completely: import the class, call the constructor
 with the stored data, then call `handle()`.  Functions can't be
 serialized portably.
 
-### Class Attributes — Complete Reference
+###  Class Attributes — Complete Reference
 
 | Attribute | Type | Default | Description |
 |---|---|---|---|
@@ -198,29 +207,57 @@ serialized portably.
 | `delete_when_completed` | `bool` | `True` | Remove from queue after success |
 | `middleware` | `list` | `[]` | Middleware instances, applied in list order |
 
-### Dispatching
+###  Dispatching
 
-```python
-# Immediate:
-SendWelcomeEmail.dispatch("user-42")
-SendWelcomeEmail.dispatch("user-42", template="vip")
+:::danger[`Job.dispatch()` raises in every context — push through the connection]
+`dispatch()`, `dispatch_after()`, `dispatch_sync()`, and the
+module-level `dispatch()` helper all route through
+`Dispatchable.dispatch_after`, which calls
+`asyncio.get_event_loop().run_until_complete(...)`.
 
-# Delayed (seconds):
-SendWelcomeEmail.dispatch_after(3600, "user-42")
+Inside a running loop — a request handler, a worker, a startup hook —
+that raises `RuntimeError: This event loop is already running`. From
+synchronous code with no loop, it raises
+`RuntimeError: There is no current event loop in thread 'MainThread'`.
+There is no context in which they work.
 
-# Synchronous — runs NOW, bypasses queue:
-SendWelcomeEmail.dispatch_sync("user-42")
+The error raised when no connection is configured also names a method
+that does not exist (`Job.set_connection()`); the real one is
+`on_connection()`.
+:::
 
-# Per-dispatch overrides:
-SendWelcomeEmail.on_queue("critical").dispatch("user-1")
-SendWelcomeEmail.on_connection(redis_conn).dispatch("user-2")
+Push through the connection, which is an ordinary coroutine:
 
-# Via helper:
-from sillo.work.queue import dispatch
-dispatch(SendWelcomeEmail, "user-99", template="beta")
+```python title="dispatching, the way that works"
+import json
+
+
+async def enqueue(job_class, *args, delay: int = 0, **kwargs) -> str:
+    connection = app.state["queue_connection"]
+    payload = json.dumps(
+        {"job": job_class.__name__, "args": args, "kwargs": kwargs}, default=str
+    )
+    return await connection.push(job_class.queue, payload, delay=delay)
+
+
+await enqueue(SendWelcomeEmail, "user-42")                    # immediate
+await enqueue(SendWelcomeEmail, "user-42", template="vip")    # with kwargs
+await enqueue(SendWelcomeEmail, "user-42", delay=3600)        # in an hour
+await enqueue(SendWelcomeEmail, "user-1")                     # queue from the class
 ```
 
-### Real-World: Order Processing Pipeline
+For a one-off queue override, pass the name to `push()` rather than
+calling `on_queue()` — that classmethod mutates the class globally and
+affects every later dispatch in the process.
+
+To run a job inline, bypassing the queue entirely — useful in tests —
+construct it and await `handle()` directly:
+
+```python
+await SendWelcomeEmail("user-42").handle()
+```
+
+###  Real-World: Order Processing Pipeline
 
 ```python
 class ValidateOrder(Job):
@@ -230,7 +267,7 @@ class ValidateOrder(Job):
         order = await Order.get(id=self.order_id)
         if not order.items: raise ValueError("Empty order")
         order.status = "validated"; await order.save()
-        ProcessPayment.dispatch(order.id)  # chain to next step
+        await enqueue(ProcessPayment, order.id)  # chain to next step
 
 class ProcessPayment(Job):
     queue = "payments"; tries = 3; timeout = 60
@@ -241,7 +278,7 @@ class ProcessPayment(Job):
             idempotency_key=f"order-{order.id}")
         order.payment_id = charge.id; order.status = "paid"
         await order.save()
-        FulfillOrder.dispatch(order.id)
+        await enqueue(FulfillOrder, order.id)
 
 class FulfillOrder(Job):
     queue = "fulfillment"; tries = 5; timeout = 300
@@ -255,7 +292,7 @@ class FulfillOrder(Job):
 @app.post("/orders", request_model=CreateOrderForm)
 async def create_order(request, response):
     order = await Order.create(...)
-    ValidateOrder.dispatch(order.id)
+    await enqueue(ValidateOrder, order.id)
     return response.json({"order_id": order.id, "status": "pending"}, status_code=202)
 ```
 
@@ -267,9 +304,9 @@ If fulfillment takes 5 minutes, it has its own timeout.  This is
 
 ---
 
-## Payload Serializer
+##  Payload Serializer
 
-### Why It Exists
+###  Why It Exists
 
 Jobs are code.  Code can't be sent over a network.  The
 `PayloadSerializer` converts a Job into a JSON string (for the queue)
@@ -279,7 +316,7 @@ and back (for the worker).  It encodes:
 2. Constructor keyword arguments (`{"user_id": "42", ...}`)
 3. Metadata: `max_tries`, `timeout`, `delay`, `priority`, `queue`
 
-### Why JSON, Not Pickle?
+###  Why JSON, Not Pickle?
 
 Pickle is Python-specific, unsafe (arbitrary code execution on
 deserialization), and fragile across Python versions.  JSON is portable,
@@ -306,9 +343,9 @@ data = serializer.deserialize(payload)
 
 ---
 
-## Workers
+##  Workers
 
-### QueueWorker
+###  QueueWorker
 
 ```python
 from sillo.work.queue import QueueWorker, WorkerOptions, PayloadSerializer, MemoryFailedRepository
@@ -331,7 +368,7 @@ await worker.run()
 worker.pause(); worker.resume(); worker.stop()
 ```
 
-### WorkerOptions — Every Parameter
+###  WorkerOptions — Every Parameter
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -344,7 +381,7 @@ worker.pause(); worker.resume(); worker.stop()
 | `backoff` | `0.0` | Default base retry delay. Job's `backoff` overrides |
 | `memory_limit` | `128` | Exit if RSS exceeds N MB. Mitigates slow leaks |
 
-### WorkerPool
+###  WorkerPool
 
 Manages multiple QueueWorker instances:
 
@@ -364,12 +401,12 @@ await pool.shutdown()
 
 ---
 
-## Middleware
+##  Middleware
 
 Middleware wraps every execution attempt.  Each middleware is a class
 with `__call__(self, handler)` returning a new async handler.
 
-### Built-in
+###  Built-in
 
 ```python
 from sillo.work.queue import QRetryMiddleware, QTimeoutMiddleware, QRateLimitMiddleware
@@ -382,7 +419,7 @@ class MyJob(Job):
     ]
 ```
 
-### Custom Middleware
+###  Custom Middleware
 
 ```python
 class TimingMiddleware:
@@ -405,9 +442,9 @@ class TimingMiddleware:
 
 ---
 
-## Failed Jobs
+##  Failed Jobs
 
-### MemoryFailedRepository
+###  MemoryFailedRepository
 
 ```python
 from sillo.work.queue import MemoryFailedRepository
@@ -420,26 +457,69 @@ await repo.forget("job-123")
 await repo.flush()
 ```
 
-### Batching & Chaining
+###  Batching & Chaining
 
-```python
-from sillo.work.queue import Batch, JobChain
+`Batch` tracks a set of job ids and fires a callback when all of them
+have reported in. `JobChain` runs a list of async callables one after
+another.
 
-# Batch — track a group of jobs:
-batch = Batch("import", on_complete=lambda b: notify(f"{b.completed_count}/{b.total}"))
-for user in users: batch.add(ImportUser.dispatch(user.id))
+```python title="a batch"
+from sillo.work.queue import Batch
+
+batch = Batch(
+    "import-users",
+    on_complete=lambda b: notify(f"{b.completed_count}/{b.total} imported"),
+    allow_failures=True,
+    timeout=600,
+)
+
+for user in users:
+    batch.add(await enqueue(ImportUser, user.id))    # add() takes the job id
+
 await batch.wait(timeout=600)
+print(batch.completed_count, batch.failed_count, batch.is_done)
+```
 
-# Chain — run sequentially:
+:::caution[A batch does not observe its jobs]
+`Batch` is a counter, not a supervisor. It learns about outcomes only
+when something calls `batch.mark_complete(job_id)` or
+`batch.mark_failed(job_id, error)`. No worker does this for you.
+
+A batch whose jobs all succeed but where nothing calls `mark_complete`
+never completes, and `wait()` blocks until its timeout. Wire the calls
+into the jobs themselves — pass the batch id in the payload and mark on
+the way out — or track completion in the database and skip `Batch`
+entirely.
+
+`allow_failures=False` (the default) finishes the whole batch on the
+first failure, so `completed_count` at that moment is a partial count,
+not a final one.
+:::
+
+```python title="a chain"
+from sillo.work.queue import JobChain
+
 chain = JobChain()
-chain.then(ValidateFile.dispatch("data.csv"))
-chain.then(TransformFile.dispatch("data.csv"))
+chain.then(lambda: ValidateFile("data.csv").handle())
+chain.then(lambda: TransformFile("data.csv").handle())
 results = await chain.run()
 ```
 
+`then()` takes a **zero-argument async callable**, not a dispatch result
+— `chain.then(SomeJob.dispatch(...))` would evaluate the dispatch
+immediately and append its return value, which is not callable. Wrap each
+step in a lambda or a partial.
+
+`run()` executes the steps sequentially in the current process and
+returns their results. It is not a queue construct: nothing is persisted,
+a failure aborts the remaining steps by propagating, and a restart
+mid-chain loses everything after the current step. For a durable
+pipeline, have each job enqueue the next — see
+[Jobs](/guides/work/jobs/).
+
 ---
 
-## Custom Backend
+##  Custom Backend
 
 Implement `QueueConnection` for any storage:
 
@@ -483,3 +563,90 @@ class PostgresBackend(QueueConnection):
   crashes before ack, the job is lost — but the `DELETE` was committed.
 - For "at-least-once" delivery, move the job to a "processing" list on
   pop and delete on ack.
+
+
+---
+
+##  Operating a queue
+
+The API is half the story; the other half is what you need in place
+before a queue is something you can rely on at three in the morning.
+
+###  Run workers as their own processes
+
+Workers should not share a process with your web server. They have
+different scaling characteristics — web processes scale with request
+rate, workers with backlog depth — and different failure modes. A worker
+that OOMs on a large job should not take down request serving.
+
+```bash
+# web
+uvicorn myapp.app:app --workers 4
+
+# workers, scaled independently
+python -m myapp.worker --queue billing --concurrency 4
+python -m myapp.worker --queue default,reports --concurrency 8
+```
+
+###  Give every queue a purpose
+
+One queue for everything means a thousand slow report jobs delay every
+password-reset email behind them. Split by latency expectation rather
+than by feature:
+
+| Queue | Contains | Workers |
+|---|---|---|
+| `critical` | Password resets, payment captures | Many, always warm |
+| `default` | Ordinary user-triggered work | Scaled to backlog |
+| `reports` | Long, heavy, tolerant of delay | Few, separate machines |
+
+A job in the wrong queue is the most common cause of "the queue is
+backed up" being both true and irrelevant.
+
+###  Monitor depth, age, and failure rate
+
+Depth alone is a poor signal — a queue with ten thousand jobs that drains
+in a minute is healthy, and one with three jobs that have been stuck for
+an hour is not.
+
+```python title="a queue health endpoint"
+@app.get("/admin/queues")
+async def queue_health(request, response):
+    connection = request.app.state["queue_connection"]
+    return response.json({
+        name: await connection.size(name)
+        for name in ("critical", "default", "reports")
+    })
+```
+
+Alert on **oldest job age** rather than count, and on failure rate as a
+proportion of throughput. Both catch problems that depth misses.
+
+###  Have a dead-letter policy
+
+Jobs that exhaust their retries land in the failed-job repository. That
+store is only useful if somebody looks at it. Decide in advance who is
+paged when it grows, how a failed job gets retried after a fix ships, and
+how long entries are kept.
+
+```python title="retrying failures after a fix"
+repo = MemoryFailedRepository()
+
+for failed_job in await repo.all():
+    if failed_job.job_class == "ChargeCard":
+        await connection.push(failed_job.queue, failed_job.payload)
+        await repo.forget(failed_job.id)
+```
+
+A failed-job store nobody reads is a silent data-loss mechanism with
+extra steps.
+
+###  Deploy without losing work
+
+Workers must finish or release the job they are holding before exiting.
+On `SIGTERM`, stop accepting new jobs, wait for the current one up to a
+bound, and let anything unfinished return to the queue for another worker
+to pick up. That bound must be shorter than your orchestrator's grace
+period, and your longest job's timeout should be shorter still — a job
+that takes ten minutes cannot be drained inside a thirty-second window,
+and will be killed and retried on every single deploy.

@@ -36,21 +36,21 @@ This automatically creates:
 
 sillo provides multiple ways to explore your API:
 
-### Swagger UI (`/docs`)
+###  Swagger UI (`/docs`)
 Interactive interface for testing endpoints directly in the browser. Features:
 - Live API testing with request/response examples
 - Parameter input forms with validation
 - Authentication support
 - Response schema visualization
 
-### ReDoc (`/redoc`)
+###  ReDoc (`/redoc`)
 Clean, responsive documentation interface optimized for reading. Features:
 - Three-column layout with navigation
 - Code samples in multiple languages
 - Detailed schema documentation
 - Print-friendly format
 
-### Raw OpenAPI Specification (`/openapi.json`)
+###  Raw OpenAPI Specification (`/openapi.json`)
 Machine-readable JSON specification for:
 - Client SDK generation
 - API testing tools
@@ -126,7 +126,7 @@ async def get_user_profile(request, response, user_id: int):
     pass
 ```
 
-### Documentation Components
+###  Documentation Components
 
 **Summary**: A brief, one-line description that appears in endpoint lists. Keep it concise but descriptive.
 
@@ -140,7 +140,7 @@ async def get_user_profile(request, response, user_id: int):
 
 ##  Advanced Documentation Features
 
-### 1. Multiple Response Types
+###  1. Multiple Response Types
 
 sillo can document multiple possible responses for each endpoint:
 
@@ -192,7 +192,7 @@ async def get_user(request, response, user_id: int):
     pass
 ```
 
-### 2. Request Body Validation
+###  2. Request Body Validation
 
 Document and validate request bodies with Pydantic models:
 
@@ -234,7 +234,7 @@ async def update_user(request, response, user_id: int):
     pass
 ```
 
-### 3. Parameter Documentation
+###  3. Parameter Documentation
 
 Document path, query, and header parameters explicitly:
 
@@ -271,7 +271,7 @@ async def list_users(request, response):
     pass
 ```
 
-### 4. Security Documentation
+###  4. Security Documentation
 
 Document authentication and authorization requirements:
 
@@ -306,7 +306,7 @@ async def delete_user(request, response, user_id: int):
 
 ##  Organizing Large APIs
 
-### Using Tags for Grouping
+###  Using Tags for Grouping
 
 Organize endpoints into logical groups using tags:
 
@@ -335,7 +335,7 @@ async def get_stats(request, response):
     pass
 ```
 
-### Router-Based Organization
+###  Router-Based Organization
 
 Use routers to organize related endpoints with shared prefixes and tags:
 
@@ -371,7 +371,7 @@ app.mount_router(admin_router)
 
 ##  Customizing OpenAPI Configuration
 
-### Application-Level Configuration
+###  Application-Level Configuration
 
 Configure OpenAPI metadata when creating your app:
 
@@ -411,7 +411,7 @@ app.openapi_config.openapi_spec.info.license = License(
 )
 ```
 
-### Custom Security Schemes
+###  Custom Security Schemes
 
 Define custom authentication schemes:
 
@@ -444,7 +444,7 @@ app.openapi_config.add_security_scheme(
 )
 ```
 
-### Excluding Routes from Documentation
+###  Excluding Routes from Documentation
 
 Hide internal or debug endpoints from public documentation:
 
@@ -462,7 +462,7 @@ async def debug_info(request, response):
 
 ##  Documentation Best Practices
 
-### Writing Effective Descriptions
+###  Writing Effective Descriptions
 
 **Be Specific and Actionable**:
 ```python
@@ -482,6 +482,7 @@ async def debug_info(request, response):
     **Caching**: Response cached for 5 minutes
     """
 )
+async def handler(request, response): ...
 ```
 
 **Document Error Conditions**:
@@ -512,9 +513,10 @@ async def debug_info(request, response):
         422: BusinessErrorResponse
     }
 )
+async def handler(request, response): ...
 ```
 
-### Consistent Naming Conventions
+###  Consistent Naming Conventions
 
 Use consistent patterns for operation IDs and route names:
 
@@ -525,9 +527,10 @@ Use consistent patterns for operation IDs and route names:
 @app.post("/users", operation_id="createUser", name="users-create")
 @app.put("/users/{id}", operation_id="updateUser", name="users-update")
 @app.delete("/users/{id}", operation_id="deleteUser", name="users-delete")
+async def handler(request, response): ...
 ```
 
-### Deprecation Handling
+###  Deprecation Handling
 
 Mark deprecated endpoints appropriately:
 
@@ -549,7 +552,7 @@ async def list_users_v1(request, response):
 
 ##  Advanced Features
 
-### Custom Documentation URLs
+###  Custom Documentation URLs
 
 Customize the documentation endpoint URLs:
 
@@ -562,7 +565,7 @@ app.openapi.redoc_url = "/api-reference"
 app.openapi.openapi_url = "/api-spec.json"
 ```
 
-### Mounted Applications
+###  Mounted Applications
 
 When mounting sub-applications, each maintains its own documentation:
 
@@ -581,7 +584,7 @@ async def admin_list_users(request, response):
 main_app.register(admin_app, prefix="/admin")
 ```
 
-### Integration with Development Tools
+###  Integration with Development Tools
 
 The OpenAPI specification integrates with various development tools:
 
@@ -613,3 +616,90 @@ prism mock http://localhost:8000/openapi.json
 ```
 
 This comprehensive OpenAPI integration makes sillo ideal for API-first development, enabling teams to design, document, test, and consume APIs efficiently.
+
+##  What a good OpenAPI document buys you
+
+The document is not documentation with extra steps. It is a machine
+contract, and four things consume it.
+
+**Interactive docs.** Swagger UI and ReDoc render it directly, so an
+integrator can read your API and call it in the same tab. This is the
+visible benefit and the least valuable one.
+
+**Client generation.** `openapi-generator` and its equivalents produce
+typed clients for TypeScript, Swift, Kotlin, Go, and Python from the same
+file. A team consuming your API writes no HTTP code and gets compile-time
+errors when you break something.
+
+**Contract testing.** Tools like Schemathesis read the schema and
+generate requests that probe its edges — the boundary of every `maximum`,
+the empty string on every `minLength`, unicode where you expected ASCII.
+It finds the inputs you did not think to test, because it derives them
+from what you published.
+
+**Mock servers.** Prism and similar tools serve a fake implementation
+from the document, so a frontend can be built before the backend exists,
+against a shape that is guaranteed to match.
+
+All four degrade in exact proportion to how accurate the document is,
+which is the argument for generating it from the code that runs rather
+than maintaining it beside.
+
+##  Publishing the schema
+
+The document lives at `/openapi.json` by default and the UIs at `/docs`
+and `/redoc`. Three decisions to make before that reaches production.
+
+**Whether to expose it publicly.** A public API should publish; an
+internal one probably should not. The schema is a complete map of every
+endpoint, parameter, and field name you have — including the endpoints
+you forgot were deployed. That is a gift to anyone probing you.
+
+**How to protect it if you keep it.** Put the docs routes behind the same
+authentication as your admin, or restrict them by IP at the proxy.
+Disabling them in production and generating a static copy for your own
+teams is the option with the least surface.
+
+**Which environment it describes.** A schema served from staging that
+lists production URLs sends integrators to the wrong place. Set the
+server URLs per environment rather than hard-coding one.
+
+##  Keeping it honest as the API grows
+
+Two failure modes appear once an API is more than a dozen routes.
+
+**Untagged routes.** Without tags, the UI lists every endpoint in one
+flat sequence and nobody can find anything. Tag from the first route, not
+when it hurts — retrofitting tags across sixty endpoints is an afternoon
+nobody schedules.
+
+**Undocumented error responses.** Every endpoint documents its 200. Few
+document the 404, the 409, or the 422 shape, and those are what an
+integrator actually has to handle. A client written against a schema that
+only describes success will handle failure by guessing.
+
+Declare the error responses once, in a shared dict, and spread it into
+every route so that consistency is the default rather than an act of
+discipline.
+
+
+##  Common failure modes
+
+Four things that make a generated document less useful than it should be,
+in rough order of frequency.
+
+**Every route in one flat list.** No tags means no navigation. Fix it by
+tagging from the first route.
+
+**Only success responses documented.** Clients write the failure paths
+too, and they need shapes for them.
+
+**Operation summaries that repeat the path.** `GET /orders` summarised as
+"Get orders" adds nothing. Say what it returns, what it excludes, and
+what it costs — "List orders for the authenticated customer, newest
+first, excluding cancelled".
+
+**Models named after their internals.** `UserResponseModelV2` in a public
+schema is a class name that escaped. Name published models the way you
+would name them in a specification: `User`, `OrderSummary`,
+`PaymentMethod`.

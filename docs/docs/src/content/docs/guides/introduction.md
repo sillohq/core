@@ -12,7 +12,7 @@ head:
     content: Learn what Sillo is, the core concepts behind it, what you can build, who it is for, and why teams choose it for serious Python software.
 ---
 
-# Introduction
+#  Introduction
 
 Sillo is a Python framework for building serious backend software: web applications, APIs, real-time systems, background workloads, internal tools, and business platforms.
 
@@ -20,7 +20,7 @@ It starts as a productive async web framework, but the goal is larger than routi
 
 The core idea is simple: teams should not have to assemble a fragile collection of unrelated tools before they can build reliable software.
 
-## What Sillo Is
+##  What Sillo Is
 
 Sillo Core is the open framework foundation of the Sillo platform. It is designed to help a project start small and grow without replacing its architecture every time the product becomes more real.
 
@@ -38,7 +38,7 @@ async def home(request, response):
 
 From there, the same application model can grow into validated endpoints, authenticated routes, database-backed records, queues, scheduled work, WebSocket channels, and operational tooling.
 
-## Core Concepts
+##  Core Concepts
 
 Sillo is built around a small set of concepts that appear consistently across the framework.
 
@@ -58,7 +58,7 @@ Sillo is built around a small set of concepts that appear consistently across th
 
 These concepts are meant to form one product language. A developer should not feel like every feature belongs to a different framework.
 
-## A Simple Example
+##  A Simple Example
 
 This example shows a validated endpoint, path parameter, and response object working together.
 
@@ -100,7 +100,7 @@ What is happening:
 - The validated Pydantic object can be injected into the handler.
 - The response object builds a JSON response with a status code.
 
-## Features
+##  Features
 
 Sillo includes the common backend pieces teams repeatedly need:
 
@@ -122,7 +122,7 @@ Sillo includes the common backend pieces teams repeatedly need:
 - HTTP client utilities
 - content negotiation, ETags, request lifecycle helpers, and protocol status constants under `sillo.http`
 
-## What Can You Build With Sillo?
+##  What Can You Build With Sillo?
 
 Sillo is useful for many backend-heavy products:
 
@@ -137,7 +137,7 @@ Sillo is useful for many backend-heavy products:
 - customer portals and product backends
 - applications that need to move from prototype to production without changing frameworks
 
-## Who Is Sillo For?
+##  Who Is Sillo For?
 
 Sillo is designed for developers and organisations building serious software with Python.
 
@@ -153,7 +153,7 @@ It is especially useful for:
 
 Sillo is less suitable if you only need a tiny script, a one-off HTTP handler, or a framework that intentionally avoids owning anything beyond routing.
 
-## Why Sillo?
+##  Why Sillo?
 
 Software teams rarely fail because they cannot write a route or database query. They struggle because the surrounding system becomes fragmented.
 
@@ -171,7 +171,7 @@ The framework is guided by these principles:
 
 Sillo is opinionated where teams benefit from a clear default, but it should remain transparent and replaceable at the boundaries. Convenience should not mean mystery. Enterprise readiness should not mean unnecessary ceremony.
 
-## Comparison
+##  Comparison
 
 Sillo is not a drop-in clone of another Python framework. It combines ideas from productive web frameworks, async API frameworks, and full-stack application platforms.
 
@@ -184,7 +184,7 @@ Sillo is not a drop-in clone of another Python framework. It combines ideas from
 
 The goal is not to win by having every feature. The goal is to make the repeated work of serious backend development feel like one designed system.
 
-## The Platform Direction
+##  The Platform Direction
 
 Sillo Core is the foundation. The broader platform direction includes first-party products for visual administration, managed deployment, server operations, identity, observability, templates, and integrations.
 
@@ -192,6 +192,134 @@ That long-term direction matters because backend software does not stop at code.
 
 Sillo’s promise is to help developers move from an idea to dependable enterprise software with fewer disconnected decisions, clearer systems, and tools that grow with their ambition.
 
-## Next Step
+##  Next Step
 
 Continue with [Installation](/guides/installation/) to install Sillo with `uv` and build your first application.
+
+
+##  How the pieces fit
+
+sillo is an ASGI framework, which means it speaks the same protocol as
+uvicorn, granian, hypercorn, and every ASGI middleware in the ecosystem.
+Everything below builds on that one interface.
+
+A request arrives at the server, which hands sillo a `scope`, a
+`receive`, and a `send`. sillo builds a `Request`, runs it through the
+[middleware stack](/guides/middleware/), matches it against the
+[router](/guides/routing/), resolves
+[dependencies](/guides/dependency-injection/) and
+[validates inputs](/guides/validation/), calls your
+[handler](/guides/handlers/), and serializes what comes back.
+
+Around that core sit optional subsystems, each independent: an
+[ORM layer](/guides/record/), [background work](/guides/work/),
+[WebSockets](/guides/websockets/), [templating](/guides/templating/),
+[caching](/guides/cache/), [mail](/guides/services/mail/), and an
+[HTTP client](/guides/http/client/). None of them are required. An
+application that only serves JSON needs none of them.
+
+##  What to read next
+
+The path through the documentation depends on what you are building.
+
+**A JSON API.** [Routing](/guides/routing/) →
+[Handlers](/guides/handlers/) → [Validation](/guides/validation/) →
+[Error Handling](/guides/error-handling/). That is enough to build
+something real. Add [Record](/guides/record/) when you need a database
+and [Authentication](/guides/authentication/) when you need users.
+
+**A server-rendered application.** [Routing](/guides/routing/) →
+[Templating](/guides/templating/) → [Sessions](/guides/sessions/) →
+[CSRF](/guides/csrf/). The last is not optional if your forms
+authenticate with cookies.
+
+**Something real-time.** [WebSockets](/guides/websockets/) first, and
+read its scaling section before you design anything, because the answer
+changes what you build.
+
+**Anything going to production.** [Security](/guides/security/),
+[Startup & Shutdown](/guides/startups-and-shutdowns/), and
+[Concurrency](/guides/concurrency/) — in that order. The third one is
+where most performance surprises come from.
+
+##  A note on this documentation
+
+These guides document what the framework does, including where it does
+something surprising or wrong. Where a function has a defect, the page
+covering it says so, shows the failure, and gives a working alternative.
+
+That is deliberate. A guide that describes intended behaviour is a guide
+that costs you an afternoon the first time reality differs. Every
+`:::danger` and `:::caution` block in these pages marks something
+verified by running it.
+
+
+##  Conventions used throughout
+
+A few things recur in every guide and are worth knowing once.
+
+**Handlers take `request, response`.** Everything after those two is
+injected — validated parameters, dependencies, the request body.
+
+**`app.state` is process-wide, `request.state` is per-request.** The
+first is written by lifespan hooks; the second by middleware.
+
+**`setup_*` functions are idempotent.** `setup_record`, `setup_work`, and
+`setup_mail` each store an object in `app.state` and register lifecycle
+hooks, and calling one twice returns the existing object rather than
+reconfiguring.
+
+**Async by default.** The framework, the ORM, and the HTTP client are all
+async. Synchronous handlers work and run in a thread; synchronous calls
+inside an async handler block everything.
+
+**Every page ends with "What not to do".** Those lists are the compressed
+version of the page, and they are the part worth re-reading before
+shipping.
+
+
+##  Getting help
+
+The guides are organised by subsystem, and the sidebar mirrors the
+package layout, so `sillo.record` is under Record and `sillo.work` under
+Work. If you know the module, you can find the page.
+
+For questions the guides do not answer, the source is small enough to
+read. Most modules are a few hundred lines, the abstractions are shallow,
+and the answer to "what does this actually do" is usually one file away —
+which is how several of the warnings in these pages were found.
+
+
+##  Prerequisites
+
+These guides assume working Python and a rough familiarity with HTTP —
+methods, status codes, headers, and what a request body is. They do not
+assume prior experience with an async framework; where `async`/`await`
+matters, the page explains what it changes.
+
+Python 3.10 or newer is required. Several guides use `match`, `X | None`
+syntax, and `asyncio.timeout`, which is 3.11+.
+
+
+##  A first application
+
+The smallest thing that runs, to anchor everything above:
+
+```python title="main.py"
+from sillo import silloApp
+
+app = silloApp()
+
+
+@app.get("/")
+async def index(request, response):
+    return response.json({"status": "ok"})
+```
+
+```bash
+sillo run --app main:app --reload
+```
+
+That is a complete ASGI application. Everything else in these guides —
+validation, the ORM, background work, WebSockets — is something you add
+to this when you need it, and nothing is required to get here.

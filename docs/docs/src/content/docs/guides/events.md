@@ -3,7 +3,7 @@ title: Events
 description: The sillo event system — a powerful publish/subscribe layer with pluggable backends (memory, Redis, persistent, record) for in-process and cross-instance event delivery, priority listeners, namespacing, and durable replay.
 ---
 
-# Events
+#  Events
 
 The sillo event system implements the [publish–subscribe (pub/sub)
 pattern](https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern):
@@ -29,7 +29,7 @@ to return a value to the caller. If the caller needs the result, call the
 function directly.
 :::
 
-## When to use events
+##  When to use events
 
 A good rule of thumb: emit when *what happened* is more interesting than
 *what should happen next*. Examples:
@@ -52,7 +52,7 @@ loop and will block other listeners and the dispatch path while it executes.
 Always prefer `async def` handlers unless the work is trivially cheap.
 :::
 
-## Basic usage
+##  Basic usage
 
 Every `silloApp` (and every `Router`) exposes a default emitter at `app.events`.
 You subscribe with a decorator and emit from anywhere:
@@ -73,9 +73,9 @@ await app.events.emit_async("user.created", {"name": "Bob"})
 You can also build standalone emitters that are not attached to an app — see
 [Creating emitters](#creating-emitters).
 
-## Subscribing to events
+##  Subscribing to events
 
-### `on` — every time
+###  `on` — every time
 
 Register a listener that runs on every emission:
 
@@ -88,7 +88,7 @@ async def handle_user_created(user):
     print(f"User created: {user['name']}")
 ```
 
-### `once` — first time only
+###  `once` — first time only
 
 Register a listener that fires **only the first time** the event is emitted and
 is then removed automatically. Useful for one-time setup or welcome flows:
@@ -99,7 +99,7 @@ async def welcome(user):
     print(f"Welcome {user['name']}!")
 ```
 
-### Direct (non-decorator) registration
+###  Direct (non-decorator) registration
 
 Both `on` and `once` also accept the function directly, which is handy when the
 handler is defined elsewhere or you need to keep a reference for later removal:
@@ -111,7 +111,7 @@ async def on_user_created(user):
 app.events.on("user.created", on_user_created)
 ```
 
-## Emitting events
+##  Emitting events
 
 Use `emit_async` for all backends, or — for the default in-process `memory`
 backend only — the synchronous `emit`:
@@ -145,7 +145,7 @@ use `await emitter.emit_async(...)`. Networked backends need an event loop to
 publish and to await the dispatch callback.
 :::
 
-## Removing listeners
+##  Removing listeners
 
 Detach a single listener, or clear listeners per event or for the whole emitter:
 
@@ -171,7 +171,7 @@ You can also drop an entire event (and all its listeners) with
 what is registered, `event_names()` returns all known event names and
 `has_event(name)` / `name in emitter` check for a specific one.
 
-## Priority listeners
+##  Priority listeners
 
 Listeners execute in priority order — **higher priority runs first**. The default
 is `NORMAL`. This is useful when one listener must run before another (for
@@ -196,7 +196,7 @@ Priorities, highest to lowest:
 
 When two listeners share a priority they run in registration order.
 
-## Listener limits and enabling/disabling
+##  Listener limits and enabling/disabling
 
 Each event caps its listener count at `max_listeners` (default `100`). Registering
 beyond the cap raises `MaxListenersExceededError`; registering the same function
@@ -211,7 +211,7 @@ ev.enabled = False   # emits are no-ops while disabled
 ev.enabled = True
 ```
 
-## Weak references
+##  Weak references
 
 By default listeners are held by a strong reference, so an emitter keeps your
 handler (and its bound object) alive for the life of the process. Pass
@@ -226,7 +226,7 @@ For bound methods this uses `weakref.WeakMethod`; for plain functions it uses a
 plain `weakref.ref`. A collected listener simply stops receiving events and is
 skipped at dispatch time.
 
-## Error handling
+##  Error handling
 
 Listeners are error-isolated: a listener that raises is logged and, for networked
 backends, the subscriber/worker loop keeps running. By default failures go to a
@@ -248,7 +248,7 @@ Note that `on_error` is for *listener* failures only — transport-level failure
 (such as Redis being unreachable) surface as `TransportError` from `start()` /
 `emit_async()` and are your responsibility to handle.
 
-## Namespaces
+##  Namespaces
 
 Group related events under a prefix without repeating it. A namespace wraps an
 emitter and prefixes every name with `"<namespace>:"`:
@@ -280,7 +280,7 @@ for the parent emitter.
 
 ---
 
-## Backends
+##  Backends
 
 The event system is **backend-agnostic**. The backend decides *where* an emitted
 event goes — in-process, across Redis instances, onto a durable backlog, or into
@@ -311,7 +311,7 @@ shutdown. `memory` and `record` need no loop — their `start()`/`stop()` are
 no-ops (they just flip a `running` flag).
 :::
 
-### Memory (default)
+###  Memory (default)
 
 In-process delivery — the original sillo behaviour. No external services, no
 serialization round-trip, and the synchronous `emit()` returns execution stats.
@@ -326,7 +326,7 @@ emitter.on("ping")(lambda: print("pong"))
 emitter.emit("ping")                       # synchronous, in-process
 ```
 
-### Redis (cross-instance)
+###  Redis (cross-instance)
 
 Every emit `PUBLISH`es a JSON envelope to a Redis channel; every emitter
 subscribes to the channels it has listeners for and re-dispatches received
@@ -356,7 +356,7 @@ there is no backlog, so an instance that is down misses events. If you need
 at-least-once delivery across restarts, use `persistent` instead.
 :::
 
-### Persistent (durable, at-least-once)
+###  Persistent (durable, at-least-once)
 
 Events are pushed onto a Redis **list** (the backlog). A worker loop blocks on
 `BRPOP`, dispatches each message, then acknowledges it. Because the message lives
@@ -381,7 +381,7 @@ drains them — that is what makes delivery at-least-once across restarts. A
 lightweight, per-instance de-duplication on `event_id` also protects against
 double-processing when a Redis reconnect replays a message.
 
-### Record (audit log + replay)
+###  Record (audit log + replay)
 
 Every emit writes an `EventMessage` Tortoise row (`channel`, `payload`, `status`,
 `attempts`) **and** fires local listeners. Rows left `pending`/`failed` can be
@@ -408,7 +408,7 @@ marked `failed` (with `attempts` incremented). `replay()` reads rows whose statu
 is `pending` or `failed`, re-runs their local listeners, and marks each
 `delivered` on success — call it on boot to rebuild state after a crash.
 
-### Custom backends
+###  Custom backends
 
 Register your own transport by dotted path:
 
@@ -426,7 +426,7 @@ envelope format, and best-effort de-duplication for you.
 
 ---
 
-## Wiring into the app lifecycle
+##  Wiring into the app lifecycle
 
 For networked backends, create the emitter and start/stop it with the
 application lifespan:
@@ -452,7 +452,7 @@ because subscribing lazily starts the loop if needed.
 
 ---
 
-## Creating emitters
+##  Creating emitters
 
 Each `EventEmitter` is independent — you can run several with different backends
 or namespaces:
@@ -475,7 +475,7 @@ When you pass `transport=`, the `backend` argument is ignored and the supplied
 transport is used directly — useful for tests or for sharing one transport
 across multiple emitters.
 
-## Metrics and history
+##  Metrics and history
 
 The memory backend tracks per-event performance data you can use for
 observation and debugging:
@@ -494,7 +494,7 @@ diagnostics, not for cross-instance aggregation.
 
 ---
 
-## API reference
+##  API reference
 
 | Symbol | Kind | Purpose |
 |---|---|---|
@@ -513,7 +513,7 @@ diagnostics, not for cross-instance aggregation.
 | `MaxListenersExceededError` | exception | Raised when the listener cap is hit. |
 | `ListenerAlreadyRegisteredError` | exception | Raised when a listener is registered twice. |
 
-### `EventEmitter` methods
+###  `EventEmitter` methods
 
 | Method | Notes |
 |---|---|
@@ -528,7 +528,7 @@ diagnostics, not for cross-instance aggregation.
 | `namespace(prefix)` | Return an `EventNamespace`. |
 | `transport` | The underlying `BaseTransport` instance. |
 
-### Related guides
+###  Related guides
 
 - [Record: Scopes & Events](/guides/record/scopes-events) — model lifecycle events
   (`before_create`, `after_create`, …) and observers.

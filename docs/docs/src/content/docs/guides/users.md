@@ -12,11 +12,11 @@ head:
     content: sillo users — simplest integration, UserProtocol contract, UserBaseModel abstract model, built-in User, UserManager, and password hashing.
 ---
 
-# Users & User Models
+#  Users & User Models
 
 Every authenticated request in sillo ends with one thing: a `request.user` object. This page shows the simplest way to get there, then goes deep on the contract that makes it work, the built-in `User` model, and how to build your own.
 
-## The simplest integration
+##  The simplest integration
 
 You don't need to understand the whole contract to get a working user. sillo ships a `User` model and a `UserManager`; you connect the database, hand `User` to the auth middleware, and `request.user` appears.
 
@@ -67,7 +67,7 @@ Now any request carrying a valid bearer token for that user hits `/me` with `req
 
 Everything below explains what just happened and how to customize it.
 
-## What "a user" means to sillo
+##  What "a user" means to sillo
 
 Authentication only produces an **identity** — a string. The middleware's job is to turn that string into a real object via your user class's `load_user(identity)` classmethod:
 
@@ -83,7 +83,7 @@ backend resolves identity "1"
 
 So a user class only has to do two things: describe itself through a few properties, and know how to load one of itself from an identity string. That contract is `UserProtocol`.
 
-## The user system at a glance
+##  The user system at a glance
 
 sillo's user code is layered so you can use as much or as little as you want:
 
@@ -103,7 +103,7 @@ from sillo.users import UserProtocol, UserBaseModel, User
 # User          -> concrete default you hand to the middleware
 ```
 
-## The built-in `User`
+##  The built-in `User`
 
 `User` is a `Record`/Tortoise model built on `UserBaseModel`. `UserBaseModel` itself is an **abstract** model (`class Meta: abstract = True`) — it defines the fields and behavior but is never instantiated as a table; only a concrete subclass (like `User`, or your own) creates one. `User` is deliberately lean — it carries only the fields you almost always need and deliberately does **not** pull in `TimestampsMixin` (created/updated) or `SoftDeletesMixin` (recoverable deletes), so the schema stays predictable. If your project wants those, mix them into your own subclass (see [Custom user classes](#custom-user-classes)).
 
@@ -117,7 +117,7 @@ print(user.is_authenticated)             # True (derived from is_active)
 print(user.has_perm("anything"))         # False unless superuser / wired up
 ```
 
-### Fields
+###  Fields
 
 | Field | Type | Notes |
 | --- | --- | --- |
@@ -129,14 +129,14 @@ print(user.has_perm("anything"))         # False unless superuser / wired up
 | `last_login` | `DatetimeField(nullable)` | Set via `set_last_login()` |
 | `email_verified_at` | `DatetimeField(nullable)` | Set via `mark_email_verified()` |
 
-### Identity, display name, permissions
+###  Identity, display name, permissions
 
 - `identity` returns `str(self.id)` — the stable string used by backends and `load_user`.
 - `display_name` returns `username` — for logs and UI.
 - `has_permission(perm)` returns `True` for superusers, `False` for inactive users, otherwise dispatches to the active permissions system (see [DB-backed permissions](#db-backed-permissions) below).
 - `load_user(identity)` resolves through `UserManager().get_by_id(int(identity))`, which returns **only active** users. A deactivated (`is_active=False`) user fails to load and is treated as unauthenticated.
 
-### Authenticating credentials
+###  Authenticating credentials
 
 `User.verify_credentials(identifier, password)` is the one-call login helper. It looks the user up by email **or** username, verifies the password, stamps `last_login` on success, and returns `None` when the user is missing, inactive, or the password is wrong:
 
@@ -150,7 +150,7 @@ if user is None:
 
 Because `verify_credentials` is defined on `UserBaseModel`, it works on any subclass too — including a custom user model.
 
-### Passwords
+###  Passwords
 
 ```python
 user.set_password("new-secret")           # stores a bcrypt hash
@@ -161,7 +161,7 @@ await user.set_last_login()               # updates last_login, saves that field
 await user.mark_email_verified()          # sets email_verified_at
 ```
 
-## Creating and finding users — UserManager
+##  Creating and finding users — UserManager
 
 `User.objects` is a `UserManager` attached to the model. It handles creation and lookups:
 
@@ -187,7 +187,7 @@ admin = await User.objects.create_superuser(
 
 You can attach `UserManager` to your own model the same way: `objects = UserManager()`.
 
-## Passwords, in depth
+##  Passwords, in depth
 
 All hashing uses **bcrypt** (cost 12 by default) with a per-password salt, and verification is constant-time (resistant to timing attacks). The helpers live in `sillo.users.password` and are re-exported from `sillo.users`.
 
@@ -234,7 +234,7 @@ if needs_rehash(user.password, rounds=14):
     await user.save()
 ```
 
-## DB-backed permissions
+##  DB-backed permissions
 
 `UserBaseModel` checks `has_permission` via an in-memory list that is empty by default. For production apps that need persistent, queryable permissions — roles, groups, audits, admin UIs — use `sillo.permissions`:
 
@@ -260,14 +260,14 @@ See the [Permissions](/guides/permissions/) guide for the full API — groups, i
 
 If you don't want the DB-backed model — perhaps permissions come from an external role table, an LDAP group, or an enum — implement `has_permission` directly on your user class (see [Custom user classes](#custom-user-classes) below). The `sillo.permissions` module is optional; `useAuth` works with any user that implements `has_permission`.
 
-## Custom user classes
+##  Custom user classes
 
 You have two extension paths:
 
 1. **Implement the contract only** — a non-DB user (LDAP, external API, in-memory). Subclass `UserProtocol`.
 2. **Extend the database model** — subclass `UserBaseModel` (or `User`) to add fields, mixins, or override behavior.
 
-### Path A — contract-only users (`UserProtocol`)
+###  Path A — contract-only users (`UserProtocol`)
 
 ```python
 from sillo.users import UserProtocol
@@ -289,7 +289,7 @@ class MyUser(UserProtocol):
 
 `UserProtocol` provides sane defaults for the rest: `is_anonymous` (= `not is_authenticated`), `is_active` (= `True`), `get_id()` (→ `identity`), `has_perm` / `has_perms` (→ `False` / all), and `get_email_field_name()` (→ `"email"`). Implement the four members above and your class works everywhere — middleware, `useAuth`, guards.
 
-#### Example: LDAP-backed user
+####  Example: LDAP-backed user
 
 ```python
 class LDAPUser(UserProtocol):
@@ -312,7 +312,7 @@ class LDAPUser(UserProtocol):
 app.use(AuthenticationMiddleware(user_model=LDAPUser, backend=LDAPBackend()))
 ```
 
-### Path B — extend the database model (`UserBaseModel` / `User`)
+###  Path B — extend the database model (`UserBaseModel` / `User`)
 
 `User` is the default. To add fields, mixins, or custom permission logic, subclass `User` (or `UserBaseModel`).
 
@@ -362,7 +362,7 @@ class AppUser(UserBaseModel):
         table = "app_users"
 ```
 
-## SimpleUser & AnonymousUser
+##  SimpleUser & AnonymousUser
 
 **`SimpleUser`** needs no database — ideal for tests and prototypes. `has_permission` checks a passed-in list; `load_user` returns `SimpleUser(identity, [identity])`.
 
@@ -387,7 +387,7 @@ a.has_permission("x") # False
 
 You'll rarely construct these yourself — they're what `request.user` *is* on an unauthenticated call (when `useAuth(required=False)` lets it through, or when there's no auth gate at all).
 
-## Adding auth capabilities to User
+##  Adding auth capabilities to User
 
 A user object can manage its own tokens, sessions, and API keys by mixing in the auth mixins. This is what makes `user.issue_token_pair(...)`, `user.create_session(...)`, and `user.create_api_key(...)` available:
 
@@ -403,7 +403,7 @@ class Account(User, JWTUserMixin, SessionUserMixin, ApiKeyUserMixin):
 
 Each mixin reads `int(str(self.identity))` as the `user_id`, which matches how `SessionAuthBackend` and `User.load_user` resolve identities. See [JWT](/guides/jwt-auth/), [Sessions](/guides/session-auth/), and [API Keys](/guides/api-keys/) for the methods these add.
 
-## Registering with the database
+##  Registering with the database
 
 `User` is a Tortoise model; tables are created when you call `setup_record` with the module that defines your user class:
 
@@ -419,7 +419,7 @@ db = setup_record(
 
 `setup_record` runs `Tortoise.init()`, creates schemas (`safe=True`, so existing tables are left alone), and closes connections on shutdown. The table name is `Meta.table` — `"users"` for the built-in model; override it on a subclass to rename.
 
-## How it all connects
+##  How it all connects
 
 ```
 create_user()  ──►  User row in DB (password hashed)
@@ -435,7 +435,7 @@ request.user  ──►  useAuth() checks is_authenticated / scopes / permission
 
 If you internalize that arrow — *identity → `load_user` → `request.user`* — every other auth feature in sillo is just a different way of producing the identity on the left.
 
-## Related
+##  Related
 
 - [Permissions](/guides/permissions/) — full permission system with groups, caching, and inheritance
 - [Authentication](/guides/authentication/) — middleware + backend model

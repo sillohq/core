@@ -1,9 +1,18 @@
 ---
 title: Scheduler
-description: Deep reference for sillo.work.scheduler — every trigger type, job lifecycle, manager API, middleware pattern, and custom extension point.
+description: Time-based execution — interval and cron triggers, the one-second tick, job lifecycle and overlap control, and the multi-process problem that makes nightly jobs run four times.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Scheduler
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Time-based execution — interval and cron triggers, the one-second tick, job lifecycle and overlap control, and the multi-process problem that makes nightly jobs run four times.
 ---
 
-# Scheduler (`sillo.work.scheduler`)
+#  Scheduler (`sillo.work.scheduler`)
 
 The scheduler runs callables on time-based triggers inside your
 application process.  Unlike the queue system which dispatches work to
@@ -13,7 +22,7 @@ sync, and health checks.
 
 ---
 
-## Architecture
+##  Architecture
 
 The scheduler has three layers:
 
@@ -27,7 +36,7 @@ immediately.  Resolution is 1 second.
 
 ---
 
-## Setup
+##  Setup
 
 ```python
 from sillo import silloApp
@@ -40,7 +49,7 @@ scheduler = setup_scheduler(app)
 
 ---
 
-## Triggers
+##  Triggers
 
 Every trigger implements exactly one method:
 `next_fire(last_fire: float) -> float | None`.  Given the timestamp of
@@ -49,7 +58,7 @@ the last execution, it returns the next fire time (epoch seconds) or
 
 Four triggers ship in the box.
 
-### IntervalTrigger
+###  IntervalTrigger
 
 Fires every `seconds` with optional `jitter` (random offset).  Jitter
 spreads load when many jobs share the same interval — preventing
@@ -68,7 +77,7 @@ IntervalTrigger(seconds=3600)
 IntervalTrigger(seconds=10)
 ```
 
-### CronTrigger
+###  CronTrigger
 
 Standard 5-field cron expression with timezone support.  The parser
 supports wildcards (`*`), ranges (`1-5`), steps (`*/15`, `1-30/5`),
@@ -104,7 +113,7 @@ CronTrigger("0 8-18/2 * * 1-5")
 | 4 | Month | 1-12 | `*` `,` `-` `/` |
 | 5 | Weekday | 0-6 (Sun=0) | `*` `,` `-` `/` `L` `#` |
 
-### DateTrigger
+###  DateTrigger
 
 One-shot — fires once at the given epoch timestamp, then never again.
 `next_fire()` returns `None` after the first fire, which causes the job
@@ -123,7 +132,7 @@ target = datetime(2027, 1, 1, tzinfo=timezone.utc).timestamp()
 DateTrigger(at=target)
 ```
 
-### CompoundTrigger
+###  CompoundTrigger
 
 Combine multiple triggers with AND or OR logic:
 
@@ -145,7 +154,7 @@ trigger = CompoundTrigger(
 
 ---
 
-## ScheduledJob
+##  ScheduledJob
 
 Binds a callable to a trigger with execution tracking and concurrency
 control.
@@ -169,7 +178,7 @@ await job.run()           # execute manually
 print(job.to_dict())      # serialized metadata
 ```
 
-### Constructor Parameters
+###  Constructor Parameters
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -190,12 +199,12 @@ second fire is skipped entirely.
 
 ---
 
-## SchedulerManager
+##  SchedulerManager
 
 The central coordinator.  Owns all jobs, runs a 1-second ticker loop,
 and integrates with the app lifecycle.
 
-### Registration
+###  Registration
 
 ```python
 from sillo.work.scheduler import SchedulerManager
@@ -221,7 +230,7 @@ job = s.schedule(
 )
 ```
 
-### Managing Jobs
+###  Managing Jobs
 
 ```python
 s.pause(job.id)           # stop firing, preserve state
@@ -237,7 +246,7 @@ s.list(JobStatus.ACTIVE)       # active only
 s.list(JobStatus.PAUSED)       # paused only
 ```
 
-### Stats
+###  Stats
 
 ```python
 s.stats.to_dict()
@@ -245,7 +254,7 @@ s.stats.to_dict()
 #  "runs": 1420, "errors": 3, "uptime": 86400}
 ```
 
-### Real-World: Admin Dashboard
+###  Real-World: Admin Dashboard
 
 ```python
 @app.get("/admin/scheduler")
@@ -280,12 +289,12 @@ async def remove_job(request, response, job_id):
 
 ---
 
-## Middleware
+##  Middleware
 
 Per-job middleware factories receive `(handler, job)` and return a new
 handler.
 
-### Built-in
+###  Built-in
 
 ```python
 from sillo.work.scheduler.middleware import (
@@ -299,7 +308,7 @@ job = scheduler.schedule(
 )
 ```
 
-### Custom
+###  Custom
 
 ```python
 async def logging_middleware(handler, job, *, extra=""):
@@ -317,7 +326,7 @@ job = scheduler.schedule(my_task, interval,
 
 ---
 
-## Custom Trigger
+##  Custom Trigger
 
 Implement `next_fire(last_fire: float) -> float | None`:
 
@@ -340,3 +349,177 @@ class BusinessHoursTrigger:
 
 scheduler.schedule(work_task, BusinessHoursTrigger(1800))
 ```
+
+
+---
+
+##  What the scheduler guarantees, and what it does not
+
+The scheduler is a one-second ticker over an in-memory dictionary of
+jobs. Understanding exactly that much explains every one of its limits.
+
+```python title="sillo/work/scheduler/manager.py"
+while self._running:
+    now = time.time()
+    for job in list(self._jobs.values()):
+        if job.status != JobStatus.ACTIVE:
+            continue
+        if job.next_run_time and job.next_run_time <= now:
+            ...
+            job.compute_next(now)
+            asyncio.create_task(self._execute(job))
+    await asyncio.sleep(1)
+```
+
+###  Resolution is one second, and firing is "at or after"
+
+A job due at 09:00:00.100 fires on the next tick, up to a second late. An
+interval of less than a second is not achievable — `every(0.1)` fires
+once per second, not ten times.
+
+The tick also drifts. `asyncio.sleep(1)` plus the loop body is slightly
+more than a second, so over a day the ticker accumulates lag. For
+interval jobs that does not matter, because the next run is computed from
+the actual firing time. For cron jobs it does not matter either, because
+the expression is absolute. It matters only if you were counting ticks.
+
+###  The schedule is in memory and is rebuilt every start
+
+`_jobs` is a dictionary on the manager instance. Nothing is persisted.
+Two consequences:
+
+Restarting the process reloads the schedule from your source code, which
+is usually what you want — your code is the source of truth.
+
+A job due while the process was down is **not caught up**. Missing a
+nightly run because a deploy took four minutes at 02:00 is silent. If
+missed runs matter, record the last successful run and reconcile at
+startup:
+
+```python title="catching up a missed run"
+@app.on_startup
+async def catch_up_billing():
+    last = await Setting.get_or_none(key="billing.last_run")
+    if last is None or last.value < yesterday_at_2am():
+        await run_billing()
+```
+
+Jobs added at runtime through `schedule()` are also lost on restart —
+they exist only in that process's memory. Anything a user can create from
+a UI needs its definition in the database and a startup hook that
+re-registers it.
+
+:::danger[Every process runs its own scheduler]
+`setup_work` starts a `SchedulerManager` in whatever process calls it. Run
+`uvicorn --workers 4` and you have four tickers, four copies of the
+schedule, and every "nightly" job running four times a night.
+
+The failure is not obvious: four identical report emails look like a mail
+problem, four billing runs look like a billing bug. Nothing in the logs
+says "this ran on four workers".
+
+Three ways out:
+
+**A dedicated scheduler process.** Run one instance with the scheduler
+enabled and no HTTP traffic, and leave it out of the web deployment. The
+simplest option and the easiest to reason about.
+
+**A distributed lock per run.** Each tick tries to acquire a lock keyed by
+job name and the scheduled minute; the loser skips. Requires Redis or the
+database, and the lock must outlive the job.
+
+```python
+async def run_once(job_name: str, when: str, coro):
+    key = f"lock:{job_name}:{when}"
+    if not await redis.set(key, "1", nx=True, ex=3600):
+        return          # another process got there first
+    await coro()
+```
+
+**Leader election.** One process holds a renewable lease and runs the
+scheduler; the others idle. More moving parts than most applications
+need.
+
+Whichever you choose, make it explicit in your deployment configuration
+rather than relying on "we only run one worker" staying true.
+:::
+
+###  Overlap control
+
+Two settings decide what happens when a run is still going at the next
+scheduled time.
+
+`max_instances` caps concurrent runs of the same job. At the cap, the
+tick skips — it does not queue.
+
+`coalesce=True` skips the run entirely if any instance is still going,
+collapsing a backlog into one run rather than a burst.
+
+```python title="a job that must never overlap"
+job = scheduler.schedule(
+    sync_upstream,
+    IntervalTrigger(60),
+    name="sync-upstream",
+    max_instances=1,
+    coalesce=True,
+)
+```
+
+Without these, a sync job that starts taking ninety seconds on a
+sixty-second interval accumulates overlapping runs until something breaks
+— usually the database connection pool. Set them on anything whose
+runtime is variable.
+
+###  `every()` and `cron()` return a `ScheduledJob`
+
+The decorators do not return the function:
+
+```python
+@scheduler.every(300)
+async def poll_upstream():
+    ...
+
+poll_upstream              # a ScheduledJob, not the function
+await poll_upstream()      # TypeError: 'ScheduledJob' object is not callable
+```
+
+That is deliberate — it gives you `poll_upstream.id` for pausing and
+removing — but it means the decorated name can no longer be called
+directly, including from your tests. Keep the callable separate when you
+need both:
+
+```python title="testable scheduled work"
+async def poll_upstream():
+    ...
+
+scheduler.schedule(poll_upstream, IntervalTrigger(300), name="poll-upstream")
+```
+
+Now the function is importable and awaitable in a test, and the schedule
+is a separate line you can leave out of the test configuration entirely.
+
+###  Interval seconds are positional
+
+`every()` takes a float in seconds as its only positional argument. There
+is no `minutes=`, `hours=`, or `days=` keyword:
+
+```python
+@scheduler.every(300)              # every five minutes
+async def poll_upstream(): ...
+
+
+@scheduler.every(60 * 60 * 24)     # daily-ish
+async def rotate_logs(): ...
+```
+
+For anything expressed naturally in wall-clock terms — "9am on
+weekdays", "midnight on the first" — use `cron()`. An interval of 86400
+seconds drifts relative to the clock, because it counts from the last
+run rather than from midnight.
+
+###  Exceptions do not stop the schedule
+
+`_execute` catches failures per run and records them in `stats.errors`.
+A job that raises every time keeps being scheduled, keeps failing, and
+keeps incrementing the counter. Alert on `stats.to_dict()["errors"]`
+rather than assuming a broken job announces itself.

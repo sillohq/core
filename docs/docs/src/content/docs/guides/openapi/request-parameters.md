@@ -68,7 +68,7 @@ async def get_product(request, response, product_id: int):
     return response.json({"product_id": product_id})
 ```
 
-### Path Parameter Types
+###  Path Parameter Types
 
 sillo supports several path parameter types:
 
@@ -179,7 +179,7 @@ async def list_users(request, response):
     })
 ```
 
-### Advanced Query Parameter Patterns
+###  Advanced Query Parameter Patterns
 
 ```python
 # Array parameters
@@ -369,7 +369,7 @@ async def get_dashboard(request, response):
 ```
 
 
-### Complex Parameter Schemas
+###  Complex Parameter Schemas
 
 ```python
 @app.get(
@@ -438,7 +438,7 @@ async def get_analytics_report(request, response):
     })
 ```
 
-### Parameter Dependencies
+###  Parameter Dependencies
 
 Document parameters that depend on each other:
 
@@ -499,7 +499,7 @@ async def search(request, response):
 
 ##  Best Practices
 
-### Parameter Naming Conventions
+###  Parameter Naming Conventions
 
 ```python
 # Use consistent naming patterns
@@ -509,18 +509,19 @@ async def search(request, response):
     Query(name="sort_by"),                       # descriptive names
     Header(name="X-API-Key"),                    # X- prefix for custom headers
 ])
+async def list_users(request, response): ...
+
 
 # Avoid ambiguous names
-#  Bad
-Query(name="id")                               # Which ID?
-Query(name="type")                             # Type of what?
+bad_id = Query(name="id")                      # Which ID?
+bad_type = Query(name="type")                  # Type of what?
 
-#  Good  
-Query(name="user_id")                          # Clear and specific
-Query(name="content_type")                     # Descriptive
+# Prefer specific ones
+good_id = Query(name="user_id")                # Clear and specific
+good_type = Query(name="content_type")         # Descriptive
 ```
 
-### Parameter Documentation
+###  Parameter Documentation
 
 ```python
 @app.get(
@@ -538,9 +539,10 @@ Query(name="content_type")                     # Descriptive
         )
     ]
 )
+async def handler(request, response): ...
 ```
 
-### Parameter Validation
+###  Parameter Validation
 
 ```python
 def validate_date_range(date_range: str) -> bool:
@@ -563,3 +565,83 @@ async def get_reports(request, response):
 ```
 
 Request parameters are essential for creating flexible, powerful APIs. Proper documentation ensures that API consumers understand how to use your endpoints effectively and helps prevent integration issues.
+
+
+##  Parameter design decisions that outlive the code
+
+Parameter names and shapes are the part of an API hardest to change,
+because clients hard-code them and a wrong name fails silently as a
+default. Four decisions worth making once.
+
+**Query or path?** Path segments identify a resource; query parameters
+modify a request. `/orders/42` and `/orders?status=open` are both right.
+`/orders?id=42` and `/orders/open` are both wrong, and the second is
+worse because it looks like a resource and is not.
+
+**Optional or required?** A required query parameter is unusual and often
+a design smell — if it is genuinely required to identify what you are
+fetching, it probably belongs in the path. Optional parameters with
+sensible defaults let a client start with the simple call and add
+precision later.
+
+**Repeated or delimited?** `?tag=a&tag=b` and `?tags=a,b` both work, and
+the first is more standard and handles values containing commas. Pick one
+convention for the whole API; supporting both accidentally means neither
+is documented correctly.
+
+**Flat or nested?** Query strings have no native nesting, and every
+convention for faking it — `filter[status]`, `filter.status` — is a
+convention someone has to learn. Flat parameters with prefixed names
+document better and generate better clients.
+
+##  Documenting for the client, not the implementation
+
+The name a client sees is the one in the schema, which is where `alias`
+earns its place. An internal field called `q` should be documented as
+`query` if that is clearer, and a parameter that must be called `from`
+cannot be a Python identifier at all.
+
+Descriptions do the work names cannot. `page_size` is self-evident;
+`window` is not — does it mean seconds, a count, a named period? One
+sentence in `description=` prevents the support ticket.
+
+Examples do more than descriptions for anything with format. A parameter
+described as "the region code" with `examples=["eu-west-1"]` answers
+casing, separator, and length in one glance, and the interactive UI
+prefills it so the first attempt succeeds.
+
+Mark deprecated parameters with `deprecated=True` rather than removing
+them. The flag appears in the schema and in the UI, generated clients
+surface it as a deprecation warning, and you get a release of notice
+instead of a support incident.
+
+##  Constraints are documentation
+
+Every constraint you declare is published as JSON Schema, so `ge=1` and
+`le=100` on a page size are not just enforcement — they tell a client
+exactly what range to offer in a UI, and they let contract-testing tools
+probe the boundary automatically.
+
+The reverse is also true: a limit enforced in handler code rather than in
+the constraint is invisible to every consumer of the schema. If the rule
+can be expressed as a constraint, express it there.
+
+
+##  Pagination parameters deserve special care
+
+Pagination appears on most collection endpoints, and inconsistency across
+them is the thing integrators complain about most.
+
+Pick one scheme for the whole API. Page-and-size, limit-and-offset, and
+cursor are all defensible; using all three across different endpoints is
+not, because a client has to write three pagination implementations.
+
+Document the maximum. A `page_size` with `le=100` published in the schema
+tells a client the ceiling before they discover it through a 422. Without
+it, someone will request ten thousand and build a UI around the response
+they got in staging.
+
+Document the ordering. Pagination without a guaranteed order returns
+rows that repeat and rows that vanish between pages, and clients cannot
+work around what they do not know. Say which field the results are
+ordered by, and whether the client can change it.

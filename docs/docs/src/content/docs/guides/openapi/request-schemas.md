@@ -66,7 +66,7 @@ async def create_user(request, response):
 
 ##  Advanced Request Schemas
 
-### Nested Models for Complex Data
+###  Nested Models for Complex Data
 
 Handle complex, hierarchical data structures:
 
@@ -109,7 +109,7 @@ async def update_profile(request, response, user_id: int):
     return response.json({"updated": True})
 ```
 
-### Custom Business Logic Models
+###  Custom Business Logic Models
 
 Define models with business logic for manual validation:
 
@@ -174,7 +174,7 @@ async def create_order(request, response):
 
 sillo supports multiple content types for request bodies:
 
-### JSON Requests (Default)
+###  JSON Requests (Default)
 
 ```python
 @app.post(
@@ -187,7 +187,7 @@ async def handle_json(request, response):
     return response.json({"received": True})
 ```
 
-### Form Data Requests
+###  Form Data Requests
 
 ```python
 class ContactForm(BaseModel):
@@ -207,7 +207,7 @@ async def handle_contact_form(request, response):
     return response.json({"submitted": True})
 ```
 
-### File Upload with Multipart
+###  File Upload with Multipart
 
 ```python
 from sillo.objects import UploadedFile
@@ -247,7 +247,7 @@ async def upload_file(request, response):
 
 ##  Documentation Enhancement
 
-### Field Documentation and Examples
+###  Field Documentation and Examples
 
 Provide rich documentation for better developer experience:
 
@@ -303,7 +303,7 @@ class ProductRequest(BaseModel):
         }
 ```
 
-### Conditional Business Logic
+###  Conditional Business Logic
 
 Handle different business rules based on context:
 
@@ -344,7 +344,7 @@ async def update_user(request, response, user_id: int):
 
 ##  Best Practices
 
-### Model Organization
+###  Model Organization
 
 ```python
 # models/user.py
@@ -370,7 +370,7 @@ class UserUpdateRequest(BaseModel):
     email: Optional[EmailStr] = None
 ```
 
-### Manual Error Handling
+###  Manual Error Handling
 
 ```python
 from pydantic import ValidationError
@@ -397,7 +397,7 @@ async def create_user(request, response):
         }, status=400)
 ```
 
-### Testing Request Schemas
+###  Testing Request Schemas
 
 ```python
 def test_user_create_schema():
@@ -416,3 +416,108 @@ def test_user_create_schema():
 ```
 
 Request schemas are fundamental to building well-documented APIs. They provide the foundation for clear API contracts, comprehensive documentation, and type safety that make your API easier to use and maintain. Remember that in sillo, these schemas are primarily for documentation - you must implement your own validation logic if you want to validate incoming data.
+
+
+##  The schema is a contract, not a mirror of your tables
+
+The most common mistake in documented request bodies is deriving the
+schema from the database model. It produces a document that leaks your
+storage layout, includes fields clients must never set, and breaks every
+time you refactor a table.
+
+Model the request as its own thing: only the fields a client may provide,
+named the way an integrator would expect, with constraints reflecting
+business rules rather than column types. A `VARCHAR(255)` becomes
+`max_length=255` only if 255 is genuinely the rule — otherwise document
+the real limit.
+
+The published schema then describes what you accept, and refactoring
+storage is invisible to clients, which is the whole point of having a
+contract.
+
+##  Documenting what happens to unknown fields
+
+Every request schema makes an implicit promise about extra keys, and
+clients depend on it whether or not you documented it.
+
+Ignoring unknown fields is forgiving and lets a client send a superset
+without breaking. Rejecting them catches typos — a client sending
+`emial` gets a clear error instead of silently failing to set an email.
+
+Both are defensible. What is not defensible is leaving it undecided,
+because the behaviour differs per model and integrators discover it by
+accident. Pick one, apply it consistently, and say which in the schema
+description.
+
+The forgiving option has one real hazard: a renamed field means clients
+keep sending the old name, it is silently ignored, and the value they
+think they set is the default. If you ignore extras, a rename needs a
+transition period where both names are accepted.
+
+##  Examples that reflect real requests
+
+A schema with no examples is a schema people get wrong on the first try.
+A schema with unrealistic examples is worse, because they copy them.
+
+Good request examples share three properties. They validate — an example
+that fails your own model is a trap, and one worth checking in CI. They
+are complete enough to actually work, including required fields a reader
+might not notice. And they show the common case, not the exotic one; the
+example for a payment endpoint should be a simple card payment, not the
+three-way split with a partial refund.
+
+Where a body has variants — a discriminated union, an optional block that
+changes meaning — give one whole-model example per variant. Field-level
+examples cannot express "when `type` is `card`, `card_token` is
+required", and that relationship is exactly what integrators get wrong.
+
+##  Content types beyond JSON
+
+Most APIs accept JSON and nothing else, and the schema should say so
+rather than leaving it implied. When you do accept more than one —
+JSON and form-encoded, JSON and multipart for uploads — document each
+content type separately, because their schemas genuinely differ. A file
+cannot be expressed in JSON, and a nested object cannot be expressed in
+a form without a convention.
+
+If you accept only one, being explicit still helps: a client sending
+`text/plain` gets a clear 415 and a schema that told them why, rather
+than a parse error they have to interpret.
+
+
+##  Reusing schemas across endpoints
+
+A model referenced by several routes is emitted once into
+`components.schemas` and referenced by `$ref`, which keeps the document
+small and — more importantly — tells clients that the two endpoints
+genuinely share a type. Generated clients then produce one class instead
+of two identical ones with different names.
+
+That is a reason to define shared shapes deliberately rather than
+declaring a fresh model per route. An `Address` used by three endpoints
+should be one `Address`.
+
+The inverse also matters: two shapes that happen to match today but are
+allowed to diverge should be two models. Sharing them means a change to
+one silently changes the other, and the schema will not warn you because
+it looks correct either way.
+
+
+##  Keeping request and response schemas distinct
+
+A model used for both input and output looks efficient and causes two
+recurring problems.
+
+Input needs fields the client sets; output needs fields the server
+computes. `id`, `created_at`, and any derived total belong in the
+response and must not be accepted from a request. One shared model either
+accepts fields it should reject or omits fields it should return.
+
+The requiredness also differs. A `POST` body requires `name`; the
+response always has `name` but a `PATCH` body must not require it. One
+model cannot express three different requiredness rules.
+
+Two or three small models per resource — `OrderCreate`, `OrderUpdate`,
+`OrderOut` — read better in the generated document than one model with
+every field optional, and they let a generated client tell the developer
+which fields are actually needed.

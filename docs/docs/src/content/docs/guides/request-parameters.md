@@ -3,11 +3,11 @@ title: Request Parameters
 description: Extract query, header, and cookie parameters in sillo handlers and dependencies
 ---
 
-# Request Parameters
+#  Request Parameters
 
 sillo provides a clean, declarative way to extract query parameters, HTTP headers, and cookies directly in your handlers and dependencies using `Query`, `Header`, and `Cookie` parameter extractors.
 
-## Quick Example
+##  Quick Example
 
 ```python
 from sillo import silloApp, Query, Header, Cookie
@@ -32,11 +32,11 @@ page = Query(1, type=int, ge=1, le=100)   # validated, 422 on bad input
 ```
 :::
 
-## Query Parameters
+##  Query Parameters
 
 Use `Query()` to extract query string parameters with automatic type conversion.
 
-### Basic Usage
+###  Basic Usage
 
 ```python
 @app.get("/items")
@@ -51,7 +51,7 @@ async def get_items(
 **Request:** `GET /items?page=2&limit=20`
 **Result:** `{"page": 2, "limit": 20}`
 
-### With Defaults
+###  With Defaults
 
 ```python
 @app.get("/search")
@@ -62,7 +62,7 @@ async def search(request, response, q: str = Query("default query")):
 **Request:** `GET /search`
 **Result:** `{"query": "default query"}`
 
-### No Default
+###  No Default
 
 When no default is provided, the parameter returns `None` if not present:
 
@@ -72,7 +72,7 @@ async def filter(request, response, tag: str = Query()):
     return {"tag": tag}
 ```
 
-### Type Conversion
+###  Type Conversion
 
 `Query()` automatically converts string values to the type of the default:
 
@@ -95,7 +95,7 @@ async def convert(
     return {"count": count, "price": price, "active": active}
 ```
 
-### With Alias
+###  With Alias
 
 Use `alias` to map a different query parameter name:
 
@@ -108,7 +108,7 @@ async def users(request, response, page_num: int = Query(1, alias="page")):
 **Request:** `GET /users?page=5`
 **Result:** `{"page": 5}`
 
-### Required Parameters
+###  Required Parameters
 
 Use `required=True` to enforce presence:
 
@@ -120,11 +120,11 @@ async def search(request, response, q: str = Query(required=True)):
 
 ---
 
-## Header Parameters
+##  Header Parameters
 
 Use `Header()` to extract HTTP headers with automatic name conversion.
 
-### Basic Usage
+###  Basic Usage
 
 Header names are automatically converted from Python naming to HTTP canonical format:
 
@@ -144,7 +144,7 @@ async def api(request, response, authorization: str = Header()):
 **Request:** `GET /api` with header `Authorization: Bearer token123`
 **Result:** `{"auth": "Bearer token123"}`
 
-### With Default
+###  With Default
 
 ```python
 @app.get("/version")
@@ -152,7 +152,7 @@ async def version(request, response, api_key: str = Header(default="guest")):
     return {"api_key": api_key}
 ```
 
-### Custom Header Name
+###  Custom Header Name
 
 Use `alias` for non-standard or custom header names:
 
@@ -167,11 +167,11 @@ async def custom(request, response, token: str = Header(alias="X-API-Token")):
 
 ---
 
-## Cookie Parameters
+##  Cookie Parameters
 
 Use `Cookie()` to extract cookie values.
 
-### Basic Usage
+###  Basic Usage
 
 ```python
 @app.get("/settings")
@@ -182,7 +182,7 @@ async def settings(request, response, theme: str = Cookie("light")):
 **Request:** `GET /settings` with cookie `theme=dark`
 **Result:** `{"theme": "dark"}`
 
-### No Default
+###  No Default
 
 ```python
 @app.get("/session")
@@ -192,11 +192,11 @@ async def session(request, response, session_id: str = Cookie()):
 
 ---
 
-## Using in Nested Dependencies
+##  Using in Nested Dependencies
 
 Parameter extractors work seamlessly in nested dependencies—no need for `Context`:
 
-### Query in Dependency
+###  Query in Dependency
 
 ```python
 def get_pagination(page: int = Query(1), limit: int = Query(10)):
@@ -213,7 +213,7 @@ async def get_items(
 **Request:** `GET /items?page=3&limit=25`
 **Result:** `{"items": [], "pagination": {"page": 3, "limit": 25}}`
 
-### Header in Dependency
+###  Header in Dependency
 
 ```python
 def get_auth(authorization: str = Header()):
@@ -226,7 +226,7 @@ async def profile(request, response, auth: dict = Depend(get_auth)):
     return auth
 ```
 
-### Cookie in Dependency
+###  Cookie in Dependency
 
 ```python
 def get_preferences(theme: str = Cookie("dark"), lang: str = Cookie("en")):
@@ -237,7 +237,7 @@ async def settings(request, response, prefs: dict = Depend(get_preferences)):
     return prefs
 ```
 
-### Mixed Parameters in Dependency
+###  Mixed Parameters in Dependency
 
 ```python
 def get_context(
@@ -254,11 +254,11 @@ async def dashboard(request, response, ctx: dict = Depend(get_context)):
 
 ---
 
-## Comparison: Parameters vs Context
+##  Comparison: Parameters vs Context
 
 sillo provides two ways to access request data in dependencies:
 
-### Using Parameters (Recommended)
+###  Using Parameters (Recommended)
 
 ```python
 from sillo import Query, Header, Cookie, Depend
@@ -280,7 +280,7 @@ async def get_data(request, response, data: dict = Depend(get_user_data)):
 - Works with nested dependencies
 - Self-documenting parameters
 
-### Using Context (Legacy)
+###  Using Context (Legacy)
 
 ```python
 from sillo import Depend
@@ -303,11 +303,11 @@ Use `Query`, `Header`, and `Cookie` parameter extractors in dependencies. They p
 
 ---
 
-## OpenAPI Integration
+##  OpenAPI Integration
 
 Parameters automatically appear in your OpenAPI documentation. sillo generates proper OpenAPI parameter objects with correct types, locations, and default values.
 
-### Example OpenAPI Output
+###  Example OpenAPI Output
 
 Given this handler:
 
@@ -353,7 +353,7 @@ The generated OpenAPI spec includes:
 }
 ```
 
-### Features
+###  Features
 
 - **Automatic type inference**: `int` → `integer`, `float` → `number`, `bool` → `boolean`, `str` → `string`
 - **Header name conversion**: `authorization` → `Authorization`, `x_request_id` → `X-Request-Id`
@@ -363,9 +363,9 @@ The generated OpenAPI spec includes:
 
 ---
 
-## API Reference
+##  API Reference
 
-### Query(default=..., *, alias=None, required=False)
+###  Query(default=..., *, alias=None, required=False)
 
 Extract query parameters.
 
@@ -375,7 +375,7 @@ Extract query parameters.
 | `alias` | str | Custom query parameter name |
 | `required` | bool | Raise error if param missing |
 
-### Header(default=..., *, alias=None, required=False)
+###  Header(default=..., *, alias=None, required=False)
 
 Extract HTTP headers. Auto-converts parameter names to canonical header names.
 
@@ -385,7 +385,7 @@ Extract HTTP headers. Auto-converts parameter names to canonical header names.
 | `alias` | str | Custom header name |
 | `required` | bool | Raise error if header missing |
 
-### Cookie(default=..., *, alias=None, required=False)
+###  Cookie(default=..., *, alias=None, required=False)
 
 Extract cookie values.
 
