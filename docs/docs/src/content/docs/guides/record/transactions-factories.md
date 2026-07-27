@@ -1,152 +1,442 @@
 ---
 title: Transactions & Factories
-description: Context-manager database transactions with savepoints, manual begin/commit/rollback, and Laravel-style model factories for testing.
+description: Atomic writes with the transaction context manager, why the savepoint and manual begin/commit APIs should not be used, and model factories for generating test data.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Transactions & Factories
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Atomic writes with the transaction context manager, why the savepoint and manual begin/commit APIs should not be used, and model factories for generating test data.
 ---
 
-# Transactions & Factories
+#  Transactions & Factories
 
-## Transactions
+Two features that share a page because they are both about controlling
+writes: transactions decide whether a group of writes happens at all, and
+factories generate the writes your tests need.
 
-`sillo.record.transactions` provides a context-manager API over Tortoise's
-database connections.  It supports PostgreSQL, MySQL, MariaDB, and SQLite
-via their respective async drivers (asyncpg, aiomysql, aiosqlite).
+##  Transactions
 
-### Context Manager
+A transaction makes several statements atomic — either every write lands
+or none does. Any operation that touches more than one row and would
+leave the database inconsistent if interrupted halfway belongs in one.
 
-The simplest way to use transactions — wrap your operations in an
-`async with` block.  On clean exit, the transaction commits.  On
-exception, it rolls back automatically.
-
-```python
+```python title="the basic form"
 from sillo.record import transaction
 
 async with transaction():
     user = await User.create(email="a@b.com")
-    profile = await Profile.create(user=user, bio="Hello")
-    order = await Order.create(user=user, total=99.99)
-    # All three committed together
-
-async with transaction():
-    user = await User.create(email="b@c.com")
-    raise ValueError("something went wrong")
-    # User is NOT created — transaction was rolled back
+    await Profile.create(user=user, bio="Hello")
+    await Order.create(user=user, total=99.99)
 ```
 
-### Savepoints
+All three rows commit together on clean exit. If anything raises, the
+whole block rolls back and the exception propagates:
 
-Nested transactions via savepoints.  A savepoint lets you roll back a
-subset of operations without affecting the outer transaction:
+```python title="rollback on exception"
+from tortoise.expressions import F
 
-```python
-async with transaction() as tx:
-    # Outer transaction
-    user = await User.create(email="a@b.com")
-
-    async with tx.savepoint():
-        try:
-            await call_external_api(user)
-            await user.save()
-        except Exception:
-            pass  # Only the API call is rolled back — user is preserved
-
-    order = await Order.create(user=user)
-    # Both user and order are committed
-```
-
-Savepoints use `SAVEPOINT sp` / `RELEASE SAVEPOINT sp` / `ROLLBACK TO
-SAVEPOINT sp` SQL commands.  Supported by PostgreSQL, MySQL 8.0+,
-MariaDB 10.3+.  Not supported by SQLite.
-
-### Manual Control
-
-For scenarios where a context manager doesn't fit:
-
-```python
-from sillo.record import begin, commit, rollback
-
-await begin()
 try:
-    await user.save()
-    await order.save()
-    await commit()
-except Exception:
-    await rollback()
-    raise
+    async with transaction():
+        await Account.filter(id=1).update(balance=F("balance") - 100)
+        await Account.filter(id=2).update(balance=F("balance") + 100)
+        raise RuntimeError("boom")
+except RuntimeError:
+    pass
+
+# Neither update survives.
 ```
 
-### Connection Handling
+That is the whole contract, and it works. `transaction()` delegates to
+Tortoise's `connection._in_transaction()`, which handles the driver-level
+protocol for each backend.
 
-The `transaction()` context manager calls `connections.get("default")`
-from Tortoise's connection pool.  This returns the active connection
-for the "default" database.  If you have multiple databases, pass
-`connection_name`:
+###  When to reach for this
+
+Wrap a transaction around any write that must be all-or-nothing: a
+purchase that debits one account and credits another, a signup that
+creates a user plus a profile plus an audit row, a bulk import where a
+partial result is worse than no result.
+
+Do **not** wrap read-only work in a transaction. It holds a connection
+and, on some isolation levels, takes locks, for no benefit.
+
+Do not wrap slow external calls in one. A transaction that stays open
+while an HTTP request to a payment provider completes holds locks for the
+duration of that request, and a provider timeout becomes a database
+incident. Do the external call first, then open a short transaction to
+record the result.
+
+###  Multiple connections
+
+Pass `connection_name` to run against a non-default connection:
 
 ```python
 async with transaction(connection_name="analytics"):
-    await analytics_event.save()
+    await Event.create(name="signup")
 ```
 
-### Tortoise Integration
+A transaction covers one connection. Writes to two different databases
+inside one `async with` are not atomic across both — that requires
+two-phase commit, which neither Tortoise nor sillo implements. If you
+need cross-database consistency, use an outbox table in the primary
+database and a worker that replays it.
 
-Tortoise ORM manages connection pools via `asyncpg` (Postgres),
-`aiomysql` (MySQL), and `aiosqlite` (SQLite).  Each driver implements
-its own transaction protocol.  Tortoise abstracts this with an internal
-`_in_transaction()` context manager.  sillo.record wraps this with
-additional savepoint support and a cleaner API.
+###  Nesting
 
-For reference: [Tortoise Transactions](https://tortoise.github.io/transactions.html)
+`transaction()` blocks nest as far as Tortoise supports them, and
+Tortoise's `_in_transaction()` reuses the existing transaction when one is
+already open on that connection rather than starting a second. The
+practical implication is that an inner block committing does **not** make
+its writes durable — the outer block still decides. Do not write code that
+depends on an inner transaction being independently committed.
 
-## Factories
+###  Savepoints are broken
 
-Model factories generate test data with sensible defaults.  Inspired by
-Laravel's model factories.
+:::danger[`TransactionContext.savepoint()` raises `TypeError` on every backend]
+The implementation calls `self._conn.execute_insert("SAVEPOINT sp")`.
+`execute_insert` requires two arguments — a query and its values — so the
+call fails immediately:
+
+```
+TypeError: SqliteClient.execute_insert() missing 1 required positional
+argument: 'values'
+```
+
+The exception handler then calls `execute_insert("ROLLBACK TO SAVEPOINT sp")`,
+which fails the same way, so the original error is replaced by a second
+`TypeError` during cleanup. There is no backend on which this works.
+
+There is a second, independent design problem. The savepoint name is the
+literal string `sp` for every savepoint, so even with the call fixed,
+nesting two savepoints would make the inner `RELEASE` and `ROLLBACK TO`
+ambiguous.
+
+And the intended semantics do not hold either: `savepoint()` re-raises
+after rolling back, so the exception propagates to the enclosing
+`transaction()` and rolls everything back — unless the caller catches it.
+The docstring's promise that a failed inner block leaves the outer
+transaction intact requires a `try`/`except` the examples do not show.
+
+If you need partial rollback, issue the SQL yourself with unique names:
 
 ```python
-from sillo.record import Factory
+from tortoise import connections
+
+conn = connections.get("default")
+
+async with transaction():
+    await User.create(email="a@b.com")
+    await conn.execute_query("SAVEPOINT sp_risky")
+    try:
+        await risky_operation()
+        await conn.execute_query("RELEASE SAVEPOINT sp_risky")
+    except Exception:
+        await conn.execute_query("ROLLBACK TO SAVEPOINT sp_risky")
+        # swallow deliberately: the outer transaction continues
+    await Order.create(...)
+```
+
+Savepoints are supported by PostgreSQL, MySQL 5.0+, MariaDB, and — contrary
+to what is sometimes assumed — SQLite, which has had `SAVEPOINT` since
+3.6.8.
+:::
+
+###  Do not use `begin` / `commit` / `rollback`
+
+:::danger[The manual API does not compose with connection pooling]
+`begin()`, `commit()`, and `rollback()` issue raw
+`execute_query("BEGIN")`, `"COMMIT"`, and `"ROLLBACK"` against
+`connections.get(name)`.
+
+They do not participate in Tortoise's transaction context. Nothing
+records that a transaction is open, so a `transaction()` block entered
+afterwards has no idea, and Tortoise's own bookkeeping is out of sync
+with the database's.
+
+On a pooled backend the problem is worse: each `execute_query` may be
+served by a different pooled connection. `BEGIN` on connection A followed
+by an `INSERT` on connection B followed by `COMMIT` on connection C
+commits nothing and leaves connection A holding an idle open transaction
+until it is recycled.
+
+If a context manager genuinely does not fit your control flow, use
+`AsyncExitStack` to hold the `transaction()` context open across
+functions rather than reaching for these:
+
+```python
+from contextlib import AsyncExitStack
+
+async with AsyncExitStack() as stack:
+    tx = await stack.enter_async_context(transaction())
+    await step_one()
+    await step_two()
+```
+:::
+
+###  Logging
+
+`transaction()` catches, logs with `logger.exception("Transaction rolled back")`,
+and re-raises. Every rolled-back transaction therefore produces a full
+traceback in the `sillo.record.transactions` logger *and* whatever your
+application logs when it handles the exception. Expect duplicate
+tracebacks; if rollbacks are an expected part of your flow — optimistic
+concurrency retries, for instance — raise the level of that logger to
+avoid drowning your log aggregator.
+
+###  A worked example
+
+An idempotent order placement that keeps the external call outside the
+transaction.
+
+```python title="ordering with an external charge"
+@app.post("/orders")
+async def place_order(request, response):
+    payload = request.validated_data
+
+    # Outside the transaction: slow, and safe to retry.
+    charge = await payments.charge(payload.token, payload.amount_cents)
+
+    async with transaction():
+        order = await Order.create(
+            user_id=request.user.id,
+            amount_cents=payload.amount_cents,
+            charge_id=charge.id,
+        )
+        await OrderLine.bulk_create(
+            [{"order_id": order.id, **line} for line in payload.lines]
+        )
+        await AuditEntry.create(action="order.created", subject_id=order.id)
+
+    return response.json(order.to_dict(), status_code=201)
+```
+
+If the database write fails after a successful charge, the transaction
+rolls back and you are left with a charge and no order — which is why
+`charge_id` is stored and why a reconciliation job matching charges
+against orders is not optional in this design.
+
+##  Factories
+
+A factory generates model instances with sensible defaults so a test can
+say "give me a user" without restating ten required fields.
+
+```python title="defining a factory"
 from uuid import uuid4
+from sillo.record import Factory
+
 
 class UserFactory(Factory):
     model = User
-    definition = lambda: {
-        "email": f"user{uuid4().hex[:8]}@test.com",
+    definition = staticmethod(lambda: {
+        "email": f"user-{uuid4().hex[:8]}@test.com",
         "name": "Test User",
-    }
-
-# Create and persist:
-user = await UserFactory.create()
-admin = await UserFactory.create(overrides={"name": "Admin"})
-
-# Create many:
-users = await UserFactory.create_many(5)
-
-# Make without saving (for unit tests):
-unsaved = UserFactory.make()
-assert unsaved.id is None  # Not persisted
-
-# State modifiers:
-class UserFactory(Factory):
-    @classmethod
-    def admin(cls):
-        return cls.state(name="Admin", email="admin@test.com")
-
-    @classmethod
-    def with_email(cls, email: str):
-        return cls.state(email=email)
+        "plan": "free",
+    })
 ```
 
-Factories use your model's `.create()` method, which fires all lifecycle
-events, validators, and auto-fields.  `.make()` constructs an instance
-without saving — perfect for unit tests that don't need a database.
+```python title="using it"
+user = await UserFactory.create()                    # saved
+admin = await UserFactory.create({"name": "Admin"})  # saved, with overrides
+users = await UserFactory.create_many(5)             # five saved rows
+draft = UserFactory.make()                           # not saved; draft.id is None
+```
 
-The `FactoryBuilder` registry lets you manage multiple factories:
+`make()` builds the instance without touching the database, which is what
+you want for a unit test of serialization or validation logic. `create()`
+calls `instance.save()`, so it goes through the normal write path —
+including `ValidatesBeforeSaveMixin` and any casts.
+
+###  `definition` must not be a normal method
+
+:::caution[`def definition(self)` raises `TypeError`]
+`Factory.make()` calls `cls.definition()` with no arguments. A plain
+method declared on the class expects `self`:
 
 ```python
-from sillo.record import FactoryBuilder
+class BadFactory(Factory):
+    model = User
+    def definition(self):          # WRONG
+        return {"email": "a@b.com"}
 
+BadFactory.make()
+# TypeError: BadFactory.definition() missing 1 required positional argument: 'self'
+```
+
+Use a `lambda` or an explicit `@staticmethod`:
+
+```python
+class GoodFactory(Factory):
+    model = User
+
+    @staticmethod
+    def definition():
+        return {"email": f"user-{uuid4().hex[:8]}@test.com"}
+```
+
+The `staticmethod` form is the one to prefer — it works, it reads
+normally, and it lets the body span more than one expression.
+:::
+
+###  Uniqueness and `create_many`
+
+`create_many(count, overrides)` applies the **same** overrides dict to
+every instance. That is fine for shared attributes and fatal for unique
+ones:
+
+```python
+await UserFactory.create_many(5, {"email": "same@test.com"})
+# IntegrityError on the second row
+```
+
+Generate unique values inside `definition` — a `uuid4()` fragment or a
+counter — so that every call produces a distinct row. If you need
+per-instance overrides, loop:
+
+```python
+users = [await UserFactory.create({"email": f"u{i}@test.com"}) for i in range(5)]
+```
+
+`create_many` also inserts one row at a time, which is fine for a handful
+of test rows and slow for thousands. For bulk fixtures use
+`Model.bulk_create` with a list comprehension over `Factory.make()`.
+
+###  `state()` returns a function, not a chainable factory
+
+`Factory.state(**kwargs)` returns a plain callable that produces
+`{**cls.definition(), **kwargs}`. There is no `.state(...).create()`
+chain — the returned function has to be installed as a `definition`:
+
+```python title="what state() actually does"
+modifier = UserFactory.state(plan="enterprise")
+modifier()          # {'email': '...', 'name': 'Test User', 'plan': 'enterprise'}
+```
+
+A subclass is clearer than trying to make `state()` into something it is
+not:
+
+```python title="factory variants as subclasses"
+class AdminUserFactory(UserFactory):
+    definition = staticmethod(lambda: {
+        **UserFactory.definition(),
+        "plan": "enterprise",
+        "is_admin": True,
+    })
+
+
+admin = await AdminUserFactory.create()
+```
+
+###  `FactoryBuilder`
+
+A dictionary with a nicer error message. `register(name, factory)` stores
+a factory class, `get(name)` retrieves it and raises
+`KeyError: Factory 'x' not registered` when absent.
+
+```python
 builder = FactoryBuilder()
 builder.register("user", UserFactory)
 builder.register("post", PostFactory)
 
-factory = builder.get("user")
-user = await factory.create()
+user = await builder.get("user").create()
 ```
+
+It is worth using when fixtures are looked up by string — a
+seed-from-YAML script, say. For ordinary tests, importing the factory
+class is simpler.
+
+###  Factories in tests
+
+Use a transaction per test and roll it back, so tests do not have to
+clean up after themselves:
+
+```python title="conftest.py"
+import pytest
+from tortoise import Tortoise, connections
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def db():
+    await Tortoise.init(db_url="sqlite://:memory:",
+                        modules={"models": ["myapp.models"]})
+    await Tortoise.generate_schemas()
+    yield
+    await connections.close_all()
+
+
+@pytest.fixture
+async def user():
+    return await UserFactory.create()
+```
+
+An in-memory SQLite database gives every session a clean schema in
+milliseconds. If your application depends on Postgres-specific behaviour
+— `ON CONFLICT` targets, array columns, `ILIKE` — test against Postgres
+instead; SQLite will pass tests that production fails.
+
+##  What not to do
+
+**Do not use `TransactionContext.savepoint()`.** It raises `TypeError`
+before doing anything.
+
+**Do not use `begin()` / `commit()` / `rollback()`.** They bypass
+Tortoise's transaction tracking and break under connection pooling.
+
+**Do not make external calls inside a transaction.** Locks are held for
+the duration.
+
+**Do not assume an inner `transaction()` commits independently.** The
+outermost block decides.
+
+**Do not expect atomicity across two connections.** There is no two-phase
+commit.
+
+**Do not declare `definition` as `def definition(self)`.** Use a
+`staticmethod` or a lambda.
+
+**Do not pass a unique value in `create_many` overrides.** Every row gets
+the same one.
+
+**Do not use `create_many` for thousands of rows.** It is one insert per
+row.
+
+##  Performance notes
+
+A transaction holds a connection for its entire lifetime. With a pool of
+five, six concurrent long transactions starve every other request. Keep
+them short and measure the slowest statement inside them.
+
+Row locks taken inside a transaction are held until commit. Two
+transactions updating the same rows in different orders deadlock; the
+database picks a victim and raises. Always touch rows in a consistent
+order — sorting ids before a bulk update is the usual fix.
+
+`create_many(1000)` issues a thousand `INSERT` statements plus whatever
+each `save()` triggers. `Model.bulk_create([...])` issues roughly
+`1000 / batch_size`. For test fixtures the difference is seconds versus
+minutes.
+
+##  API reference
+
+| Name | Signature | Notes |
+|---|---|---|
+| `transaction` | `async with transaction(connection_name="default")` | Commits on exit, rolls back on exception |
+| `TransactionContext.savepoint` | `async with tx.savepoint()` | **Raises `TypeError`; do not use** |
+| `begin` / `commit` / `rollback` | `(connection_name="default")` | **Unsafe with pooling; do not use** |
+| `Factory.make` | `(overrides=None) -> instance` | Not saved |
+| `Factory.create` | `(overrides=None) -> instance` | Saved via `save()` |
+| `Factory.create_many` | `(count, overrides=None) -> list` | Same overrides for every row |
+| `Factory.state` | `(**kwargs) -> Callable` | Returns a function, not a factory |
+| `FactoryBuilder` | `.register(name, factory)`, `.get(name)` | `get` raises `KeyError` |
+
+##  Related
+
+- [Record Overview](/guides/record/) — setup and connection lifecycle
+- [Models & Mixins](/guides/record/models/) — `bulk_create`, `upsert`, and validation hooks
+- [Scopes & Events](/guides/record/scopes-events/) — why lifecycle events do not fire inside `create()`
+- [Migrations & Seeding](/guides/record/migrations/) — seeders and fixtures for non-test data
+- [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/) — turning `IntegrityError` into a 409
+- [Concurrency](/guides/concurrency/) — how sillo schedules the tasks these run in

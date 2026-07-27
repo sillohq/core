@@ -1,170 +1,427 @@
 ---
 title: Casting & Collections
-description: Attribute casting (json, datetime, bool, int, float, encrypted) and chainable result collections with map, filter, pluck, group_by, sort_by, sum, avg, chunk, unique.
+description: Attribute casting between database and Python representations, the round-trip and security traps in the built-in casters, and the chainable Collection wrapper with its sharp edges.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Casting & Collections
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Attribute casting between database and Python representations, the round-trip and security traps in the built-in casters, and the chainable Collection wrapper with its sharp edges.
 ---
 
-# Casting & Collections
+#  Casting & Collections
 
-## Attribute Casting
+Two independent features, both about shaping data rather than fetching
+it. Casting sits between the database column and the Python attribute.
+Collections sit after the query, wrapping a list of rows in chainable
+transformations.
 
-Attribute casting transforms values when reading from or writing to the
-database.  Define a `_casts` dict on your model using the `HasCasts`
-mixin.  Inspired by Laravel's attribute casting.
+##  Attribute casting
 
-```python
-from sillo.record import Model, HasCasts
+A cast is a pair of functions — an encoder that runs on the way into the
+database and a decoder that runs on the way out. Declaring one means you
+stop writing `json.loads(user.metadata)` at every read site.
+
+```python title="declaring casts"
 from tortoise import fields
+from sillo.record import Model
 
-class User(Model, HasCasts):
+
+class User(Model):
     email = fields.CharField(max_length=255)
+    metadata = fields.TextField(null=True)
+    login_count = fields.CharField(max_length=10, null=True)
 
     _casts = {
         "metadata": "json",
-        "last_login": "datetime",
-        "is_admin": "bool",
         "login_count": "int",
-        "balance": "float",
-        "secret_key": ("encrypted", {"key": "my-32-byte-secret-key-here!!"}),
     }
 ```
 
-### How Casting Works
+`sillo.record.Model` already inherits `HasCasts`, so declaring `_casts`
+is all that is required. You do not need to list `HasCasts` in the bases.
 
-When you **read** a field (e.g., `user.metadata`), the decoder transforms
-the database value before returning it.  When you **write** (`user.metadata
-= {"theme": "dark"}`), the encoder transforms the Python value before it
-hits the database.  This is Python-side logic — there is NO database-level
-casting.  The database column must be a compatible type (TEXT for JSON and
-encrypted, DATETIME for datetime, BOOLEAN for bool, etc.).
+```python title="reading and writing cast fields"
+user = await User.create(metadata={"theme": "dark"}, login_count=3)
+# column contains the string '{"theme": "dark"}'
 
-### Accessors and Mutators
-
-Define `get_<field>_attribute(self, value)` to transform a value when it is
-read, and `set_<field>_attribute(self, value)` to normalize a value when it
-is assigned. Mutators run before persistence; accessors run after casts.
-
-```python
-class User(Model):
-    email = fields.CharField(max_length=255, unique=True)
-    name = fields.CharField(max_length=100)
-
-    def set_email_attribute(self, value: str) -> str:
-        return value.strip().lower()
-
-    def get_name_attribute(self, value: str) -> str:
-        return value.title()
-
-user = await User.create(email="  ALICE@EXAMPLE.COM ", name="alice smith")
-user.email  # "alice@example.com"
-user.name   # "Alice Smith"
+user = await User.get(id=user.id)
+user.metadata          # {'theme': 'dark'} — a real dict
+user.metadata["theme"] # 'dark'
 ```
 
-### Built-in Cast Types
+###  Where the encode and decode happen
 
-| Type | Encoder | Decoder | Best DB Column |
-|---|---|---|---|
-| `"json"` | `json.dumps` | `json.loads` | TEXT or JSONB |
-| `"datetime"` | `.isoformat()` | `datetime.fromisoformat()` | TEXT or DATETIME |
-| `"bool"` | `bool()` | `bool()` | BOOLEAN or INTEGER |
-| `"int"` | `int()` | `int()` | INTEGER |
-| `"float"` | `float()` | `float()` | REAL or FLOAT |
-| `"encrypted"` | XOR + base64 | base64 + XOR | TEXT |
+Decoding happens in `Model.__getattribute__`. Every read of a cast field
+runs the decoder. There is no caching — reading `user.metadata` five
+times parses the JSON five times.
 
-The encrypted caster uses simple XOR + base64 encoding for demonstration.
-For production, use `cryptography.fernet.Fernet` by registering a custom
-caster.
+Encoding happens in `Model.save()`, inside the `_encoded_cast_values()`
+context manager. It swaps the encoded value in, lets Tortoise write, then
+restores the original Python object on the instance. That restoration is
+why `user.metadata` is still a dict after saving rather than a JSON
+string.
 
-### Custom Casters
+Encoding covers `save()`, `create()`, `bulk_create()`, `bulk_upsert()`,
+and `upsert()`. It does **not** cover `queryset.update()`, which builds
+SQL directly:
 
 ```python
+await User.filter(id=1).update(metadata={"theme": "dark"})   # writes a Python repr
+```
+
+Load the row and `save()` it if the field is cast.
+
+A subtlety in `_set_kwargs`: for a cast field, Tortoise's own
+`to_python_value` is skipped during `__init__`, so the value you pass to
+`create()` reaches the encoder exactly as you wrote it.
+
+###  Built-in casters
+
+| Name | Encoder | Decoder | Suitable column |
+|---|---|---|---|
+| `"json"` | `json.dumps(value, default=str)` | `json.loads` when the value is a `str` | `TEXT` |
+| `"datetime"` | `.isoformat()` | `datetime.fromisoformat` | `TEXT` |
+| `"bool"` | `bool(value)` | `bool(value)` | `BOOLEAN` / `INTEGER` |
+| `"int"` | `int(value)` | `int(value)` | `INTEGER` |
+| `"float"` | `float(value)` | `float(value)` | `REAL` |
+| `("encrypted", {"key": ...})` | XOR + base64 | base64 + XOR | `TEXT` |
+
+`None` bypasses both encoder and decoder — a null column reads back as
+`None` rather than crashing the decoder.
+
+:::danger[The `"bool"` cast corrupts data over a text column]
+Both directions are `bool(value)`. Writing `False` to a `CharField`
+stores the *string* `'False'`, and `bool('False')` is `True`:
+
+```python
+await Flagged.create(enabled=False)     # column contains 'False'
+row = await Flagged.get(id=1)
+row.enabled                             # True
+```
+
+The value survives the round trip inverted. The `"bool"` cast is only
+safe over a genuine `BooleanField` or `IntField`, where the driver
+returns `0`/`1` — and over those columns Tortoise already gives you a
+Python bool, so the cast is redundant. There is no case where this cast
+is both necessary and correct. Do not use it.
+:::
+
+:::danger[The `"encrypted"` cast is not encryption]
+`_encrypted_factory` XORs the plaintext against a repeating key and
+base64-encodes the result. The source comment says so: *"Simple XOR +
+base64 for demo. Use cryptography.fernet in production."*
+
+```python
+_casts = {"ssn": ("encrypted", {"key": "k3y"})}
+# 'hunter2' is stored as 'A0YXH1YLWQ=='
+# base64.b64decode('A0YXH1YLWQ==') -> b'\x03F\x17\x1fV\x0bY'
+```
+
+A repeating-key XOR is broken by anyone with a sample of ciphertext and a
+guess at the plaintext format. There is no authentication, so ciphertext
+can be modified undetectably. A database dump containing these columns
+should be treated as a plaintext leak.
+
+Use a real caster instead:
+
+```python
+from cryptography.fernet import Fernet
 from sillo.record.casting import CastRegistry
 
-def upper_encoder(value):
-    return value.upper()
+_fernet = Fernet(os.environ["FIELD_ENCRYPTION_KEY"])
 
-def lower_decoder(value):
-    return value.lower()
+CastRegistry.register(
+    "fernet",
+    lambda value: _fernet.encrypt(value.encode()).decode(),
+    lambda value: _fernet.decrypt(value.encode()).decode(),
+)
 
-CastRegistry.register("uppercase", upper_encoder, lower_decoder)
-
-class Product(Model, HasCasts):
-    _casts = {"sku": "uppercase"}
+class Customer(Model):
+    ssn = fields.TextField(null=True)
+    _casts = {"ssn": "fernet"}
 ```
 
-## Collections
+Note that encrypted columns cannot be filtered, sorted, or indexed by
+value — every `WHERE ssn = ...` becomes a full scan and decrypt. If you
+need lookups, store a separate HMAC of the value and query that.
+See [Crypto helpers](/guides/helpers/crypto/).
+:::
 
-A `Collection` wraps a list of model instances and provides chainable
-functional methods.  Every method returns a **new** Collection — the
-original is never mutated.  This is inspired by Laravel's Collection
-class.
+###  Custom casters
+
+`CastRegistry.register(name, encoder, decoder)` adds a named caster
+usable from any model.
+
+```python title="a registered caster"
+from sillo.record.casting import CastRegistry
+
+CastRegistry.register(
+    "csv",
+    lambda value: ",".join(value),          # list -> 'a,b,c'
+    lambda value: value.split(",") if value else [],
+)
+
+
+class Article(Model):
+    tags = fields.TextField(null=True)
+    _casts = {"tags": "csv"}
+```
+
+The registry is global and keyed by name, so registering the same name
+twice silently replaces the earlier caster. Register once, at import
+time, in a module that is imported before your models.
+
+A cast entry may also be a callable returning an `(encoder, decoder)`
+pair, which is the way to build a caster that closes over per-model
+configuration:
+
+```python title="a callable cast"
+def rounded(places: int):
+    def factory():
+        return (lambda v: str(round(v, places)), lambda v: float(v))
+    return factory
+
+
+class Reading(Model):
+    celsius = fields.CharField(max_length=16)
+    _casts = {"celsius": rounded(2)}
+```
+
+###  Decoder failures surface at attribute access
+
+If a column contains a value the decoder cannot handle, the exception is
+raised from the attribute read — not from the query.
 
 ```python
+row = await Flagged.get(id=1)      # succeeds
+row.payload                        # JSONDecodeError: Expecting value: line 1 column 1
+```
+
+That is a long way from the cause, and it means a single malformed legacy
+row can crash a listing endpoint when it is serialized. If a column may
+contain values written before the cast existed, make the decoder
+defensive:
+
+```python
+CastRegistry.register(
+    "json_safe",
+    lambda v: json.dumps(v, default=str),
+    lambda v: json.loads(v) if isinstance(v, str) and v.strip() else None,
+)
+```
+
+###  Casts versus accessors
+
+Both transform values on read, and they compose: the cast decoder runs
+first, then `get_<field>_attribute` receives the decoded value. Use a
+cast when the storage representation differs from the Python one, and an
+accessor when the *presentation* differs from the stored value. Accessors
+are covered in [Models & Mixins](/guides/record/models/).
+
+##  Collections
+
+`Collection` wraps a list and adds chainable transformations. Every
+method returns a new `Collection`; the original list is never mutated.
+
+```python title="basic usage"
 from sillo.record import Collection
 
-users = await User.active().all()
-collection = Collection(users)
+users = await User.active()
+c = Collection(users)
+
+emails = c.pluck("email").to_list()
+vips = c.filter(lambda u: u.plan == "vip")
+by_plan = c.group_by("plan")
+total = c.sum("balance")
 ```
 
-### Full Method Reference
+It is a plain in-memory wrapper: iterable, sized, and indexable, with no
+database awareness. `len(c)`, `for row in c`, and `c[0]` all work.
 
-| Method | Returns | Description |
+###  Method reference
+
+| Method | Returns | Notes |
 |---|---|---|
-| `map(callback)` | Collection | Transform each item via callback |
-| `filter(callback)` | Collection | Keep items where callback returns True |
-| `reject(callback)` | Collection | Remove items where callback returns True |
-| `pluck(key)` | Collection | Extract a single attribute from each item |
-| `group_by(key)` | Dict[str, Collection] | Group items into nested Collections |
-| `key_by(key)` | Dict[Any, Any] | Index items by attribute into a dict |
-| `sort_by(key, descending)` | Collection | Sort by attribute |
-| `chunk(size)` | Iterator[Collection] | Yield sub-collections of given size |
-| `first(default)` | Any | First item or default |
-| `last(default)` | Any | Last item or default |
-| `take(count)` | Collection | First N items |
-| `skip(count)` | Collection | Skip first N items |
-| `sum(key)` | float | Sum of attribute values |
-| `avg(key)` | float | Average of attribute values |
-| `min(key)` / `max(key)` | Any | Min / max of attribute values |
-| `count()` | int | Number of items |
-| `unique(key)` | Collection | Deduplicate by attribute |
-| `contains(callback)` | bool | True if any item matches |
-| `is_empty()` / `is_not_empty()` | bool | Boolean checks |
-| `to_list()` | List | Convert to plain list |
-| `to_dict()` | List[dict] | Serialize all items to dicts |
-| `to_json(indent)` | str | Serialize to JSON string |
+| `map(fn)` | `Collection` | |
+| `filter(fn)` / `reject(fn)` | `Collection` | `reject` is the inverse |
+| `pluck(key)` | `Collection` | Missing attribute yields `None` |
+| `group_by(key)` | `dict[Any, Collection]` | A dict, not a Collection |
+| `key_by(key)` | `dict[Any, Any]` | Later duplicates overwrite earlier ones |
+| `sort_by(key, *, descending=False)` | `Collection` | See the trap below |
+| `chunk(size)` | generator of `Collection` | Lazy; not a list |
+| `first(default=None)` / `last(default=None)` | item | |
+| `take(n)` / `skip(n)` | `Collection` | |
+| `sum(key=None)` / `avg(key=None)` | number | Empty gives `0` / `0.0` |
+| `min(key=None)` / `max(key=None)` | item | Empty **raises** `ValueError` |
+| `count()` | `int` | |
+| `unique(key=None)` | `Collection` | See the trap below |
+| `contains(fn)` | `bool` | |
+| `is_empty()` / `is_not_empty()` | `bool` | |
+| `to_list()` | `list` | |
+| `to_dict()` | `list[dict]` | Returns a **list**, despite the name |
+| `to_json(indent=None)` | `str` | `default=str` |
 
-### Usage Examples
+###  `sort_by` coerces falsy values to zero
+
+The sort key is `getattr(item, key, None) or 0`. Every falsy value —
+`None`, `""`, `0`, `False`, `[]` — becomes the integer `0`.
+
+```python title="what breaks"
+Collection([Row("b"), Row(None), Row("a")]).sort_by("v")
+# TypeError: '<' not supported between instances of 'int' and 'str'
+```
+
+A column that is nullable and holds strings cannot be sorted at all once
+a single row is `NULL`. Uniform types survive: all-strings sorts
+correctly, all-numbers sorts correctly, all-`None` is a no-op.
+
+Sort in the database instead. `order_by` handles nulls, uses an index,
+and does not materialise the whole table:
 
 ```python
-# Extract email addresses:
-emails = Collection(users).pluck("email").to_list()
-
-# Filter active VIPs:
-vips = Collection(users).filter(lambda u: u.plan == "vip")
-
-# Group by role:
-by_role = Collection(users).group_by("role")
-for role, members in by_role.items():
-    print(f"{role}: {members.count()} members")
-
-# Sort by creation date, newest first:
-recent = Collection(users).sort_by("created_at", descending=True).take(10)
-
-# Aggregate:
-total_balance = Collection(users).sum("balance")
-avg_age = Collection(users).avg("age")
-oldest = Collection(users).max("created_at")
-
-# Serialize for API:
-return response.json({"users": Collection(users).take(20).to_dict()})
-
-# Deduplicate plans:
-plans = Collection(users).pluck("plan").unique().to_list()
+rows = await User.all().order_by("-created_at").limit(20)
 ```
 
-### Performance
+If you must sort in memory over a nullable column, use `sorted()` with an
+explicit key that handles `None`.
 
-Collections load ALL rows into memory.  For large datasets (10k+ rows),
-use Tortoise querysets with `.offset().limit()` or the pagination system.
-Collections excel at in-memory transformations on already-fetched result
-sets — typically after a paginated query or a filtered query returning a
-manageable number of rows.
+###  `min` and `max` use numeric sentinels
+
+With a `key`, the default for a missing attribute is `float("inf")` for
+`min` and `float("-inf")` for `max`. Over a string field where any item
+lacks the attribute, the comparison raises
+`TypeError: '<' not supported between instances of 'float' and 'str'`.
+
+They are also inconsistent with the other aggregates on an empty
+collection: `sum()` returns `0` and `avg()` returns `0.0`, but `min()`
+raises `ValueError: min() iterable argument is empty`. Guard with
+`is_empty()` before calling either.
+
+###  `unique()` without a key requires hashable items
+
+`unique()` with no argument does `list(set(self._items))`, which raises
+`TypeError: unhashable type: 'dict'` on dict rows and discards ordering
+even when it succeeds. `unique(key="plan")` uses a seen-set over the
+attribute values, preserves order, and keeps the first occurrence — that
+is the form you want almost always.
+
+###  `to_dict()` returns a list
+
+Despite the name it produces `list[dict]`, calling `.to_dict()` on each
+item that has one and `str(item)` on those that do not. That fallback is
+worth watching: a collection of plain values silently becomes a list of
+their string representations.
+
+```python
+Collection([1, 2]).to_dict()   # ['1', '2'] — strings, not ints
+```
+
+For rows from a `sillo.record.Model`, remember that each item's
+`to_dict()` includes reverse relations. Pass through `map` if you need to
+exclude them:
+
+```python
+payload = Collection(articles).map(lambda a: a.to_dict(exclude=["tags"])).to_list()
+```
+
+###  A worked example
+
+Building a dashboard payload from one query, without a second round trip
+per grouping.
+
+```python title="grouped summary endpoint"
+from sillo.record import Collection
+
+
+@app.get("/admin/summary")
+async def summary(request, response):
+    users = await User.active().limit(1000)
+    c = Collection(users)
+
+    by_plan = {
+        plan: {
+            "count": members.count(),
+            "revenue": members.sum("monthly_cents") / 100,
+            "newest": members.sort_by("id", descending=True).first().email,
+        }
+        for plan, members in c.group_by("plan").items()
+    }
+
+    return response.json({
+        "total": c.count(),
+        "by_plan": by_plan,
+        "sample": c.take(5).map(lambda u: u.to_dict(include=["id", "email"])).to_list(),
+    })
+```
+
+Note the `limit(1000)`. A `Collection` holds every row in memory; the
+limit is what keeps this endpoint bounded. For an accurate count over a
+large table, use `await User.active().count()` — one `COUNT(*)` instead
+of a full fetch.
+
+##  What not to do
+
+**Do not use the `"bool"` cast.** It inverts `False` over a text column
+and is redundant over a boolean one.
+
+**Do not use the `"encrypted"` cast for anything sensitive.** It is
+repeating-key XOR. Register a Fernet caster.
+
+**Do not use `queryset.update()` on a cast field.** It bypasses the
+encoder.
+
+**Do not read a cast field in a hot loop.** The decoder runs on every
+access, uncached.
+
+**Do not let an unguarded decoder meet legacy data.** One malformed row
+raises on attribute access, far from the query.
+
+**Do not `sort_by` a nullable string column.** Sort in SQL.
+
+**Do not call `min()`/`max()` on a possibly-empty collection** without an
+`is_empty()` guard.
+
+**Do not build a `Collection` from an unbounded queryset.** It is a list;
+it holds everything.
+
+##  Performance notes
+
+Casting costs one function call per read and one per field per save. JSON
+decoding a large document on every attribute access is the case that
+actually shows up in profiles — assign it to a local variable rather than
+reading `row.metadata` repeatedly inside a loop.
+
+Collections are ordinary Python list comprehensions. Every chained call
+allocates a new list, so a five-step chain over ten thousand rows
+allocates five ten-thousand-element lists. That is fine at page-sized
+volumes and wasteful at table-sized ones.
+
+Aggregation is where the difference is largest. `Collection(rows).sum("amount")`
+fetches every row, instantiates every model, and adds in Python.
+`await Order.all().annotate(total=Sum("amount")).values("total")` sends
+one query and returns one number. Prefer the database for aggregates over
+anything you would not want to print.
+
+##  API reference
+
+| Name | Signature | Notes |
+|---|---|---|
+| `_casts` | `dict[str, str \| tuple \| Callable]` | Class attribute on the model |
+| `CastRegistry.register` | `(name, encoder, decoder) -> None` | Global; last registration wins |
+| `CastRegistry.get` | `(name) -> tuple \| None` | |
+| `HasCasts.get_cast` | `(field_name) -> (encoder, decoder)` | `(None, None)` when unset |
+| `HasCasts.cast_get` / `cast_set` | `(field_name, value) -> Any` | `None` passes through |
+| `Collection` | `(items: list \| None = None)` | Iterable, sized, indexable |
+
+##  Related
+
+- [Models & Mixins](/guides/record/models/) — accessors, mutators, and serialization
+- [Record Overview](/guides/record/) — setup and configuration
+- [Scopes & Events](/guides/record/scopes-events/) — reusable query constraints
+- [Pagination](/guides/record/pagination/) — bounding result sets before collecting them
+- [Crypto helpers](/guides/helpers/crypto/) — proper symmetric encryption and HMAC
+- [Serialization](/guides/serialization/) — how sillo encodes handler return values

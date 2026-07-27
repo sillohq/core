@@ -1,226 +1,534 @@
 ---
 title: Models & Mixins
-description: Enhanced Tortoise base model with composable mixins — every method, parameter, and integration point explained in production depth.
+description: The sillo.record base model — auto timestamps, soft deletes, serialization, accessors and mutators, bulk writes, and the six composable mixins, with the failure modes of each.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Models & Mixins
+  - tag: meta
+    attrs:
+      property: og:description
+      content: The sillo.record base model — auto timestamps, soft deletes, serialization, accessors and mutators, bulk writes, and the six composable mixins, with the failure modes of each.
 ---
 
-# Models & Mixins
+#  Models & Mixins
 
-## The Model Base
+`sillo.record.Model` is a Tortoise `Model` subclass that also inherits
+`HasCasts` and `HasScopes`. Everything Tortoise gives you — fields,
+querysets, `Q` objects, relations, `prefetch_related`, aggregation, raw
+SQL — is unchanged. What the subclass adds is a set of behaviours most
+applications end up writing by hand.
 
-`sillo.record.Model` extends Tortoise's `Model` class.  It does not fork
-or override Tortoise internals — every Tortoise feature (fields, querysets,
-relations, aggregation, raw SQL, schema generation) works exactly as
-documented at [tortoise.github.io](https://tortoise.github.io/).
+```python title="a minimal model"
+from tortoise import fields
+from sillo.record import Model
 
-What the base class adds:
-- Three auto-fields: `created_at`, `updated_at`, `deleted_at`
-- Serialization: `to_dict()`, `to_json()`
-- Bulk updates: `update_from_dict()`
-- Soft-delete: `soft_delete()`, `restore()`, `force_delete()`
-- Query shortcuts: `get_or_none()`, `get_or_create()`, `bulk_create()`, `upsert()`, `bulk_upsert()`
 
-### Auto-Fields
+class User(Model):
+    id = fields.IntField(pk=True)
+    email = fields.CharField(max_length=255, unique=True)
+    name = fields.CharField(max_length=100)
 
-Every subclass of Model automatically gets three datetime fields.
-You never need to declare them:
+    class Meta:
+        table = "users"
+```
 
-| Field | Type | Tortoise Config | Behavior |
+That class already has `created_at`, `updated_at`, and `deleted_at`
+columns, `to_dict()`, `soft_delete()`, `active()`, `get_or_none()`,
+`upsert()`, and support for attribute casts, accessors, mutators, and
+query scopes.
+
+##  When to reach for this
+
+Subclass `sillo.record.Model` for models in an application that already
+uses sillo. The added surface is opt-in in practice: if you never call
+`to_dict()` or `soft_delete()`, they cost you three extra columns.
+
+Use plain `tortoise.Model` when those three columns are unwanted — a
+join table, a materialised view, an append-only event log where
+`updated_at` is meaningless, or a table whose schema is owned by another
+team. There is no way to disable the auto-fields on a per-model basis;
+the fields are declared on the abstract base.
+
+##  The three automatic fields
+
+Every subclass gets three datetime columns without declaring them.
+
+| Field | Class | Tortoise config | Behaviour |
 |---|---|---|---|
-| `created_at` | `DatetimeField` | `auto_now_add=True` | Set to UTC now on INSERT. Never changes. |
-| `updated_at` | `DatetimeField` | `auto_now=True` | Set to UTC now on every `.save()`. |
-| `deleted_at` | `DatetimeField` | `null=True, default=None` | `None` means active. Non-null means soft-deleted. |
+| `created_at` | `CreatedAtField` | `auto_now_add=True` | Set once, on the first save |
+| `updated_at` | `UpdatedAtField` | `auto_now=True` | Rewritten on every save |
+| `deleted_at` | `SoftDeleteField` | `null=True, default=None` | `None` means active |
 
-These are implemented as `sillo.record.fields.CreatedAtField`,
-`sillo.record.fields.UpdatedAtField`, and `sillo.record.fields.SoftDeleteField` —
-thin subclasses of `tortoise.fields.DatetimeField` with appropriate defaults.
-The actual timestamp generation is handled by Tortoise's database driver
-layer (`asyncpg` for Postgres, `aiomysql` for MySQL, `aiosqlite` for SQLite)
-— it is NOT Python-side logic.  This means timestamps are consistent even
-if you bypass the ORM and execute raw SQL.
+:::caution[Timestamps are generated in Python, not by the database]
+Tortoise's `auto_now` and `auto_now_add` are implemented inside
+`DatetimeField.to_db_value`, which calls `timezone.now()` in the
+application process. Two consequences follow.
 
-### `to_dict()` — Serialization to Python Dict
+Rows written by raw SQL, by another service, or by a database trigger get
+no timestamps at all — `created_at` will be `NULL` unless you set it
+explicitly. And with several application servers running, `created_at`
+ordering reflects the clock of whichever machine handled the write. If
+you need a database-authoritative timestamp, add a column with a
+`DEFAULT CURRENT_TIMESTAMP` in a migration and read that instead.
+:::
 
-Serializes a model instance to a plain `dict`.  Datetime values become
-ISO 8601 strings.  Related model instances (ForeignKey, OneToOne) are
-recursively serialized via their own `to_dict()` methods.
+`updated_at` is rewritten on *every* `save()`, including
+`save(update_fields=["deleted_at"])` — so soft-deleting a row also bumps
+its modification time. If `updated_at` drives cache invalidation or a
+sync cursor, be aware that soft deletes and restores both move it.
 
-Parameters:
-- `exclude: List[str] | None` — field names to omit.  Use for sensitive
-  fields like `password_hash`.
-- `include: List[str] | None` — if provided, ONLY these fields are
-  returned.  More restrictive than exclude.
-- `max_depth: int` (default 3, via SerializesToDictMixin) — how many
-  levels of related models to recurse into.  Prevents infinite recursion.
+##  Serialization
 
-```python
+###  `to_dict()`
+
+Walks `self._meta.fields`, converting `datetime` values to ISO 8601
+strings and nested `Model` instances to their own dicts.
+
+```python title="to_dict"
 user = await User.get(id=1)
+
 user.to_dict()
-# {"id": 1, "email": "a@b.com", "name": "Alice", "created_at": "2025-01-01T00:00:00", "updated_at": "2025-01-01T00:00:00", "deleted_at": null}
+# {'id': 1, 'email': 'a@b.com', 'name': 'Alice',
+#  'created_at': '2026-01-01T00:00:00+00:00', 'updated_at': '...',
+#  'deleted_at': None}
 
-# Exclude sensitive fields:
-user.to_dict(exclude=["password_hash", "deleted_at"])
-
-# Include only specific fields:
-user.to_dict(include=["id", "email", "name"])
+user.to_dict(exclude=["password_hash"])
+user.to_dict(include=["id", "email"])
 ```
 
-### `to_json()` — JSON String
+`include` is applied per field and wins over nothing — if you pass both,
+a field must be in `include` and absent from `exclude` to survive.
 
-Wraps `to_dict()` and calls `json.dumps()` with `default=str` for
-unserializable types:
+:::danger[`to_dict()` includes reverse relations, and they do not serialize]
+`self._meta.fields` contains reverse relation accessors. A model with
+`related_name="tags"` pointing at it gets a `tags` key whose value is a
+`ReverseRelation` object. `to_dict()` returns that object as-is, and
+`to_json()` — which passes `default=str` to `json.dumps` — renders it as:
 
-```python
-json_str = user.to_json(indent=2)
-# {
-#   "id": 1,
-#   "email": "a@b.com",
-#   ...
-# }
+```json
+{"tags": "<tortoise.fields.relational.ReverseRelation object at 0x102c40440>"}
 ```
 
-### `update_from_dict()` — Bulk Field Update
-
-Iterates over a dict, calls `setattr` for each key that matches a
-model field, then calls `await self.save()`.  Primary integration
-point with Pydantic:
+That string reaches your API clients, complete with a memory address.
+Always exclude reverse relations explicitly:
 
 ```python
+article.to_dict(exclude=["tags", "comments"])
+```
+
+Or use `include` to whitelist exactly the fields you intend to expose,
+which is the safer habit for anything public-facing.
+:::
+
+`to_dict()` also runs accessors. If the model defines
+`get_title_attribute`, the dict contains the accessor's output, not the
+stored column value. That is usually what you want for display, and
+occasionally not what you want for an export.
+
+###  `to_json()`
+
+`json.dumps(self.to_dict(**kwargs), indent=indent, default=str)`. The
+`default=str` is what silently stringifies unserializable values instead
+of raising, which is why the `ReverseRelation` problem above is
+invisible until a client complains.
+
+```python title="to_json"
+print(user.to_json(indent=2, exclude=["password_hash"]))
+```
+
+###  `update_from_dict()`
+
+Applies a dict of field values and saves. Keys not matching a model field
+are ignored silently, which makes it safe to feed a request body
+directly — but only for fields you are willing to let a client set.
+
+```python title="partial update from a Pydantic model"
 from pydantic import BaseModel
+
 
 class UserUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
 
+
 @app.patch("/users/{user_id}", request_model=UserUpdate)
 async def update_user(request, response, user_id: str):
     user = await User.get_or_none(id=user_id)
-    if not user:
+    if user is None:
         return response.json({"error": "Not found"}, status_code=404)
-    await user.update_from_dict(request.validated_data.model_dump(exclude_unset=True))
+    await user.update_from_dict(
+        request.validated_data.model_dump(exclude_unset=True)
+    )
     return response.json(user.to_dict())
 ```
 
-Pydantic's `exclude_unset=True` means only fields the client explicitly
-sent are included — partial updates work correctly.
+`exclude_unset=True` is the important half. Without it, a Pydantic model
+with `None` defaults sends `{"name": None, "email": None}` for a request
+that set neither, and `update_from_dict` faithfully nulls both columns.
 
-### Soft-Delete Methods
+:::caution[`update_from_dict` has no field allowlist]
+It writes any key that matches a model field — including `id`,
+`created_at`, `deleted_at`, and `is_admin`. Passing an unvalidated
+request body straight in is a mass-assignment vulnerability. Always route
+it through a schema that only declares the fields a client may change.
+:::
 
-```python
-await user.soft_delete()    # UPDATE users SET deleted_at = NOW() WHERE id = ?
-await user.restore()        # UPDATE users SET deleted_at = NULL WHERE id = ?
-await user.force_delete()   # DELETE FROM users WHERE id = ?
-user.is_trashed             # True if deleted_at is not None
+##  Accessors and mutators
+
+`Model.__getattribute__` and `__setattr__` are overridden to support
+Laravel-style computed attributes.
+
+```python title="accessors and mutators"
+class Product(Model):
+    name = fields.CharField(max_length=200)
+    price_cents = fields.IntField()
+
+    def get_name_attribute(self, value):
+        """Runs on every read of ``product.name``."""
+        return value.title() if value else value
+
+    def set_name_attribute(self, value):
+        """Runs on every write to ``product.name``. Returns the stored value."""
+        return value.strip()
 ```
 
-### Query Shortcuts
+The mutator's return value is what gets stored, so it can normalise input
+before it ever reaches the database. The accessor's return value is what
+every read sees — including `to_dict()`, `to_json()`, and any code that
+does `product.name`.
 
-```python
-user = await User.get_or_none(id=42)        # None instead of DoesNotExist
-user, created = await User.get_or_create(    # (instance, bool)
-    email="a@b.com",
-    defaults={"name": "New User"},
+Two rules keep this from becoming confusing:
+
+An accessor must not be expensive. It runs on every attribute read, and
+attribute reads happen in loops you did not write. Do formatting, not
+lookups.
+
+An accessor must not be async. `__getattribute__` is synchronous;
+returning a coroutine from an accessor gives every reader an unawaited
+coroutine object.
+
+Mutators are skipped while a row is being loaded from the database
+(`_record_loading` is set during `_init_from_db`), so a normalising
+mutator does not corrupt data read back out.
+
+##  Query shortcuts
+
+```python title="the shortcuts"
+user = await User.get_or_none(id=42)
+user, created = await User.get_or_create({"name": "New"}, email="a@b.com")
+rows = await User.bulk_create([{"email": "a@b.com"}, {"email": "c@d.com"}])
+n = await User.count_active()
+```
+
+`get_or_none` catches **every** exception, not just `DoesNotExist`:
+
+```python title="sillo/record/models.py"
+try:
+    return await cls.get(**kwargs)
+except Exception:
+    return None
+```
+
+A malformed filter, a type error in a lookup, or a dropped connection all
+return `None` — indistinguishable from "no such row". If a `get_or_none`
+is returning `None` when you are certain the row exists, replace it with
+`get()` temporarily and read the real exception.
+
+`get_or_create(defaults, **kwargs)` takes the lookup as keyword arguments
+and the creation-only values as the first positional argument or as
+`defaults=`. On create it merges `{**kwargs, **defaults}`, so a key in
+both wins from `defaults`. It is *not* atomic — it does a `get`, then a
+`create`. Two concurrent requests can both miss and both insert; rely on
+a unique constraint, and be ready to catch `IntegrityError`.
+
+##  Bulk writes
+
+###  `bulk_create`
+
+Inserts in batches of `batch_size` (default 100).
+
+```python title="bulk_create"
+rows = await Article.bulk_create(
+    [{"title": f"post-{i}"} for i in range(5_000)],
+    batch_size=500,
 )
-users = await User.bulk_create([...])       # multi-row INSERT
-count = await User.count_active()            # WHERE deleted_at IS NULL
 ```
 
-### Native Upserts
+:::caution[`bulk_create` does not populate primary keys]
+The returned instances have `id is None` even though the rows exist in
+the database. This is a Tortoise behaviour, not a sillo one — a
+multi-row `INSERT` does not read back generated keys. If you need the
+ids, re-query by a natural key after insert.
+:::
 
-`upsert()` and `bulk_upsert()` delegate to Tortoise ORM's native conflict
-support (`ON CONFLICT` / backend equivalent) instead of doing a read-then-write
-loop in Python.
+###  `upsert` and `bulk_upsert`
 
-```python
+These use the database's native conflict handling (`ON CONFLICT` and
+equivalents) rather than a read-then-write loop.
+
+```python title="upsert"
 user = await User.upsert(
     {"email": "a@b.com", "name": "Alice"},
     conflict_fields=["email"],
     update_fields=["name"],
 )
-
-await User.bulk_upsert(
-    [
-        {"email": "a@b.com", "name": "Alice"},
-        {"email": "c@d.com", "name": "Chris"},
-    ],
-    conflict_fields=["email"],
-    update_fields=["name"],
-)
 ```
 
-`conflict_fields` must identify a unique constraint or primary key supported
-by your database. `update_fields` defaults to every non-primary-key field that
-is not part of the conflict target.
+:::danger[Always pass `update_fields` explicitly]
+When `update_fields` is omitted it defaults to every entry in
+`cls._meta.fields` that is not a conflict field or the primary key — and
+`_meta.fields` includes reverse relations. On a model with any
+`related_name` pointing at it, the generated statement references a
+column that does not exist:
 
-## Mixins — Composable Behaviors
-
-Mixins are opt-in.  Import the ones you need and compose them into
-your model class.  Because Python's MRO is left-to-right, mixins
-listed FIRST take precedence.
-
-```python
-from sillo.record import (
-    Model, SoftDeletesMixin, TimestampsMixin,
-    HasUlidMixin, SerializesToDictMixin,
-    ValidatesBeforeSaveMixin, CascadesDeletesMixin,
-)
-
-class Post(Model, SoftDeletesMixin, SerializesToDictMixin):
-    title = fields.CharField(max_length=200)
-    body = fields.TextField()
+```
+OperationalError: no such column: EXCLUDED.tags
 ```
 
-### SoftDeletesMixin
+Naming the columns you actually want updated avoids this entirely, and is
+better practice regardless: an unqualified upsert that overwrites every
+column will happily clobber fields the caller never intended to touch.
+:::
 
-Same capability as the Model base's soft-delete, but as an explicit
-opt-in.  Methods: `soft_delete()`, `restore()`, `force_delete()`.
-Class methods: `active()`, `only_trashed()`, `with_trashed()`.
-Property: `is_trashed`.
+`conflict_fields` must match a real unique constraint or primary key. If
+a named conflict field is missing from the payload, `upsert` raises a
+bare `KeyError` from its final lookup rather than a helpful message.
 
-### TimestampsMixin
+##  Soft deletes
 
-Adds `touch()` (set `updated_at` and save) and `set_created_at()`.
-Useful when you need programmatic timestamp control outside Tortoise's
-auto-population.
+```python title="soft delete lifecycle"
+await user.soft_delete()   # UPDATE ... SET deleted_at = <now>
+await user.restore()       # UPDATE ... SET deleted_at = NULL
 
-### HasUlidMixin
+await User.active()        # WHERE deleted_at IS NULL
+await User.deleted()       # WHERE deleted_at IS NOT NULL
+await User.count_active()
+```
 
-Adds `generate_ulid()` returning a 26-char time-sortable identifier.
-[ULID spec](https://github.com/ulid/spec).  Requires `python-ulid`.
+`active()` and `deleted()` are ordinary classmethods returning querysets,
+so they chain: `await User.active().filter(plan="pro").order_by("-id")`.
 
-### SerializesToDictMixin
+The base `Model` provides `soft_delete`, `restore`, `active`, `deleted`,
+and `count_active`. It does **not** provide `force_delete()` or
+`is_trashed` — those live on `SoftDeletesMixin`. Use `await user.delete()`
+for a hard delete on the base model.
 
-Overrides `to_dict()` with configurable `max_depth` to prevent
-infinite recursion when serializing deeply nested related models.
+The important limitation: **soft delete is not automatic**. Nothing
+filters `deleted_at` for you. `await User.all()` returns soft-deleted
+rows, `await User.get(id=...)` finds them, and a foreign key to a
+soft-deleted row still resolves. If you want soft-deleted rows excluded
+everywhere, register a global scope — see
+[Scopes & Events](/guides/record/scopes-events/).
 
-### ValidatesBeforeSaveMixin
+##  The six mixins
 
-Overrides `save()` to call `self.validate()` first.  Raise any
-exception to prevent the write:
+Mixins are opt-in behaviours you compose onto a model.
+
+:::danger[Mixin order decides whether the mixin does anything]
+Python resolves methods left to right. `sillo.record.Model` already
+defines `save()`, so a mixin that overrides `save()` must be listed
+**before** `Model`:
 
 ```python
-class User(Model, ValidatesBeforeSaveMixin):
-    async def validate(self):
+class Account(ValidatesBeforeSaveMixin, Model):   # validate() runs
+    ...
+
+class Account(Model, ValidatesBeforeSaveMixin):   # validate() never runs
+    ...
+```
+
+In the first form `Account.save` resolves to
+`ValidatesBeforeSaveMixin.save`; in the second it resolves to
+`Model.save`, and the mixin is dead weight. There is no warning — writes
+simply skip validation. The same applies to `CascadesDeletesMixin`, which
+overrides `delete()`, and to `SerializesToDictMixin`, which overrides
+`to_dict()`.
+:::
+
+###  `SoftDeletesMixin`
+
+Adds `force_delete()`, `only_trashed()`, `with_trashed()`, and the
+`is_trashed` property on top of what the base model already has. Worth
+adding when you want `is_trashed` in templates or `with_trashed()` for
+readability. Note that `with_trashed()` is simply `cls.all()` — it is
+meaningful only if you have registered a global scope that filters
+deleted rows.
+
+###  `TimestampsMixin`
+
+`touch()` sets `updated_at` and saves; `set_created_at()` fills
+`created_at` if empty. Useful when you need to bump a modification time
+without changing any other column.
+
+```python
+await session.touch()   # UPDATE sessions SET updated_at = <now>
+```
+
+###  `HasUlidMixin`
+
+:::caution[`generate_ulid()` is broken against the current `ulid` package]
+The method calls `ulid.new()`. The installed `ulid` package exposes a
+`ULID` class and no `new()` function, so the call raises
+`AttributeError: module 'ulid' has no attribute 'new'`. Generate ULIDs
+directly instead:
+
+```python
+from ulid import ULID
+
+class Order(Model):
+    id = fields.CharField(max_length=26, pk=True, default=lambda: str(ULID()))
+```
+:::
+
+###  `SerializesToDictMixin`
+
+An alternative `to_dict()` with a `max_depth` parameter (default 3) that
+bounds recursion into related models. The base `Model.to_dict()` has no
+`max_depth` and recurses one level into loaded relations. Use this mixin
+— listed before `Model` — if you serialize nested object graphs.
+
+###  `ValidatesBeforeSaveMixin`
+
+Calls `await self.validate()` before every save. Raise anything to block
+the write.
+
+```python title="validation on save"
+class Account(ValidatesBeforeSaveMixin, Model):
+    email = fields.CharField(max_length=255)
+
+    async def validate(self) -> None:
         if "@" not in self.email:
-            raise ValueError("Invalid email")
+            raise ValueError("email must contain @")
 ```
 
-### CascadesDeletesMixin
+This fires for `Account.create(...)` as well as `instance.save()`,
+because `create()` calls `save()` internally. It does **not** fire for
+`bulk_create`, `upsert`, `queryset.update()`, or raw SQL — none of those
+go through `save()`. Treat it as a convenience, not as an integrity
+guarantee; the database constraint is the guarantee.
 
-Define `_cascade_deletes: List[str]` — when `delete()` is called,
-related models are deleted first, in list order.  Wrap in a transaction
-for atomicity.
+###  `CascadesDeletesMixin`
 
-## How Tortoise ORM Handles What sillo Adds
+Deletes named relations before deleting the row.
 
-| Feature | Handled By |
-|---|---|
-| Timestamp auto-population | Tortoise driver layer (asyncpg, aiomysql, aiosqlite) |
-| Field validation | Tortoise field validators |
-| Relationship management | Tortoise FK/O2O/M2M fields |
-| Schema generation | Tortoise `generate_schemas()` |
-| Migrations | aerich (Tortoise official) |
-| Connection pooling | Tortoise connection pool config |
-| Soft-delete flag | sillo record (deleted_at column + query filters) |
-| Lifecycle events | sillo record (before/after hooks in Python) |
-| Attribute casting | sillo record (encode/decode in Python) |
-| to_dict/to_json | sillo record (Python serialization) |
+```python
+class User(CascadesDeletesMixin, Model):
+    _cascade_deletes = ["profile"]
+```
+
+It calls `getattr(self, name)` and then `.delete()` on the result, so it
+works for already-loaded one-to-one and foreign-key objects. It is not a
+substitute for `on_delete=fields.CASCADE` on the field, which the
+database enforces atomically. Prefer the database-level cascade; reach
+for this mixin only for cleanup the schema cannot express, and wrap it in
+a [transaction](/guides/record/transactions-factories/).
+
+##  Custom fields
+
+| Field | Purpose | Status |
+|---|---|---|
+| `CreatedAtField` | `DatetimeField(auto_now_add=True)` | Works |
+| `UpdatedAtField` | `DatetimeField(auto_now=True)` | Works |
+| `SoftDeleteField` | `DatetimeField(null=True, default=None)` | Works |
+| `SlugField` | `CharField` with a `source_field` argument | Stores the argument; **never generates a slug** |
+| `ULIDField` | `CharField(max_length=26, pk=True)` | **Never generates a value** |
+| `PasswordField` | `CharField` that bcrypt-hashes on write | Works; not exported from `sillo.record` |
+
+`PasswordField` is the useful one. It hashes plaintext in `to_db_value`
+and passes through values already starting with `$2b$`, `$2a$`, or
+`$2y$`, so re-saving a loaded row does not double-hash.
+
+```python title="PasswordField"
+from sillo.record.fields import PasswordField   # not exported from sillo.record
+
+class Admin(Model):
+    email = fields.CharField(max_length=255, unique=True)
+    password = PasswordField()
+
+admin = await Admin.create(email="a@b.com", password="hunter2")
+# column contains '$2b$12$...'
+# admin.password is still 'hunter2' in memory until reloaded
+```
+
+Verify with `sillo.helpers.hashing.verify_password`, never by comparing
+strings. And note the in-memory attribute keeps the plaintext for the
+lifetime of that instance — do not log the object.
+
+`SlugField(source_field="title")` accepts and stores `source_field` but
+no code reads it. Generate the slug yourself in a mutator:
+
+```python
+def set_title_attribute(self, value):
+    self.slug = slugify(value)
+    return value
+```
+
+##  What not to do
+
+**Do not return `to_dict()` straight from a handler on a model with
+reverse relations.** Exclude them or use `include`.
+
+**Do not pass an unvalidated body to `update_from_dict()`.** It writes
+any matching field, including `id` and privilege flags.
+
+**Do not list a behaviour mixin after `Model`.** The override is silently
+ignored.
+
+**Do not rely on `get_or_create` for uniqueness.** It is two statements;
+use a unique constraint.
+
+**Do not call `upsert` without `update_fields`.** The default set
+includes reverse relations and produces invalid SQL.
+
+**Do not expect `bulk_create` to give you primary keys.** They come back
+as `None`.
+
+**Do not treat `ValidatesBeforeSaveMixin` as an integrity constraint.**
+Bulk paths bypass it.
+
+**Do not put a query inside an accessor.** It runs on every attribute
+read.
+
+##  Performance notes
+
+`__getattribute__` is overridden on every model instance. Each non-underscore
+attribute read checks `_meta.fields` membership and performs two class-level
+`getattr` calls. This is fine per request and noticeable across hundreds of
+thousands of reads — use `.values()` or `.values_list()` for bulk numeric
+work, which skips model instantiation entirely.
+
+`save()` opens the `_encoded_cast_values()` context manager, which
+short-circuits when `_casts` is empty. Models without casts pay one dict
+lookup per save.
+
+`to_dict()` iterates all fields and does an `isinstance` check per value.
+Prefer `include=[...]` over `exclude=[...]` for wide tables — same cost
+in this implementation, but it keeps the payload from growing silently
+when someone adds a column.
+
+##  API reference
+
+| Method | Signature | Notes |
+|---|---|---|
+| `to_dict` | `(*, exclude=None, include=None) -> dict` | Applies accessors; includes reverse relations |
+| `to_json` | `(*, indent=None, **kwargs) -> str` | `default=str` hides serialization failures |
+| `update_from_dict` | `(data: dict) -> None` | Sets matching fields, then saves |
+| `soft_delete` / `restore` | `() -> None` | Writes `deleted_at` only |
+| `active` / `deleted` | `() -> QuerySet` | Classmethods; chainable |
+| `count_active` | `() -> int` | `active().count()` |
+| `get_or_none` | `(**kwargs) -> T \| None` | Swallows all exceptions |
+| `get_or_create` | `(defaults=None, **kwargs) -> (T, bool)` | Not atomic |
+| `bulk_create` | `(items, batch_size=100, *, ignore_conflicts=False, update_fields=None, on_conflict=None, using_db=None)` | PKs come back `None` |
+| `bulk_upsert` | `(items, *, conflict_fields, update_fields=None, batch_size=100, using_db=None)` | Pass `update_fields` |
+| `upsert` | `(values=None, *, conflict_fields, update_fields=None, using_db=None, **kwargs)` | Re-reads the row after writing |
+
+##  Related
+
+- [Record Overview](/guides/record/) — setup, configuration, and connection lifecycle
+- [Scopes & Events](/guides/record/scopes-events/) — global scopes for automatic soft-delete filtering
+- [Casting & Collections](/guides/record/casting-collections/) — `_casts` and result manipulation
+- [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/) — generating schemas from these models
+- [Hashing helpers](/guides/helpers/hashing/) — what `PasswordField` uses internally
+- [Serialization](/guides/serialization/) — how sillo encodes handler return values
