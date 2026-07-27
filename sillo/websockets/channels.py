@@ -285,7 +285,10 @@ class ChannelBox:
             [description]
         """
         for group_name in list(cls.CHANNEL_GROUPS):
-            for channel in cls.CHANNEL_GROUPS.get(group_name, {}):
+            # Snapshot the channels too — the loop deletes from the same dict,
+            # which otherwise raises "dictionary changed size during iteration"
+            # the moment any channel in the group has actually expired.
+            for channel in list(cls.CHANNEL_GROUPS.get(group_name, {})):
                 _is_expired = await channel._is_expired()
                 if _is_expired:
                     try:

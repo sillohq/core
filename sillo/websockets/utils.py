@@ -1,6 +1,6 @@
 import typing
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from uuid import UUID
@@ -77,5 +77,8 @@ class ChannelMessageDC:
     """
 
     payload: typing.Union[str, bytes]
-    uuid: UUID = uuid.uuid4()
-    created: datetime = datetime.now(tz=timezone.utc)
+    # Factories, not values: a plain default is evaluated once at class
+    # definition, which would give every message in history the same id and
+    # the import-time timestamp.
+    uuid: UUID = field(default_factory=uuid.uuid4)
+    created: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
