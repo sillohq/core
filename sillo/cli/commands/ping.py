@@ -15,10 +15,25 @@ from sillo.cli.utils import (
     _load_app_from_path,
 )
 
-try:
-    from sillo.testclient import TestClient as Client
-except ImportError:
-    Client = None  # ty: ignore[invalid-assignment]
+def _resolve_client():
+    """Import the test client, returning ``None`` when it is unavailable.
+
+    This is deliberately deferred to call time. ``sillo/__main__.py`` imports
+    the CLI, so a module-level import here runs while ``sillo`` itself is still
+    initialising — and the test client imports ``sillo`` right back, so the
+    import would fail on a partially initialised package and silently disable
+    this command on every machine, installed httpx or not.
+
+    Returns:
+        The ``TestClient`` class, or ``None`` if the optional test-client
+        dependencies are not installed.
+    """
+    try:
+        from sillo.testclient import TestClient
+
+        return TestClient
+    except ImportError:
+        return None
 
 
 @click.command()
@@ -89,7 +104,8 @@ def ping(
                 _echo_error("Could not load app instance.")
                 sys.exit(1)
 
-            if not Client:
+            Client = _resolve_client()
+            if Client is None:
                 _echo_error("httpx is not installed. Install with: pip install httpx")
                 sys.exit(1)
                 return

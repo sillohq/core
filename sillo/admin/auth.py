@@ -103,9 +103,11 @@ class SessionAuth(AuthBackend):
         """Clear all admin-related session keys."""
         session = getattr(request, "session", None)
         if session:
-            session.pop("admin_authenticated", None)
-            session.pop("admin_user", None)
-            session.pop("user", None)
+            # ``Session`` exposes ``delete``, not the dict ``pop``; it already
+            # tolerates a key that is not present.
+            session.delete("admin_authenticated")
+            session.delete("admin_user")
+            session.delete("user")
 
     @property
     def middleware(self):

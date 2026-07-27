@@ -87,7 +87,7 @@ def shell(app_path: str, ipython: bool = False):
 
         # Try to import common modules that might be useful
         try:
-            from sillo.testing.client import Client
+            from sillo.testclient import TestClient as Client
 
             shell_vars["Client"] = Client
             _echo_info("Test client available as 'Client'")
@@ -95,8 +95,7 @@ def shell(app_path: str, ipython: bool = False):
             pass
 
         try:
-            from sillo.core.http.request import Request
-            from sillo.core.http.response import Response
+            from sillo.core.http import Request, Response
 
             shell_vars["Request"] = Request  # ty: ignore[invalid-assignment]
             shell_vars["Response"] = Response  # ty: ignore[invalid-assignment]

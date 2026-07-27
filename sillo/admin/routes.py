@@ -1256,12 +1256,20 @@ async def list_view(request, response, site, model_cls, admin_cls):
             return await self.qs.offset(offset).limit(limit)
 
     data_handler = _QSAsyncDataHandler(qs)
-    strategy = PageNumberPagination()
+    # The strategy has its own default page size, so ``list_per_page`` has to be
+    # handed to it explicitly or the admin's configured value never takes effect.
+    strategy = PageNumberPagination(
+        default_page_size=page_size,
+        max_page_size=max(page_size, 100),
+    )
     paginator = AsyncPaginator(
         data_handler=data_handler,
         pagination_strategy=strategy,
         base_url=str(request.url),
         request_params=dict(request.query_params),
+        # A page past the end renders as empty rather than raising — rows get
+        # deleted out from under bookmarked and back-button page links.
+        validate_total_items=False,
     )
     paginated = await paginator.paginate()
     items = paginated["items"]

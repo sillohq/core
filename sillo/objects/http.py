@@ -307,6 +307,26 @@ class Headers(typing.Mapping[str, str]):
                 return header_value.decode("latin-1")
         return None
 
+    def get(self, key: str, default: typing.Any = None) -> typing.Any:
+        """
+        Retrieve a header value, falling back to *default* when it is absent.
+
+        ``Mapping.get`` is implemented by catching ``KeyError`` from
+        ``__getitem__``, but this class deliberately returns ``None`` for a
+        missing header instead of raising — which would make the inherited
+        ``get`` ignore the caller's default and always answer ``None``. This
+        override honours the default while leaving subscript access as it is.
+
+        Args:
+            key: The header name to look up, matched case-insensitively.
+            default: Value to return when no such header is present.
+
+        Returns:
+            The decoded header value, or *default* when the header is absent.
+        """
+        value = self[key]
+        return default if value is None else value
+
     def __contains__(self, key: typing.Any) -> bool:
         """
         Check whether a header with the given name exists (case-insensitive).
@@ -847,6 +867,11 @@ class UploadedFile:
                 not writable.
         """
         if self._in_memory:
+            # Copy from the start regardless of where the caller left the
+            # cursor. A handler that inspects the upload before saving it
+            # leaves the stream at EOF, which would otherwise write an empty
+            # file with no error.
+            self.file.seek(0)
             with open(destination, "wb") as f:
                 shutil.copyfileobj(self.file, f)
         else:
@@ -873,6 +898,7 @@ class UploadedFile:
             OSError: If the destination directory does not exist or is
                 not writable.
         """
+        self.file.seek(0)
         with open(destination, "wb") as f:
             shutil.copyfileobj(self.file, f)
 

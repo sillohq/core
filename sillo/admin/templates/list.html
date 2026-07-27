@@ -70,8 +70,9 @@
                             <a class="cell-link" href="{{ cell.link }}">{{ cell.value }}</a>
                         {% elif cell.type == "m2m" %}
                             <div class="col-chips">
-                                {% for item in cell.items %}{% if item[1] %}<a class="mini-chip" href="{{ item[1] }}">{{ item[0] }}</a>{% else %}<span class="mini-chip">{{ item[0] }}</span>{% endif %}{% endfor %}
-                                {% if not cell.items %}<span class="mini-chip">—</span>{% endif %}
+                                {# ``cell.items`` would resolve to the dict method, not the key. #}
+                                {% for item in cell["items"] %}{% if item[1] %}<a class="mini-chip" href="{{ item[1] }}">{{ item[0] }}</a>{% else %}<span class="mini-chip">{{ item[0] }}</span>{% endif %}{% endfor %}
+                                {% if not cell["items"] %}<span class="mini-chip">—</span>{% endif %}
                             </div>
                         {% elif cell.type == "password" %}
                             <span style="color:var(--text3);">••••••••</span>

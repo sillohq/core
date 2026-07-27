@@ -155,10 +155,13 @@ def mask_string(
     """
     if len(value) <= visible_start + visible_end:
         return mask_char * len(value)
+    # ``value[-0:]`` is the whole string, so an explicit empty suffix is needed
+    # when nothing should be visible at the end.
+    suffix = value[-visible_end:] if visible_end else ""
     return (
         value[:visible_start]
         + mask_char * (len(value) - visible_start - visible_end)
-        + value[-visible_end:]
+        + suffix
     )
 
 

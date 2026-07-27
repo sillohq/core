@@ -98,6 +98,12 @@ class SessionMiddleware(BaseMiddleware):
         cookie_name = self.session_config.session_cookie_name or "session_id"
 
         if session.is_empty() and session.accessed:
+            if session.modified:
+                # Hand the emptied session to the backend before dropping the
+                # cookie. Server-backed stores purge their record here; without
+                # it the key stays valid for anyone who kept a copy of the
+                # cookie, so logging out would only clear the browser's copy.
+                await session.save()
             response.delete_cookie(key=cookie_name)
             return
 

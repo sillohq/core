@@ -55,14 +55,15 @@ class UserManager:
 
         extra_fields.setdefault("is_active", True)
 
-        if not password:
-            from sillo.users.password import UNUSABLE_PASSWORD_PREFIX
-            import secrets
-
-            password = UNUSABLE_PASSWORD_PREFIX + secrets.token_hex(40)
-
         user = self.model(email=email, username=username, **extra_fields)
-        user.set_password(password)
+        if password:
+            user.set_password(password)
+        else:
+            # Invite and SSO flows create the row before any password exists.
+            # The marker is stored as-is rather than hashed — bcrypt refuses
+            # inputs over 72 bytes, so hashing a generated placeholder would
+            # raise instead of producing an unusable password.
+            user.set_unusable_password()
         await user.save()
         return user
 

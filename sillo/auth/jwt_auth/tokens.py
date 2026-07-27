@@ -87,7 +87,9 @@ class TokenForUser:
             payload["aud"] = self.audience
         return payload
 
-    def access_token(self, expires_in: Optional[timedelta] = None) -> str:
+    def access_token(
+        self, expires_in: Optional[timedelta] = None, *, jti: Optional[str] = None
+    ) -> str:
         """Generate a signed JWT access token for the bound user.
 
         Creates a short-lived access token with the 'access' type claim.
@@ -109,6 +111,8 @@ class TokenForUser:
         """
         payload = self._base_payload()
         payload["typ"] = "access"
+        if jti:
+            payload["jti"] = jti
         payload["exp"] = (
             datetime.now(timezone.utc) + expires_in
             if expires_in
@@ -116,7 +120,9 @@ class TokenForUser:
         )
         return _jwt.encode(payload, self.secret, self.algorithm)
 
-    def refresh_token(self, expires_in: Optional[timedelta] = None) -> str:
+    def refresh_token(
+        self, expires_in: Optional[timedelta] = None, *, jti: Optional[str] = None
+    ) -> str:
         """Generate a signed JWT refresh token for the bound user.
 
         Creates a long-lived refresh token with the 'refresh' type claim.
@@ -139,6 +145,8 @@ class TokenForUser:
         """
         payload = self._base_payload()
         payload["typ"] = "refresh"
+        if jti:
+            payload["jti"] = jti
         payload["exp"] = (
             datetime.now(timezone.utc) + expires_in
             if expires_in

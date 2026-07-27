@@ -52,9 +52,16 @@ class JWTUserMixin:
         tokens = TokenForUser(self, secret=secret, algorithm=algorithm)
         family = secrets.token_hex(32)
         access_jti = secrets.token_hex(16)
-        access = tokens.access_token(access_expires or timedelta(minutes=15))
+        # The JTI has to travel inside the token: rotation looks the tracking
+        # row up by the ``jti`` claim, so a row keyed to an identifier the
+        # token never carried could never be found again.
+        access = tokens.access_token(
+            access_expires or timedelta(minutes=15), jti=access_jti
+        )
         refresh_jti = secrets.token_hex(16)
-        refresh = tokens.refresh_token(refresh_expires or timedelta(days=7))
+        refresh = tokens.refresh_token(
+            refresh_expires or timedelta(days=7), jti=refresh_jti
+        )
         now = datetime.now(timezone.utc)
         await JWTToken.create(
             user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
@@ -129,9 +136,9 @@ class JWTUserMixin:
         access_expires = timedelta(minutes=15)
         refresh_expires = timedelta(days=7)
         access_jti = secrets.token_hex(16)
-        access = tokens.access_token(access_expires)
+        access = tokens.access_token(access_expires, jti=access_jti)
         refresh_jti = secrets.token_hex(16)
-        refresh = tokens.refresh_token(refresh_expires)
+        refresh = tokens.refresh_token(refresh_expires, jti=refresh_jti)
         now = datetime.now(timezone.utc)
         await JWTToken.create(
             user_id=int(str(self.identity)),  # ty: ignore[unresolved-attribute]
