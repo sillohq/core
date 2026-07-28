@@ -1,9 +1,9 @@
 """
 Seeder and FixtureLoader.
 
-``Seeder`` writes rows; ``FixtureLoader`` parses fixture files. Note the
-asymmetry documented below: the loader parses and counts but does not
-currently insert, which these tests pin down rather than paper over.
+Both write rows. ``Seeder`` takes them from Python, ``FixtureLoader`` from
+JSON/JSONL files on disk, resolving the model from the filename unless an
+explicit mapping is given.
 """
 
 import inspect
@@ -159,13 +159,17 @@ async def test_a_jsonl_fixture_is_read(fixtures):
 
 
 async def test_blank_lines_in_a_jsonl_file_are_skipped(tmp_path):
-    (tmp_path / "rows.jsonl").write_text('{"a": 1}\n\n\n{"a": 2}\n')
-    assert await FixtureLoader(str(tmp_path)).load("rows") == 2
+    (tmp_path / "seedpost.jsonl").write_text(
+        '{"title": "One"}\n\n\n{"title": "Two"}\n'
+    )
+    assert await FixtureLoader(str(tmp_path)).load("seedpost") == 2
+    assert await SeedPost.all().count() == 2
 
 
 async def test_a_single_json_object_counts_as_one_row(tmp_path):
-    (tmp_path / "one.json").write_text(json.dumps({"email": "solo@x.com"}))
-    assert await FixtureLoader(str(tmp_path)).load("one") == 1
+    (tmp_path / "seeduser.json").write_text(json.dumps({"email": "solo@x.com"}))
+    assert await FixtureLoader(str(tmp_path)).load("seeduser") == 1
+    assert await SeedUser.get_or_none(email="solo@x.com") is not None
 
 
 async def test_an_empty_json_array(tmp_path):
@@ -198,14 +202,51 @@ async def test_malformed_json_propagates(tmp_path):
 
 
 async def test_json_is_preferred_over_jsonl_for_the_same_name(tmp_path):
-    (tmp_path / "both.json").write_text(json.dumps([{"a": 1}]))
-    (tmp_path / "both.jsonl").write_text('{"a": 1}\n{"a": 2}\n')
-    assert await FixtureLoader(str(tmp_path)).load("both") == 1
+    (tmp_path / "seedpost.json").write_text(json.dumps([{"title": "from json"}]))
+    (tmp_path / "seedpost.jsonl").write_text('{"title": "a"}\n{"title": "b"}\n')
+    assert await FixtureLoader(str(tmp_path)).load("seedpost") == 1
+    assert [p.title for p in await SeedPost.all()] == ["from json"]
 
 
-async def test_loading_does_not_write_rows_yet(fixtures):
-    """Known gap: the loader parses and counts the fixture, but nothing is
-    inserted — the file stem is read as a model name and then discarded. The
-    returned count is rows *parsed*, not rows persisted."""
-    await FixtureLoader(str(fixtures)).load_all()
+async def test_loading_writes_the_rows(fixtures):
+    """The returned count is rows persisted, not merely rows parsed."""
+    assert await FixtureLoader(str(fixtures)).load_all() == 5
+    assert await SeedUser.all().count() == 2
+    assert await SeedPost.all().count() == 3
+    assert sorted(u.email for u in await SeedUser.all()) == ["a@x.com", "b@x.com"]
+
+
+async def test_a_plural_filename_resolves_to_the_singular_model(tmp_path):
+    (tmp_path / "seedusers.json").write_text(json.dumps([{"email": "p@x.com"}]))
+    assert await FixtureLoader(str(tmp_path)).load("seedusers") == 1
+    assert await SeedUser.get_or_none(email="p@x.com") is not None
+
+
+async def test_an_explicit_mapping_overrides_the_filename(tmp_path):
+    (tmp_path / "people.json").write_text(json.dumps([{"email": "m@x.com"}]))
+    loader = FixtureLoader(str(tmp_path), models={"people": SeedUser})
+    assert await loader.load("people") == 1
+    assert await SeedUser.get_or_none(email="m@x.com") is not None
+
+
+async def test_an_unresolvable_filename_is_an_error(tmp_path):
+    (tmp_path / "widgets.json").write_text(json.dumps([{"a": 1}]))
+    with pytest.raises(LookupError, match="widgets"):
+        await FixtureLoader(str(tmp_path)).load("widgets")
+
+
+async def test_a_failing_row_rolls_back_the_whole_file(tmp_path):
+    """A constraint violation half way through leaves the table untouched."""
+    (tmp_path / "seeduser.json").write_text(
+        json.dumps([{"email": "dup@x.com"}, {"email": "dup@x.com"}])
+    )
+    with pytest.raises(Exception):
+        await FixtureLoader(str(tmp_path)).load("seeduser")
     assert await SeedUser.all().count() == 0
+
+
+async def test_non_fixture_files_are_ignored(tmp_path):
+    (tmp_path / "seedpost.json").write_text(json.dumps([{"title": "kept"}]))
+    (tmp_path / "README.md").write_text("not a fixture")
+    (tmp_path / "notes.txt").write_text("also not a fixture")
+    assert await FixtureLoader(str(tmp_path)).load_all() == 1

@@ -84,48 +84,104 @@ class FixtureLoader:
           posts.jsonl   →  {"email": "..."}\\n{"email": "..."}\\n...
     """
 
-    def __init__(self, directory: Annotated[str, Doc("Path to fixtures directory.")]):
-        """Init
+    #: File extensions ``load_all`` will read. Anything else is ignored.
+    SUFFIXES = (".json", ".jsonl")
+
+    def __init__(
+        self,
+        directory: Annotated[str, Doc("Path to fixtures directory.")],
+        *,
+        models: Annotated[
+            Optional[Dict[str, Any]],
+            Doc(
+                "Explicit fixture-name to model mapping. Names not listed here "
+                "are resolved against Tortoise's model registry."
+            ),
+        ] = None,
+    ):
+        """Initialize the loader.
 
         Args:
-            directory: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+            directory: Directory containing the fixture files.
+            models: Optional mapping of fixture stem to model class, for cases
+                where the filename does not match the model name.
         """
         self._dir = Path(directory)
+        self._models: Dict[str, Any] = dict(models or {})
 
     async def load_all(self) -> int:
-        """Load all fixture files in the directory. Returns total rows loaded."""
+        """Load every fixture file in the directory.
+
+        Files are loaded in sorted order, so a numeric prefix
+        (``01_users.json``, ``02_posts.json``) is how you control the order
+        when fixtures reference each other. Files whose suffix is not in
+        :attr:`SUFFIXES` are skipped.
+
+        Returns:
+            The total number of rows inserted.
+        """
         count = 0
         for file_path in sorted(self._dir.glob("*")):
+            if file_path.suffix not in self.SUFFIXES or not file_path.is_file():
+                continue
             count += await self._load_file(file_path)
         return count
 
     async def load(
         self, name: Annotated[str, Doc("Fixture name without extension.")]
     ) -> int:
-        """Load a specific fixture file by name."""
-        for ext in (".json", ".jsonl"):
+        """Load a specific fixture file by name.
+
+        Returns:
+            The number of rows inserted.
+
+        Raises:
+            FileNotFoundError: If no fixture with that name exists.
+        """
+        for ext in self.SUFFIXES:
             path = self._dir / f"{name}{ext}"
             if path.exists():
                 return await self._load_file(path)
         raise FileNotFoundError(f"Fixture '{name}' not found in {self._dir}")
 
     async def _load_file(self, path: Path) -> int:
-        """Load File
+        """Read one fixture file and insert its rows.
+
+        The whole file is inserted inside a transaction, so a row that fails
+        validation or violates a constraint leaves the table untouched rather
+        than half-populated.
 
         Args:
-            path: [description]
+            path: The fixture file to read.
 
         Returns:
-            [description]
+            The number of rows inserted.
 
         Raises:
-            [description]
+            LookupError: If the fixture name matches no registered model.
+        """
+        records = self._parse(path)
+        if not records:
+            return 0
+
+        model = self._resolve_model(path.stem)
+
+        from tortoise.transactions import in_transaction
+
+        async with in_transaction():
+            for record in records:
+                await model.create(**record)
+        return len(records)
+
+    def _parse(self, path: Path) -> List[Dict[str, Any]]:
+        """Decode a fixture file into a list of row dicts.
+
+        Args:
+            path: The fixture file to read.
+
+        Returns:
+            The rows the file describes. A JSON file holding a single object
+            is treated as a one-row fixture.
         """
         content = path.read_text()
         if path.suffix == ".jsonl":
@@ -136,8 +192,54 @@ class FixtureLoader:
             records = json.loads(content)
         if not isinstance(records, list):
             records = [records]
-        model_name = path.stem
-        return len(records)
+        return records
+
+    def _resolve_model(self, name: str) -> Any:
+        """Find the model a fixture file belongs to.
+
+        An explicit entry in the ``models`` mapping always wins. Otherwise the
+        filename stem is matched against the registered model names, ignoring
+        case and a trailing plural — so ``users.json`` finds ``User`` and
+        ``categories.jsonl`` finds ``Category``.
+
+        Args:
+            name: The fixture filename without its extension.
+
+        Returns:
+            The model class to insert into.
+
+        Raises:
+            LookupError: If nothing matches, listing what is registered.
+        """
+        if name in self._models:
+            return self._models[name]
+
+        from tortoise import Tortoise
+
+        registry = {
+            model_name.lower(): model
+            for app_models in Tortoise.apps.values()
+            for model_name, model in app_models.items()
+        }
+
+        stem = name.lower()
+        candidates = [stem]
+        if stem.endswith("ies"):
+            candidates.append(stem[:-3] + "y")
+        if stem.endswith("es"):
+            candidates.append(stem[:-2])
+        if stem.endswith("s"):
+            candidates.append(stem[:-1])
+
+        for candidate in candidates:
+            if candidate in registry:
+                return registry[candidate]
+
+        known = ", ".join(sorted(registry)) or "none — has Tortoise been initialised?"
+        raise LookupError(
+            f"Fixture '{name}' matches no registered model. Known models: {known}. "
+            f"Pass FixtureLoader(..., models={{'{name}': YourModel}}) to map it explicitly."
+        )
 
 
 class MigrationHelper:

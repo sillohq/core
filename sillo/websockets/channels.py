@@ -17,6 +17,9 @@ from .utils import (
 
 logging = sillo_logger.getLogger("sillo")
 
+#: Sentinel for dict.pop, so a stored ``None`` is not mistaken for "absent".
+_MISSING = object()
+
 
 class Channel:
     """Channel
@@ -159,26 +162,36 @@ class ChannelBox:
     ) -> ChannelRemoveStatusEnum:
         """Remove channel from group.
 
+        Removing a channel that is not in the group, or removing from a group
+        that does not exist, is not an error — both are ordinary outcomes of a
+        disconnect racing a cleanup, and are reported through the return value.
+
         Args:
             channel (Channel): Instance of Channel class
             group_name (str): Group name
-        """
-        if channel in cls.CHANNEL_GROUPS.get(group_name, {}):
-            try:
-                del cls.CHANNEL_GROUPS[group_name][channel]
-                channel_remove_status = ChannelRemoveStatusEnum.CHANNEL_REMOVED
-            except KeyError:
-                channel_remove_status = ChannelRemoveStatusEnum.CHANNEL_DOES_NOT_EXIST
 
-        if not any(cls.CHANNEL_GROUPS.get(group_name, {})):
-            try:
-                del cls.CHANNEL_GROUPS[group_name]
-                channel_remove_status = ChannelRemoveStatusEnum.GROUP_REMOVED
-            except KeyError:
-                channel_remove_status = ChannelRemoveStatusEnum.GROUP_DOES_NOT_EXIST
+        Returns:
+            ``GROUP_DOES_NOT_EXIST`` when there is no such group,
+            ``CHANNEL_DOES_NOT_EXIST`` when the group has no such channel,
+            ``GROUP_REMOVED`` when the channel was the last one and the empty
+            group was discarded, and ``CHANNEL_REMOVED`` otherwise.
+        """
+        group = cls.CHANNEL_GROUPS.get(group_name)
+        if group is None:
+            await cls._clean_expired()
+            return ChannelRemoveStatusEnum.GROUP_DOES_NOT_EXIST
+
+        if group.pop(channel, _MISSING) is _MISSING:
+            await cls._clean_expired()
+            return ChannelRemoveStatusEnum.CHANNEL_DOES_NOT_EXIST
+
+        if not group:
+            cls.CHANNEL_GROUPS.pop(group_name, None)
+            await cls._clean_expired()
+            return ChannelRemoveStatusEnum.GROUP_REMOVED
 
         await cls._clean_expired()
-        return channel_remove_status
+        return ChannelRemoveStatusEnum.CHANNEL_REMOVED
 
     @classmethod
     def set_history_manager(cls, manager: BaseHistoryManager) -> None:

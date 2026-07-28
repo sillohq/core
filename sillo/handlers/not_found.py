@@ -5,6 +5,9 @@ import typing
 from sillo.exceptions import NotFoundException
 from sillo.core.http import Request, Response
 
+#: Body text used when debug is off, so nothing internal is disclosed.
+GENERIC_MESSAGE = "The page you are looking for does not exist."
+
 
 def generate_html_page(title: str, message: str) -> str:
     """Generate a self-contained HTML error page without external dependencies.
@@ -61,65 +64,48 @@ async def handle_404_error(
     response: Response,
     exception: NotFoundException,
 ) -> Response:
-    """Handle 404 Not Found errors with content negotiation across multiple formats.
+    """Handle 404 Not Found errors, negotiating the response format.
 
-    Dynamically selects the appropriate response format (JSON, HTML, or plain text)
-    based on application settings. In debug mode, detailed error messages and
-    traceback information are included; in production, a sanitized custom message
-    is returned instead to avoid leaking internal details.
+    The response format follows the client's ``Accept`` header rather than a
+    server-side setting: a client that asks for JSON gets JSON, a browser gets
+    the HTML page, and anything else gets plain text. JSON is the default when
+    the header expresses no preference, which is the right default for an API.
 
-    The function first attempts to load configuration from the application settings
-    object. If settings are unavailable, it falls back to sensible defaults:
-    JSON output enabled, HTML rendering enabled, and debug mode active.
+    How much detail the body carries depends on the application's ``debug``
+    flag, read from ``request.app``. With debug on, the exception's own
+    ``detail`` is returned along with a traceback; with debug off — and when
+    the flag cannot be read at all — a generic message is returned instead, so
+    a misconfigured application errs towards saying less rather than more.
 
     Args:
-        request: The incoming HTTP request object. Not directly used in the
-            current implementation but retained for interface compatibility
-            with other error handlers.
+        request: The incoming HTTP request, used for the application's debug
+            flag and for ``Accept``-header negotiation.
         response: A response factory object providing ``.json()``, ``.html()``,
             and ``.text()`` methods for constructing typed HTTP responses.
-        exception: The ``NotFoundException`` instance that triggered this handler,
-            whose ``detail`` attribute supplies the error message in debug mode.
+        exception: The ``NotFoundException`` instance that triggered this
+            handler, whose ``detail`` supplies the message in debug mode.
 
     Returns:
-        A ``Response`` object with status code 404, formatted as JSON, HTML,
-        or plain text depending on the resolved configuration.
-
-    Raises:
-        None: All exceptions during settings access are caught and silently
-            ignored, causing the function to use default values.
+        A ``Response`` with status code 404, formatted as JSON, HTML, or plain
+        text according to what the client asked for.
     """
-    try:
-        settings = None
-    except Exception:
-        settings = None
+    debug = _debug_enabled(request)
 
-    if settings:
-        debug = settings.debug
-        not_found_config = settings.not_found
-    else:
-        debug = True
-        not_found_config = None
-
-    if not_found_config:
-        return_json = not_found_config.return_json
-        custom_message = not_found_config.custom_message
-        show_traceback = not_found_config.show_traceback
-        use_html = not_found_config.use_html
-    else:
-        return_json = True
-        custom_message = "The page you are looking for does not exist."
-        show_traceback = False
-        use_html = True
-
-    error_message = exception.detail if debug else custom_message
-
-    if show_traceback and debug:
+    if debug:
+        error_message = exception.detail
         traceback_info = traceback.format_exc()
+        if traceback_info.strip() == "NoneType: None":
+            traceback_info = None
     else:
+        error_message = GENERIC_MESSAGE
         traceback_info = None
 
-    if return_json:
+    if _prefers_html(request):
+        return response.html(
+            generate_html_page("404 - Not Found", error_message), status_code=404
+        )
+
+    if request.accepts_json:
         error_details: typing.Dict[str, typing.Any] = {
             "status": 404,
             "error": http.HTTPStatus(404).phrase,
@@ -127,14 +113,50 @@ async def handle_404_error(
         }
         if traceback_info:
             error_details["traceback"] = traceback_info
-
         return response.json(error_details, status_code=404)
 
-    if use_html:
-        html_content = generate_html_page("404 - Not Found", error_message)
-        return response.html(html_content, status_code=404)
+    return response.text(f"404 - Not Found\n{error_message}", status_code=404)
 
-    # Plain Text Fallback
-    return response.text(
-        f"404 - Not Found\n{error_message}",
-    )
+
+def _debug_enabled(request: Request) -> bool:
+    """Read the application's debug flag, defaulting to off.
+
+    The flag lives on the application, which the scope stores under
+    ``base_app``; ``app`` holds the router that is actually handling the
+    request and carries no debug flag of its own.
+
+    The handler can be invoked outside a fully-built application — in a test
+    harness, or against a bare ASGI scope — so a missing app or missing flag
+    is treated as production rather than as debug. Erring the other way would
+    leak internal paths and tracebacks from any misconfigured deployment.
+
+    Args:
+        request: The request whose application should be consulted.
+
+    Returns:
+        ``True`` only when the application explicitly has debug enabled.
+    """
+    scope = getattr(request, "scope", {}) or {}
+    for key in ("base_app", "app"):
+        candidate = scope.get(key)
+        if candidate is not None and hasattr(candidate, "debug"):
+            return bool(candidate.debug)
+    return False
+
+
+def _prefers_html(request: Request) -> bool:
+    """Decide whether the client would rather have the HTML page.
+
+    A browser sends ``text/html`` ahead of anything else; an API client asks
+    for ``application/json`` or sends no preference at all. Only the first of
+    those should get the styled page, so a wildcard ``*/*`` is not treated as
+    a request for HTML.
+
+    Args:
+        request: The request whose ``Accept`` header should be inspected.
+
+    Returns:
+        ``True`` when the client explicitly listed an HTML media type.
+    """
+    accept = request.headers.get("accept", "")
+    return "text/html" in accept or "application/xhtml+xml" in accept

@@ -8,9 +8,11 @@ and shutdown hooks.
 from __future__ import annotations
 
 import logging
+import ssl
 from typing import Annotated, Any, Dict, List, Optional
 
 from tortoise import Tortoise, connections
+from tortoise.backends.base.config_generator import expand_db_url
 from typing_extensions import Doc
 
 from .config import DatabaseConfig
@@ -21,6 +23,52 @@ except ModuleNotFoundError:
     _current_context = None  # ty: ignore[invalid-assignment]
 
 logger = logging.getLogger("sillo.record")
+
+#: URL schemes sillo accepts that Tortoise's parser does not know by name.
+_SCHEME_ALIASES = {
+    "postgresql": "postgres",
+    "mariadb": "mysql",
+}
+
+
+def _normalize_db_url(url: str) -> str:
+    """Rewrite scheme aliases to the names Tortoise's URL parser knows.
+
+    ``postgresql://`` and ``mariadb://`` are both accepted by
+    :class:`~sillo.record.config.DatabaseConfig` but rejected by Tortoise,
+    which only knows ``postgres``/``asyncpg``/``psycopg`` and ``mysql``.
+
+    Args:
+        url: The connection URL as configured.
+
+    Returns:
+        The same URL with its scheme rewritten when it is an alias, otherwise
+        the URL unchanged.
+    """
+    scheme, sep, rest = url.partition("://")
+    if not sep:
+        return url
+    return f"{_SCHEME_ALIASES.get(scheme, scheme)}://{rest}"
+
+
+def _build_ssl_context(cfg: DatabaseConfig) -> "ssl.SSLContext":
+    """Build the SSL context handed to the database driver.
+
+    Both asyncpg and aiomysql take an :class:`ssl.SSLContext` for their
+    ``ssl`` argument. The certificate paths on the config are optional; with
+    none of them set this returns the system default context, which still
+    verifies the server certificate.
+
+    Args:
+        cfg: The database configuration carrying the certificate paths.
+
+    Returns:
+        A configured :class:`ssl.SSLContext`.
+    """
+    context = ssl.create_default_context(cafile=cfg.ssl_ca)
+    if cfg.ssl_cert:
+        context.load_cert_chain(cfg.ssl_cert, keyfile=cfg.ssl_key)
+    return context
 
 
 class DatabaseManager:
@@ -120,35 +168,55 @@ class DatabaseManager:
             return False
 
     def _build_tortoise_config(self) -> dict:
-        """Build Tortoise Config
+        """Build the Tortoise config dict for the configured backend.
+
+        The connection URL is expanded by Tortoise's own URL parser, which
+        resolves the driver module and splits out host, port, user, password
+        and database. sillo's extra options are then layered on top using the
+        credential names each driver actually accepts.
 
         Returns:
-            [description]
+            A Tortoise config dict with ``connections``, ``apps`` and
+            ``timezone`` keys.
 
         Raises:
-            [description]
+            ConfigurationError: If the URL scheme is not one Tortoise
+                recognises.
         """
         cfg = self.config
         modules = self._model_modules or ["__main__"]
-        credentials: Dict[str, Any] = {
-            "pool_size": cfg.pool_size,
-            "max_overflow": cfg.max_overflow,
-            "pool_recycle": cfg.pool_recycle,
-            "echo": cfg.echo,
-        }
-        if cfg.backend.value == "sqlite":
-            credentials["file_path"] = cfg.url.replace("sqlite://", "")
-        else:
-            credentials["database"] = cfg.url
-            credentials["ssl"] = cfg.ssl
-            credentials["ssl_ca"] = cfg.ssl_ca
-            credentials["ssl_cert"] = cfg.ssl_cert
-            credentials["ssl_key"] = cfg.ssl_key
+
+        expanded = expand_db_url(_normalize_db_url(cfg.url))
+        engine: str = expanded["engine"]
+        credentials: Dict[str, Any] = dict(expanded["credentials"])
+
+        if engine != "tortoise.backends.sqlite":
+            # Both the postgres and mysql clients pop these out of **kwargs.
+            credentials["minsize"] = cfg.pool_size
+            credentials["maxsize"] = cfg.pool_size + cfg.max_overflow
+
+            if cfg.ssl:
+                credentials["ssl"] = _build_ssl_context(cfg)
+
+            if engine == "tortoise.backends.mysql":
+                credentials["charset"] = cfg.charset
+                # aiomysql.create_pool() takes pool_recycle directly.
+                credentials["pool_recycle"] = cfg.pool_recycle
+            elif engine in (
+                "tortoise.backends.asyncpg",
+                "tortoise.backends.psycopg",
+            ):
+                # asyncpg's equivalent knob, in seconds.
+                credentials["max_inactive_connection_lifetime"] = cfg.pool_recycle
+
+        if cfg.echo:
+            # Tortoise has no `echo` credential; query logging is a logger.
+            logging.getLogger("tortoise.db_client").setLevel(logging.DEBUG)
 
         return {
             "connections": {
                 "default": {
-                    "engine": f"tortoise.backends.{cfg.backend.value}",
+                    "engine": engine,
                     "credentials": credentials,
                 }
             },

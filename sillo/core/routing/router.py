@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import difflib
 import inspect
 import re
 import typing
@@ -77,6 +78,57 @@ if TYPE_CHECKING:
     from sillo.types import WsHandlerType
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
+
+
+def _known_route_kwargs() -> frozenset:
+    """Return the keyword arguments ``Route.__init__`` accepts by name.
+
+    Computed on first use and cached, because the verb decorators forward
+    ``**kwargs`` and we want to check them without paying for signature
+    introspection on every route registration.
+    """
+    global _ROUTE_KWARGS
+    if _ROUTE_KWARGS is None:
+        params = inspect.signature(Route.__init__).parameters
+        _ROUTE_KWARGS = frozenset(
+            name
+            for name, p in params.items()
+            if name not in ("self", "kwargs")
+            and p.kind is not inspect.Parameter.VAR_KEYWORD
+        )
+    return _ROUTE_KWARGS
+
+
+_ROUTE_KWARGS: Optional[frozenset] = None
+
+
+def _reject_unknown_route_kwargs(kwargs: Dict[str, Any]) -> None:
+    """Fail on keyword arguments that no route option matches.
+
+    The verb decorators accept ``**kwargs`` so that route metadata can be
+    forwarded, which means a misspelled option would otherwise be accepted and
+    silently ignored. That is dangerous for options whose whole purpose is to
+    constrain output — ``response_modle=UserOut`` would leave the endpoint
+    returning every field of every object it is given.
+
+    Args:
+        kwargs: The leftover keyword arguments handed to ``Route.__init__``.
+
+    Raises:
+        TypeError: If any key is not a known route option, naming the closest
+            match when there is one.
+    """
+    unknown = sorted(set(kwargs) - _known_route_kwargs())
+    if not unknown:
+        return
+
+    details = []
+    for name in unknown:
+        close = difflib.get_close_matches(name, _known_route_kwargs(), n=1, cutoff=0.7)
+        details.append(f"{name!r}" + (f" (did you mean {close[0]!r}?)" if close else ""))
+    raise TypeError(
+        "Route() got unexpected keyword argument(s): " + ", ".join(details)
+    )
 
 
 class Route(BaseRoute):
@@ -306,6 +358,7 @@ class Route(BaseRoute):
             if response_model is not None
             else None
         )
+        _reject_unknown_route_kwargs(kwargs)
         self.kwargs = kwargs
         self.tags = tags
         self.security = security
