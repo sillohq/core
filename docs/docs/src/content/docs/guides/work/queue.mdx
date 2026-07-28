@@ -403,6 +403,148 @@ await pool.start()
 await pool.shutdown()
 ```
 
+###  Deep Dive: Worker Tuning
+
+**Concurrency vs. CPU cores**: Concurrency is the number of asyncio tasks pulling jobs **simultaneously**, not processes. Four tasks can all be waiting on I/O (network, database) at the same time. Set it higher than your CPU core count if jobs are I/O-bound:
+
+- **4 CPU cores, mostly I/O** (email, HTTP calls): `concurrency=12–16`
+- **4 CPU cores, mixed** (some compute): `concurrency=6–8`
+- **4 CPU cores, CPU-heavy**: `concurrency=4–6`
+
+Higher concurrency means more memory (each task has its own stack), so monitor RSS.
+
+**Queue priority ordering**: Queues are checked left-to-right in a tight loop:
+
+```python
+WorkerOptions(queues=["critical", "default", "reports"])
+```
+
+This means:
+1. Pop from `critical` if not empty
+2. Else pop from `default` if not empty
+3. Else pop from `reports` if not empty
+4. If all empty, sleep for `sleep` seconds
+
+A thousand jobs in `reports` **do not block** `critical` jobs — the worker
+checks `critical` first on every poll. But if `critical` is constantly full,
+`reports` will starve. Mitigate by running separate workers:
+
+```python title="separate workers, separate processes"
+# process 1: fast, low-latency work
+python -m myapp.worker --queues critical,default --concurrency 8
+
+# process 2: long, low-priority work
+python -m myapp.worker --queues reports --concurrency 2 --max_exec_time 3600
+```
+
+**Timeout strategy**: A job timing out is **not** a soft failure; it is a
+hard crash:
+
+```python
+asyncio.TimeoutError("Timeout waiting for job to finish")
+```
+
+The job then retries (if `tries > 1`). Set timeouts **below** external API
+timeouts so you control the retry:
+
+```python
+class CallPaymentAPI(Job):
+    timeout = 20  # API's own timeout is 30s; we fail first and retry
+    tries = 5
+    backoff = 10
+```
+
+If a job consistently times out, your concurrency is too high. The worker
+checks `memory_limit` and exits the process — triggering a restart — but
+waiting for a restart is slow. Lower concurrency first.
+
+###  Worker Lifecycle and Signals
+
+A worker runs until one of five things happens:
+
+| Exit Reason | Trigger | Graceful? |
+|---|---|---|
+| **Manual stop** | `worker.stop()` | Yes — waits for current job |
+| **max_jobs reached** | N jobs processed | Yes — finishes current job |
+| **max_exec_time reached** | N seconds elapsed | Yes — finishes current job |
+| **memory_limit exceeded** | RSS exceeds threshold | **No** — exits immediately |
+| **SIGTERM** (orchestrator) | `kill -TERM <pid>` | Yes, if handler installed |
+
+In production, install a SIGTERM handler:
+
+```python title="graceful shutdown on SIGTERM"
+import signal
+
+worker = QueueWorker(...)
+
+def handle_sigterm(signum, frame):
+    worker.stop()
+
+signal.signal(signal.SIGTERM, handle_sigterm)
+await worker.run()
+```
+
+Without it, orchestrators (Kubernetes, systemd) wait for the grace period
+(usually 30 seconds) and then `SIGKILL`, losing the current job. With the
+handler, a job mid-execution is returned to the queue for another worker
+to retry.
+
+###  Debugging and Observability
+
+**What a worker logs:**
+
+```
+[INFO] QueueWorker starting: 4 concurrent, queues=[critical, default]
+[DEBUG] Polling critical (1 jobs), default (0 jobs)
+[DEBUG] Got job-1234 from critical: SendEmail
+[DEBUG] Running SendEmail with {'user_id': '42'}
+[ERROR] SendEmail failed: ConnectionError: Network error. Retries: 1/3
+[INFO] SendEmail succeeded in 1.234s
+[INFO] Processed 100 jobs, success_rate=98%
+```
+
+Add custom logging inside jobs:
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+class SendEmail(Job):
+    async def handle(self):
+        logger.info(f"Sending to {self.user_id}")
+        try:
+            await mail.send(self.user_id)
+            logger.info(f"Email sent to {self.user_id}")
+        except Exception as e:
+            logger.error(f"Failed: {e}", exc_info=True)
+            raise
+```
+
+**Monitor these metrics:**
+
+| Metric | What it means | Alert on |
+|---|---|---|
+| `queue.depth` | Jobs waiting | > expected baseline |
+| `job.age_seconds` | Oldest job's wait time | > 5 minutes |
+| `job.duration_ms` | Execution time (p50, p95, p99) | p99 > timeout |
+| `job.retry_rate` | Failures as % of throughput | > 5% |
+| `worker.memory_mb` | RSS of worker process | Trending up (memory leak) |
+| `worker.exit_count` | Restarts | > 1/hour (something wrong) |
+
+Expose these via a metrics endpoint:
+
+```python
+@app.get("/admin/queue-metrics")
+async def metrics(request, response):
+    conn = request.app.state["queue_connection"]
+    return response.json({
+        "critical_depth": await conn.size("critical"),
+        "default_depth": await conn.size("default"),
+        "reports_depth": await conn.size("reports"),
+    })
+```
+
 ---
 
 ##  Middleware
@@ -425,9 +567,15 @@ class MyJob(Job):
 
 ###  Custom Middleware
 
-```python
+Each middleware is a callable that receives the next handler and returns a new async callable:
+
+```python title="timing and metrics"
+import time
+
 class TimingMiddleware:
-    def __init__(self, registry): self.registry = registry
+    def __init__(self, metrics_registry):
+        self.registry = metrics_registry
+
     def __call__(self, handler):
         async def wrapper():
             start = time.monotonic()
@@ -442,11 +590,156 @@ class TimingMiddleware:
                 elapsed = (time.monotonic() - start) * 1000
                 self.registry.histogram("job.duration_ms").observe(elapsed)
         return wrapper
+
+
+class SendEmail(Job):
+    middleware = [TimingMiddleware(metrics_registry)]
+```
+
+Middleware runs **per attempt**, so it sees retries:
+
+```python title="logging all attempts"
+import logging
+
+logger = logging.getLogger(__name__)
+
+class LoggingMiddleware:
+    def __call__(self, handler):
+        async def wrapper():
+            logger.info(f"Starting job")
+            try:
+                result = await handler()
+                logger.info(f"Succeeded")
+                return result
+            except Exception as e:
+                logger.error(f"Failed: {e}")
+                raise
+        return wrapper
+```
+
+If a job retries twice, this middleware logs the start and failure three times.
+
+###  Middleware Stacking and Order
+
+Middleware is applied in list order, and each wraps the next. The outer middleware sees both
+the inner middleware and the handler:
+
+```python title="order matters"
+class Middleware1:
+    def __call__(self, handler):
+        async def wrapper():
+            print("M1 start")
+            result = await handler()
+            print("M1 end")
+            return result
+        return wrapper
+
+class Middleware2:
+    def __call__(self, handler):
+        async def wrapper():
+            print("M2 start")
+            result = await handler()
+            print("M2 end")
+            return result
+        return wrapper
+
+class MyJob(Job):
+    middleware = [Middleware1(), Middleware2()]
+    async def handle(self):
+        print("job")
+
+# Output on success:
+# M1 start
+# M2 start
+# job
+# M2 end
+# M1 end
+```
+
+Put **timing** and **metrics** on the outside (outermost), and **retries** and **rate-limiting**
+on the inside (innermost):
+
+```python
+class MyJob(Job):
+    middleware = [
+        TimingMiddleware(),      # outer: times everything
+        LoggingMiddleware(),      # logs all attempts
+        QRetryMiddleware(...),    # inner: controls retries
+    ]
+```
+
+###  Common Middleware Patterns
+
+**Request tracing:**
+
+```python title="span a job across a trace"
+class TracingMiddleware:
+    def __init__(self, tracer):
+        self.tracer = tracer
+
+    def __call__(self, handler):
+        async def wrapper():
+            with self.tracer.span("job") as span:
+                span.set_attribute("job_id", self.job_id)
+                return await handler()
+        return wrapper
+```
+
+**Timeout with graceful degradation:**
+
+```python title="fail fast, or degrade gracefully"
+class GracefulTimeoutMiddleware:
+    def __init__(self, timeout_seconds):
+        self.timeout = timeout_seconds
+
+    def __call__(self, handler):
+        async def wrapper():
+            try:
+                return await asyncio.wait_for(handler(), timeout=self.timeout)
+            except asyncio.TimeoutError:
+                logger.warning(f"Job timed out; marking as partial success")
+                return {"status": "partial", "reason": "timeout"}
+        return wrapper
+```
+
+**Transaction wrapper:**
+
+```python title="all-or-nothing database semantics"
+from sillo.record import transaction
+
+class TransactionMiddleware:
+    def __call__(self, handler):
+        async def wrapper():
+            async with transaction():
+                return await handler()
+        return wrapper
 ```
 
 ---
 
 ##  Failed Jobs
+
+When a job exhausts its retries, it is **not** lost — it is logged to a failed-job repository. This
+is your safety net.
+
+###  The Retry Lifecycle
+
+```
+[Attempt 1] SendEmail fails → backoff 10s
+[Attempt 2] SendEmail fails → backoff 20s (backoff doubled)
+[Attempt 3] SendEmail fails → backoff 40s
+[Attempt 4] Retries exhausted → logged to repository
+```
+
+A job with `tries=4` and `backoff=10` will retry at T+10s, T+30s, T+70s (if all fail). That's
+roughly two minutes from first failure to dead-letter. Set `tries` to match the failure's
+severity:
+
+| Job | tries | backoff | Why |
+|---|---|---|---|
+| `SendEmail` | 3–5 | 10–30 | Transient network, DNS, timeouts |
+| `ChargeCard` | 2–3 | 30–60 | Payment gateway down (rarer, retry slower) |
+| `DeleteOldLogs` | 1 | 0 | Logging never retries; idempotent anyway |
 
 ###  MemoryFailedRepository
 
@@ -454,11 +747,123 @@ class TimingMiddleware:
 from sillo.work.queue import MemoryFailedRepository
 
 repo = MemoryFailedRepository()
-await repo.log("emails", "job-123", "SendEmail", payload, traceback)
+
+# Logged automatically by the worker on exhausted retries
+# await repo.log("emails", "job-123", "SendEmail", payload, traceback)
+
+# Inspect failures
 for fj in await repo.all(limit=20):
-    print(f"{fj.job_class}: {fj.exception[:200]}")
+    print(f"{fj.id}: {fj.job_class} failed: {fj.exception[:200]}")
+
+# Manually retry after a fix ships
+failed_job = await repo.get("job-123")
+if failed_job:
+    await connection.push(failed_job.queue, failed_job.payload)
+    await repo.forget(failed_job.id)
+
+# Or forget entirely (careful!)
 await repo.forget("job-123")
-await repo.flush()
+await repo.flush()  # Clear all
+```
+
+<Aside type="danger" title="MemoryFailedRepository loses data on restart">
+
+The name says it all: jobs are held in memory. On process restart, every
+failed job is gone. For production, implement a `FailedRepository` that
+logs to the database or a message queue.
+
+</Aside>
+
+###  Custom FailedRepository
+
+Implement the abstract class to store failures durably:
+
+```python
+from sillo.work.queue import FailedRepository
+
+class DatabaseFailedRepository(FailedRepository):
+    async def log(self, queue_name, job_id, job_class, payload, exception):
+        await FailedJob.create(
+            queue_name=queue_name,
+            job_id=job_id,
+            job_class=job_class,
+            payload=payload,
+            exception=str(exception),
+            traceback=traceback.format_exc(),
+            failed_at=datetime.now(),
+        )
+
+    async def get(self, job_id):
+        row = await FailedJob.get_or_none(job_id=job_id)
+        if row:
+            return FailedJobRecord(
+                id=row.job_id,
+                queue=row.queue_name,
+                job_class=row.job_class,
+                payload=row.payload,
+                exception=row.exception,
+            )
+
+    async def all(self, limit=100):
+        rows = await FailedJob.all().limit(limit)
+        return [... convert to FailedJobRecord ...]
+
+    async def forget(self, job_id):
+        await FailedJob.delete_by_id(job_id)
+
+    async def flush(self):
+        await FailedJob.all().delete()
+```
+
+Pass it to the worker:
+
+```python
+repo = DatabaseFailedRepository()
+worker = QueueWorker(mgr, serializer, repo, options=...)
+```
+
+###  Handling Failures at Scale
+
+As jobs fail, they accumulate in the repository. Without a policy, that
+store grows unbounded and becomes a support problem.
+
+**Decide in advance:**
+
+1. **Who gets paged?** If failures exceed a threshold (50 in 1 hour), alert on-call.
+2. **How do failed jobs get retried?** After a fix ships, re-enqueue them from the repository.
+3. **Retention?** Keep entries for 7 days; auto-delete older ones.
+
+```python title="a dead-letter processor"
+class RetryFailedJobs(Job):
+    queue = "admin"
+    timeout = 300
+
+    async def handle(self):
+        repo = get_repository()
+        now = datetime.now()
+
+        # Retry recent failures (< 1 hour old)
+        for fj in await repo.all(limit=1000):
+            age = (now - fj.failed_at).total_seconds()
+            if age < 3600:
+                # Re-enqueue
+                await connection.push(fj.queue, fj.payload)
+                await repo.forget(fj.id)
+                logger.info(f"Retried {fj.id}")
+
+        # Delete old failures (> 7 days)
+        stale = await FailedJob.filter(failed_at__lt=now - timedelta(days=7))
+        for row in stale:
+            await row.delete()
+            logger.info(f"Purged {row.id}")
+```
+
+Run this via the scheduler daily:
+
+```python
+@scheduler.cron("0 3 * * *")  # 3 AM daily
+async def retry_failed_jobs():
+    await RetryFailedJobs.dispatch()
 ```
 
 ###  Batching & Chaining
@@ -656,3 +1061,158 @@ to pick up. That bound must be shorter than your orchestrator's grace
 period, and your longest job's timeout should be shorter still — a job
 that takes ten minutes cannot be drained inside a thirty-second window,
 and will be killed and retried on every single deploy.
+
+```python title="safe deployment"
+import signal
+import asyncio
+
+async def main():
+    worker = QueueWorker(mgr, serializer, repo, options=...)
+    
+    def handle_sigterm(signum, frame):
+        # Stop accepting new jobs
+        worker.stop()
+        # Worker finishes current job and exits gracefully
+    
+    signal.signal(signal.SIGTERM, handle_sigterm)
+    
+    try:
+        await worker.run()
+    except KeyboardInterrupt:
+        pass  # also safe; just exits
+```
+
+**Orchestrator configuration:**
+
+```yaml title="Kubernetes pod spec"
+spec:
+  terminationGracePeriodSeconds: 120  # time to drain
+  containers:
+  - name: worker
+    image: myapp:latest
+    command: ["python", "-m", "myapp.worker"]
+    lifecycle:
+      preStop:
+        exec:
+          command: ["sh", "-c", "sleep 5"]  # extra buffer for SIGTERM handling
+```
+
+```bash title="Systemd service"
+[Service]
+ExecStart=/path/to/venv/bin/python -m myapp.worker
+TimeoutStopSec=120
+KillMode=mixed
+```
+
+**Verify the drain works:**
+
+```bash
+# Start worker, let it process a job
+python -m myapp.worker &
+
+# Stop it gracefully
+kill -TERM $!
+
+# Watch logs — should see "Waiting for current job" and graceful exit
+```
+
+If the process is killed (SIGKILL) before it finishes, the job is returned to
+the queue and retried by another worker. That's expected — but if it happens
+on every deploy, your timeouts are wrong. Profile your jobs:
+
+```bash
+# Monitor job duration in production
+psql mydb -c "SELECT job_class, AVG(duration_seconds) FROM job_logs GROUP BY job_class;"
+```
+
+###  Capacity Planning
+
+**Estimate queue size over time:**
+
+```
+dispatch_rate = 1000 jobs/min = 16.7 jobs/sec
+job_duration = 5 sec (p50)
+workers = 4
+concurrency = 8
+throughput = 4 workers × 8 concurrent = 32 jobs/sec
+
+Queue growth = 16.7 dispatched - 32 processed = -15.3 jobs/sec
+→ Queue drains. This is healthy.
+```
+
+If throughput < dispatch rate, the queue backs up. Add workers:
+
+```
+Queue size = 10,000 jobs
+dispatch_rate = 16.7 jobs/sec
+current throughput = 16.7 jobs/sec
+→ Queue stays at 10,000 for 10,000 / 16.7 = 600 seconds (10 min)
+
+If throughput were 8 jobs/sec:
+→ Queue grows by 8.7 jobs/sec → 10 min to reach 16,000 jobs
+```
+
+**Scaling strategy:**
+
+1. Monitor queue depth and age
+2. Alert if oldest job > 5 minutes
+3. Horizontally add workers (new processes/machines)
+4. Do NOT raise concurrency without testing — it can hide memory leaks
+
+###  Connection Resilience
+
+**Redis failover:**
+
+If your Redis node dies, jobs in transit are lost (they're on the network). Jobs
+at rest survive on a replica if you have one. For critical work:
+
+```python title="Redis with automatic failover"
+from redis.sentinel import Sentinel
+
+sentinel = Sentinel([("sentinel1", 26379), ("sentinel2", 26379)])
+conn = RedisConnection(
+    redis_client=sentinel.master_for("mymaster", socket_timeout=0.1)
+)
+```
+
+**Database failover (if using DatabaseFailedRepository):**
+
+Same pattern — use your database's built-in replication and failover. The
+failed-job repository is read-only during normal operation (only during
+manual retry), so queries can be routed to a read replica.
+
+###  Monitoring and Alerting
+
+**Dashboard queries:**
+
+```sql
+-- Queue depth by type (1-min granularity)
+SELECT
+  queue_name,
+  COUNT(*) as depth,
+  NOW() as ts
+FROM queue_jobs
+GROUP BY queue_name;
+
+-- Failed jobs (past 24 hours)
+SELECT job_class, COUNT(*) as count FROM failed_jobs
+WHERE failed_at > NOW() - INTERVAL '24 hours'
+GROUP BY job_class ORDER BY count DESC;
+
+-- Retry rate (jobs that failed and were retried)
+SELECT
+  SUM(CASE WHEN attempts > 1 THEN 1 ELSE 0 END) as retried,
+  COUNT(*) as total,
+  ROUND(100.0 * SUM(CASE WHEN attempts > 1 THEN 1 ELSE 0 END) / COUNT(*), 2) as retry_pct
+FROM completed_jobs
+WHERE completed_at > NOW() - INTERVAL '1 hour';
+```
+
+**Alerts to set:**
+
+| Alert | Condition | Action |
+|---|---|---|
+| Queue backed up | `oldest_job_age > 5 min` | Page on-call; check worker health |
+| High failure rate | `failure_rate > 10%` | Check logs for errors; may be upstream service down |
+| Worker down | `no jobs processed in 10 min` | Check if process crashed; restart if needed |
+| Memory leak | `worker RSS trending up` | Restart worker; investigate in dev |

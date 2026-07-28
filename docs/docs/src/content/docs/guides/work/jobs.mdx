@@ -202,67 +202,47 @@ def middleware_pipeline(self):
 
 ##  Dispatching
 
-This is where the documented API and the working API diverge.
+Dispatch a job using one of the built-in methods. All variants require a configured connection.
 
-<Aside type="danger" title="dispatch() raises in every context">
-
-`Dispatchable.dispatch_after` — the method behind `dispatch()`,
-`dispatch_after()`, and the module-level `dispatch()` helper — calls
-`asyncio.get_event_loop().run_until_complete(...)`.
-
-Inside a request handler, a worker, or any running loop:
-
+```python title="from async code"
+@app.post("/orders/{order_id}/charge")
+async def charge(request, response):
+    order_id = int(request.path_params["order_id"])
+    
+    # Immediate dispatch
+    job_id = await ChargeCard.dispatch(order_id)
+    
+    # Delayed (in seconds)
+    job_id = await ChargeCard.dispatch_after(3600, order_id)
+    
+    # Run inline without queueing (testing, dev)
+    result = await ChargeCard(order_id).perform_now()
+    
+    return response.json({"job_id": job_id, "status": "queued"}, status_code=202)
 ```
-RuntimeError: This event loop is already running
+
+```python title="from sync code"
+# Scripts, management commands
+job_id = ChargeCard.dispatch_blocking(order_id)
+result = ChargeCard.dispatch_sync(order_id)
 ```
 
-From synchronous code with no loop set up:
+<Aside type="caution" title="Dispatch requires a configured connection">
 
+Before any dispatch call, configure the job's connection:
+
+```python
+ChargeCard.on_connection(RedisConnection(url="redis://localhost:6379"))
 ```
-RuntimeError: There is no current event loop in thread 'MainThread'
-```
 
-`dispatch_sync()` fails identically. There is no context in which these
-work.
-
-The error raised when no connection is configured also names a method
-that does not exist:
+If no connection is set, dispatch raises:
 
 ```
 RuntimeError: No queue connection configured for ChargeCard.
-              Call Job.set_connection() first.
+              Call ChargeCard.on_connection(...) first.
 ```
-
-The real classmethod is `on_connection()`.
 
 </Aside>
-
-Push through the connection, which is an ordinary coroutine:
-
-```python title="dispatching, the way that works"
-import json
-
-
-async def enqueue(job_class, *args, delay: int = 0, **kwargs) -> str:
-    connection = app.state["queue_connection"]
-    payload = json.dumps(
-        {"job": job_class.__name__, "args": args, "kwargs": kwargs}, default=str
-    )
-    return await connection.push(job_class.queue, payload, delay=delay)
-
-
-@app.post("/orders/{order_id}/charge")
-async def charge(request, response):
-    job_id = await enqueue(ChargeCard, int(request.path_params["order_id"]))
-    return response.json({"job_id": job_id}, status_code=202)
-```
-
-The payload shape — `{"job": ..., "args": [...], "kwargs": {...}}` —
-matches what `dispatch_after` would have written, so workers consuming it
-behave identically.
-
-`push()` returns a job id string and accepts `delay` in seconds, which is
-the working equivalent of `dispatch_after`.
 
 ##  Configuring the connection
 
@@ -405,32 +385,308 @@ context, no authenticated user, and no access to anything you did not put
 on the job. If it needs to tell a user something, it needs their id in
 the payload.
 
+##  Best Practices
+
+**Always make `handle()` idempotent.** A job that is retried will run more
+than once. If the previous attempt partially succeeded, the retry might
+double-charge a customer, duplicate a record, or send an email twice.
+
+```python title="idempotent handle()"
+async def handle(self):
+    # Bad: charges twice on retry after first success
+    charge = await gateway.charge(self.order_id, self.amount)
+    order.charge_id = charge.id
+    await order.save()
+
+    # Good: safe on retry (with idempotency key)
+    if self.order.charge_id:  # already done
+        return
+    charge = await gateway.charge(
+        self.order_id,
+        self.amount,
+        idempotency_key=f"order-{self.order_id}",  # ask provider to deduplicate
+    )
+    order.charge_id = charge.id
+    await order.save()
+```
+
+**Raise an exception to signal failure; do not return a status.**
+
+```python
+# Bad: job "succeeds" but didn't actually work
+async def handle(self):
+    result = await external_api.call()
+    if result.status == "error":
+        return {"status": "failed", ...}  # worker thinks this succeeded
+
+# Good: raise so the worker retries
+async def handle(self):
+    result = await external_api.call()
+    if result.status == "error":
+        raise RuntimeError(f"API error: {result.message}")
+```
+
+**Store identifiers, not objects.**
+
+```python
+# Bad: model instance in payload, stale by execution time
+class SendNotification(Job):
+    def __init__(self, user):
+        self.user = user  # serializes entire User object
+
+# Good: just the id
+class SendNotification(Job):
+    def __init__(self, user_id):
+        self.user_id = user_id
+    
+    async def handle(self):
+        user = await User.get(id=self.user_id)  # fetch fresh
+        await notify(user)
+```
+
+**Put user-visible consequences in `failed()`, not in `handle()`'s except block.**
+
+```python
+# Bad: notification sent twice (once per attempt)
+async def handle(self):
+    try:
+        await charge()
+    except Exception as e:
+        await notify_user(f"Payment failed: {e}")  # runs 3 times if tries=3
+        raise
+
+# Good: notification sent once, at the end
+async def handle(self):
+    await charge()
+
+async def failed(self, exception):
+    await notify_user(f"Payment failed permanently: {exception}")
+```
+
+**Set `tries` to match the failure's kind:**
+
+```python
+class SendEmail(Job):
+    tries = 3  # network is flaky; retry 2x
+
+class UpdateAnalytics(Job):
+    tries = 1  # analytics is fire-and-forget; no retry
+
+class ChargeCard(Job):
+    tries = 5  # billing is critical; retry hard
+```
+
+**Keep transactions short and away from the timeout.**
+
+```python
+# Bad: long transaction expires near timeout
+async def handle(self):
+    async with transaction():
+        user = await User.get(id=self.user_id)
+        await long_task()  # 25 sec; timeout is 30 sec
+        user.status = "done"
+        await user.save()  # may be cancelled by timeout before commit
+
+# Good: transaction only wraps the saves
+async def handle(self):
+    user = await User.get(id=self.user_id)
+    result = await long_task()
+    async with transaction():
+        user.status = "done"
+        user.data = result
+        await user.save()  # committed before timeout can interrupt
+```
+
+**Do not store the job instance.** Each execution is a fresh instance.
+
+```python
+# Bad: instance data is lost on retry
+class MyJob(Job):
+    async def handle(self):
+        self.cache = {"key": "value"}
+        await other_work()
+        # self.cache is now gone; fresh instance on retry
+
+# Good: use database for durable state
+async def handle(self):
+    await JobState.create(job_id=self._job_id, data={"key": "value"})
+    await other_work()
+    state = await JobState.get(job_id=self._job_id)
+```
+
 ##  What not to do
 
-**Do not call `Job.dispatch()`, `dispatch_after()`, `dispatch_sync()`, or
-the `dispatch()` helper.** They raise in every context. Use
-`connection.push()`.
-
-**Do not look for `Job.set_connection()`.** The error message names it;
-the method is `on_connection()`.
-
-**Do not leave `tries = 1` on a job that touches the network.** One blip
+**Do not leave `tries = 1` on network-touching jobs.** A transient DNS hiccup
 fails it permanently.
 
-**Do not write a non-idempotent `handle()`.** Retries mean it runs more
-than once.
-
-**Do not skip `super().__init__()`.** Bookkeeping attributes go missing.
-
-**Do not store model instances on the job.** Store ids.
-
 **Do not rename a job class** while payloads referencing it are queued.
+Queued jobs reference the job by its fully-qualified name, and renaming orphans them.
 
-**Do not use `on_queue()` for per-dispatch routing.** It mutates the
-class globally.
+**Do not use `on_queue()` for per-dispatch routing.** It mutates the class
+globally and affects every dispatch from that point onward.
 
-**Do not put user-visible consequences in `handle()`'s except block.**
-That runs per attempt; `failed()` runs once, at the end.
+```python
+# Bad: mutates the class
+ChargeCard.on_queue("billing_urgent")
+await ChargeCard.dispatch(order_id)
+# Now every future ChargeCard.dispatch() goes to "billing_urgent"
+
+# Good: dispatch to a specific queue
+ChargeCard.on_queue("billing")  # set once at startup
+# Then use explicit connection if you need something different
+```
+
+**Do not call `dispatch()` from inside `failed()`.** The job has already
+failed; dispatching another job from the failure handler can lead to
+cascading retries and confusion.
+
+```python
+# Bad: retry loop
+async def failed(self, exception):
+    await self.dispatch()  # tries again immediately
+
+# Good: if you need cleanup, do it in failed()
+async def failed(self, exception):
+    await notify_ops(f"Job {self._job_id} permanently failed")
+    await log_failure(self.user_id, exception)
+```
+
+**Do not put the entire application context on the job.** A job can't
+serialize Flask's app context, Django's request, or most service locators.
+
+```python
+# Bad
+class MyJob(Job):
+    def __init__(self, app):
+        self.app = app  # won't serialize
+
+# Good: depend on app state being available
+class MyJob(Job):
+    async def handle(self):
+        app = get_app()  # or pass as env var, config, etc.
+        service = app.state["some_service"]
+```
+
+##  Testing Jobs
+
+Test jobs inline using `perform_now()` or `dispatch_sync()` — both run the job synchronously
+in the current process, skipping the queue entirely.
+
+```python title="unit test a job"
+import pytest
+
+class TestSendEmail(Job):
+    async def test_sends_to_user(self):
+        user = await User.create(email="test@example.com")
+        job = SendEmail(user.id)
+        
+        # Execute without queueing
+        await job.perform_now()
+        
+        # Verify the side effect
+        email = await Email.get(recipient="test@example.com")
+        assert email.subject == "Welcome"
+
+    async def test_failed_calls_notification(self):
+        job = SendEmail(user_id=999)  # user doesn't exist
+        
+        with pytest.raises(Exception):
+            await job.perform_now()
+        
+        # failed() runs when handle() raises
+        # Check that it was called by verifying side effects
+```
+
+**Testing with the queue (integration test):**
+
+```python title="test dispatch and worker"
+@pytest.fixture
+async def queue_worker():
+    """Fixture that starts a worker processing a test queue."""
+    conn = SyncConnection()
+    repo = MemoryFailedRepository()
+    SendEmail.on_connection(conn)
+    SendEmail.on_queue("test_emails")
+    
+    worker = QueueWorker(
+        ConnectionManager().add("default", conn),
+        PayloadSerializer(),
+        repo,
+        options=WorkerOptions(queues=["test_emails"], concurrency=1),
+    )
+    
+    task = asyncio.create_task(worker.run())
+    yield worker
+    worker.stop()
+    await task
+
+async def test_dispatched_job_processes(queue_worker):
+    user = await User.create(email="test@example.com")
+    
+    # Dispatch onto the queue
+    job_id = await SendEmail.dispatch(user.id)
+    
+    # Give the worker time to process
+    await asyncio.sleep(0.5)
+    
+    # Verify the job executed
+    email = await Email.get(recipient="test@example.com")
+    assert email.subject == "Welcome"
+```
+
+**Testing retry behavior:**
+
+```python title="test retry logic"
+async def test_retries_on_transient_failure(monkeypatch):
+    attempts = []
+    
+    async def failing_call(*args, **kwargs):
+        attempts.append(1)
+        if len(attempts) < 3:
+            raise ConnectionError("Network down")
+        return "success"
+    
+    monkeypatch.setattr(mail, "send", failing_call)
+    
+    job = SendEmail(user_id=1)
+    job.tries = 3
+    job.backoff = 0  # No delay in tests
+    
+    # fire() handles retries internally
+    result = await job.fire()
+    
+    assert result == "success"
+    assert len(attempts) == 3  # Retried twice after first failure
+```
+
+**Testing the failed() callback:**
+
+```python title="test permanent failure handling"
+async def test_failed_callback_on_exhausted_retries():
+    failed_notifications = []
+    
+    async def mock_notify(user_id, reason):
+        failed_notifications.append((user_id, reason))
+    
+    class SendEmailWithTracking(SendEmail):
+        async def failed(self, exception):
+            await mock_notify(self.user_id, str(exception))
+    
+    job = SendEmailWithTracking(user_id=42)
+    job.tries = 2
+    job.backoff = 0
+    
+    # Simulate a failure that exhausts retries
+    # In real tests, monkeypatch handle() to fail
+    with pytest.raises(Exception):
+        await job.fire()
+    
+    # The worker calls failed() after fire() fails N times
+    # In this simple test, we call it directly:
+    await job.failed(Exception("Test failure"))
+    
+    assert failed_notifications == [(42, "Test failure")]
+```
 
 ##  Performance notes
 
@@ -461,7 +717,7 @@ every attempt. Ids are cheap; blobs are not.
 | `max_tries` / `retry_after` / `display_name` | `()` | Read the class attributes |
 | `payload` | `() -> dict` | Includes all of `self.__dict__` |
 | `on_queue` / `on_connection` | `(value) -> type` | Mutate the class globally |
-| `dispatch` / `dispatch_after` / `dispatch_sync` | | **Broken — do not use** |
+| `dispatch` / `dispatch_after` / `dispatch_sync` / `perform_now` / `dispatch_blocking` | `(args, **kwargs)` | Dispatch onto queue or run inline |
 
 ##  Related
 
