@@ -125,10 +125,10 @@ def _reject_unknown_route_kwargs(kwargs: Dict[str, Any]) -> None:
     details = []
     for name in unknown:
         close = difflib.get_close_matches(name, _known_route_kwargs(), n=1, cutoff=0.7)
-        details.append(f"{name!r}" + (f" (did you mean {close[0]!r}?)" if close else ""))
-    raise TypeError(
-        "Route() got unexpected keyword argument(s): " + ", ".join(details)
-    )
+        details.append(
+            f"{name!r}" + (f" (did you mean {close[0]!r}?)" if close else "")
+        )
+    raise TypeError("Route() got unexpected keyword argument(s): " + ", ".join(details))
 
 
 class Route(BaseRoute):
