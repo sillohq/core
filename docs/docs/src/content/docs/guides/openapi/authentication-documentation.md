@@ -1,10 +1,10 @@
 ---
-title: Authentication Documentation in sillo
+title: Documenting Authentication
 description: >
     Securing your API is crucial for protecting user data and enabling safe integrations. sillo provides comprehensive OpenAPI documentation for multiple authentication schemes, making it easy for API consumers to understand and implement proper authentication.
 ---
 
-#  Authentication Documentation in sillo
+#  Documenting Authentication
 
 Securing your API is crucial for protecting user data and enabling safe integrations. sillo provides comprehensive OpenAPI documentation for multiple authentication schemes, making it easy for API consumers to understand and implement proper authentication.
 

@@ -1,10 +1,10 @@
 ---
-title: OpenAPI Documentation in sillo
+title: OpenAPI Documentation
 description: >
     sillo provides comprehensive, automatic API documentation powered by the OpenAPI 3.0 standard. Every route you define is automatically documented with interactive UIs, type validation, and professional-grade specifications.
 ---
 
-#  OpenAPI Documentation in sillo
+#  OpenAPI Documentation
 
 sillo provides comprehensive, automatic API documentation powered by the OpenAPI 3.0 standard. Every route you define is automatically documented with interactive UIs, type validation, and professional-grade specifications.
 

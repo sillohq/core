@@ -1,0 +1,362 @@
+---
+title: Crypto Helpers
+description: Symmetric encryption with Fernet, PBKDF2 key derivation, and HMAC-signed values — including key rotation, storage rules, and the max_age parameter that does nothing.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Crypto Helpers
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Symmetric encryption with Fernet, PBKDF2 key derivation, and HMAC-signed values — including key rotation, storage rules, and the max_age parameter that does nothing.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+#  Crypto (`sillo.helpers.crypto`)
+
+[Hashing](/guides/helpers/hashing/) is for data you never need to read again. This module is for the other case: data you must be able to recover, or data you need to hand to a client and trust when it comes back.
+
+Two capabilities, and they solve different problems:
+
+- **Encryption** hides content. Someone with the ciphertext and no key learns nothing. Use it for stored third-party API tokens, personal data at rest, anything your database backup should not expose.
+- **Signing** does not hide anything. It proves a value was produced by you and has not been modified. The value stays readable. Use it for cookies, unsubscribe links, and any value that makes a round trip through a client.
+
+Reaching for the wrong one is the usual mistake. If the user must not read it, encrypt. If the user may read it but must not change it, sign.
+
+```bash
+uv add cryptography
+```
+
+```python
+from sillo.helpers import crypto
+```
+
+The signing functions (`sign_value`, `unsign_value`) are stdlib-only and work without `cryptography`. The encryption functions require it.
+
+##  Symmetric encryption
+
+Symmetric means one key both encrypts and decrypts. Anyone holding the key can do both, so the key is the entire security boundary.
+
+###  `generate_key() -> bytes`
+
+Produces a Fernet key: 32 random bytes, base64-encoded to 44 characters.
+
+```python
+key = crypto.generate_key()
+# b'GAtE_ZQ78Peo...'   44 bytes
+```
+
+###  `encrypt(value, key) -> str` and `decrypt(token, key) -> str`
+
+```python
+token = crypto.encrypt("sk_live_abc123", key)
+# 'gAAAAABqZ6KSC2KP79YBBhvLML3s...'  ~100 chars
+
+crypto.decrypt(token, key)   # 'sk_live_abc123'
+```
+
+Encryption uses Fernet, which is AES-128 in CBC mode with an HMAC-SHA256 authentication tag. That combination gives you two guarantees rather than one: confidentiality (the plaintext is hidden) and authenticity (tampering is detected rather than producing garbage plaintext).
+
+Encrypting the same value twice gives different ciphertext, because a fresh random IV is used each time:
+
+```python
+crypto.encrypt("x", key) != crypto.encrypt("x", key)   # True
+```
+
+That is required. Deterministic encryption leaks equality — an attacker who sees two identical ciphertexts learns the plaintexts are identical, which is often enough to break the scheme in practice.
+
+Decrypting with the wrong key raises `InvalidToken` from the `cryptography` package, and so does decrypting a ciphertext that has been modified by even one byte.
+
+```python title="Storing a third-party API token"
+from sillo.helpers.crypto import encrypt, decrypt
+
+@app.post("/integrations/stripe")
+async def connect_stripe(request, response):
+    body = await request.json
+    await Integration.create(
+        user_id=request.user.id,
+        provider="stripe",
+        token_encrypted=encrypt(body["api_key"], settings.ENCRYPTION_KEY),
+    )
+    return response.json({"connected": True}, status_code=201)
+
+async def call_stripe(user_id: int):
+    integration = await Integration.get(user_id=user_id, provider="stripe")
+    api_key = decrypt(integration.token_encrypted, settings.ENCRYPTION_KEY)
+    return await stripe_client.charge(api_key, ...)
+```
+
+<Aside type="danger" title="Where the key lives is the whole problem">
+
+Encryption moves the secret from "the data" to "the key". If the key sits next to the data, you have achieved nothing — an attacker who dumps your database also reads `settings.py` from the same compromised host.
+
+Rules that actually matter:
+
+- **Never commit a key.** Not in `settings.py`, not in `docker-compose.yml`, not in a `.env` that is tracked. A key in git history is a key you must rotate, forever, across every clone and fork.
+- **Load from the environment or a secret manager.** `os.environ["ENCRYPTION_KEY"]` at minimum. AWS Secrets Manager, GCP Secret Manager, or Vault if you have them.
+- **Fail loudly when it is missing.** A default key is worse than no encryption, because it looks encrypted:
+
+  ```python
+  # Correct: crash at boot rather than encrypt with a known key.
+  ENCRYPTION_KEY = os.environ["ENCRYPTION_KEY"].encode()
+
+  # Catastrophic: every deployment shares one key, and it is in your repo.
+  ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", "dev-key-please-change").encode()
+  ```
+- **Do not log ciphertext alongside the key.** Obvious, and it still happens in debug handlers.
+
+</Aside>
+
+<Aside type="caution" title="You cannot query an encrypted column">
+
+Ciphertext is random-looking and different every time. `WHERE token_encrypted = ?` never matches, `LIKE` is meaningless, and an index is useless.
+
+If you must look a row up by an encrypted value, store a deterministic HMAC of it in a second, indexed column and search on that:
+
+```python
+from sillo.helpers.hashing import hmac_digest
+
+await Record.create(
+    email_encrypted=encrypt(email, key),                    # readable with the key
+    email_lookup=hmac_digest(settings.LOOKUP_KEY, email),   # searchable, not reversible
+)
+
+row = await Record.get(email_lookup=hmac_digest(settings.LOOKUP_KEY, email))
+```
+
+The lookup column leaks equality by design — that is what makes it searchable — so it is a real trade-off, not a free trick. Use a separate key from the encryption key.
+
+</Aside>
+
+###  Key rotation
+
+Fernet keys have no expiry, so rotation is a process you build rather than a flag you set. The pattern is to decrypt with the old key and re-encrypt with the new one, in a background job:
+
+```python title="Rotating an encryption key"
+from sillo.helpers.crypto import decrypt, encrypt
+
+async def rotate_batch(old_key: bytes, new_key: bytes, limit: int = 500) -> int:
+    rows = await Integration.filter(key_version=1).limit(limit)
+    for row in rows:
+        plaintext = decrypt(row.token_encrypted, old_key)
+        row.token_encrypted = encrypt(plaintext, new_key)
+        row.key_version = 2
+        await row.save(update_fields=["token_encrypted", "key_version"])
+    return len(rows)
+```
+
+Keep a `key_version` column from the start. Adding one later means guessing which key each row used, and the only way to guess is trial decryption.
+
+##  Key derivation
+
+###  `derive_key(password, salt=None, length=32, iterations=600000)`
+
+Turns a human password into a cryptographic key using PBKDF2-HMAC-SHA256. Returns a `(key, salt)` tuple.
+
+```python
+key, salt = crypto.derive_key("correct-horse-battery")
+len(key)    # 32
+len(salt)   # 16
+
+# Same password + same salt -> same key
+key2, _ = crypto.derive_key("correct-horse-battery", salt=salt)
+key2 == key   # True
+
+# No salt -> a new random salt, so a different key
+key3, salt3 = crypto.derive_key("correct-horse-battery")
+key3 == key   # False
+```
+
+<Aside type="caution" title="The return is a tuple, and the salt is not optional to store">
+
+`derive_key` returns `(key, salt)`, not just the key. Writing `key = derive_key(password)` binds the tuple, and the encryption call fails later with a confusing type error.
+
+You must store the salt. Without it you cannot re-derive the key, and the data encrypted with it is gone. The salt is not secret — store it in plain text next to the ciphertext.
+
+</Aside>
+
+600,000 iterations is the OWASP recommendation for PBKDF2-HMAC-SHA256 and takes roughly a quarter of a second. Lowering it makes offline attacks on the password proportionally cheaper. Raising it costs your users latency on every derivation.
+
+<Aside type="danger" title="Do not use derive_key to store passwords">
+
+The functions look similar and the purposes are opposite.
+
+`derive_key` produces an *encryption key* from a password, so a user can encrypt data with a passphrase only they know. The output is used as a key, never stored for comparison.
+
+`hash_password` produces a *verifier*, stored so you can check a login without knowing the password.
+
+Storing `derive_key` output and comparing it on login means you have hand-rolled password storage with none of bcrypt's guarantees. Use [`hash_password`](/guides/helpers/hashing/) for logins. Every time.
+
+</Aside>
+
+##  Signed values
+
+###  `sign_value(value, secret, algorithm="sha256") -> str`
+
+Appends an HMAC signature to a value:
+
+```python
+signed = crypto.sign_value("user-42", secret="app-secret")
+# 'dXNlci00Mg.1c6d6e1bd46195aafb5bc593f78574ff3024ad51303c9d6ce2195ea37d3a4c19'
+```
+
+The format is `base64url(value).hex_signature`. The value is encoded, not encrypted — anyone can base64-decode the first segment and read it. What they cannot do is change it, because they cannot recompute the signature without the secret.
+
+###  `unsign_value(signed, secret, algorithm="sha256", max_age=None) -> str`
+
+Verifies and returns the original:
+
+```python
+crypto.unsign_value(signed, secret="app-secret")   # 'user-42'
+```
+
+Raises `BadSignature` on a wrong secret, a modified payload, a modified signature, or malformed input:
+
+```python
+from sillo.helpers.crypto import BadSignature
+
+try:
+    value = crypto.unsign_value(cookie, secret=settings.SECRET_KEY)
+except BadSignature:
+    return response.json({"error": "Invalid token"}, status_code=400)
+```
+
+Verification uses `hmac.compare_digest`, so it is not vulnerable to the timing attack described in [Hashing](/guides/helpers/hashing/).
+
+<Aside type="danger" title="max_age is accepted and does nothing">
+
+`unsign_value` takes a `max_age` parameter. The current implementation never reads it. There is no timestamp in the token format — the payload is only `base64url(value)` — so there is nothing to compare an age against.
+
+```python
+signed = crypto.sign_value("data", "secret")
+crypto.unsign_value(signed, "secret", max_age=0)   # returns 'data'
+```
+
+That call should reject every token. It accepts all of them.
+
+If you wrote a password-reset link, an email-confirmation token, or a signed session on the belief that `max_age` expires it, **it does not expire**. A token issued a year ago still verifies.
+
+Put the expiry inside the value and check it yourself:
+
+```python
+import json
+from datetime import datetime, timedelta, timezone
+
+def sign_with_expiry(data: dict, secret: str, ttl: timedelta) -> str:
+    payload = {**data, "exp": (datetime.now(timezone.utc) + ttl).timestamp()}
+    return crypto.sign_value(json.dumps(payload), secret)
+
+def unsign_with_expiry(token: str, secret: str) -> dict:
+    payload = json.loads(crypto.unsign_value(token, secret))   # raises BadSignature
+    if payload["exp"] < datetime.now(timezone.utc).timestamp():
+        raise BadSignature("Token expired")
+    return payload
+```
+
+Because the expiry sits inside the signed payload, an attacker cannot extend it without invalidating the signature. For anything more involved, use [JWT helpers](/guides/helpers/jwt/), where expiry is part of the standard and is actually enforced.
+
+</Aside>
+
+<Aside type="caution" title="Signed does not mean secret">
+
+The payload is base64, not ciphertext. Decoding it takes one line and no key:
+
+```python
+import base64
+base64.urlsafe_b64decode("dXNlci00Mg" + "==")   # b'user-42'
+```
+
+Never sign something the holder must not read. `sign_value("user_id=42&is_admin=false", ...)` tells the user they have an `is_admin` flag and invites them to attack it. They cannot flip it without breaking the signature, but you have disclosed your data model.
+
+If it must be unreadable, encrypt it. If it must be unreadable *and* tamper-proof, encrypt it — Fernet already authenticates.
+
+</Aside>
+
+A worked example, an unsubscribe link that needs no database lookup:
+
+```python title="Stateless unsubscribe links"
+from sillo.helpers.crypto import sign_value, unsign_value, BadSignature
+
+def unsubscribe_url(user_id: int) -> str:
+    token = sign_value(f"unsub:{user_id}", settings.SECRET_KEY)
+    return f"https://example.com/unsubscribe?t={token}"
+
+@app.get("/unsubscribe")
+async def unsubscribe(request, response):
+    try:
+        value = unsign_value(request.query_params.get("t", ""), settings.SECRET_KEY)
+    except BadSignature:
+        return response.json({"error": "Invalid link"}, status_code=400)
+
+    _, _, user_id = value.partition(":")
+    await User.filter(id=int(user_id)).update(subscribed=False)
+    return response.json({"unsubscribed": True})
+```
+
+The user can read their own ID in the token, which is fine — it is their ID. They cannot change it to somebody else's without invalidating the signature.
+
+##  Choosing between the three
+
+| Requirement | Tool |
+|---|---|
+| Never need it back (passwords) | [`hash_password`](/guides/helpers/hashing/) |
+| Need it back, must stay secret | `encrypt` / `decrypt` |
+| Client may read it, must not change it | `sign_value` / `unsign_value` |
+| Client-readable, tamper-proof, with expiry | [JWT](/guides/helpers/jwt/) |
+| Key from a user passphrase | `derive_key` |
+
+##  What not to do
+
+**Do not commit an encryption key.** Environment or secret manager only.
+
+**Do not default a missing key.** Crash at boot instead.
+
+**Do not use `derive_key` for password storage.** Use `hash_password`.
+
+**Do not unpack `derive_key` as a single value.** It returns `(key, salt)`.
+
+**Do not throw the salt away.** Without it the key cannot be re-derived and the data is unrecoverable.
+
+**Do not rely on `max_age`.** It is ignored. Put the expiry inside the signed payload.
+
+**Do not sign secrets.** Signing authenticates, it does not conceal. Encrypt instead.
+
+**Do not query encrypted columns.** Add an HMAC lookup column.
+
+**Do not lower the PBKDF2 iteration count to speed things up.** That is the security parameter.
+
+**Do not reuse one key everywhere.** Separate keys for encryption, lookup HMACs, and session signing, so one leak is not total.
+
+##  Performance
+
+| Operation | Rough cost |
+|---|---|
+| `generate_key` | microseconds |
+| `encrypt` / `decrypt` | microseconds for small values |
+| `sign_value` / `unsign_value` | microseconds |
+| `derive_key` | ~250 ms at 600,000 iterations |
+
+Only `derive_key` is expensive, and deliberately so. Never call it per request. Derive once at startup or at login, cache the resulting key in memory for the session, and never write the derived key to disk.
+
+Fernet output is larger than its input: roughly 100 characters for a short string, because of the version byte, timestamp, IV, and HMAC tag. Size database columns for ciphertext length, not plaintext length.
+
+##  Function reference
+
+| Function | Signature | Returns |
+|---|---|---|
+| `generate_key` | `()` | 44-byte base64 Fernet key |
+| `encrypt` | `(value: str, key: bytes)` | Fernet token string |
+| `decrypt` | `(token: str, key: bytes)` | Original string; raises `InvalidToken` |
+| `derive_key` | `(password: str, salt: bytes \| None = None, length: int = 32, iterations: int = 600000)` | `(key, salt)` tuple |
+| `sign_value` | `(value: str, secret: str, algorithm: str = "sha256")` | `base64url(value).signature` |
+| `unsign_value` | `(signed: str, secret: str, algorithm: str = "sha256", max_age: int \| None = None)` | Original value; raises `BadSignature`. **`max_age` is ignored.** |
+| `BadSignature` | Exception | Raised on any verification failure |
+
+##  Related
+
+- [Hashing](/guides/helpers/hashing/) — one-way hashing, password storage, HMAC
+- [JWT](/guides/helpers/jwt/) — signed tokens with working expiry
+- [Sessions](/guides/sessions/) — signed session cookies built on these primitives
+- [Strings](/guides/helpers/strings/) — token generation and secret masking

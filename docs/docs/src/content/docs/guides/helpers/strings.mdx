@@ -1,0 +1,396 @@
+---
+title: String Helpers
+description: Slug generation, naming-convention conversion, secret masking, and cryptographically secure random strings — with the failure modes that matter in production.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: String Helpers
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Slug generation, naming-convention conversion, secret masking, and cryptographically secure random strings — with the failure modes that matter in production.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+#  Strings (`sillo.helpers.strings`)
+
+Every backend ends up writing the same dozen string functions. You need a URL slug for a blog post. You need to convert `snake_case` database columns to `camelCase` JSON keys. You need to show the last four characters of an API key in a settings page without leaking the whole thing. You need a session token an attacker cannot guess.
+
+`sillo.helpers.strings` is that dozen, written once and tested. Everything here is stdlib-only, so there is no extra dependency to install.
+
+This page covers each function, what it actually returns for the inputs you will hit in practice, and the places where a plausible-looking call does the wrong thing. Two of those places can leak secrets, so read the masking section even if you skim the rest.
+
+```python
+from sillo.helpers import strings
+```
+
+Or import individual functions, which is what most codebases end up doing:
+
+```python
+from sillo.helpers.strings import slugify, mask_email, random_token
+```
+
+##  When to reach for this module
+
+Use it for the transformations that sit between your database and your HTTP layer:
+
+- **Slugs** for URLs, filenames, cache keys, and anchor IDs.
+- **Case conversion** at API boundaries, where Python's `snake_case` meets JavaScript's `camelCase`.
+- **Masking** anywhere a secret is displayed back to a human: settings pages, audit logs, support tooling, error messages.
+- **Random generation** for tokens, one-time codes, and password-reset links.
+
+Do not use it as a validation library. `is_camel_case` and `is_snake_case` answer a formatting question, not a safety question. Nothing here escapes HTML, sanitizes SQL, or validates an email address. Reach for [HTML helpers](/guides/helpers/html/) or [Validation](/guides/validation/) for that.
+
+##  Slugs
+
+###  `slugify(text, separator="-")`
+
+Turns arbitrary human text into a URL-safe identifier. The transformation runs in four steps: Unicode normalization to NFKD, ASCII encoding with non-representable characters dropped, removal of everything that is not a word character or whitespace, then whitespace and hyphen runs collapsed into the separator.
+
+```python
+strings.slugify("Hello World!")                # "hello-world"
+strings.slugify("Héllo Wörld")                 # "hello-world"
+strings.slugify("Top 10 Tips")                 # "top-10-tips"
+strings.slugify("What?! Really...")            # "what-really"
+strings.slugify("too    many   spaces")        # "too-many-spaces"
+strings.slugify("Hello World", separator="_")  # "hello_world"
+```
+
+Accents fold to their base letters, so `café` becomes `cafe` rather than being dropped. Digits survive. Leading and trailing separators are trimmed, so `"  -- leading --  "` does not come back with dangling hyphens.
+
+A typical use in a handler:
+
+```python title="Slugs from user-supplied titles"
+from sillo import silloApp
+from sillo.helpers.strings import slugify
+
+app = silloApp()
+
+@app.post("/posts")
+async def create_post(request, response):
+    body = await request.json
+    slug = slugify(body["title"])
+    # "My First Post!" -> "my-first-post"
+    post = await Post.create(title=body["title"], slug=slug)
+    return response.json({"slug": post.slug}, status_code=201)
+```
+
+<Aside type="caution" title="Slugs are not unique, and can be empty">
+
+Two different titles routinely produce the same slug. `"Hello, World"` and `"hello world"` both become `hello-world`. If your slug column has a unique constraint, the second insert raises an integrity error at the database, not at `slugify`.
+
+Some inputs slugify to the empty string. Text that is entirely non-ASCII (`"日本語"`), entirely punctuation (`"!!!"`), or entirely whitespace all return `""`. An empty slug in a URL gives you `/posts/` instead of `/posts/my-post`, which routes somewhere unintended.
+
+Handle both:
+
+```python
+slug = slugify(title) or "untitled"
+existing = await Post.filter(slug__startswith=slug).count()
+if existing:
+    slug = f"{slug}-{existing + 1}"
+```
+
+</Aside>
+
+Because non-ASCII characters are dropped rather than transliterated, `slugify` is a poor fit for primarily non-Latin content. A Japanese or Arabic title becomes an empty string, not a readable slug. If you serve those languages, either keep an ID in the URL (`/posts/1234/my-title`) or use a transliteration library that understands the script.
+
+##  Naming conventions
+
+Four functions convert between the case styles you meet at an API boundary.
+
+| Function | Input | Output |
+|---|---|---|
+| `camel_to_snake(name)` | `"myVariable"` | `"my_variable"` |
+| `snake_to_camel(name, capitalize_first=False)` | `"my_variable"` | `"myVariable"` |
+| `pascal_case(name)` | `"user_profile"` | `"UserProfile"` |
+| `kebab_case(name)` | `"myVariable"` | `"my-variable"` |
+
+`camel_to_snake` and `kebab_case` both handle consecutive capitals correctly, which is what naive implementations get wrong:
+
+```python
+strings.camel_to_snake("HTTPServer")          # "http_server"  not "h_t_t_p_server"
+strings.camel_to_snake("parseHTTPResponse")   # "parse_http_response"
+strings.camel_to_snake("MyVariable")          # "my_variable"
+strings.camel_to_snake("value2Name")          # "value2_name"
+strings.kebab_case("HTTPServer")              # "http-server"
+```
+
+`snake_to_camel` uppercases the character after each underscore. `pascal_case` is the same function with `capitalize_first=True`, provided separately because that is the more readable call site:
+
+```python
+strings.snake_to_camel("my_variable")                         # "myVariable"
+strings.snake_to_camel("my_variable", capitalize_first=True)  # "MyVariable"
+strings.pascal_case("user_profile")                           # "UserProfile"
+strings.snake_to_camel("field_1_name")                        # "field1Name"
+```
+
+The common use is serializing a Python model to a JavaScript-facing API:
+
+```python title="snake_case models, camelCase JSON"
+from sillo.helpers.strings import snake_to_camel
+
+def camelize(data: dict) -> dict:
+    """Convert every top-level key to camelCase for the JSON response."""
+    return {snake_to_camel(k): v for k, v in data.items()}
+
+@app.get("/users/{id}")
+async def get_user(request, response, id: int):
+    user = await User.get(id=id)
+    return response.json(camelize(user.to_dict()))
+    # {"firstName": "Ada", "createdAt": "2026-01-01T00:00:00Z"}
+```
+
+<Aside type="caution" title="Case conversion is lossy, so round-trips are not guaranteed">
+
+`camel_to_snake(snake_to_camel(x))` returns `x` for well-formed input, but the reverse is not reliable. `snake_to_camel(camel_to_snake("HTTPServer"))` gives `"httpServer"`, not `"HTTPServer"` — the information that "HTTP" was an acronym is gone after the first conversion.
+
+If you convert keys on the way out and back on the way in, a field named `userID` becomes `user_id` becomes `userId`, and your client's field name silently changes. Pick one canonical form and convert in a single direction, or declare the mapping explicitly with [response-model aliases](/guides/validation/response-models/).
+
+</Aside>
+
+Two predicates report the format of a string:
+
+```python
+strings.is_camel_case("myVariable")   # True
+strings.is_camel_case("lowercase")    # False — no uppercase
+strings.is_camel_case("UPPERCASE")    # False — no lowercase
+strings.is_camel_case("my_Variable")  # False — contains an underscore
+
+strings.is_snake_case("my_variable")  # True
+strings.is_snake_case("nounderscore") # False — needs at least one underscore
+strings.is_snake_case("_private")     # False — leading underscore is a different convention
+```
+
+Both return `False` for the empty string. They are heuristics for formatting, not parsers: `is_camel_case` checks for mixed case with no underscore, so `"aB"` passes and so does `"iPhone"`.
+
+##  Masking secrets
+
+This is the part of the module most likely to appear in a security review. Two functions partially hide a value so a human can recognize it without being able to reuse it.
+
+###  `mask_string(value, visible_start=4, visible_end=4, mask_char="*")`
+
+Keeps a prefix and a suffix visible, replaces the middle:
+
+```python
+strings.mask_string("1234567890123456")                            # "1234********3456"
+strings.mask_string("1234567890123456", mask_char="#")             # "1234########3456"
+strings.mask_string("1234567890", visible_start=2, visible_end=2)  # "12******90"
+strings.mask_string("secret-value", visible_start=0, visible_end=0)  # "************"
+```
+
+The output length always equals the input length, which keeps table columns aligned and makes it obvious how long the original was.
+
+When the value is too short to show both ends without revealing all of it, the whole value is masked instead:
+
+```python
+strings.mask_string("abcdef")     # "******"   — 6 chars, budget is 8, so nothing is shown
+strings.mask_string("12345678")   # "********" — exactly at the budget, still fully masked
+strings.mask_string("")           # ""
+```
+
+That is deliberate. Showing the first four and last four characters of a six-character secret would display the entire secret with a decorative asterisk in the middle.
+
+<Aside type="danger" title="Masking is display-only. It is not redaction.">
+
+A masked string still reveals the length of the secret and up to eight of its characters. That is enough to meaningfully narrow a brute-force search, and enough to confirm a guess obtained elsewhere.
+
+Never treat a masked value as safe to send to a third party, write to an analytics event, or store in a log aggregator you do not control. Mask at the point of rendering, for a human who is already authenticated and already authorized to see that record. Everywhere else, drop the field entirely.
+
+Never use a masked value as a lookup key. Masking is one-way, and two different secrets can mask to the same string.
+
+</Aside>
+
+###  `mask_email(email)`
+
+Keeps the first and last character of the local part and the whole domain:
+
+```python
+strings.mask_email("adalovelace@example.com")  # "a*********e@example.com"
+strings.mask_email("john@example.com")         # "j**n@example.com"
+strings.mask_email("ab@x.com")                 # "a*@x.com"
+strings.mask_email("a@x.com")                  # "a*@x.com"
+```
+
+A local part of two characters or fewer collapses to the first character plus a single asterisk, so a one-character address does not render as a bare `a@`.
+
+The domain is never masked. That is the right default for the usual purpose — letting a user confirm *"we sent a reset link to j\*\*n@example.com"* — but the domain does leak. For a corporate domain that identifies an employer, or a niche provider that narrows the user population, drop the field rather than masking it.
+
+```python title="Confirming a password reset without leaking the address"
+@app.post("/password-reset")
+async def request_reset(request, response):
+    body = await request.json
+    user = await User.get_or_none(email=body["email"])
+    if user:
+        await send_reset_email(user)
+    # Always return the same shape whether or not the account exists, so this
+    # endpoint cannot be used to enumerate registered addresses.
+    return response.json({
+        "message": f"If that account exists, a link was sent to {mask_email(body['email'])}"
+    })
+```
+
+<Aside type="caution" title="mask_email assumes a well-formed address">
+
+The function splits on the first `@`. Input with no `@` is treated as an all-local-part address and the result has an empty domain: `mask_email("notanemail")` returns `"n********l@"`. Validate the address before masking it — this is a formatter, not a parser.
+
+</Aside>
+
+##  Random generation
+
+Three functions produce unpredictable strings. All three use Python's `secrets` module, which draws from the operating system's cryptographically secure random source.
+
+###  `random_string(length=32, chars=None)`
+
+Alphanumeric by default, or from an alphabet you supply:
+
+```python
+strings.random_string()                             # 32 chars, A-Z a-z 0-9
+strings.random_string(16)                           # 16 chars
+strings.random_string(8, chars="ABCDEF0123456789")  # hex alphabet, 8 chars
+strings.random_string(0)                            # ""
+```
+
+###  `random_digits(length=6)`
+
+Digits only. The obvious use is a one-time code a human has to read aloud or type on a phone keypad:
+
+```python
+strings.random_digits()     # "847291"
+strings.random_digits(4)    # "5013"
+```
+
+###  `random_token(length=64)`
+
+URL-safe base64. The argument is **bytes of entropy, not output length** — the single most misread signature in this module:
+
+```python
+token = strings.random_token(32)
+len(token)   # 43, not 32
+```
+
+Sixty-four bytes of entropy produce an ~86-character string. Size your database column from the real output, not from the argument.
+
+```python title="A password-reset token"
+from datetime import datetime, timedelta, timezone
+from sillo.helpers.strings import random_token
+
+@app.post("/password-reset")
+async def request_reset(request, response):
+    body = await request.json
+    user = await User.get_or_none(email=body["email"])
+    if user:
+        await PasswordReset.create(
+            user=user,
+            token=random_token(32),   # ~43 chars, 256 bits of entropy
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        )
+    return response.json({"message": "If that account exists, a link was sent."})
+```
+
+<Aside type="danger" title="Never use random for anything a user must not guess">
+
+Python's built-in `random` module is a Mersenne Twister. It is fast, it is well-distributed, and it is completely predictable: observing 624 consecutive outputs lets an attacker reconstruct the internal state and compute every future value. A session token, reset link, API key, or one-time code generated with `random.choice` is guessable.
+
+Every function on this page uses `secrets` instead. If you write your own generator, use `secrets` too.
+
+</Aside>
+
+Choose length by what the value protects:
+
+| Use | Function | Suggested size | Why |
+|---|---|---|---|
+| Session token | `random_token` | 32 bytes | 256 bits, standard for session identifiers |
+| API key | `random_token` | 32 bytes | Long-lived, so worth over-provisioning |
+| Password-reset link | `random_token` | 32 bytes | Must survive being emailed and sitting in an inbox |
+| SMS or email OTP | `random_digits` | 6 digits | Short by necessity; **must** be rate-limited and short-lived |
+| Filename suffix | `random_string` | 8 chars | Collision avoidance, not a security boundary |
+
+<Aside type="caution" title="Six digits is one million possibilities">
+
+`random_digits(6)` is fine for a one-time code and unacceptable for anything long-lived. An attacker who can make unlimited attempts finds it in an average of 500,000 tries, which is minutes against an unprotected endpoint.
+
+A numeric OTP is only safe with all three of: a short expiry (5–10 minutes), a hard attempt limit per code (3–5 tries, then invalidate), and per-account rate limiting. See [Rate Limiting](/guides/rate-limiting/) for the middleware. Without those, use `random_token` instead.
+
+</Aside>
+
+Uniqueness is probabilistic, not guaranteed. Collisions in `random_token(32)` are not something you will observe, but `random_string(4)` from a 62-character alphabet has only about 14 million values, and the birthday bound means duplicates appear after a few thousand. If a column is `UNIQUE`, catch the integrity error and retry rather than assuming the generator never repeats.
+
+##  Accents
+
+`strip_accents(text)` removes combining marks while keeping the base characters:
+
+```python
+strings.strip_accents("café")    # "cafe"
+strings.strip_accents("Àéîõü")   # "Aeiou"
+strings.strip_accents("plain")   # "plain"
+```
+
+It normalizes to NFKD and filters out anything Unicode classifies as a combining character. Unlike `slugify`, it preserves case, spaces, and punctuation, which makes it the right choice for accent-insensitive search:
+
+```python title="Accent-insensitive search"
+from sillo.helpers.strings import strip_accents
+
+@app.get("/search")
+async def search(request, response):
+    query = strip_accents(request.query_params.get("q", "")).lower()
+    # "Café" and "cafe" both normalize to "cafe" and match the same rows
+    results = await Place.filter(name_normalized__icontains=query)
+    return response.json([r.to_dict() for r in results])
+```
+
+Store the normalized form alongside the original at write time. Normalizing every row at query time forces a full scan and cannot use an index.
+
+`strip_accents` only removes *combining* marks. Characters that are a distinct letter rather than a decorated one survive: `ø`, `ß`, `æ`, and `ł` pass through unchanged, because in Unicode they are their own code points rather than "o with a stroke". If you need those folded too, add an explicit replacement table.
+
+##  What not to do
+
+**Do not use `slugify` output as a primary key.** It is not unique, it can be empty, and it changes when the title is edited. Keep an integer or UUID as the key and treat the slug as a display field.
+
+**Do not mask a value before storing it.** Masking is a rendering step. Store the real value (encrypted, or hashed if you never need it back — see [Hashing](/guides/helpers/hashing/)) and mask on the way out.
+
+**Do not assume `random_token(n)` returns `n` characters.** It returns roughly `4n/3`.
+
+**Do not use `random_digits` for anything without a rate limit.** Six digits is a million possibilities and an unprotected endpoint will be brute-forced.
+
+**Do not run `strip_accents` on every row at query time.** Normalize on write, index the normalized column, compare normalized to normalized.
+
+**Do not convert case in both directions across an API boundary.** Acronyms do not survive the round trip. Declare the mapping once with response-model aliases instead.
+
+##  Performance
+
+Every function here is O(n) in the length of the input and operates on in-memory strings. None performs I/O. For request-sized inputs the cost is negligible.
+
+Two are worth a thought in a hot loop:
+
+- `slugify` and `strip_accents` both run Unicode NFKD normalization, which is measurably slower than plain string operations. Slugifying a hundred thousand rows in a migration is fine; doing it per request on a large document is not. Cache the result on the row.
+- The `random_*` functions read from the OS entropy pool. That is fast and does not block on modern systems, but it is a syscall rather than arithmetic. Generating thousands of tokens in a tight loop is slower than you might expect.
+
+The case-conversion functions use precompiled module-level regexes, so there is no per-call compilation cost.
+
+##  Function reference
+
+| Function | Signature | Returns |
+|---|---|---|
+| `slugify` | `(text: str, separator: str = "-")` | URL-safe slug, possibly empty |
+| `camel_to_snake` | `(name: str)` | `snake_case` string |
+| `snake_to_camel` | `(name: str, capitalize_first: bool = False)` | `camelCase` or `PascalCase` |
+| `pascal_case` | `(name: str)` | `PascalCase` string |
+| `kebab_case` | `(name: str)` | `kebab-case` string |
+| `mask_string` | `(value: str, visible_start: int = 4, visible_end: int = 4, mask_char: str = "*")` | Same-length masked string |
+| `mask_email` | `(email: str)` | Masked local part, intact domain |
+| `random_string` | `(length: int = 32, chars: str \| None = None)` | Random string of exactly `length` |
+| `random_digits` | `(length: int = 6)` | Digit-only string |
+| `random_token` | `(length: int = 64)` | URL-safe base64, ~`4/3 × length` chars |
+| `strip_accents` | `(text: str)` | Text with combining marks removed |
+| `is_camel_case` | `(text: str)` | `bool` |
+| `is_snake_case` | `(text: str)` | `bool` |
+
+##  Related
+
+- [Hashing](/guides/helpers/hashing/) — password hashing and digests, for values you never display
+- [Crypto](/guides/helpers/crypto/) — signing and encrypting values you need to read back
+- [Text](/guides/helpers/text/) — truncation, excerpts, and extraction for longer prose
+- [HTML](/guides/helpers/html/) — escaping and sanitizing before rendering into a page
+- [Rate Limiting](/guides/rate-limiting/) — required whenever you issue short numeric codes

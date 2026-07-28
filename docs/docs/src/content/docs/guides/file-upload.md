@@ -1,17 +1,17 @@
 ---
-title: File Upload Documentation for sillo Framework
+title: File Uploads
 description: This document provides a comprehensive guide to handling file uploads in the sillo framework, covering both single and multiple file upload scenarios with proper validation and security considerations.
 head:
 - tag: meta
   attrs:
     property: og:title
-    content: File Upload Documentation for sillo Framework
+    content: File Uploads
 - tag: meta
   attrs:
     property: og:description
     content: This document provides a comprehensive guide to handling file uploads in the sillo framework, covering both single and multiple file upload scenarios with proper validation and security considerations.
 ---
-#  File Upload Documentation
+#  File Uploads
 
 ###  Single File Upload
 

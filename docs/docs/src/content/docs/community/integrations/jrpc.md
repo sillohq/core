@@ -77,7 +77,8 @@ if __name__ == "__main__":
     main()
 ```
 
-::: details View Complete Server Example with Detailed Comments
+<details>
+<summary>View Complete Server Example with Detailed Comments</summary>
 
 ```python
 # server.py
@@ -142,7 +143,8 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-:::
+
+</details>
 
 **Understanding the Server Components:**
 
@@ -174,7 +176,8 @@ if __name__ == "__main__":
 ```
 
 
-::: details View Complete Client Example with Detailed Explanations
+<details>
+<summary>View Complete Client Example with Detailed Explanations</summary>
 
 ```python
 # client.py
@@ -217,7 +220,8 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 ```
-:::
+
+</details>
 
 **Understanding the Client:**
 
@@ -1036,7 +1040,8 @@ app.use(logging_middleware)
 JsonRpcPlugin(app, {"path_prefix": "/rpc"})
 ```
 
-::: details View Advanced Middleware Examples
+<details>
+<summary>View Advanced Middleware Examples</summary>
 
 ```python
 from sillo import silloApp
@@ -1185,7 +1190,8 @@ if __name__ == "__main__":
     
     app.run(host="0.0.0.0", port=8000)
 ```
-:::
+
+</details>
 
 **Middleware Benefits:**
 
@@ -1280,7 +1286,8 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
 ```
 
-::: details View Complete Calculator Service with Advanced Features
+<details>
+<summary>View Complete Calculator Service with Advanced Features</summary>
 
 ```python
 from sillo import silloApp
@@ -1591,7 +1598,8 @@ if __name__ == "__main__":
     
     app.run(host="0.0.0.0", port=8000)
 ```
-:::
+
+</details>
 
 **Key Features:**
 
