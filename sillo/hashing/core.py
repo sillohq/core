@@ -60,8 +60,7 @@ def hash_password(
 
     if not is_scheme_available(scheme):
         raise InvalidSchemeError(
-            f"Scheme '{scheme}' is not available. "
-            f"Install with: pip install {scheme}"
+            f"Scheme '{scheme}' is not available. Install with: pip install {scheme}"
         )
 
     context = _get_context()
@@ -140,8 +139,7 @@ def set_default_scheme(scheme: str) -> None:
 
     if not is_scheme_available(scheme):
         raise InvalidSchemeError(
-            f"Scheme '{scheme}' is not available. "
-            f"Install with: pip install {scheme}"
+            f"Scheme '{scheme}' is not available. Install with: pip install {scheme}"
         )
 
     _default_scheme = scheme

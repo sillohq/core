@@ -133,4 +133,5 @@ def random_salt(length: int = 16) -> str:
         Hex-encoded random string.
     """
     import secrets
+
     return secrets.token_hex(length)
