@@ -7,17 +7,16 @@ rather than failed when it is absent.
 
 import pytest
 
-from sillo.users.password import (
-    check_password,
+from sillo.hashing import (
     constant_time_compare,
     is_password_usable,
-    make_password,
     md5,
     needs_rehash,
     password_strength,
     sha256,
     validate_password,
 )
+from sillo.users import check_password, make_password
 
 bcrypt = pytest.importorskip("bcrypt", reason="bcrypt is an optional dependency")
 

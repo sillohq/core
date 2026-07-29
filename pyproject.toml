@@ -39,6 +39,7 @@ dependencies = [
     "python-multipart>=0.0.6",
     "pydantic>=2.0,<3.0",
     "typing-extensions>=4.12.2; python_version<'3.10'",
+    "passlib>=1.7.4",
 ]
 
 
@@ -51,6 +52,14 @@ graphql = ["strawberry-graphql>=0.219.0"]
 cache = ["redis>=5.0.0"]
 events = ["redis>=5.0.0"]
 record = ["tortoise-orm>=0.20.0"]
+hashing-bcrypt = ["bcrypt>=4.0.0"]
+hashing-argon2 = ["argon2-cffi>=21.2.0"]
+hashing-scrypt = ["scrypt>=0.8.0"]
+hashing-all = [
+    "bcrypt>=4.0.0",
+    "argon2-cffi>=21.2.0",
+    "scrypt>=0.8.0",
+]
 
 
 # Feature groups
@@ -71,7 +80,10 @@ all = [
     "click>=8.1.3",
     "strawberry-graphql>=0.219.0",
     "redis>=5.0.0",
-    "tortoise-orm>=0.20.0"
+    "tortoise-orm>=0.20.0",
+    "bcrypt>=4.0.0",
+    "argon2-cffi>=21.2.0",
+    "scrypt>=0.8.0",
 ]
 dev = [
     "uvicorn>=0.27.0",
@@ -85,6 +97,8 @@ dev = [
     "redis>=5.0.0",
     "tortoise-orm>=0.20.0",
     "bcrypt>=4.0.0",
+    "argon2-cffi>=21.2.0",
+    "scrypt>=0.8.0",
     "cryptography>=41.0.0",
     "email-validator>=2.0.0",
     "python-ulid>=2.0.0",
@@ -244,6 +258,8 @@ dev = [
     "redis>=5.0.0",
     "tortoise-orm>=0.20.0",
     "bcrypt>=4.0.0",
+    "argon2-cffi>=21.2.0",
+    "scrypt>=0.8.0",
     "cryptography>=41.0.0",
     "email-validator>=2.0.0",
     "python-ulid>=2.0.0",

@@ -15,9 +15,9 @@ from sillo.permissions import (
     UserGroup,
     UserPermission,
 )
+from sillo.users import make_password
 from sillo.users.base import UserBaseModel
 from sillo.users.managers import UserManager
-from sillo.users.password import make_password
 
 _has_global_fallback = "_enable_global_fallback" in inspect.signature(Tortoise.init).parameters
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sillo.users.password import validate_password
+from sillo.hashing import validate_password
 
 
 class UserManager:

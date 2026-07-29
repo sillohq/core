@@ -12,9 +12,9 @@ import pytest
 from tortoise import Tortoise, fields
 from tortoise.exceptions import ConfigurationError
 
+from sillo.hashing import UNUSABLE_PASSWORD_PREFIX
 from sillo.users.base import AnonymousUser, User, UserBaseModel
 from sillo.users.managers import UserManager
-from sillo.users.password import UNUSABLE_PASSWORD_PREFIX
 
 _has_global_fallback = (
     "_enable_global_fallback" in inspect.signature(Tortoise.init).parameters

@@ -31,19 +31,54 @@ Quick start::
 
 from __future__ import annotations
 
+import secrets
 from datetime import datetime, timezone
 from typing import Optional
 
 from tortoise import fields
 
+from sillo.hashing import (
+    UNUSABLE_PASSWORD_PREFIX,
+    hash_password,
+    is_password_usable,
+    verify_password,
+)
 from sillo.record import Model
 from sillo.users.managers import UserManager
-from sillo.users.password import (
-    UNUSABLE_PASSWORD_PREFIX,
-    check_password,
-    is_password_usable,
-    make_password,
-)
+
+
+def make_password(raw_password: Optional[str] = None) -> str:
+    """Hash a password using sillo.hashing.
+
+    Args:
+        raw_password: Plaintext password. If None, creates unusable password.
+
+    Returns:
+        Hashed password string.
+    """
+    if raw_password is None:
+        return UNUSABLE_PASSWORD_PREFIX + secrets.token_hex(40)
+    return hash_password(raw_password)
+
+
+def check_password(raw_password: str, encoded: str) -> bool:
+    """Verify password using sillo.hashing.
+
+    Args:
+        raw_password: Plaintext password.
+        encoded: Hashed password.
+
+    Returns:
+        True if valid, False otherwise.
+    """
+    if raw_password is None or not raw_password:
+        return False
+    if not encoded or encoded.startswith(UNUSABLE_PASSWORD_PREFIX):
+        return False
+    try:
+        return verify_password(raw_password, encoded)
+    except Exception:
+        return False
 
 
 class UserProtocol:
