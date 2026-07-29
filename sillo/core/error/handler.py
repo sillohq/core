@@ -10,7 +10,7 @@ import typing
 import uuid
 from typing import cast
 
-from sillo.__main__ import __version__ as sillo_version
+from sillo import __version__ as sillo_version
 from sillo.core.http import Request, Response
 from sillo.logging import DEBUG, create_logger
 from sillo.middleware.base import BaseMiddleware

@@ -23,9 +23,11 @@ Usage::
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
-from sillo import silloApp
+if TYPE_CHECKING:
+    from sillo import silloApp
+
 from sillo.core.routing import Group
 from sillo.static import StaticFiles
 from .registry import ModelAdmin, Registry
