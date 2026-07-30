@@ -154,7 +154,9 @@ def sha1(data: Union[str, bytes]) -> str:
     return hashlib.sha1(data).hexdigest()
 
 
-def hmac_digest(key: Union[str, bytes], data: Union[str, bytes], algorithm: str = "sha256") -> str:
+def hmac_digest(
+    key: Union[str, bytes], data: Union[str, bytes], algorithm: str = "sha256"
+) -> str:
     """Compute HMAC digest.
 
     Args:
@@ -166,11 +168,12 @@ def hmac_digest(key: Union[str, bytes], data: Union[str, bytes], algorithm: str 
         Hex digest of HMAC.
     """
     import hmac
+
     if isinstance(key, str):
         key = key.encode()
     if isinstance(data, str):
         data = data.encode()
-    return hmac.new(key, data, getattr(__import__('hashlib'), algorithm)).hexdigest()
+    return hmac.new(key, data, getattr(__import__("hashlib"), algorithm)).hexdigest()
 
 
 def constant_time_compare(val1: str, val2: str) -> bool:

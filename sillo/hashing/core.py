@@ -71,6 +71,7 @@ def hash_password(
         # Use bcrypt directly for bcrypt scheme
         if scheme == "bcrypt":
             import bcrypt as bcrypt_lib
+
             if salt is not None:
                 # Use provided salt
                 if isinstance(salt, str):
@@ -114,6 +115,7 @@ def verify_password(password: str, hashed: str) -> bool:
     if hashed.startswith(("$2a$", "$2b$", "$2x$", "$2y$")):
         try:
             import bcrypt as bcrypt_lib
+
             return bcrypt_lib.checkpw(password.encode(), hashed.encode())
         except Exception:
             pass

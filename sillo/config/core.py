@@ -43,10 +43,12 @@ class Config(BaseModel):
     """
 
     model_config = ConfigDict(
-        extra='ignore',
+        extra="ignore",
     )
 
-    def __init__(self, _env_file: Optional[str] = None, _case_sensitive: bool = False, **data):
+    def __init__(
+        self, _env_file: Optional[str] = None, _case_sensitive: bool = False, **data
+    ):
         """Initialize config, loading from .env if configured.
 
         Parameters:
@@ -55,17 +57,23 @@ class Config(BaseModel):
             **data: Configuration values to set
         """
         # Check if subclass has env_file config
-        config_dict = getattr(self.__class__.Config, '__dict__', {}) if hasattr(self.__class__, 'Config') else {}
-        env_file = _env_file or config_dict.get('env_file')
-        case_sensitive = _case_sensitive or config_dict.get('case_sensitive', False)
+        config_dict = (
+            getattr(self.__class__.Config, "__dict__", {})
+            if hasattr(self.__class__, "Config")
+            else {}
+        )
+        env_file = _env_file or config_dict.get("env_file")
+        case_sensitive = _case_sensitive or config_dict.get("case_sensitive", False)
 
         # Load .env file if specified
         if env_file:
             from dotenv import load_dotenv
+
             load_dotenv(env_file)
 
         # Load from environment variables
         import os
+
         env_data = {}
         for field_name in self.__class__.model_fields:
             env_key = field_name if case_sensitive else field_name.upper()
@@ -81,7 +89,7 @@ class Config(BaseModel):
         fields_repr = {}
         for field_name, field_value in self.model_dump().items():
             if self._is_secret_field(field_name):
-                fields_repr[field_name] = '***'
+                fields_repr[field_name] = "***"
             else:
                 fields_repr[field_name] = field_value
         return f"<{self.__class__.__name__} {fields_repr}>"
@@ -90,8 +98,15 @@ class Config(BaseModel):
     def _is_secret_field(field_name: str) -> bool:
         """Check if field name suggests it contains a secret."""
         secret_keywords = (
-            'secret', 'key', 'password', 'token', 'apikey',
-            'api_key', 'auth', 'credential', 'private'
+            "secret",
+            "key",
+            "password",
+            "token",
+            "apikey",
+            "api_key",
+            "auth",
+            "credential",
+            "private",
         )
         return any(keyword in field_name.lower() for keyword in secret_keywords)
 
