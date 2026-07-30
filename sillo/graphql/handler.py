@@ -3,6 +3,7 @@ from typing import Any, cast
 try:
     import strawberry
     from strawberry.types import ExecutionResult
+
     HAS_STRAWBERRY = True
 except ImportError:
     HAS_STRAWBERRY = False

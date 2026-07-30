@@ -4,6 +4,7 @@ from pathlib import Path
 
 try:
     from jinja2 import Environment, FileSystemLoader
+
     HAS_JINJA2 = True
 except ImportError:
     HAS_JINJA2 = False

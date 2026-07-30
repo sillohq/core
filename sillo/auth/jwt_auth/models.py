@@ -6,6 +6,7 @@ from typing import Optional
 try:
     from tortoise import fields
     from sillo.record import Model, TimestampsMixin
+
     HAS_TORTOISE = True
 except ImportError:
     HAS_TORTOISE = False
@@ -185,7 +186,6 @@ if HAS_TORTOISE:
                 await token.delete()
             return count
 
-
     class TokenBlacklist(Model, TimestampsMixin):
         """Token blacklist — for immediate invalidation of specific tokens.
 
@@ -249,6 +249,7 @@ else:
 
     class JWTToken:
         """Stub: tortoise-orm not installed. Install with: pip install tortoise-orm"""
+
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "JWTToken requires tortoise-orm. Install with: "
@@ -257,6 +258,7 @@ else:
 
     class TokenBlacklist:
         """Stub: tortoise-orm not installed. Install with: pip install tortoise-orm"""
+
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "TokenBlacklist requires tortoise-orm. Install with: "
