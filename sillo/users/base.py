@@ -47,30 +47,67 @@ from sillo.record import Model
 from sillo.users.managers import UserManager
 
 
-def make_password(raw_password: Optional[str] = None, **kwargs) -> str:
+def make_password(raw_password: Optional[str] = None, scheme: Optional[str] = None, **kwargs) -> str:
     """Hash a password using sillo.hashing.
 
     Args:
-        raw_password: Plaintext password. If None, creates unusable password.
-        **kwargs: Additional arguments passed to hash_password (e.g., salt, scheme).
+        raw_password: Plaintext password. If None, creates unusable password marker.
+        scheme: Hashing algorithm to use. Options: 'bcrypt' (default if installed),
+                'argon2' (if argon2-cffi installed), 'scrypt' (if scrypt installed),
+                'pbkdf2_sha256' (built-in, used as fallback if no optional libs).
+                If None, uses app's default scheme (bcrypt if available, else pbkdf2_sha256).
+        **kwargs: Additional parameters for the hashing function (e.g., salt for bcrypt).
 
     Returns:
-        Hashed password string.
+        Hashed password string prefixed with algorithm identifier.
+
+    Examples:
+        Hash with default algorithm:
+            hashed = make_password("mypassword")
+
+        Hash with specific algorithm:
+            hashed = make_password("mypassword", scheme="argon2")
+            hashed = make_password("mypassword", scheme="bcrypt")
+            hashed = make_password("mypassword", scheme="pbkdf2_sha256")
+
+        Create unusable password marker:
+            hashed = make_password(None)  # Used for disabled accounts
     """
     if raw_password is None:
         return UNUSABLE_PASSWORD_PREFIX + secrets.token_hex(40)
-    return hash_password(raw_password, **kwargs)
+    return hash_password(raw_password, scheme=scheme, **kwargs)
 
 
 def check_password(raw_password: str, encoded: str) -> bool:
-    """Verify password using sillo.hashing.
+    """Verify a password against a hash.
+
+    Automatically detects which algorithm was used to create the hash
+    (bcrypt, argon2, scrypt, pbkdf2, etc.) and verifies accordingly.
+    Works seamlessly with hashes from any supported algorithm.
 
     Args:
-        raw_password: Plaintext password.
-        encoded: Hashed password.
+        raw_password: Plaintext password to verify.
+        encoded: Hashed password string (with algorithm prefix).
 
     Returns:
-        True if valid, False otherwise.
+        True if password is valid and hash is usable, False otherwise.
+        Returns False for malformed hashes or disabled passwords.
+
+    Examples:
+        Basic verification:
+            if check_password("mypassword", user.password_hash):
+                # Password is correct
+                pass
+
+        Works with any algorithm:
+            # These all work automatically:
+            bcrypt_hash = make_password("pw", scheme="bcrypt")
+            argon2_hash = make_password("pw", scheme="argon2")
+            pbkdf2_hash = make_password("pw", scheme="pbkdf2_sha256")
+
+            check_password("pw", bcrypt_hash)  # True
+            check_password("pw", argon2_hash)  # True
+            check_password("pw", pbkdf2_hash)  # True
     """
     if raw_password is None or not raw_password:
         return False

@@ -41,23 +41,43 @@ def hash_password(
 ) -> str:
     """Hash a password using the specified scheme.
 
+    Supports multiple hashing algorithms with automatic algorithm detection
+    during verification. The hashed output includes a prefix identifying the
+    algorithm used, so any algorithm can be verified with verify_password().
+
     Args:
         password: Plaintext password to hash.
-        scheme: Hashing scheme (bcrypt, argon2, scrypt, pbkdf2_sha256, pbkdf2_sha512).
-               If None, uses the default scheme (bcrypt).
+        scheme: Hashing algorithm to use. Options:
+                - 'bcrypt' (default if installed): Fast, widely-supported
+                - 'argon2' (requires argon2-cffi): Memory-hard, most secure
+                - 'scrypt' (requires scrypt): GPU-resistant
+                - 'pbkdf2_sha256' (built-in, always available): NIST-approved, reliable
+                - 'pbkdf2_sha512' (built-in, always available): Stronger variant
+                If None, uses app's default (bcrypt if available, else pbkdf2_sha256).
         salt: Optional salt for bcrypt hashing (for advanced use only).
         **kwargs: Additional keyword arguments passed to the hashing function.
 
     Returns:
-        Hashed password string.
+        Hashed password string with algorithm prefix (e.g., $2b$..., $argon2$...).
 
     Raises:
-        InvalidSchemeError: If scheme is not available.
+        InvalidSchemeError: If scheme is not available or unknown.
         HashingError: If hashing fails.
 
-    Example:
-        hashed = hash_password("my_password")
-        hashed_argon2 = hash_password("my_password", scheme="argon2")
+    Examples:
+        Hash with default algorithm:
+            hashed = hash_password("my_password")
+
+        Hash with specific algorithms:
+            hashed_bcrypt = hash_password("my_password", scheme="bcrypt")
+            hashed_argon2 = hash_password("my_password", scheme="argon2")
+            hashed_pbkdf2 = hash_password("my_password", scheme="pbkdf2_sha256")
+
+        Algorithm mixing (all verify correctly):
+            hash1 = hash_password("password", scheme="bcrypt")
+            hash2 = hash_password("password", scheme="argon2")
+            verify_password("password", hash1)  # True
+            verify_password("password", hash2)  # True
     """
     if scheme is None:
         scheme = _default_scheme
@@ -95,18 +115,36 @@ def hash_password(
 def verify_password(password: str, hashed: str) -> bool:
     """Verify a password against a hash.
 
-    Automatically detects which scheme was used to create the hash.
+    Automatically detects which algorithm was used to create the hash
+    (bcrypt, argon2, scrypt, pbkdf2, etc.) and verifies accordingly.
+    Works seamlessly with hashes from any supported algorithm without
+    needing to specify the scheme.
 
     Args:
         password: Plaintext password to verify.
-        hashed: Previously hashed password.
+        hashed: Previously hashed password (must include algorithm prefix).
 
     Returns:
-        True if password matches hash, False otherwise.
+        True if password matches hash, False otherwise or on error.
 
-    Example:
-        if verify_password("my_password", stored_hash):
-            print("Password is correct!")
+    Examples:
+        Basic verification:
+            if verify_password("my_password", user.password_hash):
+                print("Password is correct!")
+
+        Works with any algorithm (auto-detected):
+            bcrypt_hash = hash_password("pw", scheme="bcrypt")
+            argon2_hash = hash_password("pw", scheme="argon2")
+            pbkdf2_hash = hash_password("pw", scheme="pbkdf2_sha256")
+
+            # All return True, no scheme parameter needed
+            verify_password("pw", bcrypt_hash)   # True
+            verify_password("pw", argon2_hash)   # True
+            verify_password("pw", pbkdf2_hash)   # True
+
+            # All return False for wrong password
+            verify_password("wrong", bcrypt_hash)   # False
+            verify_password("wrong", argon2_hash)   # False
     """
     if not hashed:
         return False

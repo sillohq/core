@@ -203,3 +203,107 @@ def test_sha256_accepts_bytes():
 
 def test_different_inputs_give_different_digests():
     assert sha256("a") != sha256("b")
+
+
+# ── algorithm selection ──────────────────────────────────────────────────────
+
+
+def test_default_scheme_is_used_when_not_specified():
+    """When no scheme specified, default is used."""
+    hashed = make_password("test123")
+    # Bcrypt hashes start with $2a$, $2b$, $2x$, or $2y$
+    assert hashed.startswith(("$2a$", "$2b$", "$2x$", "$2y$"))
+
+
+def test_can_explicitly_use_bcrypt_scheme():
+    """User can explicitly specify bcrypt algorithm."""
+    hashed = make_password("test123", scheme="bcrypt")
+    assert hashed.startswith(("$2a$", "$2b$", "$2x$", "$2y$"))
+    assert check_password("test123", hashed) is True
+
+
+def test_can_explicitly_use_pbkdf2_scheme():
+    """User can explicitly specify pbkdf2_sha256 (built-in, always available)."""
+    hashed = make_password("test123", scheme="pbkdf2_sha256")
+    # pbkdf2 hashes start with $pbkdf2-sha256$
+    assert hashed.startswith("$pbkdf2-sha256$")
+    assert check_password("test123", hashed) is True
+
+
+def test_pbkdf2_fallback_works():
+    """pbkdf2_sha256 is built-in and works even without bcrypt."""
+    hashed = make_password("test123", scheme="pbkdf2_sha256")
+    assert check_password("test123", hashed) is True
+    assert check_password("wrong", hashed) is False
+
+
+def test_different_schemes_produce_different_hashes():
+    """Same password hashed with different schemes produces different hashes."""
+    bcrypt_hash = make_password("test123", scheme="bcrypt")
+    pbkdf2_hash = make_password("test123", scheme="pbkdf2_sha256")
+
+    # Hashes should be different
+    assert bcrypt_hash != pbkdf2_hash
+    # But both should verify the same password
+    assert check_password("test123", bcrypt_hash) is True
+    assert check_password("test123", pbkdf2_hash) is True
+
+
+def test_can_mix_schemes_in_same_app():
+    """App can have users with different hashing schemes and verify them all."""
+    password = "mysecretpassword"
+
+    bcrypt_hash = make_password(password, scheme="bcrypt")
+    pbkdf2_hash = make_password(password, scheme="pbkdf2_sha256")
+
+    # Both schemes should verify the password
+    assert check_password(password, bcrypt_hash) is True
+    assert check_password(password, pbkdf2_hash) is True
+
+    # Wrong password fails on both
+    assert check_password("wrongpassword", bcrypt_hash) is False
+    assert check_password("wrongpassword", pbkdf2_hash) is False
+
+
+def test_explicit_scheme_with_rounds():
+    """Can pass additional parameters like rounds to the hash function."""
+    # For bcrypt, rounds is passed via salt parameter
+    salt = bcrypt.gensalt(rounds=4)
+    hashed = make_password("test123", salt=salt.decode())
+    assert check_password("test123", hashed) is True
+
+
+# Check if argon2 is available for optional tests
+argon2_available = False
+try:
+    from sillo.hashing.config import is_scheme_available
+    argon2_available = is_scheme_available("argon2")
+except ImportError:
+    pass
+
+
+@pytest.mark.skipif(not argon2_available, reason="argon2 not available in passlib")
+def test_can_use_argon2_scheme():
+    """When argon2-cffi is installed and available, user can specify argon2 scheme."""
+    hashed = make_password("test123", scheme="argon2")
+    # Argon2 hashes contain argon2 identifier
+    assert "argon2" in hashed.lower()
+    assert check_password("test123", hashed) is True
+
+
+# Check if scrypt is available for optional tests
+scrypt_available = False
+try:
+    import scrypt
+    scrypt_available = True
+except ImportError:
+    pass
+
+
+@pytest.mark.skipif(not scrypt_available, reason="scrypt not installed")
+def test_can_use_scrypt_scheme():
+    """When scrypt is installed, user can specify scrypt scheme."""
+    hashed = make_password("test123", scheme="scrypt")
+    # Scrypt hashes contain scrypt identifier
+    assert "scrypt" in hashed
+    assert check_password("test123", hashed) is True
