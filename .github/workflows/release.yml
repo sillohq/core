@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write       # to create GitHub release
       id-token: write       # for OIDC (trusted publishing)
 
     steps:
@@ -38,35 +37,27 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      - name: Navigate to core directory
-        run: cd core && pwd
+      - name: Check directory structure
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Contents:"
+          ls -la
 
       - name: Clean Old Builds
         run: |
-          cd core
           rm -rf dist build *.egg-info
 
       - name: Setup Virtual Environment
-        run: |
-          cd core
-          uv venv
+        run: uv venv
 
       - name: Install dependencies
-        run: |
-          cd core
-          uv pip install -e ".[dev]"
+        run: uv pip install -e ".[dev]"
 
       - name: Run tests
-        run: |
-          cd core
-          uv run pytest tests/ -q --tb=short
+        run: uv run pytest tests/ -q --tb=short
 
       - name: Build the package
-        run: |
-          cd core
-          uv build
+        run: uv build
 
       - name: Publish to PyPI
-        run: |
-          cd core
-          uv publish --token ${{ secrets.PYPI_TOKEN }}
+        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
