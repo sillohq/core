@@ -1,10 +1,17 @@
 from typing import Any, cast
 
-import strawberry
+try:
+    import strawberry
+    from strawberry.types import ExecutionResult
+    HAS_STRAWBERRY = True
+except ImportError:
+    HAS_STRAWBERRY = False
+    strawberry = None
+    ExecutionResult = None
+
 from sillo.application import silloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Route
-from strawberry.types import ExecutionResult
 
 
 class GraphQL:
@@ -25,7 +32,7 @@ class GraphQL:
     def __init__(
         self,
         app: silloApp,
-        schema: strawberry.Schema,
+        schema: "strawberry.Schema",
         path: str = "/graphql",
         graphiql: bool = True,
     ):
@@ -49,8 +56,14 @@ class GraphQL:
             None. This method initializes the handler and triggers route registration.
 
         Raises:
-            None.
+            ImportError: If strawberry-graphql is not installed.
         """
+        if not HAS_STRAWBERRY:
+            raise ImportError(
+                "GraphQL support requires strawberry-graphql. "
+                "Install with: pip install 'sillo[graphql]' or pip install strawberry-graphql"
+            )
+
         self.app = app
         self.schema = schema
         self.path = path

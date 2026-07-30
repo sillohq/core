@@ -41,11 +41,16 @@ SCHEMES: Dict[str, SchemeConfig] = {
 
 
 def get_default_scheme() -> str:
-    """Get the default hashing scheme."""
+    """Get the default hashing scheme.
+
+    Attempts to use the preferred default (bcrypt), but falls back to
+    pbkdf2_sha256 (built-in) if bcrypt is not installed.
+    """
     for name, config in SCHEMES.items():
-        if config.default:
+        if config.default and is_scheme_available(name):
             return name
-    return "bcrypt"
+    # Fall back to built-in pbkdf2_sha256 if bcrypt not available
+    return "pbkdf2_sha256"
 
 
 def is_scheme_available(scheme: str) -> bool:
