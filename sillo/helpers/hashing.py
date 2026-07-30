@@ -9,8 +9,13 @@ from __future__ import annotations
 import hashlib
 from typing import Union
 
-from sillo.hashing import hash_password as _hash_password
-from sillo.hashing import verify_password as _verify_password
+from sillo.hashing import (
+    constant_time_compare as _constant_time_compare,
+    hash_password as _hash_password,
+    md5 as _md5,
+    sha256 as _sha256,
+    verify_password as _verify_password,
+)
 
 
 def hash_password(password: str, scheme: str = "bcrypt") -> str:
@@ -50,9 +55,7 @@ def md5(data: Union[str, bytes]) -> str:
     Returns:
         MD5 hex digest.
     """
-    if isinstance(data, str):
-        data = data.encode()
-    return hashlib.md5(data).hexdigest()
+    return _md5(data)
 
 
 def sha256(data: Union[str, bytes]) -> str:
@@ -66,9 +69,7 @@ def sha256(data: Union[str, bytes]) -> str:
     Returns:
         SHA-256 hex digest.
     """
-    if isinstance(data, str):
-        data = data.encode()
-    return hashlib.sha256(data).hexdigest()
+    return _sha256(data)
 
 
 def sha512(data: Union[str, bytes]) -> str:
@@ -135,3 +136,51 @@ def random_salt(length: int = 16) -> str:
     import secrets
 
     return secrets.token_hex(length)
+
+
+def sha1(data: Union[str, bytes]) -> str:
+    """Compute SHA-1 hash.
+
+    Note: SHA-1 is deprecated for security-critical uses.
+
+    Args:
+        data: Data to hash (string or bytes).
+
+    Returns:
+        SHA-1 hex digest.
+    """
+    if isinstance(data, str):
+        data = data.encode()
+    return hashlib.sha1(data).hexdigest()
+
+
+def hmac_digest(key: Union[str, bytes], data: Union[str, bytes], algorithm: str = "sha256") -> str:
+    """Compute HMAC digest.
+
+    Args:
+        key: HMAC key.
+        data: Data to authenticate.
+        algorithm: Hash algorithm name.
+
+    Returns:
+        Hex digest of HMAC.
+    """
+    import hmac
+    if isinstance(key, str):
+        key = key.encode()
+    if isinstance(data, str):
+        data = data.encode()
+    return hmac.new(key, data, getattr(__import__('hashlib'), algorithm)).hexdigest()
+
+
+def constant_time_compare(val1: str, val2: str) -> bool:
+    """Compare two values in constant time.
+
+    Args:
+        val1: First value to compare.
+        val2: Second value to compare.
+
+    Returns:
+        True if values match, False otherwise.
+    """
+    return _constant_time_compare(val1, val2)

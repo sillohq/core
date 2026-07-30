@@ -40,6 +40,7 @@ dependencies = [
     "pydantic>=2.0,<3.0",
     "typing-extensions>=4.12.2; python_version<'3.10'",
     "passlib>=1.7.4",
+    "python-dotenv>=1.0.0",
 ]
 
 
@@ -112,6 +113,8 @@ dev = [
     "typing-extensions==4.16.0",
     "ruff>=0.0.256",
     "ty>=0.0.29",
+    "passlib>=1.7.4",
+    "python-dotenv>=1.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -269,4 +272,6 @@ dev = [
     "mypy>=1.15.0",
     "ruff>=0.0.256",
     "ty>=0.0.29",
+    "passlib>=1.7.4",
+    "python-dotenv>=1.0.0",
 ]

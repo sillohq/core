@@ -1,10 +1,11 @@
-"""Password utilities: validation, strength checking, etc."""
+"""Password utilities: validation, strength checking, hashing, etc."""
 
 from __future__ import annotations
 
+import hashlib
 import re
 import secrets
-from typing import Optional
+from typing import Optional, Union
 
 
 UNUSABLE_PASSWORD_PREFIX = "!"
@@ -129,3 +130,37 @@ def constant_time_compare(val1: str, val2: str) -> bool:
         True if values match, False otherwise.
     """
     return secrets.compare_digest(val1.encode(), val2.encode())
+
+
+def md5(value: Union[str, bytes]) -> str:
+    """Compute MD5 hash of a value.
+
+    Note: MD5 should not be used for password hashing. Use hash_password() instead.
+    This is a utility for checksums and non-cryptographic uses.
+
+    Args:
+        value: String or bytes to hash.
+
+    Returns:
+        Hexadecimal MD5 hash.
+    """
+    if isinstance(value, str):
+        value = value.encode()
+    return hashlib.md5(value).hexdigest()
+
+
+def sha256(value: Union[str, bytes]) -> str:
+    """Compute SHA256 hash of a value.
+
+    Note: SHA256 should not be used for password hashing. Use hash_password() instead.
+    This is a utility for checksums and non-cryptographic uses.
+
+    Args:
+        value: String or bytes to hash.
+
+    Returns:
+        Hexadecimal SHA256 hash.
+    """
+    if isinstance(value, str):
+        value = value.encode()
+    return hashlib.sha256(value).hexdigest()

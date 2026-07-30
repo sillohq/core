@@ -47,18 +47,19 @@ from sillo.record import Model
 from sillo.users.managers import UserManager
 
 
-def make_password(raw_password: Optional[str] = None) -> str:
+def make_password(raw_password: Optional[str] = None, **kwargs) -> str:
     """Hash a password using sillo.hashing.
 
     Args:
         raw_password: Plaintext password. If None, creates unusable password.
+        **kwargs: Additional arguments passed to hash_password (e.g., salt, scheme).
 
     Returns:
         Hashed password string.
     """
     if raw_password is None:
         return UNUSABLE_PASSWORD_PREFIX + secrets.token_hex(40)
-    return hash_password(raw_password)
+    return hash_password(raw_password, **kwargs)
 
 
 def check_password(raw_password: str, encoded: str) -> bool:

@@ -36,6 +36,8 @@ def _get_context() -> CryptContext:
 def hash_password(
     password: str,
     scheme: Optional[str] = None,
+    salt: Optional[str] = None,
+    **kwargs,
 ) -> str:
     """Hash a password using the specified scheme.
 
@@ -43,6 +45,8 @@ def hash_password(
         password: Plaintext password to hash.
         scheme: Hashing scheme (bcrypt, argon2, scrypt, pbkdf2_sha256, pbkdf2_sha512).
                If None, uses the default scheme (bcrypt).
+        salt: Optional salt for bcrypt hashing (for advanced use only).
+        **kwargs: Additional keyword arguments passed to the hashing function.
 
     Returns:
         Hashed password string.
@@ -63,10 +67,26 @@ def hash_password(
             f"Scheme '{scheme}' is not available. Install with: pip install {scheme}"
         )
 
-    context = _get_context()
-
     try:
-        return context.hash(password, scheme=scheme)
+        # Use bcrypt directly for bcrypt scheme
+        if scheme == "bcrypt":
+            import bcrypt as bcrypt_lib
+            if salt is not None:
+                # Use provided salt
+                if isinstance(salt, str):
+                    salt = salt.encode()
+            else:
+                # Generate new salt with 12 rounds by default
+                salt = bcrypt_lib.gensalt(rounds=12)
+            hashed = bcrypt_lib.hashpw(password.encode(), salt)
+            return hashed.decode()
+
+        # For other schemes, use passlib
+        context = _get_context()
+        return context.hash(password, scheme=scheme, **kwargs)
+    except ValueError:
+        # Let ValueError through (e.g., password too long for bcrypt)
+        raise
     except Exception as e:
         raise HashingError(f"Failed to hash password: {e}") from e
 
@@ -89,6 +109,14 @@ def verify_password(password: str, hashed: str) -> bool:
     """
     if not hashed:
         return False
+
+    # Try bcrypt directly first if it's a bcrypt hash
+    if hashed.startswith(("$2a$", "$2b$", "$2x$", "$2y$")):
+        try:
+            import bcrypt as bcrypt_lib
+            return bcrypt_lib.checkpw(password.encode(), hashed.encode())
+        except Exception:
+            pass
 
     context = _get_context()
 
@@ -178,7 +206,7 @@ def needs_rehash(hashed: str, rounds: int = 12) -> bool:
     if not hashed:
         return True
 
-    if _needs_update(hashed):
+    if needs_update(hashed):
         return True
 
     if hashed.startswith("$2"):

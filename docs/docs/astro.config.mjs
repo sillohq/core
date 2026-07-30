@@ -69,6 +69,7 @@ export default defineConfig({
                         { label: 'Introduction', link: '/guides/introduction/' },
                         { label: 'Installation', link: '/guides/installation/' },
                         { label: 'The sillo CLI', link: '/guides/cli/' },
+                        { label: 'Configuration', link: '/guides/configuration/' },
                         { label: 'Request Lifecycle', link: '/guides/request-lifecycle/' },
                     ],
                 },
@@ -180,6 +181,7 @@ export default defineConfig({
                     items: [
                         { label: 'Overview', link: '/guides/authentication/' },
                         { label: 'Users & User Models', link: '/guides/users/' },
+                        { label: 'Password Hashing', link: '/guides/hashing/' },
                         { label: 'Protecting Routes', link: '/guides/protecting-routes/' },
                         { label: 'Permissions', link: '/guides/permissions/' },
                         { label: 'JWT Authentication', link: '/guides/jwt-auth/' },

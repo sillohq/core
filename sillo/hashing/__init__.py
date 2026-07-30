@@ -46,7 +46,9 @@ from .utils import (
     constant_time_compare,
     is_password_usable,
     make_unusable_password,
+    md5,
     password_strength,
+    sha256,
     validate_password,
 )
 
@@ -65,6 +67,8 @@ __all__ = [
     "validate_password",
     "password_strength",
     "constant_time_compare",
+    "md5",
+    "sha256",
     "UNUSABLE_PASSWORD_PREFIX",
     "UNUSABLE_PASSWORD_SUFFIX_LENGTH",
 ]
