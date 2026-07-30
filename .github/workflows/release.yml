@@ -3,11 +3,11 @@ name: Release on Tag
 on:
   push:
     tags:
-      - 'v*'  # only triggers on tags like v1.0.0
+      - 'sillo-core-v*'  # Sillo core releases: sillo-core-v0.0.1a1
 
 jobs:
   release:
-    name: Build and Publish Release
+    name: Build and Publish to PyPI
     runs-on: ubuntu-latest
 
     permissions:
@@ -18,7 +18,15 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for auto-changelog to get all tags and commits
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#sillo-core-v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Releasing Sillo v$VERSION"
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -30,21 +38,35 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
+      - name: Navigate to core directory
+        run: cd core && pwd
+
       - name: Clean Old Builds
-        run: rm -rf dist build *.egg-info
+        run: |
+          cd core
+          rm -rf dist build *.egg-info
 
       - name: Setup Virtual Environment
-        run: uv venv
+        run: |
+          cd core
+          uv venv
 
       - name: Install dependencies
-        run: uv pip install -e ".[dev]"
+        run: |
+          cd core
+          uv pip install -e ".[dev]"
+
+      - name: Run tests
+        run: |
+          cd core
+          uv run pytest tests/ -q --tb=short
 
       - name: Build the package
-        run: uv build
-
-     
+        run: |
+          cd core
+          uv build
 
       - name: Publish to PyPI
-        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
-
-      
+        run: |
+          cd core
+          uv publish --token ${{ secrets.PYPI_TOKEN }}
