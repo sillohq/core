@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sillo"
+name = "sillo-framework"
 version = "0.0.1a1"
 description = "An async Python web framework for serious APIs, web applications, real-time systems, and business backends."
 authors = [
