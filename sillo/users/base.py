@@ -47,7 +47,9 @@ from sillo.record import Model
 from sillo.users.managers import UserManager
 
 
-def make_password(raw_password: Optional[str] = None, scheme: Optional[str] = None, **kwargs) -> str:
+def make_password(
+    raw_password: Optional[str] = None, scheme: Optional[str] = None, **kwargs
+) -> str:
     """Hash a password using sillo.hashing.
 
     Args:
