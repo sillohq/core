@@ -8,7 +8,14 @@ const docsBaseUrl = process.env.DOCS_BASE_URL ?? '/';
 
 export default defineConfig({
     base: docsBaseUrl,
-    site: 'https://sillo.build',
+    // The domain the docs are actually served from. This feeds every canonical
+    // link, og:url and sitemap entry — pointing it at the marketing site made
+    // all of them resolve to paths that only exist here, so anything following
+    // a canonical URL (search engines included) landed on a 404.
+    site: 'https://docs.sillo.build',
+    // On Vercel these are handled at the edge as real HTTP redirects; see
+    // vercel.json. Astro's own redirects are static meta-refresh pages, which
+    // are kept so `astro dev` and `astro preview` behave the same way locally.
     redirects: {
         '/': {
             status: 302,

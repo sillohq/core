@@ -1,4 +1,22 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
-    "outputDirectory": "docs/dist"
+
+    "installCommand": "bun install --frozen-lockfile",
+    "buildCommand": "bun run docs:build",
+    "outputDirectory": "docs/dist",
+
+    "trailingSlash": true,
+
+    "redirects": [
+        {
+            "source": "/",
+            "destination": "/guides/introduction/",
+            "permanent": false
+        },
+        {
+            "source": "/guides/getting-started/",
+            "destination": "/guides/introduction/",
+            "permanent": false
+        }
+    ]
 }
