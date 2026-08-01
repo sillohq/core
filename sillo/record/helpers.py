@@ -24,8 +24,6 @@ from typing import Annotated, Any, Dict, List, Optional
 
 from typing_extensions import Doc
 
-from aerich import Command
-
 
 class Seeder:
     """Seed database tables with test data.
@@ -243,79 +241,242 @@ class FixtureLoader:
 
 
 class MigrationHelper:
-    """Utility for running aerich migrations programmatically."""
+    """Run migrations programmatically, using Tortoise's native migration engine.
 
-    def __init__(self, app_module: str, *, location: str = "migrations"):
-        """Init
+    Tortoise 1.0 ships its own migration system and aerich itself recommends it
+    over aerich for that version onwards, so this helper drives
+    ``tortoise.migrations`` rather than aerich. State lives in the
+    ``tortoise_migrations`` table.
 
-        Args:
-            app_module: [description]
+    Every method opens a connection, does its work and closes again, so the
+    helper is safe to call from a short-lived script or a management command.
 
-        Returns:
-            [description]
+    Usage::
+
+        helper = MigrationHelper("database.config.TORTOISE_ORM")
+        await helper.make("add_posts")   # write a migration from model changes
+        await helper.upgrade()           # apply everything pending
+
+    The app whose migrations are managed must declare where they live::
+
+        TORTOISE_ORM = {
+            "connections": {"default": os.getenv("DATABASE_URL")},
+            "apps": {"models": {
+                "models": ["database.models"],
+                "default_connection": "default",
+                "migrations": "database.migrations",   # <- required
+            }},
+        }
+
+    Without the ``migrations`` key Tortoise treats the app as unmigrated and
+    every command reports "no migrations" while doing nothing.
+
+    Args:
+        config: A dotted path to the project's Tortoise config
+            (``"database.config.TORTOISE_ORM"``), or the mapping itself. Some
+            operations need the dotted path — see :meth:`make`.
+        app: Which app label inside ``config["apps"]`` to manage. None means
+            every configured app.
+    """
+
+    def __init__(
+        self,
+        config: Annotated[
+            "Dict[str, Any] | str",
+            Doc("Dotted path to the Tortoise config, or the mapping itself."),
+        ],
+        *,
+        app: Annotated[
+            Optional[str], Doc("App label to manage. None means all apps.")
+        ] = None,
+    ) -> None:
+        self._config_path = config if isinstance(config, str) else None
+        self._config = self._resolve(config)
+        self._app = app
+
+    @staticmethod
+    def _resolve(config: "Dict[str, Any] | str") -> Dict[str, Any]:
+        """Return a config mapping, importing a dotted path if one was given.
 
         Raises:
-            [description]
+            TypeError: If *config* is neither a mapping nor a dotted path.
+            ValueError: If a dotted path does not resolve to a mapping.
         """
-        self._app = app_module
-        self._location = location
+        if isinstance(config, dict):
+            return config
+        if not isinstance(config, str):
+            raise TypeError(
+                "config must be a Tortoise config mapping or a dotted path to one, "
+                f"got {type(config).__name__}."
+            )
+
+        module_path, _, attribute = config.rpartition(".")
+        if not module_path:
+            raise ValueError(
+                f"'{config}' is not a dotted path. Use something like "
+                "'database.config.TORTOISE_ORM'."
+            )
+        from importlib import import_module
+
+        resolved = getattr(import_module(module_path), attribute)
+        if not isinstance(resolved, dict):
+            raise ValueError(
+                f"'{config}' resolved to {type(resolved).__name__}, expected a dict."
+            )
+        return resolved
+
+    @property
+    def _app_labels(self) -> Optional[List[str]]:
+        """The app labels to operate on, or None for all of them."""
+        return [self._app] if self._app else None
+
+    def _qualify(self, target: Optional[str]) -> Optional[str]:
+        """Prefix a bare migration name with its app label.
+
+        Tortoise addresses migrations as ``app_label.name`` and reports an
+        unqualified name as an unknown *app*, which is a confusing way to learn
+        that the prefix was missing.
+        """
+        if not target or "." in target or not self._app:
+            return target
+        return f"{self._app}.{target}"
+
+    @staticmethod
+    async def _close() -> None:
+        """Close the connections the migration engine opened.
+
+        Neither the native API nor the CLI tears Tortoise down, and an open
+        connection keeps the event loop alive — a script that finishes its
+        migration then hangs forever at interpreter shutdown is this, not a
+        deadlock in the migration itself.
+        """
+        from tortoise import Tortoise
+
+        await Tortoise.close_connections()
+
+    async def _cli(self, *args: str) -> None:
+        """Run a native migration command that has no public API yet.
+
+        ``makemigrations`` and ``init`` only exist behind the CLI, which reads
+        the config by dotted path rather than by value.
+
+        Raises:
+            RuntimeError: If the helper was built from a mapping instead of a
+                dotted path, or the command exits non-zero.
+        """
+        if self._config_path is None:
+            raise RuntimeError(
+                f"'{args[0]}' needs the config as a dotted path. Build the helper "
+                'with MigrationHelper("database.config.TORTOISE_ORM") instead of '
+                "passing the dict."
+            )
+        from tortoise.cli.cli import run_cli_async
+
+        argv = ["-c", self._config_path, *args]
+        if self._app:
+            argv.append(self._app)
+        try:
+            code = await run_cli_async(argv)
+        finally:
+            await self._close()
+        if code != 0:
+            raise RuntimeError(f"tortoise {' '.join(args)} failed with exit code {code}.")
 
     async def init(self) -> None:
-        """Initialize migration tracking."""
-        cmd = Command(
-            tortoise_config={
-                "connections": {"default": self._app},
-                "apps": {"models": {"models": ["aerich.models"]}},
-            },
-            app="models",
-            location=self._location,
-        )
-        await cmd.init_db(safe=True)
+        """Create the migration package for each configured app.
 
-    async def migrate(self, name: str = "auto") -> None:
-        """Generate a migration."""
-        cmd = Command(
-            tortoise_config={
-                "connections": {"default": self._app},
-                "apps": {"models": {"models": ["aerich.models"]}},
-            },
-            app="models",
-            location=self._location,
-        )
-        await cmd.migrate(name=name)
+        Safe to re-run; existing packages are left alone.
+        """
+        await self._cli("init")
 
-    async def upgrade(self) -> None:
-        """Apply pending migrations."""
-        cmd = Command(
-            tortoise_config={
-                "connections": {"default": self._app},
-                "apps": {"models": {"models": ["aerich.models"]}},
-            },
-            app="models",
-            location=self._location,
-        )
-        await cmd.upgrade()
+    async def make(self, name: Optional[str] = None) -> None:
+        """Write a migration file describing the current model changes.
 
-    async def downgrade(self, target: str) -> None:
-        """Roll back to *target*."""
-        cmd = Command(
-            tortoise_config={
-                "connections": {"default": self._app},
-                "apps": {"models": {"models": ["aerich.models"]}},
-            },
-            app="models",
-            location=self._location,
-        )
-        await cmd.downgrade(target, delete=False)  # ty: ignore[invalid-argument-type]
+        Args:
+            name: Suffix for the migration file. Tortoise derives one from the
+                detected operations when omitted.
+        """
+        args = ["makemigrations"]
+        if name:
+            args += ["--name", name]
+        await self._cli(*args)
 
-    async def history(self) -> list:
-        """Show migration history."""
-        cmd = Command(
-            tortoise_config={
-                "connections": {"default": self._app},
-                "apps": {"models": {"models": ["aerich.models"]}},
-            },
-            app="models",
-            location=self._location,
-        )
-        return await cmd.history()
+    async def upgrade(self, target: Optional[str] = None, *, fake: bool = False) -> None:
+        """Apply every pending migration.
+
+        Args:
+            target: Stop at this migration instead of the latest.
+            fake: Record the migrations as applied without running them.
+        """
+        from tortoise.migrations import api
+
+        try:
+            await api.migrate(
+                config=self._config,
+                app_labels=self._app_labels,
+                target=self._qualify(target),
+                fake=fake,
+                direction="forward",
+            )
+        finally:
+            await self._close()
+
+    async def downgrade(self, target: str, *, fake: bool = False) -> None:
+        """Roll the database back to *target*.
+
+        Args:
+            target: Migration to roll back to. Either fully qualified
+                (``"models.0001_initial"``) or a bare name (``"0001_initial"``)
+                when the helper was built with an ``app``. Use ``"zero"`` to
+                unapply everything. Tortoise has no implicit "one step back",
+                so this is required.
+            fake: Record the rollback without running it.
+        """
+        from tortoise.migrations import api
+
+        target = self._qualify(target)
+
+        try:
+            await api.migrate(
+                config=self._config,
+                app_labels=self._app_labels,
+                target=target,
+                fake=fake,
+                direction="backward",
+            )
+        finally:
+            await self._close()
+
+    async def plan(self, target: Optional[str] = None) -> List[str]:
+        """Return the ordered list of migrations that would run."""
+        from tortoise.migrations import api
+
+        try:
+            return await api.plan(
+                config=self._config,
+                app_labels=self._app_labels,
+                target=target,
+            )
+        finally:
+            await self._close()
+
+    async def sql(self, migration: str, *, backward: bool = False) -> List[str]:
+        """Return the SQL a migration would execute, without running it.
+
+        Raises:
+            ValueError: If the helper manages all apps, since the SQL for a
+                migration is app-specific.
+        """
+        if not self._app:
+            raise ValueError("sql() needs a single app; build the helper with app=...")
+        from tortoise.migrations import api
+
+        try:
+            return await api.sqlmigrate(
+                config=self._config,
+                app_label=self._app,
+                migration_name=migration,
+                backward=backward,
+            )
+        finally:
+            await self._close()
