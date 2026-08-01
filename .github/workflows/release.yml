@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
+      contents: read        # actions/checkout needs repo read access
       id-token: write       # for OIDC (trusted publishing)
 
     steps:
@@ -59,5 +60,15 @@ jobs:
       - name: Build the package
         run: uv build
 
+      # Prefers OIDC trusted publishing (the id-token permission above); falls
+      # back to an API token when the PYPI_TOKEN secret is set. Passing an empty
+      # --token is a hard failure, so the secret must not be forwarded blindly.
       - name: Publish to PyPI
-        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          if [ -n "$PYPI_TOKEN" ]; then
+            uv publish --token "$PYPI_TOKEN"
+          else
+            uv publish
+          fi
