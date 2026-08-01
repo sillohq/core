@@ -380,7 +380,9 @@ class MigrationHelper:
         finally:
             await self._close()
         if code != 0:
-            raise RuntimeError(f"tortoise {' '.join(args)} failed with exit code {code}.")
+            raise RuntimeError(
+                f"tortoise {' '.join(args)} failed with exit code {code}."
+            )
 
     async def init(self) -> None:
         """Create the migration package for each configured app.
@@ -401,7 +403,9 @@ class MigrationHelper:
             args += ["--name", name]
         await self._cli(*args)
 
-    async def upgrade(self, target: Optional[str] = None, *, fake: bool = False) -> None:
+    async def upgrade(
+        self, target: Optional[str] = None, *, fake: bool = False
+    ) -> None:
         """Apply every pending migration.
 
         Args:
