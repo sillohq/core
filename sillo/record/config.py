@@ -70,6 +70,23 @@ class DatabaseConfig:
     ssl_cert: Optional[str] = field(default_factory=lambda: os.getenv("DB_SSL_CERT"))
     ssl_key: Optional[str] = field(default_factory=lambda: os.getenv("DB_SSL_KEY"))
 
+    #: Create any missing tables from the models on ``init()``.
+    #:
+    #: Convenient for a scratch database with no migrations. Turn it **off**
+    #: once the project has migrations: schema generation issues DDL on every
+    #: startup, which
+    #:
+    #: - creates tables outside the migration history, so a later
+    #:   ``makemigrations`` sees them as new and the migration then fails to
+    #:   apply against tables that already exist, and
+    #: - has every process do it at once — an app, a worker and a scheduler
+    #:   sharing one SQLite file raise "database is locked" on boot.
+    #:
+    #: Set ``DB_GENERATE_SCHEMAS=false`` to disable it without touching code.
+    generate_schemas: bool = field(
+        default_factory=lambda: os.getenv("DB_GENERATE_SCHEMAS", "true").lower() == "true"
+    )
+
     def __post_init__(self):
         """Post Init
 

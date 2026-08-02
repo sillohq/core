@@ -119,7 +119,10 @@ class DatabaseManager:
         # contextvar is not propagated — capture the context here and re-enter
         # it per-request in ensure_context().
         self._root_context = await Tortoise.init(config=cfg)
-        await Tortoise.generate_schemas(safe=True)
+        # Off in migration-managed projects: see DatabaseConfig.generate_schemas
+        # for why running DDL on every startup is the wrong default there.
+        if self.config.generate_schemas:
+            await Tortoise.generate_schemas(safe=True)
 
         self._initialized = True
         logger.info("Database connected — backend=%s", self.config.backend.value)
