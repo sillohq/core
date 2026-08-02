@@ -1,98 +1,35 @@
-"""
-sillo.record.commands — CLI commands for database migrations and seeding.
+"""Database and migration operations, as functions.
 
-Provides ``sillo record init``, ``sillo record migrate``, ``sillo record upgrade``,
-etc. — wrapping aerich with sillo-native command names.
+sillo deliberately ships no command-line interface. Building one means choosing
+an argument parser, an output format and a set of names, and those are the
+application's decisions — or its tooling's. What the framework owes you is the
+operations themselves, callable from anywhere.
+
+``sillo-start`` builds its CLI on these. So can a Click group of your own, a
+management script, or a test.
+
+Usage::
+
+    from sillo.record import DatabaseConfig, DatabaseManager
+    from sillo.record.commands import make, migrate
+
+    manager = DatabaseManager(DatabaseConfig(url=...))
+    manager.register_models("database.models")
+    config = manager.tortoise_config("database.migrations")
+
+    await make("app.database.TORTOISE_ORM", "add_posts")
+    await migrate(config)
 """
 
 from __future__ import annotations
 
-import asyncio
-from pathlib import Path
-from typing import Annotated, Optional
+from .functions import init, make, migrate, plan, rollback, sql
 
-from typing_extensions import Doc
-
-import click
-from sillo.record.helpers import MigrationHelper
-
-
-class RecordCLI:
-    """Command-line interface for sillo.record migrations.
-
-    Usage (in your CLI entry point)::
-
-        cli = RecordCLI(app_module="myapp.models", location="migrations")
-        cli.register(click_group)
-    """
-
-    def __init__(
-        self,
-        app_module: Annotated[str, Doc("Dotted path to the Tortoise config or app.")],
-        *,
-        location: Annotated[str, Doc("Directory for migration files.")] = "migrations",
-    ):
-        """Init
-
-        Args:
-            app_module: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._app = app_module
-        self._location = Path(location)
-
-    def register(self, group) -> None:
-        """Register sub-commands on a Click group."""
-
-        @group.group(name="record")
-        def record_group():
-            """Database migration and seeding commands."""
-            pass
-
-        @record_group.command()
-        def init():
-            """Initialize migration tracking."""
-            asyncio.run(MigrationHelper(self._app, location=str(self._location)).init())
-            click.echo(f"Migration tracking initialized in {self._location}/")
-
-        @record_group.command()
-        @click.option("--name", "-n", default="auto", help="Migration name.")
-        def migrate(name):
-            """Generate a new migration."""
-            asyncio.run(
-                MigrationHelper(self._app, location=str(self._location)).migrate(name)
-            )
-            click.echo("Migration created.")
-
-        @record_group.command()
-        def upgrade():
-            """Apply pending migrations."""
-            asyncio.run(
-                MigrationHelper(self._app, location=str(self._location)).upgrade()
-            )
-            click.echo("Database upgraded.")
-
-        @record_group.command()
-        @click.argument("target")
-        def downgrade(target):
-            """Roll back to a specific migration."""
-            asyncio.run(
-                MigrationHelper(self._app, location=str(self._location)).downgrade(
-                    target
-                )
-            )
-            click.echo(f"Rolled back to {target}.")
-
-        @record_group.command()
-        def history():
-            """Show migration history."""
-            result = asyncio.run(
-                MigrationHelper(self._app, location=str(self._location)).history()
-            )
-            for r in result:
-                click.echo(r)
+__all__ = [
+    "init",
+    "make",
+    "migrate",
+    "plan",
+    "rollback",
+    "sql",
+]

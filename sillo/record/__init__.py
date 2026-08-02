@@ -2,7 +2,9 @@
 
 from .casting import HasCasts
 from .collection import Collection
-from .commands import RecordCLI
+from .commands import init as init_migrations
+from .commands import make as make_migration
+from .commands import migrate, plan, rollback
 from .config import DatabaseBackend, DatabaseConfig
 from .events import HasEvents, ModelObserver
 from .exceptions import register_db_exception_handlers
@@ -79,5 +81,9 @@ __all__ = [
     "Seeder",
     "FixtureLoader",
     "MigrationHelper",
-    "RecordCLI",
+    "init_migrations",
+    "make_migration",
+    "migrate",
+    "plan",
+    "rollback",
 ]

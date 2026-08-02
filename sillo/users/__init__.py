@@ -32,3 +32,7 @@ __all__ = [
     "validate_password",
     "password_strength",
 ]
+
+# Management operations as plain functions, for a project's own tooling to
+# call. sillo ships no CLI; sillo-start and your scripts consume these.
+from sillo.users import commands  # noqa: E402,F401

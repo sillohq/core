@@ -99,6 +99,7 @@ class DatabaseManager:
         self.config = config
         self._initialized = False
         self._model_modules: List[str] = []
+        self._migrations_module: str = "database.migrations"
 
     def register_models(
         self,
@@ -170,6 +171,34 @@ class DatabaseManager:
         except Exception:
             return False
 
+    def tortoise_config(
+        self,
+        migrations: Annotated[
+            Optional[str], Doc("Dotted path to the migrations package.")
+        ] = None,
+    ) -> dict:
+        """The Tortoise configuration this manager runs on.
+
+        Exposed so migrations can be driven from the same settings the
+        application uses, rather than a second config file that has to be kept
+        in step by hand::
+
+            from sillo.record import MigrationHelper, setup_record
+
+            database = setup_record(app, DatabaseConfig(url=...), model_modules=[...])
+            await MigrationHelper(database.tortoise_config()).upgrade()
+
+        Args:
+            migrations: Override the migrations package for this call.
+
+        Returns:
+            A Tortoise config dict, including the ``migrations`` key the
+            migration engine requires.
+        """
+        if migrations:
+            self._migrations_module = migrations
+        return self._build_tortoise_config()
+
     def _build_tortoise_config(self) -> dict:
         """Build the Tortoise config dict for the configured backend.
 
@@ -227,6 +256,10 @@ class DatabaseManager:
                 "models": {
                     "models": modules,
                     "default_connection": "default",
+                    # Where migrations live. Without it Tortoise treats the app
+                    # as unmigrated and every migration command reports "no
+                    # migrations" while doing nothing at all.
+                    "migrations": self._migrations_module,
                 }
             },
             "timezone": cfg.timezone,
