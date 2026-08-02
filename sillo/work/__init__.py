@@ -66,6 +66,7 @@ def setup_work(app, *, queue_backend=None, queue_name: str = "default") -> dict:
     app.on_shutdown(s.stop)
     return state["work"]
 
+
 # Queue and scheduler operations as plain functions, for a project's own
 # tooling to call. sillo ships no CLI; sillo-start and your scripts consume
 # these.

@@ -37,7 +37,9 @@ logger = logging.getLogger("sillo.work")
 def connection_for(
     url: Annotated[
         Optional[str],
-        Doc("Broker URL. A redis:// URL gives a shared queue; None keeps it in-process."),
+        Doc(
+            "Broker URL. A redis:// URL gives a shared queue; None keeps it in-process."
+        ),
     ] = None,
     *,
     prefix: Annotated[str, Doc("Key prefix for Redis.")] = "sillo:queue:",
@@ -67,12 +69,18 @@ def connection_for(
 
 def build_worker(
     *,
-    url: Annotated[Optional[str], Doc("Broker URL. None keeps the queue in-process.")] = None,
-    queues: Annotated[Optional[List[str]], Doc("Queues to consume, highest priority first.")] = None,
+    url: Annotated[
+        Optional[str], Doc("Broker URL. None keeps the queue in-process.")
+    ] = None,
+    queues: Annotated[
+        Optional[List[str]], Doc("Queues to consume, highest priority first.")
+    ] = None,
     concurrency: Annotated[int, Doc("Jobs to run at once.")] = 4,
     timeout: Annotated[float, Doc("Seconds a single job may run.")] = 60.0,
     max_jobs: Annotated[int, Doc("Restart after this many jobs. 0 is unlimited.")] = 0,
-    connection: Annotated[Any, Doc("A ready connection, instead of building one from url.")] = None,
+    connection: Annotated[
+        Any, Doc("A ready connection, instead of building one from url.")
+    ] = None,
     failed_repository: Annotated[Any, Doc("Where failed jobs are kept.")] = None,
     prefix: Annotated[str, Doc("Key prefix for Redis.")] = "sillo:queue:",
 ) -> Any:
@@ -112,12 +120,18 @@ def build_worker(
 
 async def run_worker(
     *,
-    url: Annotated[Optional[str], Doc("Broker URL. None keeps the queue in-process.")] = None,
-    queues: Annotated[Optional[List[str]], Doc("Queues to consume, highest priority first.")] = None,
+    url: Annotated[
+        Optional[str], Doc("Broker URL. None keeps the queue in-process.")
+    ] = None,
+    queues: Annotated[
+        Optional[List[str]], Doc("Queues to consume, highest priority first.")
+    ] = None,
     concurrency: Annotated[int, Doc("Jobs to run at once.")] = 4,
     timeout: Annotated[float, Doc("Seconds a single job may run.")] = 60.0,
     max_jobs: Annotated[int, Doc("Restart after this many jobs. 0 is unlimited.")] = 0,
-    connection: Annotated[Any, Doc("A ready connection, instead of building one from url.")] = None,
+    connection: Annotated[
+        Any, Doc("A ready connection, instead of building one from url.")
+    ] = None,
     failed_repository: Annotated[Any, Doc("Where failed jobs are kept.")] = None,
     prefix: Annotated[str, Doc("Key prefix for Redis.")] = "sillo:queue:",
     handle_signals: Annotated[bool, Doc("Stop cleanly on SIGINT and SIGTERM.")] = True,
@@ -160,7 +174,9 @@ async def run_scheduler(
         Doc("Called with the manager to register tasks before it starts."),
     ] = None,
     *,
-    manager: Annotated[Any, Doc("An existing SchedulerManager, instead of a new one.")] = None,
+    manager: Annotated[
+        Any, Doc("An existing SchedulerManager, instead of a new one.")
+    ] = None,
     handle_signals: Annotated[bool, Doc("Stop cleanly on SIGINT and SIGTERM.")] = True,
 ) -> None:
     """Run the scheduler until it is stopped.
