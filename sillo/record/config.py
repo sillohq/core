@@ -84,7 +84,9 @@ class DatabaseConfig:
     #:
     #: Set ``DB_GENERATE_SCHEMAS=false`` to disable it without touching code.
     generate_schemas: bool = field(
-        default_factory=lambda: os.getenv("DB_GENERATE_SCHEMAS", "true").lower() == "true"
+        default_factory=lambda: (
+            os.getenv("DB_GENERATE_SCHEMAS", "true").lower() == "true"
+        )
     )
 
     def __post_init__(self):
