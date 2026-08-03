@@ -103,7 +103,7 @@ Common Patterns:
 
 from sillo.core.routing import Route, Router
 
-__version__: str = "0.0.1a6"
+__version__: str = "0.0.1a7"
 
 from .application import silloApp
 from .frontend import FrontendApp
