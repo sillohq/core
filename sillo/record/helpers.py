@@ -18,7 +18,6 @@ Usage::
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Annotated, Any, Dict, List, Optional
 
@@ -241,80 +240,78 @@ class FixtureLoader:
 
 
 class MigrationHelper:
-    """Run migrations programmatically, using Tortoise's native migration engine.
+    """Run migrations programmatically, from a sillo database configuration.
 
-    Tortoise 1.0 ships its own migration system and aerich itself recommends it
-    over aerich for that version onwards, so this helper drives
-    ``tortoise.migrations`` rather than aerich. State lives in the
-    ``tortoise_migrations`` table.
+    Give it a :class:`~sillo.record.manager.DatabaseManager` — the same object
+    the application runs on — and the schema is managed from one definition of
+    how this project connects::
 
-    Every method opens a connection, does its work and closes again, so the
-    helper is safe to call from a short-lived script or a management command.
+        from sillo.record import DatabaseConfig, DatabaseManager, MigrationHelper
 
-    Usage::
+        database = DatabaseManager(DatabaseConfig(url=...))
+        database.register_models("database.models")
+        database.set_migrations("database.migrations")
 
-        helper = MigrationHelper("database.config.TORTOISE_ORM")
+        helper = MigrationHelper(database)
         await helper.make("add_posts")   # write a migration from model changes
         await helper.upgrade()           # apply everything pending
 
-    The app whose migrations are managed must declare where they live::
+    Every method opens a connection, does its work and closes again, so the
+    helper is safe to call from a short-lived script or a management command.
+    Migration state lives in the ``tortoise_migrations`` table.
 
-        TORTOISE_ORM = {
-            "connections": {"default": os.getenv("DATABASE_URL")},
-            "apps": {"models": {
-                "models": ["database.models"],
-                "default_connection": "default",
-                "migrations": "database.migrations",   # <- required
-            }},
-        }
-
-    Without the ``migrations`` key Tortoise treats the app as unmigrated and
-    every command reports "no migrations" while doing nothing.
+    The app being managed must declare where its migrations live —
+    :meth:`~sillo.record.manager.DatabaseManager.set_migrations` is how, and
+    there is a conventional default. Without it the engine treats the app as
+    unmigrated and every command reports "no migrations" while doing nothing.
 
     Args:
-        config: A dotted path to the project's Tortoise config
-            (``"database.config.TORTOISE_ORM"``), or the mapping itself. Some
-            operations need the dotted path — see :meth:`make`.
-        app: Which app label inside ``config["apps"]`` to manage. None means
-            every configured app.
+        config: A :class:`DatabaseManager`, a resolved configuration mapping, or
+            a dotted path to one.
+        app: Which app label to manage. None means every configured app.
     """
 
     def __init__(
         self,
         config: Annotated[
-            "Dict[str, Any] | str",
-            Doc("Dotted path to the Tortoise config, or the mapping itself."),
+            "Any",
+            Doc("A DatabaseManager, a config mapping, or a dotted path to one."),
         ],
         *,
         app: Annotated[
             Optional[str], Doc("App label to manage. None means all apps.")
         ] = None,
     ) -> None:
+        # A path is kept when given, only so an existing dotted-path config
+        # still resolves through its own module. Nothing requires one any more.
         self._config_path = config if isinstance(config, str) else None
         self._config = self._resolve(config)
         self._app = app
 
     @staticmethod
-    def _resolve(config: "Dict[str, Any] | str") -> Dict[str, Any]:
-        """Return a config mapping, importing a dotted path if one was given.
+    def _resolve(config: "Any") -> Dict[str, Any]:
+        """Return a configuration mapping, whatever form it arrived in.
 
         Raises:
-            TypeError: If *config* is neither a mapping nor a dotted path.
+            TypeError: If *config* is not a manager, a mapping or a dotted path.
             ValueError: If a dotted path does not resolve to a mapping.
         """
+        from .manager import DatabaseManager
+
+        if isinstance(config, DatabaseManager):
+            return config.orm_config()
         if isinstance(config, dict):
             return config
         if not isinstance(config, str):
             raise TypeError(
-                "config must be a Tortoise config mapping or a dotted path to one, "
-                f"got {type(config).__name__}."
+                "config must be a DatabaseManager, a configuration mapping, or a "
+                f"dotted path to one, got {type(config).__name__}."
             )
 
         module_path, _, attribute = config.rpartition(".")
         if not module_path:
             raise ValueError(
-                f"'{config}' is not a dotted path. Use something like "
-                "'database.config.TORTOISE_ORM'."
+                f"'{config}' is not a dotted path. Pass a DatabaseManager instead."
             )
         from importlib import import_module
 
@@ -355,34 +352,39 @@ class MigrationHelper:
         await Tortoise.close_connections()
 
     async def _cli(self, *args: str) -> None:
-        """Run a native migration command that has no public API yet.
+        """Run a migration command that the engine exposes no Python API for.
 
-        ``makemigrations`` and ``init`` only exist behind the CLI, which reads
-        the config by dotted path rather than by value.
+        ``makemigrations`` and ``init`` live only behind the engine's command
+        line, which reads its configuration by importing a dotted path. When
+        this helper was built from a manager or a mapping there is no such path,
+        so :mod:`sillo.record._bridge` provides one — the config is published on
+        a module sillo owns and the path to it handed over.
 
         Raises:
-            RuntimeError: If the helper was built from a mapping instead of a
-                dotted path, or the command exits non-zero.
+            RuntimeError: If the command exits non-zero.
         """
-        if self._config_path is None:
-            raise RuntimeError(
-                f"'{args[0]}' needs the config as a dotted path. Build the helper "
-                'with MigrationHelper("database.config.TORTOISE_ORM") instead of '
-                "passing the dict."
-            )
+        from contextlib import nullcontext
+
         from tortoise.cli.cli import run_cli_async
 
-        argv = ["-c", self._config_path, *args]
-        if self._app:
-            argv.append(self._app)
-        try:
-            code = await run_cli_async(argv)
-        finally:
-            await self._close()
+        from . import _bridge
+
+        if self._config_path is not None:
+            source = nullcontext(self._config_path)
+        else:
+            source = _bridge.published(self._config)
+
+        with source as config_path:
+            argv = ["-c", config_path, *args]
+            if self._app:
+                argv.append(self._app)
+            try:
+                code = await run_cli_async(argv)
+            finally:
+                await self._close()
+
         if code != 0:
-            raise RuntimeError(
-                f"tortoise {' '.join(args)} failed with exit code {code}."
-            )
+            raise RuntimeError(f"{args[0]} failed with exit code {code}.")
 
     async def init(self) -> None:
         """Create the migration package for each configured app.

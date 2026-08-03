@@ -13,12 +13,11 @@ Usage::
     from sillo.record import DatabaseConfig, DatabaseManager
     from sillo.record.commands import make, migrate
 
-    manager = DatabaseManager(DatabaseConfig(url=...))
-    manager.register_models("database.models")
-    config = manager.tortoise_config("database.migrations")
+    database = DatabaseManager(DatabaseConfig(url=...))
+    database.register_models("database.models").set_migrations("database.migrations")
 
-    await make("app.database.TORTOISE_ORM", "add_posts")
-    await migrate(config)
+    await make(database, "add_posts")
+    await migrate(database)
 """
 
 from __future__ import annotations

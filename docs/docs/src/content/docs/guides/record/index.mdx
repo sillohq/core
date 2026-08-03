@@ -46,8 +46,8 @@ same three lines by hand for the fortieth time.
 Do **not** use `sillo.record` as a reason to choose Tortoise. If you have
 not picked an ORM yet, evaluate Tortoise on its own merits — async-native
 querysets, Django-like syntax, a small dependency footprint, and a
-migration tool (aerich) that is functional but noticeably less mature
-than Alembic. `sillo.record` does not change that calculus.
+migration engine that is functional but noticeably less mature than
+Alembic. `sillo.record` does not change that calculus.
 
 Do not use it if you need a synchronous ORM, multi-database routing with
 per-model connection selection, or a mature migration story with
@@ -67,13 +67,11 @@ no convenience layer fixes them.
 | Casting & collections | `HasCasts`, `Collection` | [Casting & Collections](/guides/record/casting-collections/) |
 | Queries & pagination | `paginate`, `iter_all`, `explain`, `find_by_ids`, `count_by`, `PaginatedResult`, `TortoiseDataHandler`, `SyncTortoiseDataHandler` | [Pagination](/guides/record/pagination/) |
 | Transactions & testing | `transaction`, `TransactionContext`, `begin`, `commit`, `rollback`, `Factory`, `FactoryBuilder` | [Transactions & Factories](/guides/record/transactions-factories/) |
-| Integration | `DatabaseConfig`, `DatabaseBackend`, `DatabaseManager`, `setup_record`, `register_db_exception_handlers`, `pydantic_model_from_tortoise`, `QueryLogger`, `QueryLogEntry`, `Seeder`, `FixtureLoader`, `MigrationHelper`, `RecordCLI` | [Exceptions & Pydantic](/guides/record/exceptions-pydantic/), [Migrations & Seeding](/guides/record/migrations/) |
+| Integration | `DatabaseConfig`, `DatabaseBackend`, `DatabaseManager`, `setup_record`, `register_db_exception_handlers`, `pydantic_model_from_tortoise`, `QueryLogger`, `QueryLogEntry`, `Seeder`, `FixtureLoader`, `MigrationHelper` | [Exceptions & Pydantic](/guides/record/exceptions-pydantic/), [Migrations & Seeding](/guides/record/migrations/) |
 
-Importing `sillo.record` pulls in `aerich` as a side effect —
-`sillo/record/helpers.py` imports `from aerich import Command` at module
-level, and `__init__.py` imports from `helpers`. If aerich is not
-installed, `import sillo.record` fails outright even if you never touch
-migrations.
+Migration operations are functions in `sillo.record.commands`, driven from
+the `DatabaseManager` your application runs on. sillo ships no command-line
+interface — see [Migrations & Seeding](/guides/record/migrations/).
 
 ##  The minimum viable setup
 
@@ -367,11 +365,10 @@ discovers by module scan, not by subclass registry.
 because it looks like a no-op. On Tortoise 0.25+ it is what makes queries
 work inside handlers at all.
 
-**Do not assume every exported name is finished.** `FixtureLoader` parses
-files and inserts nothing. `MigrationHelper` builds a config that
-registers only aerich's own models. `TransactionContext.savepoint()`
-raises `TypeError` on entry. Each is documented in its own guide with the
-verified failure mode.
+**Do not assume every exported name is finished.**
+`TransactionContext.savepoint()` raises `TypeError` on entry, and
+`Seeder.run()` accepts a `batch_size` it ignores. Each is documented in
+its own guide with the verified failure mode.
 
 ##  Performance notes
 
@@ -413,6 +410,6 @@ driver if you supply a correctly shaped config.
 - [Pagination](/guides/record/pagination/) — connecting querysets to sillo's pagination strategies
 - [Transactions & Factories](/guides/record/transactions-factories/) — atomicity and test data
 - [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/) — mapping database errors to HTTP, and schema generation
-- [Migrations & Seeding](/guides/record/migrations/) — aerich, seeders, and fixtures
+- [Migrations & Seeding](/guides/record/migrations/) — schema changes, seeders, and fixtures
 - [Startup & Shutdown](/guides/startups-and-shutdowns/) — the lifecycle hooks `setup_record` registers
 - [Serialization](/guides/serialization/) — how sillo encodes what your handlers return

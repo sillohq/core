@@ -100,15 +100,34 @@ class DatabaseManager:
         self._initialized = False
         self._model_modules: List[str] = []
         self._migrations_module: str = "database.migrations"
+        # Set by init(). Named here so ensure_context() can run before the
+        # database is up — during a request that arrives while starting.
+        self._root_context = None
 
     def register_models(
         self,
         *modules: Annotated[
             str, Doc("Dotted module paths containing Tortoise models.")
         ],
-    ) -> None:
-        """Register model modules to be discovered on init."""
+    ) -> "DatabaseManager":
+        """Register model modules to be discovered on init.
+
+        Returns the manager, so it chains with :meth:`set_migrations`.
+        """
         self._model_modules.extend(modules)
+        return self
+
+    def set_migrations(
+        self,
+        module: Annotated[str, Doc("Dotted path to the migrations package.")],
+    ) -> "DatabaseManager":
+        """Declare where this project's migrations live.
+
+        Defaults to ``database.migrations``. Returns the manager, so it chains
+        with :meth:`register_models`.
+        """
+        self._migrations_module = module
+        return self
 
     async def init(self) -> None:
         """Initialize Tortoise ORM with the configured backend."""
@@ -171,29 +190,49 @@ class DatabaseManager:
         except Exception:
             return False
 
-    def tortoise_config(
+    async def __aenter__(self) -> "DatabaseManager":
+        """Open the database for a block of work.
+
+        For scripts and management commands, where the application's startup
+        hooks never run::
+
+            async with DatabaseManager(config).register_models("app.models") as db:
+                await User.all()
+
+        Closing matters as much as opening: an open connection keeps the event
+        loop alive, and a script that finishes its work then hangs at exit is
+        usually this.
+        """
+        await self.init()
+        return self
+
+    async def __aexit__(self, *_exc) -> None:
+        """Close the database opened by :meth:`__aenter__`."""
+        await self.shutdown()
+
+    def orm_config(
         self,
         migrations: Annotated[
-            Optional[str], Doc("Dotted path to the migrations package.")
+            Optional[str], Doc("Migrations package, overriding set_migrations.")
         ] = None,
     ) -> dict:
-        """The Tortoise configuration this manager runs on.
+        """The resolved configuration this manager runs on.
 
-        Exposed so migrations can be driven from the same settings the
-        application uses, rather than a second config file that has to be kept
-        in step by hand::
+        The ORM's own configuration format, built from this manager's
+        :class:`~sillo.record.config.DatabaseConfig`. You rarely need it —
+        :mod:`sillo.record.commands` and :class:`MigrationHelper` both take the
+        manager itself, which is the point: one definition of how the project
+        connects, shared by the application and its migrations rather than
+        written out twice and kept in step by hand.
 
-            from sillo.record import MigrationHelper, setup_record
-
-            database = setup_record(app, DatabaseConfig(url=...), model_modules=[...])
-            await MigrationHelper(database.tortoise_config()).upgrade()
+        Reach for it when something outside sillo wants the mapping.
 
         Args:
             migrations: Override the migrations package for this call.
 
         Returns:
-            A Tortoise config dict, including the ``migrations`` key the
-            migration engine requires.
+            A configuration dict, including the ``migrations`` key the migration
+            engine requires.
         """
         if migrations:
             self._migrations_module = migrations
