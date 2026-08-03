@@ -203,7 +203,10 @@ class AdminSite:
         it was told about. A model it never saw keeps None and raises on first
         query.
         """
-        return getattr(getattr(model, "_meta", None), "default_connection", None) is not None
+        return (
+            getattr(getattr(model, "_meta", None), "default_connection", None)
+            is not None
+        )
 
     def _register_routes(self, app) -> None:
         """Build and attach the admin's routes.
