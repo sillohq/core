@@ -18,7 +18,8 @@ from tortoise import Tortoise, fields
 
 from sillo import silloApp
 from sillo.admin import ModelAdmin, setup_admin
-from sillo.admin.models import AdminActivity, AdminRole, AdminUser
+from sillo.admin.default_user import AdminRole, AdminUser
+from sillo.admin.models import AdminActivity
 from sillo.record import DatabaseConfig, Model, setup_record
 from sillo.session import SessionConfig, SessionMiddleware
 from sillo.testclient import TestClient
@@ -79,7 +80,7 @@ def _make_app(db_path, *, product_admin=ProductAdmin):
     setup_record(
         app,
         DatabaseConfig.sqlite(str(db_path)),
-        model_modules=["sillo.admin.models", __name__],
+        model_modules=["sillo.admin.models", "sillo.admin.default_user", __name__],
     )
     admin = setup_admin(app, title="Admin Export Test", prefix="/admin")
 
@@ -115,6 +116,9 @@ def _make_app(db_path, *, product_admin=ProductAdmin):
                 username="staff",
                 password="staff",
                 is_active=True,
+                # Staff, so they may sign in; not a superuser, so the query
+                # console stays shut. That distinction is what this fixture is for.
+                is_staff=True,
                 is_superuser=False,
                 role=role,
             )

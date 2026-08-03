@@ -20,7 +20,8 @@ from sillo.record import Model, setup_record, DatabaseConfig
 from sillo.record.fields import PasswordField
 from sillo.session import SessionMiddleware, SessionConfig
 from sillo.admin import setup_admin, ModelAdmin
-from sillo.admin.models import AdminUser, AdminRole, AdminActivity
+from sillo.admin.default_user import AdminRole, AdminUser
+from sillo.admin.models import AdminActivity
 from sillo.helpers.hashing import verify_password
 from sillo.testclient import TestClient
 
@@ -104,7 +105,7 @@ def _make_app(db_path):
     setup_record(
         app,
         DatabaseConfig.sqlite(str(db_path)),
-        model_modules=["sillo.admin.models", __name__],
+        model_modules=["sillo.admin.models", "sillo.admin.default_user", __name__],
     )
     admin = setup_admin(app, title="Admin Test", prefix="/admin")
 

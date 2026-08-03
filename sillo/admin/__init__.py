@@ -32,7 +32,8 @@ from sillo.core.routing import Group
 from sillo.static import StaticFiles
 from .registry import ModelAdmin, Registry
 from .auth import AuthBackend, SessionAuth
-from .models import AdminUser, AdminActivity
+from .default_user import AdminRole, AdminUser
+from .models import AdminActivity
 from .router import build_routes
 
 

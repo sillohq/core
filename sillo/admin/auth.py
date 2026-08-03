@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .models import AdminUser
+from .default_user import AdminUser
 
 
 class AuthBackend:
@@ -67,30 +67,78 @@ class SessionAuth(AuthBackend):
         """Initialize with a custom user model (defaults to ``AdminUser``)."""
         self.user_model = user_model
 
+    @staticmethod
+    def may_enter(user) -> bool:
+        """Whether *user* is allowed into the admin.
+
+        Being signed in is not enough. When the admin shares the
+        application's user model — the ordinary arrangement, since the people
+        who administer a site are usually people who use it — every registered
+        account holds a session, and admitting anyone with a session would hand
+        the whole database to whoever last filled in the sign-up form.
+
+        ``is_staff`` is the flag that separates the two, exactly as
+        :func:`sillo.users.commands.create_admin` sets it.
+        """
+        if not getattr(user, "is_active", True):
+            return False
+        return bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
+
+    async def current_user(self, request):
+        """Load the signed-in user, if they may use the admin.
+
+        Returns:
+            The user row, or None when nobody is signed in, the account no
+            longer exists, or it is not permitted here.
+        """
+        session = getattr(request, "session", None)
+        entry = (session.get("admin_user") or session.get("user")) if session else None
+        if not entry:
+            return None
+
+        identity = entry.get("id") if isinstance(entry, dict) else entry
+        if identity is None:
+            return None
+
+        try:
+            user = await self.user_model.load_user(identity)
+        except Exception:
+            # A session naming a user this model cannot load is not an error
+            # to surface; it is simply not an authenticated admin request.
+            return None
+        if user is None or not self.may_enter(user):
+            return None
+        return user
+
     async def authenticate(self, request) -> bool:
         """Check whether the current request carries a valid admin session.
 
-        Looks for user data stored by ``sillo.auth.session_auth.login``
-        (default key ``"user"``) or the legacy ``"admin_user"`` key.
+        The session is read for who is signed in, and the account itself for
+        whether they are allowed in — the session carries only an identity and
+        a display name, and a flag revoked after sign-in has to take effect on
+        the next request rather than at the next sign-in.
         """
-        session = getattr(request, "session", None)
-        if session:
-            return bool(session.get("admin_user") or session.get("user"))
-        return False
+        return await self.current_user(request) is not None
 
     async def get_user(self, request) -> Optional[dict]:
         """Return the current admin user dict from the session, or None."""
+        if await self.current_user(request) is None:
+            return None
         session = getattr(request, "session", None)
         if session:
             return session.get("admin_user") or session.get("user")
         return None
 
     async def login(self, request, username: str, password: str) -> bool:
-        """Authenticate against ``user_model`` via the shared user contract."""
+        """Authenticate against ``user_model`` via the shared user contract.
+
+        Correct credentials are necessary but not sufficient: the account must
+        also be allowed into the admin. See :meth:`may_enter`.
+        """
         if not username or not password:
             return False
         user = await self.user_model.verify_credentials(username, password)
-        if user is None:
+        if user is None or not self.may_enter(user):
             return False
 
         # Store user identity in the session using Sillo's official helper.
