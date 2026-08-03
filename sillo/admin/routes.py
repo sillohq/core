@@ -398,19 +398,20 @@ async def _collect_form(request):
 
 
 def model_links_html(site):
-    """Model Links Html
+    """The sidebar entries: every registered model the database can serve.
 
-    Args:
-        site: [description]
+    A model whose module the application never registered has no table, and its
+    page would raise "default_connection cannot be None". The admin registers
+    its own activity log without knowing whether the application wanted it, so
+    that case is real — and a link the admin generated itself, leading to a 500,
+    is worse than no link.
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
+    This runs per request, which is the earliest the ORM can be asked.
     """
     links = []
     for m, admin_cls in site.registry:
+        if not site._model_is_usable(m):
+            continue
         name = getattr(admin_cls, "verbose_name", None) or m.__name__
         slug = m.__name__.lower()
         links.append({"name": name, "slug": slug})
@@ -945,6 +946,10 @@ async def dashboard_view(request, response, site):
     except Exception:
         pass
     for m in site.registry.models:
+        # Same reason the sidebar filters: a model the application never
+        # registered has no table, and its card would link to a 500.
+        if not site._model_is_usable(m):
+            continue
         count = 0
         try:
             count = await m.all().count()

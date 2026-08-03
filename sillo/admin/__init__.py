@@ -121,6 +121,7 @@ class AdminSite:
     def mount(self, app: silloApp) -> None:
         """Register auth middleware, static files, and routes on startup."""
         self._register_system_models()
+        self._register_activity_log()
         app.use(self.auth.middleware)
         self._mount_static(app)
         app.on_startup(lambda: self._register_routes(app))  # ty: ignore[invalid-argument-type]
@@ -132,9 +133,7 @@ class AdminSite:
         Every admin site needs a way to browse who can log in, and the user
         model is always usable — the site cannot authenticate without it.
         Roles/permissions (``AdminRole``) are deliberately NOT auto-registered
-        here; register those yourself if you use them. The activity log waits
-        for :meth:`_register_activity_log`, which runs late enough to tell
-        whether it has a table.
+        here; register those yourself if you use them.
         """
         user_model = getattr(self.auth, "user_model", None)
         if user_model is not None and user_model not in self.registry:
@@ -147,20 +146,14 @@ class AdminSite:
             self.registry.register(user_model, _AuthAdmin)
 
     def _register_activity_log(self) -> None:
-        """Register the activity log, if the application registered its model.
+        """Register the activity log so it can be browsed.
 
-        ``sillo.admin.models`` is not required: an application may keep its
-        database to its own tables. Every write to the log already tolerates
-        being unable to — but listing it in the sidebar does not, and a nav
-        entry whose page raises "default_connection cannot be None" is worse
-        than no entry at all.
-
-        Called at startup rather than at mount, because until the ORM has been
-        initialised there is nothing to ask.
+        Whether it is *usable* — whether the application registered
+        ``sillo.admin.models`` at all — is not asked here. It cannot be: this
+        runs before the ORM is initialised, and the honest answer at this point
+        is always "no". The sidebar asks instead, per request, by which time
+        there is something to ask.
         """
-        if not self._model_is_usable(AdminActivity):
-            return
-
         if AdminActivity not in self.registry:
 
             class _ActivityAdmin(ModelAdmin):
@@ -197,55 +190,24 @@ class AdminSite:
 
     @staticmethod
     def _model_is_usable(model) -> bool:
-        """Whether *model* was registered with the ORM and so has a table.
+        """Whether *model* can be queried right now.
 
-        Tortoise fills in ``default_connection`` during ``init`` for the models
-        it was told about. A model it never saw keeps None and raises on first
-        query.
+        Asked by resolving the connection the way a query would, rather than by
+        reading ``default_connection``: that attribute is populated per
+        connection context, so it reads empty outside a request and populated
+        inside one, and a check built on it answers differently depending on
+        where it is called from.
+
+        A model the application never registered has no connection to resolve,
+        which is the same failure its list page would hit.
         """
-        return (
-            getattr(getattr(model, "_meta", None), "default_connection", None)
-            is not None
-        )
-
-    def _check_user_model(self) -> None:
-        """Fail loudly at startup if nobody can ever sign in.
-
-        The user model has to be registered with the ORM, and it is the
-        application that registers it — including when the application relies on
-        the default :class:`~sillo.admin.default_user.AdminUser`, which lives in
-        a module of its own precisely so that projects with their own user model
-        do not inherit its tables.
-
-        Unchecked, the omission surfaces as a 500 from the login form: the first
-        credential lookup raises "default_connection cannot be None", pointing at
-        the ORM rather than at the one line of configuration that is missing.
-
-        Raises:
-            RuntimeError: If the configured user model has no table.
-        """
-        user_model = getattr(self.auth, "user_model", None)
-        if user_model is None or self._model_is_usable(user_model):
-            return
-
-        module = getattr(user_model, "__module__", "your.models")
-        raise RuntimeError(
-            f"The admin authenticates against {user_model.__name__}, which is not "
-            f"registered with the ORM, so nobody can sign in. Add "
-            f'"{module}" to the model modules this application registers '
-            f"(model_modules=[...] on setup_record, or MODEL_MODULES in a "
-            f"generated project), and create a migration for it."
-        )
+        try:
+            return model._meta.db is not None
+        except Exception:
+            return False
 
     def _register_routes(self, app) -> None:
-        """Build and attach the admin's routes.
-
-        Runs at startup, after the database is up, which is what lets
-        :meth:`_register_activity_log` see whether its model is available and
-        :meth:`_check_user_model` see whether anyone can sign in.
-        """
-        self._check_user_model()
-        self._register_activity_log()
+        """Build and attach the admin's routes."""
         for route in self._build_routes(self):
             app.router.add_route(route)
 

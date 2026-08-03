@@ -121,89 +121,45 @@ class TestWhoMayEnterTheAdmin:
         assert SessionAuth.may_enter(self._user(is_staff=True, is_active=False)) is False
 
 
-class TestActivityLogIsOptional:
+class TestUnusableModelsAreHiddenNotBroken:
     """An application may keep its database to its own tables.
 
-    Writes to the log already tolerate having nowhere to go. Listing it in the
-    sidebar does not: the page would raise "default_connection cannot be None",
-    which is a worse outcome than the entry simply not being there.
+    The admin registers its own activity log without being told whether the
+    application wanted it, so a registered model with no table is a real case.
+    Writes to the log already tolerate having nowhere to go; a sidebar link
+    leading to a 500 does not.
+
+    The question is asked per request. It cannot be asked at startup: the admin
+    mounts before ``setup_record`` in a conventional application factory, so its
+    startup hook runs first and the honest answer at that point is always "no".
     """
 
-    def test_a_model_the_orm_never_saw_is_not_usable(self):
+    def test_a_model_with_no_connection_is_not_usable(self):
         from sillo.admin import AdminActivity, AdminSite
 
         # Nothing has initialised Tortoise with it in this test.
         assert AdminSite._model_is_usable(AdminActivity) is False
 
-    def test_it_is_not_in_the_registry_at_mount_time(self):
-        """Mount happens before the database is up, so the answer is not known yet."""
-        from sillo.admin import AdminActivity, AdminSite
-        from sillo.users import UserBaseModel
+    def test_the_check_resolves_a_connection_rather_than_reading_an_attribute(self):
+        """``default_connection`` is populated per connection context.
 
-        class AppUser(UserBaseModel):
-            class Meta:
-                table = "app_users_activity_test"
+        Reading it answers differently inside a request and outside one, so a
+        check built on it hides the log from a project that registered it.
+        """
+        from sillo.admin import AdminSite
 
-        site = AdminSite(user_model=AppUser)
-        site._register_system_models()
+        class Pretend:
+            class _meta:  # noqa: N801 — mirrors Tortoise's attribute name
+                db = object()
 
-        assert AppUser in site.registry
-        assert AdminActivity not in site.registry
+        assert AdminSite._model_is_usable(Pretend) is True
 
-    def test_registration_is_skipped_when_the_model_has_no_table(self):
+    def test_the_activity_log_is_still_registered(self):
+        """Hidden when unusable, not absent — a project that registers the
+        module gets its log without asking for it twice."""
         from sillo.admin import AdminActivity, AdminSite
 
         site = AdminSite()
         site._register_activity_log()
 
-        assert AdminActivity not in site.registry
-
-
-class TestTheUserModelMustBeRegistered:
-    """Nobody signing in is a configuration mistake, not a runtime surprise.
-
-    The default AdminUser lives in its own module so projects with their own
-    user model do not inherit its tables — which means relying on the default
-    is now something an application opts into. Forgetting to should say so.
-    """
-
-    def test_an_unregistered_user_model_is_reported_at_startup(self):
-        from sillo.admin import AdminSite
-        from sillo.users import UserBaseModel
-
-        class Forgotten(UserBaseModel):
-            class Meta:
-                table = "forgotten_users"
-
-        site = AdminSite(user_model=Forgotten)
-
-        with pytest.raises(RuntimeError) as caught:
-            site._check_user_model()
-
-        message = str(caught.value)
-        assert "Forgotten" in message
-        assert Forgotten.__module__ in message
-
-    def test_a_backend_without_a_user_model_is_left_alone(self):
-        """Bring-your-own-auth need not involve an ORM model at all."""
-        from sillo.admin import AdminSite
-        from sillo.admin.auth import AuthBackend
-
-        site = AdminSite(auth_backend=AuthBackend())
-
-        site._check_user_model()  # does not raise
-
-    def test_the_check_runs_when_routes_are_built(self):
-        """Which is at startup — the check is worthless if nothing calls it."""
-        from sillo import silloApp
-        from sillo.admin import AdminSite
-        from sillo.users import UserBaseModel
-
-        class AlsoForgotten(UserBaseModel):
-            class Meta:
-                table = "also_forgotten_users"
-
-        site = AdminSite(user_model=AlsoForgotten)
-
-        with pytest.raises(RuntimeError, match="AlsoForgotten"):
-            site._register_routes(silloApp())
+        assert AdminActivity in site.registry
