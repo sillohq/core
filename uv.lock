@@ -1054,7 +1054,7 @@ wheels = [
 
 [[package]]
 name = "sillo-framework"
-version = "0.0.1a4"
+version = "0.0.1a5"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -1213,9 +1213,9 @@ requires-dist = [
     { name = "strawberry-graphql", marker = "extra == 'all'", specifier = ">=0.219.0" },
     { name = "strawberry-graphql", marker = "extra == 'dev'", specifier = ">=0.219.0" },
     { name = "strawberry-graphql", marker = "extra == 'graphql'", specifier = ">=0.219.0" },
-    { name = "tortoise-orm", marker = "extra == 'all'", specifier = ">=0.20.0" },
-    { name = "tortoise-orm", marker = "extra == 'dev'", specifier = ">=0.20.0" },
-    { name = "tortoise-orm", marker = "extra == 'record'", specifier = ">=0.20.0" },
+    { name = "tortoise-orm", marker = "extra == 'all'", specifier = ">=1.0" },
+    { name = "tortoise-orm", marker = "extra == 'dev'", specifier = ">=1.0" },
+    { name = "tortoise-orm", marker = "extra == 'record'", specifier = ">=1.0" },
     { name = "ty", marker = "extra == 'dev'", specifier = ">=0.0.29" },
     { name = "typing-extensions", marker = "python_full_version < '3.10'", specifier = ">=4.12.2" },
     { name = "typing-extensions", marker = "extra == 'dev'", specifier = "==4.16.0" },
@@ -1242,7 +1242,7 @@ dev = [
     { name = "ruff", specifier = ">=0.0.256" },
     { name = "scrypt", specifier = ">=0.8.0" },
     { name = "strawberry-graphql", specifier = ">=0.219.0" },
-    { name = "tortoise-orm", specifier = ">=0.20.0" },
+    { name = "tortoise-orm", specifier = ">=1.0" },
     { name = "ty", specifier = ">=0.0.29" },
     { name = "typing-extensions", specifier = ">=4.12.2" },
 ]

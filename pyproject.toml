@@ -7,15 +7,12 @@ packages = ["sillo"]
 
 [project]
 name = "sillo-framework"
-version = "0.0.1a4"
+version = "0.0.1a5"
 description = "An async Python web framework for serious APIs, web applications, real-time systems, and business backends."
 authors = [
     {name = "Chidebele Dunamis", email = "techwithdunamix@gmail.com"}
 ]
 license = "BSD-3-Clause"
-homepage = "https://github.com/sillohq/core"
-repository = "https://github.com/sillohq/core"
-documentation = "https://sillolabs.com"
 readme = "README.md"
 keywords = [
     "ASGI",
@@ -50,12 +47,19 @@ dependencies = [
 # All other features are optional and installed via extras (pip install 'sillo[feature]')
 
 
+[project.urls]
+Homepage = "https://github.com/sillohq/core"
+Repository = "https://github.com/sillohq/core"
+Documentation = "https://sillolabs.com"
+Issues = "https://github.com/sillohq/core/issues"
+
 [project.optional-dependencies]
 # Authentication & JWT
 jwt = ["pyjwt>=2.7.0"]
 
-# Database & ORM
-record = ["tortoise-orm>=0.20.0"]
+# Database & ORM. The floor is 1.0 because sillo.record.commands drives the
+# native migration engine, which does not exist before it.
+record = ["tortoise-orm>=1.0"]
 
 # Password Hashing Algorithms (fallback to pbkdf2_sha256 if none installed)
 hashing-bcrypt = ["bcrypt>=4.0.0"]
@@ -89,7 +93,7 @@ granian = ["granian>=1.2.0"]
 # Convenience bundles
 all = [
     "pyjwt>=2.7.0",
-    "tortoise-orm>=0.20.0",
+    "tortoise-orm>=1.0",
     "bcrypt>=4.0.0",
     "argon2-cffi>=21.2.0",
     "scrypt>=0.8.0",
@@ -105,7 +109,7 @@ all = [
 dev = [
     # All features
     "pyjwt>=2.7.0",
-    "tortoise-orm>=0.20.0",
+    "tortoise-orm>=1.0",
     "bcrypt>=4.0.0",
     "argon2-cffi>=21.2.0",
     "scrypt>=0.8.0",
@@ -244,12 +248,13 @@ known-first-party = ["sillo"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.0.1a4"
+version = "0.0.1a5"
 version_files = [
     "pyproject.toml:version",
-    "sillo/__main__.py:__version__"
+    "sillo/__init__.py:__version__"
 ]
-tag_format = "v$version"
+# Must match the release workflow trigger; a bare v-tag publishes nothing.
+tag_format = "sillo-core-v$version"
 update_changelog_on_bump = true
 
 
@@ -263,7 +268,7 @@ unused-ignore-comment = "ignore"
 dev = [
     # All optional features
     "pyjwt>=2.7.0",
-    "tortoise-orm>=0.20.0",
+    "tortoise-orm>=1.0",
     "bcrypt>=4.0.0",
     "argon2-cffi>=21.2.0",
     "scrypt>=0.8.0",
