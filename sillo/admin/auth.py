@@ -82,7 +82,9 @@ class SessionAuth(AuthBackend):
         """
         if not getattr(user, "is_active", True):
             return False
-        return bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
+        return bool(
+            getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)
+        )
 
     async def current_user(self, request):
         """Load the signed-in user, if they may use the admin.
