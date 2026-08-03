@@ -127,13 +127,14 @@ class AdminSite:
         self._setup = True
 
     def _register_system_models(self) -> None:
-        """Always register the configured user model + activity log.
+        """Register the configured user model.
 
-        These are the admin's own system models — every admin site needs a
-        way to browse who can log in and what they did, so they're
-        registered unconditionally rather than left for the app to opt
-        into. Roles/permissions (``AdminRole``) are deliberately NOT
-        auto-registered here; register those yourself if you use them.
+        Every admin site needs a way to browse who can log in, and the user
+        model is always usable — the site cannot authenticate without it.
+        Roles/permissions (``AdminRole``) are deliberately NOT auto-registered
+        here; register those yourself if you use them. The activity log waits
+        for :meth:`_register_activity_log`, which runs late enough to tell
+        whether it has a table.
         """
         user_model = getattr(self.auth, "user_model", None)
         if user_model is not None and user_model not in self.registry:
@@ -144,6 +145,21 @@ class AdminSite:
                 search_fields = ["email", "username"]
 
             self.registry.register(user_model, _AuthAdmin)
+
+    def _register_activity_log(self) -> None:
+        """Register the activity log, if the application registered its model.
+
+        ``sillo.admin.models`` is not required: an application may keep its
+        database to its own tables. Every write to the log already tolerates
+        being unable to — but listing it in the sidebar does not, and a nav
+        entry whose page raises "default_connection cannot be None" is worse
+        than no entry at all.
+
+        Called at startup rather than at mount, because until the ORM has been
+        initialised there is nothing to ask.
+        """
+        if not self._model_is_usable(AdminActivity):
+            return
 
         if AdminActivity not in self.registry:
 
@@ -179,18 +195,23 @@ class AdminSite:
             static_group = Group(path=f"{self.prefix}/static", app=static_files)
             app.router.routes.append(static_group)
 
-    def _register_routes(self, app) -> None:
-        """Register Routes
+    @staticmethod
+    def _model_is_usable(model) -> bool:
+        """Whether *model* was registered with the ORM and so has a table.
 
-        Args:
-            app: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+        Tortoise fills in ``default_connection`` during ``init`` for the models
+        it was told about. A model it never saw keeps None and raises on first
+        query.
         """
+        return getattr(getattr(model, "_meta", None), "default_connection", None) is not None
+
+    def _register_routes(self, app) -> None:
+        """Build and attach the admin's routes.
+
+        Runs at startup, after the database is up, which is what lets
+        :meth:`_register_activity_log` see whether its model is available.
+        """
+        self._register_activity_log()
         for route in self._build_routes(self):
             app.router.add_route(route)
 

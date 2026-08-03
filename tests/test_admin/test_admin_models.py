@@ -118,3 +118,41 @@ class TestWhoMayEnterTheAdmin:
         from sillo.admin.auth import SessionAuth
 
         assert SessionAuth.may_enter(self._user(is_staff=True, is_active=False)) is False
+
+
+class TestActivityLogIsOptional:
+    """An application may keep its database to its own tables.
+
+    Writes to the log already tolerate having nowhere to go. Listing it in the
+    sidebar does not: the page would raise "default_connection cannot be None",
+    which is a worse outcome than the entry simply not being there.
+    """
+
+    def test_a_model_the_orm_never_saw_is_not_usable(self):
+        from sillo.admin import AdminActivity, AdminSite
+
+        # Nothing has initialised Tortoise with it in this test.
+        assert AdminSite._model_is_usable(AdminActivity) is False
+
+    def test_it_is_not_in_the_registry_at_mount_time(self):
+        """Mount happens before the database is up, so the answer is not known yet."""
+        from sillo.admin import AdminActivity, AdminSite
+        from sillo.users import UserBaseModel
+
+        class AppUser(UserBaseModel):
+            class Meta:
+                table = "app_users_activity_test"
+
+        site = AdminSite(user_model=AppUser)
+        site._register_system_models()
+
+        assert AppUser in site.registry
+        assert AdminActivity not in site.registry
+
+    def test_registration_is_skipped_when_the_model_has_no_table(self):
+        from sillo.admin import AdminActivity, AdminSite
+
+        site = AdminSite()
+        site._register_activity_log()
+
+        assert AdminActivity not in site.registry
