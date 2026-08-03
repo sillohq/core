@@ -8,6 +8,7 @@ in to the admin are the people who sign in to the application — should not end
 up with a second, empty user table it can never write to.
 """
 
+import pytest
 from tortoise.models import Model as TortoiseModel
 
 
@@ -156,3 +157,53 @@ class TestActivityLogIsOptional:
         site._register_activity_log()
 
         assert AdminActivity not in site.registry
+
+
+class TestTheUserModelMustBeRegistered:
+    """Nobody signing in is a configuration mistake, not a runtime surprise.
+
+    The default AdminUser lives in its own module so projects with their own
+    user model do not inherit its tables — which means relying on the default
+    is now something an application opts into. Forgetting to should say so.
+    """
+
+    def test_an_unregistered_user_model_is_reported_at_startup(self):
+        from sillo.admin import AdminSite
+        from sillo.users import UserBaseModel
+
+        class Forgotten(UserBaseModel):
+            class Meta:
+                table = "forgotten_users"
+
+        site = AdminSite(user_model=Forgotten)
+
+        with pytest.raises(RuntimeError) as caught:
+            site._check_user_model()
+
+        message = str(caught.value)
+        assert "Forgotten" in message
+        assert Forgotten.__module__ in message
+
+    def test_a_backend_without_a_user_model_is_left_alone(self):
+        """Bring-your-own-auth need not involve an ORM model at all."""
+        from sillo.admin import AdminSite
+        from sillo.admin.auth import AuthBackend
+
+        site = AdminSite(auth_backend=AuthBackend())
+
+        site._check_user_model()  # does not raise
+
+    def test_the_check_runs_when_routes_are_built(self):
+        """Which is at startup — the check is worthless if nothing calls it."""
+        from sillo import silloApp
+        from sillo.admin import AdminSite
+        from sillo.users import UserBaseModel
+
+        class AlsoForgotten(UserBaseModel):
+            class Meta:
+                table = "also_forgotten_users"
+
+        site = AdminSite(user_model=AlsoForgotten)
+
+        with pytest.raises(RuntimeError, match="AlsoForgotten"):
+            site._register_routes(silloApp())
