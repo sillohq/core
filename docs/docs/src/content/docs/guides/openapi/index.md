@@ -34,7 +34,10 @@ This automatically creates:
 
 ##  Documentation Interfaces
 
-sillo provides multiple ways to explore your API:
+sillo provides multiple ways to explore your API. Which viewers are
+mounted is the `docs` argument — Swagger UI and ReDoc by default, plus
+Scalar and anything you write yourself. See
+[Documentation UI](/guides/openapi/documentation-ui/).
 
 ###  Swagger UI (`/docs`)
 Interactive interface for testing endpoints directly in the browser. Features:
@@ -557,13 +560,21 @@ async def list_users_v1(request, response):
 Customize the documentation endpoint URLs:
 
 ```python
-app = silloApp()
+from sillo.openapi.ui import ReDoc, Swagger
 
-# Custom URLs for documentation
-app.openapi.swagger_url = "/api-docs"
-app.openapi.redoc_url = "/api-reference" 
-app.openapi.openapi_url = "/api-spec.json"
+app = silloApp(
+    openapi_url="/api-spec.json",
+    docs=[
+        Swagger(path="/api-docs"),
+        ReDoc(path="/api-reference"),
+    ],
+)
 ```
+
+The paths belong at construction — routes are registered there, so
+assigning `app.openapi.swagger_url` afterwards changes nothing. Passing
+`docs=[]` serves no viewer at all. See
+[Documentation UI](/guides/openapi/documentation-ui/).
 
 ###  Mounted Applications
 

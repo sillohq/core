@@ -152,6 +152,7 @@ export default defineConfig({
                         { label: 'Caching', link: '/guides/cache/' },
                         { label: 'Event System', link: '/guides/events/' },
                         { label: 'OpenAPI Overview', link: '/guides/openapi/' },
+                        { label: 'Documentation UI', link: '/guides/openapi/documentation-ui/' },
                         { label: 'OpenAPI Parameters', link: '/guides/openapi/request-parameters/' },
                         { label: 'OpenAPI Request Schemas', link: '/guides/openapi/request-schemas/' },
                         { label: 'OpenAPI Response Models', link: '/guides/openapi/response-models/' },

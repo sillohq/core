@@ -351,26 +351,46 @@ else:
 
 Customize the documentation endpoint URLs to match your preferences:
 
+Paths are set at construction, because the routes are registered there:
+
 ```python
-# Custom documentation URLs
+from sillo.openapi.ui import ReDoc, Swagger
+
 app = silloApp(
     title="Custom API",
-    version="1.0.0"
+    version="1.0.0",
+    openapi_url="/api-spec.json",
+    docs=[
+        Swagger(path="/api-docs"),
+        ReDoc(path="/api-reference"),
+    ],
 )
 
-# Customize OpenAPI documentation URLs
-app.openapi.swagger_url = "/api-docs"
-app.openapi.redoc_url = "/api-reference"
-app.openapi.openapi_url = "/api-spec.json"
-
-# Now documentation is available at:
-# - /api-docs (Swagger UI)
+# Documentation is now available at:
+# - /api-docs      (Swagger UI)
 # - /api-reference (ReDoc)
 # - /api-spec.json (OpenAPI JSON)
-
-# You can also disable certain endpoints
-app.openapi.redoc_url = None  # Disable ReDoc
 ```
+
+To drop a viewer, leave it out of the list:
+
+```python
+app = silloApp(docs=[Swagger()])   # Swagger only
+app = silloApp(docs=[])            # no documentation UI at all
+```
+
+<aside type="caution">
+
+**Assigning to `app.openapi.swagger_url` after construction does nothing.**
+The routes are registered during `__init__`, so a later assignment changes
+an attribute nobody reads again — `/docs` keeps serving and the new path
+404s. Setting `app.openapi.redoc_url = None` likewise does not disable
+ReDoc. Pass `docs=` instead.
+
+</aside>
+
+See [Documentation UI](/guides/openapi/documentation-ui/) for configuring
+the viewers themselves.
 
 ##  Custom Response Examples
 

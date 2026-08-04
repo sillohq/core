@@ -68,70 +68,39 @@ class APIDocumentation:
         # request-body, and response sections do not each re-collect them.
         self._validator_memo: Dict[int, List[Any]] = {}
 
+    def _docs_context(self, openapi_url: str | None = None):
+        """Build a render context for the standalone HTML generators."""
+        from sillo.openapi.ui import DocsContext
+
+        info = self.config.openapi_spec.info
+        return DocsContext(
+            openapi_url=openapi_url or self.openapi_url,
+            title=info.title,
+            version=info.version,
+            description=info.description or "",
+            config=self.config,
+        )
+
     def _generate_redoc_ui(self, openapi_url: str | None = None) -> str:
-        """Generate ReDoc UI HTML"""
-        url = openapi_url or self.openapi_url
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>{self.config.openapi_spec.info.title} - API Documentation</title>
-            <meta charset="utf-8"/>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
-            <link rel="icon" href="https://sillolabs.com/logo.png" type="image/png">
+        """Generate ReDoc UI HTML.
 
-            <style>
-                body {{
-                    margin: 0;
-                    padding: 0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div id="redoc"></div>
-            <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
-
-            <script>
-                Redoc.init('{url}', {{
-                    scrollYOffset: 50
-                }}, document.getElementById('redoc'))
-            </script>
-        </body>
-        </html>
+        Retained for callers that render a page outside the application's own
+        routes. The application itself mounts presenters from ``docs``, so
+        this delegates rather than holding a second copy of the markup.
         """
+        from sillo.openapi.ui import ReDoc
+
+        return ReDoc().render(self._docs_context(openapi_url))
 
     def _generate_swagger_ui(self, openapi_url: str | None = None) -> str:
-        """Generate Swagger UI HTML"""
-        url = openapi_url or self.openapi_url
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>{self.config.openapi_spec.info.title} - Docs</title>
-            <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@4.18.3/swagger-ui.css">
-            <link rel="icon" href="https://sillolabs.com/logo.png" type="image/png">
+        """Generate Swagger UI HTML.
 
-        </head>
-        <body>
-            <div id="swagger-ui"></div>
-            <script src="https://unpkg.com/swagger-ui-dist@4/swagger-ui-bundle.js"></script>
-            <script>
-                window.onload = function() {{
-                    SwaggerUIBundle({{
-                        url: '{url}',
-                        dom_id: '#swagger-ui',
-                        presets: [
-                            SwaggerUIBundle.presets.apis,
-                            SwaggerUIBundle.SwaggerUIStandalonePreset
-                        ],
-                        layout: "BaseLayout"
-                    }});
-                }}
-            </script>
-        </body>
-        </html>
+        Delegates to :class:`sillo.openapi.ui.Swagger`; see
+        :meth:`_generate_redoc_ui`.
         """
+        from sillo.openapi.ui import Swagger
+
+        return Swagger().render(self._docs_context(openapi_url))
 
     def get_openapi(
         self, route: Union[Route, Router, Group, Any], current_prefix: str = ""

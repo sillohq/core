@@ -39,6 +39,7 @@ from sillo.objects import URLPath
 from sillo.openapi._builder import APIDocumentation
 from sillo.openapi.config import OpenAPIConfig
 from sillo.openapi.models import HTTPBearer, Parameter, Server
+from sillo.openapi.ui import DocsContext, DocsUI, default_docs
 from sillo.core.routing.base import BaseRoute
 from pathlib import Path
 from sillo.core.routing import Route, Router, WebsocketRoute
@@ -173,6 +174,23 @@ class silloApp:
                 "A  URL to the OpenAPI Specification for the API, used in the OpenAPI documentation."
             ),
         ] = "/openapi.json",
+        docs: Annotated[
+            Optional[Sequence[DocsUI]],
+            Doc("""
+                    The documentation viewers to mount, each serving the generated
+                    OpenAPI document at its own path.
+
+                        docs=[Swagger(path="/docs"), Scalar(path="/reference")]
+
+                    Pass ``[]`` to serve no documentation UI; the raw document is
+                    still available at ``openapi_url``. Leave it unset for the
+                    default pair, Swagger UI and ReDoc.
+
+                    Anything with a ``path`` and a ``render(ctx)`` method works
+                    here, so a viewer sillo does not ship needs no changes to
+                    sillo. See :class:`sillo.openapi.ui.DocsUI`.
+                """),
+        ] = None,
         server_error_handler: Annotated[
             Optional[ServerErrHandlerType],
             Doc(
@@ -252,11 +270,15 @@ class silloApp:
             servers: An optional list of server entries for the OpenAPI schema.
             terms_of_service: Optional URL pointing to the API terms of service.
             swagger_docs: The URL path at which the Swagger UI is served.
-                Defaults to ``"/docs"``.
+                Defaults to ``"/docs"``. Deprecated in favour of ``docs``;
+                passing both raises ``TypeError``.
             redoc_docs: The URL path at which the Redoc UI is served.
-                Defaults to ``"/redoc"``.
+                Defaults to ``"/redoc"``. Deprecated in favour of ``docs``;
+                passing both raises ``TypeError``.
             openapi_url: The URL path serving the raw OpenAPI JSON schema.
                 Defaults to ``"/openapi.json"``.
+            docs: The documentation viewers to mount. ``None`` mounts the
+                default pair (Swagger UI and ReDoc); ``[]`` mounts none.
             server_error_handler: An optional callable invoked when an
                 unhandled exception occurs during request processing.
             lifespan: An optional async context manager factory for managing
@@ -277,7 +299,10 @@ class silloApp:
             None
 
         Raises:
-            None
+            TypeError: If ``docs`` is passed alongside a non-default
+                ``swagger_docs`` or ``redoc_docs``, which specify the same
+                thing two ways.
+            ValueError: If two documentation viewers claim the same path.
         """
         self.debug = debug
         self.dependencies = dependencies or []
@@ -325,20 +350,128 @@ class silloApp:
             openapi_url=openapi_url,
         )
 
+        self.docs: List[DocsUI] = self._resolve_docs(
+            docs, swagger_docs=swagger_docs, redoc_docs=redoc_docs
+        )
+
         self.events = EventEmitter()
         self.title = title or "sillo API"
         self.setup()
 
+    @staticmethod
+    def _resolve_docs(
+        docs: Optional[Sequence[DocsUI]],
+        *,
+        swagger_docs: str,
+        redoc_docs: str,
+    ) -> List[DocsUI]:
+        """Decide which documentation viewers to mount.
+
+        Reconciles the ``docs`` list with the older ``swagger_docs`` and
+        ``redoc_docs`` path arguments. Omitting ``docs`` reproduces the
+        historical behavior exactly, including a moved Swagger or ReDoc path.
+
+        Args:
+            docs: The presenters given by the caller, or ``None``.
+            swagger_docs: The legacy Swagger path argument.
+            redoc_docs: The legacy ReDoc path argument.
+
+        Returns:
+            The presenters to mount, as a new list.
+
+        Raises:
+            TypeError: If ``docs`` is combined with a moved legacy path, or
+                if any entry is not a documentation presenter.
+            ValueError: If two presenters claim the same path.
+        """
+        if docs is None:
+            return default_docs(swagger_url=swagger_docs, redoc_url=redoc_docs)
+
+        legacy = [
+            name
+            for name, value, default in (
+                ("swagger_docs", swagger_docs, "/docs"),
+                ("redoc_docs", redoc_docs, "/redoc"),
+            )
+            if value != default
+        ]
+        if legacy:
+            raise TypeError(
+                f"docs= cannot be combined with {' and '.join(legacy)}; "
+                f"set the path on the presenter instead, e.g. "
+                f"docs=[Swagger(path={swagger_docs!r})]"
+            )
+
+        resolved = list(docs)
+        for entry in resolved:
+            if not hasattr(entry, "path") or not callable(
+                getattr(entry, "render", None)
+            ):
+                raise TypeError(
+                    f"docs entries need a 'path' and a render(ctx) method; "
+                    f"got {entry!r}. Subclass sillo.openapi.ui.DocsUI."
+                )
+
+        seen: Dict[str, DocsUI] = {}
+        for entry in resolved:
+            clash = seen.get(entry.path)
+            if clash is not None:
+                raise ValueError(
+                    f"two documentation viewers claim {entry.path!r}: "
+                    f"{clash!r} and {entry!r}"
+                )
+            seen[entry.path] = entry
+        return resolved
+
+    def _docs_context(self, root_path: str) -> DocsContext:
+        """Build the render context for a request under ``root_path``."""
+        info = self.openapi_config.openapi_spec.info
+        return DocsContext(
+            openapi_url=root_path + self.openapi.openapi_url,
+            title=info.title,
+            version=info.version,
+            description=info.description or "",
+            config=self.openapi_config,
+        )
+
+    def get_docs_ui(self, name: str) -> Optional[DocsUI]:
+        """Return a mounted presenter by its ``name``, or ``None``.
+
+        Args:
+            name: The presenter's ``name`` attribute, e.g. ``"swagger"``.
+
+        Returns:
+            The first presenter with that name, or ``None`` if none matches.
+        """
+        return next((ui for ui in self.docs if getattr(ui, "name", None) == name), None)
+
+    def _mount_docs_ui(self, ui: DocsUI) -> None:
+        """Mount one documentation presenter at its own path.
+
+        Args:
+            ui: The presenter to serve.
+
+        Returns:
+            None
+        """
+
+        # Bound as a default argument rather than captured: a closure over the
+        # loop variable would give every route the last presenter in the list,
+        # which shows up as the wrong viewer rendering at the right path.
+        @self.get(ui.path, exclude_from_schema=True)
+        async def docs_ui(request: "Request", response: "Response", _ui: DocsUI = ui):
+            root_path = request.scope.get("root_path", "")
+            return response.html(_ui.render(self._docs_context(root_path)))
+
     def setup(self) -> None:
         """
-        Register built-in documentation routes for OpenAPI, Swagger UI, and Redoc.
+        Register the OpenAPI document route and every documentation viewer.
 
-        This method is invoked automatically during application initialization
-        to mount three internal GET endpoints that serve the raw OpenAPI JSON
-        schema, the interactive Swagger UI, and the Redoc documentation viewer.
-        All three routes are excluded from the generated OpenAPI schema to
-        prevent recursive documentation entries. The routes respect the
-        application's mount path by reading ``root_path`` from the ASGI scope.
+        Invoked automatically during initialization. Mounts one GET endpoint
+        serving the raw OpenAPI JSON, then one per entry in ``docs``. All are
+        excluded from the generated schema so the documentation does not
+        document itself, and all read ``root_path`` from the ASGI scope so
+        they work when the application is mounted under a prefix.
 
         Args:
             None
@@ -360,19 +493,8 @@ class silloApp:
                 content_type="application/json",
             )
 
-        @self.get(self.openapi.swagger_url, exclude_from_schema=True)
-        async def swagger_ui(request: "Request", response: "Response"):
-            # Get the current mount path from the request scope
-            root_path = request.scope.get("root_path", "")
-            openapi_url = root_path + self.openapi.openapi_url
-            return response.html(self.openapi._generate_swagger_ui(openapi_url))
-
-        @self.get(self.openapi.redoc_url, exclude_from_schema=True)
-        async def redoc_ui(request: "Request", response: "Response"):
-            # Get the current mount path from the request scope
-            root_path = request.scope.get("root_path", "")
-            openapi_url = root_path + self.openapi.openapi_url
-            return response.html(self.openapi._generate_redoc_ui(openapi_url))
+        for ui in self.docs:
+            self._mount_docs_ui(ui)
 
     def build_openapi(self, root_path: str = "") -> str:
         """Build the OpenAPI document and return it as a JSON string.
