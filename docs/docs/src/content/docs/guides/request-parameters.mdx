@@ -284,17 +284,23 @@ async def get_data(request, response, data: dict = Depend(get_user_data)):
 - Works with nested dependencies
 - Self-documenting parameters
 
-###  Using Context (Legacy)
+###  Reading the request directly
+
+`Depend(get_request=True)` injects the raw `Request` into a dependency,
+leaving the extraction to you:
 
 ```python
 from sillo import Depend
-from sillo.dependencies import Context
 
-def get_user_data(context: Context = None):
-    page = context.request.query_params.get("page", "1")
-    authorization = context.request.headers.get("Authorization")
+def get_user_data(request = Depend(get_request=True)):
+    page = request.query_params.get("page", "1")
+    authorization = request.headers.get("Authorization")
     return {"page": page, "token": authorization}
 ```
+
+A plain `request` parameter is **not** injected into a dependency — only
+handlers get that. Without `Depend(get_request=True)` it is just an
+unfilled argument.
 
 **Disadvantages:**
 - Manual type conversion required

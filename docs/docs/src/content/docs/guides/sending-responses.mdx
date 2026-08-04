@@ -459,7 +459,7 @@ Instead of using the `response` object's methods, you can return an instance of 
 
 ```python
 from sillo import silloApp
-from sillo.http.response import JSONResponse, HTMLResponse
+from sillo.core.http.response import JSONResponse, HTMLResponse
 
 app = silloApp()
 
@@ -482,7 +482,7 @@ You can create your own custom response classes by inheriting from `sillo.http.r
 
 ```python
 from sillo import silloApp
-from sillo.http.response import BaseResponse
+from sillo.core.http.response import BaseResponse
 from dicttoxml import dicttoxml
 
 class XMLResponse(BaseResponse):

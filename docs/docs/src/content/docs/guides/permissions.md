@@ -312,7 +312,7 @@ async def delete_post(request, response, id: int):
 ```python
 from sillo.permissions import PermissionMixin, Permission, Group
 from sillo.users import UserBaseModel, UserManager
-from sillo.users.password import make_password
+from sillo.users import make_password
 
 class Account(PermissionMixin, UserBaseModel):
     objects = UserManager()

@@ -125,7 +125,7 @@ sillo_contrib/
 
 ## Next Steps
 
-- Browse the [middleware documentation](/contribs/middleware/etag) to get started
-- Check out the [integrations](/contribs/integrations/redis) for advanced features
-- See the [main overview](/contribs) for a complete list of available packages
+- Browse the [middleware documentation](/community/middleware/etag/) to get started
+- Check out the [integrations](/community/integrations/redis/) for advanced features
+- See the [main overview](/community/) for a complete list of available packages
 - Visit the [sillo-contrib repository](https://github.com/sillohq/sillo-contrib) to contribute

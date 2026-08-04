@@ -53,7 +53,7 @@ For more control, you can instantiate `FrontendApp` directly and mount it as a r
 ```python
 from sillo import silloApp
 from sillo.frontend import FrontendApp
-from sillo.routing import Group
+from sillo.core.routing import Group
 
 app = silloApp()
 

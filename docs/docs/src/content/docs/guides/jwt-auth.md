@@ -75,7 +75,7 @@ A typical login handler:
 ```python
 @app.post("/login")
 async def login(request, response):
-    data = await request.json()
+    data = await request.json
     user = await User.objects.get_by_email(data["email"])
     if not user or not user.check_password(data["password"]):
         return response.json({"error": "invalid credentials"}, status_code=401)
@@ -131,7 +131,7 @@ If you don't need server-side revocation, refresh is just "verify the refresh to
 ```python
 @app.post("/refresh")
 async def refresh(request, response):
-    body = await request.json()
+    body = await request.json
     tokens = TokenForUser(request.user, secret=JWT_SECRET)
     try:
         tokens.verify(body["refresh_token"])   # checks signature + expiry

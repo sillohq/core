@@ -183,7 +183,7 @@ The same `middleware=[...]` keyword works on `app.route(...)`, `Route(...)`, and
 A `Router` has its own `use` method. Middleware added there runs for every route mounted under that router, after app-level middleware:
 
 ```python
-from sillo.routing import Router
+from sillo.core.routing import Router
 
 app = silloApp()
 api = Router(prefix="/api")
@@ -257,7 +257,7 @@ app.use(CORSMiddleware(config=CorsConfig(allow_origins=["*"])))
 app.use(Shield())
 
 # Request lifecycle: request IDs + request-scoped context
-from sillo.lifecycle import RequestId
+from sillo.http.lifecycle import RequestId
 app.use(RequestId())
 
 # URL normalization: trailing/double-slash + optional case folding

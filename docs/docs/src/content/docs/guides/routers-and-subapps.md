@@ -27,7 +27,7 @@ Both flatten into the app's route table at startup, so nesting adds no per-reque
 
 ```python
 from sillo import silloApp
-from sillo.routing import Router
+from sillo.core.routing import Router
 
 app = silloApp()
 
@@ -101,7 +101,7 @@ Middleware and dependencies declared on a router run only for routes under that 
 
 ```python
 from sillo import silloApp, Depend
-from sillo.routing import Router
+from sillo.core.routing import Router
 
 app = silloApp()
 
@@ -130,7 +130,7 @@ When the thing you want to mount is itself an app — a separate `silloApp`, or 
 
 ```python
 from sillo import silloApp
-from sillo.routing import Group
+from sillo.core.routing import Group
 
 main_app = silloApp()
 admin_app = silloApp()
@@ -148,7 +148,7 @@ Now `/admin/dashboard` is served by `admin_app`. The sub-app keeps its own route
 ###  Mounting a list of routes
 
 ```python
-from sillo.routing import Router, Group, Route
+from sillo.core.routing import Router, Group, Route
 from sillo import silloApp
 
 users = Router()
@@ -178,7 +178,7 @@ Because a `Group` accepts any ASGI app, you can mount a FastAPI (or Starlette, Q
 
 ```python
 from sillo import silloApp
-from sillo.routing import Group
+from sillo.core.routing import Group
 from fastapi import FastAPI
 
 app = silloApp()
@@ -219,7 +219,7 @@ When a route lives under a router prefix, `url_for` includes that prefix automat
 
 ```python
 from sillo import silloApp, Depend
-from sillo.routing import Router, Group
+from sillo.core.routing import Router, Group
 
 app = silloApp()
 

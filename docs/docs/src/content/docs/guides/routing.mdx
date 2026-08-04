@@ -109,7 +109,7 @@ It's especially useful when you have a lot of routes and want to organize them i
 
 ```python
 from sillo import silloApp
-from sillo.routing import Route
+from sillo.core.routing import Route
 
 app = silloApp()
 
@@ -130,7 +130,7 @@ app.add_route(route)
 The `Route` class is the fundamental building block of sillo routing. It encapsulates all routing information for an API endpoint, including path handling, validation, OpenAPI documentation, and request processing.
 
 ```python
-from sillo.routing import Route
+from sillo.core.routing import Route
 
 # Basic route creation
 route = Route(
@@ -190,7 +190,7 @@ Route(
 Routers allow you to organize related routes and apply common configuration:
 
 ```python
-from sillo.routing import Router
+from sillo.core.routing import Router
 
 # Create routers for different API versions
 v1_router = Router(prefix="/api/v1", tags=["API v1"])
@@ -441,7 +441,7 @@ async def get_order(request, response, order_id: int):
 You can create and register custom path converters by subclassing the `Convertor` class:
 
 ```python
-from sillo.converters import Convertor, register_url_convertor
+from sillo.core.converters import Convertor, register_url_convertor
 import re
 
 class EmailConvertor(Convertor[str]):
@@ -1096,7 +1096,7 @@ The `Group` class in sillo provides a powerful way to organize related routes an
 ###  Basic Group Usage
 
 ```python
-from sillo.routing import Group, Route
+from sillo.core.routing import Group, Route
 from sillo import silloApp
 
 app = silloApp()
@@ -1148,7 +1148,7 @@ Groups can be used to mount external ASGI applications:
 
 ```python
 from fastapi import FastAPI
-from sillo.routing import Group
+from sillo.core.routing import Group
 
 fastapi_app = FastAPI()
 

@@ -358,7 +358,7 @@ except RedisOperationError as e:
 
 ```python
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo_contrib.redis import (
     init_redis, RedisDepend
 )

@@ -769,51 +769,49 @@ await repo.flush()  # Clear all
 <Aside type="danger" title="MemoryFailedRepository loses data on restart">
 
 The name says it all: jobs are held in memory. On process restart, every
-failed job is gone. For production, implement a `FailedRepository` that
+failed job is gone. For production, implement a `FailedJobRepository` that
 logs to the database or a message queue.
 
 </Aside>
 
-###  Custom FailedRepository
+###  Custom FailedJobRepository
 
-Implement the abstract class to store failures durably:
+`FailedJobRepository` is an `ABC` with five abstract methods. Implement all
+five — an unimplemented one makes the class impossible to instantiate:
 
 ```python
-from sillo.work.queue import FailedRepository
+from sillo.work.queue import FailedJob, FailedJobRepository
 
-class DatabaseFailedRepository(FailedRepository):
-    async def log(self, queue_name, job_id, job_class, payload, exception):
-        await FailedJob.create(
-            queue_name=queue_name,
+class DatabaseFailedRepository(FailedJobRepository):
+    async def log(self, queue, job_id, job_class, payload, exception):
+        await FailedJobRow.create(
+            queue=queue,
             job_id=job_id,
             job_class=job_class,
-            payload=payload,
-            exception=str(exception),
-            traceback=traceback.format_exc(),
-            failed_at=datetime.now(),
+            payload=payload,       # already a serialised string
+            exception=exception,   # already a traceback string
         )
 
-    async def get(self, job_id):
-        row = await FailedJob.get_or_none(job_id=job_id)
-        if row:
-            return FailedJobRecord(
-                id=row.job_id,
-                queue=row.queue_name,
-                job_class=row.job_class,
-                payload=row.payload,
-                exception=row.exception,
-            )
+    async def all(self, limit=50, offset=0):
+        rows = await FailedJobRow.all().order_by("-id").offset(offset).limit(limit)
+        return [_to_failed_job(row) for row in rows]
 
-    async def all(self, limit=100):
-        rows = await FailedJob.all().limit(limit)
-        return [... convert to FailedJobRecord ...]
+    async def find(self, job_id):
+        row = await FailedJobRow.get_or_none(job_id=job_id)
+        return _to_failed_job(row) if row else None
 
     async def forget(self, job_id):
-        await FailedJob.delete_by_id(job_id)
+        deleted = await FailedJobRow.filter(job_id=job_id).delete()
+        return bool(deleted)          # True if a record was removed
 
     async def flush(self):
-        await FailedJob.all().delete()
+        await FailedJobRow.all().delete()
 ```
+
+Note the contract: `all()` takes `limit` **and** `offset` and returns
+newest first, `find()` returns `None` when there is no such job, and
+`forget()` returns a `bool` rather than nothing. `payload` and `exception`
+arrive as strings — the worker serialises them before calling you.
 
 Pass it to the worker:
 

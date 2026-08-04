@@ -203,7 +203,8 @@ check_password("", hashed)                 # False (empty never matches)
 **Unusable passwords.** A user with no password (OAuth-only accounts, invited-but-not-yet-set) gets a marker prefix `"!"`:
 
 ```python
-from sillo.users import UNUSABLE_PASSWORD_PREFIX, is_password_usable
+from sillo.hashing import UNUSABLE_PASSWORD_PREFIX
+from sillo.users import is_password_usable
 
 make_password(None)            # "!" + 40 random hex chars
 is_password_usable(hashed)     # False when it starts with "!"

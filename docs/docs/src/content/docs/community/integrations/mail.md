@@ -258,7 +258,7 @@ MAIL_SUPPRESS_SEND=false
 For cleaner code in your route handlers, use dependency injection:
 
 ```python
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo_contrib.mail import MailDepend
 
 @app.post("/send-email")

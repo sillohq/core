@@ -365,7 +365,8 @@ An orders API where every route is protected by default and ownership is
 enforced in the query rather than after it.
 
 ```python title="the whole pattern in one place"
-from sillo import HTTPException, Path, Router
+from sillo import Path, Router
+from sillo.exceptions import HTTPException
 from sillo.auth import useAuth
 
 api = Router(prefix="/api", auth=useAuth())

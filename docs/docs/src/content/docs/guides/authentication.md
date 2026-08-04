@@ -155,7 +155,7 @@ See [Users & User Models](/guides/users/) for the built-in `User`, building cust
 A backend is just `authenticate(request) -> AuthResult`. Return `AuthResult(success=True, identity=..., scope=...)` to accept, or `AuthResult(success=False, ...)` to decline (so the next backend gets a turn). This is how you'd add, say, a Bearer-token-vs-API-key-within-one-header scheme, or an OAuth introspection backend:
 
 ```python
-from sillo.auth.backends.base import AuthenticationBackend
+from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
 
 class HeaderBackend(AuthenticationBackend):

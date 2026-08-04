@@ -14,7 +14,7 @@ The `sillo.lifecycle` module provides first‑party middleware and helpers for r
 
 ```python
 from sillo import silloApp
-from sillo.lifecycle import RequestId
+from sillo.http.lifecycle import RequestId
 
 app = silloApp()
 
@@ -49,7 +49,7 @@ Every request now carries a unique request ID usable for tracing and debugging.
 
 ```python
 from sillo import silloApp
-from sillo.lifecycle import RequestId
+from sillo.http.lifecycle import RequestId
 
 app = silloApp()
 app.use(RequestId())
@@ -59,7 +59,7 @@ app.use(RequestId())
 
 ```python
 from sillo import silloApp
-from sillo.lifecycle import RequestId
+from sillo.http.lifecycle import RequestId
 
 app = silloApp()
 
@@ -77,7 +77,7 @@ app.use(
 ###  Using Helper Functions
 
 ```python
-from sillo.lifecycle import (
+from sillo.http.lifecycle import (
     generate_request_id,
     get_or_generate_request_id,
     validate_request_id,
@@ -95,7 +95,7 @@ is_valid = validate_request_id(some_request_id)
 async def get_users(request, response):
     request_id = getattr(request.state, "request_id", None)
     request_id = request.headers.get("X-Request-ID")
-    from sillo.lifecycle import get_request_id_from_request
+    from sillo.http.lifecycle import get_request_id_from_request
     request_id = get_request_id_from_request(request)
     return {"users": [], "request_id": request_id}
 ```
@@ -115,7 +115,7 @@ async def get_users(request, response):
 `RequestContext` is a request‑scoped context manager backed by a `ContextVar`. Anything you set inside the `with` block is available anywhere in the same request, without threading objects through every function call.
 
 ```python
-from sillo.lifecycle import RequestContext
+from sillo.http.lifecycle import RequestContext
 
 @app.get("/dashboard")
 async def dashboard(request, response):
@@ -142,7 +142,7 @@ def some_deep_helper():
 
 ```python
 import logging
-from sillo.lifecycle import RequestId
+from sillo.http.lifecycle import RequestId
 
 app = silloApp()
 app.use(RequestId())
@@ -166,7 +166,7 @@ app.use(logging_middleware)
 
 ```python
 import uuid
-from sillo.lifecycle import RequestIdMiddleware
+from sillo.http.lifecycle import RequestIdMiddleware
 
 class CustomRequestIdMiddleware(RequestIdMiddleware):
     def __init__(self, prefix: str = "req", **kwargs):
@@ -182,7 +182,7 @@ app.use(CustomRequestIdMiddleware(prefix="api"))
 ###  Distributed Tracing Integration
 
 ```python
-from sillo.lifecycle import RequestId
+from sillo.http.lifecycle import RequestId
 import opentelemetry.trace as trace
 
 app = silloApp()
@@ -202,7 +202,7 @@ app.use(tracing_middleware)
 
 ```python
 import httpx
-from sillo.lifecycle import get_request_id_from_request
+from sillo.http.lifecycle import get_request_id_from_request
 
 @app.get("/api/external")
 async def call_external_api(request, response):
@@ -228,7 +228,7 @@ async def call_external_api(request, response):
 
 ```python
 from sillo import silloApp
-from sillo.lifecycle import RequestId
+from sillo.http.lifecycle import RequestId
 import logging
 
 app = silloApp()
@@ -271,7 +271,7 @@ app.use(structured_logging)
 
 ```python
 import asyncpg
-from sillo.lifecycle import get_request_id_from_request
+from sillo.http.lifecycle import get_request_id_from_request
 
 @app.get("/api/users/{user_id}")
 async def get_user(request, response, user_id: int):
@@ -287,7 +287,7 @@ async def get_user(request, response, user_id: int):
 ###  With Background Tasks
 
 ```python
-from sillo.lifecycle import get_request_id_from_request
+from sillo.http.lifecycle import get_request_id_from_request
 import asyncio
 
 @app.post("/api/process")
@@ -307,7 +307,7 @@ async def process_data_async(data, request_id):
 
 ```python
 from sillo.exceptions import HTTPException
-from sillo.lifecycle import get_request_id_from_request
+from sillo.http.lifecycle import get_request_id_from_request
 
 @app.add_exception_handler(HTTPException)
 async def http_exception_handler(request, response, exc):

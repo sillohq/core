@@ -336,7 +336,7 @@ For feature requests, include:
 
 ### Code of Conduct
 
-Please note that this project is governed by our [Code of Conduct](/community/code-of-conduct). By participating, you are expected to uphold this code.
+Please note that this project is governed by our [Code of Conduct](https://github.com/sillohq/core/blob/main/.github/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
 ## Release Management
 

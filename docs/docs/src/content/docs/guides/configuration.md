@@ -642,5 +642,5 @@ access_token: str     # Appears as ***
 
 - [Environment Variables](/guides/request-info) - Request environment access
 - [Security](/guides/security) - Security best practices
-- [Deployment](/guides/deployment) - Deployment configuration
+- [Deployment](/guides/start/deployment/) - Deployment configuration
 - [Pydantic Docs](https://docs.pydantic.dev/) - Full Pydantic reference

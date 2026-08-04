@@ -286,7 +286,7 @@ JobStatus.CANCELLED  # Permanently removed
 import asyncio
 import logging
 from sillo import silloApp
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo_contrib.scheduler import (
     setup_scheduler,
     SchedulerDepends,

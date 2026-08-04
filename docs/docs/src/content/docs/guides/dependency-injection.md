@@ -242,7 +242,7 @@ DI isn't limited to one route. You can attach `Dependencies` to a `Router` or `s
 
 ```python
 from sillo import silloApp, Depend
-from sillo.routing import Router
+from sillo.core.routing import Router
 
 app = silloApp()
 

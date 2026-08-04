@@ -230,7 +230,7 @@ class FileUploadRequest(BaseModel):
 async def upload_file(request, response):
     # Get form data and files
     form_data = await request.form
-    files = request.files
+    files = await request.files
     
     # Access file and metadata manually
     file = files.get('file')

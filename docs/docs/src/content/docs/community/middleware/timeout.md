@@ -33,7 +33,7 @@ uv add sillo-contrib
 ```python
 from sillo import silloApp
 from sillo_contrib.timeout import Timeout
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 app = silloApp()
 
 # Add timeout middleware with default 30s timeout
@@ -50,7 +50,7 @@ async def slow_endpoint(request :Request, response:Response):
 
 ```python
 from sillo import silloApp
-from sillo.http import Request,Response
+from sillo.core.http import Request, Response
 from sillo_contrib.timeout import Timeout, get_timeout_from_request
 
 app = silloApp()
@@ -104,7 +104,7 @@ Timeouts can be specified in multiple ways (in order of precedence):
 
 ```python
 from sillo_contrib.timeout import timeout_after, TimeoutException
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 @timeout_after(5.0)  # 5 second timeout
 async def fetch_data():
     # This will raise TimeoutException if it takes longer than 5 seconds
@@ -124,7 +124,7 @@ async def get_data(request :Request, response :Response):
 
 ```python
 from sillo_contrib.timeout import timeout_with_fallback
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 @app.get("/cached-data")
 async def get_cached_data(request :Request, response :Response):
@@ -141,8 +141,7 @@ async def get_cached_data(request :Request, response :Response):
 ### Custom Timeout Response
 
 ```python
-from sillo.http import Request,  TimeoutExceptionResponse
-from sillo_contrib.timeout import create_timeout_response
+from sillo_contrib.timeout import TimeoutException, create_timeout_response
 
 @app.add_exception_handler(TimeoutException)
 async def timeout_exception_handler(request, response, exc):
@@ -192,7 +191,7 @@ async def duration_logger(request, response, call_next):
 ```python
 from sillo import silloApp
 from sillo_contrib.timeout import Timeout, timeout_after, TimeoutException
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 app = silloApp()
 
 # Global timeout middleware

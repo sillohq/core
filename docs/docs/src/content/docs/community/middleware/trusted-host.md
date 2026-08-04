@@ -167,21 +167,20 @@ When a request comes from an untrusted host, the middleware raises:
 
 ```python
 from sillo import silloApp
-from sillo.exceptions import BadRequest
+from sillo.exceptions import HTTPException
 
 app = silloApp()
 
-@app.add_exception_handler(BadRequest)
+@app.add_exception_handler(HTTPException)
 async def handle_bad_request(request, response, exc):
     if "Untrusted host" in str(exc):
         # Custom response for untrusted hosts
-        return {
+        return response.json({
             "error": "Access Denied",
             "message": "This domain is not authorized to access this service"
-        }, 403
-    
-    # Default handling for other BadRequest exceptions
-    return {"error": str(exc)}, 400
+        }, status_code=403)
+
+    return response.json({"error": str(exc)}, status_code=exc.status_code)
 ```
 
 ### Dynamic Host Configuration

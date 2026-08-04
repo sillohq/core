@@ -213,7 +213,7 @@ sillo provides built-in error handling for invalid pagination parameters:
 ```python {6}
 from sillo import silloApp
 from sillo.pagination import InvalidPageError, InvalidPageSizeError, InvalidCursorError
-from sillo.http import HTTPException
+from sillo.exceptions import HTTPException
 
 app = silloApp()
 

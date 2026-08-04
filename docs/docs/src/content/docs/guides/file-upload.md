@@ -18,7 +18,7 @@ head:
 To handle a single file upload in sillo:
 
 ```python
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 @app.post("/upload")
 async def upload_file(request: Request, response: Response):

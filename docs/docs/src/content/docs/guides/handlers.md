@@ -47,7 +47,7 @@ Every handler receives:
 - **`response`** — a `sillo.http.response.Responder` (also importable as `Response`) — a fluent builder you use to produce JSON, HTML, files, redirects, headers, and cookies. See [Sending Responses](/guides/sending-responses/).
 
 ```python
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 @app.get("/")
 async def index(request: Request, response: Response):
@@ -75,7 +75,7 @@ async def items(request, response):
 For finer control — or when building routes programmatically — use the `Route` class and `app.add_route`:
 
 ```python
-from sillo.routing import Route
+from sillo.core.routing import Route
 
 async def dynamic_handler(request, response):
     return "Hello, world!"
@@ -203,7 +203,7 @@ Methods are chainable. You must set a *type* (`.json()`, `.html()`, …) before 
 Return an instance of `JSONResponse`, `HTMLResponse`, `PlainTextResponse`, `FileResponse`, `StreamingResponse`, or `RedirectResponse` directly:
 
 ```python
-from sillo.http.response import JSONResponse
+from sillo.core.http.response import JSONResponse
 
 @app.get("/raw")
 async def raw(request, response):

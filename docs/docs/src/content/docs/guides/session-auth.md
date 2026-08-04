@@ -62,7 +62,7 @@ guard = SessionGuard(user_model=User)
 
 @app.post("/login")
 async def login(request, response):
-    data = await request.json()
+    data = await request.json
     ok = await guard.attempt(
         request, email=data["email"], password=data["password"]
     )
@@ -186,9 +186,11 @@ lookup happens on every request, which is why the session store's latency
 is your application's latency.
 
 **Privilege change.** On login, and on anything that elevates
-permissions, the session identifier must be regenerated. Reusing it
-allows session fixation: an attacker who could set the cookie before
-login shares the session after it.
+permissions, a server-backed session identifier must be regenerated.
+Reusing it allows session fixation: an attacker who could set the cookie
+before login shares the session after it. sillo's default cookie-backed
+sessions are not exposed to this — see
+[Session fixation](#session-fixation).
 
 **Logout.** The session is deleted server-side and the cookie cleared.
 Deleting only the cookie is not logout — the session remains valid for
@@ -249,8 +251,8 @@ compromise, the decision is made for you.
 
 ##  What not to do
 
-**Do not skip session regeneration on login.** Session fixation is still
-a live attack.
+**Do not skip session regeneration on login** once you use a server-backed
+store. Session fixation is still a live attack.
 
 **Do not store permissions in the session.** They are cached at login and
 survive revocation. Store identity; look up authorization.
@@ -281,7 +283,7 @@ encrypted; the contents are readable.
 Every decision above, applied.
 
 ```python title="login, logout, and the middleware between them"
-from sillo import HTTPException
+from sillo.exceptions import HTTPException
 from sillo.helpers.hashing import verify_password
 
 
@@ -291,11 +293,10 @@ async def login(request, response):
     user = await User.get_or_none(email=data.email.lower())
 
     # Same response and comparable timing whether or not the user exists.
-    stored = user.password_hash if user else DUMMY_HASH
+    stored = user.password if user else DUMMY_HASH
     if not verify_password(data.password, stored) or user is None:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    await request.session.regenerate()          # defeat session fixation
     request.session["user_id"] = user.id
     request.session["issued_at"] = time.time()
 
@@ -304,9 +305,34 @@ async def login(request, response):
 
 @app.post("/logout")
 async def logout(request, response):
-    await request.session.destroy()             # server-side, not just the cookie
+    request.session.clear()                 # server-side, not just the cookie
     return response.json(None, status_code=204)
 ```
+
+`clear()` is the whole logout. It marks the session emptied *and* deleted,
+and `SessionMiddleware.process_response` hands the emptied session to the
+backend before dropping the cookie — so a server-backed store purges its
+record rather than leaving a key that anyone holding the old cookie could
+still present.
+
+<aside type="caution" title="clear() ends a session; it does not recycle one">
+`deleted` is not reset by writing new keys, so `clear()` followed by
+`request.session["user_id"] = ...` in the same request saves an **empty**
+cookie value. Clear on logout; do not clear and then re-populate.
+</aside>
+
+###  Session fixation
+
+With the default `SignedSessionManager` there is no server-side identifier
+to fix: the cookie *is* the session, and it is re-signed from the new
+contents whenever you write to it. A cookie an attacker planted before
+login still decodes to the payload they chose, which has no `user_id` in
+it, so it is not an authenticated session.
+
+The attack becomes real the moment you move to a server-backed store,
+where the cookie is a key into shared state. sillo ships no
+`regenerate()`; issue a fresh key yourself in your
+`BaseSessionInterface`, purging the old record as you go.
 
 The dummy-hash comparison is the part people omit. An early `return` when
 the user does not exist is measurably faster than one that verifies a
@@ -325,7 +351,7 @@ MAX_SESSION_AGE = 60 * 60 * 24 * 2
 async def enforce_session_age(request, response, call_next):
     issued = request.session.get("issued_at")
     if issued and time.time() - issued > MAX_SESSION_AGE:
-        await request.session.destroy()
+        request.session.clear()
     return await call_next()
 ```
 
@@ -363,7 +389,8 @@ an attacker tries.
 
 Verify the password against a real password hash, in constant-ish time
 whether or not the account exists. Regenerate the session identifier at
-login. Set `HttpOnly`, `Secure`, and `SameSite` on the cookie. Expire on
+login if it is server-backed. Set `HttpOnly`, `Secure`, and `SameSite` on
+the cookie. Expire on
 both an idle and an absolute clock. Store identity rather than
 permissions. Destroy the session server-side on logout. And require
 re-authentication before anything a stolen session should not be able to
@@ -377,6 +404,7 @@ configuration — are in [Sessions](/guides/sessions/). This page covers
 the authentication flow built on top of it. The two most common mistakes
 live in different places: an in-memory store with multiple workers is a
 storage problem, and a missing session regeneration is a flow problem.
+Both only arise once you leave the default signed cookie.
 
 
 ##  Multi-factor authentication

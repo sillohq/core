@@ -68,7 +68,7 @@ async def process_data(data: dict) -> dict:
 Start background tasks from your API endpoints and return immediately:
 
 ```python title="New (Recommended)"
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 @app.post("/process")
 async def start_processing(request: Request, response: Response) -> dict:
@@ -84,7 +84,7 @@ async def start_processing(request: Request, response: Response) -> dict:
 ```
 
 ```python title="Legacy (Deprecated)"
-from sillo.http import Request, Response
+from sillo.core.http import Request, Response
 
 @app.post("/process")
 async def start_processing(request: Request, response: Response) -> dict:
