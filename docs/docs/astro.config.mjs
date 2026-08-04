@@ -75,9 +75,22 @@ export default defineConfig({
                     items: [
                         { label: 'Introduction', link: '/guides/introduction/' },
                         { label: 'Installation', link: '/guides/installation/' },
-                        { label: 'The sillo CLI', link: '/guides/cli/' },
                         { label: 'Configuration', link: '/guides/configuration/' },
                         { label: 'Request Lifecycle', link: '/guides/request-lifecycle/' },
+                    ],
+                },
+                {
+                    label: 'Building an Application',
+                    items: [
+                        { label: 'Creating a Project', link: '/guides/start/' },
+                        { label: 'Project Structure', link: '/guides/start/structure/' },
+                        { label: 'The Console', link: '/guides/start/console/' },
+                        { label: 'Database & Migrations', link: '/guides/start/database/' },
+                        { label: 'Users & Authentication', link: '/guides/start/authentication/' },
+                        { label: 'The Admin Panel', link: '/guides/start/admin/' },
+                        { label: 'Background Work', link: '/guides/start/background-work/' },
+                        { label: 'Testing', link: '/guides/start/testing/' },
+                        { label: 'Deployment', link: '/guides/start/deployment/' },
                     ],
                 },
                 {

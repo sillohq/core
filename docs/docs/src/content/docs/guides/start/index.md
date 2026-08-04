@@ -1,0 +1,327 @@
+---
+title: Creating a Project
+description: Start a Sillo application from the official starter — with sillo-start or a plain git clone — and understand what you get and why it is shaped that way.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Creating a Sillo Project
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Start a Sillo application from the official starter, with sillo-start or a plain git clone.
+---
+
+#  Creating a Project
+
+Sillo does not generate applications. It publishes one.
+
+[`sillohq/starter`](https://github.com/sillohq/starter) is a working
+application — session authentication against a real user model, an admin
+panel, migrations, server-rendered pages, a JSON API, a queue — that you
+copy and make yours. Its CI boots it and calls every route on every push,
+on three Python versions.
+
+That distinction is the whole design, and the rest of this page explains
+why it is worth caring about.
+
+##  The quickest path
+
+```bash
+git clone https://github.com/sillohq/starter.git myapp
+cd myapp
+make setup
+make dev
+```
+
+Then open <http://localhost:8000>.
+
+`make setup` installs dependencies, writes a `.env` with a freshly
+generated `SECRET_KEY`, creates the database and applies the initial
+migration. It is safe to re-run; an existing `.env` is never overwritten.
+
+##  With sillo-start
+
+```bash
+uvx sillo-start create-app myapp
+cd myapp
+make setup
+make dev
+```
+
+`sillo-start` fetches the starter as a tarball, renames the project to
+yours, and gives it its own secrets. It has exactly one command, because
+creating a project is the only thing it does — see
+[The sillo-start tool](#the-sillo-start-tool) below.
+
+```bash
+sillo-start create-app myapp                       # the default starter
+sillo-start create-app sillohq/starter myapp       # named explicitly
+sillo-start create-app sillohq/starter@v1.2 myapp  # pinned to a tag
+sillo-start create-app acme/our-template myapp     # your own starter
+```
+
+| Option | |
+| --- | --- |
+| `--ref <branch\|tag>` | Which revision to take. Defaults to `main` |
+| `-d`, `--directory <path>` | Where to create it. Defaults to `./<name>` |
+| `--install` | Install dependencies straight away |
+| `--no-git` | Do not initialise a git repository |
+| `--force` | Allow a directory that is not empty |
+| `-v`, `--verbose` | Show tracebacks |
+
+Dependencies are **not** installed by default, so creating a project takes
+a second rather than a minute. `make setup` in the new project does it,
+along with everything else a first run needs.
+
+<aside>
+
+**Which should you use?** `git clone` if you want the starter as it is and
+intend to keep pulling from it. `create-app` if you want the project named
+after itself from the first commit, with no upstream history to delete.
+They produce the same application.
+
+</aside>
+
+##  Requirements
+
+- Python 3.11 or newer
+- [uv](https://docs.astral.sh/uv/) —
+  `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+SQLite needs nothing else. PostgreSQL or MySQL need a running server and
+one extra driver — see
+[Database & Migrations](/guides/start/database/#another-database).
+
+##  Why a starter repository, not a generator
+
+A generator renders templates. Templates get checked for *rendering*,
+which is not the same as working.
+
+A generated project can produce valid Python, import cleanly, render every
+page — and still fail on its first real request. All of these render
+perfectly:
+
+- middleware registered in an order that puts authentication outside the
+  session it reads from
+- an auth backend reading the `id` claim from a token that carries `sub`
+- a `/static` mount that was never added, so every stylesheet 404s in
+  production
+- a queue that accepts jobs and never runs them
+
+Every one of those was a real bug in this project's history, and none of
+them is visible in a rendered template. They surface when something calls
+the application.
+
+So the starter is an application, and its CI runs it:
+
+```yaml
+- name: Apply migrations
+  run: |
+    cp .env.example .env
+    make migrate
+
+- name: Test
+  run: uv run pytest -q
+
+- name: Create an administrator
+  env:
+    ADMIN_PASSWORD: Ci-password1!
+  run: uv run python console.py user admin ci@example.com ci
+
+- name: Boot the application
+  run: uv run python scripts/smoke.py
+```
+
+The last step boots the app and calls every route. What you clone has been
+run, not merely written.
+
+It has a second consequence worth knowing: **a bug in what you get can be
+fixed without releasing a tool.** The starter is a repository; a fix is a
+commit. Nothing has to be published to PyPI and nothing on your machine
+has to be upgraded before the next person who clones it gets the fix.
+
+##  What you get
+
+| | |
+| --- | --- |
+| **Auth** | Session-based over JSON, with JWT written and commented out |
+| **Users** | One `User` model with a manager, password hashing and `verify_credentials` |
+| **Admin** | Mounted at `/admin/`, authenticating against that same `User` |
+| **Database** | Record with SQLite by default, and real migrations |
+| **Pages** | One Jinja template and a stylesheet, with `/static` served in development |
+| **API** | JSON routes under `/api`, with OpenAPI at `/docs` |
+| **Queue** | A worker and scheduler, wired and switched off |
+| **Console** | `console.py` — migrations, users, worker, scheduler, serve |
+| **Tooling** | `make` targets, ruff, pytest, and CI on three Python versions |
+
+Two things are deliberately *not* there, and both are covered later:
+
+- **No background jobs.** `app/jobs/` is an empty package. What a job
+  should do is your application's business, and an example you have to
+  delete is worse than none. See
+  [Background Work](/guides/start/background-work/).
+- **No second user model.** The admin signs people in with your `User`.
+  See [Users & Authentication](/guides/start/authentication/).
+
+##  What happens when you create a project
+
+Whichever route you take, the same four things happen. Worth knowing
+because each one is a decision you may want to change.
+
+###  The files arrive
+
+`create-app` downloads a tarball from
+`codeload.github.com/<owner>/<repo>/tar.gz/<ref>`, rather than cloning.
+That needs no `git` on the machine, brings no history for you to delete
+before your first commit, and pins to a tag as easily as to a branch.
+
+GitHub wraps the archive in a single top-level directory named after the
+repository and commit; that prefix is stripped so the project's files land
+at your directory's root.
+
+An archive member whose path escapes the destination is refused rather
+than sanitised — that is how a malicious archive overwrites files
+elsewhere on your machine.
+
+###  It takes your name
+
+Rewriting is targeted, not a blanket find-and-replace, so prose that
+happens to say "starter" — a README sentence, a comment — is left as
+written. What changes:
+
+| File | What |
+| --- | --- |
+| `pyproject.toml` | `name = "myapp"` |
+| `app/config.py` | `app_name`, the module docstring, the SQLite path |
+| `.env.example` | `APP_NAME`, the SQLite path, the header comment |
+| `uv.lock` | The project's own name, so `uv sync` still resolves |
+
+Model files are deliberately excluded. A model's docstring becomes its
+`table_description` in the database, so rewriting one puts your models out
+of step with the committed migration, and the next `make migration`
+writes a spurious second one describing nothing but a changed comment.
+
+###  It gets its own secrets
+
+`.env` is created from `.env.example` with a fresh value for
+`SECRET_KEY`, `JWT_SECRET` and `APP_KEY`.
+
+A secret committed to a starter is a placeholder by definition. Without
+this step every project created from it would sign its sessions with a
+key published on GitHub. `make setup` does the same thing when you clone
+directly.
+
+An existing `.env` is never touched — it may hold real credentials.
+
+###  It becomes a git repository
+
+`git init`, unless you pass `--no-git`. No initial commit is made; the
+first commit is yours.
+
+##  The sillo-start tool
+
+`sillo-start` has one command. That is a design decision, not an
+omission.
+
+A tool that also *manages* projects — generating models, editing config,
+running migrations, supervising processes — has to keep working against
+every version of every project it ever generated. A tool that only
+creates them is finished the moment the files land.
+
+So everything a project needs after it exists belongs to the project, in
+its own `console.py`:
+
+```bash
+python console.py db migrate
+python console.py user admin ada@example.com ada
+python console.py worker
+python console.py serve --reload
+```
+
+The framework provides those operations as plain functions —
+`sillo.record.commands`, `sillo.users.commands`, `sillo.work.commands` —
+and the project decides how to expose them. See
+[The Console](/guides/start/console/).
+
+**Nothing in a created project depends on `sillo-start`.** You can delete
+it the moment your project exists, and a change to it can never break
+what it already made.
+
+##  Using your own starter
+
+Any public GitHub repository works:
+
+```bash
+sillo-start create-app acme/our-template myapp
+```
+
+For a company template — your own base models, your own middleware stack,
+your own deployment files — fork the starter, change what you want, and
+point people at yours. The rename rules look for these files, and skip
+any that are absent:
+
+```python
+RENAMES = (
+    ("pyproject.toml", ('name = "{old}"', 'name = "{new}"')),
+    ("app/config.py",  ('"""Typed settings for {Old}."""', '"""Typed settings for {New}."""')),
+    ("app/config.py",  ('app_name: str = "{Old}"', 'app_name: str = "{New}"')),
+    ("app/config.py",  ("sqlite://storage/{old}.db", "sqlite://storage/{new}.db")),
+    (".env.example",   ("# {Old} environment.", "# {New} environment.")),
+    (".env.example",   ("APP_NAME={Old}", "APP_NAME={New}")),
+    (".env.example",   ("sqlite://storage/{old}.db", "sqlite://storage/{new}.db")),
+)
+```
+
+`{old}`/`{new}` are the lowercase names, `{Old}`/`{New}` the title-cased
+ones. Keep those lines recognisable in your fork and renaming keeps
+working; change them and the project simply keeps the template's name,
+which you can fix by hand.
+
+##  Your first five minutes
+
+```bash
+make setup                              # dependencies, .env, database
+make admin e=you@example.com u=you      # an account that can reach /admin/
+make dev                                # http://localhost:8000
+```
+
+Then:
+
+- <http://localhost:8000> — the welcome page
+- <http://localhost:8000/docs> — the generated OpenAPI documentation
+- <http://localhost:8000/admin/> — the admin panel, note the trailing slash
+
+`app/bootstrap.py` is the one file worth reading first. Everything the
+application is made of is assembled there, in order, with the reasoning
+written down beside each step.
+
+##  Things that will bite you
+
+Collected from actually running this, not from reading the source.
+
+1. **Run the console through `uv run`, not bare `python`.** A virtual
+   environment activated in a parent directory shadows the project's own,
+   and the sillo it finds there is usually older than the project needs.
+   `console.py` detects this and says so, but `uv run` avoids the
+   question entirely.
+
+2. **Admin routes need the trailing slash.** `/admin/login/`, not
+   `/admin/login`.
+
+3. **`make setup` is not `make install`.** `install` only installs
+   dependencies; `setup` also writes `.env` and creates the database.
+
+4. **The database file is gitignored, the migrations are not.** Commit
+   `database/migrations/`; it is the schema's source of truth.
+
+##  Related
+
+- [Project Structure](/guides/start/structure/) — every directory, and why it exists
+- [The Console](/guides/start/console/) — `console.py` in full
+- [Database & Migrations](/guides/start/database/) — models, migrations, other databases
+- [Users & Authentication](/guides/start/authentication/) — the one user model
+- [The Admin Panel](/guides/start/admin/) — registering models, who may enter
+- [Background Work](/guides/start/background-work/) — jobs, workers, scheduled tasks
+- [Testing](/guides/start/testing/) — the suite, the smoke test, and what each is for
+- [Deployment](/guides/start/deployment/) — taking it to production
