@@ -228,7 +228,7 @@ class QueueWorker:
 
         try:
             job_cls = self._resolve_job_class(job_class_name)
-            job_instance = job_cls(**job_data.get("data", {}))
+            job_instance = self._build_job(job_cls, job_data)
             job_instance._job_id = job_id
 
             await job_instance.fire()
@@ -251,23 +251,77 @@ class QueueWorker:
             except Exception:
                 logger.exception("Failed to log failed job")
 
-    def _resolve_job_class(self, name: str) -> type:
-        """Resolve Job Class
+    @staticmethod
+    def _build_job(job_cls: type, job_data: Dict[str, Any]) -> Any:
+        """Reconstruct the job from what was queued.
+
+        Two payload shapes exist. ``dispatch`` records the call —
+        ``{"args": [...], "kwargs": {...}}`` — and :meth:`Job.payload` records
+        the instance's attributes under ``data``. Reading only ``data`` meant a
+        dispatched job was rebuilt with no arguments at all: it ran, reported
+        success, and used its defaults.
 
         Args:
-            name: [description]
+            job_cls: The class to build.
+            job_data: The decoded payload.
 
         Returns:
-            [description]
+            The job instance to run.
+        """
+        if "args" in job_data or "kwargs" in job_data:
+            return job_cls(*job_data.get("args", []), **job_data.get("kwargs", {}))
+        return job_cls(**job_data.get("data", {}))
+
+    def _resolve_job_class(self, name: str) -> type:
+        """Find the class that handles a queued payload.
+
+        Args:
+            name: What the payload names, either ``module.Class`` as
+                :meth:`Dispatchable.job_reference` writes it, or a bare class
+                name from a payload queued by an older release.
+
+        Returns:
+            The job class.
 
         Raises:
-            [description]
+            RuntimeError: If nothing of that name can be found, saying what
+                would make it findable.
         """
-        parts = name.rsplit(".", 1)
-        if len(parts) == 2:
-            mod = importlib.import_module(parts[0])
-            return getattr(mod, parts[1])
-        raise RuntimeError(f"Cannot resolve job class: {name}")
+        module_path, _, attribute = name.rpartition(".")
+        if module_path:
+            module = importlib.import_module(module_path)
+            return getattr(module, attribute)
+
+        # A bare name: search the classes that have been imported. This is how
+        # payloads written before job references were qualified still run, and
+        # it is why a project imports its jobs in one package — a class nobody
+        # imported is a class this cannot find.
+        found = self._search_subclasses(name)
+        if found is not None:
+            return found
+
+        raise RuntimeError(
+            f"Cannot resolve job class: {name}. Import it before the worker "
+            f"starts — a project's jobs package is the usual place — or queue "
+            f"it from a release that records where the class lives."
+        )
+
+    @staticmethod
+    def _search_subclasses(name: str) -> "type | None":
+        """Depth-first search of every imported job class for *name*."""
+        from .job import Dispatchable
+
+        seen: set = set()
+        stack = list(Dispatchable.__subclasses__())
+        while stack:
+            candidate = stack.pop()
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            if candidate.__name__ == name:
+                return candidate
+            stack.extend(candidate.__subclasses__())
+        return None
 
 
 class WorkerPool:

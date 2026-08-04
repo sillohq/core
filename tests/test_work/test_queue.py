@@ -123,7 +123,10 @@ class TestJob:
 
         job = MyJob(42)
         p = job.payload()
-        assert p["job"] == "MyJob"
+        # Where to import it from, not just what it is called — a bare name
+        # leaves a worker with nothing to resolve.
+        assert p["job"] == MyJob.job_reference()
+        assert p["job"].endswith(".MyJob")
         assert "data" in p
 
 

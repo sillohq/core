@@ -145,10 +145,21 @@ class Dispatchable:
         return cls._connection
 
     @classmethod
+    def job_reference(cls) -> str:
+        """How this job is named in the queue, so a worker can find it again.
+
+        Fully qualified: the worker is a separate process that has to import
+        the class before it can run it, and a bare class name says nothing
+        about where to import it from.
+        """
+        return f"{cls.__module__}.{cls.__name__}"
+
+    @classmethod
     def _encode_payload(cls, args: Any, kwargs: Any) -> str:
         """Serialise the dispatch arguments into the queue payload."""
         return json.dumps(
-            {"job": cls.__name__, "args": list(args), "kwargs": kwargs}, default=str
+            {"job": cls.job_reference(), "args": list(args), "kwargs": kwargs},
+            default=str,
         )
 
     @classmethod
@@ -317,7 +328,7 @@ class Job(Dispatchable):
             [description]
         """
         return {
-            "job": self.__class__.__name__,
+            "job": self.__class__.job_reference(),
             "maxTries": self.max_tries(),
             "timeout": self.timeout,
             "data": self.__dict__,

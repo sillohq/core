@@ -53,7 +53,13 @@ async def test_dispatch_pushes_onto_the_queue(job_class):
     assert job_class._connection.pushed == [
         {
             "queue": "emails",
-            "payload": {"job": "SendWelcomeEmail", "args": ["user-42"], "kwargs": {}},
+            # Qualified, not bare: the worker is a separate process and has to
+            # import the class before it can run it.
+            "payload": {
+                "job": job_class.job_reference(),
+                "args": ["user-42"],
+                "kwargs": {},
+            },
             "delay": 0,
         }
     ]
