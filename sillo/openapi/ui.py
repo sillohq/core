@@ -13,9 +13,27 @@ registration hook and no changes here.
 
 from __future__ import annotations
 
+import html
 import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+
+def _escape(value: str) -> str:
+    """Escape a value for an HTML text node or a double-quoted attribute."""
+    return html.escape(str(value), quote=True)
+
+
+def _script_json(value: Any) -> str:
+    """Serialize a value for embedding inside a ``<script>`` block.
+
+    ``json.dumps`` escapes for JSON, not for HTML: a string containing
+    ``</script>`` closes the tag early and drops the rest of the page into
+    the document as markup. Splitting the sequence keeps the JSON identical
+    to a parser while making it inert to the HTML tokenizer.
+    """
+    return json.dumps(value).replace("</", "<\\/")
+
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from sillo.openapi.config import OpenAPIConfig
@@ -194,7 +212,7 @@ class Swagger(DocsUI):
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{self.resolve_title(ctx)}</title>
+    <title>{_escape(self.resolve_title(ctx))}</title>
     <link rel="stylesheet" href="{self.css_url}">
     {self._favicon_tag()}
 </head>
@@ -203,7 +221,7 @@ class Swagger(DocsUI):
     <script src="{self.js_url}"></script>
     <script>
         window.onload = function() {{
-            window.ui = SwaggerUIBundle({json.dumps(options)});
+            window.ui = SwaggerUIBundle({_script_json(options)});
         }};
     </script>
 </body>
@@ -251,7 +269,7 @@ class ReDoc(DocsUI):
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{self.resolve_title(ctx)}</title>
+    <title>{_escape(self.resolve_title(ctx))}</title>
     {self._favicon_tag()}
     <style>body {{ margin: 0; padding: 0; }}</style>
 </head>
@@ -260,8 +278,8 @@ class ReDoc(DocsUI):
     <script src="{self.js_url}"></script>
     <script>
         Redoc.init(
-            {json.dumps(ctx.openapi_url)},
-            {json.dumps(options)},
+            {_script_json(ctx.openapi_url)},
+            {_script_json(options)},
             document.getElementById('redoc')
         );
     </script>
@@ -315,19 +333,26 @@ class Scalar(DocsUI):
             **self.ui_config,
             "url": ctx.openapi_url,
         }
+        # Current Scalar bundles mount through Scalar.createApiReference().
+        # The older forms — a `<script id="api-reference">` carrying the spec
+        # in its body, or configured through data-url/data-configuration —
+        # are not what the unversioned CDN build reads, and the failure is a
+        # blank page with nothing in the console.
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{self.resolve_title(ctx)}</title>
+    <title>{_escape(self.resolve_title(ctx))}</title>
     {self._favicon_tag()}
     <style>body {{ margin: 0; padding: 0; }}</style>
 </head>
 <body>
     <div id="app"></div>
-    <script id="api-reference" type="application/json">{json.dumps(options)}</script>
     <script src="{self.js_url}"></script>
+    <script>
+        Scalar.createApiReference('#app', {_script_json(options)});
+    </script>
 </body>
 </html>"""
 

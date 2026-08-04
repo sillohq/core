@@ -469,3 +469,88 @@ class TestUrlFieldsSerialize:
 
         assert document["info"]["license"]["url"] == "https://example.com/mit"
         assert document["servers"][0]["url"] == "https://api.example.com"
+
+
+class TestNestedSchemaReferences:
+    """Every $ref in the document must resolve inside the document.
+
+    Pydantic emits nested definitions under ``$defs`` and refers to them as
+    ``#/$defs/X``. Those get hoisted into ``components.schemas``, but a model
+    lifted out of a parent's ``$defs`` has no ``$defs`` key of its own — so
+    it used to be stored with its sibling references untouched, leaving
+    ``#/$defs/X`` pointers at a location that no longer exists.
+
+    ReDoc stops on this with "Invalid reference token: $defs". Scalar renders
+    an empty page. Swagger UI tolerates it, which is why it went unnoticed.
+    """
+
+    @staticmethod
+    def _all_refs(node, out=None):
+        out = [] if out is None else out
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "$ref" and isinstance(value, str):
+                    out.append(value)
+                else:
+                    TestNestedSchemaReferences._all_refs(value, out)
+        elif isinstance(node, list):
+            for item in node:
+                TestNestedSchemaReferences._all_refs(item, out)
+        return out
+
+    @pytest.fixture
+    def nested_app(self):
+        from enum import Enum
+        from typing import List
+
+        from pydantic import BaseModel
+
+        class Colour(str, Enum):
+            red = "red"
+            blue = "blue"
+
+        class Part(BaseModel):
+            name: str
+            colour: Colour  # a $ref from inside a nested definition
+
+        class Assembly(BaseModel):
+            parts: List[Part]  # forces Part into $defs
+
+        app = silloApp()
+
+        @app.get("/assemblies", responses={200: Assembly})
+        async def list_assemblies(request, response):
+            return response.json({})
+
+        @app.post("/assemblies", request_model=Assembly, responses={201: Assembly})
+        async def create_assembly(request, response):
+            return response.json({}, status_code=201)
+
+        return app
+
+    def test_no_defs_references_survive(self, nested_app):
+        document = TestClient(nested_app).get("/openapi.json").text
+
+        assert "#/$defs/" not in document
+
+    def test_every_reference_resolves(self, nested_app):
+        spec = TestClient(nested_app).get("/openapi.json").json()
+        schemas = spec.get("components", {}).get("schemas", {})
+
+        for ref in self._all_refs(spec):
+            assert ref.startswith("#/components/schemas/"), ref
+            assert ref.rsplit("/", 1)[-1] in schemas, f"{ref} points at nothing"
+
+    def test_a_nested_definition_keeps_its_own_reference(self, nested_app):
+        # Part lives in Assembly's $defs and itself refers to Colour. That
+        # inner reference is the one that used to be left as #/$defs/Colour.
+        spec = TestClient(nested_app).get("/openapi.json").json()
+        part = spec["components"]["schemas"]["Part"]
+
+        assert part["properties"]["colour"]["$ref"] == "#/components/schemas/Colour"
+
+    def test_no_defs_key_is_left_in_components(self, nested_app):
+        spec = TestClient(nested_app).get("/openapi.json").json()
+
+        for name, schema in spec["components"]["schemas"].items():
+            assert "$defs" not in schema, f"{name} still carries $defs"

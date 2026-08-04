@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -425,20 +426,23 @@ class APIDocumentation:
         Extract nested schemas from Pydantic's $defs and add them to components.schemas.
         Returns the cleaned schema with updated references.
         """
-        if "$defs" not in schema:
-            return schema
+        # Deep copy: _update_schema_references rewrites in place, and a shallow
+        # copy shares its nested dicts with the caller's schema.
+        cleaned_schema = copy.deepcopy(schema)
+        nested = cleaned_schema.pop("$defs", None)
 
-        # Extract all nested schemas and add them to components
-        for def_name, def_schema in schema["$defs"].items():
-            # Recursively process nested schemas
-            processed_schema = self._extract_and_add_nested_schemas(def_schema)
-            self.config.add_schema(def_name, Schema(**processed_schema))
+        if nested:
+            for def_name, def_schema in nested.items():
+                processed_schema = self._extract_and_add_nested_schemas(def_schema)
+                self.config.add_schema(def_name, Schema(**processed_schema))
 
-        # Remove $defs from the schema
-        cleaned_schema = schema.copy()
-        del cleaned_schema["$defs"]
-
-        # Update all references to use OpenAPI format
+        # Rewrite references whether or not this schema had its own $defs.
+        # Pydantic flattens every definition to the top level, so a model
+        # lifted out of a parent's $defs has no $defs key itself while still
+        # referring to its siblings as "#/$defs/X". Returning it untouched
+        # put those dangling references into components.schemas, where
+        # ReDoc stops with "Invalid reference token: $defs" and Scalar
+        # renders nothing at all.
         self._update_schema_references(cleaned_schema)
 
         return cleaned_schema

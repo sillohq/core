@@ -14,6 +14,7 @@ import pytest
 
 from sillo import silloApp
 from sillo.openapi.ui import (
+    SCALAR_JS,
     DocsContext,
     DocsUI,
     ReDoc,
@@ -22,6 +23,12 @@ from sillo.openapi.ui import (
     default_docs,
 )
 from sillo.testclient import TestClient
+
+
+def _scalar_config(html: str) -> dict:
+    """Pull the options back out of Scalar's ``createApiReference`` call."""
+    raw = re.search(r"createApiReference\('#app',\s*(\{.*?\})\);", html, re.S).group(1)
+    return json.loads(raw.replace("<\\/", "</"))
 
 
 def _ctx(openapi_url="/openapi.json", title="Test API"):
@@ -209,22 +216,35 @@ class TestUIConfig:
         assert '"hideDownloadButton": true' in html
 
     def test_scalar_theme_is_applied(self):
-        html = Scalar(theme="purple").render(_ctx())
-
-        assert '"theme": "purple"' in html
+        assert (
+            "purple" in _scalar_config(Scalar(theme="purple").render(_ctx()))["theme"]
+        )
 
     def test_scalar_config_is_valid_json(self):
         html = Scalar(ui_config={"hideDownloadButton": True}).render(_ctx())
 
-        payload = re.search(
-            r'<script id="api-reference" type="application/json">(.*?)</script>',
-            html,
-            re.DOTALL,
-        ).group(1)
-        options = json.loads(payload)
+        options = _scalar_config(html)
 
         assert options["url"] == "/openapi.json"
         assert options["hideDownloadButton"] is True
+
+    def test_scalar_mounts_through_create_api_reference(self):
+        # Current Scalar bundles mount this way. The legacy forms — the spec
+        # in a <script id="api-reference"> body, or data-url/data-configuration
+        # attributes — are ignored by the CDN build, and the failure is a
+        # blank page with nothing in the console.
+        html = Scalar().render(_ctx(openapi_url="/api/v1/openapi.json"))
+
+        assert "Scalar.createApiReference('#app'," in html
+        assert '<div id="app"></div>' in html
+        assert _scalar_config(html)["url"] == "/api/v1/openapi.json"
+
+    def test_scalar_loads_the_bundle_before_calling_it(self):
+        # Scalar.createApiReference is defined by the bundle, so a call
+        # placed above the <script src> runs against an undefined global.
+        html = Scalar().render(_ctx())
+
+        assert html.index(SCALAR_JS) < html.index("Scalar.createApiReference")
 
 
 class TestSelfHosting:
@@ -438,3 +458,38 @@ class TestBuilderHelpers:
         app = silloApp(openapi_url="/spec.json")
 
         assert "/spec.json" in app.openapi._generate_swagger_ui()
+
+
+class TestEscaping:
+    """Values interpolated into the page must not escape their context."""
+
+    def test_a_title_cannot_break_out_of_the_title_tag(self):
+        ui = Swagger(title="</title><script>alert(1)</script>")
+
+        html = ui.render(_ctx())
+
+        assert "<script>alert(1)</script>" not in html
+        assert "&lt;/title&gt;" in html
+
+    @pytest.mark.parametrize(
+        "cls", [Swagger, ReDoc, Scalar], ids=["swagger", "redoc", "scalar"]
+    )
+    def test_every_viewer_escapes_the_title(self, cls):
+        html = cls(title="<img src=x onerror=alert(1)>").render(_ctx())
+
+        assert "<img src=x" not in html
+
+    def test_config_cannot_close_the_script_tag(self):
+        # json.dumps escapes for JSON, not for HTML: an embedded "</script>"
+        # ends the block early and the rest of the page becomes markup.
+        ui = Swagger(ui_config={"docExpansion": "</script><script>alert(1)"})
+
+        html = ui.render(_ctx())
+
+        assert "</script><script>alert(1)" not in html
+        assert "<\\/script>" in html
+
+    def test_redoc_config_cannot_close_the_script_tag(self):
+        html = ReDoc(ui_config={"expandResponses": "</script>x"}).render(_ctx())
+
+        assert "</script>x" not in html
