@@ -452,6 +452,22 @@ class APIDocumentation:
         Recursively update #/$defs/ references to #/components/schemas/ format.
         """
         if isinstance(schema, dict):
+            # A discriminator's mapping holds references as plain strings
+            # under arbitrary keys — {"email": "#/$defs/EmailNotification"} —
+            # so the "$ref" test below never sees them. Left alone, the
+            # oneOf branches point into components while the mapping that
+            # selects between them points at $defs, and a viewer using the
+            # discriminator resolves nothing.
+            discriminator = schema.get("discriminator")
+            if isinstance(discriminator, dict):
+                mapping = discriminator.get("mapping")
+                if isinstance(mapping, dict):
+                    for name, target in mapping.items():
+                        if isinstance(target, str) and target.startswith("#/$defs/"):
+                            mapping[name] = target.replace(
+                                "#/$defs/", "#/components/schemas/"
+                            )
+
             for key, value in schema.items():
                 if (
                     key == "$ref"

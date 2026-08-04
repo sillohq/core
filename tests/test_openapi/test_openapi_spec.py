@@ -554,3 +554,141 @@ class TestNestedSchemaReferences:
 
         for name, schema in spec["components"]["schemas"].items():
             assert "$defs" not in schema, f"{name} still carries $defs"
+
+
+class TestSchemaExamples:
+    """`examples` on a Schema Object is an array, not a mapping.
+
+    JSON Schema draft 2020-12 defines it as an array of sample values, and
+    OpenAPI 3.1 adopts that. The `{name: Example}` mapping belongs to
+    Parameter, MediaType and Header.
+
+    Typing it as the mapping meant any model using `Field(examples=[...])`
+    failed validation — and since the document is built in one pass, a
+    single such field returned 422 for the entire API rather than for the
+    one endpoint that used it.
+    """
+
+    def test_a_field_with_examples_does_not_break_the_document(self):
+        from pydantic import BaseModel, Field
+
+        class Money(BaseModel):
+            amount: int = Field(..., examples=[1299])
+            currency: str = Field("USD", examples=["USD", "EUR"])
+
+        app = silloApp()
+
+        @app.post("/prices", request_model=Money, responses={200: Money})
+        async def create_price(request, response):
+            return response.json({})
+
+        response = TestClient(app).get("/openapi.json")
+
+        assert response.status_code == 200, response.text
+
+    def test_the_examples_array_survives_into_the_document(self):
+        from pydantic import BaseModel, Field
+
+        class Money(BaseModel):
+            amount: int = Field(..., examples=[1299])
+
+        app = silloApp()
+
+        @app.post("/prices", request_model=Money, responses={200: Money})
+        async def create_price(request, response):
+            return response.json({})
+
+        spec = TestClient(app).get("/openapi.json").json()
+        # A top-level request model is inlined rather than hoisted into
+        # components; only nested definitions land there.
+        schema = spec["paths"]["/prices"]["post"]["requestBody"]["content"][
+            "application/json"
+        ]["schema"]
+
+        assert schema["properties"]["amount"]["examples"] == [1299]
+
+    def test_one_bad_field_does_not_take_the_whole_api_with_it(self):
+        # The failure mode that made this hard to place: an unrelated
+        # endpoint stops working because of a model it never references.
+        from pydantic import BaseModel, Field
+
+        class WithExamples(BaseModel):
+            value: int = Field(..., examples=[1])
+
+        app = silloApp()
+
+        @app.get("/unrelated")
+        async def unrelated(request, response):
+            return response.json({"ok": True})
+
+        @app.post("/withexamples", request_model=WithExamples)
+        async def with_examples(request, response):
+            return response.json({})
+
+        spec = TestClient(app).get("/openapi.json").json()
+
+        assert "/unrelated" in spec["paths"]
+
+
+class TestDiscriminatorMapping:
+    """A discriminator's mapping holds references too.
+
+    `_update_schema_references` rewrote values under a `"$ref"` key. A
+    discriminator mapping is `{"email": "#/$defs/EmailNotification"}` —
+    references under arbitrary keys — so it was skipped. The oneOf branches
+    then pointed into `components` while the mapping that selects between
+    them still pointed at `$defs`, and a viewer following the discriminator
+    resolved nothing.
+    """
+
+    @pytest.fixture
+    def union_app(self):
+        from typing import Literal, Union
+
+        from pydantic import BaseModel, Field
+        from typing_extensions import Annotated
+
+        class Email(BaseModel):
+            channel: Literal["email"]
+            to: str
+
+        class Sms(BaseModel):
+            channel: Literal["sms"]
+            to: str
+
+        class Send(BaseModel):
+            payload: Annotated[Union[Email, Sms], Field(discriminator="channel")]
+
+        app = silloApp()
+
+        @app.post("/send", request_model=Send, responses={200: Send})
+        async def send(request, response):
+            return response.json({})
+
+        return app
+
+    def test_no_defs_reference_survives_anywhere(self, union_app):
+        document = TestClient(union_app).get("/openapi.json").text
+
+        assert "#/$defs/" not in document
+
+    def test_the_mapping_points_into_components(self, union_app):
+        spec = TestClient(union_app).get("/openapi.json").json()
+        schema = spec["paths"]["/send"]["post"]["requestBody"]["content"][
+            "application/json"
+        ]["schema"]
+        mapping = schema["properties"]["payload"]["discriminator"]["mapping"]
+
+        for name, target in mapping.items():
+            assert target.startswith("#/components/schemas/"), f"{name} -> {target}"
+
+    def test_every_mapping_target_resolves(self, union_app):
+        spec = TestClient(union_app).get("/openapi.json").json()
+        schemas = spec["components"]["schemas"]
+        schema = spec["paths"]["/send"]["post"]["requestBody"]["content"][
+            "application/json"
+        ]["schema"]
+        mapping = schema["properties"]["payload"]["discriminator"]["mapping"]
+
+        for name, target in mapping.items():
+            assert target.rsplit("/", 1)[-1] in schemas, f"{name} points at nothing"

@@ -211,7 +211,15 @@ class Schema(BaseModel):
     externalDocs: Optional[ExternalDocumentation] = None
     deprecated: Optional[bool] = None
     example: Optional[Any] = None
-    examples: Optional[Examples] = None
+    # On a Schema Object, `examples` is an ARRAY of sample values — JSON
+    # Schema draft 2020-12, carried into OpenAPI 3.1. The `{name: Example}`
+    # mapping belongs to Parameter, MediaType and Header, not here.
+    #
+    # Typing it as the mapping made any pydantic model using
+    # `Field(examples=[...])` fail validation, and because the whole
+    # document is built at once, one such field turned /openapi.json into a
+    # 422 for the entire API.
+    examples: Optional[List[Any]] = None
 
     @field_validator("type", mode="before")
     @classmethod
