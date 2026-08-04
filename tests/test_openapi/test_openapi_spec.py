@@ -407,3 +407,65 @@ class TestFullIntegration:
         assert "page" in param_names
         assert "limit" in param_names
         assert "Authorization" in param_names
+
+
+class TestUrlFieldsSerialize:
+    """Spec fields typed ``AnyUrl`` must reach the wire as strings.
+
+    ``model_dump()`` without ``mode="json"`` leaves them as ``AnyUrl``
+    objects, which ``json.dumps`` refuses — so setting a license URL, the
+    single most ordinary piece of API metadata, turned the document route
+    into a 500. Nothing else in the application misbehaves, which is what
+    made it hard to place.
+    """
+
+    def test_license_url_does_not_break_the_document(self):
+        from sillo.openapi.models import License
+
+        app = silloApp(license=License(name="MIT", url="https://example.com/mit"))
+        response = TestClient(app).get("/openapi.json")
+
+        assert response.status_code == 200
+        assert response.json()["info"]["license"]["url"] == "https://example.com/mit"
+
+    def test_contact_url_does_not_break_the_document(self):
+        from sillo.openapi.models import Contact
+
+        app = silloApp(contact=Contact(name="Team", url="https://example.com"))
+        response = TestClient(app).get("/openapi.json")
+
+        assert response.status_code == 200
+        assert response.json()["info"]["contact"]["url"].startswith(
+            "https://example.com"
+        )
+
+    def test_external_docs_url_does_not_break_the_document(self):
+        from sillo.openapi.models import ExternalDocumentation
+
+        app = silloApp()
+        app.openapi_config.set_external_docs(
+            ExternalDocumentation(url="https://example.com/docs", description="More")
+        )
+        response = TestClient(app).get("/openapi.json")
+
+        assert response.status_code == 200
+        assert response.json()["externalDocs"]["url"].startswith("https://example.com")
+
+    def test_every_url_field_at_once_is_json(self):
+        import json
+
+        from sillo.openapi.models import Contact, License, Server
+
+        app = silloApp(
+            license=License(name="MIT", url="https://example.com/mit"),
+            contact=Contact(name="Team", url="https://example.com", email="t@e.com"),
+            servers=[Server(url="https://api.example.com", description="Prod")],
+            terms_of_service="https://example.com/terms",
+        )
+
+        # build_openapi returns the serialized string; if anything in the
+        # document is not JSON-native this raises rather than returning.
+        document = json.loads(app.build_openapi())
+
+        assert document["info"]["license"]["url"] == "https://example.com/mit"
+        assert document["servers"][0]["url"] == "https://api.example.com"

@@ -126,7 +126,14 @@ class APIDocumentation:
             ):
                 self._add_route_to_openapi_spec(full_path, route_obj)
 
-        spec = self.config.openapi_spec.model_dump(by_alias=True, exclude_none=True)
+        # mode="json" so pydantic's rich types land as JSON-native values.
+        # Several spec fields are typed AnyUrl — Contact.url, License.url,
+        # ExternalDocumentation.url, OAuth refreshUrl — and the default
+        # mode leaves those as AnyUrl objects, which json.dumps refuses.
+        # Setting any one of them turned /openapi.json into a 500.
+        spec = self.config.openapi_spec.model_dump(
+            by_alias=True, exclude_none=True, mode="json"
+        )
         self._validator_memo = {}
         return spec
 
