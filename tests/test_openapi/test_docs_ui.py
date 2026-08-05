@@ -14,7 +14,9 @@ import pytest
 
 from sillo import silloApp
 from sillo.openapi.ui import (
+    ATLAS_VERSION,
     SCALAR_JS,
+    Atlas,
     DocsContext,
     DocsUI,
     ReDoc,
@@ -46,11 +48,24 @@ def _ctx(openapi_url="/openapi.json", title="Test API"):
 
 
 class TestDefaults:
-    def test_default_mounts_swagger_and_redoc(self):
+    def test_default_mounts_atlas_and_redoc(self):
+        # Atlas is sillo's own reference and the default at /docs. Swagger
+        # is still shipped and one line away.
         app = silloApp()
 
-        assert [ui.name for ui in app.docs] == ["swagger", "redoc"]
+        assert [ui.name for ui in app.docs] == ["atlas", "redoc"]
         assert [ui.path for ui in app.docs] == ["/docs", "/redoc"]
+
+    def test_the_default_page_mounts_atlas(self):
+        page = TestClient(silloApp()).get("/docs").text
+
+        assert "Atlas.createApiReference" in page
+        assert "SwaggerUIBundle" not in page
+
+    def test_swagger_is_still_available(self):
+        client = TestClient(silloApp(docs=[Swagger(path="/docs")]))
+
+        assert "SwaggerUIBundle" in client.get("/docs").text
 
     def test_default_pages_are_served(self):
         client = TestClient(silloApp())
@@ -493,3 +508,73 @@ class TestEscaping:
         html = ReDoc(ui_config={"expandResponses": "</script>x"}).render(_ctx())
 
         assert "</script>x" not in html
+
+
+class TestAtlas:
+    """The default viewer."""
+
+    def test_atlas_pins_a_released_tag(self):
+        # An unpinned CDN URL means every application's documentation
+        # changes the moment Atlas does.
+        page = Atlas().render(_ctx())
+
+        assert f"atlas@{ATLAS_VERSION}" in page
+        assert "@main" not in page and "@latest" not in page
+
+    def test_the_document_url_reaches_the_mount_call(self):
+        page = Atlas().render(_ctx(openapi_url="/api/v1/openapi.json"))
+
+        assert "/api/v1/openapi.json" in page
+        assert "Atlas.createApiReference('#app'," in page
+
+    def test_the_bundle_loads_before_it_is_called(self):
+        # Atlas.createApiReference is defined by the bundle, so a call above
+        # the <script src> runs against an undefined global.
+        page = Atlas().render(_ctx())
+
+        assert page.index("atlas.standalone.js") < page.index(
+            "Atlas.createApiReference"
+        )
+
+    def test_the_favicon_is_the_sillo_one_and_typed_correctly(self):
+        page = Atlas().render(_ctx())
+
+        assert "https://docs.sillo.build/favicon.svg" in page
+        # A browser handed an SVG labelled image/png may refuse to render it.
+        assert 'type="image/svg+xml"' in page
+
+    def test_the_favicon_can_be_removed(self):
+        assert 'rel="icon"' not in Atlas(favicon_url=None).render(_ctx())
+
+    def test_a_png_favicon_keeps_its_own_type(self):
+        page = Atlas(favicon_url="https://example.com/icon.png").render(_ctx())
+
+        assert 'type="image/png"' in page
+
+    def test_the_bundle_can_be_self_hosted(self):
+        # The point of the knob: a deployment with no outbound network.
+        page = Atlas(js_url="/static/atlas.js").render(_ctx())
+
+        assert "/static/atlas.js" in page
+        assert "jsdelivr" not in page
+
+    def test_ui_config_reaches_the_mount_call(self):
+        page = Atlas(theme="dark", ui_config={"deepLinking": False}).render(_ctx())
+
+        assert '"theme": "dark"' in page
+        assert '"deepLinking": false' in page
+
+    def test_url_cannot_be_overridden_by_ui_config(self):
+        page = Atlas(ui_config={"url": "https://example.com/other.json"}).render(
+            _ctx(openapi_url="/openapi.json")
+        )
+        payload = re.search(
+            r"createApiReference\('#app', (\{.*?\})\);", page, re.DOTALL
+        )
+
+        assert json.loads(payload.group(1))["url"] == "/openapi.json"
+
+    def test_a_hostile_title_cannot_break_out(self):
+        page = Atlas(title="</title><script>alert(1)</script>").render(_ctx())
+
+        assert "<script>alert(1)</script>" not in page

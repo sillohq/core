@@ -1,11 +1,12 @@
 """Documentation presenters for the generated OpenAPI document.
 
 A presenter turns the OpenAPI document into a browsable page. sillo ships
-:class:`Swagger`, :class:`ReDoc` and :class:`Scalar`; anything else is a
+:class:`Atlas` — its own reference, and the default at ``/docs`` — plus
+:class:`Swagger`, :class:`ReDoc` and :class:`Scalar`. Anything else is a
 class with a ``render`` method, so a third-party viewer needs no
 registration hook and no changes here.
 
-    app = silloApp(docs=[Swagger(path="/docs"), Scalar(path="/reference")])
+    app = silloApp(docs=[Atlas(path="/docs"), Scalar(path="/reference")])
 
 ``docs=[]`` serves no documentation UI at all. The raw document stays at
 ``openapi_url`` regardless — presenters render it, they do not produce it.
@@ -39,6 +40,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from sillo.openapi.config import OpenAPIConfig
 
 __all__ = [
+    "Atlas",
     "DocsContext",
     "DocsUI",
     "ReDoc",
@@ -139,18 +141,105 @@ class DocsUI:
         """A ``<link rel=icon>`` tag, or an empty string when unset."""
         if not self.favicon_url:
             return ""
-        return f'<link rel="icon" href="{self.favicon_url}" type="image/png">'
+        # The type follows the extension: a browser handed an SVG labelled
+        # image/png may refuse to render it.
+        media = "image/svg+xml" if self.favicon_url.endswith(".svg") else "image/png"
+        return f'<link rel="icon" href="{_escape(self.favicon_url)}" type="{media}">'
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(path={self.path!r})"
 
 
-DEFAULT_FAVICON = "https://sillolabs.com/logo.png"
+DEFAULT_FAVICON = "https://docs.sillo.build/favicon.svg"
+
+#: Atlas is pinned to a released tag rather than a branch. An unpinned CDN
+#: URL means every application's documentation changes the moment Atlas
+#: does — a bad surprise in production, and an unreproducible bug report.
+ATLAS_VERSION = "v0.6.0"
+ATLAS_JS = (
+    f"https://cdn.jsdelivr.net/gh/sillohq/atlas@{ATLAS_VERSION}"
+    "/dist/atlas.standalone.js"
+)
 
 SWAGGER_JS = "https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"
 SWAGGER_CSS = "https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"
 REDOC_JS = "https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"
 SCALAR_JS = "https://cdn.jsdelivr.net/npm/@scalar/api-reference"
+
+
+class Atlas(DocsUI):
+    """Atlas — sillo's own OpenAPI reference, and the default at ``/docs``.
+
+    A three-pane reference with a request builder that actually sends,
+    ranked search, and snippets in nine languages. Zero dependencies, and
+    it carries its own styles, so the page is one script tag.
+
+    ``ui_config`` is merged into the ``createApiReference`` call, so options
+    this class has never heard of still work::
+
+        Atlas(theme="dark", ui_config={"deepLinking": False})
+
+    ``js_url`` points at a pinned tag on jsDelivr. Override it to
+    self-host — a deployment with no outbound network or a strict
+    ``Content-Security-Policy`` cannot reach a CDN, and the failure is a
+    blank page rather than an error.
+    """
+
+    path = "/docs"
+    name = "atlas"
+
+    def __init__(
+        self,
+        *,
+        path: Optional[str] = None,
+        title: Optional[str] = None,
+        favicon_url: Optional[str] = DEFAULT_FAVICON,
+        js_url: str = ATLAS_JS,
+        theme: str = "auto",
+        ui_config: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Initialize the Atlas presenter.
+
+        Args:
+            path: Where to serve the page. Defaults to ``"/docs"``.
+            title: Browser tab title. Defaults to the API title.
+            favicon_url: Icon for the page, or ``None`` for no icon.
+            js_url: URL of the Atlas standalone bundle.
+            theme: ``"auto"`` follows the reader's operating system.
+            ui_config: Extra options merged into the mount call. ``url`` is
+                set by this class.
+        """
+        super().__init__(path=path, title=title, favicon_url=favicon_url)
+        self.js_url = js_url
+        self.theme = theme
+        self.ui_config = dict(ui_config or {})
+
+    def render(self, ctx: DocsContext) -> str:
+        """Render the Atlas page."""
+        options: Dict[str, Any] = {
+            "theme": self.theme,
+            **self.ui_config,
+            # Set last: this identifies the document, and a caller
+            # overriding it has only broken their own page.
+            "url": ctx.openapi_url,
+        }
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{_escape(self.resolve_title(ctx))}</title>
+    {self._favicon_tag()}
+    <style>html, body {{ margin: 0; padding: 0; height: 100%; }}</style>
+</head>
+<body>
+    <div id="app"></div>
+    <script src="{_escape(self.js_url)}"></script>
+    <script>
+        Atlas.createApiReference('#app', {_script_json(options)});
+    </script>
+</body>
+</html>"""
 
 
 class Swagger(DocsUI):
@@ -360,12 +449,19 @@ class Scalar(DocsUI):
 def default_docs(swagger_url: str = "/docs", redoc_url: str = "/redoc") -> List[DocsUI]:
     """The presenters mounted when ``docs`` is not given.
 
+    ``/docs`` is :class:`Atlas`, sillo's own reference. Swagger UI is still
+    shipped and one line away::
+
+        app = silloApp(docs=[Swagger(path="/docs"), ReDoc()])
+
     Args:
-        swagger_url: Path for Swagger UI.
+        swagger_url: Path for the primary viewer. Named for the argument it
+            still backs — ``silloApp(swagger_docs=...)`` — which predates
+            there being a choice of viewer.
         redoc_url: Path for ReDoc.
 
     Returns:
         A fresh list — callers mutate their own copy, and a default list
         shared between applications would leak presenters between them.
     """
-    return [Swagger(path=swagger_url), ReDoc(path=redoc_url)]
+    return [Atlas(path=swagger_url), ReDoc(path=redoc_url)]

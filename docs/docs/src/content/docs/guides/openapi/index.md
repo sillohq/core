@@ -28,18 +28,26 @@ async def get_user(request, response, user_id: int):
 ```
 
 This automatically creates:
-- **Interactive Swagger UI** at `/docs`
-- **ReDoc documentation** at `/redoc` 
+- **Atlas**, sillo's own reference, at `/docs`
+- **ReDoc documentation** at `/redoc`
 - **OpenAPI JSON specification** at `/openapi.json`
 
 ##  Documentation Interfaces
 
 sillo provides multiple ways to explore your API. Which viewers are
-mounted is the `docs` argument — Swagger UI and ReDoc by default, plus
-Scalar and anything you write yourself. See
+mounted is the `docs` argument — Atlas and ReDoc by default, plus Swagger
+UI, Scalar and anything you write yourself. See
 [Documentation UI](/guides/openapi/documentation-ui/).
 
-###  Swagger UI (`/docs`)
+###  Atlas (`/docs`)
+sillo's own reference, and the default. Features:
+- Three-pane layout with a request builder that sends real requests
+- `⌘K` search that ranks results rather than filtering
+- Code snippets in nine languages, generated from the request you built
+- Light and dark, following the operating system
+- Zero dependencies, styles inlined, one script tag
+
+###  Swagger UI
 Interactive interface for testing endpoints directly in the browser. Features:
 - Live API testing with request/response examples
 - Parameter input forms with validation

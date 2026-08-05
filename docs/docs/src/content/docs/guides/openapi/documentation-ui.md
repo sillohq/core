@@ -1,6 +1,6 @@
 ---
 title: Documentation UI
-description: Choosing which API documentation viewers to serve — Swagger UI, ReDoc, Scalar — configuring them, self-hosting their assets, and writing your own.
+description: Choosing which API documentation viewers to serve — Atlas, Swagger UI, ReDoc, Scalar — configuring them, self-hosting their assets, and writing your own.
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: Swagger UI, ReDoc and Scalar as pluggable presenters, plus writing your own.
+      content: Atlas, Swagger UI, ReDoc and Scalar as pluggable presenters, plus writing your own.
 ---
 
 #  Documentation UI
@@ -19,20 +19,19 @@ of viewers. Which ones you get is a list you pass at construction:
 
 ```python
 from sillo import silloApp
-from sillo.openapi.ui import Swagger, ReDoc, Scalar
+from sillo.openapi.ui import Atlas, Swagger, ReDoc, Scalar
 
 app = silloApp(
     title="Myapp",
     docs=[
-        Swagger(path="/docs"),
+        Atlas(path="/docs"),
         ReDoc(path="/redoc"),
         Scalar(path="/reference", theme="purple"),
     ],
 )
 ```
 
-Leave `docs` unset and you get Swagger UI at `/docs` and ReDoc at
-`/redoc`, which is what sillo has always done.
+Leave `docs` unset and you get **Atlas** at `/docs` and ReDoc at `/redoc`.
 
 ##  Turning documentation off
 
@@ -62,14 +61,29 @@ build time.
 
 ##  The viewers
 
+###  Atlas
+
+```python
+Atlas(path="/docs", theme="auto")
+```
+
+sillo's own reference, and the default. Three panes — operations on the
+left, detail in the middle, a request builder on the right — with `⌘K`
+search that ranks rather than filters, snippets in nine languages, and a
+*Send* button that makes the request from the browser.
+
+Zero dependencies and its own inlined styles, so the page is one script
+tag. It is served from a pinned tag on jsDelivr; pass `js_url` to
+self-host.
+
 ###  Swagger UI
 
 ```python
 Swagger(path="/docs")
 ```
 
-Interactive, with a *Try it out* button per operation. The default, and
-the one to keep if you want people to call your API from the page.
+Interactive, with a *Try it out* button per operation. The previous
+default — still shipped, and one line away if you prefer it.
 
 ###  ReDoc
 
@@ -96,6 +110,8 @@ viewer's own initialization, so options sillo has never heard of still
 work:
 
 ```python
+Atlas(theme="dark", ui_config={"deepLinking": False})
+
 Swagger(ui_config={
     "persistAuthorization": True,   # keep the bearer token across reloads
     "docExpansion": "none",         # collapse everything by default
@@ -115,12 +131,14 @@ nothing.
 ###  Title and favicon
 
 ```python
-Swagger(title="Myapp — Internal API", favicon_url="/static/favicon.png")
-Swagger(favicon_url=None)                    # no icon at all
+Atlas(title="Myapp — Internal API", favicon_url="/static/favicon.svg")
+Atlas(favicon_url=None)                      # no icon at all
 ```
 
 `title` defaults to the API title, so `silloApp(title="Myapp")` already
-names the tab correctly.
+names the tab correctly. The favicon defaults to sillo's own, and its
+media type follows the file extension — an `.svg` is labelled
+`image/svg+xml` rather than handed to the browser as a PNG.
 
 ##  Self-hosting the assets
 
@@ -128,6 +146,7 @@ Every viewer loads its JavaScript from a public CDN by default. Override
 the URLs to serve them yourself:
 
 ```python
+Atlas(js_url="/static/atlas.standalone.js")
 Swagger(
     js_url="/static/swagger-ui-bundle.js",
     css_url="/static/swagger-ui.css",
@@ -242,11 +261,14 @@ silloApp(swagger_docs="/api-docs", docs=[Scalar()])
 # the presenter instead, e.g. docs=[Swagger(path='/api-docs')]
 ```
 
+The argument is still named `swagger_docs` because it predates there being
+a choice of viewer; it now sets the path of whatever sits at `/docs`.
+
 The translation is direct:
 
 | Before | After |
 | --- | --- |
-| `swagger_docs="/api-docs"` | `docs=[Swagger(path="/api-docs"), ReDoc()]` |
+| `swagger_docs="/api-docs"` | `docs=[Atlas(path="/api-docs"), ReDoc()]` |
 | `redoc_docs="/api-redoc"` | `docs=[Swagger(), ReDoc(path="/api-redoc")]` |
 | — no equivalent — | `docs=[]` |
 
@@ -268,7 +290,8 @@ could not express at all.
    path surfaces at import rather than as the wrong viewer at runtime.
 
 5. **`redoc/latest` and `swagger-ui-dist@5` float.** Pin them through
-   `js_url` if you need the page to look the same next month.
+   `js_url` if you need the page to look the same next month. Atlas is
+   already pinned to a released tag.
 
 ##  Related
 
