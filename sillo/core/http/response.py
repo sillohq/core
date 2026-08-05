@@ -482,6 +482,23 @@ class BaseResponse:
         """The response body as bytes."""
         return self._body
 
+    def set_body(self, content: typing.Any) -> "BaseResponse":
+        """Replace the body, keeping Content-Length in step with it.
+
+        Assigning ``_body`` directly leaves the Content-Length that was
+        computed from the *old* body, and a server writing more bytes than it
+        declared aborts the response.
+
+        Args:
+            content: The new body, rendered the same way as an initial one.
+
+        Returns:
+            This response, for chaining.
+        """
+        self._body = self.render(content)
+        self.set_header("content-length", str(len(self._body)), overide=True)
+        return self
+
     def _generate_etag(self) -> str:
         """Generate an ETag for the response content."""
         content_hash = sha1()
@@ -503,7 +520,13 @@ class BaseResponse:
         new_header = (key_bytes, value_bytes)
 
         if overide:
-            self.raw_headers = [(k, v) for k, v in self.raw_headers if k != key_bytes]
+            # Edit in place rather than rebinding: `self.headers` caches a
+            # MutableHeaders around this exact list, and a fresh list leaves
+            # that cache pointing at an orphan, so later edits through
+            # `response.headers` never reach the wire.
+            self.raw_headers[:] = [
+                (k, v) for k, v in self.raw_headers if k != key_bytes
+            ]
 
         self.raw_headers.append(new_header)
         return self
@@ -516,7 +539,7 @@ class BaseResponse:
             overide_all: If True, replace all existing headers.
         """
         if overide_all:
-            self.raw_headers = [
+            self.raw_headers[:] = [
                 (k.lower().encode("latin-1"), v.encode("latin-1"))
                 for k, v in headers.items()
             ]
@@ -628,7 +651,11 @@ class FileResponse(BaseResponse):
         self.status_code = status_code
 
         content_type, _ = mimetypes.guess_type(str(self.path))
-        self.set_header("content-type", content_type or "application/octet-stream")
+        #: Kept as an attribute because a multipart/byteranges response
+        #: overwrites the response-level Content-Type, and every part still
+        #: has to declare the media type of the file itself.
+        self.media_type = content_type or "application/octet-stream"
+        self.set_header("content-type", self.media_type)
         self.set_header(
             "content-disposition",
             f'{content_disposition_type}; filename="{self.filename}"',
@@ -667,45 +694,119 @@ class FileResponse(BaseResponse):
 
         await self._send_response(scope, receive, send)
 
+    def _parse_ranges(self, range_header: str, file_size: int) -> List[Tuple[int, int]]:
+        """Turn a ``Range`` header into inclusive ``(start, end)`` offsets.
+
+        Args:
+            range_header: The raw header value, e.g. ``"bytes=0-99,200-"``.
+            file_size: The size of the file on disk, in bytes.
+
+        Returns:
+            One ``(start, end)`` pair per range, both offsets inclusive and
+            already clamped to the file.
+
+        Raises:
+            ValueError: If the header is malformed, names a unit other than
+                ``bytes``, or every range it asks for is unsatisfiable.
+        """
+        unit, sep, spec = range_header.strip().partition("=")
+        if not sep or unit.strip().lower() != "bytes":
+            raise ValueError("Only byte ranges are supported")
+
+        ranges: List[Tuple[int, int]] = []
+        for range_str in spec.split(","):
+            first, sep, last = range_str.strip().partition("-")
+            if not sep:
+                raise ValueError(f"Malformed range {range_str!r}")
+            first, last = first.strip(), last.strip()
+
+            if not first:
+                # A suffix range: `bytes=-500` means the *last* 500 bytes,
+                # not "from 0 to 500".
+                suffix = int(last)
+                if suffix <= 0:
+                    raise ValueError("Suffix range must be positive")
+                start, end = max(0, file_size - suffix), file_size - 1
+            else:
+                start = int(first)
+                # An absent or over-long last-byte-pos means "to the end of
+                # the file" (RFC 9110 §14.1.2), so a client that asks for
+                # more than exists gets what exists rather than a 416.
+                end = file_size - 1 if not last else min(int(last), file_size - 1)
+
+            if start < 0 or start >= file_size or start > end:
+                raise ValueError("Unsatisfiable range")
+            ranges.append((start, end))
+
+        if not ranges:
+            raise ValueError("No ranges given")
+        return ranges
+
+    def _multipart_part_header(self, start: int, end: int, file_size: int) -> bytes:
+        """Build the boundary and headers that introduce one multipart part."""
+        return (
+            f"--{self._multipart_boundary}\r\n"
+            f"Content-Type: {self.media_type}\r\n"
+            f"Content-Range: bytes {start}-{end}/{file_size}\r\n\r\n"
+        ).encode("latin-1")
+
+    def _multipart_epilogue(self) -> bytes:
+        """Build the closing delimiter that ends a multipart body."""
+        return f"--{self._multipart_boundary}--\r\n".encode("latin-1")
+
+    def _multipart_length(self, file_size: int) -> int:
+        """Total size of the multipart body, framing included.
+
+        Counted from the very functions that write it, so the number declared
+        and the number of bytes sent cannot drift apart.
+        """
+        total = len(self._multipart_epilogue())
+        for start, end in self._ranges:
+            total += len(self._multipart_part_header(start, end, file_size))
+            total += end - start + 1
+            total += 2  # the CRLF that closes each part body
+        return total
+
     def _handle_range_header(self, range_header: str) -> None:
-        """Parse and validate the Range header."""
+        """Apply a ``Range`` header to this response's status and headers."""
         file_size = self.path.stat().st_size
 
         try:
-            unit, ranges = range_header.strip().split("=")
-            if unit != "bytes":
-                raise ValueError("Only byte ranges are supported")
-
+            self._ranges = self._parse_ranges(range_header, file_size)
+        except ValueError:
             self._ranges = []
-            for range_str in ranges.split(","):
-                range = range_str.split("-")
-                start: int = int(range[0])
-                end: int = int(range[-1]) if range[-1] != "" else 0
-                start = int(start) if start else 0
-                end: int = int(end) if end else file_size - 1
-
-                if start < 0 or end >= file_size or start > end:
-                    raise ValueError("Invalid range")
-
-                self._ranges.append((start, end))
-
-            if len(self._ranges) == 1:
-                start, end = self._ranges[0]
-                content_length = end - start + 1
-                self.set_header("content-range", f"bytes {start}-{end}/{file_size}")
-                self.set_header("content-length", str(content_length), overide=True)
-                self.status_code = 206
-            elif len(self._ranges) > 1:
-                self._multipart_boundary = self._generate_multipart_boundary()
-                self.set_header(
-                    "content-type",
-                    f"multipart/byteranges; boundary={self._multipart_boundary}",
-                )
-                self.status_code = 206
-
-        except ValueError as _:
-            self.set_header("content-range", f"bytes */{file_size}")
+            self.set_header("content-range", f"bytes */{file_size}", overide=True)
+            # `set_stat_headers` declared the whole file. A 416 sends no body
+            # at all, so leaving that in place promises bytes that never come
+            # and the server tears the connection down mid-response.
+            self.set_header("content-length", "0", overide=True)
             self.status_code = 416
+            return
+
+        self.status_code = 206
+
+        if len(self._ranges) == 1:
+            start, end = self._ranges[0]
+            self.set_header(
+                "content-range", f"bytes {start}-{end}/{file_size}", overide=True
+            )
+            self.set_header("content-length", str(end - start + 1), overide=True)
+            return
+
+        # Several ranges travel as one multipart/byteranges body, where each
+        # part carries its own boundary and headers. That framing is part of
+        # the response, so the declared length has to cover it too — the file
+        # size left over from `set_stat_headers` is not just wrong, it is
+        # routinely *smaller* than what gets written.
+        self._multipart_boundary = self._generate_multipart_boundary()
+        self.set_header(
+            "content-type",
+            f"multipart/byteranges; boundary={self._multipart_boundary}",
+            overide=True,
+        )
+        self.set_header(
+            "content-length", str(self._multipart_length(file_size)), overide=True
+        )
 
     async def _send_response(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Send the file response, handling range requests and multipart responses."""
@@ -729,12 +830,13 @@ class FileResponse(BaseResponse):
 
         async with await anyio.open_file(self.path, "rb") as file:
             if self._multipart_boundary:
+                file_size = self.path.stat().st_size
                 for start, end in self._ranges:
-                    await self._send_multipart_chunk(file, start, end, send)
+                    await self._send_multipart_chunk(file, start, end, file_size, send)
                 await send(
                     {
                         "type": "http.response.body",
-                        "body": f"--{self._multipart_boundary}--\r\n".encode("utf-8"),
+                        "body": self._multipart_epilogue(),
                         "more_body": False,
                     }
                 )
@@ -770,8 +872,9 @@ class FileResponse(BaseResponse):
     ) -> None:
         """Send a single range of the file using AnyIO."""
         await file.seek(start)
+        # Content-Length was settled in `_handle_range_header`; the start
+        # message has already gone out, so setting a header here does nothing.
         remaining = end - start + 1
-        self.set_header("content-length", str(remaining), overide=True)
 
         while remaining > 0:
             chunk_size = min(self.chunk_size, remaining)
@@ -795,21 +898,21 @@ class FileResponse(BaseResponse):
         )
 
     async def _send_multipart_chunk(
-        self, file: AsyncFile[bytes], start: int, end: int, send: Send
+        self,
+        file: AsyncFile[bytes],
+        start: int,
+        end: int,
+        file_size: int,
+        send: Send,
     ) -> None:
         """Send a multipart chunk for a range using AnyIO."""
         await file.seek(start)
         remaining = end - start + 1
 
-        boundary = f"--{self._multipart_boundary}\r\n"
-        header = next(
-            (value for key, value in self.raw_headers if key == b"content-type"), None
-        )
-        headers = f"Content-Type: {header}\r\nContent-Range: bytes {start}-{end}/{self.path.stat().st_size}\r\n\r\n"
         await send(
             {
                 "type": "http.response.body",
-                "body": (boundary + headers).encode("utf-8"),
+                "body": self._multipart_part_header(start, end, file_size),
                 "more_body": True,
             }
         )
@@ -827,6 +930,16 @@ class FileResponse(BaseResponse):
                 }
             )
             remaining -= len(chunk)
+
+        # A part body is closed by CRLF before the next boundary; without it
+        # the delimiter runs on from the data and no parser finds it.
+        await send(
+            {
+                "type": "http.response.body",
+                "body": b"\r\n",
+                "more_body": True,
+            }
+        )
 
     def _generate_multipart_boundary(self) -> str:
         """Generate a unique multipart boundary string."""
@@ -1590,7 +1703,7 @@ class Responder:
     def set_body(self, new_body: Any):
         if not self._response:
             return self.resp(new_body)
-        self._response._body = new_body
+        self._response.set_body(new_body)
         return self
 
     def get_response(self) -> BaseResponse:

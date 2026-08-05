@@ -302,3 +302,247 @@ def test_file_accept_ranges_header(
             assert accept_ranges is not None
     finally:
         os.unlink(temp_path)
+
+
+# ========== Range Request Tests ==========
+
+
+@pytest.fixture
+def range_app(request: pytest.FixtureRequest):
+    """An app serving a known 1024-byte file, plus the file's bytes."""
+    payload = bytes(range(256)) * 4
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:
+        f.write(payload)
+        temp_path = f.name
+    request.addfinalizer(lambda: os.unlink(temp_path))
+
+    app = silloApp()
+
+    @app.get("/asset")
+    async def serve_asset(req: Request, response: Response):
+        return response.file(temp_path)
+
+    return app, payload
+
+
+def _declared_length_matches(resp) -> bool:
+    """Whether Content-Length agrees with the body that actually arrived.
+
+    This is the property that matters: a server writing more bytes than it
+    declared raises ``LocalProtocolError`` in h11 and the response dies
+    part-sent, so asserting on the header alone would miss the bug.
+    """
+    declared = resp.headers.get("content-length")
+    return declared is not None and int(declared) == len(resp.content)
+
+
+def test_range_single(range_app, test_client_factory: Callable[[silloApp], TestClient]):
+    """A single range returns exactly the bytes asked for."""
+    app, payload = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=0-99"})
+
+    assert resp.status_code == 206
+    assert resp.headers["content-range"] == "bytes 0-99/1024"
+    assert resp.content == payload[0:100]
+    assert _declared_length_matches(resp)
+
+
+def test_range_multipart_declares_the_framing_it_sends(
+    range_app, test_client_factory: Callable[[silloApp], TestClient]
+):
+    """Multiple ranges: Content-Length must cover the multipart framing.
+
+    Regression for a response that kept the whole-file Content-Length set by
+    ``set_stat_headers``. Two adjacent ranges spanning the file send more than
+    the file itself once boundaries and part headers are counted, so the
+    server wrote past what it had declared and h11 aborted the response with
+    ``Too much data for declared Content-Length``.
+    """
+    app, payload = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=0-511,512-1023"})
+
+    assert resp.status_code == 206
+    assert resp.headers["content-type"].startswith("multipart/byteranges")
+    assert len(resp.content) > len(payload)  # framing pushes it past the file
+    assert _declared_length_matches(resp)
+
+
+def test_range_multipart_is_parseable(
+    range_app, test_client_factory: Callable[[silloApp], TestClient]
+):
+    """The multipart body parses, and each part carries its own bytes."""
+    import email
+
+    app, payload = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=0-511,700-899"})
+
+    content_type = resp.headers["content-type"]
+    message = email.message_from_bytes(
+        f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode()
+        + resp.content
+    )
+    assert message.is_multipart()
+
+    parts = message.get_payload()
+    assert len(parts) == 2
+    for part, (start, end) in zip(parts, [(0, 511), (700, 899)]):
+        assert part["Content-Range"] == f"bytes {start}-{end}/1024"
+        # Not the bytes repr of the header value, which is what a lookup
+        # through raw_headers used to produce.
+        assert part["Content-Type"] == "application/octet-stream"
+        assert part.get_payload(decode=True) == payload[start : end + 1]
+
+
+def test_range_multipart_sets_one_content_type(
+    range_app, test_client_factory: Callable[[silloApp], TestClient]
+):
+    """The multipart type replaces the file's type rather than joining it."""
+    app, _ = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=0-9,20-29"})
+
+    assert resp.headers["content-type"].startswith("multipart/byteranges")
+    assert "application/octet-stream" not in resp.headers["content-type"]
+
+
+def test_range_unsatisfiable_declares_no_body(
+    range_app, test_client_factory: Callable[[silloApp], TestClient]
+):
+    """A 416 sends no body, so it must not declare the whole file's length."""
+    app, _ = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=2000-3000"})
+
+    assert resp.status_code == 416
+    assert resp.headers["content-range"] == "bytes */1024"
+    assert resp.headers["content-length"] == "0"
+    assert resp.content == b""
+
+
+def test_range_first_byte_only(
+    range_app, test_client_factory: Callable[[silloApp], TestClient]
+):
+    """`bytes=0-0` is one byte, not the whole file.
+
+    A falsy check on the parsed end offset could not tell an explicit ``0``
+    from an absent one, so this probe — which browsers send to discover
+    whether a server honours ranges at all — returned everything.
+    """
+    app, payload = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=0-0"})
+
+    assert resp.status_code == 206
+    assert resp.headers["content-range"] == "bytes 0-0/1024"
+    assert resp.content == payload[0:1]
+
+
+def test_range_suffix(range_app, test_client_factory: Callable[[silloApp], TestClient]):
+    """`bytes=-100` means the last 100 bytes, not a malformed range."""
+    app, payload = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=-100"})
+
+    assert resp.status_code == 206
+    assert resp.headers["content-range"] == "bytes 924-1023/1024"
+    assert resp.content == payload[-100:]
+
+
+def test_range_open_ended(
+    range_app, test_client_factory: Callable[[silloApp], TestClient]
+):
+    """`bytes=500-` runs to the end of the file."""
+    app, payload = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=500-"})
+
+    assert resp.status_code == 206
+    assert resp.headers["content-range"] == "bytes 500-1023/1024"
+    assert resp.content == payload[500:]
+
+
+def test_range_end_past_the_file_is_clamped(
+    range_app, test_client_factory: Callable[[silloApp], TestClient]
+):
+    """An over-long end offset yields what exists rather than a 416."""
+    app, payload = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": "bytes=0-99999"})
+
+    assert resp.status_code == 206
+    assert resp.headers["content-range"] == "bytes 0-1023/1024"
+    assert resp.content == payload
+
+
+@pytest.mark.parametrize(
+    "value", ["bytes=abc", "items=0-10", "bytes=", "bytes=10-4", "0-10"]
+)
+def test_range_malformed(
+    value: str, range_app, test_client_factory: Callable[[silloApp], TestClient]
+):
+    """Anything unparseable is a 416 with an empty body."""
+    app, _ = range_app
+    with test_client_factory(app) as client:
+        resp = client.get("/asset", headers={"Range": value})
+
+    assert resp.status_code == 416
+    assert resp.headers["content-length"] == "0"
+    assert resp.content == b""
+
+
+# ========== set_body Tests ==========
+
+
+def test_set_body_keeps_content_length_in_step(
+    test_client_factory: Callable[[silloApp], TestClient],
+):
+    """Replacing the body must re-declare its length.
+
+    Assigning the body alone left the Content-Length computed from the old
+    one; a longer replacement then wrote past the declared length and h11
+    tore the connection down mid-response.
+    """
+    app = silloApp()
+
+    @app.get("/rewritten")
+    async def rewritten(request: Request, response: Response):
+        response.json({"message": "hi"})
+        response.set_body(b'{"message":"a considerably longer body than before"}')
+        return response
+
+    with test_client_factory(app) as client:
+        resp = client.get("/rewritten")
+
+    assert int(resp.headers["content-length"]) == len(resp.content)
+    assert resp.json() == {"message": "a considerably longer body than before"}
+
+
+def test_set_header_override_keeps_headers_mapping_live(
+    test_client_factory: Callable[[silloApp], TestClient],
+):
+    """An overriding set_header must not orphan the cached headers mapping.
+
+    ``response.headers`` caches a view over ``raw_headers``. Rebuilding that
+    list instead of editing it left the view wrapping a list nothing sends,
+    so later edits through ``response.headers`` vanished silently.
+    """
+    app = silloApp()
+
+    @app.get("/headers")
+    async def headers(request: Request, response: Response):
+        inner = response.json({"ok": True}).get_response()
+        inner.headers["x-first"] = "1"  # builds the cached view
+        inner.set_header("x-second", "2", overide=True)  # used to rebind
+        inner.headers["x-third"] = "3"  # must still reach the wire
+        return response
+
+    with test_client_factory(app) as client:
+        resp = client.get("/headers")
+
+    assert resp.headers.get("x-first") == "1"
+    assert resp.headers.get("x-second") == "2"
+    assert resp.headers.get("x-third") == "3"
