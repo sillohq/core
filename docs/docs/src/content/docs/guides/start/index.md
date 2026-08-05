@@ -150,7 +150,7 @@ has to be upgraded before the next person who clones it gets the fix.
 | **Admin** | Mounted at `/admin/`, authenticating against that same `User` |
 | **Database** | Record with SQLite by default, and real migrations |
 | **Pages** | One Jinja template and a stylesheet, with `/static` served in development |
-| **API** | JSON routes under `/api`, with OpenAPI at `/docs` |
+| **API** | JSON routes under `/api`, documented by [Atlas](/guides/openapi/documentation-ui/#atlas) at `/docs` |
 | **Queue** | A worker and scheduler, wired and switched off |
 | **Console** | `console.py` — migrations, users, worker, scheduler, serve |
 | **Tooling** | `make` targets, ruff, pytest, and CI on three Python versions |

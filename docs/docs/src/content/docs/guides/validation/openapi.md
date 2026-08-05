@@ -331,9 +331,12 @@ Three routes are mounted by default, all configurable on `silloApp`:
 
 | Path | What it serves |
 | --- | --- |
-| `/docs` | Swagger UI — interactive, with a request runner |
+| `/docs` | [Atlas](/guides/openapi/documentation-ui/#atlas) — sillo's own reference, with a request builder |
 | `/redoc` | ReDoc — a cleaner read, no runner |
 | `/openapi.json` | The raw document |
+
+Swagger UI and Scalar ship too; which viewers are mounted is the `docs`
+argument. See [Documentation UI](/guides/openapi/documentation-ui/).
 
 ```python
 app = silloApp(

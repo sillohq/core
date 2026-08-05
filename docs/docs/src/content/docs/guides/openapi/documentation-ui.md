@@ -67,14 +67,63 @@ build time.
 Atlas(path="/docs", theme="auto")
 ```
 
-sillo's own reference, and the default. Three panes — operations on the
-left, detail in the middle, a request builder on the right — with `⌘K`
-search that ranks rather than filters, snippets in nine languages, and a
-*Send* button that makes the request from the browser.
+[Atlas](https://github.com/sillohq/atlas) is sillo's own reference, and
+what `docs` defaults to — so this line is what you get for free.
 
-Zero dependencies and its own inlined styles, so the page is one script
-tag. It is served from a pinned tag on jsDelivr; pass `js_url` to
-self-host.
+Three panes: operations on the left, detail in the middle, a request
+builder on the right.
+
+- **`⌘K` search that ranks rather than filters.** Typing `user` puts
+  `GET /users` above a passing mention of "user" twelve operations down.
+- **A request builder that sends.** The form is seeded from the schema, so
+  an operation is runnable the moment you open it. Real timing, status,
+  size, headers, and a response viewer. Credentials persist across reloads.
+- **Snippets in nine languages** — cURL, HTTPie, Python (httpx and
+  requests), JavaScript fetch, Node axios, Go, PHP, Ruby — generated from
+  *the same request the Send button makes*, so a copied snippet cannot
+  describe something else.
+- **The whole `info` block.** Licence, terms, contact and external
+  documentation as links, every base URL, and every security scheme with
+  its OAuth scopes.
+- **Light and dark**, following the operating system.
+
+79 KB with no dependencies and its styles inlined, so the page is one
+script tag — against roughly 1.4 MB for Swagger UI.
+
+<aside>
+
+**It sends requests to the origin you are on.** A document declaring
+`http://localhost:8000` is right on the author's machine and wrong on a
+colleague's port 8001, on a LAN address, or behind a proxy. When the
+document was fetched from the same origin as the page — that is, when your
+API is serving its own documentation — Atlas offers that origin as *This
+server* and selects it. The declared servers stay in the dropdown.
+
+</aside>
+
+####  Pinning and self-hosting
+
+The bundle is served from a **pinned tag** on jsDelivr, never a branch. An
+unpinned URL would mean every sillo application's documentation changes the
+moment Atlas does — a bad surprise in production, and an unreproducible bug
+report.
+
+```python
+from sillo.openapi.ui import ATLAS_VERSION
+
+print(ATLAS_VERSION)     # the tag this sillo release points at
+```
+
+To serve it yourself — which a deployment with no outbound network or a
+strict `Content-Security-Policy` needs — download
+`dist/atlas.standalone.js` from that tag and point at your own copy:
+
+```python
+Atlas(js_url="/static/atlas.standalone.js")
+```
+
+The failure without this is a blank page rather than an error, because the
+script never loads.
 
 ###  Swagger UI
 

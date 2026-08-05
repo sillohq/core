@@ -354,20 +354,20 @@ Customize the documentation endpoint URLs to match your preferences:
 Paths are set at construction, because the routes are registered there:
 
 ```python
-from sillo.openapi.ui import ReDoc, Swagger
+from sillo.openapi.ui import Atlas, ReDoc
 
 app = silloApp(
     title="Custom API",
     version="1.0.0",
     openapi_url="/api-spec.json",
     docs=[
-        Swagger(path="/api-docs"),
+        Atlas(path="/api-docs"),
         ReDoc(path="/api-reference"),
     ],
 )
 
 # Documentation is now available at:
-# - /api-docs      (Swagger UI)
+# - /api-docs      (Atlas)
 # - /api-reference (ReDoc)
 # - /api-spec.json (OpenAPI JSON)
 ```
@@ -375,7 +375,7 @@ app = silloApp(
 To drop a viewer, leave it out of the list:
 
 ```python
-app = silloApp(docs=[Swagger()])   # Swagger only
+app = silloApp(docs=[Atlas()])     # Atlas only
 app = silloApp(docs=[])            # no documentation UI at all
 ```
 
