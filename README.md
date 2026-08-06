@@ -8,15 +8,9 @@
   <strong>Build serious Python backends with one coherent application model.</strong>
 </p>
 
-Sillo is an async Python web framework for building APIs, web applications, real-time systems, and business backends. It focuses on practical enterprise application work: routing, request validation, dependency injection, middleware, sessions, authentication helpers, records, background work, WebSockets, OpenAPI, testing, and operational structure.
+Sillo is an async Python web framework for building APIs, web applications, real-time systems, and business backends. Routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules that share one configuration model.
 
-Sillo is the open framework layer of a larger platform vision: a cohesive developer ecosystem for creating, operating, and scaling serious software without stitching together unrelated tools for every project.
-
-## Status
-
-Sillo is preparing for its first alpha release: `0.0.1a1`.
-
-Use it for exploration, prototypes, early applications, and feedback. APIs may still change before a stable release.
+The pitch is coherence, not breadth. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI spec. The queue and the scheduler start with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
 
 ## Requirements
 
@@ -26,24 +20,23 @@ Use it for exploration, prototypes, early applications, and feedback. APIs may s
 ## Installation
 
 ```bash
-uv add sillo
+uv add sillo-framework
 ```
 
 For optional feature groups:
 
 ```bash
-uv add "sillo[cli]"
-uv add "sillo[templating]"
-uv add "sillo[jwt]"
-uv add "sillo[cache]"
-uv add "sillo[record]"
-uv add "sillo[graphql]"
+uv add "sillo-framework[templating]"
+uv add "sillo-framework[jwt]"
+uv add "sillo-framework[cache]"
+uv add "sillo-framework[record]"
+uv add "sillo-framework[graphql]"
 ```
 
 For a full development setup:
 
 ```bash
-uv add "sillo[all]"
+uv add "sillo-framework[all]"
 ```
 
 ## Hello World
@@ -154,21 +147,16 @@ app.mount_router(api)
 - Event system and background work primitives
 - Record layer for database-backed models, transactions, scopes, casting, and pagination
 - Mail service utilities
-- Test client utilities
-- CLI for running and inspecting applications
+- Sync and async test clients
+- Model admin at `/admin/` that authenticates against your own user model
 
-## Platform Direction
+## Scope And Boundaries
 
-Sillo Core is intended to become the technical foundation for a broader enterprise developer platform:
+Sillo runs on its own. No hosted service is required to put an application into production.
 
-- **Miko**: visual admin studio for records, workflows, and internal operations
-- **Zoro**: managed deployment for Sillo applications
-- **Koda**: server management and deployment automation for customer-controlled infrastructure
-- **Nira**: authentication, organisations, access control, and identity services
-- **Piko**: logs, queues, jobs, releases, health, and application monitoring
-- **Template and integration marketplaces**: reusable application foundations and verified integrations
+The framework is opinionated at the defaults and open at the boundaries. Auth backends, middleware, cache drivers, session stores, and hashing algorithms are contracts you can implement yourself, and anything the framework does on your behalf is something you can read, override, or replace.
 
-The open-source framework should remain useful on its own. Commercial products should remove operational work, not lock normal application development behind a paywall.
+Sillo ships no command-line interface. The operations a CLI would expose are plain functions in `sillo.record.commands` and `sillo.users.commands`, so the argument parser belongs to whatever consumes them — a project brings its own `console.py`.
 
 ## Documentation
 
