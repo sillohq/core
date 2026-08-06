@@ -38,7 +38,10 @@ class APIKeyAuthBackend(AuthenticationBackend):
             type="apiKey",
             name=self.header_name,
             description=self.description,
-            **{"in": "header"},
+            # `in` is a keyword, so the field can only be reached through a
+            # spread — which drops the Literal. `populate_by_name` is off on
+            # these models, so `in_=` fails at runtime.
+            **{"in": "header"},  # ty: ignore[invalid-argument-type]
         )
 
     def __init__(

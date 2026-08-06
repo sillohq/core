@@ -16,6 +16,7 @@ import pytest
 from sillo import silloApp
 from sillo.auth import (
     APIKeyAuthBackend,
+    AuthenticationMiddleware,
     AuthenticationBackend,
     JWTAuthBackend,
     SessionAuthBackend,
@@ -683,3 +684,27 @@ def test_schemes_alone_does_not_warn():
     with warnings.catch_warnings():
         warnings.simplefilter("error", DeprecationWarning)
         useAuth(schemes=["bearerAuth"])
+
+
+def test_the_middleware_survives_having_no_backends(
+    test_client_factory: Callable[[silloApp], TestClient],
+):
+    """`AuthenticationMiddleware()` with no backend used to 500 every request.
+
+    The single backend was wrapped as `[backend]` without checking for the
+    `None` default, so the list held one `None`. Its first `AttributeError`
+    was then handled by calling `None.handle_exception`, raising a second
+    one from inside the handler for the first.
+    """
+    app = silloApp(title="T", version="1")
+    app.use(AuthenticationMiddleware())
+
+    @app.get("/anon")
+    async def anon(request: Request, response: Response):
+        return response.json({"authenticated": request.user.is_authenticated})
+
+    with test_client_factory(app) as client:
+        resp = client.get("/anon")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"authenticated": False}

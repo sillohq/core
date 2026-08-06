@@ -420,6 +420,11 @@ async def resolve_validated_params(
     resolved: Dict[int, Dict[str, Any]] = {}
     errors: List[Dict[str, Any]] = []
 
+    if request is None:
+        # Every validator reads from the request, so there is nothing to
+        # check without one. Saying so once beats guarding at each use.
+        return resolved
+
     # Parsed once for the whole tree rather than per node; the request caches
     # the result anyway, but this also keeps the await off the per-node path.
     form = await request.form if dependant._needs_form else None

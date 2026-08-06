@@ -11,6 +11,7 @@ from .models import (
     License,
     OpenAPI,
     Parameter,
+    Reference,
 )
 from .models import Response as OpenAPIResponse
 from .models import (
@@ -76,13 +77,17 @@ class OpenAPIConfig:
         )
 
     @property
-    def security_schemes(self) -> Dict[str, SecurityScheme]:
+    def security_schemes(self) -> Dict[str, Union[SecurityScheme, Reference]]:
         """The security schemes registered on this document.
 
         Reads the document itself. This used to be a separate dict assigned
         in ``__init__`` that ``add_security_scheme`` never wrote to, so it
         was permanently empty and anything trusting it concluded the
         application had no schemes at all.
+
+        A value may be a ``Reference`` as well as a scheme: OpenAPI allows a
+        ``$ref`` anywhere under ``securitySchemes``, and this reads whatever
+        the document holds rather than what it wishes were there.
         """
         components = self.openapi_spec.components
         if components is None or not components.securitySchemes:

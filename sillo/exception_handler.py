@@ -396,9 +396,11 @@ async def pydantic_validation_error_handler(
         if len(loc) == 1:
             error_dict[loc[0]] = msg
         elif len(loc) == 2:
-            if loc[0] not in error_dict:
-                error_dict[loc[0]] = {}
-            error_dict[loc[0]][loc[1]] = msg
+            nested = error_dict.get(loc[0])
+            if not isinstance(nested, dict):
+                nested = {}
+                error_dict[loc[0]] = nested
+            nested[loc[1]] = msg
         else:
             error_dict[".".join(map(str, loc))] = msg
     return response.json(

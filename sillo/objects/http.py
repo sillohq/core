@@ -307,7 +307,9 @@ class Headers(typing.Mapping[str, str]):
                 return header_value.decode("latin-1")
         return None
 
-    def get(self, key: str, default: typing.Any = None) -> typing.Any:
+    def get(  # ty: ignore[invalid-method-override]
+        self, key: str, default: typing.Any = None
+    ) -> typing.Any:
         """
         Retrieve a header value, falling back to *default* when it is absent.
 

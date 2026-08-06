@@ -92,14 +92,14 @@ def hash_password(
         if scheme == "bcrypt":
             import bcrypt as bcrypt_lib
 
+            # A separate name for the bytes form: `salt` is declared
+            # `str | None`, and rebinding it to bytes made the annotation
+            # describe something the function never holds.
             if salt is not None:
-                # Use provided salt
-                if isinstance(salt, str):
-                    salt = salt.encode()
+                salt_bytes = salt.encode() if isinstance(salt, str) else salt
             else:
-                # Generate new salt with 12 rounds by default
-                salt = bcrypt_lib.gensalt(rounds=12)
-            hashed = bcrypt_lib.hashpw(password.encode(), salt)
+                salt_bytes = bcrypt_lib.gensalt(rounds=12)
+            hashed = bcrypt_lib.hashpw(password.encode(), salt_bytes)
             return hashed.decode()
 
         # For other schemes, use passlib

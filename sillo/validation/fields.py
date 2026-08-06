@@ -220,7 +220,8 @@ class ParameterExtractor:
             return str
         if isinstance(self.default, list):
             item_type = builtin_type(self.default[0]) if self.default else str
-            return List[item_type]  # type: ignore[valid-type]
+            # The element type is computed from a runtime value.
+            return List[item_type]  # ty: ignore[invalid-type-form]
         return builtin_type(self.default)
 
     def to_field_info(self) -> FieldInfo:

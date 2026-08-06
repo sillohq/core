@@ -58,6 +58,7 @@ from .types import (
 if TYPE_CHECKING:
     from sillo.auth.backend import AuthenticationBackend
     from sillo.core.http import Request, Response
+    from sillo.users import BaseUser
 
 import json
 import warnings
@@ -270,7 +271,7 @@ class silloApp:
                 """),
         ] = None,
         auth_user_model: Annotated[
-            Optional[type],
+            Optional[Type["BaseUser"]],
             Doc("""
                     User model the mounted authentication middleware loads
                     identities into. Only read when ``auth`` is given.
@@ -410,7 +411,7 @@ class silloApp:
         self.title = title or "sillo API"
         self.setup()
 
-    def _register_auth(self, user_model: Optional[type]) -> None:
+    def _register_auth(self, user_model: Optional[Type["BaseUser"]]) -> None:
         """Mount the authentication middleware and publish its schemes.
 
         Args:

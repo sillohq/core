@@ -25,7 +25,9 @@ except ModuleNotFoundError:  # pragma: no cover
     ) from None
 
 
-class WebSocketDenialResponse(
+class WebSocketDenialResponse(  # ty: ignore[invalid-method-override]
+    # httpx.Response and WebSocketDisconnect each define __setstate__.
+    # Carrying both is the point of this class, and neither base is ours.
     httpx.Response,
     WebSocketDisconnect,
 ):

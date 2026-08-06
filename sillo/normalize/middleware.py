@@ -250,7 +250,13 @@ class NormalizeMiddleware(BaseMiddleware):
                         request.url.scheme,
                         request.url.netloc,
                         redirect_path,
-                        request.path_params,
+                        # The `params` slot is a URL path's `;key=value`
+                        # segment, not the route's captured parameters.
+                        # `request.path_params` is a dict, and passing a
+                        # populated one raises "Cannot mix str and non-str
+                        # arguments". It is empty here only because this
+                        # middleware runs before routing fills it in.
+                        "",
                         request.url.query,
                         request.url.fragment,
                     )

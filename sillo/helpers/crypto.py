@@ -4,19 +4,27 @@ import base64
 import hashlib
 import hmac as _hmac
 import secrets
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
-try:
+if TYPE_CHECKING:
+    # See sillo.admin.templating: the None fallbacks are runtime-only.
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
     _crypto_available = True
-except ImportError:
-    _crypto_available = False
-    Fernet = None  # type: ignore
-    PBKDF2HMAC = None
-    hashes = None  # type: ignore
+else:
+    try:
+        from cryptography.fernet import Fernet
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+        _crypto_available = True
+    except ImportError:
+        _crypto_available = False
+        Fernet = None
+        PBKDF2HMAC = None
+        hashes = None
 
 
 def _ensure_crypto() -> None:

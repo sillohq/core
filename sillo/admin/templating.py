@@ -1,15 +1,23 @@
 """sillo.admin.templating — Jinja2 template rendering for admin views."""
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-try:
+if TYPE_CHECKING:
+    # The fallbacks below rebind these names to None, which a type checker
+    # then carries into every use. It only sees the real imports.
     from jinja2 import Environment, FileSystemLoader
 
     HAS_JINJA2 = True
-except ImportError:
-    HAS_JINJA2 = False
-    Environment = None
-    FileSystemLoader = None
+else:
+    try:
+        from jinja2 import Environment, FileSystemLoader
+
+        HAS_JINJA2 = True
+    except ImportError:
+        HAS_JINJA2 = False
+        Environment = None
+        FileSystemLoader = None
 
 _TEMPLATE_DIR = Path(__file__).parent / "templates"
 _env = None
@@ -36,7 +44,7 @@ def render(name: str, **ctx) -> str:
     Raises:
         ImportError: If jinja2 is not installed.
     """
-    if not HAS_JINJA2:
+    if _env is None:
         raise ImportError(
             "Admin templating requires jinja2. "
             "Install with: pip install 'sillo[templating]' or pip install jinja2"

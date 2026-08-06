@@ -267,6 +267,8 @@ class CompiledValidator:
         errors: List[Dict[str, Any]] = []
 
         for spec in self.specs:
+            if spec.source_getter is None:
+                continue
             spec_values, spec_errors = spec.validate(spec.source_getter(request))
             values.update(spec_values)
             if spec_errors:
@@ -504,7 +506,17 @@ class ResponseModelValidator:
             raise ResponseValidationError(
                 prefix_errors(exc, "response"), body=value
             ) from exc
-        return self._adapter.dump_python(validated, mode="json", **self.dump_options)
+        # Passed by name rather than spread from `dump_options`: a ** spread
+        # is checked against every parameter of `dump_python`, including the
+        # include/exclude ones this dict never carries.
+        return self._adapter.dump_python(
+            validated,
+            mode="json",
+            exclude_none=self.dump_options["exclude_none"],
+            exclude_unset=self.dump_options["exclude_unset"],
+            exclude_defaults=self.dump_options["exclude_defaults"],
+            by_alias=self.dump_options["by_alias"],
+        )
 
 
 def raise_if_errors(errors: List[Dict[str, Any]], *, body: Any = None) -> None:

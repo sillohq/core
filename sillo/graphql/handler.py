@@ -1,14 +1,21 @@
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
-try:
+if TYPE_CHECKING:
+    # See sillo.admin.templating: the None fallbacks are runtime-only.
     import strawberry
     from strawberry.types import ExecutionResult
 
     HAS_STRAWBERRY = True
-except ImportError:
-    HAS_STRAWBERRY = False
-    strawberry = None
-    ExecutionResult = None
+else:
+    try:
+        import strawberry
+        from strawberry.types import ExecutionResult
+
+        HAS_STRAWBERRY = True
+    except ImportError:
+        HAS_STRAWBERRY = False
+        strawberry = None
+        ExecutionResult = None
 
 from sillo.application import silloApp
 from sillo.core.http import Request, Response

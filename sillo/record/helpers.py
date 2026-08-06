@@ -440,7 +440,7 @@ class MigrationHelper:
         """
         from tortoise.migrations import api
 
-        target = self._qualify(target)
+        target = self._qualify(target) or target
 
         try:
             await api.migrate(

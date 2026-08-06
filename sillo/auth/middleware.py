@@ -77,10 +77,15 @@ class AuthenticationMiddleware(BaseMiddleware):
             No exceptions are raised during initialisation. Invalid backend
                 types will surface as errors during request processing.
         """
-        if not isinstance(backend, list):
+        # Narrowed on the backend type rather than on `list`, so the empty
+        # default lands as an empty list. Wrapping it produced `[None]`,
+        # whose first failure called `None.handle_exception` inside the
+        # handler for its own AttributeError.
+        self.backends: typing.List[AuthenticationBackend] = []
+        if isinstance(backend, AuthenticationBackend):
             self.backends = [backend]
-        else:
-            self.backends = backend
+        elif backend:
+            self.backends = list(backend)
         self.user_model = user_model
 
     async def process_request(

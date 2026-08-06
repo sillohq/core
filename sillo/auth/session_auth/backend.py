@@ -121,7 +121,10 @@ class SessionAuthBackend(AuthenticationBackend):
             type="apiKey",
             name=self.cookie_name,
             description=self.description,
-            **{"in": "cookie"},
+            # `in` is a keyword, so the field can only be reached through a
+            # spread — which drops the Literal. `populate_by_name` is off on
+            # these models, so `in_=` fails at runtime.
+            **{"in": "cookie"},  # ty: ignore[invalid-argument-type]
         )
 
     def __init__(

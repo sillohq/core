@@ -106,7 +106,8 @@ def deprecated(
             The wrapped callable that emits a deprecation warning on
             every invocation before delegating to the original function.
         """
-        msg = message or f"`{func.__name__}` is deprecated"
+        name = getattr(func, "__name__", repr(func))
+        msg = message or f"`{name}` is deprecated"
         if replacement:
             msg += f". Use `{replacement}` instead."
 
@@ -185,7 +186,8 @@ def deprecate_parameter(
     """
 
     def decorator(func: F) -> F:
-        msg = f"Parameter `{param_name}` of `{func.__name__}` is deprecated"
+        name = getattr(func, "__name__", repr(func))
+        msg = f"Parameter `{param_name}` of `{name}` is deprecated"
         if replacement:
             msg += f". Use `{replacement}` instead."
 
