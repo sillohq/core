@@ -71,7 +71,10 @@ Atlas(path="/docs", theme="auto")
 what `docs` defaults to — so this line is what you get for free.
 
 Three panes: operations on the left, detail in the middle, a request
-builder on the right.
+builder on the right. It carries sillo's own palette, so your API's
+reference looks like the rest of sillo rather than like a viewer bolted
+on. Method badges are the exception and stay a functional set — telling
+`GET` from `DELETE` at a glance beats brand consistency.
 
 - **`⌘K` search that ranks rather than filters.** Typing `user` puts
   `GET /users` above a passing mention of "user" twelve operations down.

@@ -7,7 +7,7 @@ packages = ["sillo"]
 
 [project]
 name = "sillo-framework"
-version = "0.0.1a12"
+version = "0.0.1a13"
 description = "An async Python web framework for serious APIs, web applications, real-time systems, and business backends."
 authors = [
     {name = "Chidebele Dunamis", email = "techwithdunamix@gmail.com"}
@@ -248,7 +248,7 @@ known-first-party = ["sillo"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.0.1a12"
+version = "0.0.1a13"
 version_files = [
     "pyproject.toml:version",
     "sillo/__init__.py:__version__"

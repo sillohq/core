@@ -155,7 +155,7 @@ DEFAULT_FAVICON = "https://docs.sillo.build/favicon.svg"
 #: Atlas is pinned to a released tag rather than a branch. An unpinned CDN
 #: URL means every application's documentation changes the moment Atlas
 #: does — a bad surprise in production, and an unreproducible bug report.
-ATLAS_VERSION = "v0.7.0"
+ATLAS_VERSION = "v0.8.0"
 ATLAS_JS = (
     f"https://cdn.jsdelivr.net/gh/sillohq/atlas@{ATLAS_VERSION}"
     "/dist/atlas.standalone.js"
