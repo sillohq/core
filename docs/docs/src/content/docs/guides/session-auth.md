@@ -93,12 +93,12 @@ async def logout(request, response):
     await guard.logout(request)
     return {"ok": True}
 
-@app.get("/dashboard", auth=useAuth(scopes=["session"]))
+@app.get("/dashboard", auth=useAuth(schemes=["sessionCookie"]))
 async def dashboard(request, response):
     return {"user": request.user.display_name}
 ```
 
-`useAuth(scopes=["session"])` restricts the route to cookie-authenticated callers.
+`useAuth(schemes=["sessionCookie"])` restricts the route to cookie-authenticated callers, and documents it as such.
 
 ##  4. Managing sessions per user
 
@@ -166,7 +166,7 @@ For server-side session storage (instead of signed cookies), pass a `manager` to
 ##  Related
 
 - [Authentication](/guides/authentication/) — middleware + backend model
-- [Protecting Routes](/guides/protecting-routes/) — `useAuth(scopes=["session"])`
+- [Protecting Routes](/guides/protecting-routes/) — `useAuth(schemes=["sessionCookie"])`
 - [Users & User Models](/guides/users/) — `SessionUserMixin` wiring
 - [JWT](/guides/jwt-auth/) · [API Keys](/guides/api-keys/)
 

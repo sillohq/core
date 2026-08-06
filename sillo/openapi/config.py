@@ -74,7 +74,20 @@ class OpenAPIConfig:
             servers=servers,
             components=Components(),
         )
-        self.security_schemes: Dict[str, SecurityScheme] = {}
+
+    @property
+    def security_schemes(self) -> Dict[str, SecurityScheme]:
+        """The security schemes registered on this document.
+
+        Reads the document itself. This used to be a separate dict assigned
+        in ``__init__`` that ``add_security_scheme`` never wrote to, so it
+        was permanently empty and anything trusting it concluded the
+        application had no schemes at all.
+        """
+        components = self.openapi_spec.components
+        if components is None or not components.securitySchemes:
+            return {}
+        return components.securitySchemes
 
     def add_security_scheme(self, name: str, scheme: SecurityScheme):
         """Add a security scheme to the OpenAPI specification"""

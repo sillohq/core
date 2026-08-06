@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sillo import logging
 from sillo.auth.model import AuthResult
 
 if TYPE_CHECKING:
     from sillo.core.http import Request, Response
+    from sillo.openapi.models import SecurityScheme
 
 logger = logging.create_logger(__name__)
 
@@ -43,6 +44,32 @@ class AuthenticationBackend:
                         return AuthResult(success=True, identity=token, scope="custom")
                     return AuthResult(success=False, identity="", scope="")
     """
+
+    #: The OpenAPI security scheme name this backend enforces.
+    #:
+    #: A backend already knows which credential it reads, so it can also say
+    #: how that credential is documented. Naming it here is what lets one
+    #: declaration serve both the gate and ``components.securitySchemes``,
+    #: instead of the two being written separately and drifting apart.
+    #:
+    #: This is *not* ``AuthResult.scope``. That stays a method label
+    #: (``"jwt"``), because routes already match on it; this is the scheme
+    #: name a document refers to (``"bearerAuth"``).
+    name: str = "auth"
+
+    #: Prose for the scheme, shown by every viewer next to the credential.
+    description: Optional[str] = None
+
+    def describe(self) -> "Optional[SecurityScheme]":
+        """The OpenAPI scheme this backend enforces.
+
+        Returns:
+            The scheme to publish under :attr:`name`, or ``None`` for a
+            backend with nothing to document — a health-check bypass, or one
+            whose credential OpenAPI cannot express. Returning ``None`` keeps
+            the backend working and simply leaves it out of the document.
+        """
+        return None
 
     async def authenticate(self, request: "Request") -> AuthResult:
         """Resolve the caller's identity from the incoming HTTP request.

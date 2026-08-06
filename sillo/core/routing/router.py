@@ -361,6 +361,15 @@ class Route(BaseRoute):
         _reject_unknown_route_kwargs(kwargs)
         self.kwargs = kwargs
         self.tags = tags
+        # A gate that names schemes already says what the document should
+        # say, so `security` is derived rather than written a second time.
+        # An explicit `security=` still wins: a gateway may terminate auth
+        # ahead of the application, and then the document has to describe
+        # something this process does not enforce.
+        if security is None and auth is not None:
+            derive = getattr(auth, "security_requirements", None)
+            if callable(derive):
+                security = derive()
         self.security = security
         self.operation_id = operation_id
         self.deprecated = deprecated

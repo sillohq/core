@@ -39,7 +39,8 @@ Subclass to add custom logic::
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+import warnings
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.exceptions import AuthenticationFailed, PermissionDenied
@@ -48,6 +49,48 @@ from sillo.users.simple import SimpleUser
 
 if TYPE_CHECKING:
     from sillo.core.http import Request
+
+
+#: What the shipped backends used to report as ``AuthResult.scope``, mapped to
+#: the scheme names they now report instead. Only these three ever shipped
+#: with a fixed label; a custom backend chose its own string, which stays
+#: whatever it was and needs no translation.
+LEGACY_SCOPE_ALIASES = {
+    "jwt": "bearerAuth",
+    "session": "sessionCookie",
+    "apikey": "apiKeyHeader",
+}
+
+
+def accepted_identifiers(names: "Sequence[str]") -> set:
+    """Every identifier a gate written against *names* should accept.
+
+    Both the value as written and its modern spelling, because the two can
+    legitimately arrive from different backends. A shipped ``JWTAuthBackend``
+    now reports ``"bearerAuth"``, while a hand-rolled backend that returns
+    ``AuthResult(scope="jwt")`` still reports ``"jwt"`` — a gate saying
+    ``"jwt"`` means both, and translating instead of widening would turn one
+    of them into a silent 401.
+
+    Args:
+        names: Scheme names or legacy scope labels, as written by the caller.
+
+    Returns:
+        The set of identifiers that satisfy the gate.
+    """
+    accepted = set(names)
+    accepted.update(LEGACY_SCOPE_ALIASES.get(name, name) for name in names)
+    return accepted
+
+
+def request_identifiers(request: "Request") -> set:
+    """The identifiers a request authenticated under.
+
+    ``auth`` and ``auth_scheme`` hold the same value for every shipped
+    backend; they differ only for a custom backend that reports a scope but
+    never sets a name.
+    """
+    return {request.scope.get("auth_scheme"), request.scope.get("auth")}
 
 
 class useAuth:
@@ -64,35 +107,48 @@ class useAuth:
 
     Parameters
     ----------
-    scopes:
-        Auth method scopes accepted for this route.  Each backend sets a
-        scope string on ``request.scope["auth"]`` (e.g. ``"jwt"``,
-        ``"session"``, ``"apikey"``).  If non-empty at least one listed
-        scope must be present.
+    schemes:
+        OpenAPI security scheme names accepted for this route, e.g.
+        ``["bearerAuth", "sessionCookie"]``.  A backend reports its own
+        name, so this is the single identifier for "which credential" —
+        it gates the request *and* becomes the route's documented
+        ``security``.  Pass a mapping to carry OAuth2 scopes:
+        ``{"oauth2": ["read:widgets"]}``.
+    all_of:
+        Require every entry in *schemes* together rather than any one.
     permissions:
         Permission strings checked via ``user.has_permission(perm)``.
+        Authorization, not authentication — OpenAPI has no field for it,
+        so it never reaches the document.
     backends:
         If provided, these replace the globally configured middleware
         backends for this route.  Successful authentication overrides
-        ``request.scope["user"]`` and ``request.scope["auth"]``.
+        ``request.scope["user"]``, ``["auth"]`` and ``["auth_scheme"]``.
     user_model:
         User model for loading identities when *backends* are overridden.
         Defaults to :class:`sillo.auth.SimpleUser`.
     required:
         When ``False``, unauthenticated requests are allowed through with
         an :class:`UnauthenticatedUser` on the scope.  Default ``True``.
+    scopes:
+        **Deprecated** — the previous spelling, which matched a method
+        label (``"jwt"``) rather than a scheme name.  Values are
+        translated through :data:`LEGACY_SCOPE_ALIASES` and merged into
+        *schemes*, with a warning naming the replacement.
 
     Attributes:
-        scopes: List of accepted auth scope strings for this gate.
+        schemes: ``{scheme_name: oauth_scopes}`` accepted by this gate.
+        all_of: Whether every scheme is required together.
         permissions: List of required permission strings for this gate.
         backends: Optional list of backend overrides for this route.
         user_model: User model class for loading identities.
         required: Whether authentication is mandatory for this route.
+        scopes: The deprecated values as passed, kept for introspection.
 
     Example:
         Use as a route-level auth gate::
 
-            @router.get("/profile", auth=useAuth(scopes=["jwt"]))
+            @router.get("/profile", auth=useAuth(schemes=["bearerAuth"]))
             async def profile(request, response):
                 return response.json({"user": request.user})
     """
@@ -104,6 +160,8 @@ class useAuth:
         backends: Optional[list[AuthenticationBackend]] = None,
         user_model: Optional[type[BaseUser]] = None,
         required: bool = True,
+        schemes: Optional[Union[list[str], dict[str, list[str]]]] = None,
+        all_of: bool = False,
     ) -> None:
         """Initialise the authentication gate with scope, permission, and backend config.
 
@@ -127,6 +185,16 @@ class useAuth:
             required: Whether authentication is mandatory. When ``False``,
                 unauthenticated requests pass through with an
                 ``UnauthenticatedUser`` on the scope. Default ``True``.
+            schemes: OpenAPI security scheme names this route accepts, e.g.
+                ``["bearerAuth", "sessionCookie"]``. Unlike *scopes* these
+                are the names under ``components.securitySchemes``, so the
+                route's documented ``security`` is derived from them and the
+                gate cannot disagree with the document. Pass a mapping to
+                carry OAuth2 scopes: ``{"oauth2": ["read:widgets"]}``.
+            all_of: Whether every entry in *schemes* is required together.
+                ``False`` (the default) means any one will do, which OpenAPI
+                writes as separate requirement objects; ``True`` means all of
+                them, which OpenAPI writes as one object with several keys.
 
         Returns:
             None. This is a constructor that initialises the gate state.
@@ -134,11 +202,38 @@ class useAuth:
         Raises:
             No exceptions are raised during initialisation.
         """
-        self.scopes: list[str] = scopes or []
         self.permissions: list[str] = permissions or []
         self.backends: Optional[list[AuthenticationBackend]] = backends
         self.user_model: type[BaseUser] = user_model  # ty: ignore[invalid-assignment]
         self.required: bool = required
+        # Normalised to {name: oauth_scopes} so the two accepted spellings —
+        # a list of names, or a mapping carrying OAuth2 scopes — collapse to
+        # one shape before anything reads them.
+        self.schemes: dict[str, list[str]] = (
+            {}
+            if schemes is None
+            else {name: [] for name in schemes}
+            if isinstance(schemes, (list, tuple))
+            else {name: list(value or []) for name, value in schemes.items()}
+        )
+        self.all_of: bool = all_of
+
+        # `scopes` was the old spelling of the same idea, matching a method
+        # label rather than a scheme name. Translating rather than ignoring it
+        # is the whole point: dropping it would turn a working gate into a
+        # silent 401 in production, which reads like a bad credential and not
+        # like an upgrade.
+        self.scopes: list[str] = list(scopes or [])
+        if self.scopes:
+            renamed = [LEGACY_SCOPE_ALIASES.get(scope, scope) for scope in self.scopes]
+            warnings.warn(
+                "useAuth(scopes=...) is deprecated; use schemes=. "
+                f"Rewrite scopes={self.scopes!r} as schemes={renamed!r}.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            for name in renamed:
+                self.schemes.setdefault(name, [])
 
     async def authenticate(self, request: "Request") -> bool:
         """Run the authentication and authorisation gate before the route handler.
@@ -173,8 +268,10 @@ class useAuth:
                 raise AuthenticationFailed
             return True
 
-        if self.scopes:
-            self._check_scopes(request)
+        # `scopes` was folded into `schemes` at construction, so there is one
+        # check rather than two that could disagree.
+        if self.schemes:
+            self._check_schemes(request)
 
         if self.permissions:
             for perm in self.permissions:
@@ -182,6 +279,76 @@ class useAuth:
                     raise PermissionDenied
 
         return True
+
+    def security_requirements(
+        self, available: Optional[Sequence[str]] = None
+    ) -> Optional[list[dict[str, list[str]]]]:
+        """The OpenAPI ``security`` this gate implies.
+
+        A route declares its auth once, on the gate; this turns that into the
+        document's shape so the two cannot disagree. The mapping:
+
+        =========================================  =====================================
+        Gate                                       ``security``
+        =========================================  =====================================
+        ``schemes=[a, b]``                         ``[{a: []}, {b: []}]``  (either)
+        ``schemes=[a, b], all_of=True``            ``[{a: [], b: []}]``    (both)
+        ``required=False``                         an extra ``{}`` alternative
+        no ``schemes``, *available* given          every available scheme (either)
+        no ``schemes``, nothing available          ``None``
+        =========================================  =====================================
+
+        Args:
+            available: Scheme names the application registered. A bare
+                ``useAuth()`` names nothing but still rejects anonymous
+                callers, and the middleware accepts any registered backend —
+                so "any of these" is what it enforces. Without this the route
+                documents as public while returning 401, which is the same
+                lie as an overstated requirement and the more dangerous
+                direction: a consumer reads "no auth needed" and is refused.
+
+        Returns:
+            The requirement list, or ``None`` when nothing is derivable and
+            the route should keep whatever it declared by hand.
+        """
+        schemes = self.schemes
+        if not schemes and available:
+            schemes = {name: [] for name in available}
+
+        if not schemes:
+            return None
+
+        if self.all_of:
+            requirements = [dict(schemes)]
+        else:
+            requirements = [{name: scopes} for name, scopes in schemes.items()]
+
+        # OpenAPI spells "authentication is optional" as an empty requirement
+        # object among the alternatives. Nobody writes that by hand, which is
+        # why optional-auth routes are otherwise documented as mandatory.
+        if not self.required:
+            requirements.append({})
+
+        return requirements
+
+    def _check_schemes(self, request: "Request") -> None:
+        """Verify the request authenticated through an accepted scheme.
+
+        Both ``auth_scheme`` and ``auth`` are consulted. The shipped backends
+        set them to the same value, so which one answers does not matter; a
+        custom backend that only reports an ``AuthResult.scope`` and never
+        sets ``name`` keeps working through the second.
+
+        Args:
+            request: The incoming request.
+
+        Raises:
+            AuthenticationFailed: If the scheme that authenticated is not one
+                this gate accepts.
+        """
+        accepted = accepted_identifiers([*self.schemes, *self.scopes])
+        if request_identifiers(request).isdisjoint(accepted):
+            raise AuthenticationFailed
 
     def _resolve_user_model(self) -> type[UserProtocol]:
         """Resolve the user model class to use for loading authenticated identities.
@@ -238,39 +405,10 @@ class useAuth:
                 if result.success:
                     request.scope["user"] = await user_model.load_user(result.identity)
                     request.scope["auth"] = result.scope
+                    request.scope["auth_scheme"] = backend.name
                     return
             except Exception:
                 continue
 
         if self.required:
-            raise AuthenticationFailed
-
-    def _check_scopes(self, request: "Request") -> None:
-        """Verify that the request's auth scope matches the gate's required scopes.
-
-        Reads the ``"auth"`` key from the request scope and checks that at
-        least one of the gate's configured scopes is present. The auth scope
-        may be either a single string or a list of strings. If no matching
-        scope is found, an ``AuthenticationFailed`` exception is raised.
-
-        Args:
-            request: The incoming HTTP request object. The ``"auth"`` key
-                in ``request.scope`` is read to determine the authentication
-                method(s) used for this request.
-
-        Returns:
-            None. This method validates in-place and either passes silently
-                or raises an exception.
-
-        Raises:
-            AuthenticationFailed: If no auth scope is present on the request,
-                or if none of the gate's required scopes match the request's
-                auth scope.
-        """
-        auth_scope = request.scope.get("auth")
-        if not auth_scope:
-            raise AuthenticationFailed
-
-        user_scopes = auth_scope if isinstance(auth_scope, list) else [auth_scope]
-        if not any(s in user_scopes for s in self.scopes):
             raise AuthenticationFailed

@@ -196,6 +196,37 @@ class APIDocumentation:
 
         return routes_with_paths
 
+    def _route_security(self, route: Any) -> Any:
+        """The ``security`` to publish for one route.
+
+        A route that declared ``security=`` explicitly, or whose gate named
+        schemes, already settled this when it was registered. What is left is
+        the bare ``useAuth()`` — a gate that rejects anonymous callers without
+        naming a scheme. It has nothing to derive from on its own, but by the
+        time the document is built the registered schemes are known, and "any
+        of these" is exactly what such a gate enforces.
+
+        Filling it in matters more than the overstated case it complements:
+        a route documented as public that answers 401 sends a consumer
+        looking for a bug in their client.
+
+        Args:
+            route: The route being described.
+
+        Returns:
+            The route's security requirements, or ``None`` when it is public
+            or nothing is derivable.
+        """
+        if route.security is not None:
+            return route.security
+
+        gate = getattr(route, "auth", None)
+        derive = getattr(gate, "security_requirements", None)
+        if not callable(derive):
+            return None
+
+        return derive(available=list(self.config.security_schemes))
+
     def _normalize_path(self, path: str) -> str:
         """
         Normalize path by ensuring it starts with / and removing duplicate slashes.
@@ -241,7 +272,7 @@ class APIDocumentation:
                 tags=route.tags or [],  # ty:ignore[invalid-argument-type]
                 parameters=parameters,  # ty:ignore[invalid-argument-type]
                 requestBody=request_body_spec,
-                security=route.security,
+                security=self._route_security(route),
                 operationId=route.operation_id
                 or f"{method.lower()}_{openapi_path.replace('/', '_').replace('{', '').replace('}', '')}",
                 deprecated=route.deprecated,

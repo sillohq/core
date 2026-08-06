@@ -28,7 +28,7 @@ app.use(AuthenticationMiddleware(
     backend=APIKeyAuthBackend(header_name="X-API-Key", verify_with_manager=True),
 ))
 
-@app.get("/v1/data", auth=useAuth(scopes=["apikey"]))
+@app.get("/v1/data", auth=useAuth(schemes=["apiKeyHeader"]))
 async def data(request, response):
     return {"called_by": request.user.identity}
 ```
@@ -111,7 +111,7 @@ The backend confirms *that* the key is valid but does **not** expose the key's `
 ```python
 from sillo.auth.apikey import ApiKeyManager
 
-@app.get("/v1/data", auth=useAuth(scopes=["apikey"]))
+@app.get("/v1/data", auth=useAuth(schemes=["apiKeyHeader"]))
 async def data(request, response):
     raw = request.headers.get("X-API-Key")
     apikey = await ApiKeyManager().verify(raw)   # returns the ApiKey row or None
@@ -121,7 +121,7 @@ async def data(request, response):
 ```
 
 <aside type="note" title="Scope enforcement is manual">
-Unlike JWT/session (where `scope` is a fixed method string like `"apikey"`), an API key's `scopes` are application-defined permission strings stored on the `ApiKey` row. `useAuth(scopes=["apikey"])` only confirms the call came via an API key. To enforce *which* scopes, look the key up with `ApiKeyManager().verify(raw)` and branch on `apikey.scopes`, or write a small `useAuth` subclass that does it once.
+Do not confuse these with the gate. An API key's `scopes` are application-defined permission strings stored on the `ApiKey` row; `useAuth(schemes=["apiKeyHeader"])` only confirms the call came via an API key. To enforce *which* scopes, look the key up with `ApiKeyManager().verify(raw)` and branch on `apikey.scopes`, or write a small `useAuth` subclass that does it once.
 </aside>
 
 ##  5. Combining with other backends
@@ -139,11 +139,11 @@ app.use(AuthenticationMiddleware(
 ))
 ```
 
-A request with `X-API-Key` authenticates as `"apikey"`; one with a bearer token as `"jwt"`; one with a cookie as `"session"`. Routes can pin a method with `useAuth(scopes=["apikey"])` or accept any with `useAuth()`.
+A request with `X-API-Key` authenticates as `"apiKeyHeader"`; one with a bearer token as `"bearerAuth"`; one with a cookie as `"sessionCookie"`. Routes can pin a credential with `useAuth(schemes=["apiKeyHeader"])` or accept any with `useAuth()`.
 
 ##  Related
 
 - [Authentication](/guides/authentication/) — middleware + backend model
-- [Protecting Routes](/guides/protecting-routes/) — `useAuth(scopes=["apikey"])`
+- [Protecting Routes](/guides/protecting-routes/) — `useAuth(schemes=["apiKeyHeader"])`
 - [Users & User Models](/guides/users/) — `ApiKeyUserMixin` wiring
 - [JWT](/guides/jwt-auth/) · [Sessions](/guides/session-auth/)

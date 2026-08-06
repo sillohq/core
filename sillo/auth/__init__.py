@@ -27,15 +27,20 @@ from . import jwt_auth, session_auth, apikey
 
 from sillo.users import BaseUser, SimpleUser
 
+from .backend import AuthenticationBackend
+
 APIKeyAuthBackend = apikey.APIKeyAuthBackend
 JWTAuthBackend = jwt_auth.JWTAuthBackend
+SessionAuthBackend = session_auth.SessionAuthBackend
 create_jwt = jwt_auth.create_jwt
 decode_jwt = jwt_auth.decode_jwt
 
 __all__ = [
     "AuthenticationMiddleware",
+    "AuthenticationBackend",
     "APIKeyAuthBackend",
     "JWTAuthBackend",
+    "SessionAuthBackend",
     "create_jwt",
     "decode_jwt",
     "useAuth",

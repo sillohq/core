@@ -34,7 +34,7 @@ app.use(AuthenticationMiddleware(
     backend=JWTAuthBackend(secret_key="change-me", identifier="sub"),
 ))
 
-@app.get("/me", auth=useAuth(scopes=["jwt"]))
+@app.get("/me", auth=useAuth(schemes=["bearerAuth"]))
 async def me(request, response):
     return {"id": request.user.identity}
 ```
@@ -168,7 +168,7 @@ payload = decode_jwt(token, secret=JWT_SECRET)   # raises ValueError on expiry/i
 ##  Related
 
 - [Authentication](/guides/authentication/) — middleware + backend model
-- [Protecting Routes](/guides/protecting-routes/) — `useAuth(scopes=["jwt"])`
+- [Protecting Routes](/guides/protecting-routes/) — `useAuth(schemes=["bearerAuth"])`
 - [Users & User Models](/guides/users/) — `User`, `JWTUserMixin` wiring
 - [Sessions](/guides/session-auth/) · [API Keys](/guides/api-keys/)
 

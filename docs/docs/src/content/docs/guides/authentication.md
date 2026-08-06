@@ -49,6 +49,26 @@ async def me(request, response):
     return {"id": request.user.identity, "email": request.user.email}
 ```
 
+###  Or let the app mount it
+
+`silloApp(auth=...)` mounts the same middleware **and** publishes each
+backend as an OpenAPI security scheme, so your reference documents the auth
+you actually enforce rather than a list you maintain separately:
+
+```python
+app = silloApp(
+    auth=[JWTAuthBackend(secret_key="change-me", identifier="sub")],
+    auth_user_model=User,
+)
+
+@app.get("/me", auth=useAuth(schemes=["bearerAuth"]))
+async def me(request, response): ...
+```
+
+See [Documenting Authentication](/guides/openapi/authentication-documentation/)
+for how the route's `security` is derived, and for `strict_security`, which
+turns a mismatch between the two into an error instead of a lie.
+
 ```python
 # myapp/models.py
 from sillo.users import User
@@ -90,7 +110,7 @@ So the central arrow in sillo auth is: **credential → identity string → `loa
 
 ```python
 @app.get("/me", auth=useAuth())                          # any authenticated user
-@app.get("/api", auth=useAuth(scopes=["jwt"]))           # only JWT callers
+@app.get("/api", auth=useAuth(schemes=["bearerAuth"]))   # only JWT callers
 @app.get("/users", auth=useAuth(permissions=["read:users"]))
 @app.get("/feed", auth=useAuth(required=False))          # runs either way
 async def handler(request, response): ...
@@ -104,7 +124,7 @@ On failure it raises `AuthenticationFailed` (401) or `PermissionDenied` (403). S
 
 ##  Scope strings
 
-Each backend stamps a `scope` on `request.scope["auth"]`. That string is what `useAuth(scopes=[...])` checks against:
+Each backend stamps its scheme name on `request.scope["auth"]` and `["auth_scheme"]`. That string is what `useAuth(schemes=[...])` checks against:
 
 | Backend | `request.scope["auth"]` |
 | --- | --- |
@@ -112,7 +132,7 @@ Each backend stamps a `scope` on `request.scope["auth"]`. That string is what `u
 | `SessionAuthBackend` | `"session"` |
 | `APIKeyAuthBackend` | `"apikey"` |
 
-`scopes=[]` (the default) accepts *any* method. `scopes=["jwt"]` restricts a route to JWT callers — self-documenting and a useful guard against the wrong credential type reaching a handler.
+`schemes=[]` (the default) accepts *any* credential. `schemes=["bearerAuth"]` restricts a route to JWT callers — a useful guard against the wrong credential type reaching a handler, and it becomes the route's documented `security` at the same time.
 
 ##  Combining backends
 
@@ -167,7 +187,7 @@ class HeaderBackend(AuthenticationBackend):
         return AuthResult(success=True, identity=str(user_id), scope="service")
 ```
 
-Register it like any built-in: `AuthenticationMiddleware(user_model=User, backend=HeaderBackend())`. The scope string `"service"` then becomes available to `useAuth(scopes=["service"])`.
+Register it like any built-in: `AuthenticationMiddleware(user_model=User, backend=HeaderBackend())`. Set `name = "service"` on the backend and `useAuth(schemes=["service"])` gates on it; give it a `describe()` and it documents itself too.
 
 ##  Error handling
 

@@ -24,12 +24,13 @@ It runs after `AuthenticationMiddleware` has set `request.user`, but before your
 from sillo.auth import useAuth
 
 @app.get("/profile", auth=useAuth())                       # any logged-in user
-@app.get("/admin", auth=useAuth(scopes=["jwt"]))           # only JWT callers
+@app.get("/admin", auth=useAuth(schemes=["bearerAuth"]))   # only JWT callers
 @app.get("/users", auth=useAuth(permissions=["read:users"]))
-@app.get("/dash", auth=useAuth(scopes=["jwt", "session"],
+@app.get("/dash", auth=useAuth(schemes=["bearerAuth", "sessionCookie"],
                                permissions=["access:dashboard"]))
 @app.get("/feed", auth=useAuth(required=False))            # runs either way
 @app.get("/internal", auth=useAuth(backends=[APIKeyAuthBackend()]))
+@app.get("/me", auth=useAuth(schemes=["bearerAuth", "sessionCookie"]))  # documented too
 async def handler(request, response): ...
 ```
 
@@ -37,8 +38,10 @@ async def handler(request, response): ...
 
 | Parameter | Type | Default | Effect |
 | --- | --- | --- | --- |
-| `scopes` | `list[str]` | `[]` | At least one must match `request.scope["auth"]`. Empty = accept any method. |
+| `scopes` | `list[str]` | `[]` | **Deprecated** — the old spelling of `schemes`. Translated and merged into it, with a warning naming the replacement. |
 | `permissions` | `list[str]` | `[]` | Every string must pass `user.has_permission(perm)`. |
+| `schemes` | `list[str]` \| `dict[str, list[str]]` | `{}` | OpenAPI scheme names accepted. Matches `request.scope["auth_scheme"]`, **and** becomes the route's documented `security`. |
+| `all_of` | `bool` | `False` | Whether every entry in `schemes` is required together rather than any one. |
 | `backends` | `list[AuthenticationBackend]` | `None` | Replace the global middleware backends for this route only. |
 | `user_model` | `type[BaseUser]` | `SimpleUser` | User class used when `backends` is set. |
 | `required` | `bool` | `True` | If `False`, anonymous callers pass through with `UnauthenticatedUser`. |
@@ -55,10 +58,10 @@ Unauthenticated → 401. Authenticated → handler runs with `request.user` full
 
 ##  Scope restriction
 
-Each backend stamps a scope string on `request.scope["auth"]` (`"jwt"`, `"session"`, `"apikey"`). `scopes=[...]` requires at least one match:
+Each backend stamps its scheme name on `request.scope["auth"]` and `["auth_scheme"]` (`"bearerAuth"`, `"sessionCookie"`, `"apiKeyHeader"`). `schemes=[...]` requires at least one match, and becomes the route's documented `security`:
 
 ```python
-@app.get("/webhook", auth=useAuth(scopes=["apikey"]))
+@app.get("/webhook", auth=useAuth(schemes=["apiKeyHeader"]))
 async def webhook(request, response): ...
 ```
 
@@ -157,7 +160,7 @@ class OrgScoped(useAuth):
 
 @app.get("/orgs/{org_id}/members",
          auth=OrgScoped(org_id_param="org_id",
-                        scopes=["jwt"],
+                        schemes=["bearerAuth"],
                         permissions=["read:members"]))
 async def org_members(request, response, org_id: str): ...
 ```
@@ -170,7 +173,7 @@ The gate is identical on `Router` decorators:
 
 ```python
 api = Router(prefix="/api")
-@api.get("/users", auth=useAuth(scopes=["jwt"]))
+@api.get("/users", auth=useAuth(schemes=["bearerAuth"]))
 async def list_users(request, response): ...
 app.mount_router(api)
 ```

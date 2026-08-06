@@ -6,6 +6,7 @@ from sillo.decorator_helper import RouteDecorator
 from sillo.core.http import Request, Response
 
 from .exceptions import AuthenticationFailed, PermissionDenied
+from .use_auth import accepted_identifiers
 
 
 class auth(RouteDecorator):
@@ -150,10 +151,13 @@ class auth(RouteDecorator):
             if not scopes:
                 return self._handle_401(request, response)
 
-            user_scopes = scopes if isinstance(scopes, list) else [scopes]
+            user_scopes = set(scopes if isinstance(scopes, list) else [scopes])
+            # A backend now reports its scheme name where it used to report a
+            # method label, so `@auth("jwt")` has to accept "bearerAuth" too.
+            user_scopes.add(request.scope.get("auth_scheme"))
 
             for scope in self.scopes:
-                if scope not in user_scopes:
+                if user_scopes.isdisjoint(accepted_identifiers([scope])):
                     return self._handle_401(request, response)
 
             if inspect.iscoroutinefunction(handler):

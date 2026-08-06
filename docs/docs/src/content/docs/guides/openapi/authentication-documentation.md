@@ -8,6 +8,195 @@ description: >
 
 Securing your API is crucial for protecting user data and enabling safe integrations. sillo provides comprehensive OpenAPI documentation for multiple authentication schemes, making it easy for API consumers to understand and implement proper authentication.
 
+##  Declare it once
+
+An authentication backend already knows which credential it reads.
+`JWTAuthBackend` reads `Authorization: Bearer <token>` — which *is*
+`HTTPBearer(scheme="bearer", bearerFormat="JWT")`. So pass your backends to
+`silloApp(auth=...)` and the document follows from them:
+
+```python
+from sillo import silloApp
+from sillo.auth import JWTAuthBackend, APIKeyAuthBackend, SessionAuthBackend, useAuth
+
+app = silloApp(
+    auth=[
+        JWTAuthBackend(secret_key=SECRET, description="A JWT from `POST /login`."),
+        APIKeyAuthBackend(header_name="X-API-Key"),
+        SessionAuthBackend(),
+    ],
+)
+```
+
+That one argument does two jobs: it mounts `AuthenticationMiddleware` with
+those backends, and it publishes each one under
+`components.securitySchemes` as `bearerAuth`, `apiKeyHeader` and
+`sessionCookie`.
+
+A route then names a scheme **once**, on its gate, and its documented
+`security` is derived:
+
+```python
+@app.get("/me", auth=useAuth(schemes=["bearerAuth", "sessionCookie"]))
+async def me(request, response): ...
+```
+
+```json
+"security": [{"bearerAuth": []}, {"sessionCookie": []}]
+```
+
+| Gate | Generated `security` | Meaning |
+| --- | --- | --- |
+| `schemes=["a"]` | `[{"a": []}]` | requires `a` |
+| `schemes=["a", "b"]` | `[{"a": []}, {"b": []}]` | either one |
+| `schemes=["a", "b"], all_of=True` | `[{"a": [], "b": []}]` | both |
+| `schemes=["a"], required=False` | `[{"a": []}, {}]` | optional |
+| `schemes={"oauth2": ["read:widgets"]}` | `[{"oauth2": ["read:widgets"]}]` | with OAuth2 scopes |
+| `useAuth()` — no `schemes` | every registered scheme, as alternatives | any credential |
+| no gate at all | absent | public |
+
+The `{}` in that fourth row is how OpenAPI spells "authentication is
+optional" — an empty requirement object alongside the real ones. Almost
+nobody writes it by hand, which is why optional-auth routes are so often
+documented as mandatory.
+
+The second-to-last row is the one that catches people out. A bare
+`useAuth()` names no scheme but still rejects anonymous callers, and any
+registered backend satisfies it — so the document lists them all as
+alternatives rather than leaving the route looking public. The same applies
+to `useAuth(permissions=[...])`: needing a permission implies needing an
+identity.
+
+<aside>
+
+A route documented as public that answers **401** is worse than one
+documented as protected that answers 200 — the reader has no reason to
+suspect their client, and nothing in the reference suggests a credential is
+wanted. That is why the fallback exists rather than leaving `security`
+absent.
+
+</aside>
+
+###  Why this matters more than the shorter syntax
+
+Before this, a route said its auth twice — once as a gate that enforced it,
+once as a `security=` list that documented it — and nothing checked the two
+against each other. A document could advertise bearer auth while the gate
+accepted an API key, forever, with no test failing.
+
+Turn that into an error:
+
+```python
+app = silloApp(auth=[JWTAuthBackend(secret_key=SECRET)], strict_security=True)
+```
+
+Building the document now fails if a route requires a scheme nothing
+registered:
+
+```
+ValueError: These routes require security schemes that are not registered:
+  /me requires 'sessionCookie'
+Registered schemes: bearerAuth.
+```
+
+Without it, that route renders an authorize box in every viewer wired to a
+scheme no backend implements, and the first sign of trouble is a 401 the
+document says is impossible.
+
+`strict_security` is off by default so existing applications keep building.
+
+###  `scopes` is the old spelling of `schemes`
+
+There used to be two identifiers for one fact: a backend reported a *method
+label* on `AuthResult.scope` (`"jwt"`), while the document named a *scheme*
+(`"bearerAuth"`), and a route had to know both. They are now one — a backend
+reports its own scheme name, and `request.scope["auth"]` and
+`["auth_scheme"]` carry the same value.
+
+`scopes=` still works. It warns, and tells you what to write instead:
+
+```python
+useAuth(scopes=["jwt"])
+# DeprecationWarning: useAuth(scopes=...) is deprecated; use schemes=.
+# Rewrite scopes=['jwt'] as schemes=['bearerAuth'].
+```
+
+| Old | New |
+| --- | --- |
+| `scopes=["jwt"]` | `schemes=["bearerAuth"]` |
+| `scopes=["session"]` | `schemes=["sessionCookie"]` |
+| `scopes=["apikey"]` | `schemes=["apiKeyHeader"]` |
+
+A deprecated gate is **widened, not rewritten**: `scopes=["jwt"]` accepts
+both `"jwt"` and `"bearerAuth"`. A hand-rolled backend returning
+`AuthResult(scope="jwt")` is not `bearerAuth`, and translating rather than
+widening would reject it — a silent 401 in production, which reads like a
+bad credential rather than an upgrade. Only the modern name reaches the
+document.
+
+The legacy `@auth("jwt")` decorator is widened the same way.
+
+<aside>
+
+OpenAPI also says "scopes", meaning OAuth2 permission strings — a third
+thing again. Those live inside `schemes` as the mapping form:
+`schemes={"oauth2": ["read:widgets"]}`.
+
+</aside>
+
+###  Naming two backends of the same kind
+
+Two JWT secrets — a user token and an admin token — are two schemes:
+
+```python
+auth=[
+    JWTAuthBackend(secret_key=USER_SECRET),
+    JWTAuthBackend(secret_key=ADMIN_SECRET, name="adminBearer",
+                   description="Issued only to staff accounts."),
+]
+```
+
+Leave the second unnamed and sillo raises rather than letting one silently
+overwrite the other — which would document a credential the losing backend
+never reads.
+
+###  Opting out
+
+A backend whose `describe()` returns `None` still authenticates; it is just
+left out of the document. That is the default for a custom
+`AuthenticationBackend`, so subclasses keep working unchanged:
+
+```python
+class InternalBackend(AuthenticationBackend):
+    name = "internal"
+
+    def describe(self):
+        return None            # enforced, undocumented
+
+    async def authenticate(self, request): ...
+```
+
+An explicit `security=` on a route always wins over the derived value. You
+need that when a gateway terminates auth ahead of the application and the
+document has to describe something this process does not enforce.
+
+###  When you still register schemes by hand
+
+`config.add_security_scheme` remains the way to document a scheme sillo has
+no backend for — `openIdConnect`, an OAuth2 flow handled by an identity
+provider, or mutual TLS terminated at a load balancer. The rest of this page
+covers that path.
+
+<aside>
+
+**An application that declares no backends still advertises `bearerAuth`.**
+`silloApp()` has always registered that scheme unconditionally, whether or
+not the app has any JWT anywhere. Passing `auth=` is the opt-out; it is left
+in place otherwise so existing `security=[{"bearerAuth": []}]` declarations
+keep resolving.
+
+</aside>
+
 ##  Why Document Authentication?
 
 Proper authentication documentation provides several benefits:

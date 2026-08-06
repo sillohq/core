@@ -9,7 +9,7 @@ it on each incoming request.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
@@ -105,10 +105,32 @@ class SessionAuthBackend(AuthenticationBackend):
         identifier: The key within the user data dict holding the identity.
     """
 
+    name = "sessionCookie"
+
+    def describe(self):
+        """Document this backend as the session cookie it rides on.
+
+        The credential is not read from the cookie directly — the session
+        middleware has already turned it into ``request.session`` — but the
+        cookie is what a caller must send, and that is what the document has
+        to describe.
+        """
+        from sillo.openapi.models import APIKey
+
+        return APIKey(
+            type="apiKey",
+            name=self.cookie_name,
+            description=self.description,
+            **{"in": "cookie"},
+        )
+
     def __init__(
         self,
         session_key: str = DEFAULT_SESSION_KEY,
         identifier: str = DEFAULT_IDENTIFIER,
+        cookie_name: str = "session_id",
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         """Initialize the session authentication backend with key configuration.
 
@@ -130,6 +152,12 @@ class SessionAuthBackend(AuthenticationBackend):
         """
         self.session_key = session_key
         self.identifier = identifier
+        # Must match SessionConfig.session_cookie_name, or the document names
+        # a cookie the application never sets.
+        self.cookie_name = cookie_name
+        if name is not None:
+            self.name = name
+        self.description = description
 
     async def authenticate(self, request: Request) -> Any:
         """Authenticate the current request by checking session data.
@@ -162,5 +190,5 @@ class SessionAuthBackend(AuthenticationBackend):
             return AuthResult(success=False, identity="", scope="")
 
         return AuthResult(
-            success=True, identity=user.get(self.identifier, ""), scope="session"
+            success=True, identity=user.get(self.identifier, ""), scope=self.name
         )

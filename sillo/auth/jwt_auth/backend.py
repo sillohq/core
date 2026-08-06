@@ -52,11 +52,26 @@ class JWTAuthBackend(AuthenticationBackend):
             :class:`TokenBlacklist` model.
     """
 
+    name = "bearerAuth"
+
+    def describe(self):
+        """Document this backend as HTTP bearer auth carrying a JWT."""
+        from sillo.openapi.models import HTTPBearer
+
+        return HTTPBearer(
+            type="http",
+            scheme="bearer",
+            bearerFormat="JWT",
+            description=self.description,
+        )
+
     def __init__(
         self,
         identifier: str = "id",
         secret_key: Optional[str] = None,
         check_blacklist: bool = True,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         """Initialize the JWT authentication backend with configuration options.
 
@@ -79,6 +94,12 @@ class JWTAuthBackend(AuthenticationBackend):
         self.identifier = identifier
         self.secret_key = secret_key
         self.check_blacklist = check_blacklist
+        # Named per instance so two JWT backends — a user token and an admin
+        # token on a different secret — document as two schemes rather than
+        # silently overwriting each other under one name.
+        if name is not None:
+            self.name = name
+        self.description = description
 
     async def authenticate(self, request: Request) -> Any:
         """Authenticate an incoming HTTP request using a Bearer JWT token.
@@ -124,7 +145,7 @@ class JWTAuthBackend(AuthenticationBackend):
         return AuthResult(
             success=True,
             identity=payload.get(self.identifier, ""),
-            scope="jwt",
+            scope=self.name,
         )
 
     async def _is_blacklisted(self, token: str) -> bool:

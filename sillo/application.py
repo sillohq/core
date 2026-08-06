@@ -56,6 +56,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
+    from sillo.auth.backend import AuthenticationBackend
     from sillo.core.http import Request, Response
 
 import json
@@ -246,6 +247,45 @@ class silloApp:
                     their current behavior; recommended for new applications.
                 """),
         ] = False,
+        auth: Annotated[
+            Optional[Sequence["AuthenticationBackend"]],
+            Doc("""
+                    The authentication backends this application accepts.
+
+                        auth=[JWTAuthBackend(secret_key=...), SessionAuthBackend()]
+
+                    One declaration does two jobs: it mounts
+                    ``AuthenticationMiddleware`` with these backends, and it
+                    publishes each backend's ``describe()`` under
+                    ``components.securitySchemes``. A route then names a
+                    scheme once, on its gate, and its documented ``security``
+                    follows from that — so the document cannot claim auth the
+                    application does not enforce.
+
+                    Backends whose ``describe()`` returns ``None`` still
+                    authenticate; they are simply left out of the document.
+
+                    Leaving this unset keeps the previous behaviour, including
+                    the legacy ``bearerAuth`` scheme registered by default.
+                """),
+        ] = None,
+        auth_user_model: Annotated[
+            Optional[type],
+            Doc("""
+                    User model the mounted authentication middleware loads
+                    identities into. Only read when ``auth`` is given.
+                """),
+        ] = None,
+        strict_security: Annotated[
+            bool,
+            Doc("""
+                    Refuse to build a document whose security requirements do
+                    not resolve. A route naming a scheme that no backend
+                    registered is a silent lie today — the viewer shows an
+                    authorize box wired to nothing. Off by default so existing
+                    applications keep building; recommended for new ones.
+                """),
+        ] = False,
     ) -> None:
         """
         Initialize the sillo application with all core subsystems.
@@ -339,9 +379,21 @@ class silloApp:
             termsOfService=terms_of_service,
         )
 
-        self.openapi_config.add_security_scheme(
-            "bearerAuth", HTTPBearer(type="http", scheme="bearer", bearerFormat="JWT")
-        )
+        self.strict_security = strict_security
+        self.auth_backends: List["AuthenticationBackend"] = list(auth or [])
+
+        if self.auth_backends:
+            self._register_auth(auth_user_model)
+        else:
+            # Legacy default. An application that declares no backends still
+            # advertises JWT bearer auth, which is a claim the document has no
+            # basis for — but removing it would dangle every existing
+            # `security=[{"bearerAuth": []}]`, so it stands until `auth=` is
+            # used. Declaring backends is the opt-out.
+            self.openapi_config.add_security_scheme(
+                "bearerAuth",
+                HTTPBearer(type="http", scheme="bearer", bearerFormat="JWT"),
+            )
 
         self.openapi = APIDocumentation(
             config=self.openapi_config,
@@ -357,6 +409,73 @@ class silloApp:
         self.events = EventEmitter()
         self.title = title or "sillo API"
         self.setup()
+
+    def _register_auth(self, user_model: Optional[type]) -> None:
+        """Mount the authentication middleware and publish its schemes.
+
+        Args:
+            user_model: User model the middleware loads identities into, or
+                ``None`` for the middleware's own default.
+
+        Raises:
+            ValueError: If two backends claim the same scheme name with
+                different definitions. Silently overwriting one with the
+                other would document a credential the loser never reads.
+        """
+        from sillo.auth.middleware import AuthenticationMiddleware
+
+        for backend in self.auth_backends:
+            scheme = backend.describe()
+            if scheme is None:
+                continue
+
+            existing = self.openapi_config.security_schemes.get(backend.name)
+            if existing is not None and existing != scheme:
+                raise ValueError(
+                    f"Two auth backends both claim the scheme {backend.name!r} "
+                    f"but describe it differently. Give one of them a distinct "
+                    f"name, e.g. {type(backend).__name__}(name='...')."
+                )
+            self.openapi_config.add_security_scheme(backend.name, scheme)
+
+        middleware = (
+            AuthenticationMiddleware(user_model=user_model, backend=self.auth_backends)
+            if user_model is not None
+            else AuthenticationMiddleware(backend=self.auth_backends)
+        )
+        self.use(middleware)
+
+    def _check_security(self) -> None:
+        """Verify every route's security resolves to a registered scheme.
+
+        The whole point of deriving ``security`` from the gate is that the two
+        can be checked against each other. Without this they can disagree
+        forever in silence: the viewer renders an authorize box wired to a
+        scheme nothing enforces, and the first sign of trouble is a 401 the
+        document says is impossible.
+
+        Raises:
+            ValueError: If a route requires a scheme that is not registered.
+        """
+        known = set(self.openapi_config.security_schemes)
+        problems: List[str] = []
+
+        for route in self.get_all_routes():
+            if getattr(route, "exclude_from_schema", False):
+                continue
+            for requirement in getattr(route, "security", None) or []:
+                for name in requirement:
+                    if name not in known:
+                        problems.append(f"  {route.raw_path} requires {name!r}")
+
+        if problems:
+            listed = ", ".join(sorted(known)) or "none"
+            raise ValueError(
+                "These routes require security schemes that are not "
+                "registered:\n"
+                + "\n".join(sorted(set(problems)))
+                + f"\nRegistered schemes: {listed}."
+            )
 
     @staticmethod
     def _resolve_docs(
@@ -518,6 +637,8 @@ class silloApp:
         """
         cached = self._openapi_documents.get(root_path)
         if cached is None:
+            if self.strict_security:
+                self._check_security()
             cached = json.dumps(
                 self.openapi.get_openapi(self.router, current_prefix=root_path)
             )

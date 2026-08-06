@@ -28,11 +28,26 @@ class APIKeyAuthBackend(AuthenticationBackend):
             any non-empty header value.
     """
 
+    name = "apiKeyHeader"
+
+    def describe(self):
+        """Document this backend as an apiKey credential in a header."""
+        from sillo.openapi.models import APIKey
+
+        return APIKey(
+            type="apiKey",
+            name=self.header_name,
+            description=self.description,
+            **{"in": "header"},
+        )
+
     def __init__(
         self,
         header_name: str = "X-API-Key",
         prefix: str = "key",
         verify_with_manager: bool = False,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         """Initialize the API key authentication backend.
 
@@ -61,6 +76,9 @@ class APIKeyAuthBackend(AuthenticationBackend):
         self.header_name = header_name
         self.prefix = prefix
         self.verify_with_manager = verify_with_manager
+        if name is not None:
+            self.name = name
+        self.description = description
 
     async def authenticate(self, request: Request) -> Any:
         """Authenticate an incoming request using an API key header.
@@ -98,7 +116,7 @@ class APIKeyAuthBackend(AuthenticationBackend):
             return AuthResult(
                 success=True,
                 identity=str(apikey.user_id),
-                scope="apikey",
+                scope=self.name,
             )
 
-        return AuthResult(success=True, identity=raw_token, scope="apikey")
+        return AuthResult(success=True, identity=raw_token, scope=self.name)

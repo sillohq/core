@@ -144,6 +144,10 @@ class AuthenticationMiddleware(BaseMiddleware):
                         auth_result.identity
                     )
                     request.scope["auth"] = auth_result.scope
+                    # Which *scheme* answered, alongside which *method*. A
+                    # route gated on schemes matches this; `auth` keeps its
+                    # existing meaning so `useAuth(scopes=...)` is untouched.
+                    request.scope["auth_scheme"] = backend.name
                     break
 
             except Exception as e:
@@ -154,5 +158,6 @@ class AuthenticationMiddleware(BaseMiddleware):
             # No backend authenticated the user
             request.scope["user"] = UnauthenticatedUser()
             request.scope["auth"] = None
+            request.scope["auth_scheme"] = None
 
         return await call_next()
