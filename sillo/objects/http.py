@@ -982,7 +982,11 @@ class UploadedFile:
         }
 
 
-class FormData(MultiDict[str, typing.Union[UploadedFile, str, Sequence[Any]]]):
+# `MultiDict` closes its type parameters as `Any, Any`, so subscripting it
+# here described nothing — it only worked because `__class_getitem__` is
+# inherited and ignores what it is given. The values this actually holds
+# are `UploadedFile | str | Sequence[Any]`.
+class FormData(MultiDict):
     """
     A mutable multidict for HTTP form data supporting file uploads.
 
@@ -1039,8 +1043,12 @@ class FormData(MultiDict[str, typing.Union[UploadedFile, str, Sequence[Any]]]):
             if isinstance(value, UploadedFile):
                 await value.close()
 
-    def get(
-        self, key: str, default: typing.Any = None
+    def get(  # ty: ignore[invalid-method-override]
+        # Narrows `Mapping.get`'s `key: object` to `str`. Form field names
+        # are strings, and the narrower signature is what callers rely on.
+        self,
+        key: str,
+        default: typing.Any = None,
     ) -> typing.Union[UploadedFile, str, None]:
         """
         Get a form field value by key with an optional default.

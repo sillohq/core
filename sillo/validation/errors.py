@@ -47,8 +47,12 @@ def prefix_errors(
     out: List[Dict[str, Any]] = []
     for err in exc.errors():
         loc: Sequence[Any] = err.get("loc", ())
-        if alias_map and loc and loc[0] in alias_map:
-            loc = (alias_map[loc[0]], *loc[1:])
+        # A pydantic location mixes field names with list indices, and only a
+        # name can be an alias — `in` on a str-keyed dict happily answers
+        # False for an int, which hid that the lookup was untyped.
+        first = loc[0] if loc else None
+        if alias_map and isinstance(first, str) and first in alias_map:
+            loc = (alias_map[first], *loc[1:])
         item = {
             "loc": [location, *loc],
             "msg": err.get("msg", ""),
