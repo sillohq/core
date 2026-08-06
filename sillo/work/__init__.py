@@ -68,6 +68,6 @@ def setup_work(app, *, queue_backend=None, queue_name: str = "default") -> dict:
 
 
 # Queue and scheduler operations as plain functions, for a project's own
-# tooling to call. sillo ships no CLI; sillo-start and your scripts consume
+# tooling to call. The `sillo` command, sillo-start and your scripts consume
 # these.
 from sillo.work import commands  # noqa: E402,F401

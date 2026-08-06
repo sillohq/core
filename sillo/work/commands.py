@@ -1,6 +1,6 @@
 """Queue and scheduler operations, as functions.
 
-sillo ships no command-line interface. These are the operations a CLI would
+These are the operations a command line
 expose, so that ``sillo-start``, a management script or a container entrypoint
 can start a worker without each one reassembling the same five objects.
 

@@ -1,4 +1,4 @@
-from sillo.users.base import UserProtocol
+from sillo.users.protocol import UserProtocol
 
 
 class SimpleUser(UserProtocol):

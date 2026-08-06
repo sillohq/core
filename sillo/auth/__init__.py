@@ -19,21 +19,32 @@ Attributes:
     SimpleUser: Lightweight user representation for common use cases.
 """
 
+from sillo._internals.lazy import deferred
+from sillo.users import BaseUser, SimpleUser
+
+from .backend import AuthenticationBackend
 from .decorator import auth, has_permission
 from .middleware import AuthenticationMiddleware
 from .use_auth import useAuth
 
-from . import jwt_auth, session_auth, apikey
-
-from sillo.users import BaseUser, SimpleUser
-
-from .backend import AuthenticationBackend
-
-APIKeyAuthBackend = apikey.APIKeyAuthBackend
-JWTAuthBackend = jwt_auth.JWTAuthBackend
-SessionAuthBackend = session_auth.SessionAuthBackend
-create_jwt = jwt_auth.create_jwt
-decode_jwt = jwt_auth.decode_jwt
+# The session and API-key backends define Tortoise models, and the JWT one
+# needs PyJWT. All three used to be imported here, which meant `import sillo`
+# — this package is reached from the exception handler — required the `record`
+# and `jwt` extras that are supposed to be optional. They load on first use
+# instead; the import paths and __all__ are unchanged.
+__getattr__ = deferred(
+    __name__,
+    {
+        "apikey": ".apikey",
+        "jwt_auth": ".jwt_auth",
+        "session_auth": ".session_auth",
+        "APIKeyAuthBackend": ".apikey",
+        "JWTAuthBackend": ".jwt_auth",
+        "SessionAuthBackend": ".session_auth",
+        "create_jwt": ".jwt_auth",
+        "decode_jwt": ".jwt_auth",
+    },
+)
 
 __all__ = [
     "AuthenticationMiddleware",

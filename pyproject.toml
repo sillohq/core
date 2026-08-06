@@ -2,12 +2,15 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[project.scripts]
+sillo = "sillo.__main__:main"
+
 [tool.hatch.build.targets.wheel]
 packages = ["sillo"]
 
 [project]
 name = "sillo-framework"
-version = "0.0.1a13"
+version = "0.0.1a14"
 description = "An async Python web framework for serious APIs, web applications, real-time systems, and business backends."
 authors = [
     {name = "Chidebele Dunamis", email = "techwithdunamix@gmail.com"}
@@ -83,9 +86,9 @@ templating = ["jinja2>=3.1.6"]
 # GraphQL Support
 graphql = ["strawberry-graphql>=0.219.0"]
 
-# Removed: sillo ships no command-line interface. The operations a CLI would
-# expose are plain functions in sillo.record.commands and sillo.users.commands,
-# so the argument parser belongs to whatever consumes them.
+# The `sillo` command is a console script, not an extra: see [project.scripts]
+# below. It carries the framework-level commands and, inside a project, merges
+# in whatever that project's console.py registers.
 
 # Alternative ASGI Server (uvicorn is default)
 granian = ["granian>=1.2.0"]
@@ -248,7 +251,7 @@ known-first-party = ["sillo"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.0.1a13"
+version = "0.0.1a14"
 version_files = [
     "pyproject.toml:version",
     "sillo/__init__.py:__version__"

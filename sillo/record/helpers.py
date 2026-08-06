@@ -440,6 +440,14 @@ class MigrationHelper:
         """
         from tortoise.migrations import api
 
+        # "zero" is this API's word for "unapply everything"; the engine's is
+        # "__first__", which it treats as a backward plan including the root
+        # migration. Without the translation the documented spelling raises
+        # "Unknown migration target models.zero".
+        if target == "zero":
+            target = "__first__"
+        # Qualified either way: the API resolves an unqualified target as an
+        # app label, so a bare "__first__" is rejected as an unknown app.
         target = self._qualify(target) or target
 
         try:

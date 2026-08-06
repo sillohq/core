@@ -149,6 +149,7 @@ app.mount_router(api)
 - Mail service utilities
 - Sync and async test clients
 - Model admin at `/admin/` that authenticates against your own user model
+- `sillo` command, and `sillo.console` for building a project's own
 
 ## Scope And Boundaries
 
@@ -156,7 +157,7 @@ Sillo runs on its own. No hosted service is required to put an application into 
 
 The framework is opinionated at the defaults and open at the boundaries. Auth backends, middleware, cache drivers, session stores, and hashing algorithms are contracts you can implement yourself, and anything the framework does on your behalf is something you can read, override, or replace.
 
-Sillo ships no command-line interface. The operations a CLI would expose are plain functions in `sillo.record.commands` and `sillo.users.commands`, so the argument parser belongs to whatever consumes them — a project brings its own `console.py`.
+Sillo ships a `sillo` command with the framework-level operations, built on `sillo.console`. Inside a project it also merges in whatever that project's `console.py` registers, so `sillo db:migrate` works without the framework owning the command set. The operations underneath stay plain functions in `sillo.record.commands`, `sillo.users.commands` and `sillo.work.commands`, so a project that wants different names writes its own console against them.
 
 ## Documentation
 

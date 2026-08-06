@@ -57,6 +57,7 @@ from .types import (
 
 if TYPE_CHECKING:
     from sillo.auth.backend import AuthenticationBackend
+    from sillo.console import Command
     from sillo.core.http import Request, Response
     from sillo.users import BaseUser
 
@@ -369,6 +370,15 @@ class silloApp:
         self.route = self.router.route
         self.lifespan_context: Optional[lifespan_manager] = lifespan
         self.state: dict[str, Any] = {}
+
+        #: Console commands this application registers. The ``sillo`` command
+        #: reads them after importing the app, which is how a project's own
+        #: commands reach the command line without a file of its own.
+        self.commands: list[type["Command"]] = []
+
+        #: The user model authentication loads identities into, kept so that
+        #: tooling can find it. The middleware receives it separately.
+        self.auth_user_model = auth_user_model
 
         self.openapi_config = OpenAPIConfig(
             title=title or "sillo API",
@@ -916,6 +926,14 @@ class silloApp:
             ```
         """
 
+        # Authentication can be configured two ways: silloApp(auth_user_model=…)
+        # or AuthenticationMiddleware(user_model=…) passed to use(). Both name
+        # the same thing, and tooling that wants to know which model this
+        # application authenticates against should not have to care which was
+        # used, so the middleware's answer is adopted when nothing else set one.
+        if self.auth_user_model is None:
+            self.auth_user_model = getattr(middleware, "user_model", None)
+
         self.http_middleware.insert(
             0,
             Middleware(ASGIRequestResponseBridge, dispatch=middleware),
@@ -1035,6 +1053,91 @@ class silloApp:
             name=name,
             cache_control=cache_control,
         )
+
+    def add_command(self, command: "type[Command]") -> "type[Command]":
+        """Register a console command on this application.
+
+        The ``sillo`` command imports the application and runs whatever is
+        registered here, so a project's own commands reach the command line
+        without a file of its own::
+
+            from sillo.console import Argument, Command
+
+
+            class Backfill(Command):
+                name = "posts:backfill"
+                help = "Fill in slugs for older posts"
+
+                arguments = [Argument("since", default=None)]
+
+                async def handle(self):
+                    ...
+
+
+            app.add_command(Backfill)
+
+        Args:
+            command: The command class.
+
+        Returns:
+            The class, so this can be used as a decorator.
+
+        Raises:
+            ValueError: If the command has no name, or that name is already
+                registered on this application.
+        """
+        if not getattr(command, "name", ""):
+            raise ValueError(f"{command.__name__} needs a name")
+
+        for existing in self.commands:
+            if existing.name == command.name:
+                raise ValueError(
+                    f"{command.name!r} is already registered to {existing.__name__}"
+                )
+
+        self.commands.append(command)
+        return command
+
+    def command(
+        self,
+        name: str,
+        help: str = "",
+        arguments: Optional[Sequence[Any]] = None,
+        aliases: Sequence[str] = (),
+        hidden: bool = False,
+    ) -> Callable[[Callable], "type[Command]"]:
+        """Register a plain function as a console command.
+
+        The shorthand for a command whose body does not warrant a class::
+
+            @app.command("cache:clear", help="Drop every cached entry")
+            async def clear(command):
+                await cache.flush()
+                command.success("Cache cleared.")
+
+        Args:
+            name: How the command is invoked.
+            help: One line for the listing.
+            arguments: The parameters it accepts.
+            aliases: Other names that dispatch here.
+            hidden: Keep it out of the listing.
+
+        Returns:
+            A decorator returning the generated command class.
+        """
+        from sillo.console import Console
+
+        # Console.command builds the class; borrowing it here keeps one
+        # implementation of the function-to-command wrapping.
+        registry = Console()
+        decorate = registry.command(
+            name, help=help, arguments=arguments, aliases=aliases, hidden=hidden
+        )
+
+        def wrapper(function: Callable) -> "type[Command]":
+            return self.add_command(decorate(function))
+
+        return wrapper
 
     def mount_router(self, router: Router, name: Optional[str] = None) -> None:
         """

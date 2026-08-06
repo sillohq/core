@@ -70,7 +70,8 @@ no convenience layer fixes them.
 | Integration | `DatabaseConfig`, `DatabaseBackend`, `DatabaseManager`, `setup_record`, `register_db_exception_handlers`, `pydantic_model_from_tortoise`, `QueryLogger`, `QueryLogEntry`, `Seeder`, `FixtureLoader`, `MigrationHelper` | [Exceptions & Pydantic](/guides/record/exceptions-pydantic/), [Migrations & Seeding](/guides/record/migrations/) |
 
 Migration operations are functions in `sillo.record.commands`, driven from
-the `DatabaseManager` your application runs on. sillo ships no command-line
+the `DatabaseManager` your application runs on. They stay plain functions, so the
+`sillo` command, your own console and a test all reach the same code; no command-line
 interface — see [Migrations & Seeding](/guides/record/migrations/).
 
 ##  The minimum viable setup

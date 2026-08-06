@@ -21,6 +21,8 @@ Usage::
 
 from .cors import CORSMiddleware, CorsConfig
 from .csrf import CSRFConfig, CSRFMiddleware
+from sillo._internals.lazy import deferred
+
 from .ratelimit import (
     InMemoryBackend,
     RateLimit,
@@ -28,8 +30,6 @@ from .ratelimit import (
     RateLimitConfig,
     RateLimitMiddleware,
     RateLimitResult,
-    RecordBackend,
-    RedisBackend,
 )
 from .shield import Shield
 
@@ -48,3 +48,11 @@ __all__ = [
     "RedisBackend",
     "RecordBackend",
 ]
+
+
+#: The Record backend defines a Tortoise model and the Redis one needs redis.
+#: This package is reached from the middleware package, which an application
+#: imports unconditionally, so neither may be imported eagerly.
+__getattr__ = deferred(
+    __name__, {"RecordBackend": ".ratelimit", "RedisBackend": ".ratelimit"}
+)

@@ -14,7 +14,8 @@ head:
 
 #  The Console
 
-Sillo ships **no command-line interface**. A project brings its own, and
+Sillo ships a `sillo` command, and a project brings its own console too —
+`sillo` finds it and merges it in. In a project created from the starter that is
 in a project created from the starter that is `console.py` at the root.
 
 ```bash

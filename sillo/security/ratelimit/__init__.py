@@ -12,13 +12,13 @@ from __future__ import annotations
 import typing
 from typing import Any, Optional
 
+from sillo._internals.lazy import deferred
+
 from ._middleware import RateLimitMiddleware
 from .backends import (
     InMemoryBackend,
     RateLimitBackend,
     RateLimitResult,
-    RecordBackend,
-    RedisBackend,
     get_backend,
 )
 from .config import RateLimitConfig
@@ -103,3 +103,11 @@ class RateLimit(RateLimitMiddleware):
             on_exceed=on_exceed,
         )
         super().__init__(config=config, **kwargs)
+
+
+#: Re-exported from .backends, which defers them for the same reason: the
+#: middleware package is imported unconditionally by the application, and the
+#: Record backend defines a Tortoise model.
+__getattr__ = deferred(
+    __name__, {"RecordBackend": ".backends", "RedisBackend": ".backends"}
+)

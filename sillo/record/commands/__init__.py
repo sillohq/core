@@ -1,6 +1,7 @@
 """Database and migration operations, as functions.
 
-sillo deliberately ships no command-line interface. Building one means choosing
+The `sillo` command exposes these, and so can a console of your own. Keeping
+them as functions is what makes both possible: building a CLI means choosing
 an argument parser, an output format and a set of names, and those are the
 application's decisions — or its tooling's. What the framework owes you is the
 operations themselves, callable from anywhere.

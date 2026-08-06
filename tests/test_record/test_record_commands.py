@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from sillo.record import DatabaseConfig, DatabaseManager
-from sillo.record.commands import init, make, migrate, plan
+from sillo.record.commands import init, make, migrate, plan, rollback
 
 
 @pytest.fixture
@@ -180,3 +180,31 @@ class TestMigrationCommands:
 
         assert not (project / "settings.py").exists()
         assert (project / "migrations_pkg" / "0001_initial.py").exists()
+
+    async def test_rolling_back_to_zero_unapplies_everything(self, project, database):
+        """``"zero"`` is the documented way to unapply every migration.
+
+        The engine spells it ``__first__`` and rejects ``zero`` as an unknown
+        target, so without a translation the documented spelling raised
+        ``ValueError: Unknown migration target models.zero`` — the one thing
+        the docstring told you to reach for.
+        """
+        await init(database)
+        await make(database, "initial")
+        await migrate(database)
+        assert "widgets" in tables(project)
+
+        await rollback(database, "zero")
+
+        assert "widgets" not in tables(project)
+
+    async def test_rolling_back_to_a_named_migration_still_works(
+        self, project, database
+    ):
+        await init(database)
+        await make(database, "initial")
+        await migrate(database)
+
+        await rollback(database, "0001_initial")
+
+        assert "widgets" in tables(project)

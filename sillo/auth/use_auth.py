@@ -44,11 +44,15 @@ from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.exceptions import AuthenticationFailed, PermissionDenied
-from sillo.users.base import BaseUser, UserProtocol
 from sillo.users.simple import SimpleUser
 
 if TYPE_CHECKING:
+    # sillo.users.base defines Tortoise models, so importing it at runtime
+    # drags the ORM into `import sillo` and makes the package unimportable
+    # without the `record` extra. Both names are only ever annotations here,
+    # and `from __future__ import annotations` keeps those unevaluated.
     from sillo.core.http import Request
+    from sillo.users.base import BaseUser, UserProtocol
 
 
 #: What the shipped backends used to report as ``AuthResult.scope``, mapped to

@@ -1,6 +1,6 @@
 """User management, as functions.
 
-sillo ships no command-line interface. These are the operations a CLI would
+These are the operations a command line
 expose, written as plain async functions so that a project's own tooling —
 ``sillo-start``, a Click group, a management script, a test — can call them
 without going through a process boundary.

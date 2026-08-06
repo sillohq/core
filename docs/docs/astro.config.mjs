@@ -175,6 +175,7 @@ export default defineConfig({
                         { label: 'Frontend (SPA)', link: '/guides/frontend/' },
                         { label: 'HTTP Client', link: '/guides/http/client/' },
                         { label: 'Mail Service', link: '/guides/services/mail/' },
+                        { label: 'Console Commands', link: '/guides/console/' },
                         { label: 'GraphQL', link: '/guides/graphql/' },
                     ],
                 },
