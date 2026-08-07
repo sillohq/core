@@ -34,20 +34,13 @@ make setup
 make dev
 ```
 
-Then open <http://localhost:8000>. This is the path to use today —
-`sillo-start` is not published yet.
+Then open <http://localhost:8000>.
 
 `make setup` installs dependencies, writes a `.env` with a freshly
 generated `SECRET_KEY`, creates the database and applies the initial
 migration. It is safe to re-run; an existing `.env` is never overwritten.
 
 ##  With sillo-start
-
-:::caution[Not published yet]
-`sillo-start` is not on PyPI, so `uvx sillo-start` cannot resolve it. Use
-[the quickest path](#the-quickest-path) above until it is released. The rest of
-this section describes what it will do.
-:::
 
 ```bash
 uvx sillo-start create-app myapp
