@@ -101,7 +101,144 @@ export class StarlightTOC extends HTMLElement {
             clearTimeout(timeout);
             timeout = setTimeout(() => this.onIdle(observe), 200);
         });
+
+        this.trackScroll(links);
     };
+
+    /**
+     * Move the marker with the page rather than with the current heading.
+     *
+     * The intersection observer above answers a different question — which
+     * heading is in view — and it answers it in steps. A marker driven from it
+     * sits still through a long section and then jumps. This interpolates
+     * between two entries by how far the reader is between their headings, so
+     * the marker travels continuously as the page scrolls.
+     *
+     * Nothing here reads layout during a scroll. Positions are measured once
+     * up front and again on resize; each frame only reads scrollY and writes
+     * two custom properties, which is what keeps it off the layout path.
+     */
+    private trackScroll(links: HTMLAnchorElement[]): void {
+        const body = this.querySelector<HTMLElement>('.toc-body');
+        const marker = this.querySelector<HTMLElement>('.toc-marker');
+        if (!body || !marker) return;
+
+        interface Stop {
+            /** Scroll position at which this heading reaches the reading line. */
+            arrive: number;
+            /** Where the fill should end when it does, within the list. */
+            edge: number;
+        }
+
+        let stops: Stop[] = [];
+        let anchor = 0;
+
+        /** Distance from the top of `root`, walking offsetParent. */
+        const offsetWithin = (element: HTMLElement, root: HTMLElement): number => {
+            let top = 0;
+            let node: HTMLElement | null = element;
+            while (node && node !== root) {
+                top += node.offsetTop;
+                node = node.offsetParent as HTMLElement | null;
+            }
+            return top;
+        };
+
+        const measure = (): void => {
+            // The reading line the intersection observer above uses, so the
+            // fill and the emboldened link agree about where "here" is.
+            const header = document.querySelector('header')?.getBoundingClientRect().height || 0;
+            anchor = header + 32;
+
+            const maxScroll = Math.max(
+                0,
+                document.documentElement.scrollHeight - window.innerHeight
+            );
+
+            const found: { arrive: number; edge: number }[] = [];
+            for (const link of links) {
+                const id = decodeURIComponent(link.hash.slice(1));
+                const heading = id ? document.getElementById(id) : null;
+                if (!heading) continue;
+                found.push({
+                    arrive: heading.getBoundingClientRect().top + window.scrollY - anchor,
+                    edge: offsetWithin(link, body) + link.offsetHeight,
+                });
+            }
+            found.sort((a, b) => a.arrive - b.arrive);
+
+            /*
+             * The last screenful of headings never reaches the reading line —
+             * the document runs out first — so their natural arrival positions
+             * are all past the end of the scroll range. Left alone the fill
+             * freezes for the whole final screen and never covers the entries
+             * it is still scrolling through. They are respaced across whatever
+             * scrolling remains instead, which also guarantees the rail is
+             * full at the bottom of the page.
+             */
+            let tail = found.length;
+            while (tail > 0 && found[tail - 1]!.arrive > maxScroll) tail--;
+            const remaining = found.length - tail;
+            if (remaining > 0) {
+                const start = tail > 0 ? Math.min(found[tail - 1]!.arrive, maxScroll) : 0;
+                const step = (maxScroll - start) / remaining;
+                for (let i = 0; i < remaining; i++) {
+                    found[tail + i]!.arrive = start + step * (i + 1);
+                }
+            }
+
+            stops = found;
+        };
+
+        const update = (): void => {
+            if (stops.length === 0) {
+                body.removeAttribute('data-marker');
+                return;
+            }
+
+            const y = window.scrollY;
+            let index = 0;
+            while (index < stops.length - 1 && stops[index + 1]!.arrive <= y) index++;
+
+            const from = stops[index]!;
+            const to = stops[index + 1];
+            let edge = from.edge;
+
+            if (to) {
+                const span = to.arrive - from.arrive;
+                // Clamped, so scrolling above the first heading holds the fill
+                // at that heading rather than pulling it negative.
+                const progress = span > 0 ? Math.min(1, Math.max(0, (y - from.arrive) / span)) : 1;
+                edge += (to.edge - from.edge) * progress;
+            }
+
+            marker.style.setProperty('--toc-progress', `${Math.max(0, edge)}px`);
+            body.setAttribute('data-marker', '');
+        };
+
+        let frame = 0;
+        const schedule = (): void => {
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                update();
+            });
+        };
+
+        const remeasure = (): void => {
+            measure();
+            schedule();
+        };
+
+        measure();
+        update();
+
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', remeasure);
+        // Images, fonts and code blocks settle after the first measurement and
+        // move every heading under it.
+        new ResizeObserver(remeasure).observe(document.body);
+    }
 
     private getRootMargin(): `-${number}px 0% ${number}px` {
         const navBarHeight = document.querySelector('header')?.getBoundingClientRect().height || 0;

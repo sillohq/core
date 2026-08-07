@@ -9,7 +9,10 @@ const { toc } = Astro.locals.starlightRoute;
         <starlight-toc data-min-h={toc.minHeadingLevel} data-max-h={toc.maxHeadingLevel}>
             <nav aria-labelledby="starlight__on-this-page">
                 <p id="starlight__on-this-page">{Astro.locals.t('tableOfContents.onThisPage')}</p>
-                <TableOfContentsList toc={toc.items} />
+                <div class="toc-body">
+                    <span class="toc-marker" aria-hidden="true" />
+                    <TableOfContentsList toc={toc.items} />
+                </div>
             </nav>
         </starlight-toc>
     )
@@ -24,13 +27,71 @@ const { toc } = Astro.locals.starlightRoute;
         overflow: auto;
         height: 100%;
     }
-    nav {
-    }
     p {
         font-weight: 400;
         font-size: 0.75rem;
         line-height: 1rem;
         margin-bottom: calc(var(--spacing) * 3.5);
         color: var(--muted-foreground);
+    }
+
+    /*
+     * Positioned so the marker measures against this element: every link's
+     * offsetParent chain stops here, which keeps its offset independent of how
+     * far the table of contents has itself been scrolled.
+     */
+    .toc-body {
+        position: relative;
+        padding-left: calc(var(--spacing) * 3.5);
+    }
+
+    /* The rail the marker rides, matching the page sidebar's. */
+    .toc-body::before {
+        content: '';
+        position: absolute;
+        inset-block: 0;
+        left: 0;
+        width: 1px;
+        background: var(--sidebar-rail-color, var(--border));
+        border-radius: 1px;
+    }
+
+    /*
+     * The rail fills to the reading position as the page scrolls, rather than
+     * a marker hopping from entry to entry.
+     *
+     * A marker was the first attempt and it does not work here. To move with
+     * the scroll it has to interpolate between two entries, which leaves it
+     * sitting in the gap between them — measured at up to 79px from the entry
+     * the intersection observer had just emboldened, on a third of frames. The
+     * edge of a fill lands on exactly the same value and reads as correct,
+     * because a fill's edge belongs between two entries.
+     *
+     * No transition: the height is already rewritten every frame the page
+     * scrolls, and easing on top of that would only make it lag the page.
+     */
+    .toc-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 2px;
+        border-radius: 2px;
+        background: linear-gradient(
+            to bottom,
+            color-mix(in srgb, var(--sidebar-marker-color, var(--foreground)) 45%, transparent) 0%,
+            var(--sidebar-marker-color, var(--foreground)) 32%,
+            var(--sidebar-marker-color, var(--foreground)) 100%
+        );
+        box-shadow: 0 0 12px
+            color-mix(in srgb, var(--sidebar-marker-color, var(--foreground)) 45%, transparent);
+        height: var(--toc-progress, 0px);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .toc-body[data-marker] .toc-marker {
+        opacity: 1;
+        transition: opacity 0.2s ease;
     }
 </style>
