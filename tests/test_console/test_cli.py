@@ -9,6 +9,7 @@ what is derived from it, and what happens when there is none.
 from __future__ import annotations
 
 import io
+import sys
 import textwrap
 
 import pytest
@@ -778,15 +779,23 @@ def test_pyproject_configuration_works_without_tomllib(elsewhere, monkeypatch):
     assert _configured_app() == "somewhere:app"
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="tomllib is genuinely absent here, so the fallback is already the "
+    "ordinary path and the other pyproject tests cover it",
+)
 def test_the_pyproject_parser_falls_back_when_tomllib_is_absent(tmp_path):
     """On 3.10 there is no tomllib, and sillo supports 3.10.
 
     Run in a subprocess with tomllib blocked and tomli standing in, which is
     exactly the 3.10 arrangement. CI caught the first version of this on 3.10
     after it passed locally on 3.12.
+
+    Simulating the absence needs the real parser to forward to, so this only
+    runs where tomllib exists. Where it does not, every other test on this page
+    is already exercising the fallback.
     """
     import subprocess
-    import sys
     import textwrap
 
     (tmp_path / "tomli.py").write_text(
