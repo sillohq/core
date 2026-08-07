@@ -175,6 +175,24 @@ def test_a_synchronous_handle_is_supported():
     assert "done" in stream.getvalue()
 
 
+def test_a_synchronous_handle_may_start_its_own_loop():
+    import asyncio
+
+    class Serves(Command):
+        name = "serves"
+
+        def handle(self):
+            # The shape of `uvicorn.run`: starting a loop from a command only
+            # works when the console has not already started one for it.
+            asyncio.run(asyncio.sleep(0))
+            self.line("served")
+
+    console, stream = build(Serves)
+
+    assert console.run(["serves"]) == 0
+    assert "served" in stream.getvalue()
+
+
 def test_an_integer_return_becomes_the_exit_code():
     class Fails(Command):
         name = "fails"
