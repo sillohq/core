@@ -19,7 +19,7 @@ const { sublist } = Astro.props;
                 {...entry.attrs}
             >
                 <span class="entry-link-inner">
-                    {entry.label}
+                    <span class="entry-link-label">{entry.label}</span>
                     {entry.badge && <span class="entry-badge">{entry.badge.text}</span>}
                 </span>
             </a>
@@ -36,80 +36,127 @@ const { sublist } = Astro.props;
 
 <style>
     .container-sidebar-entry {
-        gap: 0.25rem;
+        gap: calc(var(--spacing) * 1.5);
         flex-direction: column;
         display: flex;
     }
 
+    /*
+     * A section heading, not a link: small, tracked and quiet, so the eye reads
+     * the group names as structure and the page names as the things to click.
+     */
     .entry-title {
         font-weight: 600;
-        font-size: 0.75rem;
-        line-height: 1rem;
-        padding-top: calc(var(--spacing) * 1);
+        font-size: 0.6875rem;
+        line-height: 1;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        padding-left: var(--sidebar-rail-inset);
         padding-bottom: calc(var(--spacing) * 1);
-        padding-left: calc(var(--spacing) * 2);
-        padding-right: calc(var(--spacing) * 2);
-        border-radius: calc(var(--radius) - 2px);
-        color: var(--muted-foreground);
+        color: var(--sidebar-group-color, var(--muted-foreground));
+        opacity: 0.75;
     }
 
+    /*
+     * The rail every link hangs off. It is drawn per group rather than down the
+     * whole sidebar so it stops at each group's last link instead of running
+     * through the gap above the next heading.
+     */
     .container-group-link {
+        position: relative;
         font-size: 0.875rem;
         line-height: 1.25rem;
-        gap: 2px;
+        gap: 1px;
         grid-auto-rows: max-content;
         grid-auto-flow: row;
         display: grid;
     }
 
+    .container-group-link::before {
+        content: '';
+        position: absolute;
+        inset-block: 0;
+        left: 0;
+        width: 1px;
+        background: var(--sidebar-rail-color, var(--border));
+        border-radius: 1px;
+    }
+
     .entry-link {
-        color: var(--foreground);
+        color: var(--sidebar-link-color, var(--muted-foreground));
         font-weight: 400;
         align-items: center;
         width: 100%;
-        height: 1.875rem;
+        height: 1.9375rem;
         display: flex;
         text-decoration: none;
-        font-size: 0.8rem;
+        font-size: 0.8125rem;
         line-height: 1.125rem;
+        letter-spacing: -0.01em;
     }
 
+    /*
+     * flex: 1 so the hover and current backgrounds are one consistent shape.
+     * Sized to the label instead, they were a ragged column of pills as wide as
+     * whatever each page happened to be called.
+     */
     .entry-link-inner {
         display: flex;
         align-items: center;
-        padding-left: calc(var(--spacing) * 2);
+        flex: 1;
+        min-width: 0;
+        padding-left: var(--sidebar-rail-inset);
         padding-right: calc(var(--spacing) * 2);
-        border-radius: calc(var(--radius) - 2px);
+        border-radius: calc(var(--radius) - 3px);
         height: 100%;
         transition:
-            color 0.15s,
-            background-color 0.15s;
+            color 0.16s ease,
+            background-color 0.16s ease;
     }
 
-    .entry-link[aria-current='page'] {
-        font-weight: 500;
+    .entry-link-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .entry-link[aria-current='page'] .entry-link-inner {
-        background-color: var(--accent);
-        color: var(--accent-foreground);
+    .entry-link:hover:not([aria-current='page']) {
+        color: var(--foreground);
     }
 
     .entry-link:hover:not([aria-current='page']) .entry-link-inner {
-        background-color: var(--secondary);
-        color: var(--secondary-foreground);
+        background-color: color-mix(in srgb, var(--foreground) 5%, transparent);
+    }
+
+    .entry-link:focus-visible {
+        outline: none;
+    }
+
+    .entry-link:focus-visible .entry-link-inner {
+        outline: 2px solid var(--sidebar-marker-color, var(--foreground));
+        outline-offset: -2px;
+    }
+
+    .entry-link[aria-current='page'] {
+        color: var(--foreground);
+        font-weight: 550;
+    }
+
+    .entry-link[aria-current='page'] .entry-link-inner {
+        background-color: var(--sidebar-current-background, color-mix(in srgb, var(--foreground) 8%, transparent));
     }
 
     .entry-badge {
-        color: rgb(0 0 0);
+        color: var(--sidebar-marker-color, var(--foreground));
         line-height: 1;
-        font-size: 0.75rem;
-        padding-top: calc(var(--spacing) * 0.5);
-        padding-bottom: calc(var(--spacing) * 0.5);
-        padding-left: calc(var(--spacing) * 1.5);
-        padding-right: calc(var(--spacing) * 1.5);
-        background-color: rgb(173 250 29);
-        border-radius: calc(var(--radius) - 2px);
-        margin-left: calc(var(--spacing) * 2);
+        font-size: 0.625rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: calc(var(--spacing) * 0.75) calc(var(--spacing) * 1.5);
+        background-color: color-mix(in srgb, var(--sidebar-marker-color, var(--foreground)) 14%, transparent);
+        border-radius: 999px;
+        margin-left: auto;
+        flex-shrink: 0;
     }
 </style>

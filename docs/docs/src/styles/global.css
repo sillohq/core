@@ -42,6 +42,28 @@
 	--sl-color-hairline-light: var(--sillo-border);
 	--sl-color-hairline: var(--sillo-border);
 	--sl-color-hairline-shade: rgba(0, 0, 0, 0.5);
+
+	/*
+	 * lucode-starlight's own tokens. They are declared inside @layer lucode, so
+	 * these unlayered values win in both themes without !important — and
+	 * because each points at a --sillo-* variable that is itself redefined
+	 * under [data-theme='light'], one declaration covers both.
+	 *
+	 * --background matters beyond colour: the sidebar's top and bottom fades
+	 * are gradients to it, so while it was neutral-950 and the page was
+	 * #050505 the fades ended in a visible lighter band.
+	 */
+	--background: var(--sillo-bg);
+	--foreground: var(--sillo-text);
+	--border: var(--sillo-border);
+	--muted-foreground: var(--sillo-muted);
+
+	/* Sidebar. The component defaults each of these to a neutral. */
+	--sidebar-marker-color: var(--sillo-primary);
+	--sidebar-rail-color: var(--sillo-border);
+	--sidebar-link-color: var(--sillo-muted);
+	--sidebar-group-color: var(--sillo-muted);
+	--sidebar-current-background: rgba(252, 3, 69, 0.09);
 }
 
 :root[data-theme='light'] {
@@ -117,32 +139,14 @@ header.header {
 	border-color: var(--sillo-border) !important;
 }
 
-.sidebar-content a[aria-current='page'],
-.sidebar-content a[aria-current='true'] {
-	color: var(--sillo-text);
-	background: rgba(220, 56, 45, 0.11);
-}
-
-.sidebar-content a[aria-current='page']::before,
-.sidebar-content a[aria-current='true']::before,
-.sidebar-content .is-active::before,
-.sidebar-content [data-current-parent]::before {
-	background: var(--sillo-redis) !important;
-	box-shadow: 0 0 18px rgba(220, 56, 45, 0.7);
-}
-
-.sidebar-content .is-active,
-.sidebar-content [data-current-parent] {
-	color: var(--sillo-text) !important;
-}
-
-.sidebar-content .is-active > a,
-.sidebar-content [data-current-parent] > a {
-	color: var(--sillo-text) !important;
-}
-
-.sidebar-content a:hover {
-	background: rgba(255, 255, 255, 0.045);
+/*
+ * The sidebar itself is lucode-starlight's override, not Starlight's own, and
+ * it is themed entirely through the --sidebar-* variables set above. Rules
+ * targeting .sidebar-content used to live here and matched nothing: that class
+ * only appears in the default sidebar, which this site never renders.
+ */
+:root[data-theme='light'] {
+	--sidebar-current-background: rgba(252, 3, 69, 0.07);
 }
 
 .sl-markdown-content h1,
