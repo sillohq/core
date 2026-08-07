@@ -140,9 +140,9 @@ make migration m="add post slug"
 That writes a migration **and applies it**. To write without applying:
 
 ```bash
-uv run python console.py db make add_post_slug
-uv run python console.py db plan          # look at what would run
-uv run python console.py db migrate       # apply it
+uv run sillo db:make add_post_slug
+uv run sillo db:plan          # look at what would run
+uv run sillo db:migrate       # apply it
 ```
 
 ###  After pulling someone else's work
@@ -287,7 +287,7 @@ application startup code. Three replicas that each migrate on boot produce
 three concurrent schema changes and, on a good day, two failures.
 
 ```bash
-uv run python console.py db migrate && exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+uv run sillo db:migrate && exec uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 That is fine for a single instance. For rolling deployments, make it a job

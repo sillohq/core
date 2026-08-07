@@ -22,7 +22,7 @@ GraphQL is a query language for APIs and a runtime for fulfilling those queries 
 GraphQL support ships with sillo as a first-party module. Install with the graphql extra:
 
 ```bash
-uv add "sillo[graphql]"
+uv add "sillo-framework[graphql]"
 ```
 
 This installs `strawberry-graphql` alongside sillo.
@@ -184,7 +184,7 @@ For resolvers that hit the database, use your normal async fixtures in the test 
 - **Malformed body** — a non-JSON or non-object `POST` yields `400` with `{"errors": [...]}`. GraphiQL itself is unaffected (it uses `GET`).
 - **GraphiQL in production** — leaving `graphiql=True` exposes an in-browser IDE. Set `graphiql=False` for production endpoints you don't want browsable.
 - **Auth** — `GraphQL` does not enforce authentication. Protect the route by registering auth middleware or checking `info.context["request"]` inside resolvers.
-- **Extra dependency** — `strawberry-graphql` is required. Install with `uv add "sillo[graphql]"` (or your lockfile equivalent); importing `sillo.graphql` without it raises at runtime.
+- **Extra dependency** — `strawberry-graphql` is required. Install with `uv add "sillo-framework[graphql]"` (or your lockfile equivalent); importing `sillo.graphql` without it raises at runtime.
 
 ##  Related topics
 

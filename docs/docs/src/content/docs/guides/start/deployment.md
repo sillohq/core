@@ -68,7 +68,7 @@ Run them as a **separate step before the new version starts**, never from
 application startup code:
 
 ```bash
-uv run python console.py db migrate && exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+uv run sillo db:migrate && exec uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 Three replicas that each migrate on boot produce three concurrent schema
@@ -83,7 +83,7 @@ new application version:
 - add an index concurrently, in its own migration
 
 ```bash
-uv run python console.py db plan     # what would run, before it runs
+uv run sillo db:plan     # what would run, before it runs
 ```
 
 is worth putting in front of a production migration.
@@ -93,7 +93,7 @@ is worth putting in front of a production migration.
 If you use the queue, run it properly:
 
 ```bash
-QUEUE_URL=redis://redis:6379 uv run python console.py worker --concurrency 8
+QUEUE_URL=redis://redis:6379 uv run sillo queue:work --concurrency 8
 ```
 
 The in-memory queue does not survive a restart and is not shared between
@@ -112,7 +112,7 @@ job in flight rather than killing it halfway.
 
 **Run one scheduler, not one per replica.** Each application process
 running `_register_work` gets its own scheduler, so a nightly task fires
-once per replica. Run `console.py scheduler` as a single process, or guard
+once per replica. Run `sillo schedule:run` as a single process, or guard
 the task with a lock.
 
 </aside>
@@ -181,7 +181,7 @@ replica migrates:
 
 ```yaml
 # one job, before the rollout
-command: ["uv", "run", "python", "console.py", "db", "migrate"]
+command: ["uv", "run", "sillo", "db:migrate"]
 ```
 
 ##  A systemd unit
@@ -208,7 +208,7 @@ And the worker, if you have one:
 
 ```ini
 [Service]
-ExecStart=/usr/local/bin/uv run python console.py worker --concurrency 8
+ExecStart=/usr/local/bin/uv run sillo queue:work --concurrency 8
 Restart=always
 KillSignal=SIGTERM
 TimeoutStopSec=60
@@ -243,7 +243,7 @@ afternoon:
 - [ ] `DATABASE_URL` pointing at PostgreSQL or MySQL, not SQLite, if you run more than one worker
 - [ ] `CORS_ALLOW_ORIGINS` naming real origins, not `*`
 - [ ] Migrations run as a separate step, gating the rollout
-- [ ] `console.py db plan` reviewed for anything destructive
+- [ ] `sillo db:plan` reviewed for anything destructive
 - [ ] Static files served by the proxy
 - [ ] `X-Forwarded-Proto` set by the proxy
 - [ ] Worker running with `QUEUE_URL`, if you dispatch jobs

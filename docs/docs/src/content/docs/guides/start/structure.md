@@ -38,7 +38,6 @@ myapp/
   scripts/
     smoke.py          Boots the app and hits every route
   tests/
-  console.py          Management commands — see `python console.py`
   Makefile
   pyproject.toml
   .env.example
@@ -57,9 +56,9 @@ migrations — one directory holding everything that describes persistence.
 
 **`routes/` is the HTTP surface.** What paths exist and what they return.
 
-**`console.py` is the operator's entry point.** Migrations, accounts,
-processes. It is a sibling of the packages rather than inside one, because
-it drives the application rather than being part of it.
+**`sillo` is the operator's entry point.** Migrations, accounts,
+processes. The project ships no console file: `sillo` finds the application
+and derives its commands from what the application set up.
 
 That boundary is load-bearing in one direction: `routes/` imports from
 `app/` and `database/`, `app/` imports from `database/`, and `database/`
@@ -424,22 +423,20 @@ message for what is actually a stale file.
 
 ---
 
-##  `console.py`
+##  Management commands
 
-Management commands, at the project root. A thin layer over
-`sillo.record.commands`, `sillo.users.commands` and `sillo.work.commands`,
-using nothing but `argparse`.
+There is no console file. `sillo` finds the application — `app/main.py` here —
+and offers what it set up: `setup_record` brings the migration and account
+commands, `setup_scheduler` brings the schedule commands.
 
 ```bash
-uv run python console.py db migrate
-uv run python console.py user admin ada@example.com ada
-uv run python console.py worker
+uv run sillo db:migrate
+uv run sillo user:admin ada@example.com ada
+uv run sillo queue:work
 ```
 
-It lives at the root rather than inside `app/` because it drives the
-application rather than being part of it — and because
-`python console.py` is shorter than the alternative, which matters for
-something typed dozens of times a day.
+Commands of your own go on the application with `app.add_command`, which is
+what puts them in the same listing.
 
 See [The Console](/guides/start/console/).
 
@@ -480,7 +477,7 @@ are the project's spine.
 ##  Related
 
 - [Creating a Project](/guides/start/) — how the files got here
-- [The Console](/guides/start/console/) — `console.py` in full
+- [The Console](/guides/start/console/) — every command in full
 - [Database & Migrations](/guides/start/database/) — models and schema changes
 - [Middleware](/guides/middleware/) — the ordering rules in general
 - [Routers & Sub-Apps](/guides/routers-and-subapps/) — mounting and prefixes

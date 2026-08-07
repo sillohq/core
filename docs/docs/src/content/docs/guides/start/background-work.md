@@ -170,7 +170,7 @@ _register_work(application)
 ```
 
 ```bash
-QUEUE_URL=redis://localhost:6379 uv run python console.py worker
+QUEUE_URL=redis://localhost:6379 uv run sillo queue:work
 ```
 
 **Good for** production. Jobs survive an application restart, several
@@ -310,11 +310,11 @@ def register_tasks(scheduler) -> None:
     scheduler.schedule(cleanup, trigger=CronTrigger("0 3 * * *"), name="cleanup")
 ```
 
-Both the application and a standalone `console.py scheduler` call this, so
+Both the application and a standalone `sillo schedule:run` call this, so
 both see the same schedule. Register a task in two places and they drift.
 
 ```bash
-uv run python console.py scheduler
+uv run sillo schedule:run
 ```
 
 With `_register_work` on, the scheduler runs inside the application and
@@ -332,7 +332,7 @@ guard the task with a lock.
 ##  Running the worker in production
 
 ```bash
-QUEUE_URL=redis://redis:6379 uv run python console.py worker --concurrency 8
+QUEUE_URL=redis://redis:6379 uv run sillo queue:work --concurrency 8
 ```
 
 `run_worker` installs a SIGTERM handler, so a container stop finishes the
@@ -342,7 +342,7 @@ between a clean shutdown and a half-sent email.
 Queue priority is order:
 
 ```bash
-uv run python console.py worker --queues urgent,default
+uv run sillo queue:work --queue urgent --queue default
 ```
 
 `urgent` is drained before `default` is looked at.

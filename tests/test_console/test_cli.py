@@ -630,8 +630,12 @@ def test_main_exits_two_on_an_unknown_command(elsewhere):
 def test_the_console_script_is_declared():
     # The entry point is why `sillo` exists on PATH after an install; losing it
     # is silent until somebody installs the package.
-    import tomllib
     from pathlib import Path
+
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # 3.10
+        import tomli as tomllib
 
     root = Path(__file__).resolve().parents[2]
     config = tomllib.loads((root / "pyproject.toml").read_text())
@@ -644,3 +648,187 @@ def test_the_console_is_a_console(elsewhere):
 
     assert isinstance(console, Console)
     assert console.prog == "sillo"
+
+
+def test_routes_descends_into_mounted_routers(elsewhere, monkeypatch):
+    """A mounted router is one entry holding routes of its own.
+
+    Listing only the top level shows `/api` and hides every route under it,
+    which is the opposite of what someone runs this to find out.
+    """
+    write_app(
+        elsewhere,
+        """
+        from sillo import Router, silloApp
+
+        app = silloApp()
+        api = Router(prefix="/api")
+
+        @api.get("/health")
+        async def health(request, response):
+            return response.json({})
+
+        @api.post("/items")
+        async def create_item(request, response):
+            return response.json({})
+
+        app.mount_router(api)
+        """,
+        name="mounted.py",
+    )
+    monkeypatch.syspath_prepend(str(elsewhere))
+
+    console, _ = build_console()
+    code, written = run(console, ["routes", "mounted:app"])
+
+    assert code == 0
+    assert "/api/health" in written
+    assert "/api/items" in written
+
+
+def test_a_mount_is_not_labelled_a_websocket(elsewhere, monkeypatch):
+    # Groups declare no methods. Calling them WEBSOCKET because of that is a
+    # guess, and a wrong one — /api is a mounted router, not a socket.
+    write_app(
+        elsewhere,
+        """
+        from sillo import Router, silloApp
+
+        app = silloApp()
+        api = Router(prefix="/api")
+
+        @api.get("/health")
+        async def health(request, response):
+            return response.json({})
+
+        app.mount_router(api)
+        """,
+        name="not_a_socket.py",
+    )
+    monkeypatch.syspath_prepend(str(elsewhere))
+
+    console, _ = build_console()
+    _, written = run(console, ["routes", "not_a_socket:app"])
+
+    assert "WEBSOCKET" not in written
+
+
+def test_a_real_websocket_is_labelled(elsewhere, monkeypatch):
+    write_app(
+        elsewhere,
+        """
+        from sillo import silloApp
+
+        app = silloApp()
+
+        @app.ws_route("/ws")
+        async def socket(ws):
+            pass
+        """,
+        name="with_socket.py",
+    )
+    monkeypatch.syspath_prepend(str(elsewhere))
+
+    console, _ = build_console()
+    _, written = run(console, ["routes", "with_socket:app"])
+
+    assert "WEBSOCKET" in written
+    assert "/ws" in written
+
+
+def test_filtering_by_method_reaches_mounted_routes(elsewhere, monkeypatch):
+    write_app(
+        elsewhere,
+        """
+        from sillo import Router, silloApp
+
+        app = silloApp()
+        api = Router(prefix="/api")
+
+        @api.get("/health")
+        async def health(request, response):
+            return response.json({})
+
+        @api.post("/items")
+        async def create_item(request, response):
+            return response.json({})
+
+        app.mount_router(api)
+        """,
+        name="mounted_filter.py",
+    )
+    monkeypatch.syspath_prepend(str(elsewhere))
+
+    console, _ = build_console()
+    _, written = run(console, ["routes", "mounted_filter:app", "-m", "post"])
+
+    assert "/api/items" in written
+    assert "/api/health" not in written
+
+
+def test_pyproject_configuration_works_without_tomllib(elsewhere, monkeypatch):
+    """tomllib is 3.11+, and sillo supports 3.10.
+
+    The first version of this read pyproject inside a bare `except Exception`,
+    so on 3.10 the missing parser looked exactly like "no app configured" and
+    [tool.sillo] silently did nothing.
+    """
+    (elsewhere / "pyproject.toml").write_text('[tool.sillo]\napp = "somewhere:app"\n')
+
+    assert _configured_app() == "somewhere:app"
+
+
+def test_the_pyproject_parser_falls_back_when_tomllib_is_absent(tmp_path):
+    """On 3.10 there is no tomllib, and sillo supports 3.10.
+
+    Run in a subprocess with tomllib blocked and tomli standing in, which is
+    exactly the 3.10 arrangement. CI caught the first version of this on 3.10
+    after it passed locally on 3.12.
+    """
+    import subprocess
+    import sys
+    import textwrap
+
+    (tmp_path / "tomli.py").write_text(
+        "from tomllib_real import loads, TOMLDecodeError\n"
+    )
+    # A stand-in that forwards to the real parser under the older name.
+    (tmp_path / "tomllib_real.py").write_text(
+        "import tomllib as _t\nloads = _t.loads\nTOMLDecodeError = _t.TOMLDecodeError\n"
+    )
+    (tmp_path / "pyproject.toml").write_text('[tool.sillo]\napp = "configured:app"\n')
+
+    script = textwrap.dedent(
+        """
+        import sys
+
+        real_tomllib = __import__("tomllib")
+        sys.modules["tomllib_real"] = real_tomllib
+
+
+        class Blocked:
+            def find_spec(self, name, path=None, target=None):
+                if name == "tomllib":
+                    raise ModuleNotFoundError("No module named 'tomllib'")
+                return None
+
+
+        del sys.modules["tomllib"]
+        sys.meta_path.insert(0, Blocked())
+
+        from sillo.__main__ import _configured_app
+
+        print(_configured_app())
+        """
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        env={**__import__("os").environ, "PYTHONPATH": str(tmp_path)},
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "configured:app"

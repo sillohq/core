@@ -7,8 +7,12 @@ them to a user model and gives them names, arguments and output::
     from sillo.console import Console
     from sillo.users.console import user_commands
 
-    console = Console(prog="python console.py")
+    console = Console(prog="python tools.py")
     console.add_many(user_commands(context=database))
+
+The ``sillo`` command registers these itself when the application has a
+database, using the model it authenticates against; calling this directly is for
+building a console of your own.
 
 No model has to be named. ``sillo.users.commands`` already falls back to the
 built-in :class:`sillo.users.base.User`, so a project that has not defined its

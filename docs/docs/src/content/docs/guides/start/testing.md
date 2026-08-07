@@ -256,7 +256,7 @@ the only way to know.
 - name: Create an administrator
   env:
     ADMIN_PASSWORD: Ci-password1!
-  run: uv run python console.py user admin ci@example.com ci
+  run: uv run sillo user:admin ci@example.com ci
 
 - name: Boot the application
   run: uv run python scripts/smoke.py

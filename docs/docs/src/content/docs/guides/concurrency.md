@@ -270,7 +270,7 @@ loop for 50 ms at a time.
 with a traceback pointing at the culprit. Run it in development:
 
 ```bash
-PYTHONASYNCIODEBUG=1 sillo run --app main:app --reload
+PYTHONASYNCIODEBUG=1 sillo serve main:app --reload
 ```
 
 It is too noisy and too slow for production, and it will find blocking

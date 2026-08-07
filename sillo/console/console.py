@@ -1,9 +1,10 @@
 """
 sillo.console.console — the registry, the argv walk and the help.
 
-``Console`` is what a project's ``console.py`` builds and runs::
+``Console`` is what the ``sillo`` command builds, and what a project builds for
+tooling of its own::
 
-    console = Console(prog="python console.py")
+    console = Console(prog="python tools.py")
     console.add(Migrate)
     console.add(CreateAdmin)
 
@@ -30,11 +31,13 @@ from typing import (
     IO,
     Any,
     Callable,
+    Coroutine,
     Dict,
     List,
     Optional,
     Sequence,
     Type,
+    cast,
 )
 
 from .arguments import Argument, Flag, Option, Parameter, ParsedInput, parse
@@ -488,7 +491,9 @@ class Console:
                 result = instance.handle()
 
         if inspect.isawaitable(result):
-            result = asyncio.run(result)
+            # isawaitable narrows to Awaitable, which asyncio.run does not
+            # accept; a handle() that returns one returns a coroutine.
+            result = asyncio.run(cast(Coroutine[Any, Any, Any], result))
 
         return int(result) if isinstance(result, int) else 0
 
@@ -572,8 +577,7 @@ class Console:
     def run(self, argv: Optional[Sequence[str]] = None) -> int:
         """Parse *argv* and run the command it names.
 
-        This is the synchronous entry point, for a ``console.py`` run from a
-        shell. Call :meth:`run_async` instead from inside a running event loop —
+        This is the synchronous entry point, for a console run from a shell. Call :meth:`run_async` instead from inside a running event loop —
         a test, or an application that dispatches a command of its own.
 
         Only commands that ask for one get a loop: an ``async def handle``

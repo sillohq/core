@@ -1,6 +1,6 @@
 ---
 title: The Console
-description: console.py — every command a Sillo project ships with, how it is built on the framework's command functions, and how to add your own.
+description: The sillo command — every command a Sillo project gets, where they come from, and how to add your own.
 head:
   - tag: meta
     attrs:
@@ -9,496 +9,387 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: console.py — every command a Sillo project ships with, and how to add your own.
+      content: The sillo command — every command a Sillo project gets, and how to add your own.
 ---
 
 #  The Console
 
-Sillo ships a `sillo` command, and a project brings its own console too —
-`sillo` finds it and merges it in. In a project created from the starter that is
-in a project created from the starter that is `console.py` at the root.
+A project created from the starter ships no console file. `sillo` finds the
+application and derives its commands from it.
 
 ```bash
-uv run python console.py
+uv run sillo
 ```
 
 with no arguments prints everything below.
 
-##  Why the project owns it
+##  Where the commands come from
 
-Building a CLI means choosing an argument parser, an output format and a
-set of names. Those are an application's decisions.
+The application already says what the project has, so nothing is configured
+twice. `sillo` imports it and reads it:
 
-What a framework owes you is the *operations*, callable from anywhere:
+| On the application | What it brings |
+|---|---|
+| `setup_record(app, …)` on `app.state["record"]` | `db:*` and `user:*` |
+| `setup_scheduler(app)` on `app.state["scheduler"]` | `schedule:*` |
+| `AuthenticationMiddleware(user_model=…)` | which model accounts are created in |
+| `app.add_command(…)` | the project's own commands |
 
-```python
-from sillo.record.commands import init, make, migrate, plan, rollback, sql
-from sillo.users.commands import create_user, create_admin, list_users, set_password
-from sillo.work.commands import run_worker, run_scheduler, build_worker
+A project with no database gets no `db:*` — there is nothing to migrate. The
+queue commands are always offered, because a queue needs no setup to inspect.
+
+The starter wires the first three in `app/bootstrap.py`, so all of it is
+available from the first `make setup`.
+
+###  How the application is found
+
+In order: the `SILLO_APP` environment variable, then `[tool.sillo] app` in
+`pyproject.toml`, then `app.main:app`, `main:app`, `app:app`. The starter's
+layout matches the first conventional name, so it needs no configuration.
+
+```toml
+# pyproject.toml — only if your application lives somewhere unusual
+[tool.sillo]
+app = "src/myapp/server.py:application"
 ```
 
-`console.py` is a thin layer over those — about three hundred lines,
-mostly `argparse` wiring and print statements. It has **no dependency
-beyond sillo**; `argparse` ships with Python.
-
-That has a consequence worth stating plainly: **nothing in your project
-depends on a tool you have to keep installed.** `sillo-start` creates the
-project and is then irrelevant. The console cannot rot when a separate CLI
-changes, because there is no separate CLI.
+Outside a project none of those resolve and only `version`, `serve` and
+`routes` are offered.
 
 ##  Always run it through `uv run`
 
 ```bash
-uv run python console.py db migrate     # correct
-python console.py db migrate            # depends on what is activated
+uv run sillo db:migrate     # correct
+sillo db:migrate            # depends on what is activated
 ```
 
-A virtual environment activated in a parent directory shadows the
-project's own, and bare `python` finds whatever sillo lives there. When
-that is older than the project needs, the failure lands deep inside your
-own files:
-
-```text
-File "myapp/database/config.py", line 65, in database
-    manager.register_models(*MODEL_MODULES).set_migrations(MIGRATIONS_MODULE)
-AttributeError: 'NoneType' object has no attribute 'set_migrations'
-```
-
-which reads like a bug in your project and is not — chained registration
-simply did not exist in that release.
-
-`console.py` checks for this before doing anything and reports it
-properly:
-
-```text
-This project needs a newer sillo-framework than the one being used.
-
-  version:      0.0.1a3
-  installed at: /Users/you/.venv/lib/python3.12/site-packages/sillo
-  python:       /Users/you/.venv/bin/python
-  missing:      sillo.record.commands.init, ...
-
-That python is probably not this project's. Run commands through uv, which
-always uses it:
-
-  uv run python console.py ...
-  make migrate
-```
-
-The check is by **capability, not version number** — what matters is
-whether the call will work, which needs no version arithmetic.
-
----
+A virtual environment activated in a parent directory shadows the project's
+own, and the sillo it finds there is usually older than the project needs.
+`uv run` avoids the question entirely.
 
 ##  Database
 
 ```bash
-uv run python console.py db migrate [--fake]
-uv run python console.py db make [name] [--apply]
-uv run python console.py db plan
-uv run python console.py db rollback <target>
+uv run sillo db:migrate [--target] [--fake]
+uv run sillo db:make [name] [--apply]
+uv run sillo db:plan [--target]
+uv run sillo db:rollback <target> [--fake] [-f]
+uv run sillo db:status
+uv run sillo db:sql <migration> [--backward]
+uv run sillo db:init
 ```
 
-###  `db migrate`
+###  `db:migrate`
 
-Creates the database and applies every pending migration.
-
-```console
-$ uv run python console.py db migrate
-models: database.migrations -> /myapp/database/migrations
-  Created models.0001_initial
-    /myapp/database/migrations/0001_initial.py
-Database is up to date.
-```
-
-On a project with no migrations yet it does three things: creates the
-migration package, writes `0001_initial` from your models, and applies it.
-Afterwards it only applies what is pending.
-
-**There is no `db init`.** One command either way means there is no state
-in which you have to know which to reach for.
-
-```python
-async def db_migrate(args) -> int:
-    package = Path(MIGRATIONS_MODULE.replace(".", "/"))
-    if not any(package.glob("0*.py")):
-        # Nothing written yet: set the package up and record the starting
-        # schema, so a later model change is an alteration of a known table
-        # rather than a table the migration engine has never seen.
-        await init(database())
-        await make(database(), "initial")
-
-    await migrate(database(), fake=args.fake)
-```
-
-`--fake` records migrations as applied **without running the SQL**. It is
-for adopting a schema that already exists — a project that ran on
-`generate_schemas` has the tables but no history:
+Applies every pending migration, listing them first.
 
 ```bash
-uv run python console.py db make initial
-uv run python console.py db migrate --fake
+$ uv run sillo db:migrate
+  • + models.0001_initial
+
+✓ Applied 1 migration.
 ```
 
-The schema is now under migration control, and the next model change is an
-alteration of a known table rather than a table the engine has never seen.
-
-###  `db make`
-
-Writes a migration describing your current model changes.
+Nothing pending says so and changes nothing:
 
 ```bash
-uv run python console.py db make add_posts           # write it
-uv run python console.py db make add_posts --apply   # write and apply
+$ uv run sillo db:migrate
+Nothing pending.
 ```
 
-Without `--apply` it stops and tells you to look:
+`--fake` records migrations as applied without running their SQL. That is for
+adopting a schema that already exists — tables created before the project had
+migrations — not for skipping one that fails.
 
-```text
-Written. Review it, then: python console.py db migrate
-```
+###  `db:make`
 
-That pause is the point. See
-[Database & Migrations](/guides/start/database/#always-read-the-generated-migration)
-for what the diff engine gets wrong.
-
-Writing nothing is a valid outcome — if the models already match the last
-migration, there is nothing to record.
-
-###  `db plan`
-
-Shows what would run, without running it.
+Writes a migration describing the difference between the models and the last
+migration.
 
 ```bash
-uv run python console.py db plan
+uv run sillo db:make add_posts           # write it
+uv run sillo db:make add_posts --apply   # write and apply
 ```
 
-Prints `Nothing pending.` when the database is current.
+```
+✓ Migration written.
+  Review it, then: sillo db:migrate
+```
 
-###  `db rollback`
+When the models already match, nothing is written and it says so rather than
+reporting a success for a file that does not exist:
+
+```
+No model changes to record.
+```
+
+###  `db:plan`
+
+What `db:migrate` would do, without doing it. Worth running before a
+deployment.
+
+###  `db:status`
+
+Whether the database is up to date.
 
 ```bash
-uv run python console.py db rollback 0001_initial   # back to this migration
-uv run python console.py db rollback zero           # unapply everything
+$ uv run sillo db:status
+  app      models
+  pending  0
+
+✓ Up to date.
 ```
 
-**`target` is required.** There is no implicit "one step back" — you name
-the migration to stop at, or `zero`. A bare name is qualified with the app
-label for you, so `0001_initial` works as well as `models.0001_initial`.
+###  `db:rollback`
 
----
+```
+  USAGE
+    sillo db:rollback <TARGET> [options]
+
+  ARGUMENTS
+    TARGET        Migration to stop at, or 'zero'
+
+  OPTIONS
+    --fake        Record the rollback without running it
+    -f, --force   Skip the confirmation
+```
+
+There is no implicit "one step back": name the migration to stop at. `zero`
+unapplies everything, which drops the tables those migrations made — so it asks
+you to type `zero` back before it does. Without a terminal it refuses rather
+than assuming yes, which is what stops an unattended run from dropping a schema.
 
 ##  Users
 
 ```bash
-uv run python console.py user create <email> <username>
-uv run python console.py user admin  <email> <username>
-uv run python console.py user list [--limit N] [--staff]
-uv run python console.py user password <identifier>
+uv run sillo user:admin <email> [username]
+uv run sillo user:create <email> <username> [--admin]
+uv run sillo user:list [-l] [--offset] [--staff]
+uv run sillo user:show <identifier>
+uv run sillo user:password <identifier>
+uv run sillo user:active <identifier> [--off]
+uv run sillo user:staff <identifier> [--revoke]
 ```
 
-###  `user create` and `user admin`
+The account is created in the model the application authenticates against —
+the starter's `database/models/user.py`, because `app/bootstrap.py` passes it
+to `AuthenticationMiddleware`.
 
-```console
-$ uv run python console.py user admin ada@example.com ada
-Password:
-Created ada@example.com — sign in at /admin/
-```
-
-`admin` is `create` plus `is_staff` and `is_superuser` — the flags that
-get an account into `/admin/`.
-
-The password is prompted for, hidden. For scripts and CI, set
-`ADMIN_PASSWORD`:
+###  `user:admin` and `user:create`
 
 ```bash
-ADMIN_PASSWORD='Hunter2!pass' uv run python console.py user admin ci@example.com ci
+$ uv run sillo user:admin ada@example.com ada
+Password: ••••••••
+Confirm:  ••••••••
+✓ Created ada@example.com.
+  Sign in at /admin/
 ```
 
-The policy is enforced by the framework and reports exactly what failed:
-
-```console
-$ ADMIN_PASSWORD=short uv run python console.py user admin weak@example.com weak
-Password must be at least 8 characters. Password must contain at least one
-uppercase letter. Password must contain at least one digit. Password must
-contain at least one special character.
-```
-
-The wording comes from `sillo.users.commands`, not from the console — one
-place decides what a valid password is.
-
-###  `user list`
-
-```console
-$ uv run python console.py user list
-     3  A-  ada@example.com                  ada
-     2  --  someone@example.com              someone
-     1  AX  old-admin@example.com            olddev
-
-  A = admin access, X = deactivated
-```
-
-Newest first. `--staff` filters to administrators, `--limit` caps the rows
-(default 50).
-
-The two flag columns are `is_staff` and `is_active`. An account showing
-`AX` has admin rights and is deactivated — it cannot sign in, and clearing
-that is a single field.
-
-###  `user password`
+The password is read from a hidden prompt. With no terminal — CI, a container
+build — it comes from `SILLO_PASSWORD` instead, and with neither the command
+fails and says so rather than blocking on a prompt nobody can answer.
 
 ```bash
-uv run python console.py user password ada@example.com
-uv run python console.py user password ada              # username works too
+SILLO_PASSWORD='…' uv run sillo user:admin ci@example.com ci
 ```
 
-Takes an email **or** a username. Deactivated accounts are findable — you
-frequently need to reset a password precisely because an account was
-disabled.
+`user:admin` omits the username when you do: it defaults to the mailbox, so
+`ada@example.com` becomes `ada`.
 
----
+###  `user:list`
+
+```bash
+$ uv run sillo user:list
+ id   email             username   admin   active
+ ──   ───────────────   ────────   ─────   ──────
+  1   ada@example.com   ada         yes     yes
+
+  1 shown
+```
+
+`--staff` narrows it to accounts with admin access. `-l` limits the rows.
+
+###  `user:active` and `user:staff`
+
+Deactivating is the reversible alternative to deleting: credentials stop
+working immediately and the rows referencing the user stay valid.
+
+```bash
+uv run sillo user:active ada@example.com --off   # cannot sign in
+uv run sillo user:active ada@example.com         # can again
+uv run sillo user:staff ada@example.com          # grant admin access
+uv run sillo user:staff ada@example.com --revoke
+```
+
+The identifier is an email address or a username, and matches deactivated
+accounts too — an account you cannot find is one you could never turn back on.
 
 ##  Processes
 
-```bash
-uv run python console.py worker [--queues a,b] [--concurrency N]
-uv run python console.py scheduler
-uv run python console.py serve [--host H] [--port P] [--reload]
+###  `queue:work`
+
+```
+  OPTIONS
+    -q, --queue        Queue to consume. Repeatable, highest priority first
+    -c, --concurrency  Jobs at once  [4]
+    --timeout          Seconds one job may run  [60.0]
+    --max-jobs         Restart after this many jobs. 0 is unlimited  [0]
 ```
 
-###  `worker`
-
 ```bash
-uv run python console.py worker
-uv run python console.py worker --queues urgent,default --concurrency 8
+QUEUE_URL=redis://localhost:6379 uv run sillo queue:work
+uv run sillo queue:work --queue urgent --queue default
 ```
 
-`--queues` is highest-priority-first. `--concurrency` defaults to 4. The
-broker comes from `QUEUE_URL`; with it unset the queue is in-process.
+Queues are consumed in the order named, so the first is drained before the
+second is looked at.
 
-<aside>
+Without a `redis://` URL the queue lives in this process, so nothing a web
+process dispatches ever reaches it. The command says so rather than sitting at
+zero looking healthy.
 
-**With the default in-memory queue, a separate worker processes nothing.**
-`SyncConnection` lives inside one process, so `console.py worker` has its
-own empty queue while your application dispatches into a different one.
-
-Either run the worker inside the application
-(`_register_work(application, in_process=True)`) or set
-`QUEUE_URL=redis://…` so both processes talk to the same broker. See
-[Background Work](/guides/start/background-work/).
-
-</aside>
-
-It imports `app.jobs` before starting, so queued payloads resolve back to
-the classes that handle them.
-
-###  `scheduler`
-
-Runs `app.tasks.register_tasks` and blocks. Both this and the application
-call the same function, so a task added in one place is seen by both.
-
-###  `serve`
+###  `queue:list` and `queue:failed`
 
 ```bash
-uv run python console.py serve --reload
-uv run python console.py serve --host 0.0.0.0 --port 9000
+$ uv run sillo queue:list
+ queue     waiting
+ ───────   ───────
+ default         0
 ```
 
-Single-process uvicorn, defaulting to `config.host` and `config.port`.
-It is the development server; production uses `make serve`, which is
-uvicorn with `--workers 4`. See
-[Deployment](/guides/start/deployment/).
+`queue:failed` lists jobs that exhausted their retries, `queue:forget <id>`
+drops one, and `queue:flush` drops them all. The failed-job record is in memory
+unless you bind a durable one, and `queue:failed` reports that distinction
+rather than printing "no failures" at somebody about to stop looking.
 
----
+###  `schedule:run` and `schedule:list`
+
+```bash
+$ uv run sillo schedule:list
+ name    trigger     status   runs   last run
+ ─────   ─────────   ──────   ────   ────────
+ prune   0 3 * * *   active      0   —
+
+$ uv run sillo schedule:run
+```
+
+`schedule:pause <id>` and `schedule:resume <id>` stop and restart one task.
+
+These need a scheduler, which `setup_scheduler(app)` puts on `app.state`. The
+starter has that behind the commented-out `_register_work(application)` in
+`app/bootstrap.py`; until you uncomment it, the schedule commands say there is
+no scheduler bound rather than reporting an empty one.
+
+###  `serve` and `routes`
+
+```bash
+uv run sillo serve --reload          # development
+uv run sillo serve -p 9000
+uv run sillo routes                  # every route, method and handler
+uv run sillo routes -m post          # only POST
+```
+
+Both default to the application `sillo` already found, so neither needs an
+import string.
 
 ##  Make targets
 
-Everything above has a `make` equivalent, and CI uses those:
+The Makefile wraps the commands typed most often. They are shorthand, not a
+different mechanism.
 
 | Target | Runs |
-| --- | --- |
-| `make migrate` | `db migrate` |
-| `make migration m="add_posts"` | `db make "add_posts" --apply` |
-| `make plan` | `db plan` |
-| `make rollback to=0001_initial` | `db rollback 0001_initial` |
-| `make admin e=… u=…` | `user admin` |
-| `make users` | `user list` |
-| `make worker` | `worker` |
-| `make scheduler` | `scheduler` |
+|---|---|
+| `make migrate` | `db:init` + `db:make initial` on a fresh clone, then `db:migrate` |
+| `make migration m="add_posts"` | `db:make "add_posts" --apply` |
+| `make plan` | `db:plan` |
+| `make rollback to=0001_initial` | `db:rollback 0001_initial` |
+| `make admin e=… u=…` | `user:admin` |
+| `make users` | `user:list` |
 | `make dev` | `serve --reload` |
-| `make serve` | `uvicorn --workers 4` |
+| `make worker` / `make scheduler` | `queue:work` / `schedule:run` |
 
-`make admin` and `make rollback` check their arguments first:
-
-```console
-$ make admin
-  need both: make admin e=ada@x.com u=ada
-```
-
-Without that guard the console receives empty strings and reports a
-validation failure about an empty email — which says nothing about the
-missing argument.
-
----
-
-##  How a command is built
-
-Three parts: a function, a parser entry, and the dispatcher.
-
-###  The function
-
-```python
-async def db_plan(args) -> int:
-    """Show which migrations would run."""
-    from sillo.record.commands import plan
-
-    lines = await plan(database())
-    print("\n".join(lines) if lines else "Nothing pending.")
-    return 0
-```
-
-Takes the parsed arguments, returns an exit code. The framework import is
-inside the function so that starting the console does not import the
-world — `console.py --help` should not open a database connection.
-
-###  The parser entry
-
-```python
-plan_cmd = schema.add_parser("plan", help="Show which migrations would run.")
-plan_cmd.set_defaults(run=db_plan)
-```
-
-`set_defaults(run=…)` is how the dispatcher finds the function.
-
-###  The dispatcher
-
-```python
-if asyncio.iscoroutinefunction(args.run):
-    if getattr(args, "needs_database", False):
-        return asyncio.run(_with_database(args.run(args)))
-    return asyncio.run(args.run(args))
-return args.run(args)
-```
-
-Three cases: a synchronous command (`serve`, which hands the loop to
-uvicorn), an async command that manages its own connections (the migration
-commands do), and an async command that needs the ORM open.
-
-That last one is the interesting flag:
-
-```python
-async def _with_database(coroutine):
-    async with database():
-        return await coroutine
-```
-
-`sillo.users.commands` operates on models and assumes the ORM is already
-initialised — that is the application's job, and here it is the console's.
-Migrations are the exception: they open and close their own connections,
-so wrapping them would nest two.
-
-Commands that touch models declare it:
-
-```python
-list_cmd.set_defaults(run=user_list, needs_database=True)
-```
-
-Forget it and the command fails with `default_connection cannot be None`.
-
----
+`make migrate` is the one that does more than rename: on a fresh clone there is
+no migration to apply yet, so it writes the first one before applying it. That
+bootstrap only runs when the migrations package is empty, so a later
+`make migrate` never writes one behind your back.
 
 ##  Adding your own
 
-A command that backfills a column, in full:
+Register a command on the application and it appears in the same listing,
+grouped by the part of its name before the colon.
 
 ```python
-# -- maintenance -------------------------------------------------------
+# app/main.py
+from sillo.console import Argument, Command, Option
+
+app = create_app()
 
 
-async def backfill_slugs(args) -> int:
-    """Give every post without a slug one."""
-    from database.models.post import Post
+@app.add_command
+class Backfill(Command):
+    """Fill in slugs for posts written before the column existed."""
 
-    posts = await Post.filter(slug=None).limit(args.limit)
-    for post in posts:
-        post.slug = slugify(post.title)
-        await post.save()
+    name = "posts:backfill"
+    help = "Backfill post slugs"
 
-    print(f"Updated {len(posts)} post(s).")
-    return 0
-```
+    arguments = [
+        Argument("since", default=None, help="Only posts after this date"),
+        Option("batch", type=int, default=100, help="Rows per batch"),
+    ]
 
-Register it in `build_parser()`:
+    async def handle(self):
+        from database.models.post import Post
 
-```python
-backfill_cmd = commands.add_parser("backfill-slugs", help="Fill in missing slugs.")
-backfill_cmd.add_argument("--limit", type=int, default=500)
-backfill_cmd.set_defaults(run=backfill_slugs, needs_database=True)
+        query = Post.filter(slug=None)
+        if self.argument("since"):
+            query = query.filter(created_at__gte=self.argument("since"))
+
+        total = 0
+        for post in await query.limit(self.option("batch")):
+            post.slug = slugify(post.title)
+            await post.save()
+            total += 1
+
+        self.success(f"Backfilled {total} posts.")
 ```
 
 ```bash
-uv run python console.py backfill-slugs --limit 100
+uv run sillo posts:backfill
+uv run sillo posts:backfill 2024-01-01 --batch 500
 ```
 
-Three rules, and they are the whole convention:
-
-1. **Return an exit code.** `0` for success, non-zero for failure. CI and
-   `make` depend on it.
-2. **Set `needs_database=True`** if the command touches models.
-3. **Import inside the function**, so `--help` stays instant.
-
-For a group of related commands, mirror `db` and `user`:
+For something short, the decorator form skips the class:
 
 ```python
-reports = commands.add_parser("reports", help="Generated reports.").add_subparsers(
-    dest="action", metavar="<action>"
-)
-
-daily_cmd = reports.add_parser("daily", help="Yesterday's numbers.")
-daily_cmd.set_defaults(run=reports_daily, needs_database=True)
+@app.command("cache:clear", help="Drop every cached entry")
+async def clear(command):
+    await cache.flush()
+    command.success("Cache cleared.")
 ```
 
-<aside>
-
-**Do not name a local variable after something at module level.** The
-parser for `db` is called `schema`, not `database`, because `database` is
-the module-level manager factory — shadowing it inside `build_parser()`
-is a trap for the next edit.
-
-</aside>
+Commands registered on the application are added last, so a name you choose
+overrides a built-in one of the same name. `sillo.console` documents the
+parameter types, the output helpers and the interactive prompts in full — see
+[Console Commands](/guides/console/).
 
 ##  Errors and output
 
-Commands that can fail on user input catch the framework's exception and
-print its message:
+Exit codes are what a script would expect: `0` for success, `2` for a usage
+error, `1` for a command that failed, `130` for a cancelled prompt.
 
-```python
-try:
-    user = await create(args.email, args.username, password, model=User)
-except ValueError as error:
-    # The framework reports which rule failed — duplicate address, or which
-    # part of the password policy. Its wording beats a local guess.
-    print(error, file=sys.stderr)
-    return 1
+```bash
+$ uv run sillo db:rollback
+✗ missing argument <TARGET>
+  Usage: sillo db:rollback <TARGET> [options]
 ```
 
-Errors to `stderr`, results to `stdout`, so `console.py user list > users.txt`
-gives you the list and leaves the errors on your terminal.
-
-Connect/disconnect logging is quieted for console commands:
-
-```python
-logging.getLogger("sillo.record").setLevel(logging.WARNING)
-```
-
-"Database connected" and "connections closed" around every `user list` is
-noise. The application still logs them at startup, where they mean
-something.
+Colour is dropped when the output is not a terminal, so a log file gets plain
+text. `NO_COLOR=1` turns it off everywhere and `FORCE_COLOR=1` keeps it through
+a pipe.
 
 ##  Related
 
-- [Project Structure](/guides/start/structure/) — where `console.py` sits
-- [Database & Migrations](/guides/start/database/) — what `db` drives
-- [Users & Authentication](/guides/start/authentication/) — what `user` drives
-- [Background Work](/guides/start/background-work/) — what `worker` drives
-- [Deployment](/guides/start/deployment/) — running migrations on deploy
+- [Console Commands](/guides/console/) — the toolkit underneath, in full
+- [Database](/guides/start/database/) — what the migration commands act on
+- [Background Work](/guides/start/background-work/) — the queue and scheduler
+- [Deployment](/guides/start/deployment/) — running these in production

@@ -112,11 +112,17 @@ def _configured_app() -> Optional[str]:
 
     try:
         import tomllib
+    except ModuleNotFoundError:  # pragma: no cover - 3.10 only
+        # tomllib arrived in 3.11; tomli is the same parser under the older
+        # name, and is a dependency on those versions.
+        import tomli as tomllib  # ty: ignore[unresolved-import]
 
+    try:
         data = tomllib.loads(config.read_text())
-    except Exception:
+    except (tomllib.TOMLDecodeError, OSError):
         # A pyproject that will not parse is the packaging tools' problem to
-        # report, not something to fail a console over.
+        # report, not something to fail a console over. Catching only that,
+        # rather than everything, is what keeps a missing parser visible.
         return None
 
     app = data.get("tool", {}).get("sillo", {}).get("app")
@@ -275,17 +281,10 @@ class Routes(Command):
 
         wanted = (self.option("method") or "").upper()
         rows = []
-        for route in routes:
-            methods = sorted(getattr(route, "methods", None) or ["WEBSOCKET"])
+        for methods, path, name in self._walk(routes):
             if wanted and wanted not in methods:
                 continue
-            rows.append(
-                [
-                    ",".join(methods),
-                    self._path(route),
-                    getattr(route, "name", "") or self._handler_name(route),
-                ]
-            )
+            rows.append([",".join(methods), path, name])
 
         if not rows:
             self.muted("No routes registered.")
@@ -296,6 +295,47 @@ class Routes(Command):
         self.blank()
         self.muted(f"  {len(rows)} routes")
         return None
+
+    @classmethod
+    def _walk(cls, routes: Any, prefix: str = "") -> List[Any]:
+        """Flatten *routes*, descending into mounted routers.
+
+        A mounted router is one entry in ``router.routes`` holding routes of
+        its own, and its children carry paths relative to the mount. Listing
+        only the top level shows ``/api`` and hides every route under it, which
+        is the opposite of what someone runs this to find out.
+
+        Args:
+            routes: Routes to walk.
+            prefix: Path the enclosing mount is under.
+
+        Returns:
+            Tuples of methods, full path, and name.
+        """
+        found = []
+        for route in routes:
+            path = prefix + cls._path(route)
+            children = getattr(route, "routes", None)
+
+            if children:
+                found.extend(cls._walk(children, path))
+                continue
+
+            methods = getattr(route, "methods", None)
+            if methods:
+                label = sorted(methods)
+            elif "websocket" in type(route).__name__.lower():
+                label = ["WEBSOCKET"]
+            else:
+                # A mount with nothing under it — a static directory, say.
+                # Calling it WEBSOCKET because it declares no methods would be
+                # a guess, and a wrong one.
+                label = ["MOUNT"]
+
+            found.append(
+                (label, path, getattr(route, "name", "") or cls._handler_name(route))
+            )
+        return found
 
     @staticmethod
     def _path(route: Any) -> str:

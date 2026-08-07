@@ -96,8 +96,8 @@ property and fails on assignment.
 ##  Creating accounts
 
 ```bash
-uv run python console.py user create ada@example.com ada    # an ordinary user
-uv run python console.py user admin  ada@example.com ada    # …who can reach /admin/
+uv run sillo user:create ada@example.com ada    # an ordinary user
+uv run sillo user:admin  ada@example.com ada    # …who can reach /admin/
 ```
 
 In code:
@@ -306,9 +306,9 @@ table.
 ##  Managing accounts
 
 ```bash
-uv run python console.py user list                 # everyone, newest first
-uv run python console.py user list --staff         # administrators only
-uv run python console.py user password ada         # reset a password
+uv run sillo user:list                 # everyone, newest first
+uv run sillo user:list --staff         # administrators only
+uv run sillo user:password ada         # reset a password
 ```
 
 In code, `sillo.users.commands` has the rest:

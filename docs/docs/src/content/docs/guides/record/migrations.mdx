@@ -168,7 +168,7 @@ each try to migrate produces three concurrent schema changes and, on a
 good day, two failures.
 
 ```bash title="a deployment step"
-python console.py db migrate && exec uvicorn myapp.app:app --host 0.0.0.0 --port 8000
+sillo db:migrate && exec uvicorn myapp.app:app --host 0.0.0.0 --port 8000
 ```
 
 That is fine for a single-instance deployment. For rolling deployments,

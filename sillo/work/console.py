@@ -7,7 +7,7 @@ them to a broker and gives them names, arguments and output::
     from sillo.console import Console
     from sillo.work.console import work_commands
 
-    console = Console(prog="python console.py")
+    console = Console(prog="python tools.py")
     console.add_many(
         work_commands(
             url=os.getenv("QUEUE_URL"),

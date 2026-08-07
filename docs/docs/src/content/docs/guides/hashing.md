@@ -33,7 +33,7 @@ uv add scrypt
 # PBKDF2 (built-in to Python, no extra dependency needed)
 
 # Install all algorithms
-uv add "sillo[hashing-all]"
+uv add "sillo-framework[hashing-all]"
 ```
 
 ## Quick Start

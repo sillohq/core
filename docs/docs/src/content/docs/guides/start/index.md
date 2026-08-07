@@ -34,13 +34,20 @@ make setup
 make dev
 ```
 
-Then open <http://localhost:8000>.
+Then open <http://localhost:8000>. This is the path to use today —
+`sillo-start` is not published yet.
 
 `make setup` installs dependencies, writes a `.env` with a freshly
 generated `SECRET_KEY`, creates the database and applies the initial
 migration. It is safe to re-run; an existing `.env` is never overwritten.
 
 ##  With sillo-start
+
+:::caution[Not published yet]
+`sillo-start` is not on PyPI, so `uvx sillo-start` cannot resolve it. Use
+[the quickest path](#the-quickest-path) above until it is released. The rest of
+this section describes what it will do.
+:::
 
 ```bash
 uvx sillo-start create-app myapp
@@ -127,7 +134,7 @@ So the starter is an application, and its CI runs it:
 - name: Create an administrator
   env:
     ADMIN_PASSWORD: Ci-password1!
-  run: uv run python console.py user admin ci@example.com ci
+  run: uv run sillo user:admin ci@example.com ci
 
 - name: Boot the application
   run: uv run python scripts/smoke.py
@@ -152,7 +159,7 @@ has to be upgraded before the next person who clones it gets the fix.
 | **Pages** | One Jinja template and a stylesheet, with `/static` served in development |
 | **API** | JSON routes under `/api`, documented by [Atlas](/guides/openapi/documentation-ui/#atlas) at `/docs` |
 | **Queue** | A worker and scheduler, wired and switched off |
-| **Console** | `console.py` — migrations, users, worker, scheduler, serve |
+| **Console** | `sillo` — migrations, users, worker, scheduler, serve |
 | **Tooling** | `make` targets, ruff, pytest, and CI on three Python versions |
 
 Two things are deliberately *not* there, and both are covered later:
@@ -229,19 +236,20 @@ running migrations, supervising processes — has to keep working against
 every version of every project it ever generated. A tool that only
 creates them is finished the moment the files land.
 
-So everything a project needs after it exists belongs to the project, in
-its own `console.py`:
+So everything a project needs after it exists comes from the framework's
+`sillo` command, which reads it off the application:
 
 ```bash
-python console.py db migrate
-python console.py user admin ada@example.com ada
-python console.py worker
-python console.py serve --reload
+sillo db:migrate
+sillo user:admin ada@example.com ada
+sillo queue:work
+sillo serve --reload
 ```
 
-The framework provides those operations as plain functions —
-`sillo.record.commands`, `sillo.users.commands`, `sillo.work.commands` —
-and the project decides how to expose them. See
+`sillo` finds the application and derives those from what it set up. The
+operations underneath stay plain functions — `sillo.record.commands`,
+`sillo.users.commands`, `sillo.work.commands` — so a project that wants
+different names can build its own console against them. See
 [The Console](/guides/start/console/).
 
 **Nothing in a created project depends on `sillo-start`.** You can delete
@@ -303,8 +311,7 @@ Collected from actually running this, not from reading the source.
 1. **Run the console through `uv run`, not bare `python`.** A virtual
    environment activated in a parent directory shadows the project's own,
    and the sillo it finds there is usually older than the project needs.
-   `console.py` detects this and says so, but `uv run` avoids the
-   question entirely.
+   `uv run` avoids the question entirely.
 
 2. **Admin routes need the trailing slash.** `/admin/login/`, not
    `/admin/login`.
@@ -318,7 +325,7 @@ Collected from actually running this, not from reading the source.
 ##  Related
 
 - [Project Structure](/guides/start/structure/) — every directory, and why it exists
-- [The Console](/guides/start/console/) — `console.py` in full
+- [The Console](/guides/start/console/) — every command in full
 - [Database & Migrations](/guides/start/database/) — models, migrations, other databases
 - [Users & Authentication](/guides/start/authentication/) — the one user model
 - [The Admin Panel](/guides/start/admin/) — registering models, who may enter

@@ -317,7 +317,7 @@ async def index(request, response):
 ```
 
 ```bash
-sillo run --app main:app --reload
+sillo serve main:app --reload
 ```
 
 That is a complete ASGI application. Everything else in these guides —

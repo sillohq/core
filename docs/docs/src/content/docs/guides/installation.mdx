@@ -57,7 +57,7 @@ Use `uv init` to create a project and `uv add` to install Sillo:
 ```bash
 uv init my-sillo-app
 cd my-sillo-app
-uv add sillo
+uv add sillo-framework
 ```
 
 This creates a project with a managed virtual environment and records dependencies in your project files.
@@ -108,17 +108,17 @@ You should see:
 Sillo ships optional extras for integrations that need additional dependencies. Add them only when your project needs them.
 
 ```bash
-uv add "sillo[templating]"
-uv add "sillo[jwt]"
-uv add "sillo[cache]"
-uv add "sillo[record]"
-uv add "sillo[graphql]"
+uv add "sillo-framework[templating]"
+uv add "sillo-framework[jwt]"
+uv add "sillo-framework[cache]"
+uv add "sillo-framework[record]"
+uv add "sillo-framework[graphql]"
 ```
 
 For a full development setup:
 
 ```bash
-uv add "sillo[all]"
+uv add "sillo-framework[all]"
 ```
 
 ## Existing projects
@@ -126,7 +126,7 @@ uv add "sillo[all]"
 If you already have a Python project, install Sillo into it with:
 
 ```bash
-uv add sillo
+uv add sillo-framework
 ```
 
 If you are using a manually managed virtual environment, prefer switching the project to `uv` before adding Sillo. This keeps the install command, lockfile, and local run commands consistent across your team.

@@ -2,22 +2,22 @@
 sillo.record.console — the migration operations, as console commands.
 
 ``sillo.record.commands`` supplies the operations as plain functions. This binds
-them to a database and gives them names, arguments and output, so a project's
-``console.py`` gets the whole migration workflow in one line::
+them to a database and gives them names, arguments and output.
+
+Most projects never call this. The ``sillo`` command registers these itself when
+the application has a database — :func:`~sillo.record.manager.setup_record` puts
+one on ``app.state`` — so the whole migration workflow follows from setup a
+project was writing anyway. Call it directly to build a console of your own::
 
     from sillo.console import Console
     from sillo.record.console import record_commands
 
-    console = Console(prog="python console.py")
+    console = Console(prog="python tools.py")
     console.add_many(record_commands(database))
 
 ``database`` is either a :class:`~sillo.record.manager.DatabaseManager` or a
-callable returning one — the starter layout exports a factory rather than an
-instance, so both are accepted rather than making the caller remember which.
-
-Registering these is a choice, not a default. A project that wants different
-names, or only some of them, calls the functions in ``sillo.record.commands``
-directly and writes its own.
+callable returning one — a project may export a factory rather than an instance,
+so both are accepted rather than making the caller remember which.
 """
 
 from __future__ import annotations
@@ -187,7 +187,7 @@ class Make(RecordCommand):
             The suggestion, using the console's own program name so it is
             copyable rather than approximate.
         """
-        prog = self.console.prog if self.console else "console.py"
+        prog = self.console.prog if self.console else "sillo"
         return f"{prog} db:migrate"
 
 

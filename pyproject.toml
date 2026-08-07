@@ -44,6 +44,9 @@ dependencies = [
     "typing-extensions>=4.12.2; python_version<'3.10'",
     "passlib>=1.7.4",
     "python-dotenv>=1.0.0",
+    # tomllib is 3.11+; the `sillo` command reads [tool.sillo] from
+    # pyproject.toml, and that has to work on every supported version.
+    "tomli>=2.0.1; python_version<'3.11'",
 ]
 
 # CORE: Only includes what's required for any sillo app (HTTP routing, config, password hashing)

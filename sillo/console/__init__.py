@@ -38,7 +38,7 @@ A console in full::
             self.success(f"Created {user.email}")
 
 
-    console = Console(prog="python console.py")
+    console = Console(prog="python tools.py")
     console.add(CreateAdmin)
 
     if __name__ == "__main__":
