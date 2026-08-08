@@ -1,7 +1,7 @@
 import re
 import secrets
 import typing
-from typing import Any, Optional
+from typing import Any
 
 from itsdangerous import BadSignature, URLSafeSerializer
 
@@ -18,20 +18,10 @@ class CSRFMiddleware(BaseMiddleware):
 
     def __init__(
         self,
-        config: Optional[CSRFConfig] = None,
+        config: CSRFConfig | None = None,
         **kwargs: Any,
     ) -> None:
-        """Init
-
-        Args:
-            config: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         if config is not None:
             if not isinstance(config, CSRFConfig):
                 raise TypeError("config must be a CSRFConfig instance")
@@ -70,19 +60,7 @@ class CSRFMiddleware(BaseMiddleware):
         response: Response,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
-        """Process Request
-
-        Args:
-            request: [description]
-            response: [description]
-            call_next: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Process Request"""
         if not self.csrf_config or not self.use_csrf:
             return await call_next()
 
@@ -137,7 +115,7 @@ class CSRFMiddleware(BaseMiddleware):
             samesite=self.cookie_samesite,
         )
 
-    def _has_sensitive_cookies(self, cookies: typing.Dict[str, typing.Any]) -> bool:
+    def _has_sensitive_cookies(self, cookies: dict[str, typing.Any]) -> bool:
         """Check if the request contains sensitive cookies."""
         if not self.sensitive_cookies:
             return True

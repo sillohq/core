@@ -7,7 +7,8 @@ bulk find-by-ids, and field-level count aggregation.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, AsyncIterator, List, Optional, Type, TypeVar
+from collections.abc import AsyncIterator
+from typing import Annotated, Any, TypeVar
 
 from tortoise import connections
 from typing_extensions import Doc
@@ -18,21 +19,8 @@ T = TypeVar("T")
 class PaginatedResult:
     """Holds a page of results plus pagination metadata."""
 
-    def __init__(self, items: List[Any], total: int, page: int, page_size: int):
-        """Init
-
-        Args:
-            items: [description]
-            total: [description]
-            page: [description]
-            page_size: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def __init__(self, items: list[Any], total: int, page: int, page_size: int):
+        """Init"""
         self.items = items
         self.total = total
         self.page = page
@@ -40,49 +28,21 @@ class PaginatedResult:
 
     @property
     def pages(self) -> int:
-        """Pages
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Pages"""
         return max(1, (self.total + self.page_size - 1) // self.page_size)
 
     @property
     def has_next(self) -> bool:
-        """Has Next
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Next"""
         return self.page < self.pages
 
     @property
     def has_prev(self) -> bool:
-        """Has Prev
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Prev"""
         return self.page > 1
 
     def to_dict(self) -> dict:
-        """To Dict
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """To Dict"""
         return {
             "items": [
                 item.to_dict() if hasattr(item, "to_dict") else str(item)
@@ -103,7 +63,7 @@ async def paginate(
     page_size: Annotated[int, Doc("Items per page.")] = 20,
     *,
     ordering: Annotated[
-        Optional[str], Doc("Field name with optional '-' prefix for descending.")
+        str | None, Doc("Field name with optional '-' prefix for descending.")
     ] = None,
 ) -> PaginatedResult:
     """Paginate any Tortoise queryset."""
@@ -141,7 +101,7 @@ async def explain(queryset) -> str:
         return f"EXPLAIN unavailable: {e}"
 
 
-async def find_by_ids(queryset, ids: List[Any]) -> List[Any]:
+async def find_by_ids(queryset, ids: list[Any]) -> list[Any]:
     """Fetch multiple rows by primary key."""
     pk = queryset.model._meta.pk_attr
     return await queryset.filter(**{f"{pk}__in": ids}).all()

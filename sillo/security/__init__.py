@@ -19,10 +19,10 @@ Usage::
     app.use(RateLimit(limit=100, window=60))
 """
 
-from .cors import CORSMiddleware, CorsConfig
-from .csrf import CSRFConfig, CSRFMiddleware
 from sillo._internals.lazy import deferred
 
+from .cors import CorsConfig, CORSMiddleware
+from .csrf import CSRFConfig, CSRFMiddleware
 from .ratelimit import (
     InMemoryBackend,
     RateLimit,
@@ -34,19 +34,19 @@ from .ratelimit import (
 from .shield import Shield
 
 __all__ = [
+    "CORSMiddleware",
     "CSRFConfig",
     "CSRFMiddleware",
     "CorsConfig",
-    "CORSMiddleware",
-    "Shield",
-    "RateLimit",
-    "RateLimitMiddleware",
-    "RateLimitConfig",
-    "RateLimitResult",
-    "RateLimitBackend",
     "InMemoryBackend",
-    "RedisBackend",
+    "RateLimit",
+    "RateLimitBackend",
+    "RateLimitConfig",
+    "RateLimitMiddleware",
+    "RateLimitResult",
     "RecordBackend",
+    "RedisBackend",
+    "Shield",
 ]
 
 

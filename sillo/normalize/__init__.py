@@ -1,4 +1,3 @@
-from .middleware import NormalizeMiddleware, SlashAction, Normalize
 from .helpers import (
     add_trailing_slash,
     build_normalized_url,
@@ -13,10 +12,11 @@ from .helpers import (
     remove_trailing_slash,
     should_skip_path_processing,
 )
+from .middleware import Normalize, NormalizeMiddleware, SlashAction
 
 __all__ = [
-    "NormalizeMiddleware",
     "Normalize",
+    "NormalizeMiddleware",
     "SlashAction",
     "add_trailing_slash",
     "build_normalized_url",

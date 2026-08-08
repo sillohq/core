@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import datetime
 import json
-import typing
-from typing import Any, Dict, Optional
+from typing import Any
 
 try:
     import jwt as pyjwt
     from jwt.exceptions import (
+        DecodeError,
         ExpiredSignatureError,
         InvalidTokenError,
-        DecodeError,
     )
 
     _jwt_available = True
@@ -32,8 +31,6 @@ class TokenError(Exception):
     from other exception types in the application.
     """
 
-    pass
-
 
 class ExpiredTokenError(TokenError):
     """Exception raised when a JWT token has passed its expiration time.
@@ -44,8 +41,6 @@ class ExpiredTokenError(TokenError):
     a refresh token or re-authenticating the user.
     """
 
-    pass
-
 
 class InvalidTokenError_(TokenError):
     """Exception raised when a JWT token is malformed or fails verification.
@@ -54,8 +49,6 @@ class InvalidTokenError_(TokenError):
     not match the expected secret. This covers cases such as tampered
     payloads, incorrect signing algorithms, or corrupted token strings.
     """
-
-    pass
 
 
 def _ensure_jwt():
@@ -77,10 +70,10 @@ def _ensure_jwt():
 
 
 def encode(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     secret: str,
     algorithm: str = "HS256",
-    headers: Optional[Dict[str, Any]] = None,
+    headers: dict[str, Any] | None = None,
 ) -> str:
     """Encode a dictionary payload into a signed JWT token string.
 
@@ -110,12 +103,12 @@ def encode(
 def decode(
     token: str,
     secret: str,
-    algorithms: Optional[typing.List[str]] = None,
-    options: Optional[Dict[str, Any]] = None,
-    audience: Optional[str] = None,
-    issuer: Optional[str] = None,
+    algorithms: list[str] | None = None,
+    options: dict[str, Any] | None = None,
+    audience: str | None = None,
+    issuer: str | None = None,
     leeway: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Decode and verify a JWT token, returning its payload as a dictionary.
 
     Validates the token signature against the provided secret, checks
@@ -161,10 +154,10 @@ def decode(
 
 
 def sign(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     secret: str,
     algorithm: str = "HS256",
-    headers: Optional[Dict[str, Any]] = None,
+    headers: dict[str, Any] | None = None,
 ) -> bytes:
     """Sign a payload dictionary and return the JWT token as raw bytes.
 
@@ -194,7 +187,7 @@ def sign(
 def verify(
     token: str,
     secret: str,
-    algorithms: Optional[typing.List[str]] = None,
+    algorithms: list[str] | None = None,
 ) -> bool:
     """Verify a JWT token's signature and return a boolean validity result.
 
@@ -224,7 +217,7 @@ def verify(
         return False
 
 
-def get_unverified_header(token: str) -> Dict[str, Any]:
+def get_unverified_header(token: str) -> dict[str, Any]:
     """Extract the header section from a JWT token without verifying its signature.
 
     Decodes only the header portion of the token to inspect metadata such as
@@ -245,7 +238,7 @@ def get_unverified_header(token: str) -> Dict[str, Any]:
     return pyjwt.get_unverified_header(token)
 
 
-def get_unverified_claims(token: str) -> Optional[Dict[str, Any]]:
+def get_unverified_claims(token: str) -> dict[str, Any] | None:
     """Extract the payload claims from a JWT token without verifying its signature.
 
     Decodes the middle section of the token to inspect its claims without
@@ -274,11 +267,11 @@ def get_unverified_claims(token: str) -> Optional[Dict[str, Any]]:
 
 
 def create_access_token(
-    data: Dict[str, Any],
+    data: dict[str, Any],
     secret: str,
-    expires_delta: Optional[datetime.timedelta] = None,
+    expires_delta: datetime.timedelta | None = None,
     algorithm: str = "HS256",
-    issuer: Optional[str] = None,
+    issuer: str | None = None,
 ) -> str:
     """Create a signed JWT access token with automatic expiration and issued-at claims.
 
@@ -318,9 +311,9 @@ def create_access_token(
 
 
 def create_refresh_token(
-    data: Dict[str, Any],
+    data: dict[str, Any],
     secret: str,
-    expires_delta: Optional[datetime.timedelta] = None,
+    expires_delta: datetime.timedelta | None = None,
     algorithm: str = "HS256",
 ) -> str:
     """Create a signed JWT refresh token with automatic expiration and issued-at claims.
@@ -357,7 +350,7 @@ def create_refresh_token(
     return pyjwt.encode(to_encode, secret, algorithm=algorithm)
 
 
-def decode_without_verification(token: str) -> Dict[str, Any]:
+def decode_without_verification(token: str) -> dict[str, Any]:
     """Decode a JWT token's payload without performing any signature verification.
 
     Extracts and returns the claims from the token payload while explicitly
@@ -384,9 +377,9 @@ def decode_without_verification(token: str) -> Dict[str, Any]:
 
 
 def validate_claims(
-    payload: Dict[str, Any],
-    audience: Optional[str] = None,
-    issuer: Optional[str] = None,
+    payload: dict[str, Any],
+    audience: str | None = None,
+    issuer: str | None = None,
     leeway: int = 0,
 ) -> bool:
     """Validate standard JWT claims in a decoded payload dictionary.
@@ -428,7 +421,4 @@ def validate_claims(
     if audience and payload.get("aud") != audience:
         return False
 
-    if issuer and payload.get("iss") != issuer:
-        return False
-
-    return True
+    return not (issuer and payload.get("iss") != issuer)

@@ -1,0 +1,45 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+
+# The formatter job (format-code.yml) runs `ruff format` on main and pushes the
+# result. It has never run `ruff check`, which is how 2991 lint findings
+# accumulated unnoticed. This gates on them instead of rewriting the tree.
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # The install script has moved between ~/.cargo/bin and ~/.local/bin
+      # across uv versions. Add both so the PATH does not depend on which
+      # installer layout ships today.
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Setup Virtual Environment
+        run: uv venv
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]"
+
+      - name: Lint
+        run: uv run ruff check sillo
+
+      - name: Check formatting
+        run: uv run ruff format --check sillo

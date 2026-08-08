@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Dict
+from typing import Any
 
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
@@ -113,9 +113,9 @@ class State:
     state values without explicit error handling.
     """
 
-    _state: typing.Dict[str, typing.Any]
+    _state: dict[str, typing.Any]
 
-    def __init__(self, state: typing.Optional[typing.Dict[str, typing.Any]] = None):
+    def __init__(self, state: dict[str, typing.Any] | None = None):
         """
         Initializes the State object with an optional dictionary of initial values.
 
@@ -192,7 +192,7 @@ class State:
         """
         return f"<State data={self._state}>"
 
-    def update(self, values: Dict[str, Any]):
+    def update(self, values: dict[str, Any]):
         """
         Bulk-updates the state with multiple key-value pairs from a dictionary.
 

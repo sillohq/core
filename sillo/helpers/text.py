@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import re
-import typing
-from html.parser import HTMLParser as _HTMLParser
 
 _HTML_TAG_RE = re.compile(r"<[^>]*>")
 _MULTI_SPACE_RE = re.compile(r"\s+")
@@ -204,8 +202,8 @@ def wrap_text(text: str, width: int = 80) -> str:
         TypeError: If text is not a string or width is not an integer.
     """
     words = text.split()
-    lines: typing.List[str] = []
-    current: typing.List[str] = []
+    lines: list[str] = []
+    current: list[str] = []
     current_len = 0
     for word in words:
         if current_len + len(word) + len(current) > width:
@@ -220,7 +218,7 @@ def wrap_text(text: str, width: int = 80) -> str:
     return "\n".join(lines)
 
 
-def extract_urls(text: str) -> typing.List[str]:
+def extract_urls(text: str) -> list[str]:
     """Extract all HTTP and HTTPS URLs from a text string.
 
     Uses a regex pattern to find all substrings that match the structure
@@ -241,7 +239,7 @@ def extract_urls(text: str) -> typing.List[str]:
     return pattern.findall(text)
 
 
-def extract_emails(text: str) -> typing.List[str]:
+def extract_emails(text: str) -> list[str]:
     """Extract all email addresses from a text string.
 
     Uses a regex pattern to find all substrings matching common email

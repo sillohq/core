@@ -2,72 +2,58 @@ from __future__ import annotations
 
 import copy
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from pydantic import BaseModel
 
-from sillo.openapi.models import Reference
 from sillo.core.routing import Route, Router
 from sillo.core.routing.grouping import Group
-from sillo.parameters import Query, Header, Cookie, SolvedParamDependency
+from sillo.openapi.models import Reference
+from sillo.parameters import Cookie, Header, Query, SolvedParamDependency
 from sillo.validation import ParameterLocation
 
 from .config import OpenAPIConfig
 from .models import (
     Cookie as OpenAPICookie,
+)
+from .models import (
     Header as OpenAPIHeader,
+)
+from .models import (
     MediaType,
     Operation,
     Parameter,
-    Path as OpenAPIPath,
     PathItem,
-    Query as OpenAPIQuery,
     RequestBody,
-)
-from .models import Response as OpenAPIResponse
-from .models import (
     Schema,
 )
+from .models import (
+    Path as OpenAPIPath,
+)
+from .models import (
+    Query as OpenAPIQuery,
+)
+from .models import Response as OpenAPIResponse
 
 
 class APIDocumentation:
-    """Apidocumentation
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Apidocumentation"""
 
     def __init__(
         self,
-        config: Optional[OpenAPIConfig] = None,
+        config: OpenAPIConfig | None = None,
         swagger_url: str = "/docs",
         redoc_url: str = "/redoc",
         openapi_url: str = "/openapi.json",
     ):
-        """Init
-
-        Args:
-            config: [description]
-            swagger_url: [description]
-            redoc_url: [description]
-            openapi_url: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.config = config or OpenAPIConfig()
         self.swagger_url = swagger_url
         self.redoc_url = redoc_url
         self.openapi_url = openapi_url
         # Per-build memo of each route's compiled validators, so the parameter,
         # request-body, and response sections do not each re-collect them.
-        self._validator_memo: Dict[int, List[Any]] = {}
+        self._validator_memo: dict[int, list[Any]] = {}
 
     def _docs_context(self, openapi_url: str | None = None):
         """Build a render context for the standalone HTML generators."""
@@ -104,8 +90,8 @@ class APIDocumentation:
         return Swagger().render(self._docs_context(openapi_url))
 
     def get_openapi(
-        self, route: Union[Route, Router, Group, Any], current_prefix: str = ""
-    ) -> Dict[str, Any]:
+        self, route: Route | Router | Group | Any, current_prefix: str = ""
+    ) -> dict[str, Any]:
         """
         Recursively extract all Route with their full paths, automatically add them to OpenAPI spec,
         and return the complete OpenAPI specification as a dictionary.
@@ -139,12 +125,12 @@ class APIDocumentation:
         return spec
 
     def _collect_routes_with_paths(
-        self, route: Union[Route, Router, Group, Any], current_prefix: str = ""
-    ) -> List[Tuple[str, Route]]:
+        self, route: Route | Router | Group | Any, current_prefix: str = ""
+    ) -> list[tuple[str, Route]]:
         """
         Recursively collect all Route with their full paths, tracking prefixes through nested structures.
         """
-        routes_with_paths: List[Tuple[str, Route]] = []
+        routes_with_paths: list[tuple[str, Route]] = []
 
         if isinstance(route, Route):
             # Combine current prefix with route's raw_path
@@ -294,9 +280,7 @@ class APIDocumentation:
         """
         return re.sub(r"\{(\w+):[^}]+\}", r"{\1}", path)
 
-    def _build_request_body_spec(
-        self, route: Route, method: str
-    ) -> Optional[RequestBody]:
+    def _build_request_body_spec(self, route: Route, method: str) -> RequestBody | None:
         """
         Build request body specification for the route.
 
@@ -356,7 +340,7 @@ class APIDocumentation:
             )
         return None
 
-    def _build_marker_body_spec(self, route: Route) -> Optional[RequestBody]:
+    def _build_marker_body_spec(self, route: Route) -> RequestBody | None:
         """
         Build a request body spec from ``Form`` and ``File`` markers.
 
@@ -384,7 +368,7 @@ class APIDocumentation:
             properties = dict(schema_dict.get("properties") or {})
             # File markers bypass Pydantic, so they are absent from the
             # generated model and must be described explicitly.
-            for param_name, alias in spec.passthrough.items():
+            for alias in spec.passthrough.values():
                 properties[alias] = {"type": "string", "format": "binary"}
             schema_dict["properties"] = properties
             content_type = (
@@ -401,7 +385,7 @@ class APIDocumentation:
 
     def _build_responses_spec(
         self, route: Route
-    ) -> Dict[str, OpenAPIResponse | Reference]:
+    ) -> dict[str, OpenAPIResponse | Reference]:
         """
         Build response specifications for the route.
 
@@ -414,7 +398,7 @@ class APIDocumentation:
         response_model = getattr(route, "response_model", None)
         if response_model is not None:
             model = (
-                List[response_model]  # type: ignore[valid-type]
+                list[response_model]  # type: ignore[valid-type]
                 if getattr(route, "response_model_many", False)
                 else response_model
             )
@@ -452,7 +436,7 @@ class APIDocumentation:
 
         return responses_spec
 
-    def _extract_and_add_nested_schemas(self, schema: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_and_add_nested_schemas(self, schema: dict[str, Any]) -> dict[str, Any]:
         """
         Extract nested schemas from Pydantic's $defs and add them to components.schemas.
         Returns the cleaned schema with updated references.
@@ -585,7 +569,7 @@ class APIDocumentation:
             content={"application/json": MediaType(spec=Schema(type="object"))},
         )
 
-    def _collect_validators(self, route: Route) -> List[Any]:
+    def _collect_validators(self, route: Route) -> list[Any]:
         """
         Collect every compiled validator reachable from a route.
 
@@ -622,7 +606,7 @@ class APIDocumentation:
         self._validator_memo[key] = validators
         return validators
 
-    def _build_parameters_spec(self, route: Route) -> List[Parameter]:
+    def _build_parameters_spec(self, route: Route) -> list[Parameter]:
         """
         Build parameter specifications for the route.
 
@@ -637,7 +621,7 @@ class APIDocumentation:
 
         # Path parameters declared with a ``Path`` marker carry a real schema;
         # collect them first so the generic fallback below skips them.
-        path_schemas: Dict[str, Schema] = {}
+        path_schemas: dict[str, Schema] = {}
         for validator in self._collect_validators(route):
             for spec in validator.specs:
                 if spec.location is not ParameterLocation.PATH:
@@ -675,7 +659,7 @@ class APIDocumentation:
 
         return parameters
 
-    def _schemas_for_spec(self, spec: Any) -> Dict[str, Schema]:
+    def _schemas_for_spec(self, spec: Any) -> dict[str, Schema]:
         """
         Extract a per-parameter JSON Schema from a compiled location model.
 
@@ -696,7 +680,7 @@ class APIDocumentation:
             for name, prop in (processed.get("properties") or {}).items()
         }
 
-    def _convert_location_spec(self, spec: Any, documented: set) -> List[Parameter]:
+    def _convert_location_spec(self, spec: Any, documented: set) -> list[Parameter]:
         """
         Convert one compiled location model into OpenAPI parameter entries.
 
@@ -723,7 +707,7 @@ class APIDocumentation:
         processed = self._extract_and_add_nested_schemas(raw)
         required_names = set(processed.get("required") or [])
 
-        out: List[Parameter] = []
+        out: list[Parameter] = []
         for name, prop in (processed.get("properties") or {}).items():
             key = (spec.location.value, name)
             if key in documented:
@@ -740,7 +724,7 @@ class APIDocumentation:
 
     def _convert_param_dependency(
         self, param_dep: SolvedParamDependency
-    ) -> Optional[Parameter]:
+    ) -> Parameter | None:
         """
         Convert a SolvedParamDependency to an OpenAPI Parameter.
         """

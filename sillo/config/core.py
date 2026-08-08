@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Optional
-
-from pydantic import BaseModel, ConfigDict, Field as PydanticField
+from pydantic import BaseModel, ConfigDict
+from pydantic import Field as PydanticField
 
 
 class Config(BaseModel):
@@ -47,7 +45,7 @@ class Config(BaseModel):
     )
 
     def __init__(
-        self, _env_file: Optional[str] = None, _case_sensitive: bool = False, **data
+        self, _env_file: str | None = None, _case_sensitive: bool = False, **data
     ):
         """Initialize config, loading from .env if configured.
 

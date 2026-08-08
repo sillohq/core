@@ -6,7 +6,7 @@ import hashlib
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 
 def static_hash(filepath: str) -> str:
@@ -67,7 +67,7 @@ def truncate(text: str, length: int = 100, suffix: str = "...") -> str:
     return text[:length].rsplit(" ", 1)[0] + suffix
 
 
-def merge_dicts(*dicts: Dict[str, Any]) -> Dict[str, Any]:
+def merge_dicts(*dicts: dict[str, Any]) -> dict[str, Any]:
     """Merge two or more dictionaries into a single dictionary.
 
     Later dictionaries take precedence over earlier ones for duplicate
@@ -86,7 +86,7 @@ def merge_dicts(*dicts: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-def get_template_globals() -> Dict[str, Any]:
+def get_template_globals() -> dict[str, Any]:
     """Return the default dictionary of template-global callables.
 
     These functions are injected into every template context so they can
@@ -106,7 +106,7 @@ def get_template_globals() -> Dict[str, Any]:
     }
 
 
-def create_template_dir(template_dir: Optional[Union[str, Path]] = None) -> Path:
+def create_template_dir(template_dir: str | Path | None = None) -> Path:
     """Ensure a template directory exists and return its ``Path``.
 
     Creates the directory (including parents) if it does not already

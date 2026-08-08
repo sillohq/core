@@ -12,24 +12,19 @@ Features:
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import (
     Annotated,
     Any,
     ClassVar,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Type,
     TypeVar,
 )
 
 from tortoise import Model as _TortoiseModel
-from tortoise import fields
 from tortoise.exceptions import ConfigurationError, OperationalError
-from typing_extensions import Doc
+from typing_extensions import Doc, Self
 
 from .casting import HasCasts
 from .fields import CreatedAtField, SoftDeleteField, UpdatedAtField
@@ -58,14 +53,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
     deleted_at: ClassVar[SoftDeleteField] = SoftDeleteField()  # ty: ignore[invalid-assignment]
 
     class Meta:
-        """Meta
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Meta"""
 
         abstract = True
         manager = RecordManager()
@@ -131,7 +119,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         return passed_fields
 
     @classmethod
-    def _init_from_db(cls: Type[T], **kwargs: Any) -> T:
+    def _init_from_db(cls, **kwargs: Any) -> Self:
         self = cls.__new__(cls)
         object.__setattr__(self, "_partial", False)
         object.__setattr__(self, "_saved_in_db", True)
@@ -217,7 +205,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         if not casts:
             yield
             return
-        originals: Dict[str, Any] = {}
+        originals: dict[str, Any] = {}
         object.__setattr__(self, "_record_encoding", True)
         for field_name in casts:
             if field_name not in self._meta.fields:
@@ -239,11 +227,11 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
     def to_dict(
         self,
         *,
-        exclude: Annotated[Optional[List[str]], Doc("Field names to omit.")] = None,
+        exclude: Annotated[list[str] | None, Doc("Field names to omit.")] = None,
         include: Annotated[
-            Optional[List[str]], Doc("If set, ONLY include these fields.")
+            list[str] | None, Doc("If set, ONLY include these fields.")
         ] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Serialize the model to a plain dict."""
         data = {}
         for field_name in self._meta.fields:
@@ -259,14 +247,14 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
             data[field_name] = value
         return data
 
-    def to_json(self, *, indent: Optional[int] = None, **kwargs) -> str:
+    def to_json(self, *, indent: int | None = None, **kwargs) -> str:
         """Serialize to JSON string."""
         return json.dumps(self.to_dict(**kwargs), indent=indent, default=str)
 
     async def update_from_dict(  # ty: ignore[invalid-method-override]
         self,
         data: Annotated[
-            Dict[str, Any], Doc("Dict to apply, e.g. from pydantic model_dump().")
+            dict[str, Any], Doc("Dict to apply, e.g. from pydantic model_dump().")
         ],
     ) -> None:
         """Apply a dict of field updates and save."""
@@ -300,7 +288,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         return cls.filter(deleted_at__isnull=False)
 
     @classmethod
-    async def get_or_none(cls: Type[T], **kwargs) -> Optional[T]:  # ty: ignore[invalid-method-override]
+    async def get_or_none(cls, **kwargs) -> Self | None:  # ty: ignore[invalid-method-override]
         """Return the first matching row, or None."""
         try:
             return await cls.get(**kwargs)
@@ -309,12 +297,12 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
 
     @classmethod
     async def get_or_create(
-        cls: Type[T],
+        cls,
         defaults: Annotated[
-            Optional[Dict[str, Any]], Doc("Values to use when creating.")
+            dict[str, Any] | None, Doc("Values to use when creating.")
         ] = None,
         **kwargs,
-    ) -> tuple[T, bool]:  # ty: ignore[invalid-method-override]
+    ) -> tuple[Self, bool]:  # ty: ignore[invalid-method-override]
         """Return existing or create new. Returns (instance, created)."""
         instance = await cls.get_or_none(**kwargs)
         if instance:
@@ -323,17 +311,17 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
 
     @classmethod
     async def bulk_create(
-        cls: Type[T],
+        cls,
         items: Annotated[
-            Iterable[Dict[str, Any] | T], Doc("Field dicts or instances.")
+            Iterable[dict[str, Any] | Self], Doc("Field dicts or instances.")
         ],
         batch_size: Annotated[int, Doc("Insert this many per query.")] = 100,
         *,
         ignore_conflicts: bool = False,
-        update_fields: Optional[Iterable[str]] = None,
-        on_conflict: Optional[Iterable[str]] = None,
+        update_fields: Iterable[str] | None = None,
+        on_conflict: Iterable[str] | None = None,
         using_db=None,
-    ) -> List[T]:  # ty: ignore[invalid-method-override]
+    ) -> list[Self]:  # ty: ignore[invalid-method-override]
         """Insert multiple rows efficiently."""
         instances = [item if isinstance(item, cls) else cls(**item) for item in items]  # ty: ignore[invalid-argument-type]
         for i in range(0, len(instances), batch_size):
@@ -363,14 +351,14 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
 
     @classmethod
     async def bulk_upsert(
-        cls: Type[T],
-        items: Iterable[Dict[str, Any] | T],
+        cls,
+        items: Iterable[dict[str, Any] | Self],
         *,
         conflict_fields: Iterable[str],
-        update_fields: Optional[Iterable[str]] = None,
+        update_fields: Iterable[str] | None = None,
         batch_size: int = 100,
         using_db=None,
-    ) -> List[T]:
+    ) -> list[Self]:
         """Insert rows or update them using database-native conflict handling."""
         instances = [item if isinstance(item, cls) else cls(**item) for item in items]  # ty: ignore[invalid-argument-type]
         conflict_fields = tuple(conflict_fields)
@@ -391,14 +379,14 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
 
     @classmethod
     async def upsert(
-        cls: Type[T],
-        values: Optional[Dict[str, Any]] = None,
+        cls,
+        values: dict[str, Any] | None = None,
         *,
         conflict_fields: Iterable[str],
-        update_fields: Optional[Iterable[str]] = None,
+        update_fields: Iterable[str] | None = None,
         using_db=None,
         **kwargs,
-    ) -> T:
+    ) -> Self:
         """Upsert one row using native ``ON CONFLICT``/equivalent support."""
         payload = {**(values or {}), **kwargs}
         conflict_fields = tuple(conflict_fields)

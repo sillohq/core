@@ -10,11 +10,7 @@ Record backends trivially interchangeable.
 from __future__ import annotations
 
 import time
-import typing
 from dataclasses import dataclass
-from typing import Any, Optional
-
-from typing_extensions import Doc
 
 
 @dataclass
@@ -40,7 +36,7 @@ class RateLimitResult:
 class RateLimitBackend:
     """Abstract base class for rate-limit backends."""
 
-    async def fetch_state(self, key: str) -> Optional[dict]:
+    async def fetch_state(self, key: str) -> dict | None:
         """Return the stored state dict for ``key`` or ``None`` if absent/expired."""
         raise NotImplementedError
 
@@ -54,12 +50,5 @@ class RateLimitBackend:
 
 
 def _now() -> float:
-    """Now
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Now"""
     return time.time()

@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import logging
 import ssl
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 from tortoise import Tortoise, connections
 from tortoise.backends.base.config_generator import expand_db_url
-from typing_extensions import Doc
+from typing_extensions import Doc, Self
 
 from .config import DatabaseConfig
 
@@ -51,7 +51,7 @@ def _normalize_db_url(url: str) -> str:
     return f"{_SCHEME_ALIASES.get(scheme, scheme)}://{rest}"
 
 
-def _build_ssl_context(cfg: DatabaseConfig) -> "ssl.SSLContext":
+def _build_ssl_context(cfg: DatabaseConfig) -> ssl.SSLContext:
     """Build the SSL context handed to the database driver.
 
     Both asyncpg and aiomysql take an :class:`ssl.SSLContext` for their
@@ -85,20 +85,10 @@ class DatabaseManager:
     def __init__(
         self, config: Annotated[DatabaseConfig, Doc("Connection configuration.")]
     ):
-        """Init
-
-        Args:
-            config: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.config = config
         self._initialized = False
-        self._model_modules: List[str] = []
+        self._model_modules: list[str] = []
         self._migrations_module: str = "database.migrations"
         # Set by init(). Named here so ensure_context() can run before the
         # database is up — during a request that arrives while starting.
@@ -109,7 +99,7 @@ class DatabaseManager:
         *modules: Annotated[
             str, Doc("Dotted module paths containing Tortoise models.")
         ],
-    ) -> "DatabaseManager":
+    ) -> DatabaseManager:
         """Register model modules to be discovered on init.
 
         Returns the manager, so it chains with :meth:`set_migrations`.
@@ -120,7 +110,7 @@ class DatabaseManager:
     def set_migrations(
         self,
         module: Annotated[str, Doc("Dotted path to the migrations package.")],
-    ) -> "DatabaseManager":
+    ) -> DatabaseManager:
         """Declare where this project's migrations live.
 
         Defaults to ``database.migrations``. Returns the manager, so it chains
@@ -190,7 +180,7 @@ class DatabaseManager:
         except Exception:
             return False
 
-    async def __aenter__(self) -> "DatabaseManager":
+    async def __aenter__(self) -> Self:
         """Open the database for a block of work.
 
         For scripts and management commands, where the application's startup
@@ -213,7 +203,7 @@ class DatabaseManager:
     def orm_config(
         self,
         migrations: Annotated[
-            Optional[str], Doc("Migrations package, overriding set_migrations.")
+            str | None, Doc("Migrations package, overriding set_migrations.")
         ] = None,
     ) -> dict:
         """The resolved configuration this manager runs on.
@@ -259,7 +249,7 @@ class DatabaseManager:
 
         expanded = expand_db_url(_normalize_db_url(cfg.url))
         engine: str = expanded["engine"]
-        credentials: Dict[str, Any] = dict(expanded["credentials"])
+        credentials: dict[str, Any] = dict(expanded["credentials"])
 
         if engine != "tortoise.backends.sqlite":
             # Both the postgres and mysql clients pop these out of **kwargs.
@@ -310,7 +300,7 @@ def setup_record(
     config: Annotated[DatabaseConfig, Doc("Database configuration.")],
     *,
     model_modules: Annotated[
-        Optional[List[str]], Doc("List of dotted model module paths.")
+        list[str] | None, Doc("List of dotted model module paths.")
     ] = None,
 ) -> DatabaseManager:
     """Wire database lifecycle into a sillo application.

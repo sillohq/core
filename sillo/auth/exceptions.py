@@ -1,9 +1,9 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
-from sillo.exceptions import HTTPException
 from sillo.core.http import Request, Response
+from sillo.exceptions import HTTPException
 
-HeadersType = Dict[str, Any]  # Alias for better readability
+HeadersType = dict[str, Any]  # Alias for better readability
 """Type alias for HTTP header dictionaries used in auth exception responses.
 
 Provides a readable alias for ``Dict[str, Any]`` to improve code clarity
@@ -41,7 +41,7 @@ class AuthException(HTTPException):
     """
 
     def __init__(
-        self, status_code: int, detail: str, headers: Optional[HeadersType] = None
+        self, status_code: int, detail: str, headers: HeadersType | None = None
     ) -> None:
         """Initialise an authentication exception with status and detail.
 
@@ -89,7 +89,7 @@ class AuthenticationFailed(AuthException):
     def __init__(
         self,
         detail: str = "Authentication failed",
-        headers: Optional[HeadersType] = None,
+        headers: HeadersType | None = None,
     ) -> None:
         """Initialise an AuthenticationFailed exception with HTTP 401 status.
 
@@ -135,7 +135,7 @@ class PermissionDenied(AuthException):
     def __init__(
         self,
         detail: str = "Permission denied",
-        headers: Optional[HeadersType] = None,
+        headers: HeadersType | None = None,
     ) -> None:
         """Initialise a PermissionDenied exception with HTTP 403 status.
 

@@ -5,6 +5,7 @@ import typing
 import httpx
 from httpx._types import RequestContent
 from pydantic import BaseModel
+from typing_extensions import Self
 
 from sillo.cache.base import _MISSING
 from sillo.http.client.config import HTTPClientConfig, HTTPClientStats
@@ -19,7 +20,7 @@ from sillo.http.client.models import ResponseValidator
 from sillo.http.client.transport import ConnectionPoolConfig
 
 if typing.TYPE_CHECKING:
-    from typing import Any, Optional, Union
+    from typing import Any, Union
 
     from httpx._types import (
         AuthTypes,
@@ -42,9 +43,9 @@ class _HTTPClientState:
     """
 
     def __init__(self) -> None:
-        self.client: Optional[httpx.AsyncClient] = None
-        self.cache: Optional[Any] = None
-        self.middleware_chain: Optional[MiddlewareChain] = None
+        self.client: httpx.AsyncClient | None = None
+        self.cache: Any | None = None
+        self.middleware_chain: MiddlewareChain | None = None
         self.stats = HTTPClientStats()
 
 
@@ -95,7 +96,7 @@ class HTTPClient:
         self,
         base_url: str = "",
         *,
-        config: Optional[HTTPClientConfig] = None,
+        config: HTTPClientConfig | None = None,
         **kwargs: Any,
     ) -> None:
         if config is None:
@@ -119,11 +120,11 @@ class HTTPClient:
     def stats(self) -> HTTPClientStats:
         return self._state.stats
 
-    async def __aenter__(self) -> HTTPClient:
+    async def __aenter__(self) -> Self:
         await self.start()
         return self
 
-    async def __aexit__(self, *exc: Any) -> None:
+    async def __aexit__(self, *exc: object) -> None:
         await self.stop()
 
     # ---- lifecycle ---------------------------------------------------
@@ -146,7 +147,7 @@ class HTTPClient:
             max_keepalive_connections=self._config.max_keepalive_connections,
         )
 
-        auth: Optional[AuthTypes] = None
+        auth: AuthTypes | None = None
         if self._config.default_auth:
             auth = httpx.BasicAuth(*self._config.default_auth)
 
@@ -207,20 +208,20 @@ class HTTPClient:
         method: str,
         url: URLTypes,
         *,
-        content: Optional[RequestContent] = None,
-        data: Optional[RequestData] = None,
-        json: Optional[RequestData] = None,
-        files: Optional[RequestFiles] = None,
-        params: Optional[QueryParamTypes] = None,
-        headers: Optional[HeaderTypes] = None,
-        cookies: Optional[CookieTypes] = None,
-        auth: Optional[AuthTypes] = None,
-        follow_redirects: Optional[bool] = None,
-        timeout: Optional[float] = None,
-        extensions: Optional[dict[str, Any]] = None,
+        content: RequestContent | None = None,
+        data: RequestData | None = None,
+        json: RequestData | None = None,
+        files: RequestFiles | None = None,
+        params: QueryParamTypes | None = None,
+        headers: HeaderTypes | None = None,
+        cookies: CookieTypes | None = None,
+        auth: AuthTypes | None = None,
+        follow_redirects: bool | None = None,
+        timeout: float | None = None,
+        extensions: dict[str, Any] | None = None,
     ) -> httpx.Response:
         """Execute a single HTTP request (one attempt, no retry logic)."""
-        effective_timeout: Union[float, httpx.Timeout, None] = None
+        effective_timeout: float | httpx.Timeout | None = None
         if timeout is not None:
             effective_timeout = timeout
         elif self._config.default_timeout != 30.0:
@@ -331,7 +332,7 @@ class HTTPClient:
         method: str,
         url: URLTypes,
         *,
-        response_model: Optional[type[BaseModel]] = None,
+        response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
         **kwargs: Any,
@@ -423,7 +424,7 @@ class HTTPClient:
         self,
         url: URLTypes,
         *,
-        response_model: Optional[type[BaseModel]] = None,
+        response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
         **kwargs: Any,
@@ -442,9 +443,9 @@ class HTTPClient:
         self,
         url: URLTypes,
         *,
-        json: Optional[RequestData] = None,
-        data: Optional[RequestData] = None,
-        response_model: Optional[type[BaseModel]] = None,
+        json: RequestData | None = None,
+        data: RequestData | None = None,
+        response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
         **kwargs: Any,
@@ -465,9 +466,9 @@ class HTTPClient:
         self,
         url: URLTypes,
         *,
-        json: Optional[RequestData] = None,
-        data: Optional[RequestData] = None,
-        response_model: Optional[type[BaseModel]] = None,
+        json: RequestData | None = None,
+        data: RequestData | None = None,
+        response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
         **kwargs: Any,
@@ -488,9 +489,9 @@ class HTTPClient:
         self,
         url: URLTypes,
         *,
-        json: Optional[RequestData] = None,
-        data: Optional[RequestData] = None,
-        response_model: Optional[type[BaseModel]] = None,
+        json: RequestData | None = None,
+        data: RequestData | None = None,
+        response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
         **kwargs: Any,
@@ -511,7 +512,7 @@ class HTTPClient:
         self,
         url: URLTypes,
         *,
-        response_model: Optional[type[BaseModel]] = None,
+        response_model: type[BaseModel] | None = None,
         many: bool = False,
         strict: bool = False,
         **kwargs: Any,

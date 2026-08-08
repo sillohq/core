@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 from base64 import b64encode
+from collections.abc import Iterable
 from hashlib import sha1
-from typing import Any, Iterable
+from typing import Any
 
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
@@ -161,14 +162,14 @@ def ETag(
 
 
 __all__ = [
-    "ETagMiddleware",
     "ETag",
-    "generate_etag_from_bytes",
-    "normalize_etag",
-    "set_response_etag",
+    "ETagMiddleware",
     "compute_and_set_etag",
-    "parse_if_none_match",
-    "parse_if_match",
     "etag_matches",
+    "generate_etag_from_bytes",
     "is_fresh",
+    "normalize_etag",
+    "parse_if_match",
+    "parse_if_none_match",
+    "set_response_etag",
 ]

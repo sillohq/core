@@ -29,20 +29,20 @@ from sillo.users.protocol import (
 from sillo.users.simple import SimpleUser, UnauthenticatedUser
 
 __all__ = [
-    "UserProtocol",
-    "UserBaseModel",
-    "BaseUser",
     "AnonymousUser",
-    "User",
-    "UserManager",
+    "BaseUser",
     "SimpleUser",
     "UnauthenticatedUser",
-    "make_password",
+    "User",
+    "UserBaseModel",
+    "UserManager",
+    "UserProtocol",
     "check_password",
     "is_password_usable",
+    "make_password",
     "needs_update",
-    "validate_password",
     "password_strength",
+    "validate_password",
 ]
 
 #: Names that live on a Tortoise model, so they need the `record` extra.
@@ -51,4 +51,4 @@ __getattr__ = deferred(__name__, {"User": ".base", "UserBaseModel": ".base"})
 
 # Management operations as plain functions, for a project's own tooling to
 # call. They resolve the user model lazily, so importing this costs nothing.
-from sillo.users import commands  # noqa: E402,F401
+from sillo.users import commands

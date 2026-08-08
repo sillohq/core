@@ -23,17 +23,18 @@ Usage::
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type
 
 if TYPE_CHECKING:
     from sillo import silloApp
 
 from sillo.core.routing import Group
 from sillo.static import StaticFiles
-from .registry import ModelAdmin, Registry
+
 from .auth import AuthBackend, SessionAuth
 from .default_user import AdminRole, AdminUser
 from .models import AdminActivity
+from .registry import ModelAdmin, Registry
 from .router import build_routes
 
 
@@ -59,23 +60,10 @@ class AdminSite:
         self,
         title: str = "Recorder Admin",
         prefix: str = "/admin",
-        auth_backend: Optional[AuthBackend] = None,
-        user_model: Optional[Type] = None,
+        auth_backend: AuthBackend | None = None,
+        user_model: type | None = None,
     ):
-        """Init
-
-        Args:
-            title: [description]
-            prefix: [description]
-            auth_backend: [description]
-            user_model: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.title = title
         self.prefix = prefix.rstrip("/")
         self.registry = Registry()
@@ -83,9 +71,7 @@ class AdminSite:
         self._build_routes = build_routes
         self._setup = False
 
-    def register(
-        self, model_class: Type, admin_class: Optional[Type[ModelAdmin]] = None
-    ):
+    def register(self, model_class: type, admin_class: type[ModelAdmin] | None = None):
         """Register a model with the admin site.
 
         Can be used as a decorator or called directly::
@@ -99,17 +85,7 @@ class AdminSite:
         if admin_class is None:
 
             def decorator(kls):
-                """Decorator
-
-                Args:
-                    kls: [description]
-
-                Returns:
-                    [description]
-
-                Raises:
-                    [description]
-                """
+                """Decorator"""
                 self.registry.register(model_class, kls)
                 return kls
 
@@ -140,8 +116,14 @@ class AdminSite:
 
             class _AuthAdmin(ModelAdmin):
                 verbose_name = "Auth"
-                list_display = ["id", "email", "username", "is_active", "is_superuser"]
-                search_fields = ["email", "username"]
+                list_display: ClassVar[list[str]] = [
+                    "id",
+                    "email",
+                    "username",
+                    "is_active",
+                    "is_superuser",
+                ]
+                search_fields: ClassVar[list[str]] = ["email", "username"]
 
             self.registry.register(user_model, _AuthAdmin)
 
@@ -158,30 +140,24 @@ class AdminSite:
 
             class _ActivityAdmin(ModelAdmin):
                 verbose_name = "Activity Log"
-                list_display = [
+                list_display: ClassVar[list[str]] = [
                     "id",
                     "user_email",
                     "action",
                     "model_name",
                     "created_at",
                 ]
-                search_fields = ["user_email", "action", "model_name"]
-                ordering = ["-created_at"]
+                search_fields: ClassVar[list[str]] = [
+                    "user_email",
+                    "action",
+                    "model_name",
+                ]
+                ordering: ClassVar[list[str]] = ["-created_at"]
 
             self.registry.register(AdminActivity, _ActivityAdmin)
 
     def _mount_static(self, app: silloApp) -> None:
-        """Mount Static
-
-        Args:
-            app: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Mount Static"""
         static_dir = Path(__file__).parent / "static"
         if static_dir.is_dir():
             static_files = StaticFiles(directory=static_dir)
@@ -216,16 +192,18 @@ def setup_admin(
     app,
     title: str = "Recorder Admin",
     prefix: str = "/admin",
-    auth_backend: Optional[AuthBackend] = None,
-    user_model: Optional[Type] = None,
+    auth_backend: AuthBackend | None = None,
+    user_model: type | None = None,
 ) -> AdminSite:
-    """Setup Admin
+    """Build an admin site and mount it on the application.
 
     Args:
-        app: [description]
-        title: [description]
-        prefix: [description]
-        auth_backend: [description]
+        app: The application to mount the admin on.
+        title: Name shown in the admin's own header and page titles.
+        prefix: Path the admin is served under. Its routes all carry a
+            trailing slash, so ``/admin/`` rather than ``/admin``.
+        auth_backend: Backend used to authenticate admin logins. Defaults to
+            session authentication against ``user_model``.
         user_model: Subclass of :class:`sillo.users.UserBaseModel` to
             authenticate admin logins against. Defaults to :class:`AdminUser`.
             Build your own to add fields or change RBAC, e.g.::
@@ -236,12 +214,6 @@ def setup_admin(
                         table = "my_admin_users"
 
                 admin = setup_admin(app, user_model=MyAdminUser)
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
     """
     site = AdminSite(
         title=title, prefix=prefix, auth_backend=auth_backend, user_model=user_model

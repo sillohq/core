@@ -16,15 +16,11 @@ every prompt a command might hit in CI, and the same command works in both.
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable, Sequence
 from typing import (
     IO,
     Any,
-    Callable,
-    List,
-    Optional,
-    Sequence,
     TextIO,
-    Tuple,
     Union,
     cast,
 )
@@ -44,11 +40,11 @@ from .terminal import (
 __all__ = ["Prompt"]
 
 
-Choice = Union[str, Tuple[Any, str]]
+Choice = Union[str, tuple[Any, str]]
 Validator = Callable[[str], Any]
 
 
-def _split(option: Choice) -> Tuple[Any, str]:
+def _split(option: Choice) -> tuple[Any, str]:
     """Split a choice into its value and its label.
 
     Args:
@@ -76,8 +72,8 @@ class Prompt:
     def __init__(
         self,
         output: Output,
-        input_stream: Optional[IO[str]] = None,
-        interactive: Optional[bool] = None,
+        input_stream: IO[str] | None = None,
+        interactive: bool | None = None,
     ) -> None:
         self.output = output
         self.input_stream = input_stream if input_stream is not None else sys.stdin
@@ -144,7 +140,7 @@ class Prompt:
             self.output.blank()
             raise Abort("cancelled")
 
-    def _validate(self, value: str, validate: Optional[Validator]) -> Any:
+    def _validate(self, value: str, validate: Validator | None) -> Any:
         """Run *validate* over *value*.
 
         A validator checks; it does not transform. Return None or True to
@@ -182,8 +178,8 @@ class Prompt:
     def ask(
         self,
         question: str,
-        default: Optional[str] = None,
-        validate: Optional[Validator] = None,
+        default: str | None = None,
+        validate: Validator | None = None,
     ) -> Any:
         """Ask for a line of text.
 
@@ -224,7 +220,7 @@ class Prompt:
         self,
         question: str = "Password",
         confirm: bool = False,
-        validate: Optional[Validator] = None,
+        validate: Validator | None = None,
     ) -> str:
         """Ask for a value without echoing it.
 
@@ -322,9 +318,9 @@ class Prompt:
     def _render_choices(
         self,
         question: str,
-        options: Sequence[Tuple[Any, str]],
+        options: Sequence[tuple[Any, str]],
         cursor: int,
-        selected: Optional[set] = None,
+        selected: set | None = None,
         filter_text: str = "",
         window: int = 10,
     ) -> int:
@@ -361,7 +357,7 @@ class Prompt:
             else:
                 marker = glyphs["tick"] if index in selected else " "
 
-            style: Optional[Style] = None
+            style: Style | None = None
             if active:
                 style = PRIMARY
             elif selected is not None and index in selected:
@@ -382,11 +378,11 @@ class Prompt:
     def _drive(
         self,
         question: str,
-        options: Sequence[Tuple[Any, str]],
+        options: Sequence[tuple[Any, str]],
         cursor: int,
-        selected: Optional[set],
+        selected: set | None,
         searchable: bool,
-    ) -> Tuple[int, Optional[set]]:
+    ) -> tuple[int, set | None]:
         """Run the key loop for a list prompt.
 
         Args:
@@ -403,9 +399,7 @@ class Prompt:
         Raises:
             Abort: If the user cancelled.
         """
-        filter_text = ""
-        matches = list(range(len(options)))
-        drawn = 0
+        list(range(len(options)))
 
         # The menu redraws on every keypress, and a visible cursor parked at
         # the end of the last drawn row flickers through all of it. Restored in
@@ -419,11 +413,11 @@ class Prompt:
     def _loop(
         self,
         question: str,
-        options: Sequence[Tuple[Any, str]],
+        options: Sequence[tuple[Any, str]],
         cursor: int,
-        selected: Optional[set],
+        selected: set | None,
         searchable: bool,
-    ) -> Tuple[int, Optional[set]]:
+    ) -> tuple[int, set | None]:
         """Read keys and redraw until the user accepts or cancels.
 
         Args:
@@ -496,7 +490,7 @@ class Prompt:
         question: str,
         options: Sequence[Choice],
         default: Any = None,
-        search: Optional[bool] = None,
+        search: bool | None = None,
     ) -> Any:
         """Ask the user to pick one option.
 
@@ -543,9 +537,9 @@ class Prompt:
         self,
         question: str,
         options: Sequence[Choice],
-        defaults: Optional[Sequence[Any]] = None,
+        defaults: Sequence[Any] | None = None,
         minimum: int = 0,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Ask the user to pick any number of options.
 
         Space toggles the highlighted option, Enter accepts the selection.

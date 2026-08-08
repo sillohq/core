@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import typing
 from dataclasses import dataclass, field
-from typing import Optional
 
 if typing.TYPE_CHECKING:
     from sillo.cache.base import BaseCache
-    from sillo.http.client.retry import RetryStrategy
     from sillo.http.client.middleware import HTTPMiddleware
+    from sillo.http.client.retry import RetryStrategy
 
 
 @dataclass
@@ -43,26 +42,26 @@ class HTTPClientConfig:
 
     base_url: str = ""
     default_timeout: float = 30.0
-    connect_timeout: Optional[float] = None
-    read_timeout: Optional[float] = None
-    write_timeout: Optional[float] = None
-    pool_timeout: Optional[float] = None
+    connect_timeout: float | None = None
+    read_timeout: float | None = None
+    write_timeout: float | None = None
+    pool_timeout: float | None = None
     max_connections: int = 50
     max_keepalive_connections: int = 20
     verify_ssl: bool = True
     trust_env: bool = True
     follow_redirects: bool = True
     max_redirects: int = 20
-    default_headers: Optional[dict[str, str]] = None
-    default_auth: Optional[tuple[str, str]] = None
-    retry_strategy: Optional[RetryStrategy] = None
-    cache_backend: Optional[BaseCache] = None
+    default_headers: dict[str, str] | None = None
+    default_auth: tuple[str, str] | None = None
+    retry_strategy: RetryStrategy | None = None
+    cache_backend: BaseCache | None = None
     cache_ttl: int = 300
-    cache_key_prefix: Optional[str] = None
-    cache_tags: Optional[list[str]] = None
+    cache_key_prefix: str | None = None
+    cache_tags: list[str] | None = None
     middlewares: list[HTTPMiddleware] = field(default_factory=list)
     raise_for_status: bool = False
-    user_agent: Optional[str] = None
+    user_agent: str | None = None
 
     def resolve_timeout(self) -> dict[str, float]:
         """Resolve the full timeout dictionary for httpx.

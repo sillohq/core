@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from sillo.auth.apikey.models import ApiKey, ApiKeyManager
 
@@ -22,8 +21,8 @@ class ApiKeyUserMixin:
     async def create_api_key(
         self,
         name: str,
-        scopes: Optional[list[str]] = None,
-        expires_at: Optional[datetime] = None,
+        scopes: list[str] | None = None,
+        expires_at: datetime | None = None,
         prefix: str = "sillo",
     ) -> tuple[str, object]:
         """Create a new API key for the current user.

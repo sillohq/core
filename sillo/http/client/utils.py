@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing
 
 if typing.TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
     from httpx import Response as HttpxResponse
 
@@ -27,8 +27,8 @@ def extract_response_summary(response: HttpxResponse) -> dict[str, Any]:
 
 
 def merge_headers(
-    base: Optional[dict[str, str]],
-    override: Optional[dict[str, str]],
+    base: dict[str, str] | None,
+    override: dict[str, str] | None,
 ) -> dict[str, str]:
     """Merge two header dicts, with override taking precedence."""
     result: dict[str, str] = {}
@@ -79,7 +79,7 @@ def guess_content_type(body: Any) -> str:
 
 __all__ = [
     "extract_response_summary",
+    "guess_content_type",
     "merge_headers",
     "sanitize_url_for_log",
-    "guess_content_type",
 ]

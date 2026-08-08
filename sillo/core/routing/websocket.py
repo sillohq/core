@@ -1,11 +1,10 @@
 import asyncio
-import typing
-from typing import Any, Dict
+from typing import Annotated, Any
 
-from typing_extensions import Annotated, Doc
+from typing_extensions import Doc
 
-from sillo.route_builder import RouteBuilder
 from sillo.objects.routing import URLPath
+from sillo.route_builder import RouteBuilder
 from sillo.types import (
     Receive,
     Scope,
@@ -171,7 +170,7 @@ class WebsocketRoute(BaseRoute):
         self.route_type = self.route_info.route_type
         self.router_middleware = None
 
-    def match(self, scope: Scope) -> typing.Tuple[Any, Any]:
+    def match(self, scope: Scope) -> tuple[Any, Any]:
         """Match a WebSocket request path against this route's URL pattern.
 
         Extracts the path from the ASGI scope and attempts to match it
@@ -252,7 +251,7 @@ class WebsocketRoute(BaseRoute):
 
         await app(scope, receive, send)
 
-    def url_path_for(self, name: str, **path_params: Dict[str, Any]) -> URLPath:
+    def url_path_for(self, name: str, **path_params: dict[str, Any]) -> URLPath:
         """Generate a URL path for this WebSocket route by name.
 
         Performs reverse URL resolution for WebSocket routes by substituting

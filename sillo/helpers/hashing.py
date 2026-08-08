@@ -7,13 +7,20 @@ New code should import directly from sillo.hashing.
 from __future__ import annotations
 
 import hashlib
-from typing import Union
 
 from sillo.hashing import (
     constant_time_compare as _constant_time_compare,
+)
+from sillo.hashing import (
     hash_password as _hash_password,
+)
+from sillo.hashing import (
     md5 as _md5,
+)
+from sillo.hashing import (
     sha256 as _sha256,
+)
+from sillo.hashing import (
     verify_password as _verify_password,
 )
 
@@ -44,7 +51,7 @@ def verify_password(password: str, hashed: str) -> bool:
     return _verify_password(password, hashed)
 
 
-def md5(data: Union[str, bytes]) -> str:
+def md5(data: str | bytes) -> str:
     """Compute MD5 hash.
 
     Note: MD5 is not suitable for passwords. Use hash_password() instead.
@@ -58,7 +65,7 @@ def md5(data: Union[str, bytes]) -> str:
     return _md5(data)
 
 
-def sha256(data: Union[str, bytes]) -> str:
+def sha256(data: str | bytes) -> str:
     """Compute SHA-256 hash.
 
     Note: SHA-256 is not suitable for passwords. Use hash_password() instead.
@@ -72,7 +79,7 @@ def sha256(data: Union[str, bytes]) -> str:
     return _sha256(data)
 
 
-def sha512(data: Union[str, bytes]) -> str:
+def sha512(data: str | bytes) -> str:
     """Compute SHA-512 hash.
 
     Args:
@@ -86,7 +93,7 @@ def sha512(data: Union[str, bytes]) -> str:
     return hashlib.sha512(data).hexdigest()
 
 
-def digest(data: Union[str, bytes], algorithm: str = "sha256") -> str:
+def digest(data: str | bytes, algorithm: str = "sha256") -> str:
     """Compute hash using specified algorithm.
 
     Args:
@@ -138,7 +145,7 @@ def random_salt(length: int = 16) -> str:
     return secrets.token_hex(length)
 
 
-def sha1(data: Union[str, bytes]) -> str:
+def sha1(data: str | bytes) -> str:
     """Compute SHA-1 hash.
 
     Note: SHA-1 is deprecated for security-critical uses.
@@ -154,9 +161,7 @@ def sha1(data: Union[str, bytes]) -> str:
     return hashlib.sha1(data).hexdigest()
 
 
-def hmac_digest(
-    key: Union[str, bytes], data: Union[str, bytes], algorithm: str = "sha256"
-) -> str:
+def hmac_digest(key: str | bytes, data: str | bytes, algorithm: str = "sha256") -> str:
     """Compute HMAC digest.
 
     Args:

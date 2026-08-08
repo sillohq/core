@@ -1,5 +1,5 @@
 import typing
-from typing import Any, List, Optional
+from typing import Any
 
 
 class CSRFConfig:
@@ -10,43 +10,21 @@ class CSRFConfig:
     def __init__(
         self,
         enabled: bool = False,
-        required_urls: Optional[List[str]] = None,
-        exempt_urls: Optional[List[str]] = None,
-        sensitive_cookies: Optional[List[str]] = None,
-        safe_methods: Optional[List[str]] = None,
+        required_urls: list[str] | None = None,
+        exempt_urls: list[str] | None = None,
+        sensitive_cookies: list[str] | None = None,
+        safe_methods: list[str] | None = None,
         cookie_name: str = "csrftoken",
         cookie_path: str = "/",
-        cookie_domain: Optional[str] = None,
+        cookie_domain: str | None = None,
         cookie_secure: bool = False,
         cookie_httponly: bool = True,
         cookie_samesite: typing.Literal["lax", "none", "strict"] = "lax",
         header_name: str = "X-CSRFToken",
-        secret_key: Optional[str] = None,
+        secret_key: str | None = None,
         **kwargs: Any,
     ):
-        """Init
-
-        Args:
-            enabled: [description]
-            required_urls: [description]
-            exempt_urls: [description]
-            sensitive_cookies: [description]
-            safe_methods: [description]
-            cookie_name: [description]
-            cookie_path: [description]
-            cookie_domain: [description]
-            cookie_secure: [description]
-            cookie_httponly: [description]
-            cookie_samesite: [description]
-            header_name: [description]
-            secret_key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         config = {
             "enabled": enabled,
             "required_urls": required_urls or ["*"],
@@ -75,156 +53,65 @@ class CSRFConfig:
 
     @property
     def enabled(self) -> bool:
-        """Enabled
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Enabled"""
         return self._config["enabled"]
 
     @property
-    def required_urls(self) -> List[str]:
-        """Required Urls
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def required_urls(self) -> list[str]:
+        """Required Urls"""
         return self._config["required_urls"]
 
     @property
-    def exempt_urls(self) -> List[str]:
-        """Exempt Urls
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def exempt_urls(self) -> list[str]:
+        """Exempt Urls"""
         return self._config["exempt_urls"]
 
     @property
-    def sensitive_cookies(self) -> List[str]:
-        """Sensitive Cookies
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def sensitive_cookies(self) -> list[str]:
+        """Sensitive Cookies"""
         return self._config["sensitive_cookies"]
 
     @property
-    def safe_methods(self) -> List[str]:
-        """Safe Methods
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def safe_methods(self) -> list[str]:
+        """Safe Methods"""
         return self._config["safe_methods"]
 
     @property
     def cookie_name(self) -> str:
-        """Cookie Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Cookie Name"""
         return self._config["cookie_name"]
 
     @property
     def cookie_path(self) -> str:
-        """Cookie Path
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Cookie Path"""
         return self._config["cookie_path"]
 
     @property
-    def cookie_domain(self) -> Optional[str]:
-        """Cookie Domain
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def cookie_domain(self) -> str | None:
+        """Cookie Domain"""
         return self._config["cookie_domain"]
 
     @property
     def cookie_secure(self) -> bool:
-        """Cookie Secure
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Cookie Secure"""
         return self._config["cookie_secure"]
 
     @property
     def cookie_httponly(self) -> bool:
-        """Cookie Httponly
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Cookie Httponly"""
         return self._config["cookie_httponly"]
 
     @property
     def cookie_samesite(self) -> typing.Literal["lax", "none", "strict"]:
-        """Cookie Samesite
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Cookie Samesite"""
         return self._config["cookie_samesite"]
 
     @property
     def header_name(self) -> str:
-        """Header Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Header Name"""
         return self._config["header_name"]
 
     @property
-    def secret_key(self) -> Optional[str]:
-        """Secret Key
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def secret_key(self) -> str | None:
+        """Secret Key"""
         return self._config.get("secret_key")

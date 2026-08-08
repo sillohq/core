@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from sillo.core.http import Request, Response
 from sillo.core.routing.base import BaseRouter
 from sillo.types import Receive, Scope, Send
 
-FallbackType = Optional[Union[str, bool]]
+FallbackType = Optional[str | bool]
 
 
 class FrontendApp(BaseRouter):
@@ -47,9 +47,9 @@ class FrontendApp(BaseRouter):
 
     def __init__(
         self,
-        directory: Union[str, Path],
+        directory: str | Path,
         fallback: FallbackType = "auto",
-        cache_control: Optional[str] = None,
+        cache_control: str | None = None,
     ) -> None:
         """Initialize the frontend application with directory and fallback config.
 
@@ -78,7 +78,7 @@ class FrontendApp(BaseRouter):
         self.fallback = fallback
         self.cache_control = cache_control
 
-    def _resolve_fallback_path(self) -> Optional[Path]:
+    def _resolve_fallback_path(self) -> Path | None:
         """Resolve the fallback HTML file path based on the configured strategy.
 
         Determines which file to serve when the requested path does not match
@@ -170,7 +170,7 @@ class FrontendApp(BaseRouter):
                 response = result  # type: ignore[assignment]
             await response(scope, receive, send)
 
-    async def _handle(self, request: Request, response: Response) -> Optional[Response]:
+    async def _handle(self, request: Request, response: Response) -> Response | None:
         """Resolve and serve the requested file or fallback for a GET request.
 
         Strips the leading slash from the request path and attempts to locate

@@ -3,8 +3,8 @@ from urllib.parse import unquote
 
 
 def parse_cookies(
-    cookie_string: typing.Union[str, None],
-) -> typing.Dict[str, typing.Any]:
+    cookie_string: str | None,
+) -> dict[str, typing.Any]:
     """Parse a ``Cookie`` HTTP header string into a dictionary of key-value pairs.
 
     Mimics browser cookie-parsing behavior, which is often more lenient than
@@ -35,7 +35,7 @@ def parse_cookies(
 
     if cookie_string is None:
         return {}
-    cookie_dict: typing.Dict[str, typing.Optional[str]] = {}
+    cookie_dict: dict[str, str | None] = {}
 
     for chunk in cookie_string.split(";"):
         chunk = chunk.strip()

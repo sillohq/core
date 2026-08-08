@@ -1,7 +1,6 @@
 """Configuration for password hashing schemes."""
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 
 @dataclass
@@ -9,13 +8,13 @@ class SchemeConfig:
     """Configuration for a hashing scheme."""
 
     name: str
-    package: Optional[str] = None
+    package: str | None = None
     default: bool = False
     deprecated: bool = False
 
 
 # Supported hashing schemes
-SCHEMES: Dict[str, SchemeConfig] = {
+SCHEMES: dict[str, SchemeConfig] = {
     "bcrypt": SchemeConfig(
         name="bcrypt",
         package="bcrypt",
@@ -71,4 +70,4 @@ def is_scheme_available(scheme: str) -> bool:
 
 def get_available_schemes() -> list[str]:
     """Get list of available schemes."""
-    return [name for name in SCHEMES.keys() if is_scheme_available(name)]
+    return [name for name in SCHEMES if is_scheme_available(name)]

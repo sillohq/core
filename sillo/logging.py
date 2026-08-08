@@ -12,10 +12,6 @@ from logging import (
 )
 from logging.handlers import QueueHandler, QueueListener, RotatingFileHandler
 from queue import SimpleQueue as Queue
-from typing import TYPE_CHECKING, Optional, Tuple
-
-if TYPE_CHECKING:
-    pass
 
 
 class LocalQueueHandler(QueueHandler):
@@ -110,7 +106,7 @@ def has_level_handler(logger: Logger) -> bool:
         and a new handler should be added.
     """
     level = logger.getEffectiveLevel()
-    current_logger: Optional[Logger] = logger
+    current_logger: Logger | None = logger
 
     while current_logger:
         if any(handler.level <= level for handler in current_logger.handlers):
@@ -125,7 +121,7 @@ def has_level_handler(logger: Logger) -> bool:
 def create_logger(
     logger_name: str = "sillo",
     log_level: int = DEBUG,
-    log_file: Optional[str] = None,
+    log_file: str | None = None,
     max_bytes: int = 10 * 1024 * 1024,  # 10MB per log file
     backup_count: int = 5,
 ) -> Logger:
@@ -169,7 +165,7 @@ def create_logger(
         Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
     )
 
-    handlers: Tuple[Handler, ...] = (console_handler,)
+    handlers: tuple[Handler, ...] = (console_handler,)
 
     if log_file:
         file_handler = RotatingFileHandler(

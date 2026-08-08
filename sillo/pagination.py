@@ -2,7 +2,7 @@ import abc
 import base64
 import json
 import urllib.parse
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 
 class PaginationError(Exception):
@@ -68,8 +68,8 @@ class LinkBuilder:
     def __init__(
         self,
         base_url: str,
-        request_params: Dict[str, Union[str, List[str]]],
-        pagination_params: List[str],
+        request_params: dict[str, str | list[str]],
+        pagination_params: list[str],
     ):
         """
         Initialize the LinkBuilder with URL and parameter configuration.
@@ -94,7 +94,7 @@ class LinkBuilder:
         self.request_params = request_params
         self.pagination_params = pagination_params
 
-    def build_link(self, new_params: Dict[str, Any]) -> str:
+    def build_link(self, new_params: dict[str, Any]) -> str:
         """
         Build a complete pagination URL by merging new parameters with existing ones.
 
@@ -115,7 +115,7 @@ class LinkBuilder:
             non-pagination query parameters, and the new pagination
             parameters properly URL-encoded.
         """
-        filtered_params: Dict[str, Any] = {
+        filtered_params: dict[str, Any] = {
             k: v
             for k, v in self.request_params.items()
             if k not in self.pagination_params
@@ -128,25 +128,22 @@ class BasePaginationStrategy(abc.ABC):
     """Abstract base class for pagination strategies."""
 
     @abc.abstractmethod
-    def parse_parameters(self, request_params: Dict[str, Any]) -> Any:
+    def parse_parameters(self, request_params: dict[str, Any]) -> Any:
         """Parse pagination parameters from request."""
-        pass
 
     @abc.abstractmethod
-    def calculate_offset_limit(self, *args: Any, **kwargs: Any) -> Tuple[int, int]:
+    def calculate_offset_limit(self, *args: Any, **kwargs: Any) -> tuple[int, int]:
         """Calculate offset and limit for data fetching."""
-        pass
 
     @abc.abstractmethod
     def generate_metadata(
         self,
         total_items: int,
-        items: List[Any],
+        items: list[Any],
         base_url: str,
-        request_params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        request_params: dict[str, Any],
+    ) -> dict[str, Any]:
         """Generate pagination metadata."""
-        pass
 
 
 class SyncDataHandler(abc.ABC):
@@ -155,18 +152,16 @@ class SyncDataHandler(abc.ABC):
     @abc.abstractmethod
     def get_total_items(self) -> int:
         """Get total number of items."""
-        pass
 
     @abc.abstractmethod
-    def get_items(self, offset: int, limit: int) -> List[Any]:
+    def get_items(self, offset: int, limit: int) -> list[Any]:
         """Get items for the current page."""
-        pass
 
 
 class SyncListDataHandler(SyncDataHandler):
     """Synchronous data handler for lists."""
 
-    def __init__(self, data: List[Any]):
+    def __init__(self, data: list[Any]):
         """Initialize with a list of data.
 
         Args:
@@ -178,7 +173,7 @@ class SyncListDataHandler(SyncDataHandler):
         """Get total number of items."""
         return len(self.data)
 
-    def get_items(self, offset: int, limit: int) -> List[Any]:
+    def get_items(self, offset: int, limit: int) -> list[Any]:
         """Get items for the current page."""
         return self.data[offset : offset + limit]
 
@@ -189,18 +184,16 @@ class AsyncDataHandler(abc.ABC):
     @abc.abstractmethod
     async def get_total_items(self) -> int:
         """Get total number of items."""
-        pass
 
     @abc.abstractmethod
-    async def get_items(self, offset: int, limit: int) -> List[Any]:
+    async def get_items(self, offset: int, limit: int) -> list[Any]:
         """Get items for the current page."""
-        pass
 
 
 class AsyncListDataHandler(AsyncDataHandler):
     """Asynchronous data handler for lists."""
 
-    def __init__(self, data: List[Any]):
+    def __init__(self, data: list[Any]):
         """Initialize with a list of data.
 
         Args:
@@ -212,7 +205,7 @@ class AsyncListDataHandler(AsyncDataHandler):
         """Get total number of items."""
         return len(self.data)
 
-    async def get_items(self, offset: int, limit: int) -> List[Any]:
+    async def get_items(self, offset: int, limit: int) -> list[Any]:
         """Get items for the current page."""
         return self.data[offset : offset + limit]
 
@@ -235,14 +228,13 @@ class PageNumberPagination(BasePaginationStrategy):
         self.default_page_size = default_page_size
         self.max_page_size = max_page_size
 
-    def parse_parameters(self, request_params: Dict[str, Any]) -> Tuple[int, int]:
+    def parse_parameters(self, request_params: dict[str, Any]) -> tuple[int, int]:
         page = int(request_params.get(self.page_param, self.default_page))
         page_size = int(
             request_params.get(self.page_size_param, self.default_page_size)
         )
 
-        if page_size > self.max_page_size:
-            page_size = self.max_page_size
+        page_size = min(page_size, self.max_page_size)
 
         if page < 1:
             raise InvalidPageError("Page number must be at least 1")
@@ -251,16 +243,16 @@ class PageNumberPagination(BasePaginationStrategy):
 
         return page, page_size
 
-    def calculate_offset_limit(self, page: int, page_size: int) -> Tuple[int, int]:
+    def calculate_offset_limit(self, page: int, page_size: int) -> tuple[int, int]:
         return (page - 1) * page_size, page_size
 
     def generate_metadata(
         self,
         total_items: int,
-        items: List[Any],
+        items: list[Any],
         base_url: str,
-        request_params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        request_params: dict[str, Any],
+    ) -> dict[str, Any]:
         page, page_size = self.parse_parameters(request_params)
         total_pages = (total_items + page_size - 1) // page_size if page_size else 1
 
@@ -308,12 +300,11 @@ class LimitOffsetPagination(BasePaginationStrategy):
         self.default_limit = default_limit
         self.max_limit = max_limit
 
-    def parse_parameters(self, request_params: Dict[str, Any]) -> Tuple[int, int]:
+    def parse_parameters(self, request_params: dict[str, Any]) -> tuple[int, int]:
         limit = int(request_params.get(self.limit_param, self.default_limit))
         offset = int(request_params.get(self.offset_param, 0))
 
-        if limit > self.max_limit:
-            limit = self.max_limit
+        limit = min(limit, self.max_limit)
         if limit < 0:
             raise InvalidPageSizeError("Limit cannot be negative")
         if offset < 0:
@@ -321,16 +312,16 @@ class LimitOffsetPagination(BasePaginationStrategy):
 
         return limit, offset
 
-    def calculate_offset_limit(self, limit: int, offset: int) -> Tuple[int, int]:
+    def calculate_offset_limit(self, limit: int, offset: int) -> tuple[int, int]:
         return offset, limit
 
     def generate_metadata(
         self,
         total_items: int,
-        items: List[Any],
+        items: list[Any],
         base_url: str,
-        request_params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        request_params: dict[str, Any],
+    ) -> dict[str, Any]:
         limit, offset = self.parse_parameters(request_params)
         current_page = (offset // limit) + 1 if limit else 1
         total_pages = (total_items + limit - 1) // limit if limit else 1
@@ -386,8 +377,8 @@ class CursorPagination(BasePaginationStrategy):
         self.sort_field = sort_field
 
     def parse_parameters(
-        self, request_params: Dict[str, Any]
-    ) -> Tuple[Optional[str], int]:
+        self, request_params: dict[str, Any]
+    ) -> tuple[str | None, int]:
         cursor = request_params.get(self.cursor_param)
         page_size = int(
             request_params.get(self.page_size_param, self.default_page_size)
@@ -395,7 +386,7 @@ class CursorPagination(BasePaginationStrategy):
         page_size = min(page_size, self.max_page_size)
         return cursor, page_size
 
-    def decode_cursor(self, cursor: str) -> Dict[str, Any]:
+    def decode_cursor(self, cursor: str) -> dict[str, Any]:
         try:
             decoded = base64.b64decode(cursor).decode("utf-8")
             return json.loads(decoded)
@@ -407,8 +398,8 @@ class CursorPagination(BasePaginationStrategy):
         return base64.b64encode(json.dumps(cursor_data).encode("utf-8")).decode("utf-8")
 
     def calculate_offset_limit(
-        self, cursor: Optional[str], page_size: int
-    ) -> Tuple[int, int]:
+        self, cursor: str | None, page_size: int
+    ) -> tuple[int, int]:
         decoded_cursor = urllib.parse.unquote(cursor) if cursor else None
         if decoded_cursor:
             try:
@@ -421,10 +412,10 @@ class CursorPagination(BasePaginationStrategy):
     def generate_metadata(
         self,
         total_items: int,
-        items: List[Any],
+        items: list[Any],
         base_url: str,
-        request_params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        request_params: dict[str, Any],
+    ) -> dict[str, Any]:
         cursor, page_size = self.parse_parameters(request_params)
         link_builder = LinkBuilder(
             base_url, request_params, [self.cursor_param, self.page_size_param]
@@ -460,7 +451,7 @@ class SyncPaginator:
         data_handler: SyncDataHandler,
         pagination_strategy: BasePaginationStrategy,
         base_url: str,
-        request_params: Dict[str, Any],
+        request_params: dict[str, Any],
         validate_total_items: bool = True,
     ):
         self.data_handler = data_handler
@@ -469,7 +460,7 @@ class SyncPaginator:
         self.request_params = request_params
         self.validate_total_items = validate_total_items
 
-    def paginate(self, **kwargs: Any) -> Dict[str, Any]:
+    def paginate(self, **kwargs: Any) -> dict[str, Any]:
         # Merge request params with kwargs to allow direct overrides
         request_params = {**self.request_params, **kwargs}
 
@@ -494,7 +485,7 @@ class AsyncPaginator:
         data_handler: AsyncDataHandler,
         pagination_strategy: BasePaginationStrategy,
         base_url: str,
-        request_params: Dict[str, Any],
+        request_params: dict[str, Any],
         validate_total_items: bool = True,
     ):
         self.data_handler = data_handler
@@ -503,7 +494,7 @@ class AsyncPaginator:
         self.request_params = request_params
         self.validate_total_items = validate_total_items
 
-    async def paginate(self, **kwargs: Any) -> Dict[str, Any]:
+    async def paginate(self, **kwargs: Any) -> dict[str, Any]:
         # Merge request params with kwargs to allow direct overrides
         request_params = {**self.request_params, **kwargs}
 
@@ -523,18 +514,18 @@ class AsyncPaginator:
 
 
 class PaginatedResponse:
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: dict[str, Any]):
         self.items = data["items"]
         self.metadata = data["pagination"]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"data": self.items, "pagination": self.metadata}
 
 
 class AsyncPaginatedResponse:
-    def __init__(self, data: Dict[str, Any]):
+    def __init__(self, data: dict[str, Any]):
         self.items = data["items"]
         self.metadata = data["pagination"]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"data": self.items, "pagination": self.metadata}

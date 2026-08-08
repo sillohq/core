@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from sillo.auth.session_auth.backend import (
     DEFAULT_IDENTIFIER,
     DEFAULT_SESSION_KEY,
+)
+from sillo.auth.session_auth.backend import (
     login as _session_login,
+)
+from sillo.auth.session_auth.backend import (
     logout as _session_logout,
 )
 from sillo.core.http import Request
@@ -219,7 +221,7 @@ class SessionGuard:
             return False
         return bool(request.session.get(self._session_key))
 
-    async def id(self, request: Request) -> Optional[str]:
+    async def id(self, request: Request) -> str | None:
         """Return the raw user identifier stored in the current session.
 
         Reads the session store and extracts the identifier field value

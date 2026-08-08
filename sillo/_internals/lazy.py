@@ -20,7 +20,8 @@ is when the dependency is required — at use rather than at import.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Mapping
+from collections.abc import Callable, Mapping
+from typing import Any
 
 __all__ = ["deferred"]
 

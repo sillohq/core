@@ -1,19 +1,21 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # A type checker sees only the real models. At runtime either branch can
     # be taken, and checking both leaves every `.filter`/`.create` call
     # resolving against the import-error stub as well as the ORM model.
     from tortoise import fields
+
     from sillo.record import Model, TimestampsMixin
 
     HAS_TORTOISE = True
 else:
     try:
         from tortoise import fields
+
         from sillo.record import Model, TimestampsMixin
 
         HAS_TORTOISE = True

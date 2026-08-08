@@ -1,14 +1,11 @@
 """Core password hashing operations using passlib."""
 
-from typing import Optional
-
 from passlib.context import CryptContext
 
 from .config import get_available_schemes, get_default_scheme, is_scheme_available
 from .exceptions import HashingError, InvalidSchemeError
 
-
-_context: Optional[CryptContext] = None
+_context: CryptContext | None = None
 _default_scheme: str = get_default_scheme()
 
 
@@ -35,8 +32,8 @@ def _get_context() -> CryptContext:
 
 def hash_password(
     password: str,
-    scheme: Optional[str] = None,
-    salt: Optional[str] = None,
+    scheme: str | None = None,
+    salt: str | None = None,
     **kwargs,
 ) -> str:
     """Hash a password using the specified scheme.

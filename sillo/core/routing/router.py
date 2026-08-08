@@ -4,35 +4,26 @@ import copy
 import difflib
 import inspect
 import re
-import typing
 import warnings
+from collections.abc import Callable, Sequence
+from pathlib import Path
+from re import Pattern
 from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
-    Callable,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Pattern,
-    Sequence,
-    Type,
-    Union,
     cast,
 )
 
+from pydantic import BaseModel, ValidationError
 from typing_extensions import Doc
 
 from sillo._internals._middleware import (
     ASGIRequestResponseBridge,
-)
-from sillo._internals._middleware import DefineMiddleware as Middleware
-from sillo._internals._middleware import (
     wrap_middleware,
 )
-from sillo.core.encoding import jsonable_encoder
-from sillo.route_builder import RouteBuilder
+from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo.core.dependencies import (
     Depend,
     Dependant,
@@ -40,39 +31,37 @@ from sillo.core.dependencies import (
     get_dependant,
     solve_dependencies,
 )
-from sillo.parameters import ParameterExtractor, SolvedParamDependency
-from sillo.validation import (
-    RequestValidationError,
-    ResponseModelValidator,
-    prefix_errors,
-)
-from sillo.events import EventEmitter
-from sillo.exceptions import NotFoundException, HTTPException
+from sillo.core.encoding import jsonable_encoder
+from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.core.http import Request, Response
 from sillo.core.http.response import BaseResponse, JSONResponse, Responder
+from sillo.events import EventEmitter
+from sillo.exceptions import HTTPException, NotFoundException
+from sillo.frontend import FrontendApp
 from sillo.objects import RouteParam, URLPath
 from sillo.openapi.models import Parameter
+from sillo.parameters import ParameterExtractor, SolvedParamDependency
+from sillo.route_builder import RouteBuilder
 from sillo.types import (
-    ASGIApp,
     ArgsType,
+    ASGIApp,
     HandlerType,
     MiddlewareType,
     Receive,
     Scope,
     Send,
 )
-from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.utils.concurrency import run_in_threadpool
-
-from pydantic import BaseModel, ValidationError
+from sillo.validation import (
+    RequestValidationError,
+    ResponseModelValidator,
+    prefix_errors,
+)
 
 from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute, BaseRouter
 from .grouping import Group
 from .websocket import WebsocketRoute
-from pathlib import Path
-
-from sillo.frontend import FrontendApp
 
 if TYPE_CHECKING:
     from sillo.types import WsHandlerType
@@ -99,10 +88,10 @@ def _known_route_kwargs() -> frozenset:
     return _ROUTE_KWARGS
 
 
-_ROUTE_KWARGS: Optional[frozenset] = None
+_ROUTE_KWARGS: frozenset | None = None
 
 
-def _reject_unknown_route_kwargs(kwargs: Dict[str, Any]) -> None:
+def _reject_unknown_route_kwargs(kwargs: dict[str, Any]) -> None:
     """Fail on keyword arguments that no route option matches.
 
     The verb decorators accept ``**kwargs`` so that route metadata can be
@@ -163,7 +152,7 @@ class Route(BaseRoute):
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
             Callable responsible for processing requests to this endpoint. Can be:
             - A regular function
@@ -176,7 +165,7 @@ class Route(BaseRoute):
             """),
         ],
         methods: Annotated[
-            List[str],
+            list[str],
             Doc("""
             HTTP methods allowed for this endpoint. Common methods include:
             - GET: Retrieve resources
@@ -189,31 +178,31 @@ class Route(BaseRoute):
             """),
         ] = allowed_methods_default,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""The unique identifier for the route. This name is used to generate 
             URLs dynamically with `url_for`. It should be a valid, unique string 
             that represents the route within the application."""),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc(
                 "A brief summary of the API endpoint. This should be a short, one-line description providing a high-level overview of its purpose."
             ),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc(
                 "A detailed explanation of the API endpoint, including functionality, expected behavior, and additional context."
             ),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc(
                 "A dictionary mapping HTTP status codes to response schemas or descriptions. Keys are HTTP status codes (e.g., 200, 400), and values define the response format."
             ),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc(
                 "A Pydantic model representing the expected request payload, a dict of status codes to models, or a nested dict. Defines the structure and validation rules for incoming request data."
             ),
@@ -229,7 +218,7 @@ class Route(BaseRoute):
             ),
         ] = "application/json",
         response_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc(
                 "A Pydantic model describing this endpoint's successful response. When set, the handler's return value is validated against it, undeclared fields are dropped, and the OpenAPI response schema is generated from it — so the published contract is enforced rather than merely documented."
             ),
@@ -240,14 +229,14 @@ class Route(BaseRoute):
         response_model_exclude_defaults: bool = False,
         response_model_by_alias: bool = True,
         strict_validation: bool = False,
-        tags: Optional[Sequence[str]] = None,
-        security: Optional[List[Dict[str, List[str]]]] = None,
-        operation_id: Optional[str] = None,
+        tags: Sequence[str] | None = None,
+        security: list[dict[str, list[str]]] | None = None,
+        operation_id: str | None = None,
         deprecated: bool = False,
-        parameters: Optional[List[Parameter]] = None,
-        middleware: Optional[List[Any]] = None,
+        parameters: list[Parameter] | None = None,
+        middleware: list[Any] | None = None,
         exclude_from_schema: bool = False,
-        auth: Optional[Any] = None,
+        auth: Any | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a Route instance with full endpoint configuration.
@@ -320,7 +309,7 @@ class Route(BaseRoute):
         """
         assert callable(handler), "Route handler must be callable"
 
-        self.prefix: Optional[str] = None
+        self.prefix: str | None = None
         if path == "":
             path = "/"
         self.raw_path = path
@@ -329,15 +318,13 @@ class Route(BaseRoute):
         self.handler_signature = inspect.signature(handler)
         self.name = name
         self.dependant = get_dependant(handler, strict_validation=strict_validation)
-        self._router_dependants: List[Dependant] = []
+        self._router_dependants: list[Dependant] = []
 
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
-        self.middleware: typing.List[MiddlewareType] = (
-            list(middleware) if middleware else []
-        )
+        self.middleware: list[MiddlewareType] = list(middleware) if middleware else []
         self.summary = summary
         self.description = description
         self.responses = responses
@@ -379,7 +366,7 @@ class Route(BaseRoute):
         if "GET" in self.methods:
             self.methods.add("HEAD")
 
-        self._validated_param_name: Optional[str] = self._find_body_param()
+        self._validated_param_name: str | None = self._find_body_param()
 
         async def _route_asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
             """Serve as the base ASGI application for this route.
@@ -446,7 +433,7 @@ class Route(BaseRoute):
                 middleware, forming a complete middleware chain ready to
                 process incoming requests.
             """
-            middleware: typing.List[Middleware] = []
+            middleware: list[Middleware] = []
             for mdw in self.middleware:
                 middleware.append(wrap_middleware(mdw))
             for cls, args, kwargs in reversed(middleware):
@@ -455,7 +442,7 @@ class Route(BaseRoute):
 
         self.app = apply_middleware(route_handler_as_asgi_app)
 
-    def _find_body_param(self) -> Optional[str]:
+    def _find_body_param(self) -> str | None:
         """Find the handler parameter that should receive the validated body.
 
         ``request_model`` declares a body on the decorator, so something has to
@@ -500,7 +487,7 @@ class Route(BaseRoute):
             return candidates[0].name
         return None
 
-    def _third_param_name(self) -> Optional[str]:
+    def _third_param_name(self) -> str | None:
         """Return the name of the handler's third parameter, if it has one.
 
         Used only to preserve the original positional binding rule for
@@ -513,7 +500,7 @@ class Route(BaseRoute):
         return names[2] if len(names) >= 3 else None
 
     @property
-    def resolved_params(self) -> List[SolvedParamDependency]:
+    def resolved_params(self) -> list[SolvedParamDependency]:
         """Expose parameter extractors for backward-compatible OpenAPI generation.
 
         Provides access to the resolved parameter dependencies from the
@@ -528,7 +515,7 @@ class Route(BaseRoute):
         return list(self.dependant.param_extractors)
 
     @property
-    def _own_resolved_dependencies(self) -> List[Dependant]:
+    def _own_resolved_dependencies(self) -> list[Dependant]:
         """Expose the handler's own dependency sub-tree for backward compatibility.
 
         Provides access to the list of dependant objects that represent
@@ -542,7 +529,7 @@ class Route(BaseRoute):
         """
         return list(self.dependant.dependencies)
 
-    def match(self, scope: Scope) -> typing.Tuple[MatchStatus, Any]:
+    def match(self, scope: Scope) -> tuple[MatchStatus, Any]:
         """Match an HTTP request path against this route's URL pattern.
 
         Extracts the path from the ASGI scope and attempts to match it
@@ -581,7 +568,7 @@ class Route(BaseRoute):
             return MatchStatus.FULL, matched_params
         return MatchStatus.NONE, {}
 
-    def url_path_for(self, name: str, **path_params: Dict[str, Any]) -> URLPath:
+    def url_path_for(self, name: str, **path_params: dict[str, Any]) -> URLPath:
         """
         Generate a URL path for the route with the given name and parameters.
 
@@ -632,9 +619,9 @@ class Route(BaseRoute):
         Returns:
             Any: The response from the handler.
         """
-        cleanup_callbacks: List[Callable[[], Any]] = []
-        injected: Dict[str, Any] = {}
-        dependency_cache: Dict[Any, Any] = {}
+        cleanup_callbacks: list[Callable[[], Any]] = []
+        injected: dict[str, Any] = {}
+        dependency_cache: dict[Any, Any] = {}
 
         for rd in self._router_dependants:
             sub_values = await solve_dependencies(
@@ -796,13 +783,13 @@ class Router(BaseRouter):
 
     def __init__(
         self,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         routes: Sequence[BaseRoute] = [],
-        tags: Optional[Sequence[str]] = None,
+        tags: Sequence[str] | None = None,
         exclude_from_schema: bool = False,
-        name: Optional[str] = None,
-        dependencies: Optional[list[Depend]] = None,
-        route_class: Type[Route] = Route,
+        name: str | None = None,
+        dependencies: list[Depend] | None = None,
+        route_class: type[Route] = Route,
         strict_validation: bool = False,
     ):
         """Initialize the router with configuration options.
@@ -839,18 +826,24 @@ class Router(BaseRouter):
         self.prefix = prefix or ""
         self.prefix.rstrip("/")
         self.routes = list(routes)
-        self.middleware: typing.List[Middleware] = []
-        self.sub_routers: Dict[str, Union[Router, ASGIApp]] = {}
+        self.middleware: list[Middleware] = []
+        self.sub_routers: dict[str, Router | ASGIApp] = {}
         self.route_class = route_class
         self.strict_validation = strict_validation
         self.tags = tags or []
         self.exclude_from_schema = exclude_from_schema
         self.name = name
         self.event = EventEmitter()
-        self.dependencies: List[Dependant] = [
-            get_dependant(d.dependency) for d in (dependencies or [])
+        # `Depend()` is allowed to carry no callable, so a router-level
+        # dependency can be a marker with nothing to solve. Those are skipped:
+        # get_dependant() would be inspecting None. This was hidden by an
+        # implicit-Optional annotation that claimed dependency was never None.
+        self.dependencies: list[Dependant] = [
+            get_dependant(d.dependency)
+            for d in (dependencies or [])
+            if d.dependency is not None
         ]
-        self._inherited_dependencies: List[Dependant] = []
+        self._inherited_dependencies: list[Dependant] = []
         self.root_path = ""
 
         if self.prefix and not self.prefix.startswith("/"):
@@ -859,7 +852,7 @@ class Router(BaseRouter):
 
         self._refresh_route_dependencies()
 
-    def _get_combined_dependencies(self) -> List[Dependant]:
+    def _get_combined_dependencies(self) -> list[Dependant]:
         """Combine inherited and local dependencies into a single list.
 
         Merges the dependencies inherited from parent routers with the
@@ -941,18 +934,18 @@ class Router(BaseRouter):
     def add_route(
         self,
         route: Annotated[
-            Optional[BaseRoute],
+            BaseRoute | None,
             Doc("An instance of the Route class representing an HTTP route."),
         ] = None,
         path: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 URL path pattern for the HEAD endpoint.
                 Example: '/api/v1/resources/{id}'
             """),
         ] = None,
         methods: Annotated[
-            List[str],
+            list[str],
             Doc("""
                 List of HTTP methods this route should handle.
                 Common methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
@@ -960,7 +953,7 @@ class Router(BaseRouter):
             """),
         ] = allowed_methods_default,
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for HEAD requests.
                 Example:
@@ -970,28 +963,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-check-resource'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Check resource existence'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Returns headers only to check if resource exists'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1001,7 +994,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request validation.
                 Example:
@@ -1020,28 +1013,28 @@ class Router(BaseRouter):
             ),
         ] = "application/json",
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [cache_control('public')]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["Resource Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"ApiKeyAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'checkResource'
@@ -1055,7 +1048,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="X-Check-Type", in_="header")]
@@ -1202,7 +1195,7 @@ class Router(BaseRouter):
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for GET requests.
                 Receives (request, response) and returns response or raw data.
@@ -1214,28 +1207,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route identifier for URL generation.
                 Example: 'get-user-by-id'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief summary for OpenAPI documentation.
                 Example: 'Retrieves a user by ID'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed description for OpenAPI documentation.
                 Example: 'Returns full user details including profile information'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response models by status code.
                 Example: 
@@ -1247,7 +1240,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Pydantic model or model mapping for request validation.
                 Can be a single model, a dict of status codes to models, or a nested dict.
@@ -1258,28 +1251,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 List of route-specific middleware functions.
                 Example: [auth_required, rate_limit]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping related endpoints.
                 Example: ["Users", "Public"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements for OpenAPI docs.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation identifier for OpenAPI.
                 Example: 'users.get_by_id'
@@ -1293,7 +1286,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional OpenAPI parameter definitions.
                 Example: [Parameter(name="fields", in_="query", description="Fields to include")]
@@ -1307,7 +1300,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -1424,7 +1417,7 @@ class Router(BaseRouter):
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for POST requests.
                 Example:
@@ -1434,28 +1427,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-create-user'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Create new user'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Creates new user with provided data'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1466,7 +1459,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1487,28 +1480,28 @@ class Router(BaseRouter):
             ),
         ] = "application/json",
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [rate_limit(10), validate_content_type('json')]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["User Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'createUser'
@@ -1522,7 +1515,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="X-Request-ID", in_="header")]
@@ -1536,7 +1529,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -1632,7 +1625,7 @@ class Router(BaseRouter):
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for DELETE requests.
                 Example:
@@ -1642,28 +1635,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-delete-user'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Delete user account'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Permanently deletes user account and all associated data'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1674,7 +1667,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request validation.
                 Example:
@@ -1683,28 +1676,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [admin_required, confirm_action]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["User Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'deleteUser'
@@ -1718,7 +1711,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="confirm", in_="query")]
@@ -1732,7 +1725,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -1826,7 +1819,7 @@ class Router(BaseRouter):
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for PUT requests.
                 Example:
@@ -1836,28 +1829,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-update-user'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Update user details'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Full update of user resource'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1868,7 +1861,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1878,28 +1871,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [owner_required, validate_etag]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["User Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'updateUser'
@@ -1913,7 +1906,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="If-Match", in_="header")]
@@ -1927,7 +1920,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         request_content_type: Annotated[
@@ -2035,7 +2028,7 @@ class Router(BaseRouter):
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for PATCH requests.
                 Example:
@@ -2045,28 +2038,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-partial-update-user'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Partially update user details'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Partial update of user resource'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -2077,7 +2070,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request body validation.
                 Example:
@@ -2087,28 +2080,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [owner_required, validate_patch]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["User Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'partialUpdateUser'
@@ -2122,7 +2115,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="fields", in_="query")]
@@ -2136,7 +2129,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         request_content_type: Annotated[
@@ -2243,7 +2236,7 @@ class Router(BaseRouter):
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for OPTIONS requests.
                 Example:
@@ -2253,28 +2246,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-user-options'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Get supported operations'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Returns supported HTTP methods and CORS headers'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -2284,7 +2277,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request validation.
                 Example:
@@ -2293,28 +2286,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [cors_middleware]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["CORS"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: []
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'userOptions'
@@ -2328,7 +2321,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="Origin", in_="header")]
@@ -2342,7 +2335,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -2438,7 +2431,7 @@ class Router(BaseRouter):
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for HEAD requests.
                 Example:
@@ -2448,28 +2441,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-check-resource'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Check resource existence'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Returns headers only to check if resource exists'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -2479,7 +2472,7 @@ class Router(BaseRouter):
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request validation.
                 Example:
@@ -2488,28 +2481,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [cache_control('public')]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["Resource Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"ApiKeyAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'checkResource'
@@ -2523,7 +2516,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="X-Check-Type", in_="header")]
@@ -2537,7 +2530,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -2634,7 +2627,7 @@ class Router(BaseRouter):
             """),
         ],
         methods: Annotated[
-            List[str],
+            list[str],
             Doc("""
                 List of HTTP methods this route should handle.
                 Common methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
@@ -2642,7 +2635,7 @@ class Router(BaseRouter):
             """),
         ] = allowed_methods_default,
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 The async handler function for this route. Must accept:
                 - request: Request object
@@ -2651,28 +2644,28 @@ class Router(BaseRouter):
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique name for this route, used for URL generation with url_for().
                 If not provided, will be generated from the path and methods.
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("Brief one-line description of the route for OpenAPI docs"),
         ] = None,
         description: Annotated[
-            Optional[str], Doc("Detailed description of the route for OpenAPI docs")
+            str | None, Doc("Detailed description of the route for OpenAPI docs")
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response models by status code for OpenAPI docs.
                 Example: {200: UserModel, 404: ErrorModel}
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("Pydantic model for request body validation and OpenAPI docs"),
         ] = None,
         request_content_type: Annotated[
@@ -2686,28 +2679,28 @@ class Router(BaseRouter):
             ),
         ] = "application/json",
         middleware: Annotated[
-            List[MiddlewareType],
+            list[MiddlewareType],
             Doc("""
                 List of middleware specific to this route.
                 These will be executed in order before the route handler.
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping related routes in documentation.
                 Inherits parent router tags if not specified.
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements for this route.
                 Example: [{"bearerAuth": []}] for JWT auth.
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique identifier for this operation in OpenAPI docs.
                 Auto-generated if not provided.
@@ -2717,7 +2710,7 @@ class Router(BaseRouter):
             bool, Doc("Mark route as deprecated in OpenAPI docs")
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional OpenAPI parameter definitions.
                 Path parameters are automatically included from the path pattern.
@@ -2731,7 +2724,7 @@ class Router(BaseRouter):
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("""
                 Route-level authentication gate.  Pass a
                 :class:`sillo.auth.useAuth` instance to require
@@ -2745,7 +2738,7 @@ class Router(BaseRouter):
                 Useful for custom extensions or plugin-specific data.
             """),
         ],
-    ) -> Union[HandlerType, Callable[..., HandlerType]]:
+    ) -> HandlerType | Callable[..., HandlerType]:
         """Register a route with configurable HTTP methods and OpenAPI metadata.
 
         This is the most flexible route registration method, allowing full
@@ -2851,14 +2844,13 @@ class Router(BaseRouter):
 
     def add_ws_route(
         self,
-        route: Optional[
-            Annotated[
-                WebsocketRoute,
-                Doc("An instance of the Route class representing a WebSocket route."),
-            ]
-        ] = None,
-        path: Optional[str] = None,
-        handler: Optional[WsHandlerType] = None,
+        route: Annotated[
+            WebsocketRoute,
+            Doc("An instance of the Route class representing a WebSocket route."),
+        ]
+        | None = None,
+        path: str | None = None,
+        handler: WsHandlerType | None = None,
     ) -> None:
         """Add a WebSocket route to the application router.
 
@@ -2902,7 +2894,7 @@ class Router(BaseRouter):
             str, Doc("The WebSocket route path. Must be a valid URL pattern.")
         ],
         handler: Annotated[
-            Optional[WsHandlerType],
+            WsHandlerType | None,
             Doc("The WebSocket handler function. Must be an async function."),
         ] = None,
     ) -> Any:
@@ -3010,8 +3002,8 @@ class Router(BaseRouter):
     def _search_nested_route(
         self,
         full_name: str,
-        name_parts: List[str],
-        path_segments: List[str],
+        name_parts: list[str],
+        path_segments: list[str],
         **path_params: Any,
     ) -> URLPath:
         """Recursively search for a named route through nested Group objects.
@@ -3095,10 +3087,10 @@ class Router(BaseRouter):
     def frontend(
         self,
         path: str = "/",
-        directory: Union[str, "Path"] = "dist",
-        fallback: "Optional[Union[str, bool]]" = "auto",
-        name: Optional[str] = None,
-        cache_control: Optional[str] = None,
+        directory: str | Path = "dist",
+        fallback: str | bool | None = "auto",
+        name: str | None = None,
+        cache_control: str | None = None,
     ) -> None:
         """Mount a frontend SPA build directory with fallback routing.
 
@@ -3248,7 +3240,7 @@ class Router(BaseRouter):
         else:
             await send({"type": "websocket.close", "code": 4404})
 
-    def mount_router(self, app: "Router", name: Optional[str] = None):
+    def mount_router(self, app: Router, name: str | None = None):
         """Mount a sub-router under this router using its prefix.
 
         Attaches another Router instance as a sub-application wrapped in a
@@ -3278,7 +3270,7 @@ class Router(BaseRouter):
         path = app.prefix
         self.routes.append(Group(app=app, path=path, name=name))
 
-    def get_all_routes(self) -> List[Route]:
+    def get_all_routes(self) -> list[Route]:
         """Collect all HTTP routes from this router and all nested sub-routers.
 
         Performs a breadth-first traversal of the router hierarchy, starting
@@ -3300,8 +3292,8 @@ class Router(BaseRouter):
             nested sub-routers, with each route's ``raw_path`` updated
             to include the full accumulated prefix from parent routers.
         """
-        all_routes: List[Route] = []
-        routers_to_process: List[Any] = [(self, "")]  # (router, current_prefix)
+        all_routes: list[Route] = []
+        routers_to_process: list[Any] = [(self, "")]  # (router, current_prefix)
 
         while routers_to_process:
             current_router, current_prefix = routers_to_process.pop(0)

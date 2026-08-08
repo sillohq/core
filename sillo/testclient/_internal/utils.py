@@ -1,27 +1,15 @@
 from __future__ import annotations
 
 import inspect
-from typing import Any, TypedDict
+from typing import Any, TypedDict, TypeGuard
 
-from typing_extensions import TypeGuard
-
+from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.testclient._internal.types import ASGI2App, ASGI3App
 from sillo.types import Receive, Scope, Send
-from sillo.core.helpers.async_helpers import is_async_callable
 
 
 def is_asgi3(app: ASGI2App | ASGI3App) -> TypeGuard[ASGI3App]:
-    """Is Asgi3
-
-    Args:
-        app: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Is Asgi3"""
     if inspect.isclass(app):
         return hasattr(app, "__await__")
     return is_async_callable(app)
@@ -33,46 +21,17 @@ class WrapASGI2:
     """
 
     def __init__(self, app) -> None:
-        """Init
-
-        Args:
-            app: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """Call
-
-        Args:
-            scope: [description]
-            receive: [description]
-            send: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Call"""
         instance = self.app(scope)
         await instance(receive, send)
 
 
 class AsyncBackend(TypedDict):
-    """Asyncbackend
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Asyncbackend"""
 
     backend: str
     backend_options: dict[str, Any]

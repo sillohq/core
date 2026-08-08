@@ -8,10 +8,11 @@ strategies to Tortoise's ``.count()``, ``.offset()``, and ``.limit()`` API.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, List
+from typing import Annotated, Any
+
+from typing_extensions import Doc
 
 from sillo.pagination import AsyncDataHandler, SyncDataHandler
-from typing_extensions import Doc
 
 
 class TortoiseDataHandler(AsyncDataHandler):
@@ -23,85 +24,29 @@ class TortoiseDataHandler(AsyncDataHandler):
     """
 
     def __init__(self, queryset: Annotated[Any, Doc("Tortoise queryset.")]):
-        """Init
-
-        Args:
-            queryset: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self._qs = queryset
 
     async def get_total_items(self) -> int:
-        """Get Total Items
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Total Items"""
         return await self._qs.count()
 
-    async def get_items(self, offset: int, limit: int) -> List[Any]:
-        """Get Items
-
-        Args:
-            offset: [description]
-            limit: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    async def get_items(self, offset: int, limit: int) -> list[Any]:
+        """Get Items"""
         return await self._qs.offset(offset).limit(limit).all()
 
 
 class SyncTortoiseDataHandler(SyncDataHandler):
     """Synchronous data handler (rare — for SyncPaginator compat)."""
 
-    def __init__(self, data: List[Any]):
-        """Init
-
-        Args:
-            data: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def __init__(self, data: list[Any]):
+        """Init"""
         self._data = data
 
     def get_total_items(self) -> int:
-        """Get Total Items
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Total Items"""
         return len(self._data)
 
-    def get_items(self, offset: int, limit: int) -> List[Any]:
-        """Get Items
-
-        Args:
-            offset: [description]
-            limit: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def get_items(self, offset: int, limit: int) -> list[Any]:
+        """Get Items"""
         return self._data[offset : offset + limit]

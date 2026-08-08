@@ -105,9 +105,10 @@ from sillo.core.routing import Route, Router
 
 __version__: str = "0.0.1a14"
 
+from sillo.core.dependencies import Depend
+
 from .application import silloApp
 from .frontend import FrontendApp
-from sillo.core.dependencies import Depend
 from .validation import (
     Cookie,
     File,
@@ -121,18 +122,18 @@ from .validation import (
 )
 
 __all__ = [
-    "silloApp",
-    "Depend",
-    "Router",
-    "Route",
-    "FrontendApp",
-    "Query",
-    "Header",
     "Cookie",
-    "Path",
-    "Form",
+    "Depend",
     "File",
-    "UploadFile",
+    "Form",
+    "FrontendApp",
+    "Header",
+    "Path",
+    "Query",
     "RequestValidationError",
     "ResponseValidationError",
+    "Route",
+    "Router",
+    "UploadFile",
+    "silloApp",
 ]

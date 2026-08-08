@@ -3,9 +3,9 @@ import typing
 from typing import Any
 
 from sillo._internals._middleware import DefineMiddleware as Middleware
-from sillo.route_builder import RouteBuilder
 from sillo.exceptions import NotFoundException
 from sillo.objects import URLPath
+from sillo.route_builder import RouteBuilder
 from sillo.types import ASGIApp, Receive, Scope, Send
 
 from ._utils import MatchStatus, get_route_path
@@ -31,11 +31,11 @@ class Group(BaseRoute):
     def __init__(
         self,
         path: str = "",
-        app: typing.Optional[ASGIApp] = None,
-        routes: typing.List[BaseRoute] = [],
-        name: typing.Optional[str] = None,
+        app: ASGIApp | None = None,
+        routes: list[BaseRoute] = [],
+        name: str | None = None,
         *,
-        middleware: typing.List[Middleware] = [],
+        middleware: list[Middleware] = [],
     ) -> None:
         """Initialize a route group with path prefix, app, and middleware.
 
@@ -107,7 +107,7 @@ class Group(BaseRoute):
         """
         return getattr(self._base_app, "routes", [])
 
-    def match(self, scope: Scope) -> typing.Tuple[MatchStatus, dict[str, Any]]:
+    def match(self, scope: Scope) -> tuple[MatchStatus, dict[str, Any]]:
         """Match a request path against this group's URL pattern.
 
         Attempts to match the incoming request path against the compiled

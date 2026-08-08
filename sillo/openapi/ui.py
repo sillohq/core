@@ -17,7 +17,7 @@ from __future__ import annotations
 import html
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 
 def _escape(value: str) -> str:
@@ -69,7 +69,7 @@ class DocsContext:
     title: str
     version: str
     description: str
-    config: "OpenAPIConfig"
+    config: OpenAPIConfig
 
 
 class DocsUI:
@@ -91,9 +91,9 @@ class DocsUI:
     def __init__(
         self,
         *,
-        path: Optional[str] = None,
-        title: Optional[str] = None,
-        favicon_url: Optional[str] = None,
+        path: str | None = None,
+        title: str | None = None,
+        favicon_url: str | None = None,
     ) -> None:
         """Initialize a presenter.
 
@@ -191,12 +191,12 @@ class Atlas(DocsUI):
     def __init__(
         self,
         *,
-        path: Optional[str] = None,
-        title: Optional[str] = None,
-        favicon_url: Optional[str] = DEFAULT_FAVICON,
+        path: str | None = None,
+        title: str | None = None,
+        favicon_url: str | None = DEFAULT_FAVICON,
         js_url: str = ATLAS_JS,
         theme: str = "auto",
-        ui_config: Optional[Dict[str, Any]] = None,
+        ui_config: dict[str, Any] | None = None,
     ) -> None:
         """Initialize the Atlas presenter.
 
@@ -216,7 +216,7 @@ class Atlas(DocsUI):
 
     def render(self, ctx: DocsContext) -> str:
         """Render the Atlas page."""
-        options: Dict[str, Any] = {
+        options: dict[str, Any] = {
             "theme": self.theme,
             **self.ui_config,
             # Set last: this identifies the document, and a caller
@@ -261,12 +261,12 @@ class Swagger(DocsUI):
     def __init__(
         self,
         *,
-        path: Optional[str] = None,
-        title: Optional[str] = None,
-        favicon_url: Optional[str] = DEFAULT_FAVICON,
+        path: str | None = None,
+        title: str | None = None,
+        favicon_url: str | None = DEFAULT_FAVICON,
         js_url: str = SWAGGER_JS,
         css_url: str = SWAGGER_CSS,
-        ui_config: Optional[Dict[str, Any]] = None,
+        ui_config: dict[str, Any] | None = None,
     ) -> None:
         """Initialize the Swagger UI presenter.
 
@@ -287,7 +287,7 @@ class Swagger(DocsUI):
 
     def render(self, ctx: DocsContext) -> str:
         """Render the Swagger UI page."""
-        options: Dict[str, Any] = {
+        options: dict[str, Any] = {
             "layout": "BaseLayout",
             "deepLinking": True,
             **self.ui_config,
@@ -331,11 +331,11 @@ class ReDoc(DocsUI):
     def __init__(
         self,
         *,
-        path: Optional[str] = None,
-        title: Optional[str] = None,
-        favicon_url: Optional[str] = DEFAULT_FAVICON,
+        path: str | None = None,
+        title: str | None = None,
+        favicon_url: str | None = DEFAULT_FAVICON,
         js_url: str = REDOC_JS,
-        ui_config: Optional[Dict[str, Any]] = None,
+        ui_config: dict[str, Any] | None = None,
     ) -> None:
         """Initialize the ReDoc presenter.
 
@@ -352,7 +352,7 @@ class ReDoc(DocsUI):
 
     def render(self, ctx: DocsContext) -> str:
         """Render the ReDoc page."""
-        options: Dict[str, Any] = {"scrollYOffset": 50, **self.ui_config}
+        options: dict[str, Any] = {"scrollYOffset": 50, **self.ui_config}
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -392,12 +392,12 @@ class Scalar(DocsUI):
     def __init__(
         self,
         *,
-        path: Optional[str] = None,
-        title: Optional[str] = None,
-        favicon_url: Optional[str] = DEFAULT_FAVICON,
+        path: str | None = None,
+        title: str | None = None,
+        favicon_url: str | None = DEFAULT_FAVICON,
         js_url: str = SCALAR_JS,
         theme: str = "default",
-        ui_config: Optional[Dict[str, Any]] = None,
+        ui_config: dict[str, Any] | None = None,
     ) -> None:
         """Initialize the Scalar presenter.
 
@@ -417,7 +417,7 @@ class Scalar(DocsUI):
 
     def render(self, ctx: DocsContext) -> str:
         """Render the Scalar API reference page."""
-        options: Dict[str, Any] = {
+        options: dict[str, Any] = {
             "theme": self.theme,
             **self.ui_config,
             "url": ctx.openapi_url,
@@ -446,7 +446,7 @@ class Scalar(DocsUI):
 </html>"""
 
 
-def default_docs(swagger_url: str = "/docs", redoc_url: str = "/redoc") -> List[DocsUI]:
+def default_docs(swagger_url: str = "/docs", redoc_url: str = "/redoc") -> list[DocsUI]:
     """The presenters mounted when ``docs`` is not given.
 
     ``/docs`` is :class:`Atlas`, sillo's own reference. Swagger UI is still

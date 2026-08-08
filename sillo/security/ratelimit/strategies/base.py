@@ -12,11 +12,6 @@ heavy endpoints), pass ``weight > 1`` via ``config.cost``.
 from __future__ import annotations
 
 import abc
-import typing
-import time
-from typing import Any, Optional
-
-from typing_extensions import Doc
 
 from ..backends.base import RateLimitBackend, RateLimitResult
 
@@ -41,7 +36,7 @@ class RateLimitStrategy(abc.ABC):
         limit: int,
         window: int,
         cost: int = 1,
-        now: Optional[float] = None,
+        now: float | None = None,
     ) -> RateLimitResult:
         """Evaluate one request against the rate-limit state and return the decision.
 

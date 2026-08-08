@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
 
 from sillo.core.http import Request, Response
 
@@ -29,7 +28,7 @@ def generate_request_id() -> str:
 
 def get_request_id_from_header(
     request: Request, header_name: str = "X-Request-ID"
-) -> Optional[str]:
+) -> str | None:
     """Extract a request ID from an incoming HTTP request header.
 
     Reads the value of the specified header from the request's header
@@ -160,7 +159,7 @@ def store_request_id_in_request(
 
 def get_request_id_from_request(
     request: Request, attribute_name: str = "request_id"
-) -> Optional[str]:
+) -> str | None:
     """Retrieve a previously stored request ID from the request state.
 
     Reads the request ID from ``request.state`` using the given

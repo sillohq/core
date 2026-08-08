@@ -41,8 +41,8 @@ class HTTPException(Exception):
     def __init__(
         self,
         status_code: int,
-        detail: typing.Optional[typing.Any] = None,
-        headers: typing.Dict[str, typing.Any] = {},
+        detail: typing.Any | None = None,
+        headers: dict[str, typing.Any] = {},
     ) -> None:
         """Initialize an HTTPException with status code, detail, and headers.
 
@@ -135,8 +135,8 @@ class NotFoundException(HTTPException):
 
     def __init__(
         self,
-        detail: typing.Optional[str] = None,
-        headers: typing.Dict[str, typing.Any] = {},
+        detail: str | None = None,
+        headers: dict[str, typing.Any] = {},
     ) -> None:
         """Initialize a NotFoundException with optional detail and headers.
 
@@ -179,7 +179,7 @@ class WebSocketException(Exception):
         (policy violation), and 1011 (internal error).
     """
 
-    def __init__(self, code: int, reason: typing.Optional[str] = None) -> None:
+    def __init__(self, code: int, reason: str | None = None) -> None:
         """Initialize a WebSocketException with a close code and reason.
 
         Constructs a WebSocket exception that will result in a close frame

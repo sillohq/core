@@ -2,8 +2,8 @@ import inspect
 import typing
 from functools import wraps
 
-from sillo.decorator_helper import RouteDecorator
 from sillo.core.http import Request, Response
+from sillo.decorator_helper import RouteDecorator
 
 from .exceptions import AuthenticationFailed, PermissionDenied
 from .use_auth import accepted_identifiers
@@ -38,8 +38,8 @@ class auth(RouteDecorator):
 
     def __init__(
         self,
-        scopes: typing.Union[str, typing.List[str], None] = None,
-        handle_401: typing.Callable[[Request, Response], typing.Any] = None,
+        scopes: str | list[str] | None = None,
+        handle_401: typing.Callable[[Request, Response], typing.Any] | None = None,
     ):
         """Initialise the auth decorator with scope and error-handling config.
 
@@ -102,10 +102,8 @@ class auth(RouteDecorator):
 
     def __call__(
         self,
-        handler: typing.Union[
-            typing.Callable[..., typing.Any],
-            typing.Callable[..., typing.Awaitable[typing.Any]],
-        ],
+        handler: typing.Callable[..., typing.Any]
+        | typing.Callable[..., typing.Awaitable[typing.Any]],
     ) -> typing.Any:
         """Wrap a route handler with authentication and scope checking.
 
@@ -137,7 +135,7 @@ class auth(RouteDecorator):
 
         @wraps(handler)
         async def wrapper(
-            *args: typing.List[typing.Any], **kwargs: typing.Dict[str, typing.Any]
+            *args: list[typing.Any], **kwargs: dict[str, typing.Any]
         ) -> typing.Any:
             request, response = args[0], args[1]
 
@@ -192,7 +190,7 @@ class has_permission(RouteDecorator):
                 return response.json({"users": [...]})
     """
 
-    def __init__(self, permissions: typing.Union[str, typing.List[str], None] = None):
+    def __init__(self, permissions: str | list[str] | None = None):
         """Initialise the permission decorator with required permissions.
 
         Parses the ``permissions`` argument into a canonical list form for
@@ -221,10 +219,8 @@ class has_permission(RouteDecorator):
 
     def __call__(
         self,
-        handler: typing.Union[
-            typing.Callable[..., typing.Any],
-            typing.Callable[..., typing.Awaitable[typing.Any]],
-        ],
+        handler: typing.Callable[..., typing.Any]
+        | typing.Callable[..., typing.Awaitable[typing.Any]],
     ) -> typing.Any:
         """Wrap a route handler with permission-based authorisation checking.
 
@@ -258,7 +254,7 @@ class has_permission(RouteDecorator):
 
         @wraps(handler)
         async def wrapper(
-            *args: typing.List[typing.Any], **kwargs: typing.Dict[str, typing.Any]
+            *args: list[typing.Any], **kwargs: dict[str, typing.Any]
         ) -> typing.Any:
             request, response, *_ = args
 

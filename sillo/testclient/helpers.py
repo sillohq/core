@@ -2,7 +2,8 @@
 Helper functions for creating sync and async test clients for sillo applications.
 """
 
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from sillo import silloApp
 from sillo.core.dependencies import Depend
@@ -13,14 +14,14 @@ from sillo.types import ExceptionHandlerType
 
 
 def create_client(
-    title: Optional[str] = None,
-    version: Optional[str] = None,
-    description: Optional[str] = None,
-    server_error_handler: Optional[ExceptionHandlerType] = None,
-    lifespan: Optional[Any] = None,
+    title: str | None = None,
+    version: str | None = None,
+    description: str | None = None,
+    server_error_handler: ExceptionHandlerType | None = None,
+    lifespan: Any | None = None,
     routes: Sequence[BaseRoute] = [],
-    dependencies: Optional[List[Depend]] = None,
-    client_config: Optional[Dict[str, Any]] = None,
+    dependencies: list[Depend] | None = None,
+    client_config: dict[str, Any] | None = None,
 ) -> TestClient:
     """Create a synchronous ``TestClient`` for a sillo application.
 
@@ -82,14 +83,14 @@ def create_client(
 
 
 def create_async_client(
-    title: Optional[str] = None,
-    version: Optional[str] = None,
-    description: Optional[str] = None,
-    server_error_handler: Optional[ExceptionHandlerType] = None,
-    lifespan: Optional[Any] = None,
+    title: str | None = None,
+    version: str | None = None,
+    description: str | None = None,
+    server_error_handler: ExceptionHandlerType | None = None,
+    lifespan: Any | None = None,
     routes: Sequence[Route] = [],
-    dependencies: Optional[List[Depend]] = None,
-    client_config: Optional[Dict[str, Any]] = None,
+    dependencies: list[Depend] | None = None,
+    client_config: dict[str, Any] | None = None,
 ) -> AsyncTestClient:
     """Create an asynchronous ``AsyncTestClient`` for a sillo application.
 

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.jwt_auth.models import TokenBlacklist
 from sillo.auth.model import AuthResult
-from sillo.helpers import jwt as jwt_helpers
 from sillo.core.http import Request
+from sillo.helpers import jwt as jwt_helpers
 
 
 def _decode_jwt(token: str, secret: str) -> dict:
@@ -68,10 +68,10 @@ class JWTAuthBackend(AuthenticationBackend):
     def __init__(
         self,
         identifier: str = "id",
-        secret_key: Optional[str] = None,
+        secret_key: str | None = None,
         check_blacklist: bool = True,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ):
         """Initialize the JWT authentication backend with configuration options.
 
@@ -133,9 +133,8 @@ class JWTAuthBackend(AuthenticationBackend):
 
         token = auth_header.split(" ")[1]
 
-        if self.check_blacklist:
-            if await self._is_blacklisted(token):
-                return AuthResult(success=False, identity="", scope="")
+        if self.check_blacklist and await self._is_blacklisted(token):
+            return AuthResult(success=False, identity="", scope="")
 
         try:
             payload = _decode_jwt(token, self.secret_key)

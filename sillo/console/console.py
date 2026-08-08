@@ -27,16 +27,10 @@ import asyncio
 import difflib
 import inspect
 import sys
+from collections.abc import Callable, Coroutine, Sequence
 from typing import (
     IO,
     Any,
-    Callable,
-    Coroutine,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Type,
     cast,
 )
 
@@ -84,12 +78,12 @@ class Console:
         self,
         prog: str = "console.py",
         description: str = "",
-        version: Optional[str] = None,
-        output: Optional[IO[str]] = None,
-        error: Optional[IO[str]] = None,
-        input: Optional[IO[str]] = None,
-        color: Optional[bool] = None,
-        interactive: Optional[bool] = None,
+        version: str | None = None,
+        output: IO[str] | None = None,
+        error: IO[str] | None = None,
+        input: IO[str] | None = None,
+        color: bool | None = None,
+        interactive: bool | None = None,
     ) -> None:
         self.prog = prog
         self.description = description
@@ -102,12 +96,12 @@ class Console:
         self.error_output = Output(err_stream, Palette(err_stream, enabled=color))
         self.prompt = Prompt(self.output, input, interactive=interactive)
 
-        self._commands: Dict[str, Type[Command]] = {}
-        self._aliases: Dict[str, str] = {}
+        self._commands: dict[str, type[Command]] = {}
+        self._aliases: dict[str, str] = {}
 
     # -- registration --------------------------------------------------
 
-    def add(self, command: Type[Command], override: bool = False) -> Type[Command]:
+    def add(self, command: type[Command], override: bool = False) -> type[Command]:
         """Register *command*.
 
         Args:
@@ -155,7 +149,7 @@ class Console:
             if target == name or alias == name:
                 self._aliases.pop(alias, None)
 
-    def add_many(self, commands: Sequence[Type[Command]]) -> None:
+    def add_many(self, commands: Sequence[type[Command]]) -> None:
         """Register several commands.
 
         Args:
@@ -168,10 +162,10 @@ class Console:
         self,
         name: str,
         help: str = "",
-        arguments: Optional[Sequence[Parameter]] = None,
+        arguments: Sequence[Parameter] | None = None,
         aliases: Sequence[str] = (),
         hidden: bool = False,
-    ) -> Callable[[Callable], Type[Command]]:
+    ) -> Callable[[Callable], type[Command]]:
         """Register a plain function as a command.
 
         The class form is the primary one and is what a command with any real
@@ -197,8 +191,8 @@ class Console:
             A decorator returning the generated command class.
         """
 
-        def decorate(function: Callable) -> Type[Command]:
-            async def handle(self: Command) -> Optional[int]:
+        def decorate(function: Callable) -> type[Command]:
+            async def handle(self: Command) -> int | None:
                 result = function(self)
                 if inspect.isawaitable(result):
                     result = await result
@@ -222,7 +216,7 @@ class Console:
         return decorate
 
     @property
-    def commands(self) -> Dict[str, Type[Command]]:
+    def commands(self) -> dict[str, type[Command]]:
         """Every registered command, keyed by name.
 
         Returns:
@@ -230,7 +224,7 @@ class Console:
         """
         return dict(self._commands)
 
-    def resolve(self, name: str) -> Optional[Type[Command]]:
+    def resolve(self, name: str) -> type[Command] | None:
         """Find the command *name* refers to.
 
         Args:
@@ -247,7 +241,7 @@ class Console:
 
     # -- help ----------------------------------------------------------
 
-    def _usage_for(self, command: Type[Command]) -> str:
+    def _usage_for(self, command: type[Command]) -> str:
         """Build the usage line for *command*.
 
         Args:
@@ -282,7 +276,7 @@ class Console:
         out.line(f"    {self.prog} {out.paint('<command>', PRIMARY)} [options]")
 
         visible = [command for command in self._commands.values() if not command.hidden]
-        groups: Dict[str, List[Type[Command]]] = {}
+        groups: dict[str, list[type[Command]]] = {}
         for command in sorted(visible, key=lambda item: item.name):
             groups.setdefault(command.group(), []).append(command)
 
@@ -316,7 +310,7 @@ class Console:
             out.write("    ", out.paint(flag.ljust(width), PRIMARY), "  ", text, "\n")
         out.blank()
 
-    def print_command_help(self, command: Type[Command]) -> None:
+    def print_command_help(self, command: type[Command]) -> None:
         """Write the help for one command.
 
         Args:
@@ -399,7 +393,7 @@ class Console:
             name = parameter.negative
         return f"-{short}, --{name}" if short else f"--{name}"
 
-    def _suggest(self, name: str) -> Optional[str]:
+    def _suggest(self, name: str) -> str | None:
         """Find the registered name closest to *name*.
 
         Args:
@@ -415,7 +409,7 @@ class Console:
     # -- running -------------------------------------------------------
 
     @staticmethod
-    def _owns_loop(command: Type[Command]) -> bool:
+    def _owns_loop(command: type[Command]) -> bool:
         """Whether the command runs synchronously, owning any loop it makes.
 
         A plain ``def handle`` opts out of the console's loop: it hands the
@@ -431,7 +425,7 @@ class Console:
         """
         return not inspect.iscoroutinefunction(command.handle)
 
-    async def _dispatch(self, command: Type[Command], parsed: ParsedInput) -> int:
+    async def _dispatch(self, command: type[Command], parsed: ParsedInput) -> int:
         """Instantiate and run *command*.
 
         Args:
@@ -462,7 +456,7 @@ class Console:
 
         return int(result) if isinstance(result, int) else 0
 
-    def _dispatch_sync(self, command: Type[Command], parsed: ParsedInput) -> int:
+    def _dispatch_sync(self, command: type[Command], parsed: ParsedInput) -> int:
         """Run a synchronous command without creating an event loop.
 
         Mirrors :meth:`_dispatch` for the commands :meth:`_owns_loop` picks
@@ -497,7 +491,7 @@ class Console:
 
         return int(result) if isinstance(result, int) else 0
 
-    def _guard(self, command: Type[Command], body: Callable[[], int]) -> int:
+    def _guard(self, command: type[Command], body: Callable[[], int]) -> int:
         """Map a dispatch failure to its exit code, whichever path raised it.
 
         Args:
@@ -527,8 +521,8 @@ class Console:
             return 1
 
     def _prepare(
-        self, argv: Optional[Sequence[str]]
-    ) -> int | tuple[Type[Command], ParsedInput]:
+        self, argv: Sequence[str] | None
+    ) -> int | tuple[type[Command], ParsedInput]:
         """Walk the tokens to a command and its parsed input.
 
         Shared by :meth:`run` and :meth:`run_async`: help, version, resolving
@@ -574,7 +568,7 @@ class Console:
 
         return command, parsed
 
-    def run(self, argv: Optional[Sequence[str]] = None) -> int:
+    def run(self, argv: Sequence[str] | None = None) -> int:
         """Parse *argv* and run the command it names.
 
         This is the synchronous entry point, for a console run from a shell. Call :meth:`run_async` instead from inside a running event loop —
@@ -617,7 +611,7 @@ class Console:
             command, lambda: asyncio.run(self._dispatch(command, parsed))
         )
 
-    async def run_async(self, argv: Optional[Sequence[str]] = None) -> int:
+    async def run_async(self, argv: Sequence[str] | None = None) -> int:
         """Parse *argv* and run the command it names, on the current loop.
 
         Args:
@@ -651,7 +645,7 @@ class Console:
             self.error_output.error(str(error))
             return 1
 
-    def _report_usage(self, error: UsageError, command: Type[Command]) -> int:
+    def _report_usage(self, error: UsageError, command: type[Command]) -> int:
         """Write a usage error and the line that would have been correct.
 
         Args:
@@ -666,7 +660,7 @@ class Console:
         self.error_output.muted(f"  Run {self.prog} {command.name} --help")
         return error.exit_code
 
-    def main(self, argv: Optional[Sequence[str]] = None) -> None:
+    def main(self, argv: Sequence[str] | None = None) -> None:
         """Run and exit.
 
         Args:

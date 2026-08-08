@@ -7,15 +7,12 @@ that can be registered as exception handlers on a sillo app.
 
 from __future__ import annotations
 
-from typing import Annotated
-
 from tortoise.exceptions import (
     DoesNotExist,
     IntegrityError,
     OperationalError,
     ValidationError,
 )
-from typing_extensions import Doc
 
 
 async def handle_does_not_exist(request, response, exc: DoesNotExist):

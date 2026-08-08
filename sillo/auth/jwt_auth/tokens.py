@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from sillo.helpers import jwt as _jwt
 
@@ -29,8 +28,8 @@ class TokenForUser:
         user,
         secret: str,
         algorithm: str = "HS256",
-        issuer: Optional[str] = None,
-        audience: Optional[str] = None,
+        issuer: str | None = None,
+        audience: str | None = None,
     ):
         """Initialize a TokenForUser instance with user context and signing config.
 
@@ -88,7 +87,7 @@ class TokenForUser:
         return payload
 
     def access_token(
-        self, expires_in: Optional[timedelta] = None, *, jti: Optional[str] = None
+        self, expires_in: timedelta | None = None, *, jti: str | None = None
     ) -> str:
         """Generate a signed JWT access token for the bound user.
 
@@ -121,7 +120,7 @@ class TokenForUser:
         return _jwt.encode(payload, self.secret, self.algorithm)
 
     def refresh_token(
-        self, expires_in: Optional[timedelta] = None, *, jti: Optional[str] = None
+        self, expires_in: timedelta | None = None, *, jti: str | None = None
     ) -> str:
         """Generate a signed JWT refresh token for the bound user.
 
@@ -156,8 +155,8 @@ class TokenForUser:
 
     def token_pair(
         self,
-        access_expires: Optional[timedelta] = None,
-        refresh_expires: Optional[timedelta] = None,
+        access_expires: timedelta | None = None,
+        refresh_expires: timedelta | None = None,
     ) -> dict:
         """Generate a complete access and refresh token pair for the bound user.
 

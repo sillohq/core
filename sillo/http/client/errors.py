@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing
 
 if typing.TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
 
 class HTTPClientError(Exception):
@@ -21,7 +21,7 @@ class HTTPConnectionError(HTTPClientError):
 class HTTPTimeoutError(HTTPClientError):
     """Raised when a request exceeds the configured timeout."""
 
-    def __init__(self, message: str, timeout_type: Optional[str] = None) -> None:
+    def __init__(self, message: str, timeout_type: str | None = None) -> None:
         super().__init__(message)
         self.timeout_type = timeout_type
 
@@ -34,9 +34,9 @@ class HTTPStatusError(HTTPClientError):
         self,
         message: str,
         status_code: int,
-        response_body: Optional[str] = None,
-        request_url: Optional[str] = None,
-        request_method: Optional[str] = None,
+        response_body: str | None = None,
+        request_url: str | None = None,
+        request_method: str | None = None,
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
@@ -51,7 +51,7 @@ class HTTPRetryError(HTTPClientError):
     def __init__(
         self,
         message: str,
-        last_exception: Optional[Exception] = None,
+        last_exception: Exception | None = None,
         attempts: int = 0,
         total_delay: float = 0.0,
     ) -> None:
@@ -72,7 +72,7 @@ class HTTPValidationError(HTTPClientError):
         self,
         message: str,
         validation_errors: list[dict[str, Any]],
-        response_body: Optional[str] = None,
+        response_body: str | None = None,
     ) -> None:
         super().__init__(message)
         self.validation_errors = validation_errors
@@ -88,14 +88,14 @@ class HTTPDecodeError(HTTPClientError):
 
 
 __all__ = [
-    "HTTPClientError",
-    "HTTPClientConfigError",
-    "HTTPConnectionError",
-    "HTTPTimeoutError",
-    "HTTPStatusError",
-    "HTTPRetryError",
     "HTTPCacheError",
-    "HTTPValidationError",
-    "HTTPRedirectError",
+    "HTTPClientConfigError",
+    "HTTPClientError",
+    "HTTPConnectionError",
     "HTTPDecodeError",
+    "HTTPRedirectError",
+    "HTTPRetryError",
+    "HTTPStatusError",
+    "HTTPTimeoutError",
+    "HTTPValidationError",
 ]

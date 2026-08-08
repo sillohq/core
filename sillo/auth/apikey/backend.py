@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import hashlib
-import secrets
-from typing import Any, Optional
+from typing import Any
 
-from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.apikey.models import ApiKeyManager
+from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
 from sillo.core.http import Request
 
@@ -49,8 +47,8 @@ class APIKeyAuthBackend(AuthenticationBackend):
         header_name: str = "X-API-Key",
         prefix: str = "key",
         verify_with_manager: bool = False,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ):
         """Initialize the API key authentication backend.
 

@@ -23,7 +23,7 @@ one, is also accepted for tooling that has only that.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any, Union
 
 from typing_extensions import Doc
 
@@ -33,10 +33,10 @@ if TYPE_CHECKING:
     from ..manager import DatabaseManager
 
 #: The database to act on: a manager, a resolved configuration, or a path to one.
-Database = Union["DatabaseManager", Dict[str, Any], str]
+Database = Union["DatabaseManager", dict[str, Any], str]
 
 
-def _helper(database: Database, app: Optional[str]) -> MigrationHelper:
+def _helper(database: Database, app: str | None) -> MigrationHelper:
     """Bind a helper to *database*."""
     return MigrationHelper(database, app=app)
 
@@ -56,7 +56,7 @@ async def init(
 
 async def make(
     database: Annotated[Database, Doc("The database to act on.")],
-    name: Annotated[Optional[str], Doc("Suffix for the migration file.")] = None,
+    name: Annotated[str | None, Doc("Suffix for the migration file.")] = None,
     *,
     app: Annotated[str, Doc("App label to manage.")] = "models",
 ) -> None:
@@ -70,7 +70,7 @@ async def make(
 async def migrate(
     database: Annotated[Database, Doc("The database to act on.")],
     *,
-    target: Annotated[Optional[str], Doc("Stop at this migration.")] = None,
+    target: Annotated[str | None, Doc("Stop at this migration.")] = None,
     fake: Annotated[bool, Doc("Record as applied without running the SQL.")] = False,
     app: Annotated[str, Doc("App label to manage.")] = "models",
 ) -> None:
@@ -100,9 +100,9 @@ async def rollback(
 async def plan(
     database: Annotated[Database, Doc("The database to act on.")],
     *,
-    target: Annotated[Optional[str], Doc("Plan as far as this migration.")] = None,
+    target: Annotated[str | None, Doc("Plan as far as this migration.")] = None,
     app: Annotated[str, Doc("App label to manage.")] = "models",
-) -> List[str]:
+) -> list[str]:
     """Return the migrations that would run, without running them."""
     return await _helper(database, app).plan(target=target)
 
@@ -113,6 +113,6 @@ async def sql(
     *,
     backward: Annotated[bool, Doc("Show the rollback SQL instead.")] = False,
     app: Annotated[str, Doc("App label to manage.")] = "models",
-) -> List[str]:
+) -> list[str]:
     """Return the SQL a migration would execute, without executing it."""
     return await _helper(database, app).sql(migration, backward=backward)

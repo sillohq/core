@@ -27,13 +27,13 @@ from sillo.validation.fields import (
 )
 
 __all__ = [
-    "Query",
-    "Header",
     "Cookie",
-    "ParameterLocation",
+    "Header",
     "ParameterExtractor",
+    "ParameterLocation",
+    "Query",
     "SolvedParamDependency",
-    "solve_params",
-    "resolve_param",
     "bind_marker",
+    "resolve_param",
+    "solve_params",
 ]

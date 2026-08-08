@@ -2,8 +2,8 @@ import http
 import traceback
 import typing
 
-from sillo.exceptions import NotFoundException
 from sillo.core.http import Request, Response
+from sillo.exceptions import NotFoundException
 
 #: Body text used when debug is off, so nothing internal is disclosed.
 GENERIC_MESSAGE = "The page you are looking for does not exist."
@@ -106,7 +106,7 @@ async def handle_404_error(
         )
 
     if request.accepts_json:
-        error_details: typing.Dict[str, typing.Any] = {
+        error_details: dict[str, typing.Any] = {
             "status": 404,
             "error": http.HTTPStatus(404).phrase,
             "message": error_message,

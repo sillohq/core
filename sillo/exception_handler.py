@@ -16,9 +16,9 @@ from pydantic import ValidationError
 
 from sillo import logging
 from sillo.auth.exceptions import AuthenticationFailed, AuthErrorHandler
+from sillo.core.http import Request, Response
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.handlers.not_found import handle_404_error
-from sillo.core.http import Request, Response
 from sillo.types import ExceptionHandlerType
 from sillo.validation import RequestValidationError, ResponseValidationError
 
@@ -26,7 +26,7 @@ logger = logging.getLogger("sillo")
 
 
 def _lookup_exception_handler(
-    exc_handlers: typing.Dict[int | typing.Type[Exception], ExceptionHandlerType],
+    exc_handlers: dict[int | type[Exception], ExceptionHandlerType],
     exc: Exception,
 ):
     """Look up the appropriate exception handler by walking the exception's MRO.
@@ -64,8 +64,8 @@ async def wrap_http_exceptions(
     request: Request,
     response: Response,
     call_next: typing.Callable[..., typing.Awaitable[Response]],
-    exception_handlers: typing.Dict[int | typing.Type[Exception], ExceptionHandlerType],
-    status_handlers: typing.Dict[int, ExceptionHandlerType],
+    exception_handlers: dict[int | type[Exception], ExceptionHandlerType],
+    status_handlers: dict[int, ExceptionHandlerType],
 ):
     """Wrap request processing with exception handling for HTTP and custom exceptions.
 
@@ -102,20 +102,18 @@ async def wrap_http_exceptions(
         be invoked directly by application code. The try/except around the
         variable assignment is a defensive guard against KeyError in edge cases.
     """
-    try:
-        exception_handlers, status_handlers = exception_handlers, status_handlers
-    except KeyError:
-        exception_handlers, status_handlers = {}, {}
+    # These were assigned to themselves inside a try/except KeyError, which
+    # could not raise and so could not default anything. Default them directly.
+    exception_handlers = exception_handlers or {}
+    status_handlers = status_handlers or {}
 
     try:
         return await call_next()
     except Exception as exc:
-        handler: typing.Union[ExceptionHandlerType, None] = None
+        handler: ExceptionHandlerType | None = None
 
         if isinstance(exc, HTTPException):
-            handler: typing.Optional[ExceptionHandlerType] = status_handlers.get(
-                exc.status_code
-            )
+            handler: ExceptionHandlerType | None = status_handlers.get(exc.status_code)
             if handler:
                 return await handler(request, response, exc)  # ty: ignore[invalid-await]
 
@@ -124,7 +122,7 @@ async def wrap_http_exceptions(
             if not handler:
                 error = traceback.format_exc()
                 logger.error(error)
-                raise exc
+                raise
             return await handler(request, response, exc)
 
 
@@ -175,7 +173,7 @@ class ExceptionMiddleware:
             - ``ValidationError`` -> ``pydantic_validation_error_handler`` (422 response)
         """
         self.debug = False
-        self._status_handlers: typing.Dict[int, ExceptionHandlerType] = {}
+        self._status_handlers: dict[int, ExceptionHandlerType] = {}
         self._exception_handlers = {
             HTTPException: self.http_exception,
             AuthenticationFailed: AuthErrorHandler,
@@ -187,7 +185,7 @@ class ExceptionMiddleware:
 
     def add_exception_handler(
         self,
-        exc_class_or_status_code: typing.Union[int, type[Exception]],
+        exc_class_or_status_code: int | type[Exception],
         handler: ExceptionHandlerType,
     ) -> None:
         """Register a custom exception handler for a specific exception class or status code.
@@ -299,7 +297,7 @@ class ExceptionMiddleware:
 
 
 async def request_validation_error_handler(
-    request: Request, response: Response, exc: "RequestValidationError"
+    request: Request, response: Response, exc: RequestValidationError
 ) -> Response:
     """Handle a request validation failure with a 422 response.
 
@@ -326,7 +324,7 @@ async def request_validation_error_handler(
 
 
 async def response_validation_error_handler(
-    request: Request, response: Response, exc: "ResponseValidationError"
+    request: Request, response: Response, exc: ResponseValidationError
 ) -> Response:
     """Handle a response validation failure with a 500 response.
 

@@ -7,7 +7,7 @@ enabling request validation that directly maps to your database models.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Dict, List, Optional, Type
+from typing import Annotated, Any, Optional
 
 from pydantic import BaseModel, Field, create_model
 from tortoise import fields as f
@@ -18,10 +18,14 @@ def pydantic_model_from_tortoise(
     model_class: type,
     *,
     name: Annotated[str, Doc("Name for the generated Pydantic model.")] = "",
-    exclude: Annotated[List[str], Doc("Field names to exclude.")] = None,
-    include: Annotated[List[str], Doc("If set, ONLY include these fields.")] = None,
-    optional_fields: Annotated[List[str], Doc("Fields to mark as Optional.")] = None,
-) -> Type[BaseModel]:
+    exclude: Annotated[list[str] | None, Doc("Field names to exclude.")] = None,
+    include: Annotated[
+        list[str] | None, Doc("If set, ONLY include these fields.")
+    ] = None,
+    optional_fields: Annotated[
+        list[str] | None, Doc("Fields to mark as Optional.")
+    ] = None,
+) -> type[BaseModel]:
     """Generate a Pydantic model from a Tortoise model's fields.
 
     Usage::
@@ -37,7 +41,7 @@ def pydantic_model_from_tortoise(
     include = include or []
     optional_fields = optional_fields or []
     meta = model_class._meta  # ty: ignore[unresolved-attribute]
-    fields: Dict[str, Any] = {}
+    fields: dict[str, Any] = {}
 
     for field_name, field_obj in meta.fields_map.items():
         if exclude and field_name in exclude:

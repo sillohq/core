@@ -22,6 +22,7 @@ Bringing your own user model is the ordinary path::
 """
 
 from tortoise import fields
+
 from sillo.record import Model
 from sillo.record.fields import PasswordField
 from sillo.users import UserBaseModel
@@ -36,26 +37,12 @@ class AdminRole(Model):
     description = fields.TextField(null=True)
 
     class Meta:
-        """Meta
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Meta"""
 
         table = "admin_roles"
 
     def __str__(self):
-        """Str
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Str"""
         return self.name
 
 
@@ -87,40 +74,16 @@ class AdminUser(UserBaseModel):
     )
 
     class Meta:
-        """Meta
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Meta"""
 
         table = "admin_users"
 
     def __str__(self):
-        """Str
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Str"""
         return self.email
 
     def has_permission(self, permission: str) -> bool:
-        """Has Permission
-
-        Args:
-            permission: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Permission"""
         if self.is_superuser:
             return True
         if self.role and hasattr(self.role, "permissions"):
@@ -128,14 +91,7 @@ class AdminUser(UserBaseModel):
         return False
 
     def to_dict(self, **kwargs):
-        """To Dict
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """To Dict"""
         d = super().to_dict(**kwargs)
         d.pop("password", None)
         return d

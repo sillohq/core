@@ -17,18 +17,19 @@ Nothing outside :mod:`sillo.record.helpers` should touch this.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator
+from typing import Any
 
 #: The configuration currently published. Set only through :func:`published`.
-CONFIG: Dict[str, Any] = {}
+CONFIG: dict[str, Any] = {}
 
 #: Where to tell the command layer to look.
 PATH = f"{__name__}.CONFIG"
 
 
 @contextmanager
-def published(config: Dict[str, Any]) -> Iterator[str]:
+def published(config: dict[str, Any]) -> Iterator[str]:
     """Publish *config* for the duration of the block.
 
     Args:

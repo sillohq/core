@@ -8,8 +8,6 @@ sillo.record.fields — Custom Tortoise field types.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from tortoise import fields as _fields
 
 from sillo.helpers.hashing import hash_password
@@ -36,35 +34,14 @@ class PasswordField(_fields.CharField):
     password: bool = True
 
     def __init__(self, max_length: int = 255, **kwargs):
-        """Init
-
-        Args:
-            max_length: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         kwargs.setdefault("max_length", max_length)
         super().__init__(**kwargs)
 
     def to_db_value(self, value, instance, *args, **kwargs):
         # Hash plaintext on the way into the database, but leave already-hashed
         # values (those produced by hash_password) untouched.
-        """To Db Value
-
-        Args:
-            value: [description]
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """To Db Value"""
         if value is None or value == "":
             return value
         if isinstance(value, str) and value.startswith(("$2b$", "$2a$", "$2y$")):
@@ -73,17 +50,7 @@ class PasswordField(_fields.CharField):
 
     def to_python_value(self, value, *args, **kwargs):
         # Never expose the hash as a "python value" that could be re-hashed.
-        """To Python Value
-
-        Args:
-            value: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """To Python Value"""
         return value
 
 
@@ -91,14 +58,7 @@ class CreatedAtField(_fields.DatetimeField):
     """Auto-set to UTC now on creation. Never updated."""
 
     def __init__(self, **kwargs):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         kwargs.setdefault("auto_now_add", True)
         super().__init__(**kwargs)
 
@@ -107,14 +67,7 @@ class UpdatedAtField(_fields.DatetimeField):
     """Auto-set to UTC now on every save."""
 
     def __init__(self, **kwargs):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         kwargs.setdefault("auto_now", True)
         super().__init__(**kwargs)
 
@@ -123,14 +76,7 @@ class SoftDeleteField(_fields.DatetimeField):
     """Nullable datetime for soft-deletion. None = active."""
 
     def __init__(self, **kwargs):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         kwargs.setdefault("null", True)
         kwargs.setdefault("default", None)
         super().__init__(**kwargs)
@@ -140,20 +86,9 @@ class SlugField(_fields.CharField):
     """URL-safe slug, optionally auto-generated from a source field."""
 
     def __init__(
-        self, max_length: int = 200, source_field: Optional[str] = None, **kwargs
+        self, max_length: int = 200, source_field: str | None = None, **kwargs
     ):
-        """Init
-
-        Args:
-            max_length: [description]
-            source_field: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         kwargs.setdefault("max_length", max_length)
         super().__init__(**kwargs)
         self._source_field = source_field
@@ -163,14 +98,7 @@ class ULIDField(_fields.CharField):
     """ULID primary key (26-char sortable identifier)."""
 
     def __init__(self, **kwargs):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         kwargs.setdefault("max_length", 26)
         kwargs.setdefault("pk", True)
         super().__init__(**kwargs)

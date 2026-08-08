@@ -1,7 +1,8 @@
 # type: ignore[overide]
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Union
+from collections.abc import Mapping
+from typing import Any, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.networks import AnyUrl
@@ -22,54 +23,33 @@ HeaderParamStyles = Literal["simple"]
 CookieParamStyles = Literal["form"]
 FormDataStyles = QueryParamStyles
 
-Extension = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
+Extension = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 
 
 class Contact(BaseModel):
-    """Contact
+    """Contact"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    name: Optional[str] = None
-    url: Optional[AnyUrl] = None
-    email: Optional[EmailStr] = None
+    name: str | None = None
+    url: AnyUrl | None = None
+    email: EmailStr | None = None
 
 
 class License(BaseModel):
-    """License
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """License"""
 
     name: str
-    url: Optional[AnyUrl] = None
+    url: AnyUrl | None = None
 
 
 class Info(BaseModel):
-    """Info
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Info"""
 
     title: str
     version: str
-    description: Optional[str] = None
-    termsOfService: Optional[str] = None
-    contact: Optional[Contact] = None
-    license: Optional[License] = None
+    description: str | None = None
+    termsOfService: str | None = None
+    contact: Contact | None = None
+    license: License | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -78,139 +58,90 @@ class Info(BaseModel):
 
 
 class ServerVariable(BaseModel):
-    """Servervariable
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Servervariable"""
 
     default: str
-    enum: Optional[List[str]] = None
-    description: Optional[str] = None
+    enum: list[str] | None = None
+    description: str | None = None
 
 
 class Server(BaseModel):
-    """Server
+    """Server"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    url: Union[AnyUrl, str]
-    description: Optional[str] = None
-    variables: Optional[Dict[str, ServerVariable]] = None
+    url: AnyUrl | str
+    description: str | None = None
+    variables: dict[str, ServerVariable] | None = None
 
 
 class Reference(BaseModel):
-    """Reference
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Reference"""
 
     ref: Annotated[str, Field(alias="$ref")]
 
 
 class Discriminator(BaseModel):
-    """Discriminator
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Discriminator"""
 
     propertyName: str
-    mapping: Optional[Dict[str, str]] = None
+    mapping: dict[str, str] | None = None
 
 
 class XML(BaseModel):
-    """Xml
+    """Xml"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    name: Optional[str] = None
-    namespace: Optional[str] = None
-    prefix: Optional[str] = None
-    attribute: Optional[bool] = None
-    wrapped: Optional[bool] = None
+    name: str | None = None
+    namespace: str | None = None
+    prefix: str | None = None
+    attribute: bool | None = None
+    wrapped: bool | None = None
 
 
 class ExternalDocumentation(BaseModel):
-    """Externaldocumentation
+    """Externaldocumentation"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    url: Optional[AnyUrl] = None
-    description: Optional[str] = None
+    url: AnyUrl | None = None
+    description: str | None = None
 
 
 class Schema(BaseModel):
-    """Schema
+    """Schema"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    ref: Annotated[Optional[str], Field(alias="$ref")] = None
-    title: Optional[str] = None
-    multipleOf: Optional[float] = None
-    maximum: Optional[float] = None
-    exclusiveMaximum: Optional[float] = None
-    minimum: Optional[float] = None
-    exclusiveMinimum: Optional[float] = None
-    maxLength: Annotated[Optional[int], Field(ge=0)] = None
-    minLength: Annotated[Optional[int], Field(ge=0)] = None
-    pattern: Optional[str] = None
-    maxItems: Annotated[Optional[int], Field(ge=0)] = None
-    minItems: Annotated[Optional[int], Field(ge=0)] = None
-    uniqueItems: Optional[bool] = None
-    maxProperties: Annotated[Optional[int], Field(ge=0)] = None
-    minProperties: Annotated[Optional[int], Field(ge=0)] = None
-    required: Optional[List[str]] = None
-    enum: Optional[List[Any]] = None
-    type: Optional[str] = None
-    allOf: Optional[List[Schema]] = None
-    oneOf: Optional[List[Schema]] = None
-    anyOf: Optional[List[Schema]] = None
-    not_: Annotated[Optional[Schema], Field(alias="not")] = None
-    items: Optional[Union[Schema, List[Schema]]] = None
-    properties: Optional[Dict[str, Schema]] = None
-    additionalProperties: Optional[Union[Schema, Reference, bool]] = None
-    description: Optional[str] = None
-    format: Optional[str] = None
+    ref: Annotated[str | None, Field(alias="$ref")] = None
+    title: str | None = None
+    multipleOf: float | None = None
+    maximum: float | None = None
+    exclusiveMaximum: float | None = None
+    minimum: float | None = None
+    exclusiveMinimum: float | None = None
+    maxLength: Annotated[int | None, Field(ge=0)] = None
+    minLength: Annotated[int | None, Field(ge=0)] = None
+    pattern: str | None = None
+    maxItems: Annotated[int | None, Field(ge=0)] = None
+    minItems: Annotated[int | None, Field(ge=0)] = None
+    uniqueItems: bool | None = None
+    maxProperties: Annotated[int | None, Field(ge=0)] = None
+    minProperties: Annotated[int | None, Field(ge=0)] = None
+    required: list[str] | None = None
+    enum: list[Any] | None = None
+    type: str | None = None
+    allOf: list[Schema] | None = None
+    oneOf: list[Schema] | None = None
+    anyOf: list[Schema] | None = None
+    not_: Annotated[Schema | None, Field(alias="not")] = None
+    items: Schema | list[Schema] | None = None
+    properties: dict[str, Schema] | None = None
+    additionalProperties: Schema | Reference | bool | None = None
+    description: str | None = None
+    format: str | None = None
     default: Any = None
-    nullable: Optional[bool] = None
-    discriminator: Optional[Discriminator] = None
-    readOnly: Optional[bool] = None
-    writeOnly: Optional[bool] = None
-    xml: Optional[XML] = None
-    externalDocs: Optional[ExternalDocumentation] = None
-    deprecated: Optional[bool] = None
-    example: Optional[Any] = None
+    nullable: bool | None = None
+    discriminator: Discriminator | None = None
+    readOnly: bool | None = None
+    writeOnly: bool | None = None
+    xml: XML | None = None
+    externalDocs: ExternalDocumentation | None = None
+    deprecated: bool | None = None
+    example: Any | None = None
     # On a Schema Object, `examples` is an ARRAY of sample values — JSON
     # Schema draft 2020-12, carried into OpenAPI 3.1. The `{name: Example}`
     # mapping belongs to Parameter, MediaType and Header, not here.
@@ -219,7 +150,7 @@ class Schema(BaseModel):
     # `Field(examples=[...])` fail validation, and because the whole
     # document is built at once, one such field turned /openapi.json into a
     # 422 for the entire API.
-    examples: Optional[List[Any]] = None
+    examples: list[Any] | None = None
 
     @field_validator("type", mode="before")
     @classmethod
@@ -241,122 +172,71 @@ class Schema(BaseModel):
 
 
 class Example(BaseModel):
-    """Example
+    """Example"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    summary: Optional[str] = None
-    description: Optional[str] = None
+    summary: str | None = None
+    description: str | None = None
     value: Any = None
-    external_value: Annotated[Optional[str], Field(alias="externalValue")] = None
+    external_value: Annotated[str | None, Field(alias="externalValue")] = None
 
 
-Examples = Mapping[str, Union[Example, Reference]]
+Examples = Mapping[str, Example | Reference]
 
 
 class Encoding(BaseModel):
-    """Encoding
+    """Encoding"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    contentType: Optional[str] = None
-    headers: Optional[Dict[str, Union[Header, Reference]]] = None
-    style: Optional[str] = None
-    explode: Optional[bool] = None
+    contentType: str | None = None
+    headers: dict[str, Header | Reference] | None = None
+    style: str | None = None
+    explode: bool | None = None
 
 
 class MediaType(BaseModel):
-    """Mediatype
+    """Mediatype"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    spec: Optional[Union[Schema, Reference]] = Field(
-        default=None, serialization_alias="schema"
-    )
-    examples: Optional[Examples] = None
-    encoding: Optional[Dict[str, Encoding]] = None
+    spec: Schema | Reference | None = Field(default=None, serialization_alias="schema")
+    examples: Examples | None = None
+    encoding: dict[str, Encoding] | None = None
 
 
 class ParameterBase(BaseModel):
-    """Parameterbase
+    """Parameterbase"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    description: Optional[str] = None
-    required: Optional[bool] = None
-    deprecated: Optional[bool] = None
-    style: Optional[str] = None
-    explode: Optional[bool] = None
+    description: str | None = None
+    required: bool | None = None
+    deprecated: bool | None = None
+    style: str | None = None
+    explode: bool | None = None
     spec: Annotated[
-        Optional[Union[Schema, Reference]],
+        Schema | Reference | None,
         Field(default=None, serialization_alias="schema"),
     ] = None
-    examples: Optional[Examples] = None
-    content: Optional[Dict[str, MediaType]] = None
+    examples: Examples | None = None
+    content: dict[str, MediaType] | None = None
 
 
 class ConcreteParameter(ParameterBase):
-    """Concreteparameter
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Concreteparameter"""
 
     name: str
     in_: ParameterLocations = Field(alias="in")
 
 
 class Header(ConcreteParameter):
-    """Header
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Header"""
 
     in_: Literal["header"] = Field(default="header", serialization_alias="in")
     style: HeaderParamStyles = "simple"
     explode: bool = False
     spec: Annotated[
-        Optional[Union[Schema, Reference]],
+        Schema | Reference | None,
         Field(default=None, serialization_alias="schema"),
     ] = Schema(type="string")
 
 
 class Query(ConcreteParameter):
-    """Query
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Query"""
 
     in_: Literal["query"] = Field(
         default="query",
@@ -365,20 +245,13 @@ class Query(ConcreteParameter):
     style: QueryParamStyles = "form"
     explode: bool = True
     spec: Annotated[
-        Optional[Union[Schema, Reference]],
+        Schema | Reference | None,
         Field(default=None, serialization_alias="schema"),
     ] = Schema(type="string")
 
 
 class Path(ConcreteParameter):
-    """Path
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Path"""
 
     in_: Literal["path"] = Field(default="path", alias="in")  # Explicit default
     style: PathParamStyles = "simple"
@@ -387,14 +260,7 @@ class Path(ConcreteParameter):
 
 
 class Cookie(ConcreteParameter):
-    """Cookie
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Cookie"""
 
     in_: Literal["cookie"] = "cookie"
     style: CookieParamStyles = "form"
@@ -405,99 +271,64 @@ Parameter = Union[Query, Header, Cookie, Path]
 
 
 class RequestBody(BaseModel):
-    """Requestbody
+    """Requestbody"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    content: Dict[str, MediaType]
-    description: Optional[str] = None
-    required: Optional[bool] = None
+    content: dict[str, MediaType]
+    description: str | None = None
+    required: bool | None = None
 
 
 class Link(BaseModel):
-    """Link
+    """Link"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    operationRef: Optional[str] = None
-    operationId: Optional[str] = None
-    parameters: Optional[Dict[str, str]] = None
-    requestBody: Optional[str] = None
-    description: Optional[str] = None
-    server: Optional[Server] = None
+    operationRef: str | None = None
+    operationId: str | None = None
+    parameters: dict[str, str] | None = None
+    requestBody: str | None = None
+    description: str | None = None
+    server: Server | None = None
 
 
 class ResponseHeader(BaseModel):
-    """Responseheader
+    """Responseheader"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    description: Optional[str] = None
-    deprecated: Optional[bool] = None
+    description: str | None = None
+    deprecated: bool | None = None
     style: HeaderParamStyles = "simple"
     explode: bool = False
     spec: Annotated[
-        Optional[Union[Schema, Reference]],
+        Schema | Reference | None,
         Field(default=None, serialization_alias="schema"),
     ] = None
-    examples: Optional[Examples] = None
-    content: Optional[Dict[str, MediaType]] = None
+    examples: Examples | None = None
+    content: dict[str, MediaType] | None = None
 
 
 class Response(BaseModel):
-    """Response
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Response"""
 
     description: str
-    headers: Optional[Dict[str, Union[ResponseHeader, Reference]]] = None
-    content: Optional[Dict[str, MediaType]] = None
-    links: Optional[Dict[str, Union[Link, Reference]]] = None
+    headers: dict[str, ResponseHeader | Reference] | None = None
+    content: dict[str, MediaType] | None = None
+    links: dict[str, Link | Reference] | None = None
 
 
 class Operation(BaseModel):
-    """Operation
+    """Operation"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    responses: Dict[str, Union[Response, Reference]]
-    tags: Optional[List[str]] = None
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    externalDocs: Optional[ExternalDocumentation] = None
-    operationId: Optional[str] = None
-    parameters: Optional[List[Union[ConcreteParameter, Reference]]] = None
-    requestBody: Optional[Union[RequestBody, Reference]] = None
+    responses: dict[str, Response | Reference]
+    tags: list[str] | None = None
+    summary: str | None = None
+    description: str | None = None
+    externalDocs: ExternalDocumentation | None = None
+    operationId: str | None = None
+    parameters: list[ConcreteParameter | Reference] | None = None
+    requestBody: RequestBody | Reference | None = None
     # Using Any for Specification Extensions
-    callbacks: Optional[Dict[str, Union[Dict[str, PathItem], Reference]]] = None
-    deprecated: Optional[bool] = None
-    security: Optional[List[Dict[str, List[str]]]] = None
-    servers: Optional[List[Server]] = None
+    callbacks: dict[str, dict[str, PathItem] | Reference] | None = None
+    deprecated: bool | None = None
+    security: list[dict[str, list[str]]] | None = None
+    servers: list[Server] | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -506,28 +337,21 @@ class Operation(BaseModel):
 
 
 class PathItem(BaseModel):
-    """Pathitem
+    """Pathitem"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    ref: Annotated[Optional[str], Field(alias="$ref")] = None
-    summary: Optional[str] = None
-    description: Optional[str] = None
-    get: Optional[Operation] = None
-    put: Optional[Operation] = None
-    post: Optional[Operation] = None
-    delete: Optional[Operation] = None
-    options: Optional[Operation] = None
-    head: Optional[Operation] = None
-    patch: Optional[Operation] = None
-    trace: Optional[Operation] = None
-    servers: Optional[List[Server]] = None
-    parameters: Optional[List[Union[Parameter, Reference]]] = None
+    ref: Annotated[str | None, Field(alias="$ref")] = None
+    summary: str | None = None
+    description: str | None = None
+    get: Operation | None = None
+    put: Operation | None = None
+    post: Operation | None = None
+    delete: Operation | None = None
+    options: Operation | None = None
+    head: Operation | None = None
+    patch: Operation | None = None
+    trace: Operation | None = None
+    servers: list[Server] | None = None
+    parameters: list[Parameter | Reference] | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -539,31 +363,17 @@ SecuritySchemeName = Literal["apiKey", "http", "oauth2", "openIdConnect"]
 
 
 class SecurityBase(BaseModel):
-    """Securitybase
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Securitybase"""
 
     type: SecuritySchemeName
-    description: Optional[str] = None
+    description: str | None = None
 
 
 APIKeyLocation = Literal["query", "header", "cookie"]
 
 
 class APIKey(SecurityBase):
-    """Apikey
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Apikey"""
 
     name: str
     in_: Annotated[APIKeyLocation, Field(alias="in")]
@@ -571,140 +381,70 @@ class APIKey(SecurityBase):
 
 
 class HTTPBase(SecurityBase):
-    """Httpbase
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Httpbase"""
 
     scheme: str
     type: Literal["http"] = "http"
 
 
 class HTTPBearer(HTTPBase):
-    """Httpbearer
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Httpbearer"""
 
     scheme: Literal["bearer"] = "bearer"
-    bearerFormat: Optional[str] = None
+    bearerFormat: str | None = None
     type: Literal["http"] = "http"
 
 
 class OAuthFlow(BaseModel):
-    """Oauthflow
+    """Oauthflow"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    refreshUrl: Optional[AnyUrl] = None
-    scopes: Annotated[Optional[Mapping[str, str]], Field(default_factory=dict)]
+    refreshUrl: AnyUrl | None = None
+    scopes: Annotated[Mapping[str, str] | None, Field(default_factory=dict)]
 
 
 class OAuthFlowImplicit(OAuthFlow):
-    """Oauthflowimplicit
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Oauthflowimplicit"""
 
     authorizationUrl: str
 
 
 class OAuthFlowPassword(OAuthFlow):
-    """Oauthflowpassword
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Oauthflowpassword"""
 
     tokenUrl: str
 
 
 class OAuthFlowClientCredentials(OAuthFlow):
-    """Oauthflowclientcredentials
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Oauthflowclientcredentials"""
 
     tokenUrl: str
 
 
 class OAuthFlowAuthorizationCode(OAuthFlow):
-    """Oauthflowauthorizationcode
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Oauthflowauthorizationcode"""
 
     authorizationUrl: str
     tokenUrl: str
 
 
 class OAuthFlows(BaseModel):
-    """Oauthflows
+    """Oauthflows"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    implicit: Optional[OAuthFlowImplicit] = None
-    password: Optional[OAuthFlowPassword] = None
-    clientCredentials: Optional[OAuthFlowClientCredentials] = None
-    authorizationCode: Optional[OAuthFlowAuthorizationCode] = None
+    implicit: OAuthFlowImplicit | None = None
+    password: OAuthFlowPassword | None = None
+    clientCredentials: OAuthFlowClientCredentials | None = None
+    authorizationCode: OAuthFlowAuthorizationCode | None = None
 
 
 class OAuth2(SecurityBase):
-    """Oauth2
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Oauth2"""
 
     flows: OAuthFlows
     type: Literal["oauth2"] = "oauth2"
 
 
 class OpenIdConnect(SecurityBase):
-    """Openidconnect
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Openidconnect"""
 
     openIdConnectUrl: str
     type: Literal["openIdConnect"] = "openIdConnect"
@@ -714,60 +454,39 @@ SecurityScheme = Union[APIKey, HTTPBase, OAuth2, OpenIdConnect, HTTPBearer]
 
 
 class Components(BaseModel):
-    """Components
+    """Components"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    schemas: Optional[Dict[str, Union[Schema, Reference]]] = None
-    responses: Optional[Dict[str, Union[Response, Reference]]] = None
-    parameters: Optional[Dict[str, Union[Parameter, Reference]]] = None
-    examples: Optional[Examples] = None
-    requestBodies: Optional[Dict[str, Union[RequestBody, Reference]]] = None
-    headers: Optional[Dict[str, Union[Header, Reference]]] = None
-    securitySchemes: Optional[Dict[str, Union[SecurityScheme, Reference]]] = None
-    links: Optional[Dict[str, Union[Link, Reference]]] = None
-    callbacks: Optional[Dict[str, Union[Dict[str, PathItem], Reference]]] = None
+    schemas: dict[str, Schema | Reference] | None = None
+    responses: dict[str, Response | Reference] | None = None
+    parameters: dict[str, Parameter | Reference] | None = None
+    examples: Examples | None = None
+    requestBodies: dict[str, RequestBody | Reference] | None = None
+    headers: dict[str, Header | Reference] | None = None
+    securitySchemes: dict[str, SecurityScheme | Reference] | None = None
+    links: dict[str, Link | Reference] | None = None
+    callbacks: dict[str, dict[str, PathItem] | Reference] | None = None
 
 
 class Tag(BaseModel):
-    """Tag
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Tag"""
 
     name: str
-    description: Optional[str] = None
-    externalDocs: Optional[ExternalDocumentation] = None
+    description: str | None = None
+    externalDocs: ExternalDocumentation | None = None
 
 
 class OpenAPI(BaseModel):
-    """Openapi
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Openapi"""
 
     openapi: str
     info: Info
-    paths: Annotated[Dict[str, Union[PathItem, Extension]], Field(default_factory=dict)]
-    servers: Optional[List[Server]] = None
+    paths: Annotated[dict[str, PathItem | Extension], Field(default_factory=dict)]
+    servers: list[Server] | None = None
     # Using Any for Specification Extensions
     components: Components = Components()
-    security: Optional[List[Dict[str, List[str]]]] = None
-    tags: Optional[List[Tag]] = None
-    externalDocs: Optional[ExternalDocumentation] = None
+    security: list[dict[str, list[str]]] | None = None
+    tags: list[Tag] | None = None
+    externalDocs: ExternalDocumentation | None = None
 
 
 Schema.model_rebuild()

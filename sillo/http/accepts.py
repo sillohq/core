@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
@@ -20,7 +20,7 @@ class AcceptItem:
     """
 
     def __init__(
-        self, value: str, quality: float = 1.0, params: Optional[Dict[str, str]] = None
+        self, value: str, quality: float = 1.0, params: dict[str, str] | None = None
     ):
         """Initialize an AcceptItem with a value, quality factor, and optional params.
 
@@ -96,7 +96,7 @@ class AcceptsInfo:
         self._parsed_accept_encoding = None
 
     @property
-    def accept(self) -> List[AcceptItem]:
+    def accept(self) -> list[AcceptItem]:
         """Return the parsed list of Accept header items from the request.
 
         Checks ``request.state.accepts_parsed`` first for pre-parsed data
@@ -124,7 +124,7 @@ class AcceptsInfo:
         return self._parsed_accept
 
     @property
-    def accept_language(self) -> List[AcceptItem]:
+    def accept_language(self) -> list[AcceptItem]:
         """Return the parsed list of Accept-Language header items.
 
         Checks ``request.state.accepts_parsed`` first for pre-parsed data
@@ -153,7 +153,7 @@ class AcceptsInfo:
         return self._parsed_accept_language
 
     @property
-    def accept_charset(self) -> List[AcceptItem]:
+    def accept_charset(self) -> list[AcceptItem]:
         """Return the parsed list of Accept-Charset header items.
 
         Checks ``request.state.accepts_parsed`` first for pre-parsed data
@@ -182,7 +182,7 @@ class AcceptsInfo:
         return self._parsed_accept_charset
 
     @property
-    def accept_encoding(self) -> List[AcceptItem]:
+    def accept_encoding(self) -> list[AcceptItem]:
         """Return the parsed list of Accept-Encoding header items.
 
         Checks ``request.state.accepts_parsed`` first for pre-parsed data
@@ -210,7 +210,7 @@ class AcceptsInfo:
                 )
         return self._parsed_accept_encoding
 
-    def get_accepted_types(self) -> List[str]:
+    def get_accepted_types(self) -> list[str]:
         """Return a flat list of accepted media type values with positive quality.
 
         Filters out any entries whose quality factor is zero (explicitly
@@ -229,7 +229,7 @@ class AcceptsInfo:
         """
         return [item.value for item in self.accept if item.quality > 0]
 
-    def get_accepted_languages(self) -> List[str]:
+    def get_accepted_languages(self) -> list[str]:
         """Return a flat list of accepted language tags with positive quality.
 
         Filters out any entries whose quality factor is zero (explicitly
@@ -248,7 +248,7 @@ class AcceptsInfo:
         """
         return [item.value for item in self.accept_language if item.quality > 0]
 
-    def get_accepted_charsets(self) -> List[str]:
+    def get_accepted_charsets(self) -> list[str]:
         """Return a flat list of accepted charset names with positive quality.
 
         Filters out any entries whose quality factor is zero (explicitly
@@ -267,7 +267,7 @@ class AcceptsInfo:
         """
         return [item.value for item in self.accept_charset if item.quality > 0]
 
-    def get_accepted_encodings(self) -> List[str]:
+    def get_accepted_encodings(self) -> list[str]:
         """Return a flat list of accepted encoding tokens with positive quality.
 
         Filters out any entries whose quality factor is zero (explicitly
@@ -287,7 +287,7 @@ class AcceptsInfo:
         return [item.value for item in self.accept_encoding if item.quality > 0]
 
 
-def parse_accept_header(accept_header: str) -> List[AcceptItem]:
+def parse_accept_header(accept_header: str) -> list[AcceptItem]:
     """Parse an HTTP Accept header string into a sorted list of AcceptItem objects.
 
     Splits the raw header value on commas, extracts the media range, quality
@@ -317,7 +317,7 @@ def parse_accept_header(accept_header: str) -> List[AcceptItem]:
         if not part:
             continue
         quality = 1.0
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         if ";" in part:
             media_range, param_str = part.split(";", 1)
             media_range = media_range.strip()
@@ -343,7 +343,7 @@ def parse_accept_header(accept_header: str) -> List[AcceptItem]:
     return items
 
 
-def parse_accept_language(accept_language: str) -> List[AcceptItem]:
+def parse_accept_language(accept_language: str) -> list[AcceptItem]:
     """Parse an HTTP Accept-Language header into a sorted list of AcceptItem objects.
 
     Delegates to :func:`parse_accept_header` since the grammar for
@@ -365,7 +365,7 @@ def parse_accept_language(accept_language: str) -> List[AcceptItem]:
     return parse_accept_header(accept_language)
 
 
-def parse_accept_charset(accept_charset: str) -> List[AcceptItem]:
+def parse_accept_charset(accept_charset: str) -> list[AcceptItem]:
     """Parse an HTTP Accept-Charset header into a sorted list of AcceptItem objects.
 
     Delegates to :func:`parse_accept_header` since the grammar for
@@ -387,7 +387,7 @@ def parse_accept_charset(accept_charset: str) -> List[AcceptItem]:
     return parse_accept_header(accept_charset)
 
 
-def parse_accept_encoding(accept_encoding: str) -> List[AcceptItem]:
+def parse_accept_encoding(accept_encoding: str) -> list[AcceptItem]:
     """Parse an HTTP Accept-Encoding header into a sorted list of AcceptItem objects.
 
     Delegates to :func:`parse_accept_header` since the grammar for
@@ -440,8 +440,8 @@ def matches_media_type(pattern: str, media_type: str) -> bool:
 
 
 def negotiate_content_type(
-    accept_header: str, available_types: List[str]
-) -> Optional[str]:
+    accept_header: str, available_types: list[str]
+) -> str | None:
     """Negotiate the best content type from available options given an Accept header.
 
     Performs RFC 7231 content negotiation by iterating through the parsed
@@ -486,8 +486,8 @@ def negotiate_content_type(
 
 
 def negotiate_language(
-    accept_language: str, available_languages: List[str]
-) -> Optional[str]:
+    accept_language: str, available_languages: list[str]
+) -> str | None:
     """Negotiate the best language from available options given an Accept-Language header.
 
     Iterates through parsed Accept-Language items in preference order and
@@ -527,9 +527,7 @@ def negotiate_language(
     return available_languages[0] if available_languages else None
 
 
-def negotiate_charset(
-    accept_charset: str, available_charsets: List[str]
-) -> Optional[str]:
+def negotiate_charset(accept_charset: str, available_charsets: list[str]) -> str | None:
     """Negotiate the best charset from available options given an Accept-Charset header.
 
     Iterates through parsed Accept-Charset items in preference order and
@@ -565,8 +563,8 @@ def negotiate_charset(
 
 
 def negotiate_encoding(
-    accept_encoding: str, available_encodings: List[str]
-) -> List[str]:
+    accept_encoding: str, available_encodings: list[str]
+) -> list[str]:
     """Negotiate acceptable encodings from available options given an Accept-Encoding header.
 
     Iterates through parsed Accept-Encoding items and collects all
@@ -591,7 +589,7 @@ def negotiate_encoding(
     if not accept_encoding or not available_encodings:
         return []
     accept_items = parse_accept_encoding(accept_encoding)
-    accepted_encodings: List[str] = []
+    accepted_encodings: list[str] = []
     for accept_item in accept_items:
         if accept_item.quality == 0:
             continue
@@ -605,7 +603,7 @@ def negotiate_encoding(
     return accepted_encodings
 
 
-def get_best_match(accept_header: str, options: List[str]) -> Optional[str]:
+def get_best_match(accept_header: str, options: list[str]) -> str | None:
     """Find the best matching option from a list given an Accept header.
 
     Parses the Accept header and iterates through items in preference
@@ -638,7 +636,7 @@ def get_best_match(accept_header: str, options: List[str]) -> Optional[str]:
     return options[0] if options else None
 
 
-def get_accepts_info(request: Request) -> Dict[str, Any]:
+def get_accepts_info(request: Request) -> dict[str, Any]:
     """Build a comprehensive dictionary of parsed Accept-family header data.
 
     Parses all four Accept-family headers (Accept, Accept-Language,
@@ -678,7 +676,7 @@ def get_accepts_info(request: Request) -> Dict[str, Any]:
     }
 
 
-def create_vary_header(existing_vary: Optional[str], new_fields: List[str]) -> str:
+def create_vary_header(existing_vary: str | None, new_fields: list[str]) -> str:
     """Merge new field names into an existing Vary header value without duplicates.
 
     Takes the current ``Vary`` header string (if any) and appends each
@@ -736,7 +734,7 @@ def get_accepts_from_request(
 
 def get_accepted_content_types(
     request: Request, attribute_name: str = "accepts_parsed"
-) -> List[str]:
+) -> list[str]:
     """Extract accepted content type values from pre-parsed request state.
 
     Reads the ``accepts_parsed`` attribute (or the specified attribute
@@ -765,7 +763,7 @@ def get_accepted_content_types(
 
 def get_accepted_languages(
     request: Request, attribute_name: str = "accepts_parsed"
-) -> List[str]:
+) -> list[str]:
     """Extract accepted language tags from pre-parsed request state.
 
     Reads the ``accepts_parsed`` attribute (or the specified attribute
@@ -794,7 +792,7 @@ def get_accepted_languages(
 
 def get_accepted_charsets(
     request: Request, attribute_name: str = "accepts_parsed"
-) -> List[str]:
+) -> list[str]:
     """Extract accepted charset names from pre-parsed request state.
 
     Reads the ``accepts_parsed`` attribute (or the specified attribute
@@ -823,7 +821,7 @@ def get_accepted_charsets(
 
 def get_accepted_encodings(
     request: Request, attribute_name: str = "accepts_parsed"
-) -> List[str]:
+) -> list[str]:
     """Extract accepted encoding tokens from pre-parsed request state.
 
     Reads the ``accepts_parsed`` attribute (or the specified attribute
@@ -851,8 +849,8 @@ def get_accepted_encodings(
 
 
 def get_best_accepted_content_type(
-    request: Request, available_types: List[str], attribute_name: str = "accepts_parsed"
-) -> Optional[str]:
+    request: Request, available_types: list[str], attribute_name: str = "accepts_parsed"
+) -> str | None:
     """Determine the best content type match from available options using request state.
 
     Reads pre-parsed Accept header data from the request state and
@@ -885,9 +883,9 @@ def get_best_accepted_content_type(
 
 def get_best_accepted_language(
     request: Request,
-    available_languages: List[str],
+    available_languages: list[str],
     attribute_name: str = "accepts_parsed",
-) -> Optional[str]:
+) -> str | None:
     """Determine the best language match from available options using request state.
 
     Reads pre-parsed Accept-Language data from the request state and
@@ -986,7 +984,7 @@ class AcceptsMiddleware(BaseMiddleware):
         self.default_charset = default_charset
         self.set_vary_header = set_vary_header
         self.store_accepts_info = store_accepts_info
-        self.vary: List[str] = []
+        self.vary: list[str] = []
 
     async def process_request(
         self, request: Request, response: Response, call_next: Any
@@ -1142,8 +1140,8 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
     def negotiate_content_type(
         self,
         request: Request,
-        available_types: List[str],
-        default_type: Optional[str] = None,
+        available_types: list[str],
+        default_type: str | None = None,
     ) -> str:
         """Negotiate the best content type for a request from available server types.
 
@@ -1178,8 +1176,8 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
     def negotiate_language(
         self,
         request: Request,
-        available_languages: List[str],
-        default_language: Optional[str] = None,
+        available_languages: list[str],
+        default_language: str | None = None,
     ) -> str:
         """Negotiate the best language for a request from available server languages.
 
@@ -1228,8 +1226,8 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
     def __init__(
         self,
         *,
-        available_types: List[str],
-        available_languages: Optional[List[str]] = None,
+        available_types: list[str],
+        available_languages: list[str] | None = None,
         **kwargs: Any,
     ):
         """Initialize StrictContentNegotiationMiddleware with required available types.
@@ -1304,9 +1302,12 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
                 },
                 status_code=406,
             )
-        setattr(request, "negotiated_content_type", best_type)
+        # Attached dynamically for downstream handlers to read. These were
+        # written with setattr(), which only had the effect of hiding them from
+        # the type checker — they are not declared on Request either way.
+        request.negotiated_content_type = best_type  # ty: ignore[unresolved-attribute]
         best_language = self.negotiate_language(
             request, self.available_languages, self.default_language
         )
-        setattr(request, "negotiated_language", best_language)
+        request.negotiated_language = best_language  # ty: ignore[unresolved-attribute]
         return await call_next()

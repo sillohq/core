@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import secrets
 from datetime import datetime, timezone
-from typing import Optional
 
 from tortoise import fields
 
@@ -198,8 +197,8 @@ class ApiKeyManager:
         self,
         user_id: int,
         name: str,
-        scopes: Optional[list[str]] = None,
-        expires_at: Optional[datetime] = None,
+        scopes: list[str] | None = None,
+        expires_at: datetime | None = None,
         prefix: str = "sillo",
     ) -> tuple[str, ApiKey]:
         """Generate a new API key and persist it in the database.
@@ -238,7 +237,7 @@ class ApiKeyManager:
         )
         return full_key, apikey
 
-    async def verify(self, raw_key: str) -> Optional[ApiKey]:
+    async def verify(self, raw_key: str) -> ApiKey | None:
         """Authenticate a raw API key and return the associated model instance.
 
         Hashes the provided key, looks it up among active keys, and checks

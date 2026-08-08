@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Annotated, Optional
+from typing import Annotated
 
 from tortoise import connections
 from typing_extensions import Doc
@@ -55,18 +55,7 @@ class TransactionContext:
     """Context for manual transaction management."""
 
     def __init__(self, conn, tx):
-        """Init
-
-        Args:
-            conn: [description]
-            tx: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self._conn = conn
         self._tx = tx
 

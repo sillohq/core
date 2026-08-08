@@ -63,4 +63,4 @@ def get_route_path(scope: Scope) -> str:
     if path == root_path:
         return ""
 
-    return path[len(root_path) :] if path.startswith(root_path) else path
+    return path.removeprefix(root_path)

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import base64
-import hashlib
 import hmac as _hmac
 import secrets
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # See sillo.admin.templating: the None fallbacks are runtime-only.
@@ -117,10 +116,10 @@ def decrypt(token: str, key: bytes) -> str:
 
 def derive_key(
     password: str,
-    salt: Optional[bytes] = None,
+    salt: bytes | None = None,
     length: int = 32,
     iterations: int = 600_000,
-) -> Tuple[bytes, bytes]:
+) -> tuple[bytes, bytes]:
     """Derive a cryptographic key from a password using PBKDF2-HMAC-SHA256.
 
     Uses the PBKDF2 key derivation function with HMAC-SHA256 to produce a
@@ -195,7 +194,7 @@ def sign_value(value: str, secret: str, algorithm: str = "sha256") -> str:
 
 
 def unsign_value(
-    signed: str, secret: str, algorithm: str = "sha256", max_age: Optional[int] = None
+    signed: str, secret: str, algorithm: str = "sha256", max_age: int | None = None
 ) -> str:
     """Verify and extract the original value from an HMAC-signed token.
 
@@ -254,5 +253,3 @@ class BadSignature(Exception):
     Attributes:
         message: A human-readable description of the verification failure.
     """
-
-    pass

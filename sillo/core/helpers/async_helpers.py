@@ -12,11 +12,7 @@ import functools
 import sys
 import typing
 from contextlib import contextmanager
-
-if sys.version_info >= (3, 10):  # pragma: no cover
-    from typing import TypeGuard
-else:  # pragma: no cover
-    from typing_extensions import TypeGuard
+from typing import TypeGuard
 
 has_exceptiongroups = True
 if sys.version_info < (3, 11):  # pragma: no cover
@@ -199,7 +195,7 @@ class AwaitableOrContextManagerWrapper(typing.Generic[SupportsAsyncCloseType]):
         self.entered = await self.aw
         return self.entered
 
-    async def __aexit__(self, *args: typing.Any) -> typing.Optional[bool]:
+    async def __aexit__(self, *args: object) -> bool | None:
         """Exit the async context by closing the resolved object.
 
         Calls the ``close()`` method on the object that was resolved
@@ -254,4 +250,7 @@ def collapse_excgroups() -> typing.Generator[None, None, None]:
             while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:  # ty: ignore[unresolved-attribute]
                 exc = exc.exceptions[0]  # ty: ignore[unresolved-attribute]  # pragma: no cover
 
-        raise exc
+        # `raise exc`, not a bare `raise`: exc has been rebound to the unwrapped
+        # exception above, and a bare raise would re-raise the original group —
+        # which is the entire thing this context manager exists to undo.
+        raise exc  # noqa: TRY201

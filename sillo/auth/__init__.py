@@ -47,17 +47,17 @@ __getattr__ = deferred(
 )
 
 __all__ = [
-    "AuthenticationMiddleware",
-    "AuthenticationBackend",
     "APIKeyAuthBackend",
+    "AuthenticationBackend",
+    "AuthenticationMiddleware",
+    "BaseUser",
     "JWTAuthBackend",
     "SessionAuthBackend",
+    "SimpleUser",
+    "apikey",
     "create_jwt",
     "decode_jwt",
-    "useAuth",
-    "BaseUser",
-    "SimpleUser",
     "jwt_auth",
     "session_auth",
-    "apikey",
+    "useAuth",
 ]

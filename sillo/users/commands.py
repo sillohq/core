@@ -21,7 +21,7 @@ application startup, or ``Tortoise.init`` in a script.
 
 from __future__ import annotations
 
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -108,7 +108,7 @@ async def find_user(
     *,
     model: Annotated[UserModel, Doc("User model. Defaults to sillo's.")] = None,
     include_inactive: Annotated[bool, Doc("Match deactivated accounts too.")] = True,
-) -> Optional[UserModel]:
+) -> UserModel | None:
     """Look a user up by either of the things people know them by.
 
     Queries the model directly rather than through ``objects.get_by_email``,
@@ -206,7 +206,7 @@ async def list_users(
     limit: Annotated[int, Doc("Maximum rows to return.")] = 50,
     offset: Annotated[int, Doc("Rows to skip.")] = 0,
     staff_only: Annotated[bool, Doc("Only accounts with admin access.")] = False,
-) -> List[UserModel]:
+) -> list[UserModel]:
     """List users, newest first.
 
     Returns:

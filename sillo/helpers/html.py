@@ -3,8 +3,6 @@ from __future__ import annotations
 import html as _html
 import re
 from html.parser import HTMLParser
-from typing import Dict, List, Optional
-
 
 _ALLOWED_TAGS_DEFAULT = frozenset(
     {"b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li", "code", "pre", "span"}
@@ -86,7 +84,7 @@ def strip_tags(html: str) -> str:
 
         def __init__(self):
             super().__init__()
-            self.result: List[str] = []
+            self.result: list[str] = []
 
         def handle_data(self, data):
             """Append a chunk of raw text data encountered in the HTML.
@@ -107,8 +105,8 @@ def strip_tags(html: str) -> str:
 
 def sanitize_html(
     html: str,
-    allowed_tags: Optional[set[str] | frozenset[str]] = None,
-    allowed_attrs: Optional[set[str] | frozenset[str]] = None,
+    allowed_tags: set[str] | frozenset[str] | None = None,
+    allowed_attrs: set[str] | frozenset[str] | None = None,
     strip: bool = True,
 ) -> str:
     """Sanitize an HTML string by removing disallowed tags and dangerous attributes.
@@ -181,7 +179,7 @@ def sanitize_html(
     return html
 
 
-def safe_attrs(attrs: Dict[str, str]) -> str:
+def safe_attrs(attrs: dict[str, str]) -> str:
     """Render a dictionary of attributes into a safe HTML attribute string.
 
     Takes a mapping of attribute names to values and produces a properly

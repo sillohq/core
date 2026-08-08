@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sillo.objects import URLPath
 from sillo.types import ASGIApp, Receive, Scope, Send
@@ -108,7 +108,6 @@ class BaseRouter(ABC):
                 application should have a prefix attribute or be wrapped
                 in a Group with a specific path.
         """
-        ...
 
 
 class BaseRoute(ABC):
@@ -131,9 +130,9 @@ class BaseRoute(ABC):
     def __init__(
         self,
         path: str,
-        methods: List[str] = [],
-        name: Optional[str] = None,
-        **kwargs: Dict[str, Any],
+        methods: list[str] = [],
+        name: str | None = None,
+        **kwargs: dict[str, Any],
     ) -> None:
         """Initialize a base route with path, HTTP methods, and optional name.
 
@@ -214,7 +213,7 @@ class BaseRoute(ABC):
         raise NotImplementedError("Subclasses must implement this method")
 
     @abstractmethod
-    def url_path_for(self, name: str, **path_params: Dict[str, Any]) -> URLPath:
+    def url_path_for(self, name: str, **path_params: dict[str, Any]) -> URLPath:
         """Generate a URL path for a named route by substituting parameters.
 
         Performs reverse URL resolution by taking a route name and a set of

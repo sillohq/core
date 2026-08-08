@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import typing
+from collections.abc import Callable
 from copy import copy
 from dataclasses import dataclass, field
 from operator import attrgetter
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
@@ -21,8 +22,8 @@ if typing.TYPE_CHECKING:
     from sillo.core.http import Request
 
 __all__ = [
-    "LocationSpec",
     "CompiledValidator",
+    "LocationSpec",
     "ResponseModelValidator",
     "compile_validator",
 ]
@@ -91,27 +92,27 @@ class LocationSpec:
 
     location: ParameterLocation
     model: type[BaseModel]
-    markers: Dict[str, ParameterExtractor] = field(default_factory=dict)
+    markers: dict[str, ParameterExtractor] = field(default_factory=dict)
     list_aliases: frozenset = frozenset()
-    passthrough: Dict[str, str] = field(default_factory=dict)
+    passthrough: dict[str, str] = field(default_factory=dict)
 
     # --- Precomputed at registration; read-only at request time. -------------
     #: ``request`` attribute holding this location's values, as a C-level
     #: attrgetter so the hot path does no branching to find its source.
-    source_getter: Optional[Callable[[Any], Any]] = None
+    source_getter: Callable[[Any], Any] | None = None
     #: Wire names read with a plain ``get``.
-    scalar_aliases: Tuple[str, ...] = ()
+    scalar_aliases: tuple[str, ...] = ()
     #: Wire names read with ``getlist`` because the field is a sequence. Almost
     #: always empty, which lets the hot path skip that branch entirely.
-    list_plan: Tuple[str, ...] = ()
+    list_plan: tuple[str, ...] = ()
     #: ``(param_name, alias, default, is_required)`` for markers that bypass
     #: Pydantic — currently uploaded files.
-    passthrough_plan: Tuple[Tuple[str, str, Any, bool], ...] = ()
+    passthrough_plan: tuple[tuple[str, str, Any, bool], ...] = ()
     #: ``self.location.value``, resolved once to keep enum lookups off the
     #: error path.
     location_value: str = ""
 
-    def gather(self, source: Any) -> Dict[str, Any]:
+    def gather(self, source: Any) -> dict[str, Any]:
         """Pull this location's raw values out of a request mapping.
 
         Walks precomputed alias tuples rather than re-deriving names, list-ness,
@@ -129,7 +130,7 @@ class LocationSpec:
             A dictionary keyed by wire name containing only the keys present in
             ``source``.
         """
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         if source is None:
             return data
 
@@ -153,7 +154,7 @@ class LocationSpec:
 
         return data
 
-    def validate(self, source: Any) -> Tuple[Dict[str, Any], Any]:
+    def validate(self, source: Any) -> tuple[dict[str, Any], Any]:
         """Validate this location and produce handler keyword arguments.
 
         Args:
@@ -224,9 +225,9 @@ class CompiledValidator:
             the existing synchronous extractor machinery.
     """
 
-    specs: Tuple[LocationSpec, ...] = ()
-    form_spec: Optional[LocationSpec] = None
-    legacy: Tuple[SolvedParamDependency, ...] = ()
+    specs: tuple[LocationSpec, ...] = ()
+    form_spec: LocationSpec | None = None
+    legacy: tuple[SolvedParamDependency, ...] = ()
 
     @property
     def needs_form(self) -> bool:
@@ -251,8 +252,8 @@ class CompiledValidator:
         return bool(self.specs) or self.needs_form
 
     def validate_sync(
-        self, request: "Request"
-    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+        self, request: Request
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """Validate every location available without awaiting the body.
 
         Args:
@@ -263,8 +264,8 @@ class CompiledValidator:
             error dictionaries. Errors from all locations are gathered so a
             client sees every problem at once rather than one per round trip.
         """
-        values: Dict[str, Any] = {}
-        errors: List[Dict[str, Any]] = []
+        values: dict[str, Any] = {}
+        errors: list[dict[str, Any]] = []
 
         for spec in self.specs:
             if spec.source_getter is None:
@@ -276,7 +277,7 @@ class CompiledValidator:
 
         return values, errors
 
-    def validate_form(self, form: Any) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    def validate_form(self, form: Any) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """Validate parsed form data against the route's form declarations.
 
         Args:
@@ -294,7 +295,7 @@ class CompiledValidator:
 
 def _build_spec(
     location: ParameterLocation,
-    markers: List[Tuple[str, ParameterExtractor]],
+    markers: list[tuple[str, ParameterExtractor]],
     model_name: str,
 ) -> LocationSpec:
     """Compile one location's markers into a synthetic Pydantic model.
@@ -309,10 +310,10 @@ def _build_spec(
         A ``LocationSpec`` holding the generated model and the metadata needed
         to feed it at request time.
     """
-    definitions: Dict[str, Any] = {}
+    definitions: dict[str, Any] = {}
     list_aliases = set()
-    passthrough: Dict[str, str] = {}
-    by_name: Dict[str, ParameterExtractor] = {}
+    passthrough: dict[str, str] = {}
+    by_name: dict[str, ParameterExtractor] = {}
 
     for param_name, marker in markers:
         by_name[param_name] = marker
@@ -368,7 +369,7 @@ def _build_spec(
 
 
 def compile_validator(
-    markers: List[Tuple[str, ParameterExtractor]],
+    markers: list[tuple[str, ParameterExtractor]],
     *,
     name: str = "Route",
     strict: bool = False,
@@ -392,8 +393,8 @@ def compile_validator(
     Returns:
         A ``CompiledValidator`` ready to be stored on the route.
     """
-    legacy: List[SolvedParamDependency] = []
-    grouped: Dict[ParameterLocation, List[Tuple[str, ParameterExtractor]]] = {}
+    legacy: list[SolvedParamDependency] = []
+    grouped: dict[ParameterLocation, list[tuple[str, ParameterExtractor]]] = {}
 
     for param_name, marker in markers:
         # Bind a copy rather than the marker itself. A marker held in a module
@@ -450,7 +451,7 @@ class ResponseModelValidator:
         dump_options: Options forwarded to ``model_dump`` when serializing.
     """
 
-    __slots__ = ("model", "many", "dump_options", "_adapter")
+    __slots__ = ("_adapter", "dump_options", "many", "model")
 
     def __init__(
         self,
@@ -483,7 +484,7 @@ class ResponseModelValidator:
             "exclude_defaults": exclude_defaults,
             "by_alias": by_alias,
         }
-        self._adapter = TypeAdapter(List[model] if many else model)  # type: ignore[valid-type]
+        self._adapter = TypeAdapter(list[model] if many else model)  # type: ignore[valid-type]
 
     def validate(self, value: Any) -> Any:
         """Validate a handler return value and serialize it to plain data.
@@ -519,7 +520,7 @@ class ResponseModelValidator:
         )
 
 
-def raise_if_errors(errors: List[Dict[str, Any]], *, body: Any = None) -> None:
+def raise_if_errors(errors: list[dict[str, Any]], *, body: Any = None) -> None:
     """Raise a request validation error when any failures were collected.
 
     Args:

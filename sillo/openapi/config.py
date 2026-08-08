@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional, Type, Union
-
 from pydantic import BaseModel
 
 from .models import (
@@ -12,55 +10,29 @@ from .models import (
     OpenAPI,
     Parameter,
     Reference,
-)
-from .models import Response as OpenAPIResponse
-from .models import (
     Schema,
     SecurityScheme,
     Server,
     Tag,
 )
+from .models import Response as OpenAPIResponse
 
 
 class OpenAPIConfig:
-    """Openapiconfig
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Openapiconfig"""
 
     def __init__(
         self,
         title: str = "API Documentation",
         version: str = "1.0.0",
         description: str = "",
-        servers: Optional[List[Server]] = [],
-        contact: Optional[Contact] = None,
-        license: Optional[License] = None,
-        termsOfService: Optional[str] = None,
+        servers: list[Server] | None = [],
+        contact: Contact | None = None,
+        license: License | None = None,
+        termsOfService: str | None = None,
         openapi_version: str = "3.0.0",
     ):
-        """Init
-
-        Args:
-            title: [description]
-            version: [description]
-            description: [description]
-            servers: [description]
-            contact: [description]
-            license: [description]
-            termsOfService: [description]
-            openapi_version: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.openapi_spec = OpenAPI(
             openapi=openapi_version,
             info=Info(
@@ -77,7 +49,7 @@ class OpenAPIConfig:
         )
 
     @property
-    def security_schemes(self) -> Dict[str, Union[SecurityScheme, Reference]]:
+    def security_schemes(self) -> dict[str, SecurityScheme | Reference]:
         """The security schemes registered on this document.
 
         Reads the document itself. This used to be a separate dict assigned
@@ -104,7 +76,7 @@ class OpenAPIConfig:
 
         self.openapi_spec.components.securitySchemes[name] = scheme
 
-    def add_schema(self, name: str, schema: Union[Type[BaseModel], Schema]):
+    def add_schema(self, name: str, schema: type[BaseModel] | Schema):
         """Add a schema to the OpenAPI components section"""
         if not self.openapi_spec.components:
             self.openapi_spec.components = Components()
@@ -170,7 +142,7 @@ class OpenAPIConfig:
         """Set external documentation for the OpenAPI specification"""
         self.openapi_spec.externalDocs = external_docs
 
-    def set_global_security(self, security: List[Dict[str, List[str]]]):
+    def set_global_security(self, security: list[dict[str, list[str]]]):
         """Set global security requirements for all operations"""
         self.openapi_spec.security = security
 

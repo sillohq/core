@@ -10,7 +10,8 @@ methods: ``map``, ``filter``, ``pluck``, ``group_by``, ``key_by``,
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Dict, Iterator, List, Optional, TypeVar
+from collections.abc import Callable, Iterator
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
@@ -30,123 +31,43 @@ class Collection:
         total = collection.sum("balance")
     """
 
-    def __init__(self, items: Optional[List[Any]] = None):
-        """Init
+    def __init__(self, items: list[Any] | None = None):
+        """Init"""
+        self._items: list[Any] = items or []
 
-        Args:
-            items: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._items: List[Any] = items or []
-
-    def map(self, callback: Callable[[Any], Any]) -> "Collection":
-        """Map
-
-        Args:
-            callback: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def map(self, callback: Callable[[Any], Any]) -> Collection:
+        """Map"""
         return Collection([callback(item) for item in self._items])
 
-    def filter(self, callback: Callable[[Any], bool]) -> "Collection":
-        """Filter
-
-        Args:
-            callback: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def filter(self, callback: Callable[[Any], bool]) -> Collection:
+        """Filter"""
         return Collection([item for item in self._items if callback(item)])
 
-    def reject(self, callback: Callable[[Any], bool]) -> "Collection":
-        """Reject
-
-        Args:
-            callback: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def reject(self, callback: Callable[[Any], bool]) -> Collection:
+        """Reject"""
         return Collection([item for item in self._items if not callback(item)])
 
-    def pluck(self, key: str) -> "Collection":
-        """Pluck
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def pluck(self, key: str) -> Collection:
+        """Pluck"""
         return Collection([getattr(item, key, None) for item in self._items])
 
-    def group_by(self, key: str) -> Dict[Any, "Collection"]:
-        """Group By
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        result: Dict[Any, List] = {}
+    def group_by(self, key: str) -> dict[Any, Collection]:
+        """Group By"""
+        result: dict[Any, list] = {}
         for item in self._items:
             val = getattr(item, key, None)
             result.setdefault(val, []).append(item)
         return {k: Collection(v) for k, v in result.items()}
 
-    def key_by(self, key: str) -> Dict[Any, Any]:
-        """Key By
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        result: Dict[Any, Any] = {}
+    def key_by(self, key: str) -> dict[Any, Any]:
+        """Key By"""
+        result: dict[Any, Any] = {}
         for item in self._items:
             result[getattr(item, key, None)] = item
         return result
 
-    def sort_by(self, key: str, *, descending: bool = False) -> "Collection":
-        """Sort By
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def sort_by(self, key: str, *, descending: bool = False) -> Collection:
+        """Sort By"""
         return Collection(
             sorted(
                 self._items,
@@ -155,201 +76,70 @@ class Collection:
             )
         )
 
-    def chunk(self, size: int) -> Iterator["Collection"]:
-        """Chunk
-
-        Args:
-            size: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def chunk(self, size: int) -> Iterator[Collection]:
+        """Chunk"""
         for i in range(0, len(self._items), size):
             yield Collection(self._items[i : i + size])
 
     def first(self, default=None) -> Any:
-        """First
-
-        Args:
-            default: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """First"""
         return self._items[0] if self._items else default
 
     def last(self, default=None) -> Any:
-        """Last
-
-        Args:
-            default: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Last"""
         return self._items[-1] if self._items else default
 
-    def take(self, count: int) -> "Collection":
-        """Take
-
-        Args:
-            count: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def take(self, count: int) -> Collection:
+        """Take"""
         return Collection(self._items[:count])
 
-    def skip(self, count: int) -> "Collection":
-        """Skip
-
-        Args:
-            count: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def skip(self, count: int) -> Collection:
+        """Skip"""
         return Collection(self._items[count:])
 
-    def sum(self, key: Optional[str] = None) -> float:
-        """Sum
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def sum(self, key: str | None = None) -> float:
+        """Sum"""
         if key:
             return sum(getattr(item, key, 0) or 0 for item in self._items)
         return sum(self._items)
 
-    def avg(self, key: Optional[str] = None) -> float:
-        """Avg
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def avg(self, key: str | None = None) -> float:
+        """Avg"""
         values = (
             [getattr(item, key, 0) or 0 for item in self._items] if key else self._items
         )
         return sum(values) / len(values) if values else 0.0
 
-    def min(self, key: Optional[str] = None):
-        """Min
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def min(self, key: str | None = None):
+        """Min"""
         if key:
             return min(getattr(item, key, float("inf")) for item in self._items)
         return min(self._items)
 
-    def max(self, key: Optional[str] = None):
-        """Max
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def max(self, key: str | None = None):
+        """Max"""
         if key:
             return max(getattr(item, key, float("-inf")) for item in self._items)
         return max(self._items)
 
     def count(self) -> int:
-        """Count
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Count"""
         return len(self._items)
 
     def is_empty(self) -> bool:
-        """Is Empty
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Empty"""
         return len(self._items) == 0
 
     def is_not_empty(self) -> bool:
-        """Is Not Empty
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Not Empty"""
         return not self.is_empty()
 
     def contains(self, callback: Callable[[Any], bool]) -> bool:
-        """Contains
-
-        Args:
-            callback: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Contains"""
         return any(callback(item) for item in self._items)
 
-    def unique(self, key: Optional[str] = None) -> "Collection":
-        """Unique
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def unique(self, key: str | None = None) -> Collection:
+        """Unique"""
         if key:
             seen = set()
             result = []
@@ -361,88 +151,33 @@ class Collection:
             return Collection(result)
         return Collection(list(set(self._items)))
 
-    def to_list(self) -> List[Any]:
-        """To List
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_list(self) -> list[Any]:
+        """To List"""
         return list(self._items)
 
-    def to_dict(self) -> List[Any]:
-        """To Dict
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_dict(self) -> list[Any]:
+        """To Dict"""
         return [
             item.to_dict() if hasattr(item, "to_dict") else str(item)
             for item in self._items
         ]
 
-    def to_json(self, indent: Optional[int] = None) -> str:
-        """To Json
-
-        Args:
-            indent: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_json(self, indent: int | None = None) -> str:
+        """To Json"""
         return json.dumps(self.to_dict(), indent=indent, default=str)
 
     def __iter__(self):
-        """Iter
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Iter"""
         return iter(self._items)
 
     def __len__(self):
-        """Len
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Len"""
         return len(self._items)
 
     def __getitem__(self, index):
-        """Getitem
-
-        Args:
-            index: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Getitem"""
         return self._items[index]
 
     def __repr__(self):
-        """Repr
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Repr"""
         return f"Collection({len(self._items)} items)"

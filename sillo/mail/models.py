@@ -7,34 +7,20 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 
 @dataclass
 class EmailAttachment:
-    """Emailattachment
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Emailattachment"""
 
     filename: str
-    content: Union[bytes, str]
-    content_type: Optional[str] = None
-    content_id: Optional[str] = None
+    content: bytes | str
+    content_type: str | None = None
+    content_id: str | None = None
 
     def __post_init__(self) -> None:
-        """Post Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Post Init"""
         if isinstance(self.content, str):
             path = Path(self.content)
             if path.exists():
@@ -49,39 +35,25 @@ class EmailAttachment:
 
 @dataclass
 class EmailMessage:
-    """Emailmessage
+    """Emailmessage"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    to: Union[str, List[str]]
+    to: str | list[str]
     subject: str
-    body: Optional[str] = None
-    html_body: Optional[str] = None
-    template_name: Optional[str] = None
-    template_context: Optional[Dict[str, Any]] = None
-    from_email: Optional[str] = None
-    reply_to: Optional[Union[str, List[str]]] = None
-    cc: Optional[Union[str, List[str]]] = None
-    bcc: Optional[Union[str, List[str]]] = None
-    attachments: Optional[List[EmailAttachment]] = None
+    body: str | None = None
+    html_body: str | None = None
+    template_name: str | None = None
+    template_context: dict[str, Any] | None = None
+    from_email: str | None = None
+    reply_to: str | list[str] | None = None
+    cc: str | list[str] | None = None
+    bcc: str | list[str] | None = None
+    attachments: list[EmailAttachment] | None = None
     message_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    headers: Optional[Dict[str, str]] = None
-    priority: Optional[int] = None
+    headers: dict[str, str] | None = None
+    priority: int | None = None
 
     def __post_init__(self) -> None:
-        """Post Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Post Init"""
         for attr in ("to", "cc", "bcc", "reply_to"):
             val = getattr(self, attr)
             if isinstance(val, str):
@@ -98,24 +70,11 @@ class EmailMessage:
     def add_attachment(
         self,
         filename: str,
-        content: Union[bytes, str],
-        content_type: Optional[str] = None,
-        content_id: Optional[str] = None,
+        content: bytes | str,
+        content_type: str | None = None,
+        content_id: str | None = None,
     ) -> None:
-        """Add Attachment
-
-        Args:
-            filename: [description]
-            content: [description]
-            content_type: [description]
-            content_id: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Add Attachment"""
         self.attachments.append(  # ty: ignore[unresolved-attribute]
             EmailAttachment(
                 filename=filename,
@@ -126,32 +85,11 @@ class EmailMessage:
         )
 
     def add_header(self, name: str, value: str) -> None:
-        """Add Header
-
-        Args:
-            name: [description]
-            value: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Add Header"""
         self.headers[name] = value  # ty: ignore[invalid-assignment]
 
-    def to_mime_message(self, from_email: Optional[str] = None) -> MIMEMultipart:
-        """To Mime Message
-
-        Args:
-            from_email: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_mime_message(self, from_email: str | None = None) -> MIMEMultipart:
+        """To Mime Message"""
         msg = MIMEMultipart("alternative")
         msg["Subject"] = self.subject
         msg["To"] = ", ".join(self.to)
@@ -188,32 +126,18 @@ class EmailMessage:
 
 @dataclass
 class EmailResult:
-    """Emailresult
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Emailresult"""
 
     success: bool
     message_id: str
-    to: List[str]
+    to: list[str]
     subject: str
     sent_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    error: Optional[str] = None
-    provider_response: Optional[Dict[str, Any]] = None
+    error: str | None = None
+    provider_response: dict[str, Any] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
-        """To Dict
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_dict(self) -> dict[str, Any]:
+        """To Dict"""
         return {
             "success": self.success,
             "message_id": self.message_id,

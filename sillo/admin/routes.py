@@ -15,16 +15,16 @@ A Django-admin-level interface for sillo models:
 """
 
 from __future__ import annotations
-from typing import List, Any
 
 import csv
 import io
 import json
-import math
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from typing import Any
 
-from tortoise import connections, fields as tf
+from tortoise import connections
+from tortoise import fields as tf
 from tortoise.expressions import Q
 from tortoise.fields.relational import (
     BackwardFKRelation,
@@ -33,11 +33,13 @@ from tortoise.fields.relational import (
     ManyToManyFieldInstance,
     OneToOneFieldInstance,
 )
+
+from sillo.helpers.hashing import hash_password
+from sillo.pagination import AsyncDataHandler, AsyncPaginator, PageNumberPagination
 from sillo.record.fields import PasswordField
-from sillo.helpers.hashing import hash_password, verify_password
-from .templating import render as _render
+
 from .models import AdminActivity
-from sillo.pagination import AsyncPaginator, PageNumberPagination, AsyncDataHandler
+from .templating import render as _render
 
 FKAliases = (ForeignKeyFieldInstance, OneToOneFieldInstance)
 M2MAlias = ManyToManyFieldInstance
@@ -54,70 +56,26 @@ _HIDDEN_FIELDS = frozenset(
 
 
 def _should_skip_field(field_name: str) -> bool:
-    """Should Skip Field
-
-    Args:
-        field_name: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Should Skip Field"""
     return field_name in _HIDDEN_FIELDS or field_name.endswith("_id")
 
 
 def _is_backward_relation(field_obj) -> bool:
-    """Is Backward Relation
-
-    Args:
-        field_obj: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Is Backward Relation"""
     return isinstance(field_obj, (BackwardFKRelation, BackwardOneToOneRelation))
 
 
 def _is_password(field_obj, name: str = "") -> bool:
-    """Is Password
-
-    Args:
-        field_obj: [description]
-        name: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Is Password"""
     if isinstance(field_obj, PasswordField):
         return True
     if getattr(field_obj, "password", False):
         return True
-    if name and "password" in name.lower():
-        return True
-    return False
+    return bool(name and "password" in name.lower())
 
 
 def _field_kind(field_obj, name: str = "") -> str:
-    """Field Kind
-
-    Args:
-        field_obj: [description]
-        name: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Field Kind"""
     if _is_password(field_obj, name):
         return "password"
     if isinstance(field_obj, ManyToManyFieldInstance):
@@ -130,34 +88,13 @@ def _field_kind(field_obj, name: str = "") -> str:
 
 
 def _related_model_name(field_obj) -> str:
-    """Related Model Name
-
-    Args:
-        field_obj: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Related Model Name"""
     parts = field_obj.model_name.split(".")
     return parts[-1] if parts else ""
 
 
 async def _get_fk_options(field_obj, current_value=None):
-    """Get Fk Options
-
-    Args:
-        field_obj: [description]
-        current_value: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Get Fk Options"""
     name = _related_model_name(field_obj)
     slug = name.lower()
     model = field_obj.related_model
@@ -177,18 +114,7 @@ async def _get_fk_options(field_obj, current_value=None):
 
 
 async def _get_m2m_options(field_obj, current_ids=None):
-    """Get M2M Options
-
-    Args:
-        field_obj: [description]
-        current_ids: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Get M2M Options"""
     name = _related_model_name(field_obj)
     slug = name.lower()
     model = field_obj.related_model
@@ -198,7 +124,7 @@ async def _get_m2m_options(field_obj, current_ids=None):
         all_recs = await model.all()
     except Exception:
         return name, slug, []
-    current = set(str(x) for x in (current_ids or []))
+    current = {str(x) for x in (current_ids or [])}
     options = []
     for r in all_recs:
         pk = getattr(r, "pk", getattr(r, "id", None))
@@ -223,18 +149,7 @@ def _find_forward_field(rel_model, target_model_cls):
 
 
 def _field_widget(field_obj, name: str = "") -> str:
-    """Field Widget
-
-    Args:
-        field_obj: [description]
-        name: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Field Widget"""
     kind = _field_kind(field_obj, name)
     if kind == "password":
         return "password"
@@ -254,52 +169,19 @@ def _field_widget(field_obj, name: str = "") -> str:
 
 
 def _is_relation(field_obj) -> bool:
-    """Is Relation
-
-    Args:
-        field_obj: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-    return isinstance(field_obj, FKAliases) or isinstance(field_obj, M2MAlias)
+    """Is Relation"""
+    return isinstance(field_obj, (FKAliases, M2MAlias))
 
 
 def _field_label(field_name: str) -> str:
-    """Field Label
-
-    Args:
-        field_name: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Field Label"""
     return field_name.replace("_", " ").title()
 
 
 async def _resolve_fk_value(
     obj, field_name: str, field_obj, admin_site, *, as_link: bool = True
 ):
-    """Resolve Fk Value
-
-    Args:
-        obj: [description]
-        field_name: [description]
-        field_obj: [description]
-        admin_site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Resolve Fk Value"""
     try:
         related = await getattr(obj, field_name)
     except Exception:
@@ -316,20 +198,7 @@ async def _resolve_fk_value(
 
 
 async def _resolve_m2m_value(obj, field_name: str, field_obj, admin_site):
-    """Resolve M2M Value
-
-    Args:
-        obj: [description]
-        field_name: [description]
-        field_obj: [description]
-        admin_site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Resolve M2M Value"""
     try:
         manager = getattr(obj, field_name)
         related = await manager.all()
@@ -346,48 +215,18 @@ async def _resolve_m2m_value(obj, field_name: str, field_obj, admin_site):
 
 
 async def _collect_form(request):
-    """Collect Form
-
-    Args:
-        request: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Collect Form"""
     form = await request.form
 
     def get(key):
-        """Get
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get"""
         v = form.get(key)
         return (
             v if isinstance(v, str) else (v[0] if isinstance(v, (list, tuple)) else v)
         )
 
     def getlist(key):
-        """Getlist
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Getlist"""
         v = form.getlist(key)
         return [x for x in v if isinstance(x, str)]
 
@@ -419,20 +258,7 @@ def model_links_html(site):
 
 
 def base_ctx(request, site, model_name="", model_slug=""):
-    """Base Ctx
-
-    Args:
-        request: [description]
-        site: [description]
-        model_name: [description]
-        model_slug: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Base Ctx"""
     return {
         "site_title": site.title,
         "site_prefix": site.prefix,
@@ -446,18 +272,7 @@ def base_ctx(request, site, model_name="", model_slug=""):
 
 
 def _forbidden(response, site_prefix):
-    """Forbidden
-
-    Args:
-        response: [description]
-        site_prefix: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Forbidden"""
     return response.redirect(f"{site_prefix}/", status_code=302)
 
 
@@ -482,22 +297,7 @@ async def _current_admin_user(request, site):
 
 
 async def _log(request, action, model_name, site, object_id=None, detail=None):
-    """Log
-
-    Args:
-        request: [description]
-        action: [description]
-        model_name: [description]
-        site: [description]
-        object_id: [description]
-        detail: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Log"""
     try:
         ctx = base_ctx(request, site)
         await AdminActivity.create(
@@ -512,19 +312,7 @@ async def _log(request, action, model_name, site, object_id=None, detail=None):
 
 
 def _form_field_names(meta, admin, is_create):
-    """Form Field Names
-
-    Args:
-        meta: [description]
-        admin: [description]
-        is_create: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Form Field Names"""
     raw = admin.get_fields(add=is_create)
     if raw:
         names = [f for f in raw if f in meta.fields_map]
@@ -541,20 +329,7 @@ def _form_field_names(meta, admin, is_create):
 
 
 async def _build_form_fields(meta, admin, obj=None, is_create=True):
-    """Build Form Fields
-
-    Args:
-        meta: [description]
-        admin: [description]
-        obj: [description]
-        is_create: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Build Form Fields"""
     is_update = not is_create
     names = _form_field_names(meta, admin, is_create)
     fields = []
@@ -612,9 +387,7 @@ async def _build_form_fields(meta, admin, obj=None, is_create=True):
             if obj is not None:
                 try:
                     rels = await getattr(obj, f_name).all()
-                    current_ids = [
-                        str(getattr(r, "pk", getattr(r, "id"))) for r in rels
-                    ]
+                    current_ids = [str(getattr(r, "pk", r.id)) for r in rels]
                 except Exception:
                     current_ids = []
             rel_name, rel_slug, options = await _get_m2m_options(field_obj, current_ids)
@@ -869,19 +642,7 @@ def _json_export(response, rows, filename):
 
 
 async def login_view(request, response, site):
-    """Login View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Login View"""
     ctx = {
         "site_title": site.title,
         "site_prefix": site.prefix,
@@ -906,37 +667,13 @@ async def login_view(request, response, site):
 
 
 async def logout_view(request, response, site):
-    """Logout View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Logout View"""
     await site.auth.logout(request)
     return response.redirect(f"{site.prefix}/login/", status_code=302)
 
 
 async def dashboard_view(request, response, site):
-    """Dashboard View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Dashboard View"""
     ctx = base_ctx(request, site)
     ctx["title"] = "Dashboard"
     dashboard_models = []
@@ -998,17 +735,6 @@ async def query_view(request, response, site):
     Gated on ``is_superuser`` (rather than just "logged in") since it grants
     full read/write access to every table, not just the ones registered
     with the admin.
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
     """
     user = await _current_admin_user(request, site)
     if user is None or not getattr(user, "is_superuser", False):
@@ -1067,19 +793,6 @@ async def export_view(request, response, site, model_cls, admin_cls):
     params as :func:`list_view` so "export what I'm looking at" works, but
     ignores pagination and instead caps the result at ``_EXPORT_ROW_CAP``
     rows to avoid an unbounded dump.
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
     """
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
@@ -1158,21 +871,7 @@ async def export_view(request, response, site, model_cls, admin_cls):
 
 
 async def list_view(request, response, site, model_cls, admin_cls):
-    """List View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """List View"""
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
 
@@ -1257,7 +956,7 @@ async def list_view(request, response, site, model_cls, admin_cls):
         async def get_total_items(self) -> int:
             return await self.qs.count()
 
-        async def get_items(self, offset: int, limit: int) -> List[Any]:
+        async def get_items(self, offset: int, limit: int) -> list[Any]:
             return await self.qs.offset(offset).limit(limit)
 
     data_handler = _QSAsyncDataHandler(qs)
@@ -1376,22 +1075,7 @@ async def list_view(request, response, site, model_cls, admin_cls):
 
 
 async def detail_view(request, response, site, model_cls, admin_cls, id):
-    """Detail View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-        id: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Detail View"""
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
 
@@ -1415,7 +1099,7 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
     # the unawaited Tortoise relation manager (e.g. "<ReverseRelation object at ...>").
     display_cols = [
         c
-        for c in meta.fields_map.keys()
+        for c in meta.fields_map
         if not _should_skip_field(c) and not _is_backward_relation(meta.fields_map[c])
     ]
     for f in display_cols:
@@ -1476,7 +1160,7 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
             items = [
                 {
                     "label": str(r),
-                    "link": f"{site.prefix}/{slug}/{getattr(r, 'pk', getattr(r, 'id'))}/",
+                    "link": f"{site.prefix}/{slug}/{getattr(r, 'pk', r.id)}/",
                 }
                 for r in related[:10]
             ]
@@ -1498,21 +1182,7 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
 
 
 async def create_view(request, response, site, model_cls, admin_cls):
-    """Create View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Create View"""
     if not admin_cls.has_add_permission(request):
         return _forbidden(response, site.prefix)
 
@@ -1588,22 +1258,7 @@ async def create_view(request, response, site, model_cls, admin_cls):
 
 
 async def update_view(request, response, site, model_cls, admin_cls, id):
-    """Update View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-        id: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Update View"""
     if not admin_cls.has_change_permission(request):
         return _forbidden(response, site.prefix)
 
@@ -1673,22 +1328,7 @@ async def update_view(request, response, site, model_cls, admin_cls, id):
 
 
 async def delete_view(request, response, site, model_cls, admin_cls, id):
-    """Delete View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-        id: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Delete View"""
     if not admin_cls.has_delete_permission(request):
         return _forbidden(response, site.prefix)
 
@@ -1709,21 +1349,7 @@ async def delete_view(request, response, site, model_cls, admin_cls, id):
 
 
 async def bulk_view(request, response, site, model_cls, admin_cls):
-    """Bulk View
-
-    Args:
-        request: [description]
-        response: [description]
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Bulk View"""
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
     if request.method != "POST":

@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass, replace
-from typing import IO, Dict, Optional
+from typing import IO
 
 from .terminal import supports_color
 
@@ -30,7 +30,7 @@ _HEX = re.compile(r"^#?([0-9a-fA-F]{6})$")
 _ANSI = re.compile(r"\x1b\[[0-9;?]*[a-zA-Z]")
 
 # The eight base colours and their bright variants, as SGR foreground offsets.
-_NAMED: Dict[str, int] = {
+_NAMED: dict[str, int] = {
     "black": 0,
     "red": 1,
     "green": 2,
@@ -83,15 +83,15 @@ class Style:
         strike: Strike the text through.
     """
 
-    fg: Optional[str] = None
-    bg: Optional[str] = None
+    fg: str | None = None
+    bg: str | None = None
     bold: bool = False
     dim: bool = False
     italic: bool = False
     underline: bool = False
     strike: bool = False
 
-    def __or__(self, other: "Style") -> "Style":
+    def __or__(self, other: Style) -> Style:
         """Merge two styles, with *other* winning on any attribute it sets.
 
         Args:
@@ -110,7 +110,7 @@ class Style:
             strike=self.strike or other.strike,
         )
 
-    def with_(self, **changes: object) -> "Style":
+    def with_(self, **changes: object) -> Style:
         """Return a copy with *changes* applied.
 
         Args:
@@ -184,9 +184,9 @@ class Palette:
 
     def __init__(
         self,
-        stream: Optional[IO[str]] = None,
-        enabled: Optional[bool] = None,
-        truecolor: Optional[bool] = None,
+        stream: IO[str] | None = None,
+        enabled: bool | None = None,
+        truecolor: bool | None = None,
     ) -> None:
         self.enabled = supports_color(stream) if enabled is None else enabled
         if truecolor is None:
@@ -225,7 +225,7 @@ class Palette:
 
         raise ValueError(f"{value!r} is not a colour")
 
-    def render(self, text: str, style: Optional[Style] = None) -> str:
+    def render(self, text: str, style: Style | None = None) -> str:
         """Apply *style* to *text*.
 
         Args:

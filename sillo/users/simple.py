@@ -2,168 +2,61 @@ from sillo.users.protocol import UserProtocol
 
 
 class SimpleUser(UserProtocol):
-    """Simpleuser
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Simpleuser"""
 
     def __init__(self, username: str, permissions: list[str] | None = None):
-        """Init
-
-        Args:
-            username: [description]
-            permissions: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.username = username
         self.permissions = permissions or []
 
     @property
     def is_authenticated(self) -> bool:
-        """Is Authenticated
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Authenticated"""
         return True
 
     @property
     def display_name(self) -> str:
-        """Display Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Display Name"""
         return self.username
 
     @property
     def identity(self) -> str:
-        """Identity
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Identity"""
         return self.username
 
     def has_permission(self, permission: str) -> bool:
-        """Has Permission
-
-        Args:
-            permission: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Permission"""
         return permission in self.permissions
 
     @classmethod
     async def load_user(cls, identity: str):
-        """Load User
-
-        Args:
-            identity: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Load User"""
         return cls(identity, [identity])
 
 
 class UnauthenticatedUser(UserProtocol):
-    """Unauthenticateduser
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Unauthenticateduser"""
 
     @property
     def is_authenticated(self) -> bool:
-        """Is Authenticated
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Authenticated"""
         return False
 
     @property
     def display_name(self) -> str:
-        """Display Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Display Name"""
         return ""
 
     @property
     def identity(self) -> str:
-        """Identity
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Identity"""
         return ""
 
     def has_permission(self, permission: str) -> bool:
-        """Has Permission
-
-        Args:
-            permission: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Permission"""
         return False
 
     @classmethod
     async def load_user(cls, identity: str):
-        """Load User
-
-        Args:
-            identity: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Load User"""
         return cls()

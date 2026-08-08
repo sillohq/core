@@ -1,10 +1,10 @@
-from typing import Any, List, Union
+from typing import Any
 
 from sillo.core.routing import Route, Router
 from sillo.core.routing.grouping import Group
 
 
-def get_openapi(route: Union[Route, Router, Group, Any]) -> List[Route]:
+def get_openapi(route: Route | Router | Group | Any) -> list[Route]:
     """Recursively extract all Route objects from a nested route structure.
 
     Walks through Route, Router, Group, and generic route containers to
@@ -21,7 +21,7 @@ def get_openapi(route: Union[Route, Router, Group, Any]) -> List[Route]:
         None explicitly. If ``route`` has no viable structure an empty list
         is returned rather than raising.
     """
-    routes_list: List[Route] = []
+    routes_list: list[Route] = []
 
     if isinstance(route, Route):
         return [route]

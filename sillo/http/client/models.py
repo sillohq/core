@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from httpx import Response as HttpxResponse
 from pydantic import BaseModel
@@ -21,13 +21,13 @@ class CachedResponse(BaseModel):
     url: str
     method: str
     cached_at: datetime
-    ttl: Optional[int] = None
+    ttl: int | None = None
 
     @classmethod
     def from_httpx_response(
         cls,
         response: HttpxResponse,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
     ) -> CachedResponse:
         """Build a CachedResponse from an httpx response."""
         return cls(
@@ -56,7 +56,7 @@ class ResponseValidator:
     @staticmethod
     def validate(
         response_body: str,
-        response_model: Optional[type[BaseModel]] = None,
+        response_model: type[BaseModel] | None = None,
         *,
         many: bool = False,
         strict: bool = False,

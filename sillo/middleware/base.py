@@ -1,6 +1,7 @@
 import typing
+from typing import Annotated
 
-from typing_extensions import Annotated, Any, Doc
+from typing_extensions import Any, Doc
 
 from sillo.core.http import Request, Response
 
@@ -25,7 +26,7 @@ class BaseMiddleware:
     def __init__(
         self,
         **kwargs: Annotated[
-            typing.Dict[typing.Any, typing.Any],
+            dict[typing.Any, typing.Any],
             Doc("Additional keyword arguments for middleware configuration."),
         ],
     ) -> None:
@@ -42,7 +43,6 @@ class BaseMiddleware:
                 These are stored and made available to subclass implementations
                 for custom configuration and behavioral adjustments.
         """
-        pass
 
     async def __call__(
         self,

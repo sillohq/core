@@ -21,11 +21,11 @@ from sillo.core.encoding import (
 )
 
 __all__ = [
-    "jsonable_encoder",
-    "register_encoder",
-    "get_custom_encoders",
     "CUSTOM_ENCODERS",
     "ENCODERS_BY_TYPE",
     "encoders_by_class_tuples",
     "generate_encoders_by_class_tuples",
+    "get_custom_encoders",
+    "jsonable_encoder",
+    "register_encoder",
 ]

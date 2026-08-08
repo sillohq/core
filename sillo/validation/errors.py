@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -15,8 +16,8 @@ def prefix_errors(
     exc: ValidationError,
     location: str,
     *,
-    alias_map: Dict[str, str] | None = None,
-) -> List[Dict[str, Any]]:
+    alias_map: dict[str, str] | None = None,
+) -> list[dict[str, Any]]:
     """Convert a Pydantic ValidationError into location-prefixed error dicts.
 
     Pydantic reports ``loc`` tuples relative to the model it validated, which
@@ -44,7 +45,7 @@ def prefix_errors(
         with the ``url`` key stripped (it points at pydantic.dev docs and is
         noise in an HTTP API response).
     """
-    out: List[Dict[str, Any]] = []
+    out: list[dict[str, Any]] = []
     for err in exc.errors():
         loc: Sequence[Any] = err.get("loc", ())
         # A pydantic location mixes field names with list indices, and only a
@@ -84,7 +85,7 @@ class RequestValidationError(Exception):
             Useful for debugging and for handlers that want to echo it back.
     """
 
-    def __init__(self, errors: List[Dict[str, Any]], *, body: Any = None) -> None:
+    def __init__(self, errors: list[dict[str, Any]], *, body: Any = None) -> None:
         """Initialize the error with prefixed error dicts and optional payload.
 
         Args:
@@ -112,7 +113,7 @@ class ResponseValidationError(Exception):
         body: The offending value the handler returned.
     """
 
-    def __init__(self, errors: List[Dict[str, Any]], *, body: Any = None) -> None:
+    def __init__(self, errors: list[dict[str, Any]], *, body: Any = None) -> None:
         """Initialize the error with prefixed error dicts and the bad value.
 
         Args:

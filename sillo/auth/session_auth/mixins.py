@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from sillo.auth.session_auth.models import Session
 
@@ -21,9 +20,9 @@ class SessionUserMixin:
     async def create_session(
         self,
         session_key: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        device_name: Optional[str] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        device_name: str | None = None,
         duration_seconds: int = 86400,
     ):
         """Create a new session record for this user.

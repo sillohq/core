@@ -11,7 +11,7 @@ __all__ = [
     "AsyncTestClient",
     "TestClient",
     "WebSocketDenialResponse",
-    "WebSocketTestSession",
     "WebSocketDisconnect",
+    "WebSocketTestSession",
     "create_client",
 ]

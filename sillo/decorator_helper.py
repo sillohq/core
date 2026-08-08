@@ -6,7 +6,7 @@ metadata such as HTTP methods, path patterns, and middleware configuration.
 """
 
 import typing
-from typing import Any, Dict, TypeVar
+from typing import Any, TypeVar
 
 from .types import HandlerType
 
@@ -33,7 +33,7 @@ class RouteDecorator:
         decorator instance is stored on another object.
     """
 
-    def __init__(self, **kwargs: Dict[str, Any]):
+    def __init__(self, **kwargs: dict[str, Any]):
         """Initialize the route decorator with optional configuration.
 
         Accepts arbitrary keyword arguments that subclasses can use to configure
@@ -53,7 +53,6 @@ class RouteDecorator:
             specific configuration parameters. The base implementation is a
             no-op to allow flexible subclass design.
         """
-        pass
 
     def __call__(self, handler: HandlerType) -> Any:
         """Apply the decorator to a route handler function.

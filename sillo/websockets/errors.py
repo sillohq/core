@@ -11,61 +11,21 @@ logger = getLogger("sillo")
 async def websocket_exception_handler(
     websocket: WebSocket, exc: WebSocketException
 ) -> None:
-    """Websocket Exception Handler
-
-    Args:
-        websocket: [description]
-        exc: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Websocket Exception Handler"""
     error = traceback.format_exc()
     logger.error(f"WebSocket error: {error}")
     await websocket.close(code=exc.code, reason=str(exc))
 
 
 class WebSocketErrorMiddleware:
-    """Websocketerrormiddleware
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Websocketerrormiddleware"""
 
     def __init__(self, app: ASGIApp):
-        """Init
-
-        Args:
-            app: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
-        """Call
-
-        Args:
-            scope: [description]
-            receive: [description]
-            send: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Call"""
         if scope["type"] == "websocket":
             websocket = WebSocket(scope, receive, send)
             try:

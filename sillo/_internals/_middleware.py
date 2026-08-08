@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import typing
-from collections.abc import Iterator
-from typing import Any, AsyncIterable, Callable, Mapping, MutableMapping
+from collections.abc import AsyncIterable, Callable, Iterator, Mapping, MutableMapping
+from typing import Any
 
 import anyio
 
+from sillo.core.helpers.async_helpers import collapse_excgroups
 from sillo.core.http.request import ClientDisconnect, Request
 from sillo.core.http.response import (
     BaseResponse,
 )
 from sillo.core.http.response import Responder as Response
 from sillo.types import ASGIApp, Message, MiddlewareType, Receive, Scope, Send
-from sillo.core.helpers.async_helpers import collapse_excgroups
 from sillo.websockets import WebSocket
 
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]

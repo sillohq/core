@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import time
 from contextvars import ContextVar
-from typing import Any, Dict, Optional
+from typing import Any
 
+from typing_extensions import Self
 
-_current_context: ContextVar[Optional["RequestContext"]] = ContextVar(
+_current_context: ContextVar[RequestContext | None] = ContextVar(
     "_sillo_request_ctx", default=None
 )
 """Module-level context variable that holds the active RequestContext for the
@@ -42,11 +42,11 @@ class RequestContext:
         Raises:
             None.
         """
-        self._data: Dict[str, Any] = {}
+        self._data: dict[str, Any] = {}
         self._token = None
 
     @classmethod
-    def current(cls) -> Optional["RequestContext"]:
+    def current(cls) -> RequestContext | None:
         """Retrieve the active RequestContext for the current async task.
 
         Looks up the module-level ``ContextVar`` and returns whichever
@@ -66,7 +66,7 @@ class RequestContext:
         """
         return _current_context.get()
 
-    def __enter__(self) -> "RequestContext":
+    def __enter__(self) -> Self:
         """Activate this context on the current async task's context stack.
 
         Sets this instance as the value of the module-level ``ContextVar``
@@ -87,7 +87,7 @@ class RequestContext:
         self._token = _current_context.set(self)
         return self
 
-    def __exit__(self, *args: Any) -> None:
+    def __exit__(self, *args: object) -> None:
         """Deactivate this context and restore the previous context value.
 
         Called automatically when the ``with`` block exits (normally or
@@ -228,7 +228,7 @@ class RequestContext:
         self._data[key] = value
 
     @property
-    def data(self) -> Dict[str, Any]:
+    def data(self) -> dict[str, Any]:
         """Return a reference to the context's internal data dictionary.
 
         Exposes the raw underlying storage for iteration, bulk reads,

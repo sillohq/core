@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import ipaddress
 import typing
-from typing import List, Optional
-
 
 _LOOPBACK_V4 = ipaddress.ip_network("127.0.0.0/8")
 _LOOPBACK_V6 = ipaddress.ip_network("::1/128")
@@ -143,7 +141,7 @@ def is_private_ip(ip: str) -> bool:
         return False
 
 
-def is_trusted_proxy(ip: str, trusted_proxies: Optional[List[str]] = None) -> bool:
+def is_trusted_proxy(ip: str, trusted_proxies: list[str] | None = None) -> bool:
     """Check whether an IP address belongs to a trusted proxy.
 
     If no explicit trusted proxy list is provided, the address is considered
@@ -177,8 +175,8 @@ def is_trusted_proxy(ip: str, trusted_proxies: Optional[List[str]] = None) -> bo
 def get_client_ip(
     request_headers: typing.Mapping[str, str],
     remote_addr: str,
-    trusted_proxies: Optional[List[str]] = None,
-    proxy_headers: Optional[List[str]] = None,
+    trusted_proxies: list[str] | None = None,
+    proxy_headers: list[str] | None = None,
 ) -> str:
     """Extract the real client IP address from request headers or remote address.
 

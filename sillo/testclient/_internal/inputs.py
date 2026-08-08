@@ -17,14 +17,7 @@ from sillo.testclient._internal.types import RequestData
 
 
 class RequestInputs(TypedDict, total=False):
-    """Requestinputs
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Requestinputs"""
 
     content: RequestContent | None
     data: RequestData | None

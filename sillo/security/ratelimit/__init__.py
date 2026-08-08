@@ -31,19 +31,19 @@ from .strategies import (
 )
 
 __all__ = [
-    "RateLimit",
-    "RateLimitMiddleware",
-    "RateLimitConfig",
-    "RateLimitResult",
-    "RateLimitBackend",
-    "InMemoryBackend",
-    "RedisBackend",
-    "RecordBackend",
-    "get_backend",
-    "RateLimitStrategy",
     "FixedWindowStrategy",
+    "InMemoryBackend",
+    "RateLimit",
+    "RateLimitBackend",
+    "RateLimitConfig",
+    "RateLimitMiddleware",
+    "RateLimitResult",
+    "RateLimitStrategy",
+    "RecordBackend",
+    "RedisBackend",
     "SlidingWindowStrategy",
     "TokenBucketStrategy",
+    "get_backend",
     "get_strategy",
 ]
 
@@ -62,7 +62,7 @@ class RateLimit(RateLimitMiddleware):
         window: int = 60,
         strategy: Any = "token",
         backend: Any = "memory",
-        key_func: Optional[Any] = None,
+        key_func: Any | None = None,
         namespace: str = "sillo_rl",
         cost: int = 1,
         include_headers: bool = True,
@@ -70,26 +70,7 @@ class RateLimit(RateLimitMiddleware):
         on_exceed: Any = "deny",
         **kwargs: Any,
     ) -> None:
-        """Init
-
-        Args:
-            limit: [description]
-            window: [description]
-            strategy: [description]
-            backend: [description]
-            key_func: [description]
-            namespace: [description]
-            cost: [description]
-            include_headers: [description]
-            fail_open: [description]
-            on_exceed: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         config = RateLimitConfig(
             limit=limit,
             window=window,

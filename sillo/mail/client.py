@@ -4,7 +4,7 @@ import asyncio
 import logging
 import smtplib
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from .config import MailConfig
 from .models import EmailMessage, EmailResult
@@ -20,43 +20,19 @@ except ImportError:
 
 
 class MailClient:
-    """Mailclient
+    """Mailclient"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    def __init__(self, config: Optional[MailConfig] = None) -> None:
-        """Init
-
-        Args:
-            config: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def __init__(self, config: MailConfig | None = None) -> None:
+        """Init"""
         self.config = config or MailConfig()
-        self._smtp: Optional[smtplib.SMTP] = None
-        self._template_env: Optional[Any] = None
+        self._smtp: smtplib.SMTP | None = None
+        self._template_env: Any | None = None
         self._started = False
         if _JINJA2 and self.config.template_directory:
             self._setup_templates()
 
     def _setup_templates(self) -> None:
-        """Setup Templates
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Setup Templates"""
         path = Path(self.config.template_directory)  # ty: ignore[invalid-argument-type]
         if not path.exists():
             logger.warning(f"Template directory not found: {path}")
@@ -69,14 +45,7 @@ class MailClient:
         )
 
     async def start(self) -> None:
-        """Start
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Start"""
         if self._started or self.config.suppress_send:
             self._started = True
             return
@@ -85,14 +54,7 @@ class MailClient:
         logger.info("Mail client started")
 
     async def stop(self) -> None:
-        """Stop
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Stop"""
         if not self._started:
             return
         if self._smtp:
@@ -105,26 +67,12 @@ class MailClient:
         logger.info("Mail client stopped")
 
     async def _connect(self) -> None:
-        """Connect
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Connect"""
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self._connect_sync)
 
     def _connect_sync(self) -> None:
-        """Connect Sync
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Connect Sync"""
         if self.config.use_ssl:
             self._smtp = smtplib.SMTP_SSL(
                 self.config.smtp_host,
@@ -145,14 +93,7 @@ class MailClient:
             self._smtp.login(self.config.smtp_username, self.config.smtp_password)
 
     async def _ensure_connected(self) -> None:
-        """Ensure Connected
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Ensure Connected"""
         if self.config.suppress_send:
             return
         if self._smtp is None:
@@ -168,40 +109,20 @@ class MailClient:
 
     async def send_email(
         self,
-        to: Union[str, List[str]],
+        to: str | list[str],
         subject: str,
-        body: Optional[str] = None,
-        html_body: Optional[str] = None,
-        from_email: Optional[str] = None,
-        reply_to: Optional[Union[str, List[str]]] = None,
-        cc: Optional[Union[str, List[str]]] = None,
-        bcc: Optional[Union[str, List[str]]] = None,
-        attachments: Optional[List[Any]] = None,
-        template_name: Optional[str] = None,
-        template_context: Optional[Dict[str, Any]] = None,
+        body: str | None = None,
+        html_body: str | None = None,
+        from_email: str | None = None,
+        reply_to: str | list[str] | None = None,
+        cc: str | list[str] | None = None,
+        bcc: str | list[str] | None = None,
+        attachments: list[Any] | None = None,
+        template_name: str | None = None,
+        template_context: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> EmailResult:
-        """Send Email
-
-        Args:
-            to: [description]
-            subject: [description]
-            body: [description]
-            html_body: [description]
-            from_email: [description]
-            reply_to: [description]
-            cc: [description]
-            bcc: [description]
-            attachments: [description]
-            template_name: [description]
-            template_context: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Send Email"""
         message = EmailMessage(
             to=to,
             subject=subject,
@@ -225,28 +146,14 @@ class MailClient:
 
     async def send_template_email(
         self,
-        to: Union[str, List[str]],
+        to: str | list[str],
         subject: str,
         template_name: str,
-        context: Optional[Dict[str, Any]] = None,
-        from_email: Optional[str] = None,
+        context: dict[str, Any] | None = None,
+        from_email: str | None = None,
         **kwargs: Any,
     ) -> EmailResult:
-        """Send Template Email
-
-        Args:
-            to: [description]
-            subject: [description]
-            template_name: [description]
-            context: [description]
-            from_email: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Send Template Email"""
         return await self.send_email(
             to=to,
             subject=subject,
@@ -257,17 +164,7 @@ class MailClient:
         )
 
     async def send_message(self, message: EmailMessage) -> EmailResult:
-        """Send Message
-
-        Args:
-            message: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Send Message"""
         try:
             if message.template_name and self._template_env:
                 self._render_template(message)
@@ -315,35 +212,14 @@ class MailClient:
                 error=str(e),
             )
 
-    def _send_mime(self, mime_message, recipients: List[str]) -> None:
-        """Send Mime
-
-        Args:
-            mime_message: [description]
-            recipients: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def _send_mime(self, mime_message, recipients: list[str]) -> None:
+        """Send Mime"""
         if not self._smtp:
             raise RuntimeError("SMTP not connected")
         self._smtp.sendmail(mime_message["From"], recipients, mime_message.as_string())
 
     def _render_template(self, message: EmailMessage) -> None:
-        """Render Template
-
-        Args:
-            message: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Render Template"""
         if not self._template_env or not message.template_name:
             return
         try:
@@ -362,19 +238,8 @@ class MailClient:
             raise
 
 
-def setup_mail(app, config: Optional[MailConfig] = None) -> MailClient:
-    """Setup Mail
-
-    Args:
-        app: [description]
-        config: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+def setup_mail(app, config: MailConfig | None = None) -> MailClient:
+    """Setup Mail"""
     if "mail_client" in app.state:
         return app.state["mail_client"]
     client = MailClient(config=config)
@@ -385,17 +250,7 @@ def setup_mail(app, config: Optional[MailConfig] = None) -> MailClient:
 
 
 def get_mail_client(request) -> MailClient:
-    """Get Mail Client
-
-    Args:
-        request: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Get Mail Client"""
     client = request.state._state.get("mail_client")
     if client is None:
         raise RuntimeError(

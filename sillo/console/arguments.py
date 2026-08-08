@@ -21,7 +21,8 @@ embedding application should not have happen underneath it.
 
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple
+from collections.abc import Callable, Sequence
+from typing import Any, ClassVar
 
 from .exceptions import UsageError
 
@@ -87,9 +88,9 @@ class Parameter:
         name: str,
         help: str = "",
         default: Any = UNSET,
-        type: Optional[Callable[[str], Any]] = None,
-        choices: Optional[Sequence[Any]] = None,
-        metavar: Optional[str] = None,
+        type: Callable[[str], Any] | None = None,
+        choices: Sequence[Any] | None = None,
+        metavar: str | None = None,
     ) -> None:
         if not name:
             raise ValueError("a parameter needs a name")
@@ -158,9 +159,9 @@ class Argument(Parameter):
         name: str,
         help: str = "",
         default: Any = UNSET,
-        type: Optional[Callable[[str], Any]] = None,
-        choices: Optional[Sequence[Any]] = None,
-        metavar: Optional[str] = None,
+        type: Callable[[str], Any] | None = None,
+        choices: Sequence[Any] | None = None,
+        metavar: str | None = None,
         variadic: bool = False,
     ) -> None:
         super().__init__(name, help, default, type, choices, metavar)
@@ -208,10 +209,10 @@ class Option(Parameter):
         name: str,
         help: str = "",
         default: Any = UNSET,
-        type: Optional[Callable[[str], Any]] = None,
-        choices: Optional[Sequence[Any]] = None,
-        metavar: Optional[str] = None,
-        short: Optional[str] = None,
+        type: Callable[[str], Any] | None = None,
+        choices: Sequence[Any] | None = None,
+        metavar: str | None = None,
+        short: str | None = None,
         multiple: bool = False,
         required: bool = False,
     ) -> None:
@@ -254,7 +255,7 @@ class Flag(Parameter):
         name: str,
         help: str = "",
         default: bool = False,
-        short: Optional[str] = None,
+        short: str | None = None,
     ) -> None:
         super().__init__(name, help, bool(default))
         if short is not None and len(short) != 1:
@@ -291,15 +292,15 @@ class ParsedInput:
 
     def __init__(
         self,
-        values: Dict[str, Any],
-        kinds: Dict[str, str],
-        extra: Optional[List[str]] = None,
+        values: dict[str, Any],
+        kinds: dict[str, str],
+        extra: list[str] | None = None,
     ) -> None:
         self.values = values
         self.kinds = kinds
         self.extra = extra or []
 
-    def get(self, name: str, expected: Optional[str] = None) -> Any:
+    def get(self, name: str, expected: str | None = None) -> Any:
         """Return the value of *name*.
 
         Args:
@@ -336,7 +337,7 @@ class ParsedInput:
 
 def _index(
     parameters: Sequence[Parameter],
-) -> Tuple[List[Argument], Dict[str, Parameter], Dict[str, Parameter]]:
+) -> tuple[list[Argument], dict[str, Parameter], dict[str, Parameter]]:
     """Split declared parameters into the lookups the parser needs.
 
     Args:
@@ -350,9 +351,9 @@ def _index(
         ValueError: If a name or short alias is used twice, or a variadic
             argument is not last.
     """
-    positionals: List[Argument] = []
-    long_names: Dict[str, Parameter] = {}
-    short_names: Dict[str, Parameter] = {}
+    positionals: list[Argument] = []
+    long_names: dict[str, Parameter] = {}
+    short_names: dict[str, Parameter] = {}
 
     for parameter in parameters:
         if isinstance(parameter, Argument):
@@ -380,7 +381,7 @@ def _index(
     return positionals, long_names, short_names
 
 
-def _seed(parameters: Sequence[Parameter]) -> Tuple[Dict[str, Any], Dict[str, str]]:
+def _seed(parameters: Sequence[Parameter]) -> tuple[dict[str, Any], dict[str, str]]:
     """Build the starting values and the kind lookup.
 
     Args:
@@ -389,8 +390,8 @@ def _seed(parameters: Sequence[Parameter]) -> Tuple[Dict[str, Any], Dict[str, st
     Returns:
         Defaults keyed by normalised name, and each name's kind.
     """
-    values: Dict[str, Any] = {}
-    kinds: Dict[str, str] = {}
+    values: dict[str, Any] = {}
+    kinds: dict[str, str] = {}
 
     for parameter in parameters:
         kinds[parameter.key] = parameter.kind
@@ -407,7 +408,7 @@ def _seed(parameters: Sequence[Parameter]) -> Tuple[Dict[str, Any], Dict[str, st
     return values, kinds
 
 
-def _store(values: Dict[str, Any], parameter: Parameter, value: Any) -> None:
+def _store(values: dict[str, Any], parameter: Parameter, value: Any) -> None:
     """Record one parsed value, appending when the parameter repeats.
 
     Args:
@@ -424,7 +425,7 @@ def _store(values: Dict[str, Any], parameter: Parameter, value: Any) -> None:
 def parse(
     parameters: Sequence[Parameter],
     argv: Sequence[str],
-    command: Optional[str] = None,
+    command: str | None = None,
 ) -> ParsedInput:
     """Parse *argv* against the declared *parameters*.
 
@@ -447,15 +448,15 @@ def parse(
     values, kinds = _seed(parameters)
 
     seen: set = set()
-    waiting: List[str] = []
-    extra: List[str] = []
+    waiting: list[str] = []
+    extra: list[str] = []
     tokens = list(argv)
     index = 0
 
     def fail(message: str) -> UsageError:
         return UsageError(message, command=command)
 
-    def consume_value(parameter: Parameter, inline: Optional[str], token: str) -> None:
+    def consume_value(parameter: Parameter, inline: str | None, token: str) -> None:
         """Take a value for *parameter*, from *inline* or the next token."""
         nonlocal index
         if inline is not None:
@@ -478,7 +479,7 @@ def parse(
 
         if token.startswith("--") and len(token) > 2:
             body = token[2:]
-            inline: Optional[str] = None
+            inline: str | None = None
             if "=" in body:
                 body, inline = body.split("=", 1)
 

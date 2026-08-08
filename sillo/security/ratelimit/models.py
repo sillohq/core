@@ -8,16 +8,12 @@ it, e.g. ``model_modules=["sillo.security.ratelimit.models"]``.
 
 from __future__ import annotations
 
-import typing
-from typing import Any, Optional
-
-from tortoise import fields
-from typing_extensions import Doc
-
-from sillo.record import Model
-
 import json
 import time
+
+from tortoise import fields
+
+from sillo.record import Model
 
 
 class RateLimitCounter(Model):
@@ -28,30 +24,13 @@ class RateLimitCounter(Model):
     expires_at = fields.IntField()
 
     class Meta:
-        """Meta
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Meta"""
 
         table = "sillo_ratelimit_counters"
 
     @classmethod
-    async def fetch(cls, key: str) -> Optional[dict]:
-        """Fetch
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    async def fetch(cls, key: str) -> dict | None:
+        """Fetch"""
         row = await cls.get_or_none(key=key)
         if row is None:
             return None
@@ -66,19 +45,7 @@ class RateLimitCounter(Model):
 
     @classmethod
     async def save_state(cls, key: str, state: dict, ttl: int) -> None:
-        """Save State
-
-        Args:
-            key: [description]
-            state: [description]
-            ttl: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Save State"""
         payload = json.dumps(state)
         expires_at = int(time.time()) + ttl
         row = await cls.get_or_none(key=key)
@@ -91,12 +58,5 @@ class RateLimitCounter(Model):
 
     @classmethod
     async def clear_all(cls) -> None:
-        """Clear All
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Clear All"""
         await cls.all().delete()

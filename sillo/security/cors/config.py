@@ -1,4 +1,5 @@
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 
 class CorsConfig:
@@ -8,46 +9,23 @@ class CorsConfig:
 
     def __init__(
         self,
-        allow_origins: Optional[List[str]] = None,
-        blacklist_origins: Optional[List[str]] = None,
-        allow_methods: Optional[List[str]] = None,
-        blacklist_headers: Optional[List[str]] = None,
-        allow_headers: Optional[List[str]] = None,
+        allow_origins: list[str] | None = None,
+        blacklist_origins: list[str] | None = None,
+        allow_methods: list[str] | None = None,
+        blacklist_headers: list[str] | None = None,
+        allow_headers: list[str] | None = None,
         allow_credentials: bool = True,
-        allow_origin_regex: Optional[str] = None,
-        expose_headers: Optional[List[str]] = None,
+        allow_origin_regex: str | None = None,
+        expose_headers: list[str] | None = None,
         max_age: int = 600,
         strict_origin_checking: bool = False,
-        dynamic_origin_validator: Optional[Callable[[Optional[str]], bool]] = None,
+        dynamic_origin_validator: Callable[[str | None], bool] | None = None,
         debug: bool = False,
         custom_error_status: int = 400,
-        custom_error_messages: Optional[Dict[str, str]] = None,
+        custom_error_messages: dict[str, str] | None = None,
         **kwargs: Any,
     ):
-        """Init
-
-        Args:
-            allow_origins: [description]
-            blacklist_origins: [description]
-            allow_methods: [description]
-            blacklist_headers: [description]
-            allow_headers: [description]
-            allow_credentials: [description]
-            allow_origin_regex: [description]
-            expose_headers: [description]
-            max_age: [description]
-            strict_origin_checking: [description]
-            dynamic_origin_validator: [description]
-            debug: [description]
-            custom_error_status: [description]
-            custom_error_messages: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         config = {
             "allow_origins": allow_origins or [],
             "blacklist_origins": blacklist_origins or [],
@@ -66,180 +44,82 @@ class CorsConfig:
             "custom_error_messages": None,
         }
         config.update(kwargs)
-        self._config: Dict[str, Any] = config
+        self._config: dict[str, Any] = config
 
     def __getattr__(self, name: str):
         if name == "_config":
             raise AttributeError(name)
         return self._config.get(name)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return dict(self._config)
 
     @property
-    def allow_origins(self) -> List[str]:
-        """Allow Origins
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def allow_origins(self) -> list[str]:
+        """Allow Origins"""
         return self._config["allow_origins"]
 
     @property
-    def blacklist_origins(self) -> List[str]:
-        """Blacklist Origins
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def blacklist_origins(self) -> list[str]:
+        """Blacklist Origins"""
         return self._config["blacklist_origins"]
 
     @property
-    def allow_methods(self) -> List[str]:
-        """Allow Methods
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def allow_methods(self) -> list[str]:
+        """Allow Methods"""
         return self._config["allow_methods"]
 
     @property
-    def blacklist_headers(self) -> List[str]:
-        """Blacklist Headers
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def blacklist_headers(self) -> list[str]:
+        """Blacklist Headers"""
         return self._config["blacklist_headers"]
 
     @property
-    def allow_headers(self) -> List[str]:
-        """Allow Headers
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def allow_headers(self) -> list[str]:
+        """Allow Headers"""
         return self._config["allow_headers"]
 
     @property
     def allow_credentials(self) -> bool:
-        """Allow Credentials
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Allow Credentials"""
         return self._config["allow_credentials"]
 
     @property
-    def allow_origin_regex(self) -> Optional[str]:
-        """Allow Origin Regex
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def allow_origin_regex(self) -> str | None:
+        """Allow Origin Regex"""
         return self._config["allow_origin_regex"]
 
     @property
-    def expose_headers(self) -> List[str]:
-        """Expose Headers
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def expose_headers(self) -> list[str]:
+        """Expose Headers"""
         return self._config["expose_headers"]
 
     @property
     def max_age(self) -> int:
-        """Max Age
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Max Age"""
         return self._config["max_age"]
 
     @property
     def strict_origin_checking(self) -> bool:
-        """Strict Origin Checking
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Strict Origin Checking"""
         return self._config["strict_origin_checking"]
 
     @property
-    def dynamic_origin_validator(self) -> Optional[Callable[[Optional[str]], bool]]:
-        """Dynamic Origin Validator
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def dynamic_origin_validator(self) -> Callable[[str | None], bool] | None:
+        """Dynamic Origin Validator"""
         return self._config["dynamic_origin_validator"]
 
     @property
     def debug(self) -> bool:
-        """Debug
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Debug"""
         return self._config["debug"]
 
     @property
     def custom_error_status(self) -> int:
-        """Custom Error Status
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Custom Error Status"""
         return self._config["custom_error_status"]
 
     @property
-    def custom_error_messages(self) -> Dict[str, str]:
-        """Custom Error Messages
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def custom_error_messages(self) -> dict[str, str]:
+        """Custom Error Messages"""
         return self._config["custom_error_messages"]

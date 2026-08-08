@@ -4,7 +4,8 @@ import abc
 import typing
 
 if typing.TYPE_CHECKING:
-    from typing import Any, AsyncGenerator, Callable, Optional
+    from collections.abc import AsyncGenerator, Callable
+    from typing import Any
 
     from httpx import Request, Response
 
@@ -60,7 +61,7 @@ class MiddlewareChain:
 class LoggingMiddleware(HTTPMiddleware):
     """Middleware that logs request and response details."""
 
-    def __init__(self, logger: Optional[Any] = None) -> None:
+    def __init__(self, logger: Any | None = None) -> None:
         import logging
 
         self._logger = logger or logging.getLogger("sillo.http")
@@ -126,9 +127,9 @@ class BaseURLMiddleware(HTTPMiddleware):
 
 
 __all__ = [
-    "HTTPMiddleware",
-    "MiddlewareChain",
-    "LoggingMiddleware",
-    "HeaderInjectionMiddleware",
     "BaseURLMiddleware",
+    "HTTPMiddleware",
+    "HeaderInjectionMiddleware",
+    "LoggingMiddleware",
+    "MiddlewareChain",
 ]

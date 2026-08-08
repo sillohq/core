@@ -10,9 +10,8 @@ Register callbacks per model class or globally.
 
 from __future__ import annotations
 
-import asyncio
 import logging
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Optional
+from collections.abc import Awaitable, Callable
 
 logger = logging.getLogger("sillo.record.events")
 
@@ -33,131 +32,36 @@ class ModelObserver:
     """
 
     async def before_create(self, instance):
-        """Before Create
-
-        Args:
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        pass
+        """Before Create"""
 
     async def after_create(self, instance):
-        """After Create
-
-        Args:
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        pass
+        """After Create"""
 
     async def before_save(self, instance):
-        """Before Save
-
-        Args:
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        pass
+        """Before Save"""
 
     async def after_save(self, instance):
-        """After Save
-
-        Args:
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        pass
+        """After Save"""
 
     async def before_update(self, instance):
-        """Before Update
-
-        Args:
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        pass
+        """Before Update"""
 
     async def after_update(self, instance):
-        """After Update
-
-        Args:
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        pass
+        """After Update"""
 
     async def before_delete(self, instance):
-        """Before Delete
-
-        Args:
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        pass
+        """Before Delete"""
 
     async def after_delete(self, instance):
-        """After Delete
-
-        Args:
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        pass
+        """After Delete"""
 
 
 class EventDispatcher:
     """Dispatches model lifecycle events to registered callbacks."""
 
     def __init__(self):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._listeners: Dict[str, List[Callable[..., Awaitable[None]]]] = {
+        """Init"""
+        self._listeners: dict[str, list[Callable[..., Awaitable[None]]]] = {
             "before_create": [],
             "after_create": [],
             "before_save": [],
@@ -169,7 +73,7 @@ class EventDispatcher:
             "before_restore": [],
             "after_restore": [],
         }
-        self._observers: List[ModelObserver] = []
+        self._observers: list[ModelObserver] = []
 
     def on(self, event: str, callback: Callable[..., Awaitable[None]]) -> None:
         """Register a callback for a lifecycle event."""
@@ -214,18 +118,11 @@ class HasEvents:
         User.observe(UserObserver())
     """
 
-    _events: Optional[EventDispatcher] = None
+    _events: EventDispatcher | None = None
 
     @classmethod
     def _ensure_events(cls):
-        """Ensure Events
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Ensure Events"""
         if cls._events is None:
             cls._events = EventDispatcher()
 
@@ -235,17 +132,7 @@ class HasEvents:
         cls._ensure_events()
 
         def decorator(func):
-            """Decorator
-
-            Args:
-                func: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Decorator"""
             cls._events.on(event, func)  # ty: ignore[unresolved-attribute]
             return func
 
@@ -259,17 +146,6 @@ class HasEvents:
 
     @classmethod
     async def fire_event(cls, event: str, instance) -> None:
-        """Fire Event
-
-        Args:
-            event: [description]
-            instance: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Fire Event"""
         if cls._events:
             await cls._events.fire(event, instance)

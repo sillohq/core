@@ -8,8 +8,6 @@ subclassing :class:`AuthBackend`.
 
 from __future__ import annotations
 
-from typing import Optional
-
 from .default_user import AdminUser
 
 
@@ -24,7 +22,7 @@ class AuthBackend:
         """Return True if the request is authenticated."""
         return True
 
-    async def get_user(self, request) -> Optional[dict]:
+    async def get_user(self, request) -> dict | None:
         """Return the current user dict or None."""
         return {"id": "anonymous", "username": "Anonymous"}
 
@@ -34,7 +32,6 @@ class AuthBackend:
 
     async def logout(self, request) -> None:
         """Clear the current session."""
-        pass
 
     @property
     def middleware(self):
@@ -122,7 +119,7 @@ class SessionAuth(AuthBackend):
         """
         return await self.current_user(request) is not None
 
-    async def get_user(self, request) -> Optional[dict]:
+    async def get_user(self, request) -> dict | None:
         """Return the current admin user dict from the session, or None."""
         if await self.current_user(request) is None:
             return None
@@ -161,14 +158,7 @@ class SessionAuth(AuthBackend):
 
     @property
     def middleware(self):
-        """Middleware
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Middleware"""
         return _AuthMiddleware(self)
 
 
@@ -176,33 +166,11 @@ class _AuthMiddleware:
     """Middleware that enforces admin authentication."""
 
     def __init__(self, backend: AuthBackend):
-        """Init
-
-        Args:
-            backend: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.backend = backend
 
     async def __call__(self, request, response, call_next):
-        """Call
-
-        Args:
-            request: [description]
-            response: [description]
-            call_next: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Call"""
         path = (
             request.url.path
             if hasattr(request.url, "path")
@@ -210,7 +178,7 @@ class _AuthMiddleware:
         )
         if not path.startswith("/admin"):
             return await call_next()
-        if path.startswith("/admin/login") or path.startswith("/admin/static"):
+        if path.startswith(("/admin/login", "/admin/static")):
             return await call_next()
         if not await self.backend.authenticate(request):
             return response.redirect("/admin/login/", status_code=302)

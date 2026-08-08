@@ -9,6 +9,10 @@ from urllib.parse import urlencode
 
 import anyio
 
+from sillo.core.helpers.async_helpers import (
+    AwaitableOrContextManager,
+    AwaitableOrContextManagerWrapper,
+)
 from sillo.formparser import (
     FormParser,
     MultiPartException,
@@ -16,15 +20,11 @@ from sillo.formparser import (
     UploadedFile,
 )
 from sillo.objects import URL, Address, FormData, Headers, QueryParams, State
-from sillo.core.helpers.async_helpers import (
-    AwaitableOrContextManager,
-    AwaitableOrContextManagerWrapper,
-)
 
 if typing.TYPE_CHECKING:
     from sillo import silloApp
-    from sillo.users import BaseUser
     from sillo.session.session_objects import Session
+    from sillo.users import BaseUser
 
 
 try:
@@ -39,7 +39,7 @@ Message = typing.MutableMapping[str, typing.Any]
 Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[[Message], typing.Awaitable[None]]
 JSONType = typing.Union[
-    str, int, float, bool, None, typing.Dict[str, typing.Any], typing.List[typing.Any]
+    str, int, float, bool, None, dict[str, typing.Any], list[typing.Any]
 ]
 
 SERVER_PUSH_HEADERS_TO_COPY = {
@@ -118,7 +118,7 @@ class ClientDisconnect(Exception):
 T = typing.TypeVar("T")
 
 
-class HTTPConnection(object):
+class HTTPConnection:
     """Base class for incoming HTTP connections in the ASGI protocol.
 
     Provides common functionality shared by both the :class:`Request` class
@@ -246,7 +246,7 @@ class HTTPConnection(object):
         return self.scope["app"]
 
     @property
-    def base_app(self) -> "silloApp":  # noqa: F821
+    def base_app(self) -> silloApp:
         """The root ASGI application instance for the sillo framework.
 
         Retrieves the base application object from the ASGI scope.  This
@@ -414,7 +414,7 @@ class HTTPConnection(object):
         return self._cookies
 
     @property
-    def client(self) -> typing.Union[Address, None]:
+    def client(self) -> Address | None:
         """The client address (host, port) for this request.
 
         Extracts the client's network address from the ASGI scope's
@@ -499,7 +499,7 @@ class HTTPConnection(object):
         return self.headers.get("user-agent", "")
 
     def build_absolute_uri(
-        self, path: str = "", query_params: typing.Optional[dict[str, str]] = None
+        self, path: str = "", query_params: dict[str, str] | None = None
     ) -> str:
         """Build an absolute URI using the base URL and the provided path.
 
@@ -726,7 +726,7 @@ class Request(HTTPConnection):
         return self._receive
 
     @property
-    def content_type(self) -> typing.Optional[str]:
+    def content_type(self) -> str | None:
         """The Content-Type header value without parameters.
 
         Extracts the media type portion of the ``Content-Type`` header,
@@ -811,7 +811,7 @@ class Request(HTTPConnection):
         return self._body
 
     @property
-    async def json(self) -> typing.Dict[str, JSONType]:
+    async def json(self) -> dict[str, JSONType]:
         """The request body parsed as a JSON object.
 
         Lazily reads the request body via the :attr:`body` property and
@@ -880,8 +880,8 @@ class Request(HTTPConnection):
     async def _get_form(
         self,
         *,
-        max_files: typing.Optional[int] = 1000,
-        max_fields: typing.Optional[int] = 1000,
+        max_files: int | None = 1000,
+        max_fields: int | None = 1000,
     ) -> FormData:
         """Parse form data from the request body.
 
@@ -1036,7 +1036,7 @@ class Request(HTTPConnection):
             )
 
     @property
-    async def files(self) -> typing.Dict[str, UploadedFile]:
+    async def files(self) -> dict[str, UploadedFile]:
         """A dictionary of uploaded files from the request.
 
         Parses the form data and extracts all fields that represent uploaded
@@ -1052,7 +1052,7 @@ class Request(HTTPConnection):
             AssertionError: If ``python-multipart`` is not installed.
         """
         form_data = await self.form_data
-        files_dict: typing.Dict[str, typing.Any] = {}
+        files_dict: dict[str, typing.Any] = {}
         for key, value in form_data.items():
             if isinstance(value, (list, tuple)):
                 for item in value:
@@ -1124,7 +1124,7 @@ class Request(HTTPConnection):
             AssertionError: If the session middleware is not installed and
                 the ``"session"`` key is missing from the scope.
         """
-        assert "session" in self.scope.keys(), "No Session Middleware Installed"
+        assert "session" in self.scope, "No Session Middleware Installed"
         return self.scope["session"]
 
     @property
@@ -1148,7 +1148,7 @@ class Request(HTTPConnection):
             raise ValueError("Authentication middleware required to use request.user")
         return user
 
-    def url_for(self, _name: str, **path_params: typing.Dict[str, typing.Any]) -> str:
+    def url_for(self, _name: str, **path_params: dict[str, typing.Any]) -> str:
         """Generate a URL path for the given route name.
 
         Delegates to the base application's ``url_for`` method to generate
@@ -1276,8 +1276,9 @@ class Request(HTTPConnection):
         """
         content_type = self.content_type
         return content_type is not None and (
-            content_type.startswith("application/x-www-form-urlencoded")
-            or content_type.startswith("multipart/form-data")
+            content_type.startswith(
+                ("application/x-www-form-urlencoded", "multipart/form-data")
+            )
         )
 
     @property
@@ -1394,10 +1395,7 @@ class Request(HTTPConnection):
             return True
 
         # For methods that typically have bodies
-        if self.method in ("POST", "PUT", "PATCH"):
-            return True
-
-        return False
+        return self.method in ("POST", "PUT", "PATCH")
 
     @property
     def is_authenticated(self) -> bool:
@@ -1600,7 +1598,7 @@ class Request(HTTPConnection):
 
     def get_query_params(
         self, flat: bool = True
-    ) -> typing.Union[typing.Dict[str, str], typing.Dict[str, typing.List[str]]]:
+    ) -> dict[str, str] | dict[str, list[str]]:
         """Get query parameters, optionally flattened to single values.
 
         Retrieves the query parameters from the request URL.  When *flat*

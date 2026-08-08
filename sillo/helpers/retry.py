@@ -5,7 +5,8 @@ import functools
 import inspect
 import random
 import time
-from typing import Any, Callable, List, Optional, Tuple, Type, TypeVar, Union, cast
+from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -25,7 +26,7 @@ class RetryError(Exception):
         last_exception: The last exception caught before retries were exhausted.
     """
 
-    def __init__(self, message: str, last_exception: Optional[BaseException] = None):
+    def __init__(self, message: str, last_exception: BaseException | None = None):
         """Initialize a RetryError with a message and optional wrapped exception.
 
         Args:
@@ -69,9 +70,7 @@ def retry(
     max_delay: float = 60.0,
     backoff_factor: float = 2.0,
     jitter: bool = True,
-    retryable_exceptions: Union[
-        Type[Exception], Tuple[Type[Exception], ...]
-    ] = Exception,
+    retryable_exceptions: type[Exception] | tuple[type[Exception], ...] = Exception,
 ):
     """Decorator that retries a function on failure with exponential backoff.
 
@@ -185,9 +184,7 @@ async def async_retry(
     max_delay: float = 60.0,
     backoff_factor: float = 2.0,
     jitter: bool = True,
-    retryable_exceptions: Union[
-        Type[Exception], Tuple[Type[Exception], ...]
-    ] = Exception,
+    retryable_exceptions: type[Exception] | tuple[type[Exception], ...] = Exception,
     **kwargs: Any,
 ) -> Any:
     """Retry an async callable with exponential backoff and optional jitter.
@@ -241,9 +238,7 @@ def sync_retry(
     max_delay: float = 60.0,
     backoff_factor: float = 2.0,
     jitter: bool = True,
-    retryable_exceptions: Union[
-        Type[Exception], Tuple[Type[Exception], ...]
-    ] = Exception,
+    retryable_exceptions: type[Exception] | tuple[type[Exception], ...] = Exception,
     **kwargs: Any,
 ) -> Any:
     """Retry a synchronous callable with exponential backoff and optional jitter.

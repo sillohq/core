@@ -1,51 +1,44 @@
 from __future__ import annotations
-from sillo.core.helpers.async_helpers import is_async_callable
-from sillo.openapi import License
-from sillo.openapi import Contact
 
+from collections.abc import Awaitable, Callable, Sequence
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     AsyncContextManager,
-    Awaitable,
-    Callable,
     ContextManager,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Sequence,
-    Type,
-    Union,
 )
 
-from typing_extensions import Annotated, Doc
+from typing_extensions import Doc
 
 from sillo._internals._middleware import (
     ASGIRequestResponseBridge,
 )
-from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder
-
 from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo.core.dependencies import Depend
-from sillo.events import EventEmitter
-from sillo.exception_handler import ExceptionHandlerType, ExceptionMiddleware
-from sillo.logging import create_logger
+from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder
 from sillo.core.error import (
     ServerErrHandlerType,
     ServerErrorMiddleware,
 )
+from sillo.core.helpers.async_helpers import is_async_callable
+from sillo.core.routing import Route, Router, WebsocketRoute
+from sillo.core.routing.base import BaseRoute
+from sillo.events import EventEmitter
+from sillo.exception_handler import ExceptionHandlerType, ExceptionMiddleware
+from sillo.logging import create_logger
 from sillo.objects import URLPath
+from sillo.openapi import Contact, License
 from sillo.openapi._builder import APIDocumentation
 from sillo.openapi.config import OpenAPIConfig
 from sillo.openapi.models import HTTPBearer, Parameter, Server
 from sillo.openapi.ui import DocsContext, DocsUI, default_docs
-from sillo.core.routing.base import BaseRoute
-from pathlib import Path
-from sillo.core.routing import Route, Router, WebsocketRoute
+
 from .types import (
-    ASGIApp,
     ArgsType,
+    ASGIApp,
     HandlerType,
     Message,
     MiddlewareType,
@@ -73,7 +66,7 @@ allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 logger = create_logger("sillo")
 lifespan_manager = Callable[
-    ["silloApp"], Union[AsyncContextManager[Any], ContextManager[Any]]
+    ["silloApp"], AsyncContextManager[Any] | ContextManager[Any]
 ]
 
 
@@ -118,43 +111,43 @@ class silloApp:
                     """),
         ] = True,
         title: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                     The title of the API, used in the OpenAPI documentation.
                     """),
         ] = None,
         version: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                     The version of the API, used in the OpenAPI documentation.
                     """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                     A brief description of the API, used in the OpenAPI documentation.
                     """),
         ] = None,
         contact: Annotated[
-            Optional[Contact],
+            Contact | None,
             Doc("""
                     Contact information for the API, used in the OpenAPI documentation.
                     """),
         ] = None,
         license: Annotated[
-            Optional[License],
+            License | None,
             Doc("""
                     License information for the API, used in the OpenAPI documentation.
                     """),
         ] = None,
         servers: Annotated[
-            Optional[List[Server]],
+            list[Server] | None,
             Doc("""
                     A list of servers for the API, used in the OpenAPI documentation.
                     """),
         ] = None,
         terms_of_service: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                     A URL to the terms of service for the API, used in the OpenAPI documentation.
                     """),
@@ -178,7 +171,7 @@ class silloApp:
             ),
         ] = "/openapi.json",
         docs: Annotated[
-            Optional[Sequence[DocsUI]],
+            Sequence[DocsUI] | None,
             Doc("""
                     The documentation viewers to mount, each serving the generated
                     OpenAPI document at its own path.
@@ -195,14 +188,14 @@ class silloApp:
                 """),
         ] = None,
         server_error_handler: Annotated[
-            Optional[ServerErrHandlerType],
+            ServerErrHandlerType | None,
             Doc(
                 """
                         A function in sillo responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures."""
             ),
         ] = None,
         lifespan: Annotated[
-            Optional[lifespan_manager],
+            lifespan_manager | None,
             Doc("""
                     A function in sillo responsible for handling ASGI lifespan protocol events. It handles the startup and shutdown events emitted by the ASGI server. It allows you to perform actions such as initializing resources, opening connections, and tearing down resources during application startup and shutdown.
 
@@ -224,7 +217,7 @@ class silloApp:
                 """),
         ] = [],
         dependencies: Annotated[
-            Optional[list[Depend]],
+            list[Depend] | None,
             Doc("""
                     A list of dependencies for the application. These dependencies are used to resolve dependencies within the application.
 
@@ -234,7 +227,7 @@ class silloApp:
                 """),
         ] = None,
         route_class: Annotated[
-            Type[Route],
+            type[Route],
             Doc("""
                     The class used to create routes. This can be a custom route class that inherits from `Route`.
                 """),
@@ -250,7 +243,7 @@ class silloApp:
                 """),
         ] = False,
         auth: Annotated[
-            Optional[Sequence["AuthenticationBackend"]],
+            Sequence[AuthenticationBackend] | None,
             Doc("""
                     The authentication backends this application accepts.
 
@@ -272,7 +265,7 @@ class silloApp:
                 """),
         ] = None,
         auth_user_model: Annotated[
-            Optional[Type["BaseUser"]],
+            type[BaseUser] | None,
             Doc("""
                     User model the mounted authentication middleware loads
                     identities into. Only read when ``auth`` is given.
@@ -348,17 +341,17 @@ class silloApp:
         """
         self.debug = debug
         self.dependencies = dependencies or []
-        self.custom_encoders: Dict[type, Callable[[Any], Any]] = {}
+        self.custom_encoders: dict[type, Callable[[Any], Any]] = {}
 
-        self.http_middleware: List[Middleware] = []
-        self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
-        self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
+        self.http_middleware: list[Middleware] = []
+        self.startup_handlers: list[Callable[[], Awaitable[None]]] = []
+        self.shutdown_handlers: list[Callable[[], Awaitable[None]]] = []
         self.server_error_handler = server_error_handler
 
         self.route_class = route_class
         self.strict_validation = strict_validation
         # Serialized OpenAPI document per mount prefix, built once.
-        self._openapi_documents: Dict[str, str] = {}
+        self._openapi_documents: dict[str, str] = {}
         self.app = Router(
             routes=routes,
             dependencies=self.dependencies,
@@ -368,13 +361,13 @@ class silloApp:
         self.exceptions_handler = ExceptionMiddleware()
         self.router = self.app
         self.route = self.router.route
-        self.lifespan_context: Optional[lifespan_manager] = lifespan
+        self.lifespan_context: lifespan_manager | None = lifespan
         self.state: dict[str, Any] = {}
 
         #: Console commands this application registers. The ``sillo`` command
         #: reads them after importing the app, which is how a project's own
         #: commands reach the command line without a file of its own.
-        self.commands: list[type["Command"]] = []
+        self.commands: list[type[Command]] = []
 
         #: The user model authentication loads identities into, kept so that
         #: tooling can find it. The middleware receives it separately.
@@ -391,7 +384,7 @@ class silloApp:
         )
 
         self.strict_security = strict_security
-        self.auth_backends: List["AuthenticationBackend"] = list(auth or [])
+        self.auth_backends: list[AuthenticationBackend] = list(auth or [])
 
         if self.auth_backends:
             self._register_auth(auth_user_model)
@@ -413,7 +406,7 @@ class silloApp:
             openapi_url=openapi_url,
         )
 
-        self.docs: List[DocsUI] = self._resolve_docs(
+        self.docs: list[DocsUI] = self._resolve_docs(
             docs, swagger_docs=swagger_docs, redoc_docs=redoc_docs
         )
 
@@ -421,7 +414,7 @@ class silloApp:
         self.title = title or "sillo API"
         self.setup()
 
-    def _register_auth(self, user_model: Optional[Type["BaseUser"]]) -> None:
+    def _register_auth(self, user_model: type[BaseUser] | None) -> None:
         """Mount the authentication middleware and publish its schemes.
 
         Args:
@@ -469,7 +462,7 @@ class silloApp:
             ValueError: If a route requires a scheme that is not registered.
         """
         known = set(self.openapi_config.security_schemes)
-        problems: List[str] = []
+        problems: list[str] = []
 
         for route in self.get_all_routes():
             if getattr(route, "exclude_from_schema", False):
@@ -490,11 +483,11 @@ class silloApp:
 
     @staticmethod
     def _resolve_docs(
-        docs: Optional[Sequence[DocsUI]],
+        docs: Sequence[DocsUI] | None,
         *,
         swagger_docs: str,
         redoc_docs: str,
-    ) -> List[DocsUI]:
+    ) -> list[DocsUI]:
         """Decide which documentation viewers to mount.
 
         Reconciles the ``docs`` list with the older ``swagger_docs`` and
@@ -542,7 +535,7 @@ class silloApp:
                     f"got {entry!r}. Subclass sillo.openapi.ui.DocsUI."
                 )
 
-        seen: Dict[str, DocsUI] = {}
+        seen: dict[str, DocsUI] = {}
         for entry in resolved:
             clash = seen.get(entry.path)
             if clash is not None:
@@ -564,7 +557,7 @@ class silloApp:
             config=self.openapi_config,
         )
 
-    def get_docs_ui(self, name: str) -> Optional[DocsUI]:
+    def get_docs_ui(self, name: str) -> DocsUI | None:
         """Return a mounted presenter by its ``name``, or ``None``.
 
         Args:
@@ -589,7 +582,7 @@ class silloApp:
         # loop variable would give every route the last presenter in the list,
         # which shows up as the wrong viewer rendering at the right path.
         @self.get(ui.path, exclude_from_schema=True)
-        async def docs_ui(request: "Request", response: "Response", _ui: DocsUI = ui):
+        async def docs_ui(request: Request, response: Response, _ui: DocsUI = ui):
             root_path = request.scope.get("root_path", "")
             return response.html(_ui.render(self._docs_context(root_path)))
 
@@ -616,7 +609,7 @@ class silloApp:
         from sillo.core.http.response import BaseResponse
 
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)
-        async def serve_openapi(request: "Request", response: "Response"):
+        async def serve_openapi(request: Request, response: Response):
             root_path = request.scope.get("root_path", "")
             return BaseResponse(
                 body=self.build_openapi(root_path),
@@ -974,14 +967,13 @@ class silloApp:
 
     def add_ws_route(
         self,
-        route: Optional[
-            Annotated[
-                WebsocketRoute,
-                Doc("An instance of the Route class representing a WebSocket route."),
-            ]
-        ] = None,
-        path: Optional[str] = None,
-        handler: Optional[WsHandlerType] = None,
+        route: Annotated[
+            WebsocketRoute,
+            Doc("An instance of the Route class representing a WebSocket route."),
+        ]
+        | None = None,
+        path: str | None = None,
+        handler: WsHandlerType | None = None,
     ) -> None:
         """
         Adds a WebSocket route to the application.
@@ -1001,12 +993,13 @@ class silloApp:
             ```
         """
 
-        if route:
-            if (not path or path == route.raw_path) and (
-                not handler or handler == route.handler
-            ):
-                self.router.add_ws_route(route)
-                return
+        if (
+            route
+            and (not path or path == route.raw_path)
+            and (not handler or handler == route.handler)
+        ):
+            self.router.add_ws_route(route)
+            return
 
         if path is None or handler is None:
             raise ValueError(
@@ -1018,10 +1011,10 @@ class silloApp:
     def frontend(
         self,
         path: str = "/",
-        directory: Union[str, "Path"] = "dist",
-        fallback: "Optional[Union[str, bool]]" = "auto",
-        name: Optional[str] = None,
-        cache_control: Optional[str] = None,
+        directory: str | Path = "dist",
+        fallback: str | bool | None = "auto",
+        name: str | None = None,
+        cache_control: str | None = None,
     ) -> None:
         """Mount a frontend SPA build directory with fallback routing.
 
@@ -1054,7 +1047,7 @@ class silloApp:
             cache_control=cache_control,
         )
 
-    def add_command(self, command: "type[Command]") -> "type[Command]":
+    def add_command(self, command: type[Command]) -> type[Command]:
         """Register a console command on this application.
 
         The ``sillo`` command imports the application and runs whatever is
@@ -1102,10 +1095,10 @@ class silloApp:
         self,
         name: str,
         help: str = "",
-        arguments: Optional[Sequence[Any]] = None,
+        arguments: Sequence[Any] | None = None,
         aliases: Sequence[str] = (),
         hidden: bool = False,
-    ) -> Callable[[Callable], "type[Command]"]:
+    ) -> Callable[[Callable], type[Command]]:
         """Register a plain function as a console command.
 
         The shorthand for a command whose body does not warrant a class::
@@ -1134,12 +1127,12 @@ class silloApp:
             name, help=help, arguments=arguments, aliases=aliases, hidden=hidden
         )
 
-        def wrapper(function: Callable) -> "type[Command]":
+        def wrapper(function: Callable) -> type[Command]:
             return self.add_command(decorate(function))
 
         return wrapper
 
-    def mount_router(self, router: Router, name: Optional[str] = None) -> None:
+    def mount_router(self, router: Router, name: str | None = None) -> None:
         """
         Mounts a router and all its routes to the application using the router's prefix.
 
@@ -1256,7 +1249,7 @@ class silloApp:
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for GET requests.
                 Receives (request, response) and returns response or raw data.
@@ -1268,28 +1261,28 @@ class silloApp:
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route identifier for URL generation.
                 Example: 'get-user-by-id'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief summary for OpenAPI documentation.
                 Example: 'Retrieves a user by ID'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed description for OpenAPI documentation.
                 Example: 'Returns full user details including profile information'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response models by status code.
                 Example: 
@@ -1301,7 +1294,7 @@ class silloApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Pydantic model for request validation (query params).
                 Example:
@@ -1311,28 +1304,28 @@ class silloApp:
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 List of route-specific middleware functions.
                 Example: [auth_required, rate_limit]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping related endpoints.
                 Example: ["Users", "Public"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements for OpenAPI docs.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation identifier for OpenAPI.
                 Example: 'users.get_by_id'
@@ -1346,7 +1339,7 @@ class silloApp:
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional OpenAPI parameter definitions.
                 Example: [Parameter(name="fields", in_="query", description="Fields to include")]
@@ -1360,7 +1353,7 @@ class silloApp:
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -1442,7 +1435,7 @@ class silloApp:
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for POST requests.
                 Example:
@@ -1452,28 +1445,28 @@ class silloApp:
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-create-user'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Create new user'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Creates new user with provided data'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1484,7 +1477,7 @@ class silloApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1505,28 +1498,28 @@ class silloApp:
             ),
         ] = "application/json",
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [rate_limit(10), validate_content_type('json')]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["User Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'createUser'
@@ -1540,7 +1533,7 @@ class silloApp:
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="X-Request-ID", in_="header")]
@@ -1554,7 +1547,7 @@ class silloApp:
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -1628,7 +1621,7 @@ class silloApp:
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for DELETE requests.
                 Example:
@@ -1638,28 +1631,28 @@ class silloApp:
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-delete-user'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Delete user account'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Permanently deletes user account and all associated data'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1670,7 +1663,7 @@ class silloApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request validation.
                 Example:
@@ -1679,28 +1672,28 @@ class silloApp:
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [admin_required, confirm_action]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["User Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'deleteUser'
@@ -1714,7 +1707,7 @@ class silloApp:
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="confirm", in_="query")]
@@ -1728,7 +1721,7 @@ class silloApp:
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -1799,7 +1792,7 @@ class silloApp:
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for PUT requests.
                 Example:
@@ -1809,28 +1802,28 @@ class silloApp:
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-update-user'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Update user details'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Full update of user resource'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -1841,7 +1834,7 @@ class silloApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request body validation.
                 Example:
@@ -1851,28 +1844,28 @@ class silloApp:
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [owner_required, validate_etag]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["User Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'updateUser'
@@ -1886,7 +1879,7 @@ class silloApp:
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="If-Match", in_="header")]
@@ -1900,7 +1893,7 @@ class silloApp:
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         request_content_type: Annotated[
@@ -1988,7 +1981,7 @@ class silloApp:
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for PATCH requests.
                 Example:
@@ -1998,28 +1991,28 @@ class silloApp:
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-partial-update-user'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Partially update user details'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Partial update of user resource'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -2030,7 +2023,7 @@ class silloApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request body validation.
                 Example:
@@ -2040,28 +2033,28 @@ class silloApp:
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [owner_required, validate_patch]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["User Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"BearerAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'partialUpdateUser'
@@ -2075,7 +2068,7 @@ class silloApp:
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="fields", in_="query")]
@@ -2089,7 +2082,7 @@ class silloApp:
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         request_content_type: Annotated[
@@ -2176,7 +2169,7 @@ class silloApp:
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for OPTIONS requests.
                 Example:
@@ -2186,28 +2179,28 @@ class silloApp:
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-user-options'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Get supported operations'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Returns supported HTTP methods and CORS headers'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -2217,7 +2210,7 @@ class silloApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request validation.
                 Example:
@@ -2226,28 +2219,28 @@ class silloApp:
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [cors_middleware]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["CORS"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: []
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'userOptions'
@@ -2261,7 +2254,7 @@ class silloApp:
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="Origin", in_="header")]
@@ -2275,7 +2268,7 @@ class silloApp:
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -2345,7 +2338,7 @@ class silloApp:
             """),
         ],
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for HEAD requests.
                 Example:
@@ -2355,28 +2348,28 @@ class silloApp:
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-check-resource'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Check resource existence'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Returns headers only to check if resource exists'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -2386,7 +2379,7 @@ class silloApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request validation.
                 Example:
@@ -2395,28 +2388,28 @@ class silloApp:
             """),
         ] = None,
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [cache_control('public')]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["Resource Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"ApiKeyAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'checkResource'
@@ -2430,7 +2423,7 @@ class silloApp:
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="X-Check-Type", in_="header")]
@@ -2444,7 +2437,7 @@ class silloApp:
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -2507,18 +2500,18 @@ class silloApp:
     def add_route(
         self,
         route: Annotated[
-            Optional[BaseRoute],
+            BaseRoute | None,
             Doc("An instance of the Route class representing an HTTP route."),
         ] = None,
         path: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 URL path pattern for the HEAD endpoint.
                 Example: '/api/v1/resources/{id}'
             """),
         ] = None,
         methods: Annotated[
-            List[str],
+            list[str],
             Doc("""
                 List of HTTP methods this route should handle.
                 Common methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
@@ -2526,7 +2519,7 @@ class silloApp:
             """),
         ] = allowed_methods_default,
         handler: Annotated[
-            Optional[HandlerType],
+            HandlerType | None,
             Doc("""
                 Async handler function for HEAD requests.
                 Example:
@@ -2536,28 +2529,28 @@ class silloApp:
             """),
         ] = None,
         name: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique route name for URL generation.
                 Example: 'api-v1-check-resource'
             """),
         ] = None,
         summary: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Brief endpoint summary.
                 Example: 'Check resource existence'
             """),
         ] = None,
         description: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Detailed endpoint description.
                 Example: 'Returns headers only to check if resource exists'
             """),
         ] = None,
         responses: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Response schemas by status code.
                 Example: {
@@ -2567,7 +2560,7 @@ class silloApp:
             """),
         ] = None,
         request_model: Annotated[
-            Optional[ArgsType],
+            ArgsType | None,
             Doc("""
                 Model for request validation.
                 Example:
@@ -2587,28 +2580,28 @@ class silloApp:
             """),
         ] = "application/json",
         middleware: Annotated[
-            List[Any],
+            list[Any],
             Doc("""
                 Route-specific middleware.
                 Example: [cache_control('public')]
             """),
         ] = [],
         tags: Annotated[
-            Optional[List[str]],
+            list[str] | None,
             Doc("""
                 OpenAPI tags for grouping.
                 Example: ["Resource Management"]
             """),
         ] = None,
         security: Annotated[
-            Optional[List[Dict[str, List[str]]]],
+            list[dict[str, list[str]]] | None,
             Doc("""
                 Security requirements.
                 Example: [{"ApiKeyAuth": []}]
             """),
         ] = None,
         operation_id: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Unique operation ID.
                 Example: 'checkResource'
@@ -2622,7 +2615,7 @@ class silloApp:
             """),
         ] = False,
         parameters: Annotated[
-            List[Parameter],
+            list[Parameter],
             Doc("""
                 Additional parameters.
                 Example: [Parameter(name="X-Check-Type", in_="header")]
@@ -2636,7 +2629,7 @@ class silloApp:
             """),
         ] = False,
         auth: Annotated[
-            Optional[Any],
+            Any | None,
             Doc("Route-level :class:`sillo.auth.useAuth` gate."),
         ] = None,
         **kwargs: Annotated[
@@ -2692,8 +2685,8 @@ class silloApp:
 
     def add_exception_handler(
         self,
-        exc_class_or_status_code: Union[Type[Exception], int],
-        handler: Optional[ExceptionHandlerType] = None,
+        exc_class_or_status_code: type[Exception] | int,
+        handler: ExceptionHandlerType | None = None,
     ) -> Any:
         """
         Register a custom exception handler for specific exception types or status codes.
@@ -2788,9 +2781,8 @@ class silloApp:
 
         """
         self.app = middleware_cls(self.app, **kwargs)
-        return
 
-    def get_all_routes(self) -> List[Route]:
+    def get_all_routes(self) -> list[Route]:
         """
         Returns all routes registered in the application.
 
@@ -2818,7 +2810,7 @@ class silloApp:
             """),
         ],
         handler: Annotated[
-            Optional[WsHandlerType],
+            WsHandlerType | None,
             Doc("""
                 Async handler function for WebSocket connections.
                 Example:

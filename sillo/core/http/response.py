@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import http.cookies
 import json
@@ -6,6 +8,7 @@ import os
 import stat
 import typing
 from base64 import b64encode
+from collections.abc import AsyncIterator, Callable
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime, formatdate
 from functools import partial
@@ -14,12 +17,7 @@ from pathlib import Path
 from typing import (
     Annotated,
     Any,
-    AsyncIterator,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
+    ClassVar,
     Union,
 )
 from urllib.parse import quote
@@ -29,8 +27,8 @@ import anyio.to_thread
 from anyio import AsyncFile
 from typing_extensions import Doc
 
-from sillo.exceptions import HTTPException, NotFoundException
 from sillo.core.http.request import ClientDisconnect, Request
+from sillo.exceptions import HTTPException, NotFoundException
 from sillo.objects import MutableHeaders
 from sillo.pagination import (
     AsyncListDataHandler,
@@ -49,7 +47,7 @@ Message = typing.MutableMapping[str, typing.Any]
 Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[[Message], typing.Awaitable[None]]
 
-JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
+JSONType = Union[str, int, float, bool, None, dict[str, Any], list[Any]]
 
 
 class MalformedRangeHeader(Exception):
@@ -143,40 +141,7 @@ class BaseResponse:
         object: Python built-in base class.
     """
 
-    def __init__(
-        self,
-        body: Union[JSONType, Any] = "",
-        status_code: int = 200,
-        headers: Optional[Dict[str, str]] = None,
-        content_type: Optional[str] = None,
-    ):
-        """Initialize a BaseResponse with body, status, headers, and content type.
-
-        Renders the body content to bytes, sets the HTTP status code, and
-        initializes the raw headers list.  Automatically populates the
-        Content-Length and Content-Type headers if not explicitly provided
-        in the *headers* dictionary.
-
-        Args:
-            body: The response body content.  Can be a string, bytes, or any
-                JSON-compatible type.  Defaults to an empty string.
-            status_code: The HTTP status code for the response.  Defaults to
-                200 (OK).
-            headers: Optional dictionary of header name-value pairs to include
-                in the response.  Defaults to ``None``.
-            content_type: Optional Content-Type header value.  If the content
-                type starts with ``"text/"`` and lacks a charset parameter,
-                the response charset is appended automatically.
-
-        Returns:
-            None: This method initializes the instance in-place.
-
-        Raises:
-            None: This method does not raise exceptions under normal
-                circumstances.
-        """
-
-    STATUS_CODES = {
+    STATUS_CODES: ClassVar[dict] = {
         200: "OK",
         201: "Created",
         204: "No Content",
@@ -192,27 +157,37 @@ class BaseResponse:
 
     def __init__(
         self,
-        body: Union[JSONType, Any] = "",
+        body: JSONType | Any = "",
         status_code: int = 200,
-        headers: Optional[Dict[str, str]] = None,
-        content_type: Optional[str] = None,
+        headers: dict[str, str] | None = None,
+        content_type: str | None = None,
     ):
-        """Initialize a BaseResponse.
+        """Initialize a BaseResponse with body, status, headers, and content type.
+
+        Renders the body content to bytes, sets the HTTP status code, and
+        initializes the raw headers list. Automatically populates the
+        Content-Length and Content-Type headers if not explicitly provided
+        in the *headers* dictionary.
 
         Args:
-            body: Response body content.
-            status_code: HTTP status code.
-            headers: Response headers dict.
-            content_type: Content-Type header value.
+            body: The response body content. Can be a string, bytes, or any
+                JSON-compatible type. Defaults to an empty string.
+            status_code: The HTTP status code for the response. Defaults to
+                200 (OK).
+            headers: Optional dictionary of header name-value pairs to include
+                in the response.
+            content_type: Optional Content-Type header value. If the content
+                type starts with ``"text/"`` and lacks a charset parameter,
+                the response charset is appended automatically.
         """
         self.charset = "utf-8"
         self.status_code: int = status_code
-        self.raw_headers: List[Tuple[bytes, bytes]] = []
+        self.raw_headers: list[tuple[bytes, bytes]] = []
         self._body = self.render(body)
-        self.content_type: typing.Optional[str] = content_type
+        self.content_type: str | None = content_type
         self._init_headers(headers)
 
-    def render(self, content: typing.Any) -> typing.Union[bytes, memoryview]:
+    def render(self, content: typing.Any) -> bytes | memoryview:
         """Render content to bytes for transmission over the wire.
 
         Converts the provided content into a bytes representation suitable
@@ -238,7 +213,7 @@ class BaseResponse:
             return content
         return content.encode(self.charset)
 
-    def _init_headers(self, headers: Optional[Dict[str, str]] = None):
+    def _init_headers(self, headers: dict[str, str] | None = None):
         """Initialize response headers from a dictionary of name-value pairs.
 
         Processes the provided headers dictionary, normalizing header names
@@ -282,7 +257,7 @@ class BaseResponse:
         ):
             content_length = str(len(body))
             self.set_header("content-length", content_length, overide=True)
-        content_type: typing.Optional[str] = self.content_type
+        content_type: str | None = self.content_type
         if content_type is not None and populate_content_type:
             if (
                 content_type.startswith("text/")
@@ -316,13 +291,13 @@ class BaseResponse:
         self,
         key: str,
         value: str = "",
-        max_age: typing.Optional[int] = None,
-        expires: typing.Union[datetime, str, int, None] = None,
-        path: typing.Optional[str] = "/",
-        domain: typing.Optional[str] = None,
-        secure: typing.Optional[bool] = False,
-        httponly: typing.Optional[bool] = False,
-        samesite: typing.Optional[typing.Literal["lax", "strict", "none"]] = "lax",
+        max_age: int | None = None,
+        expires: datetime | str | int | None = None,
+        path: str | None = "/",
+        domain: str | None = None,
+        secure: bool | None = False,
+        httponly: bool | None = False,
+        samesite: typing.Literal["lax", "strict", "none"] | None = "lax",
     ) -> Any:
         """Set an HTTP cookie in the response with full attribute control.
 
@@ -387,7 +362,7 @@ class BaseResponse:
         return cookie
 
     def delete_cookie(
-        self, key: str, path: str = "/", domain: Optional[str] = None
+        self, key: str, path: str = "/", domain: str | None = None
     ) -> Any:
         """Delete a cookie by setting its expiration to the past.
 
@@ -437,7 +412,7 @@ class BaseResponse:
         Raises:
             None: This method does not raise exceptions.
         """
-        cache_control: List[str] = []
+        cache_control: list[str] = []
         if private:
             cache_control.append("private")
         else:
@@ -482,7 +457,7 @@ class BaseResponse:
         """The response body as bytes."""
         return self._body
 
-    def set_body(self, content: typing.Any) -> "BaseResponse":
+    def set_body(self, content: typing.Any) -> BaseResponse:
         """Replace the body, keeping Content-Length in step with it.
 
         Assigning ``_body`` directly leaves the Content-Length that was
@@ -505,7 +480,7 @@ class BaseResponse:
         content_hash.update(self._body)
         return f'W/"{b64encode(content_hash.digest()).decode("utf-8")}"'
 
-    def set_header(self, key: str, value: str, overide: bool = False) -> "BaseResponse":
+    def set_header(self, key: str, value: str, overide: bool = False) -> BaseResponse:
         """Set a response header.
 
         Args:
@@ -531,7 +506,7 @@ class BaseResponse:
         self.raw_headers.append(new_header)
         return self
 
-    def set_headers(self, headers: Dict[str, str], overide_all: bool = False):
+    def set_headers(self, headers: dict[str, str], overide_all: bool = False):
         """Set multiple headers at once.
 
         Args:
@@ -551,7 +526,7 @@ class BaseResponse:
         """Remove a header from the response."""
         del self.headers[key]
 
-    def remove_headers(self, keys: List[str]):
+    def remove_headers(self, keys: list[str]):
         """Remove multiple headers from the response."""
         for key in keys:
             self.remove_header(key)
@@ -562,7 +537,7 @@ class PlainTextResponse(BaseResponse):
         self,
         body: JSONType = "",
         status_code: int = 200,
-        headers: typing.Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         content_type: str = "text/plain",
     ):
         super().__init__(body, status_code, headers, content_type)
@@ -577,11 +552,11 @@ class JSONResponse(BaseResponse):
         self,
         content: Any,
         status_code: int = 200,
-        headers: Optional[Dict[str, str]] = None,
-        indent: Optional[int] = None,
+        headers: dict[str, str] | None = None,
+        indent: int | None = None,
         ensure_ascii: bool = True,
         use_encoder: bool = True,
-        custom_encoder: Optional[Dict[type, Callable[[Any], Any]]] = None,
+        custom_encoder: dict[type, Callable[[Any], Any]] | None = None,
     ):
         try:
             # Pre-process content through jsonable_encoder when requested
@@ -599,7 +574,7 @@ class JSONResponse(BaseResponse):
                 default=str,
             )
         except (TypeError, ValueError) as e:
-            raise ValueError(f"Content is not JSON serializable: {str(e)}")
+            raise ValueError(f"Content is not JSON serializable: {e!s}")
 
         super().__init__(
             body=body,
@@ -616,9 +591,9 @@ class HTMLResponse(BaseResponse):
 
     def __init__(
         self,
-        content: Union[str, JSONType],
+        content: str | JSONType,
         status_code: int = 200,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ):
         super().__init__(
             body=content,
@@ -638,10 +613,10 @@ class FileResponse(BaseResponse):
 
     def __init__(
         self,
-        path: Union[str, Path],
-        filename: Optional[str] = None,
+        path: str | Path,
+        filename: str | None = None,
         status_code: int = 200,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         content_disposition_type: str = "inline",
     ):
         super().__init__(headers=headers)
@@ -662,8 +637,8 @@ class FileResponse(BaseResponse):
         )
         self.set_header("accept-ranges", "bytes")
 
-        self._ranges: List[Tuple[int, int]] = []
-        self._multipart_boundary: Optional[str] = None
+        self._ranges: list[tuple[int, int]] = []
+        self._multipart_boundary: str | None = None
 
     def set_stat_headers(self, stat_result: os.stat_result) -> None:
         content_length = str(stat_result.st_size)
@@ -694,7 +669,7 @@ class FileResponse(BaseResponse):
 
         await self._send_response(scope, receive, send)
 
-    def _parse_ranges(self, range_header: str, file_size: int) -> List[Tuple[int, int]]:
+    def _parse_ranges(self, range_header: str, file_size: int) -> list[tuple[int, int]]:
         """Turn a ``Range`` header into inclusive ``(start, end)`` offsets.
 
         Args:
@@ -713,7 +688,7 @@ class FileResponse(BaseResponse):
         if not sep or unit.strip().lower() != "bytes":
             raise ValueError("Only byte ranges are supported")
 
-        ranges: List[Tuple[int, int]] = []
+        ranges: list[tuple[int, int]] = []
         for range_str in spec.split(","):
             first, sep, last = range_str.strip().partition("-")
             if not sep:
@@ -953,16 +928,16 @@ class StreamingResponse(BaseResponse):
 
     def __init__(
         self,
-        content: AsyncIterator[Union[str, bytes]],
+        content: AsyncIterator[str | bytes],
         status_code: int = 200,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         content_type: str = "text/plain",
     ):
         super().__init__(headers=headers)
 
         self.content_iterator = content
         self.status_code = status_code
-        self._cookies: List[Tuple[str, str, Dict[str, Any]]] = []
+        self._cookies: list[tuple[str, str, dict[str, Any]]] = []
 
         self.content_type = content_type
         self.headers["content-type"] = self.content_type
@@ -1022,7 +997,7 @@ class RedirectResponse(BaseResponse):
         self,
         url: str,
         status_code: int = 302,
-        headers: Dict[str, str] = {},
+        headers: dict[str, str] = {},
     ):
         if not 300 <= status_code < 400:
             raise ValueError("Status code must be a valid redirect status")
@@ -1170,13 +1145,13 @@ class Responder:
     def has_header(self, key: str) -> bool:
         """Check if a header is present in the response."""
 
-        return key.lower() in (k.lower() for k in self.headers.keys())
+        return key.lower() in (k.lower() for k in self.headers)
 
     def text(
         self,
         content: JSONType,
         status_code: int = 200,
-        headers: Dict[str, Any] = {},
+        headers: dict[str, Any] = {},
     ):
         """Send plain text or HTML content."""
         new_response = PlainTextResponse(
@@ -1188,7 +1163,7 @@ class Responder:
     def json(
         self,
         data: Annotated[
-            Union[str, List[Any], Dict[str, Any]],
+            str | list[Any] | dict[str, Any],
             Doc("""
                 Data to serialize as JSON response.
                 
@@ -1218,7 +1193,7 @@ class Responder:
                 """),
         ] = 200,
         headers: Annotated[
-            Dict[str, Any],
+            dict[str, Any],
             Doc("""
                 Additional HTTP headers to include in the response.
                 
@@ -1226,7 +1201,7 @@ class Responder:
                 """),
         ] = {},
         indent: Annotated[
-            Optional[int],
+            int | None,
             Doc("""
                 Number of spaces to use for JSON indentation.
                 
@@ -1244,7 +1219,7 @@ class Responder:
                 """),
         ] = True,
         custom_encoder: Annotated[
-            Optional[Dict[type, Callable[[Any], Any]]],
+            dict[type, Callable[[Any], Any]] | None,
             Doc("""
                 One-off custom type encoders applied only to this response.
                 
@@ -1302,17 +1277,17 @@ class Responder:
         self._response = new_response
         return self
 
-    def download(self, path: str, filename: Optional[str] = None) -> "Responder":
+    def download(self, path: str, filename: str | None = None) -> Responder:
         """Set a response to force a file download."""
         return self.file(path, filename, content_disposition_type="attachment")
 
-    def set_permanent_cookie(self, key: str, value: str, **kwargs: Any) -> "Responder":
+    def set_permanent_cookie(self, key: str, value: str, **kwargs: Any) -> Responder:
         """Set a permanent cookie with a far-future expiration date."""
         expires = datetime.now(timezone.utc) + timedelta(days=365 * 10)
         self.set_cookie(key, value, expires=expires, **kwargs)
         return self
 
-    def empty(self, status_code: int = 200, headers: Dict[str, Any] = {}):
+    def empty(self, status_code: int = 200, headers: dict[str, Any] = {}):
         """Send an empty response."""
 
         new_response = BaseResponse(status_code=status_code, headers=headers)
@@ -1322,8 +1297,8 @@ class Responder:
     def abort(
         self,
         status_code: int,
-        detail: typing.Optional[typing.Any] = None,
-        headers: Dict[str, Any] = {},
+        detail: typing.Any | None = None,
+        headers: dict[str, Any] = {},
     ) -> typing.NoReturn:
         """
         Abort the request by raising an :class:`HTTPException`.
@@ -1355,8 +1330,8 @@ class Responder:
 
     def not_found(
         self,
-        detail: typing.Optional[str] = None,
-        headers: Dict[str, Any] = {},
+        detail: str | None = None,
+        headers: dict[str, Any] = {},
     ) -> typing.NoReturn:
         """
         Abort the request with a 404 by raising a :class:`NotFoundException`.
@@ -1388,7 +1363,7 @@ class Responder:
         self,
         content: str,
         status_code: int = 200,
-        headers: Dict[str, Any] = {},
+        headers: dict[str, Any] = {},
     ):
         """Send HTML response."""
 
@@ -1401,10 +1376,10 @@ class Responder:
     def file(
         self,
         path: str,
-        filename: Optional[str] = None,
+        filename: str | None = None,
         content_disposition_type: str = "inline",
         status_code: int = 200,
-        headers: Dict[str, Any] = {},
+        headers: dict[str, Any] = {},
     ):
         """Send file response."""
         new_response = FileResponse(
@@ -1419,10 +1394,10 @@ class Responder:
 
     def stream(
         self,
-        iterator: AsyncIterator[Union[str, bytes]],
+        iterator: AsyncIterator[str | bytes],
         content_type: str = "text/plain",
         status_code: int = 200,
-        headers: Dict[str, Any] = {},
+        headers: dict[str, Any] = {},
     ):
         """Send streaming response."""
 
@@ -1437,10 +1412,10 @@ class Responder:
 
     def redirect(
         self,
-        url: typing.Optional[str] = None,
-        name: typing.Optional[str] = None,
+        url: str | None = None,
+        name: str | None = None,
         status_code: int = 302,
-        headers: Dict[str, Any] = {},
+        headers: dict[str, Any] = {},
         **path_params: typing.Any,
     ):
         """
@@ -1501,7 +1476,7 @@ class Responder:
         key: Annotated[str, Doc("Name of the cookie to set")],
         value: Annotated[str, Doc("Value to store in the cookie")],
         max_age: Annotated[
-            Optional[int],
+            int | None,
             Doc("""
                 Maximum age of the cookie in seconds.
                 
@@ -1515,7 +1490,7 @@ class Responder:
                 """),
         ] = None,
         expires: Annotated[
-            Optional[Union[str, datetime, int]],
+            str | datetime | int | None,
             Doc("""
                 Expiration date/time for the cookie.
                 
@@ -1537,7 +1512,7 @@ class Responder:
                 """),
         ] = "/",
         domain: Annotated[
-            Optional[str],
+            str | None,
             Doc("""
                 Domain where the cookie is valid.
                 
@@ -1568,7 +1543,7 @@ class Responder:
                 """),
         ] = False,
         samesite: Annotated[
-            typing.Optional[typing.Literal["lax", "strict", "none"]],
+            typing.Literal["lax", "strict", "none"] | None,
             Doc("""
                 SameSite attribute for CSRF protection.
                 
@@ -1645,7 +1620,7 @@ class Responder:
         self,
         key: str,
         path: str = "/",
-        domain: Optional[str] = None,
+        domain: str | None = None,
     ):
         """Delete a response cookie."""
         self._response.delete_cookie(
@@ -1668,9 +1643,9 @@ class Responder:
 
     def resp(
         self,
-        body: Union[JSONType, Any] = "",
+        body: JSONType | Any = "",
         status_code: int = 200,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         content_type: str = "text/plain",
     ):
         """
@@ -1685,13 +1660,13 @@ class Responder:
         self._response = new_response
         return self
 
-    def set_cookies(self, cookies: List[Dict[str, Any]]):
+    def set_cookies(self, cookies: list[dict[str, Any]]):
         """Set multiple cookies at once."""
         for cookie in cookies:
             self.set_cookie(**cookie)
         return self
 
-    def set_headers(self, headers: Dict[str, str], overide_all: bool = False):
+    def set_headers(self, headers: dict[str, str], overide_all: bool = False):
         """Set multiple headers at once."""
         if overide_all:
             self._response.set_headers(headers)
@@ -1710,12 +1685,12 @@ class Responder:
         """Make the response ASGI-compatible."""
         return self._response
 
-    def add_csp_header(self, policy: str) -> "Responder":
+    def add_csp_header(self, policy: str) -> Responder:
         """Add a Content Security Policy header."""
         self.set_header("Content-Security-Policy", policy)
         return self
 
-    def make_response(self, response_class: BaseResponse) -> "Responder":
+    def make_response(self, response_class: BaseResponse) -> Responder:
         """
         Create a response using a custom response class.
 
@@ -1737,11 +1712,11 @@ class Responder:
 
     def paginate(
         self,
-        objects: List[Any],
-        strategy: Union[str, BasePaginationStrategy] = "page_number",
+        objects: list[Any],
+        strategy: str | BasePaginationStrategy = "page_number",
         data_handler: type[SyncListDataHandler] = SyncListDataHandler,
         **kwargs: Any,
-    ) -> "Responder":
+    ) -> Responder:
         """
         Paginate the response data.
 
@@ -1792,11 +1767,11 @@ class Responder:
 
     async def apaginate(
         self,
-        objects: List[Any],
-        strategy: Union[str, BasePaginationStrategy] = "page_number",
+        objects: list[Any],
+        strategy: str | BasePaginationStrategy = "page_number",
         data_handler: type[AsyncListDataHandler] = AsyncListDataHandler,
         **kwargs: Any,
-    ) -> "Responder":
+    ) -> Responder:
         """
         Paginate the response data asynchronously.
 

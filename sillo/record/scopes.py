@@ -7,7 +7,7 @@ automatically applied to every query on a model.
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional
+from collections.abc import Callable
 
 from tortoise.manager import Manager
 from tortoise.queryset import QuerySet
@@ -17,15 +17,8 @@ class ScopeRegistry:
     """Registry of global scopes applied to every query."""
 
     def __init__(self):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._global_scopes: List[Callable] = []
+        """Init"""
+        self._global_scopes: list[Callable] = []
 
     def add(self, scope: Callable) -> None:
         """Register a global scope. ``scope(queryset) -> queryset``."""
@@ -67,7 +60,7 @@ class HasScopes:
         active_vip = await User.active().vip().all()
     """
 
-    _scope_registry: Optional[ScopeRegistry] = None
+    _scope_registry: ScopeRegistry | None = None
 
     @classmethod
     def add_global_scope(cls, scope: Callable) -> None:
@@ -83,17 +76,7 @@ class HasScopes:
 
     @classmethod
     def apply_scopes(cls, queryset):
-        """Apply Scopes
-
-        Args:
-            queryset: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Apply Scopes"""
         if cls._scope_registry is not None:
             return cls._scope_registry.apply(queryset)
         return queryset

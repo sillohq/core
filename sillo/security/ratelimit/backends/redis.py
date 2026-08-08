@@ -12,11 +12,7 @@ constructing the backend raises ``ImportError`` with an actionable message.
 from __future__ import annotations
 
 import json
-import time
-import typing
-from typing import Any, Optional
-
-from typing_extensions import Doc
+from typing import Any
 
 from .base import RateLimitBackend
 
@@ -37,18 +33,7 @@ class RedisBackend(RateLimitBackend):
         prefix: str = "sillo:ratelimit:",
         **kwargs: Any,
     ) -> None:
-        """Init
-
-        Args:
-            url: [description]
-            prefix: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         try:
             import redis.asyncio as aioredis
         except ImportError as exc:  # pragma: no cover - depends on env
@@ -62,31 +47,11 @@ class RedisBackend(RateLimitBackend):
         self._script = self._client.register_script(_LUA_SET)
 
     def _key(self, key: str) -> str:
-        """Key
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Key"""
         return f"{self._prefix}{key}"
 
-    async def fetch_state(self, key: str) -> Optional[dict]:
-        """Fetch State
-
-        Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    async def fetch_state(self, key: str) -> dict | None:
+        """Fetch State"""
         raw = await self._client.get(self._key(key))
         if raw is None:
             return None
@@ -96,30 +61,11 @@ class RedisBackend(RateLimitBackend):
             return None
 
     async def save_state(self, key: str, state: dict, ttl: int) -> None:
-        """Save State
-
-        Args:
-            key: [description]
-            state: [description]
-            ttl: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Save State"""
         payload = json.dumps(state)
         await self._script(keys=[self._key(key)], args=[ttl, payload])
 
     async def clear(self) -> None:
-        """Clear
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Clear"""
         async for name in self._client.scan_iter(match=f"{self._prefix}*"):
             await self._client.delete(name)

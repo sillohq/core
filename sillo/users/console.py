@@ -25,7 +25,8 @@ is no terminal — a CI job creating a seed account has nowhere to type.
 from __future__ import annotations
 
 import os
-from typing import Any, Callable, ClassVar, List, Optional, Type, Union
+from collections.abc import Callable
+from typing import Any, ClassVar, Union
 
 from sillo.console import Argument, Command, Flag, Option
 
@@ -70,7 +71,7 @@ class UserCommand(Command):
         config: Set by :func:`user_commands` on a subclass.
     """
 
-    config: ClassVar[Optional[_Config]] = None
+    config: ClassVar[_Config | None] = None
 
     def context(self) -> Any:
         """Open the database around the command, when one was bound.
@@ -114,7 +115,7 @@ class UserCommand(Command):
 
         return self.secret(question, confirm=confirm)
 
-    def render(self, users: List[Any]) -> None:
+    def render(self, users: list[Any]) -> None:
         """Draw a table of *users*.
 
         Args:
@@ -146,7 +147,7 @@ class Create(UserCommand):
     name = "user:create"
     help = "Create a user"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("email", help="Email address. Must not already be registered"),
         Argument("username", help="Username. Must not already be taken"),
         Flag("admin", help="Give the account admin access"),
@@ -185,7 +186,7 @@ class CreateAdmin(UserCommand):
     name = "user:admin"
     help = "Create an administrator"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("email", help="Email address"),
         Argument("username", default=None, help="Username. Defaults to the mailbox"),
     ]
@@ -212,7 +213,7 @@ class ListUsers(UserCommand):
     name = "user:list"
     help = "List users, newest first"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Option("limit", type=int, default=50, short="l", help="Maximum rows"),
         Option("offset", type=int, default=0, help="Rows to skip"),
         Flag("staff", help="Only accounts with admin access"),
@@ -239,7 +240,9 @@ class Show(UserCommand):
     name = "user:show"
     help = "Show one account"
 
-    arguments = [Argument("identifier", help="Email address or username")]
+    arguments: ClassVar[list] = [
+        Argument("identifier", help="Email address or username")
+    ]
 
     async def handle(self) -> None:
         from .commands import find_user
@@ -265,7 +268,9 @@ class SetPassword(UserCommand):
     name = "user:password"
     help = "Change a password"
 
-    arguments = [Argument("identifier", help="Email address or username")]
+    arguments: ClassVar[list] = [
+        Argument("identifier", help="Email address or username")
+    ]
 
     async def handle(self) -> None:
         from .commands import set_password
@@ -290,7 +295,7 @@ class SetActive(UserCommand):
     name = "user:active"
     help = "Activate or deactivate an account"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("identifier", help="Email address or username"),
         Flag("off", help="Deactivate instead of activating"),
     ]
@@ -315,7 +320,7 @@ class SetStaff(UserCommand):
     name = "user:staff"
     help = "Grant or revoke admin access"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("identifier", help="Email address or username"),
         Flag("revoke", help="Take the access away instead"),
     ]
@@ -333,7 +338,7 @@ class SetStaff(UserCommand):
 
 
 #: Every command this module defines, in the order they are listed.
-COMMANDS: List[Type[UserCommand]] = [
+COMMANDS: list[type[UserCommand]] = [
     Create,
     CreateAdmin,
     ListUsers,
@@ -348,8 +353,8 @@ def user_commands(
     *,
     model: Any = None,
     context: ContextSource = None,
-    only: Optional[List[str]] = None,
-) -> List[Type[Command]]:
+    only: list[str] | None = None,
+) -> list[type[Command]]:
     """Return the account commands.
 
     Args:

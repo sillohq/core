@@ -12,7 +12,7 @@ def create_jwt(
     payload: dict,
     secret: str,
     algorithm: str = "HS256",
-    expires_in: Optional[timedelta] = None,
+    expires_in: timedelta | None = None,
 ) -> str:
     """Encode a dictionary payload into a signed JSON Web Token string.
 
@@ -45,7 +45,7 @@ def create_jwt(
 def decode_jwt(
     token: str,
     secret: str,
-    algorithms: Optional[list[str]] = None,
+    algorithms: list[str] | None = None,
 ) -> dict:
     """Decode and verify a JSON Web Token, returning its claims as a dictionary.
 
@@ -78,10 +78,10 @@ def decode_jwt(
 
 __all__ = [
     "JWTAuthBackend",
+    "JWTToken",
+    "JWTUserMixin",
+    "TokenBlacklist",
     "TokenForUser",
     "create_jwt",
     "decode_jwt",
-    "JWTToken",
-    "TokenBlacklist",
-    "JWTUserMixin",
 ]

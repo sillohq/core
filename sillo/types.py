@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from pydantic import BaseModel
 
-from sillo.core.http.response import StreamingResponse
-
 from sillo.core.http.request import Request
 from sillo.core.http.response import Responder as Response
-from .websockets import WebSocket
+from sillo.core.http.response import StreamingResponse
 
+from .websockets import WebSocket
 
 # Type alias for route model arguments — accepts any of:
 #   - a single Pydantic model class
@@ -26,12 +26,12 @@ Message = typing.MutableMapping[str, typing.Any]
 Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[[Message], typing.Awaitable[None]]
 RequestResponseEndpoint = typing.Callable[
-    [], typing.Awaitable[typing.Union[Response, StreamingResponse]]
+    [], typing.Awaitable[Response | StreamingResponse]
 ]
 
 MiddlewareType = typing.Callable[
     [Request, Response, RequestResponseEndpoint],
-    typing.Awaitable[typing.Union[Response, StreamingResponse]],
+    typing.Awaitable[Response | StreamingResponse],
 ]
 
 WsHandlerType = typing.Callable[[WebSocket], typing.Awaitable[None]]

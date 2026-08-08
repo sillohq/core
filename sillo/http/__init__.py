@@ -23,16 +23,16 @@ from sillo.http.accepts import (
 from sillo.http.client import (
     BaseURLMiddleware,
     CacheConfig,
-    CachePolicy,
     CachedResponse,
+    CachePolicy,
     ConnectionPoolConfig,
+    HeaderInjectionMiddleware,
     HTTPCache,
     HTTPClient,
     HTTPClientConfig,
     HTTPClientError,
     HTTPClientStats,
     HTTPMiddleware,
-    HeaderInjectionMiddleware,
     LoggingMiddleware,
     MiddlewareChain,
     ResponseValidator,
@@ -67,7 +67,7 @@ from sillo.http.lifecycle import (
     store_request_id_in_request,
     validate_request_id,
 )
-from sillo.http.status import *  # noqa: F403
+from sillo.http.status import *
 from sillo.http.status import __all__ as _status_all
 
 __all__ = [

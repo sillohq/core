@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from sillo.auth.jwt_auth.models import JWTToken, TokenBlacklist
 from sillo.auth.jwt_auth.tokens import TokenForUser
@@ -21,8 +20,8 @@ class JWTUserMixin:
     async def issue_token_pair(
         self,
         secret: str,
-        access_expires: Optional[timedelta] = None,
-        refresh_expires: Optional[timedelta] = None,
+        access_expires: timedelta | None = None,
+        refresh_expires: timedelta | None = None,
         algorithm: str = "HS256",
     ) -> dict:
         """Issue a new access and refresh token pair for this user.

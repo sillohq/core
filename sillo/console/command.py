@@ -33,16 +33,12 @@ a message, not a silently wrong value.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Sequence
 from typing import (
     Any,
     AsyncContextManager,
-    Awaitable,
     ClassVar,
-    List,
     NoReturn,
-    Optional,
-    Sequence,
-    Union,
 )
 
 from .arguments import Parameter, ParsedInput
@@ -101,7 +97,7 @@ class Command:
 
     def handle(  # pragma: no cover - overridden
         self,
-    ) -> Union[Optional[int], Awaitable[Optional[int]]]:
+    ) -> int | None | Awaitable[int | None]:
         """Do the work.
 
         Declared synchronously and returning either a value or an awaitable,
@@ -115,7 +111,7 @@ class Command:
         """
         raise NotImplementedError(f"{type(self).__name__} does not define handle()")
 
-    def context(self) -> Optional[AsyncContextManager]:
+    def context(self) -> AsyncContextManager | None:
         """Return a context manager to wrap :meth:`handle`.
 
         Override it when every command in a family needs the same thing opened
@@ -175,7 +171,7 @@ class Command:
         return bool(self.input.get(name, "flag"))
 
     @property
-    def extra(self) -> List[str]:
+    def extra(self) -> list[str]:
         """Positional tokens that followed ``--``.
 
         Returns:
@@ -186,7 +182,7 @@ class Command:
 
     # -- output --------------------------------------------------------
 
-    def line(self, text: str = "", style: Optional[Style] = None) -> None:
+    def line(self, text: str = "", style: Style | None = None) -> None:
         """Write one line.
 
         Args:
@@ -265,7 +261,7 @@ class Command:
         self,
         headers: Sequence[str],
         rows: Sequence[Sequence[Any]],
-        align: Optional[Sequence[str]] = None,
+        align: Sequence[str] | None = None,
     ) -> None:
         """Draw a table.
 
@@ -321,8 +317,8 @@ class Command:
     def ask(
         self,
         question: str,
-        default: Optional[str] = None,
-        validate: Optional[Validator] = None,
+        default: str | None = None,
+        validate: Validator | None = None,
     ) -> Any:
         """Ask for a line of text.
 
@@ -383,9 +379,9 @@ class Command:
         self,
         question: str,
         options: Sequence[Choice],
-        defaults: Optional[Sequence[Any]] = None,
+        defaults: Sequence[Any] | None = None,
         minimum: int = 0,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Ask the user to pick any number of options.
 
         Args:

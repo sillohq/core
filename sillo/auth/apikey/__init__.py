@@ -66,6 +66,6 @@ __all__ = [
     "ApiKeyManager",
     "ApiKeyUserMixin",
     "generate_api_key",
-    "verify_api_key",
     "hash_api_key",
+    "verify_api_key",
 ]

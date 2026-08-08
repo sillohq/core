@@ -3,7 +3,8 @@ from __future__ import annotations
 import functools
 import inspect
 import warnings
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -22,8 +23,6 @@ class DeprecatedError(FutureWarning):
             the version it was deprecated in and the version it will be
             removed in.
     """
-
-    pass
 
 
 def warn_deprecated(

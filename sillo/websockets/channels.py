@@ -2,6 +2,7 @@ import os
 import time
 import typing
 import uuid
+from typing import ClassVar
 
 from sillo import logging as sillo_logger
 from sillo.websockets import WebSocket
@@ -22,20 +23,13 @@ _MISSING = object()
 
 
 class Channel:
-    """Channel
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Channel"""
 
     def __init__(
         self,
         websocket: WebSocket,
         payload_type: str,
-        expires: typing.Optional[int] = None,
+        expires: int | None = None,
     ) -> None:
         """Main websocket channel class.
 
@@ -62,17 +56,7 @@ class Channel:
         self.created = time.time()
 
     async def _send(self, payload: typing.Any) -> None:
-        """Send
-
-        Args:
-            payload: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Send"""
         try:
             if self.payload_type == "json":
                 await self.websocket.send_json(payload)
@@ -88,46 +72,24 @@ class Channel:
         self.created = time.time()
 
     async def _is_expired(self) -> bool:
-        """Is Expired
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Expired"""
         if not self.expires:
             return False
         return (self.expires + int(self.created)) < time.time()
 
     def __repr__(self) -> str:
-        """Repr
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Repr"""
         return f"{self.__class__.__name__} {self.uuid=} {self.payload_type=} {self.expires=}"
 
 
 class ChannelBox:
-    """Channelbox
+    """Channelbox"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    CHANNEL_GROUPS: typing.Dict[
-        str, typing.Any
-    ] = {}  # groups of channels ~ key: group_name, val: dict of channels
-    HISTORY_SIZE: int = int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", 1_048_576))
+    # Groups of channels ~ key: group_name, val: dict of channels.
+    CHANNEL_GROUPS: ClassVar[dict[str, typing.Any]] = {}
+    HISTORY_SIZE: int = int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", "1048576"))
     HISTORY_MANAGER: BaseHistoryManager = InMemoryHistoryManager(
-        history_size=int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", 1_048_576))
+        history_size=int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", "1048576"))
     )
 
     @classmethod
@@ -210,7 +172,7 @@ class ChannelBox:
     async def group_send(
         cls,
         group_name: str = "default",
-        payload: typing.Union[typing.Dict[str, typing.Any], str, bytes] = {},
+        payload: dict[str, typing.Any] | str | bytes = {},
         save_history: bool = False,
     ) -> GroupSendStatusEnum:
         """Send payload to all channels connected to group.
@@ -237,36 +199,20 @@ class ChannelBox:
         return group_send_status
 
     @classmethod
-    async def show_groups(cls) -> typing.Dict[str, typing.Any]:
-        """Show Groups
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    async def show_groups(cls) -> dict[str, typing.Any]:
+        """Show Groups"""
         return cls.CHANNEL_GROUPS
 
     @classmethod
     async def flush_groups(cls) -> None:
-        """Flush Groups
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Flush Groups"""
         cls.CHANNEL_GROUPS = {}
 
     @classmethod
     async def show_history(
         cls,
         group_name: str = "",
-    ) -> typing.Union[
-        typing.List[ChannelMessageDC], typing.Dict[str, typing.List[ChannelMessageDC]]
-    ]:
+    ) -> list[ChannelMessageDC] | dict[str, list[ChannelMessageDC]]:
         """Get message history for a group or all groups.
 
         Args:
@@ -278,7 +224,7 @@ class ChannelBox:
         return await cls.HISTORY_MANAGER.get_history(group_name if group_name else None)
 
     @classmethod
-    async def flush_history(cls, group_name: typing.Optional[str] = None) -> None:
+    async def flush_history(cls, group_name: str | None = None) -> None:
         """Flush message history.
 
         Args:
@@ -289,14 +235,7 @@ class ChannelBox:
 
     @classmethod
     async def _clean_expired(cls) -> None:
-        """Clean Expired
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Clean Expired"""
         for group_name in list(cls.CHANNEL_GROUPS):
             # Snapshot the channels too — the loop deletes from the same dict,
             # which otherwise raises "dictionary changed size during iteration"

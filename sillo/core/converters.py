@@ -376,7 +376,7 @@ class FloatConvertor(Convertor[float]):
         assert value >= 0.0, "Negative floats are not supported"
         assert not math.isnan(value), "NaN values are not supported"
         assert not math.isinf(value), "Infinite values are not supported"
-        return ("%0.20f" % value).rstrip("0").rstrip(".")
+        return (f"{value:0.20f}").rstrip("0").rstrip(".")
 
 
 class UUIDConvertor(Convertor[uuid.UUID]):

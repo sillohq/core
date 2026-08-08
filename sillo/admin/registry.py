@@ -8,7 +8,7 @@ admin interface for that model.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import ClassVar
 
 
 class ModelAdmin:
@@ -30,180 +30,80 @@ class ModelAdmin:
     """
 
     # ── Display ────────────────────────────────────────────────────────
-    verbose_name: Optional[str] = (
+    verbose_name: str | None = (
         None  # sidebar/header label; defaults to the model's class name
     )
 
     # ── List view configuration ───────────────────────────────────────
-    list_display: List[str] = ["__str__"]
-    list_display_links: List[str] = []
-    list_filter: List[str] = []
-    search_fields: List[str] = []
-    ordering: List[str] = []
+    list_display: ClassVar[list[str]] = ["__str__"]
+    list_display_links: ClassVar[list[str]] = []
+    list_filter: ClassVar[list[str]] = []
+    search_fields: ClassVar[list[str]] = []
+    ordering: ClassVar[list[str]] = []
     list_per_page: int = 25
-    actions: List[str] = ["delete_selected"]
+    actions: ClassVar[list[str]] = ["delete_selected"]
 
     # ── Form configuration ────────────────────────────────────────────
-    fields: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
-    readonly_fields: List[str] = []
+    fields: list[str] | None = None
+    exclude: list[str] | None = None
+    readonly_fields: ClassVar[list[str]] = []
     save_on_top: bool = False
 
     # ── Permissions ───────────────────────────────────────────────────
     @staticmethod
     def has_view_permission(request) -> bool:
-        """Has View Permission
-
-        Args:
-            request: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has View Permission"""
         return True
 
     @staticmethod
     def has_add_permission(request) -> bool:
-        """Has Add Permission
-
-        Args:
-            request: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Add Permission"""
         return True
 
     @staticmethod
     def has_change_permission(request, obj=None) -> bool:
-        """Has Change Permission
-
-        Args:
-            request: [description]
-            obj: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Change Permission"""
         return True
 
     @staticmethod
     def has_delete_permission(request, obj=None) -> bool:
-        """Has Delete Permission
-
-        Args:
-            request: [description]
-            obj: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Delete Permission"""
         return True
 
     # ── Display helpers ───────────────────────────────────────────────
     @classmethod
     def get_list_display(cls):
-        """Get List Display
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get List Display"""
         return cls.list_display
 
     @classmethod
     def get_search_fields(cls):
-        """Get Search Fields
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Search Fields"""
         return cls.search_fields
 
     @classmethod
     def get_list_filter(cls):
-        """Get List Filter
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get List Filter"""
         return cls.list_filter
 
     @classmethod
     def get_ordering(cls):
-        """Get Ordering
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Ordering"""
         return cls.ordering
 
     @classmethod
     def get_fields(cls, add: bool = False):
-        """Get Fields
-
-        Args:
-            add: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Fields"""
         return cls.fields
 
     @classmethod
     def get_readonly_fields(cls, add: bool = False):
-        """Get Readonly Fields
-
-        Args:
-            add: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Readonly Fields"""
         return cls.readonly_fields
 
     @classmethod
     def get_queryset(cls, queryset):
-        """Get Queryset
-
-        Args:
-            queryset: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Queryset"""
         return queryset
 
 
@@ -211,92 +111,33 @@ class Registry:
     """Holds all registered model → ModelAdmin mappings."""
 
     def __init__(self):
-        """Init
+        """Init"""
+        self._registry: dict[type, type[ModelAdmin]] = {}
 
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._registry: Dict[Type, Type[ModelAdmin]] = {}
-
-    def register(self, model_class: Type, admin_class: Type[ModelAdmin]) -> None:
-        """Register
-
-        Args:
-            model_class: [description]
-            admin_class: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def register(self, model_class: type, admin_class: type[ModelAdmin]) -> None:
+        """Register"""
         if model_class in self._registry:
             raise ValueError(f"Model {model_class.__name__} is already registered")
         self._registry[model_class] = admin_class
 
-    def get(self, model_class: Type) -> Optional[Type[ModelAdmin]]:
-        """Get
-
-        Args:
-            model_class: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def get(self, model_class: type) -> type[ModelAdmin] | None:
+        """Get"""
         return self._registry.get(model_class)
 
     @property
-    def models(self) -> List[Type]:
-        """Models
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def models(self) -> list[type]:
+        """Models"""
         return list(self._registry.keys())
 
     @property
-    def admins(self) -> List[Type[ModelAdmin]]:
-        """Admins
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def admins(self) -> list[type[ModelAdmin]]:
+        """Admins"""
         return list(self._registry.values())
 
     def __iter__(self):
-        """Iter
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Iter"""
         return iter(self._registry.items())
 
-    def __contains__(self, model_class: Type) -> bool:
-        """Contains
-
-        Args:
-            model_class: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def __contains__(self, model_class: type) -> bool:
+        """Contains"""
         return model_class in self._registry

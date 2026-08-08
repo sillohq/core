@@ -21,15 +21,13 @@ class ImmutableMultiDict(typing.Mapping[_KeyType, _CovariantValueType]):
     mutable variant that supports item assignment and deletion.
     """
 
-    _dict: typing.Dict[_KeyType, _CovariantValueType]
+    _dict: dict[_KeyType, _CovariantValueType]
 
     def __init__(
         self,
-        *args: typing.Union[
-            "ImmutableMultiDict[_KeyType, _CovariantValueType]",
-            typing.Mapping[_KeyType, _CovariantValueType],
-            typing.Iterable[typing.Tuple[_KeyType, _CovariantValueType]],
-        ],
+        *args: ImmutableMultiDict[_KeyType, _CovariantValueType]
+        | typing.Mapping[_KeyType, _CovariantValueType]
+        | typing.Iterable[tuple[_KeyType, _CovariantValueType]],
         **kwargs: typing.Any,
     ) -> None:
         """
@@ -59,7 +57,7 @@ class ImmutableMultiDict(typing.Mapping[_KeyType, _CovariantValueType]):
             )
 
         if not value:
-            _items: typing.List[typing.Tuple[typing.Any, typing.Any]] = []
+            _items: list[tuple[typing.Any, typing.Any]] = []
         elif hasattr(value, "multi_items"):
             value = typing.cast(
                 ImmutableMultiDict[_KeyType, _CovariantValueType], value
@@ -69,15 +67,13 @@ class ImmutableMultiDict(typing.Mapping[_KeyType, _CovariantValueType]):
             value = typing.cast(typing.Mapping[_KeyType, _CovariantValueType], value)
             _items = list(value.items())
         else:
-            value = typing.cast(
-                typing.List[typing.Tuple[typing.Any, typing.Any]], value
-            )
+            value = typing.cast(list[tuple[typing.Any, typing.Any]], value)
             _items = list(value)
 
         self._dict = {k: v for k, v in _items}
         self._list = _items
 
-    def getlist(self, key: typing.Any) -> typing.List[_CovariantValueType]:
+    def getlist(self, key: typing.Any) -> list[_CovariantValueType]:
         """
         Returns all values associated with the given key across all entries.
 
@@ -136,7 +132,7 @@ class ImmutableMultiDict(typing.Mapping[_KeyType, _CovariantValueType]):
         """
         return self._dict.items()
 
-    def multi_items(self) -> typing.List[typing.Tuple[_KeyType, _CovariantValueType]]:
+    def multi_items(self) -> list[tuple[_KeyType, _CovariantValueType]]:
         """
         Returns all key-value pairs including duplicates as a list of tuples.
 
@@ -210,7 +206,7 @@ class ImmutableMultiDict(typing.Mapping[_KeyType, _CovariantValueType]):
         """
         return len(self._dict)
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """
         Compares this multidict with another for equality.
 
@@ -306,7 +302,7 @@ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
         self._list = [(k, v) for k, v in self._list if k != key]
         return self._dict.pop(key, default)
 
-    def popitem(self) -> typing.Tuple[typing.Any, typing.Any]:
+    def popitem(self) -> tuple[typing.Any, typing.Any]:
         """
         Removes and returns an arbitrary key-value pair from the multidict.
 
@@ -325,7 +321,7 @@ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
         self._list = [(k, v) for k, v in self._list if k != key]
         return key, value
 
-    def poplist(self, key: typing.Any) -> typing.List[typing.Any]:
+    def poplist(self, key: typing.Any) -> list[typing.Any]:
         """
         Removes all entries for the key and returns all its values as a list.
 
@@ -379,7 +375,7 @@ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
 
         return self[key]
 
-    def setlist(self, key: typing.Any, values: typing.List[typing.Any]) -> None:
+    def setlist(self, key: typing.Any, values: list[typing.Any]) -> None:
         """
         Replaces all values for the given key with a new list of values.
 
@@ -418,11 +414,9 @@ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
 
     def update(
         self,
-        *args: typing.Union[
-            "MultiDict",
-            typing.Mapping[str, typing.Any],
-            typing.List[typing.Tuple[typing.Any, typing.Any]],
-        ],
+        *args: MultiDict
+        | typing.Mapping[str, typing.Any]
+        | list[tuple[typing.Any, typing.Any]],
         **kwargs: typing.Any,
     ) -> None:
         """
@@ -439,6 +433,6 @@ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
             **kwargs: Additional keyword arguments to merge as key-value pairs.
         """
         value = MultiDict(*args, **kwargs)
-        existing_items = [(k, v) for (k, v) in self._list if k not in value.keys()]
+        existing_items = [(k, v) for (k, v) in self._list if k not in value]
         self._list = existing_items + value.multi_items()
         self._dict.update(value)

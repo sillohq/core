@@ -28,7 +28,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any, ClassVar
 
 from .console import Argument, Command, Console, Flag, Option
 
@@ -96,7 +96,7 @@ def _import_string(target: str) -> Any:
         raise ValueError(f"{module_name!r} has no attribute {attribute!r}")
 
 
-def _configured_app() -> Optional[str]:
+def _configured_app() -> str | None:
     """Read the import string a project configured, if it did.
 
     Returns:
@@ -129,7 +129,7 @@ def _configured_app() -> Optional[str]:
     return app if isinstance(app, str) else None
 
 
-def discover_application() -> Tuple[Any, Optional[str]]:
+def discover_application() -> tuple[Any, str | None]:
     """Find the project's application.
 
     Returns:
@@ -162,7 +162,7 @@ class Version(Command):
 
     name = "version"
     help = "Show the installed version and available features"
-    aliases = ["about"]
+    aliases: ClassVar[list[str]] = ["about"]
 
     async def handle(self) -> None:
         import sillo
@@ -184,7 +184,7 @@ class Version(Command):
             self.muted(f"    {name} — not installed")
 
     @staticmethod
-    def _features() -> Tuple[List[str], List[str]]:
+    def _features() -> tuple[list[str], list[str]]:
         """Split the optional extras into installed and missing.
 
         Returns:
@@ -208,14 +208,14 @@ class Serve(Command):
     name = "serve"
     help = "Run the application with uvicorn"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("app", default=None, help="Import string. Defaults to the app found"),
         Option("host", default="127.0.0.1", help="Interface to bind"),
         Option("port", type=int, default=8000, short="p", help="Port to bind"),
         Flag("reload", short="r", help="Restart when the source changes"),
     ]
 
-    def handle(self) -> Optional[int]:
+    def handle(self) -> int | None:
         """Run the server.
 
         Synchronous: uvicorn owns the event loop, and starting it from inside
@@ -255,12 +255,12 @@ class Routes(Command):
     name = "routes"
     help = "List the application's routes"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("app", default=None, help="Import string. Defaults to the app found"),
         Option("method", short="m", help="Only routes accepting this method"),
     ]
 
-    async def handle(self) -> Optional[int]:
+    async def handle(self) -> int | None:
         target = self.argument("app")
         if target:
             try:
@@ -297,7 +297,7 @@ class Routes(Command):
         return None
 
     @classmethod
-    def _walk(cls, routes: Any, prefix: str = "") -> List[Any]:
+    def _walk(cls, routes: Any, prefix: str = "") -> list[Any]:
         """Flatten *routes*, descending into mounted routers.
 
         A mounted router is one entry in ``router.routes`` holding routes of
@@ -414,7 +414,7 @@ def _register_project(console: Console, application: Any) -> None:
         console.add(command, override=True)
 
 
-def build_console() -> Tuple[Console, Optional[str]]:
+def build_console() -> tuple[Console, str | None]:
     """Assemble the ``sillo`` console.
 
     Returns:
@@ -444,7 +444,7 @@ def build_console() -> Tuple[Console, Optional[str]]:
     return console, None
 
 
-def main(argv: Optional[List[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     """Run the ``sillo`` command.
 
     Args:

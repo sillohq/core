@@ -4,10 +4,8 @@ sillo.security.ratelimit.config — configuration for the rate-limit middleware.
 
 from __future__ import annotations
 
-import typing
-from typing import Any, Callable, Optional, Union
-
-from typing_extensions import Doc
+from collections.abc import Callable
+from typing import Any
 
 from sillo.core.http import Request
 
@@ -36,35 +34,16 @@ class RateLimitConfig:
         self,
         limit: int = 60,
         window: int = 60,
-        strategy: Union[str, Any] = "token",
-        backend: Union[str, Any] = "memory",
-        key_func: Optional[Callable[[Request], Optional[str]]] = None,
+        strategy: str | Any = "token",
+        backend: str | Any = "memory",
+        key_func: Callable[[Request], str | None] | None = None,
         namespace: str = "sillo_rl",
         cost: int = 1,
         include_headers: bool = True,
         fail_open: bool = True,
-        on_exceed: Union[str, Callable[[Request, Any], Any]] = "deny",
+        on_exceed: str | Callable[[Request, Any], Any] = "deny",
     ) -> None:
-        """Init
-
-        Args:
-            limit: [description]
-            window: [description]
-            strategy: [description]
-            backend: [description]
-            key_func: [description]
-            namespace: [description]
-            cost: [description]
-            include_headers: [description]
-            fail_open: [description]
-            on_exceed: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         if limit <= 0:
             raise ValueError("limit must be a positive integer")
         if window <= 0:
@@ -84,18 +63,8 @@ class RateLimitConfig:
         self._key_func = key_func or self._default_key
 
     @staticmethod
-    def _default_key(request: Request) -> Optional[str]:
-        """Default Key
-
-        Args:
-            request: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def _default_key(request: Request) -> str | None:
+        """Default Key"""
         client = request.client
         if client is not None:
             return client[0]

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import typing
+from typing import Annotated
 
-from typing_extensions import Annotated, Doc
+from typing_extensions import Doc
 
 from sillo import logging
 from sillo.auth.backend import AuthenticationBackend
-from sillo.users import BaseUser, SimpleUser, UnauthenticatedUser
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
+from sillo.users import BaseUser, SimpleUser, UnauthenticatedUser
 
 logger = logging.create_logger(__name__)
 
@@ -51,7 +52,7 @@ class AuthenticationMiddleware(BaseMiddleware):
             Doc("The user model to use for authentication."),
         ] = SimpleUser,
         backend: Annotated[
-            typing.Union[AuthenticationBackend, typing.List[AuthenticationBackend]],
+            AuthenticationBackend | list[AuthenticationBackend],
             Doc("Single backend or list of backends to use for authentication."),
         ] = None,
     ) -> None:
@@ -81,7 +82,7 @@ class AuthenticationMiddleware(BaseMiddleware):
         # default lands as an empty list. Wrapping it produced `[None]`,
         # whose first failure called `None.handle_exception` inside the
         # handler for its own AttributeError.
-        self.backends: typing.List[AuthenticationBackend] = []
+        self.backends: list[AuthenticationBackend] = []
         if isinstance(backend, AuthenticationBackend):
             self.backends = [backend]
         elif backend:

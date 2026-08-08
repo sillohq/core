@@ -22,16 +22,16 @@ from .memory import InMemoryBackend
 # loaded on first use instead, by __getattr__ below and by get_backend.
 
 __all__ = [
+    "InMemoryBackend",
     "RateLimitBackend",
     "RateLimitResult",
-    "InMemoryBackend",
-    "RedisBackend",
     "RecordBackend",
+    "RedisBackend",
     "get_backend",
 ]
 
 
-def get_backend(spec: Union[str, RateLimitBackend, None]) -> RateLimitBackend:
+def get_backend(spec: str | RateLimitBackend | None) -> RateLimitBackend:
     """Resolve a backend from a string name, an instance, or ``None``.
 
     Args:

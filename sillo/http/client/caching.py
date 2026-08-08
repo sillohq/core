@@ -6,12 +6,11 @@ from enum import Enum
 from hashlib import sha256
 
 if typing.TYPE_CHECKING:
-    from typing import Any, Optional
+    from typing import Any
 
     from httpx import Request, Response
 
     from sillo.cache.base import BaseCache
-    from sillo.http.client.models import CachedResponse
 
 
 class CachePolicy(str, Enum):
@@ -41,13 +40,13 @@ class CacheConfig:
 
     policy: CachePolicy = CachePolicy.ENABLED
     ttl: int = 300
-    key_prefix: Optional[str] = None
-    tags: Optional[list[str]] = None
+    key_prefix: str | None = None
+    tags: list[str] | None = None
     status_codes: set[int] = frozenset({200})  # ty: ignore[invalid-assignment]
     methods: set[str] = frozenset({"GET"})  # ty: ignore[invalid-assignment]
     include_query: bool = True
     include_headers: bool = False
-    cache_key_headers: Optional[list[str]] = None
+    cache_key_headers: list[str] | None = None
 
     def should_cache_response(self, response: Response) -> bool:
         if self.policy == CachePolicy.DISABLED or self.policy == CachePolicy.READ_ONLY:
@@ -69,10 +68,10 @@ class CacheKeyBuilder:
     @staticmethod
     def build(
         request: Request,
-        prefix: Optional[str] = None,
+        prefix: str | None = None,
         include_query: bool = True,
         include_headers: bool = False,
-        cache_key_headers: Optional[list[str]] = None,
+        cache_key_headers: list[str] | None = None,
     ) -> str:
         """Build a cache key from a request."""
         parts: list[str] = [
@@ -110,7 +109,7 @@ class HTTPCache:
     def __init__(
         self,
         backend: BaseCache,
-        config: Optional[CacheConfig] = None,
+        config: CacheConfig | None = None,
     ) -> None:
         self._backend = backend
         self._config = config or CacheConfig()
@@ -153,7 +152,7 @@ class HTTPCache:
         self,
         request: Request,
         response: Response,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
     ) -> None:
         """Store a response in the cache."""
         from sillo.http.client.models import CachedResponse
@@ -195,8 +194,8 @@ class HTTPCache:
 
 
 __all__ = [
-    "CachePolicy",
     "CacheConfig",
     "CacheKeyBuilder",
+    "CachePolicy",
     "HTTPCache",
 ]

@@ -4,7 +4,7 @@ import typing
 from dataclasses import dataclass
 from enum import Enum
 from inspect import Parameter, signature
-from typing import Any, List, Optional
+from typing import Any
 
 from pydantic import Field
 from pydantic.fields import FieldInfo
@@ -14,18 +14,18 @@ if typing.TYPE_CHECKING:
     from sillo.core.http import Request
 
 __all__ = [
-    "ParameterLocation",
-    "ParameterExtractor",
-    "Query",
-    "Header",
     "Cookie",
-    "Path",
-    "Form",
     "File",
-    "UploadFile",
+    "Form",
+    "Header",
+    "ParameterExtractor",
+    "ParameterLocation",
+    "Path",
+    "Query",
     "SolvedParamDependency",
-    "solve_params",
+    "UploadFile",
     "resolve_param",
+    "solve_params",
 ]
 
 
@@ -125,21 +125,21 @@ class ParameterExtractor:
         default: Any = ...,
         *,
         type: Any = None,
-        alias: Optional[str] = None,
+        alias: str | None = None,
         required: bool = False,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
+        title: str | None = None,
+        description: str | None = None,
         example: Any = None,
-        deprecated: Optional[bool] = None,
+        deprecated: bool | None = None,
         gt: Any = None,
         ge: Any = None,
         lt: Any = None,
         le: Any = None,
         multiple_of: Any = None,
-        min_length: Optional[int] = None,
-        max_length: Optional[int] = None,
-        pattern: Optional[str] = None,
-        strict: Optional[bool] = None,
+        min_length: int | None = None,
+        max_length: int | None = None,
+        pattern: str | None = None,
+        strict: bool | None = None,
     ):
         """Initialize a parameter marker.
 
@@ -174,7 +174,7 @@ class ParameterExtractor:
         self.type = type
         self.alias = alias
         self.required = required
-        self.param_name: Optional[str] = None
+        self.param_name: str | None = None
 
         local = locals()
         self.constraints = {
@@ -221,7 +221,7 @@ class ParameterExtractor:
         if isinstance(self.default, list):
             item_type = builtin_type(self.default[0]) if self.default else str
             # The element type is computed from a runtime value.
-            return List[item_type]  # ty: ignore[invalid-type-form]
+            return list[item_type]  # ty: ignore[invalid-type-form]
         return builtin_type(self.default)
 
     def to_field_info(self) -> FieldInfo:
@@ -251,7 +251,7 @@ class ParameterExtractor:
         default = ... if (self.default is ... or self.required) else self.default
         return Field(default, **kwargs)
 
-    def extract(self, request: "Request | None") -> Any:
+    def extract(self, request: Request | None) -> Any:
         """Extract this parameter's value from the request (legacy path).
 
         Subclasses that read from a synchronously-available part of the request
@@ -271,7 +271,7 @@ class ParameterExtractor:
         """
         raise NotImplementedError
 
-    def _extract_from(self, source: Any, request: "Request | None") -> Any:
+    def _extract_from(self, source: Any, request: Request | None) -> Any:
         """Look a value up in a mapping and apply legacy coercion.
 
         Shared implementation behind ``Query.extract``, ``Header.extract``, and
@@ -312,7 +312,7 @@ class ParameterExtractor:
 
         return self._convert(value, self.default)
 
-    def _get_param_name(self) -> Optional[str]:
+    def _get_param_name(self) -> str | None:
         """Get the effective name used to look this parameter up on the wire.
 
         Returns:
@@ -406,7 +406,7 @@ class Query(ParameterExtractor):
 
     location = ParameterLocation.QUERY
 
-    def extract(self, request: "Request | None") -> Any:
+    def extract(self, request: Request | None) -> Any:
         """Read this parameter from the request's query string.
 
         Args:
@@ -436,7 +436,7 @@ class Header(ParameterExtractor):
 
     location = ParameterLocation.HEADER
 
-    def extract(self, request: "Request | None") -> Any:
+    def extract(self, request: Request | None) -> Any:
         """Read this parameter from the request's headers.
 
         Args:
@@ -462,7 +462,7 @@ class Cookie(ParameterExtractor):
 
     location = ParameterLocation.COOKIE
 
-    def extract(self, request: "Request | None") -> Any:
+    def extract(self, request: Request | None) -> Any:
         """Read this parameter from the request's cookies.
 
         Args:
@@ -497,7 +497,7 @@ class Path(ParameterExtractor):
 
     location = ParameterLocation.PATH
 
-    def extract(self, request: "Request | None") -> Any:
+    def extract(self, request: Request | None) -> Any:
         """Read this parameter from the request's matched path parameters.
 
         Args:
@@ -617,7 +617,7 @@ def bind_marker(extractor: ParameterExtractor, param_name: str) -> None:
             extractor.alias = param_name
 
 
-def solve_params(handler: Any) -> List[SolvedParamDependency]:
+def solve_params(handler: Any) -> list[SolvedParamDependency]:
     """Introspect a callable and collect its parameter markers.
 
     Scans the signature for parameters whose default is a
@@ -644,7 +644,7 @@ def solve_params(handler: Any) -> List[SolvedParamDependency]:
 
 async def resolve_param(
     param_dep: SolvedParamDependency,
-    request: "Optional[Request]" = None,
+    request: Request | None = None,
 ) -> Any:
     """Resolve a single parameter dependency by extracting its value.
 
@@ -664,4 +664,4 @@ async def resolve_param(
 # Imported last: sillo.objects.http pulls in the datastructures module, and
 # importing it at the top would create a cycle for modules that import fields
 # during their own initialization.
-from sillo.objects.http import UploadedFile as UploadFile  # noqa: E402
+from sillo.objects.http import UploadedFile as UploadFile

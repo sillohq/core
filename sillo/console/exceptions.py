@@ -10,8 +10,6 @@ which deserves neither.
 
 from __future__ import annotations
 
-from typing import Optional
-
 __all__ = ["Abort", "CommandError", "ConsoleError", "UsageError"]
 
 
@@ -31,7 +29,7 @@ class UsageError(ConsoleError):
 
     exit_code = 2
 
-    def __init__(self, message: str, command: Optional[str] = None) -> None:
+    def __init__(self, message: str, command: str | None = None) -> None:
         super().__init__(message)
         self.command = command
 

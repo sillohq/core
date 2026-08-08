@@ -5,8 +5,6 @@ from __future__ import annotations
 import hashlib
 import re
 import secrets
-from typing import Optional, Union
-
 
 UNUSABLE_PASSWORD_PREFIX = "!"
 UNUSABLE_PASSWORD_SUFFIX_LENGTH = 40
@@ -35,7 +33,7 @@ def is_password_usable(encoded: str) -> bool:
 
 def validate_password(
     password: str,
-    user: Optional[object] = None,
+    user: object | None = None,
     min_length: int = 8,
 ) -> list[str]:
     """Validate password strength requirements.
@@ -132,7 +130,7 @@ def constant_time_compare(val1: str, val2: str) -> bool:
     return secrets.compare_digest(val1.encode(), val2.encode())
 
 
-def md5(value: Union[str, bytes]) -> str:
+def md5(value: str | bytes) -> str:
     """Compute MD5 hash of a value.
 
     Note: MD5 should not be used for password hashing. Use hash_password() instead.
@@ -149,7 +147,7 @@ def md5(value: Union[str, bytes]) -> str:
     return hashlib.md5(value).hexdigest()
 
 
-def sha256(value: Union[str, bytes]) -> str:
+def sha256(value: str | bytes) -> str:
     """Compute SHA256 hash of a value.
 
     Note: SHA256 should not be used for password hashing. Use hash_password() instead.

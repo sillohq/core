@@ -13,7 +13,7 @@ working.
 from __future__ import annotations
 
 import secrets
-from typing import Optional
+from typing import ClassVar
 
 from sillo.hashing import (
     UNUSABLE_PASSWORD_PREFIX,
@@ -31,7 +31,7 @@ __all__ = [
 
 
 def make_password(
-    raw_password: Optional[str] = None, scheme: Optional[str] = None, **kwargs
+    raw_password: str | None = None, scheme: str | None = None, **kwargs
 ) -> str:
     """Hash a password using sillo.hashing.
 
@@ -112,210 +112,80 @@ class UserProtocol:
     concrete implementation raise ``NotImplementedError`` here.
     """
 
-    REQUIRED_FIELDS: list[str] = []
+    REQUIRED_FIELDS: ClassVar[list[str]] = []
 
     @property
     def is_authenticated(self) -> bool:
-        """Is Authenticated
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Authenticated"""
         return True
 
     @property
     def is_anonymous(self) -> bool:
-        """Is Anonymous
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Anonymous"""
         return not self.is_authenticated
 
     is_active: bool = True
 
     @property
     def display_name(self) -> str:
-        """Display Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Display Name"""
         raise NotImplementedError
 
     @property
     def identity(self) -> str:
-        """Identity
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Identity"""
         raise NotImplementedError
 
     def get_id(self) -> str:
-        """Get Id
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Id"""
         return self.identity
 
     def get_display_name(self) -> str:
-        """Get Display Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Display Name"""
         return self.display_name
 
     def has_perm(self, perm: str) -> bool:
-        """Has Perm
-
-        Args:
-            perm: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Perm"""
         return False
 
     def has_perms(self, perm_list: list[str]) -> bool:
-        """Has Perms
-
-        Args:
-            perm_list: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Perms"""
         return all(self.has_perm(p) for p in perm_list)
 
     def has_permission(self, permission: str) -> bool:
-        """Has Permission
-
-        Args:
-            permission: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Permission"""
         raise NotImplementedError
 
     def has_module_perms(self, app_label: str) -> bool:
-        """Has Module Perms
-
-        Args:
-            app_label: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Module Perms"""
         return self.is_active and self.is_staff  # ty: ignore[unresolved-attribute]  # pyright: ignore[reportAttributeAccessIssue]
 
     def __str__(self) -> str:
-        """Str
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Str"""
         return self.get_display_name()
 
     def __repr__(self) -> str:
-        """Repr
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Repr"""
         return f"<{self.__class__.__name__}: {self}>"
 
     def __eq__(self, other: object) -> bool:
-        """Eq
-
-        Args:
-            other: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Eq"""
         if not isinstance(other, UserProtocol):
             return NotImplemented
         return self.get_id() == other.get_id()
 
     def __hash__(self) -> int:
-        """Hash
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Hash"""
         return hash(self.get_id())
 
     @classmethod
-    async def load_user(cls, identity: str) -> Optional[UserProtocol]:
-        """Load User
-
-        Args:
-            identity: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    async def load_user(cls, identity: str) -> UserProtocol | None:
+        """Load User"""
         raise NotImplementedError
 
     @classmethod
     def get_email_field_name(cls) -> str:
-        """Get Email Field Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Email Field Name"""
         return "email"
 
 
@@ -336,103 +206,35 @@ class AnonymousUser:
     identity: str = ""
 
     def get_id(self) -> str:
-        """Get Id
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Id"""
         return ""
 
     def get_display_name(self) -> str:
-        """Get Display Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Display Name"""
         return ""
 
     def has_perm(self, perm: str) -> bool:
-        """Has Perm
-
-        Args:
-            perm: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Perm"""
         return False
 
     def has_perms(self, perm_list: list[str]) -> bool:
-        """Has Perms
-
-        Args:
-            perm_list: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Perms"""
         return False
 
     def has_module_perms(self, app_label: str) -> bool:
-        """Has Module Perms
-
-        Args:
-            app_label: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Module Perms"""
         return False
 
     def __str__(self) -> str:
-        """Str
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Str"""
         return "AnonymousUser"
 
     def __eq__(self, other: object) -> bool:
-        """Eq
-
-        Args:
-            other: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Eq"""
         if not isinstance(other, AnonymousUser):
             return NotImplemented
         return True
 
     def __hash__(self) -> int:
-        """Hash
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Hash"""
         return 0

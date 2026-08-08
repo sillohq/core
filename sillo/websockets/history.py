@@ -1,5 +1,4 @@
 import sys
-import typing
 from abc import ABC, abstractmethod
 
 from .utils import ChannelMessageDC
@@ -24,15 +23,12 @@ class BaseHistoryManager(ABC):
             group_name: The name of the channel group
             message: The message to save
         """
-        pass
 
     @abstractmethod
     async def get_history(
         self,
-        group_name: typing.Optional[str] = None,
-    ) -> typing.Union[
-        typing.List[ChannelMessageDC], typing.Dict[str, typing.List[ChannelMessageDC]]
-    ]:
+        group_name: str | None = None,
+    ) -> list[ChannelMessageDC] | dict[str, list[ChannelMessageDC]]:
         """Retrieve message history.
 
         Args:
@@ -42,17 +38,15 @@ class BaseHistoryManager(ABC):
         Returns:
             List of messages if group_name is provided, otherwise dict of group_name -> messages
         """
-        pass
 
     @abstractmethod
-    async def flush_history(self, group_name: typing.Optional[str] = None) -> None:
+    async def flush_history(self, group_name: str | None = None) -> None:
         """Clear message history.
 
         Args:
             group_name: Optional group name. If provided, clears history for that group.
                        If None, clears all history.
         """
-        pass
 
 
 class InMemoryHistoryManager(BaseHistoryManager):
@@ -66,19 +60,9 @@ class InMemoryHistoryManager(BaseHistoryManager):
     """
 
     def __init__(self, history_size: int = 1_048_576):
-        """Init
-
-        Args:
-            history_size: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.history_size = history_size
-        self._history: typing.Dict[str, typing.List[ChannelMessageDC]] = {}
+        self._history: dict[str, list[ChannelMessageDC]] = {}
 
     async def save_message(
         self,
@@ -97,16 +81,14 @@ class InMemoryHistoryManager(BaseHistoryManager):
 
     async def get_history(
         self,
-        group_name: typing.Optional[str] = None,
-    ) -> typing.Union[
-        typing.List[ChannelMessageDC], typing.Dict[str, typing.List[ChannelMessageDC]]
-    ]:
+        group_name: str | None = None,
+    ) -> list[ChannelMessageDC] | dict[str, list[ChannelMessageDC]]:
         """Retrieve message history from memory."""
         if group_name:
             return self._history.get(group_name, [])
         return self._history
 
-    async def flush_history(self, group_name: typing.Optional[str] = None) -> None:
+    async def flush_history(self, group_name: str | None = None) -> None:
         """Clear message history from memory."""
         if group_name:
             if group_name in self._history:
@@ -128,19 +110,15 @@ class NoOpHistoryManager(BaseHistoryManager):
         message: ChannelMessageDC,
     ) -> None:
         """Does nothing - messages are not saved."""
-        pass
 
     async def get_history(
         self,
-        group_name: typing.Optional[str] = None,
-    ) -> typing.Union[
-        typing.List[ChannelMessageDC], typing.Dict[str, typing.List[ChannelMessageDC]]
-    ]:
+        group_name: str | None = None,
+    ) -> list[ChannelMessageDC] | dict[str, list[ChannelMessageDC]]:
         """Returns empty history."""
         if group_name:
             return []
         return {}
 
-    async def flush_history(self, group_name: typing.Optional[str] = None) -> None:
+    async def flush_history(self, group_name: str | None = None) -> None:
         """Does nothing - no history to flush."""
-        pass

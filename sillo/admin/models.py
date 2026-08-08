@@ -12,7 +12,10 @@ every project that registers this module — including the great majority that
 pass their own ``user_model`` and would never write a row to either.
 """
 
+from typing import ClassVar
+
 from tortoise import fields
+
 from sillo.record import Model
 
 
@@ -28,25 +31,11 @@ class AdminActivity(Model):
     user_agent = fields.TextField(null=True)
 
     class Meta:
-        """Meta
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Meta"""
 
         table = "admin_activity"
-        ordering = ["-created_at"]
+        ordering: ClassVar[list[str]] = ["-created_at"]
 
     def __str__(self):
-        """Str
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Str"""
         return f"{self.user_email} {self.action} {self.model_name} at {self.created_at}"

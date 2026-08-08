@@ -69,14 +69,14 @@ class MultipartPart:
             from this part's header section, stored as bytes.
     """
 
-    content_disposition: typing.Optional[bytes] = None
+    content_disposition: bytes | None = None
     field_name: str = ""
     data: bytearray = field(default_factory=bytearray)
-    file: typing.Optional[UploadedFile] = None
+    file: UploadedFile | None = None
     item_headers: list[tuple[bytes, bytes]] = field(default_factory=list)
 
 
-def _user_safe_decode(src: typing.Union[bytes, bytearray], codec: str) -> str:
+def _user_safe_decode(src: bytes | bytearray, codec: str) -> str:
     """Decode a byte sequence using the specified codec with a safe fallback.
 
     Attempts to decode the given bytes or bytearray using the provided codec
@@ -351,8 +351,8 @@ class MultiPartParser:
         headers: Headers,
         stream: typing.AsyncGenerator[bytes, None],
         *,
-        max_fields: typing.Optional[int] = None,
-        max_files: typing.Optional[int] = None,
+        max_fields: int | None = None,
+        max_files: int | None = None,
     ) -> None:
         """Initialize the multipart parser with request context and limits.
 
@@ -384,7 +384,7 @@ class MultiPartParser:
         self.stream = stream
         self.max_files = max_files if max_files is not None else self.max_files
         self.max_fields = max_fields if max_fields is not None else self.max_fields
-        self.items: list[tuple[str, typing.Union[str, UploadedFile]]] = []
+        self.items: list[tuple[str, str | UploadedFile]] = []
         self._current_files = 0
         self._current_fields = 0
         self._current_partial_header_name: bytes = b""
@@ -602,7 +602,6 @@ class MultiPartParser:
         Returns:
             None.
         """
-        pass
 
     async def parse(self) -> FormData:
         """Parse the form data from the request body.
@@ -673,11 +672,11 @@ class MultiPartParser:
                     await part.file.seek(0)
                 self._file_parts_to_write.clear()
                 self._file_parts_to_finish.clear()
-        except MultiPartException as exc:
+        except MultiPartException:
             # Close all the files if there was an error.
             for file in self._files_to_close_on_error:
                 file.close()
-            raise exc
+            raise
 
         parser.finalize()
         return FormData(self.items)

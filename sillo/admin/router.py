@@ -20,17 +20,7 @@ from .routes import (
 
 
 def build_routes(site) -> list:
-    """Build Routes
-
-    Args:
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Build Routes"""
     p = site.prefix
     routes = [
         Route(
@@ -106,358 +96,110 @@ def build_routes(site) -> list:
 
 
 def _login_handler(site):
-    """Login Handler
-
-    Args:
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Login Handler"""
 
     async def handler(request, response):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await login_view(request, response, site)
 
     return handler
 
 
 def _logout_handler(site):
-    """Logout Handler
-
-    Args:
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Logout Handler"""
 
     async def handler(request, response):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await logout_view(request, response, site)
 
     return handler
 
 
 def _dashboard_handler(site):
-    """Dashboard Handler
-
-    Args:
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Dashboard Handler"""
 
     async def handler(request, response):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await dashboard_view(request, response, site)
 
     return handler
 
 
 def _query_handler(site):
-    """Query Handler
-
-    Args:
-        site: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Query Handler"""
 
     async def handler(request, response):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await query_view(request, response, site)
 
     return handler
 
 
 def _export_handler(site, model_cls, admin_cls):
-    """Export Handler
-
-    Args:
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Export Handler"""
 
     async def handler(request, response):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await export_view(request, response, site, model_cls, admin_cls)
 
     return handler
 
 
 def _list_handler(site, model_cls, admin_cls):
-    """List Handler
-
-    Args:
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """List Handler"""
 
     async def handler(request, response):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await list_view(request, response, site, model_cls, admin_cls)
 
     return handler
 
 
 def _create_handler(site, model_cls, admin_cls):
-    """Create Handler
-
-    Args:
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Create Handler"""
 
     async def handler(request, response):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await create_view(request, response, site, model_cls, admin_cls)
 
     return handler
 
 
 def _detail_handler(site, model_cls, admin_cls):
-    """Detail Handler
-
-    Args:
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Detail Handler"""
 
     async def handler(request, response, id):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-            id: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await detail_view(request, response, site, model_cls, admin_cls, id)
 
     return handler
 
 
 def _update_handler(site, model_cls, admin_cls):
-    """Update Handler
-
-    Args:
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Update Handler"""
 
     async def handler(request, response, id):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-            id: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await update_view(request, response, site, model_cls, admin_cls, id)
 
     return handler
 
 
 def _delete_handler(site, model_cls, admin_cls):
-    """Delete Handler
-
-    Args:
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Delete Handler"""
 
     async def handler(request, response, id):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-            id: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await delete_view(request, response, site, model_cls, admin_cls, id)
 
     return handler
 
 
 def _bulk_handler(site, model_cls, admin_cls):
-    """Bulk Handler
-
-    Args:
-        site: [description]
-        model_cls: [description]
-        admin_cls: [description]
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Bulk Handler"""
 
     async def handler(request, response):
-        """Handler
-
-        Args:
-            request: [description]
-            response: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handler"""
         return await bulk_view(request, response, site, model_cls, admin_cls)
 
     return handler

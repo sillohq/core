@@ -2,11 +2,12 @@
 Template context middleware for sillo.
 """
 
-from typing import Any, Awaitable, Callable, Dict, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
-from sillo.middleware import BaseMiddleware
-from sillo.types import Request, Response
 from sillo.core.helpers.async_helpers import is_async_callable
+from sillo.middleware.base import BaseMiddleware
+from sillo.types import Request, Response
 
 
 class TemplateContextMiddleware(BaseMiddleware):
@@ -27,8 +28,8 @@ class TemplateContextMiddleware(BaseMiddleware):
 
     def __init__(
         self,
-        default_context: Dict[str, Any] | None = None,
-        context_processor: Callable[[Request], Awaitable[Dict[str, Any]]] | None = None,
+        default_context: dict[str, Any] | None = None,
+        context_processor: Callable[[Request], Awaitable[dict[str, Any]]] | None = None,
     ):
         """Initialise the template-context middleware.
 
@@ -85,8 +86,8 @@ class TemplateContextMiddleware(BaseMiddleware):
 
 
 def template_context(
-    default_context: Optional[Dict[str, Any]] = None,
-    context_processor: Optional[Callable[[Request], Awaitable[Dict[str, Any]]]] = None,
+    default_context: dict[str, Any] | None = None,
+    context_processor: Callable[[Request], Awaitable[dict[str, Any]]] | None = None,
 ):
     """Factory that returns a ``TemplateContextMiddleware`` instance.
 

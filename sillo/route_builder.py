@@ -2,7 +2,7 @@ import re
 import typing
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Pattern
+from re import Pattern
 
 from sillo.core.converters import CONVERTOR_TYPES, Convertor
 
@@ -83,7 +83,7 @@ def replace_params(
 
 def compile_path(
     path: str,
-) -> tuple[typing.Pattern[str], RouteType, dict[str, Convertor[typing.Any]], List[str]]:
+) -> tuple[typing.Pattern[str], RouteType, dict[str, Convertor[typing.Any]], list[str]]:
     """
     Compile a URL path template into a regex pattern with parameter convertors.
 
@@ -129,11 +129,11 @@ def compile_path(
 
     path_regex = "^"
     path_format = ""
-    duplicated_params: typing.Set[typing.Any] = set()
+    duplicated_params: set[typing.Any] = set()
 
     idx = 0
     param_convertors = {}
-    param_names: List[str] = []
+    param_names: list[str] = []
     for match in PARAM_REGEX.finditer(path):
         param_name, convertor_type = match.groups("str")
         convertor_type = convertor_type.lstrip(":")
@@ -145,7 +145,7 @@ def compile_path(
         path_regex += re.escape(path[idx : match.start()])
         path_regex += f"(?P<{param_name}>{convertor.regex})"
         path_format += path[idx : match.start()]
-        path_format += "{%s}" % param_name
+        path_format += f"{{{param_name}}}"
 
         if param_name in param_convertors:
             duplicated_params.add(param_name)
@@ -197,9 +197,9 @@ class RoutePattern:
 
     pattern: Pattern[str]
     raw_path: str
-    param_names: List[str]
+    param_names: list[str]
     route_type: RouteType
-    convertor: Dict[str, Convertor[typing.Any]]
+    convertor: dict[str, Convertor[typing.Any]]
 
 
 class RouteBuilder:

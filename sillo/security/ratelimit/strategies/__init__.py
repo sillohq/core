@@ -15,8 +15,8 @@ from .sliding_window import SlidingWindowStrategy
 from .token_bucket import TokenBucketStrategy
 
 __all__ = [
-    "RateLimitStrategy",
     "FixedWindowStrategy",
+    "RateLimitStrategy",
     "SlidingWindowStrategy",
     "TokenBucketStrategy",
     "get_strategy",
@@ -33,7 +33,7 @@ _STRATEGY_MAP = {
 
 
 def get_strategy(
-    spec: Union[str, RateLimitStrategy, None],
+    spec: str | RateLimitStrategy | None,
 ) -> RateLimitStrategy:
     """Resolve a strategy from a name, an instance, or ``None`` (token bucket)."""
     if spec is None:

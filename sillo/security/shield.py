@@ -11,27 +11,18 @@ Usage::
     app.use(Shield())
 """
 
-from typing import Dict, List, Optional, Union
-
-from sillo.middleware import BaseMiddleware
+from sillo.middleware.base import BaseMiddleware
 from sillo.types import Request, Response
 
 
 class Shield(BaseMiddleware):
-    """Shield
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Shield"""
 
     def __init__(
         self,
         # Content Security Policy
         csp_enabled: bool = True,
-        csp_policy: Optional[Dict[str, Union[str, List[str]]]] = None,
+        csp_policy: dict[str, str | list[str]] | None = None,
         csp_report_only: bool = False,
         # HSTS
         hsts_enabled: bool = True,
@@ -43,21 +34,21 @@ class Shield(BaseMiddleware):
         xss_mode: str = "block",
         # Frame Options
         frame_options: str = "DENY",
-        frame_options_allow_from: Optional[str] = None,
+        frame_options_allow_from: str | None = None,
         # Content Type Options
         content_type_options: bool = True,
         # Referrer Policy
         referrer_policy: str = "strict-origin-when-cross-origin",
         # Permissions Policy
-        permissions_policy: Optional[Dict[str, Union[str, List[str]]]] = None,
+        permissions_policy: dict[str, str | list[str]] | None = None,
         # SSL/HTTPS
         ssl_redirect: bool = False,
-        ssl_host: Optional[str] = None,
+        ssl_host: str | None = None,
         ssl_permanent: bool = True,
         # Cache Control
         cache_control: str = "no-store, no-cache, must-revalidate, proxy-revalidate",
         # Clear Site Data
-        clear_site_data: Optional[List[str]] = None,
+        clear_site_data: list[str] | None = None,
         # DNS Prefetch
         dns_prefetch_control: str = "off",
         # Download Options
@@ -70,62 +61,19 @@ class Shield(BaseMiddleware):
         expect_ct: bool = False,
         expect_ct_max_age: int = 86400,
         expect_ct_enforce: bool = False,
-        expect_ct_report_uri: Optional[str] = None,
+        expect_ct_report_uri: str | None = None,
         # Report-To
-        report_to: Optional[Dict[str, List[Dict]]] = None,
+        report_to: dict[str, list[dict]] | None = None,
         # NEL (Network Error Logging)
-        nel: Optional[Dict] = None,
+        nel: dict | None = None,
         # Trusted Types
         trusted_types: bool = False,
-        trusted_types_policies: Optional[List[str]] = None,
+        trusted_types_policies: list[str] | None = None,
         # Server
         hide_server: bool = True,
-        server_header: Optional[str] = None,
+        server_header: str | None = None,
     ):
-        """Init
-
-        Args:
-            csp_enabled: [description]
-            csp_policy: [description]
-            csp_report_only: [description]
-            hsts_enabled: [description]
-            hsts_max_age: [description]
-            hsts_include_subdomains: [description]
-            hsts_preload: [description]
-            xss_protection: [description]
-            xss_mode: [description]
-            frame_options: [description]
-            frame_options_allow_from: [description]
-            content_type_options: [description]
-            referrer_policy: [description]
-            permissions_policy: [description]
-            ssl_redirect: [description]
-            ssl_host: [description]
-            ssl_permanent: [description]
-            cache_control: [description]
-            clear_site_data: [description]
-            dns_prefetch_control: [description]
-            download_options: [description]
-            cross_origin_opener_policy: [description]
-            cross_origin_embedder_policy: [description]
-            cross_origin_resource_policy: [description]
-            expect_ct: [description]
-            expect_ct_max_age: [description]
-            expect_ct_enforce: [description]
-            expect_ct_report_uri: [description]
-            report_to: [description]
-            nel: [description]
-            trusted_types: [description]
-            trusted_types_policies: [description]
-            hide_server: [description]
-            server_header: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.csp_enabled = csp_enabled
         self.csp_policy = csp_policy or {
             "default-src": ["'self'"],
@@ -185,14 +133,7 @@ class Shield(BaseMiddleware):
         self.server_header = server_header
 
     def _build_csp_header(self) -> str:
-        """Build Csp Header
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Build Csp Header"""
         policies = []
         for directive, sources in self.csp_policy.items():
             if isinstance(sources, str):
@@ -201,14 +142,7 @@ class Shield(BaseMiddleware):
         return "; ".join(policies)
 
     def _build_permissions_policy(self) -> str:
-        """Build Permissions Policy
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Build Permissions Policy"""
         policies = []
         for feature, setting in self.permissions_policy.items():
             if isinstance(setting, str):
@@ -218,20 +152,8 @@ class Shield(BaseMiddleware):
         return ", ".join(policies)
 
     async def __call__(self, request: Request, response: Response, call_next):
-        """Call
-
-        Args:
-            request: [description]
-            response: [description]
-            call_next: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        if self.ssl_redirect and not request.url.scheme == "https":
+        """Call"""
+        if self.ssl_redirect and request.url.scheme != "https":
             redirect_url = (
                 f"https://{self.ssl_host or request.url.hostname}{request.url.path}"
             )

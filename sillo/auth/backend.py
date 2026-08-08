@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sillo import logging
 from sillo.auth.model import AuthResult
@@ -58,9 +58,9 @@ class AuthenticationBackend:
     name: str = "auth"
 
     #: Prose for the scheme, shown by every viewer next to the credential.
-    description: Optional[str] = None
+    description: str | None = None
 
-    def describe(self) -> "Optional[SecurityScheme]":
+    def describe(self) -> SecurityScheme | None:
         """The OpenAPI scheme this backend enforces.
 
         Returns:
@@ -71,7 +71,7 @@ class AuthenticationBackend:
         """
         return None
 
-    async def authenticate(self, request: "Request") -> AuthResult:
+    async def authenticate(self, request: Request) -> AuthResult:
         """Resolve the caller's identity from the incoming HTTP request.
 
         Subclasses must override this method to extract credentials from the
@@ -111,7 +111,7 @@ class AuthenticationBackend:
             f"{type(self).__name__} must implement authenticate()"
         )
 
-    def handle_exception(self, response: "Response", exc: Exception) -> None:
+    def handle_exception(self, response: Response, exc: Exception) -> None:
         """Handle exceptions raised during the authenticate phase.
 
         Called by the middleware or route gate when :meth:`authenticate` raises

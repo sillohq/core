@@ -11,7 +11,6 @@ import paths keep working.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from tortoise import fields
 
@@ -66,198 +65,72 @@ class UserBaseModel(Model, UserProtocol):
     email_verified_at = fields.DatetimeField(null=True, default=None)
 
     class Meta:
-        """Meta
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Meta"""
 
         abstract = True
 
     @property
     def is_authenticated(self) -> bool:
-        """Is Authenticated
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Authenticated"""
         return bool(self.is_active)
 
     @property
     def display_name(self) -> str:
-        """Display Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Display Name"""
         return self.username
 
     @property
     def identity(self) -> str:
-        """Identity
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Identity"""
         return str(self.id)
 
     def has_perm(self, perm: str) -> bool:
-        """Has Perm
-
-        Args:
-            perm: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Perm"""
         if self.is_superuser:
             return True
         return perm in getattr(self, "_permissions", [])
 
     def has_permission(self, permission: str) -> bool:
-        """Has Permission
-
-        Args:
-            permission: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Permission"""
         return self.has_perm(permission)
 
     def has_perms(self, perm_list: list[str]) -> bool:
-        """Has Perms
-
-        Args:
-            perm_list: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Perms"""
         return all(self.has_perm(p) for p in perm_list)
 
     def has_module_perms(self, app_label: str) -> bool:
-        """Has Module Perms
-
-        Args:
-            app_label: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Module Perms"""
         return bool(self.is_active and self.is_staff)
 
     def set_password(self, raw_password: str) -> None:
-        """Set Password
-
-        Args:
-            raw_password: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Set Password"""
         self.password = make_password(raw_password)
 
     def check_password(self, raw_password: str) -> bool:
-        """Check Password
-
-        Args:
-            raw_password: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Check Password"""
         return check_password(raw_password, self.password)
 
     def set_unusable_password(self) -> None:
-        """Set Unusable Password
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Set Unusable Password"""
         self.password = UNUSABLE_PASSWORD_PREFIX
 
     def has_usable_password(self) -> bool:
-        """Has Usable Password
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Has Usable Password"""
         return is_password_usable(self.password)
 
     async def set_last_login(self) -> None:
-        """Set Last Login
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Set Last Login"""
         self.last_login = datetime.now(timezone.utc)
         await self.save(update_fields=["last_login"])
 
     async def mark_email_verified(self) -> None:
-        """Mark Email Verified
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Mark Email Verified"""
         self.email_verified_at = datetime.now(timezone.utc)
         await self.save(update_fields=["email_verified_at"])
 
     @classmethod
-    async def load_user(cls, identity: str) -> Optional["UserBaseModel"]:
-        """Load User
-
-        Args:
-            identity: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    async def load_user(cls, identity: str) -> UserBaseModel | None:
+        """Load User"""
         try:
             uid = int(identity)
         except (TypeError, ValueError):
@@ -269,20 +142,13 @@ class UserBaseModel(Model, UserProtocol):
 
     @classmethod
     def get_email_field_name(cls) -> str:
-        """Get Email Field Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Get Email Field Name"""
         return "email"
 
     @classmethod
     async def verify_credentials(
         cls, identifier: str, password: str
-    ) -> Optional["UserBaseModel"]:
+    ) -> UserBaseModel | None:
         """Authenticate a user by email/username + password.
 
         Looks the user up by ``identifier`` (email or username) through the
@@ -322,13 +188,6 @@ class User(UserBaseModel):
     objects = UserManager()
 
     class Meta:
-        """Meta
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Meta"""
 
         table = "users"

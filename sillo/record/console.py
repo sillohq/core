@@ -22,7 +22,8 @@ so both are accepted rather than making the caller remember which.
 
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, List, Optional, Type, Union
+from collections.abc import Callable
+from typing import Any, ClassVar, Union
 
 from sillo.console import Argument, Command, Flag, Option
 
@@ -64,7 +65,7 @@ class RecordCommand(Command):
             unbound class is a programming error and says so.
     """
 
-    config: ClassVar[Optional[_Config]] = None
+    config: ClassVar[_Config | None] = None
 
     @property
     def database(self) -> Any:
@@ -95,7 +96,7 @@ class RecordCommand(Command):
         return self.config.app if self.config else "models"
 
     @staticmethod
-    def entries(lines: List[str]) -> List[str]:
+    def entries(lines: list[str]) -> list[str]:
         """Keep only the lines of a plan that name a migration.
 
         ``plan()`` returns display lines, not names: a connection header comes
@@ -152,7 +153,7 @@ class Make(RecordCommand):
     name = "db:make"
     help = "Write a migration from the current model changes"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("name", default=None, help="Suffix for the migration file"),
         Flag("apply", help="Apply it straight away"),
     ]
@@ -201,7 +202,7 @@ class Migrate(RecordCommand):
     name = "db:migrate"
     help = "Apply every pending migration"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Option("target", help="Stop at this migration"),
         Flag("fake", help="Record as applied without running the SQL"),
     ]
@@ -239,7 +240,7 @@ class Plan(RecordCommand):
     name = "db:plan"
     help = "Show which migrations would run"
 
-    arguments = [Option("target", help="Plan as far as this migration")]
+    arguments: ClassVar[list] = [Option("target", help="Plan as far as this migration")]
 
     async def handle(self) -> None:
         from .commands import plan
@@ -266,13 +267,13 @@ class Rollback(RecordCommand):
     name = "db:rollback"
     help = "Roll the database back to a migration"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("target", help="Migration to stop at, or 'zero'"),
         Flag("fake", help="Record the rollback without running it"),
         Flag("force", short="f", help="Skip the confirmation"),
     ]
 
-    async def handle(self) -> Optional[int]:
+    async def handle(self) -> int | None:
         from .commands import rollback
 
         target = self.argument("target")
@@ -299,7 +300,7 @@ class Sql(RecordCommand):
     name = "db:sql"
     help = "Show the SQL a migration would run"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Argument("migration", help="Migration name, e.g. '0001_initial'"),
         Flag("backward", help="Show the rollback SQL instead"),
     ]
@@ -350,7 +351,7 @@ class Status(RecordCommand):
 
 
 #: Every command this module defines, in the order they are listed.
-COMMANDS: List[Type[RecordCommand]] = [
+COMMANDS: list[type[RecordCommand]] = [
     Init,
     Make,
     Migrate,
@@ -365,8 +366,8 @@ def record_commands(
     database: DatabaseSource,
     *,
     app: str = "models",
-    only: Optional[List[str]] = None,
-) -> List[Type[Command]]:
+    only: list[str] | None = None,
+) -> list[type[Command]]:
     """Return the migration commands, bound to *database*.
 
     Args:

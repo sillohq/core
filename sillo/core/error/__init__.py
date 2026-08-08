@@ -1,3 +1,3 @@
-from .handler import ServerErrorMiddleware, ServerErrHandlerType
+from .handler import ServerErrHandlerType, ServerErrorMiddleware
 
-__all__ = ["ServerErrorMiddleware", "ServerErrHandlerType"]
+__all__ = ["ServerErrHandlerType", "ServerErrorMiddleware"]

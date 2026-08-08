@@ -1,13 +1,13 @@
+from .client import MailClient, get_mail_client, setup_mail
 from .config import MailConfig
 from .models import EmailAttachment, EmailMessage, EmailResult
-from .client import MailClient, setup_mail, get_mail_client
 
 __all__ = [
-    "MailConfig",
-    "MailClient",
-    "EmailMessage",
     "EmailAttachment",
+    "EmailMessage",
     "EmailResult",
-    "setup_mail",
+    "MailClient",
+    "MailConfig",
     "get_mail_client",
+    "setup_mail",
 ]

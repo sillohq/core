@@ -16,8 +16,8 @@ Usage::
 
 from __future__ import annotations
 
-import uuid
-from typing import Annotated, Any, Callable, Dict, List, Optional, Type
+from collections.abc import Callable
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -29,14 +29,14 @@ class Factory:
     returning a dict of default attributes).
     """
 
-    model: Optional[Type] = None
-    definition: Callable[[], Dict[str, Any]] = lambda: {}
+    model: type | None = None
+    definition: Callable[[], dict[str, Any]] = dict
 
     @classmethod
     def make(
         cls,
         overrides: Annotated[
-            Optional[Dict[str, Any]], Doc("Attributes to override.")
+            dict[str, Any] | None, Doc("Attributes to override.")
         ] = None,
     ) -> Any:
         """Create an unsaved model instance."""
@@ -47,7 +47,7 @@ class Factory:
     async def create(
         cls,
         overrides: Annotated[
-            Optional[Dict[str, Any]], Doc("Attributes to override.")
+            dict[str, Any] | None, Doc("Attributes to override.")
         ] = None,
     ) -> Any:
         """Create and persist a model instance."""
@@ -60,9 +60,9 @@ class Factory:
         cls,
         count: Annotated[int, Doc("Number of instances.")],
         overrides: Annotated[
-            Optional[Dict[str, Any]], Doc("Attributes applied to all.")
+            dict[str, Any] | None, Doc("Attributes applied to all.")
         ] = None,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """Create and persist *count* instances."""
         instances = []
         for _ in range(count):
@@ -75,14 +75,7 @@ class Factory:
         """Return a modifier that overrides definition attributes."""
 
         def modifier():
-            """Modifier
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Modifier"""
             return {**cls.definition(), **kwargs}
 
         return modifier
@@ -92,43 +85,15 @@ class FactoryBuilder:
     """Registry-builder pattern for defining factories."""
 
     def __init__(self):
-        """Init
+        """Init"""
+        self._factories: dict[str, type[Factory]] = {}
 
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._factories: Dict[str, Type[Factory]] = {}
-
-    def register(self, name: str, factory: Type[Factory]) -> None:
-        """Register
-
-        Args:
-            name: [description]
-            factory: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def register(self, name: str, factory: type[Factory]) -> None:
+        """Register"""
         self._factories[name] = factory
 
-    def get(self, name: str) -> Type[Factory]:
-        """Get
-
-        Args:
-            name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def get(self, name: str) -> type[Factory]:
+        """Get"""
         if name not in self._factories:
             raise KeyError(f"Factory '{name}' not registered")
         return self._factories[name]

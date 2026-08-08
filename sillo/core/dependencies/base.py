@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from inspect import signature
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any
 
 from sillo.validation import (
     CompiledValidator,
@@ -45,7 +46,7 @@ class Depend:
     """
 
     def __init__(
-        self, dependency: Callable[..., Any] = None, *, get_request: bool = False
+        self, dependency: Callable[..., Any] | None = None, *, get_request: bool = False
     ) -> None:
         """
         Initialize a Depend instance with a dependency callable and request flag.
@@ -174,19 +175,19 @@ class Dependant:
             being checked for per node.
     """
 
-    call: Optional[Callable[..., Any]] = None
-    name: Optional[str] = None
-    dependencies: List["Dependant"] = field(default_factory=list)
-    request_param_names: List[str] = field(default_factory=list)
-    param_extractors: List[SolvedParamDependency] = field(default_factory=list)
-    validator: Optional[CompiledValidator] = None
+    call: Callable[..., Any] | None = None
+    name: str | None = None
+    dependencies: list[Dependant] = field(default_factory=list)
+    request_param_names: list[str] = field(default_factory=list)
+    param_extractors: list[SolvedParamDependency] = field(default_factory=list)
+    validator: CompiledValidator | None = None
     is_coroutine: bool = False
     is_generator: bool = False
     is_async_generator: bool = False
-    cache_key: Optional[Tuple[Callable[..., Any], Tuple[str, ...]]] = None
+    cache_key: tuple[Callable[..., Any], tuple[str, ...]] | None = None
     use_cache: bool = True
-    _execution_plan: List[ExecutionStep] = field(default_factory=list)
-    _validator_plan: Tuple[Tuple[int, CompiledValidator], ...] = ()
+    _execution_plan: list[ExecutionStep] = field(default_factory=list)
+    _validator_plan: tuple[tuple[int, CompiledValidator], ...] = ()
     _needs_form: bool = False
 
 
@@ -197,7 +198,7 @@ class Dependant:
 
 def get_dependant(
     call: Callable[..., Any],
-    name: Optional[str] = None,
+    name: str | None = None,
     *,
     strict_validation: bool = False,
 ) -> Dependant:
@@ -240,10 +241,10 @@ def get_dependant(
         # dependant.is_coroutine == True
     """
     sig = signature(call)
-    deps: List[Dependant] = []
-    request_params: List[str] = []
-    markers: List[Tuple[str, ParameterExtractor]] = []
-    cache_key_parts: List[str] = []
+    deps: list[Dependant] = []
+    request_params: list[str] = []
+    markers: list[tuple[str, ParameterExtractor]] = []
+    cache_key_parts: list[str] = []
 
     for param_name, param in sig.parameters.items():
         default = param.default
@@ -307,7 +308,7 @@ def get_dependant(
     return dependant
 
 
-def _build_execution_plan(root: Dependant) -> List[ExecutionStep]:
+def _build_execution_plan(root: Dependant) -> list[ExecutionStep]:
     """
     Build a flattened execution plan from a dependency tree via DFS traversal.
 
@@ -327,7 +328,7 @@ def _build_execution_plan(root: Dependant) -> List[ExecutionStep]:
         with the root step marked as ``is_root=True`` at the end of the
         list. All child steps appear before the root step.
     """
-    steps: List[ExecutionStep] = []
+    steps: list[ExecutionStep] = []
 
     def _collect(node: Dependant) -> None:
         for sub in node.dependencies:
@@ -341,10 +342,10 @@ def _build_execution_plan(root: Dependant) -> List[ExecutionStep]:
 
 def _collect_kwargs(
     node: Dependant,
-    values: Dict[str, Any],
-    request: Optional["Request"],
-    validated: Optional[Dict[int, Dict[str, Any]]] = None,
-) -> Dict[str, Any]:
+    values: dict[str, Any],
+    request: Request | None,
+    validated: dict[int, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """
     Collect keyword arguments for executing a dependency node.
 
@@ -371,7 +372,7 @@ def _collect_kwargs(
         resolved dependency results, extracted parameters, or request
         references as appropriate.
     """
-    kwargs: Dict[str, Any] = {
+    kwargs: dict[str, Any] = {
         dep.name: values[dep.name] for dep in node.dependencies if dep.name
     }
     for ext in node.param_extractors:
@@ -387,8 +388,8 @@ def _collect_kwargs(
 
 async def resolve_validated_params(
     dependant: Dependant,
-    request: Optional["Request"],
-) -> Dict[int, Dict[str, Any]]:
+    request: Request | None,
+) -> dict[int, dict[str, Any]]:
     """
     Run every Pydantic validator in a dependency tree against the request.
 
@@ -417,8 +418,8 @@ async def resolve_validated_params(
     Raises:
         RequestValidationError: If any declared parameter failed validation.
     """
-    resolved: Dict[int, Dict[str, Any]] = {}
-    errors: List[Dict[str, Any]] = []
+    resolved: dict[int, dict[str, Any]] = {}
+    errors: list[dict[str, Any]] = []
 
     if request is None:
         # Every validator reads from the request, so there is nothing to
@@ -447,19 +448,19 @@ async def resolve_validated_params(
     return resolved
 
 
-DependencyCache = Dict[Tuple[Callable[..., Any], Tuple[str, ...]], Any]
+DependencyCache = dict[tuple[Callable[..., Any], tuple[str, ...]], Any]
 
 #: Shared empty mapping returned when a tree declares no validated parameters.
 #: Only ever read, never mutated, so one instance is safe to share.
-_NO_VALIDATED: Dict[int, Dict[str, Any]] = {}
+_NO_VALIDATED: dict[int, dict[str, Any]] = {}
 
 
 async def solve_dependencies(
     dependant: Dependant,
-    request: Optional["Request"] = None,
-    dependency_cache: Optional[DependencyCache] = None,
-    cleanup_callbacks: Optional[List[Callable[[], Any]]] = None,
-) -> Dict[str, Any]:
+    request: Request | None = None,
+    dependency_cache: DependencyCache | None = None,
+    cleanup_callbacks: list[Callable[[], Any]] | None = None,
+) -> dict[str, Any]:
     """
     Resolve all dependencies in a Dependant tree iteratively using the execution plan.
 
@@ -493,10 +494,10 @@ async def solve_dependencies(
             (propagated from ``_execute_dependency``).
     """
     cache: DependencyCache = dependency_cache if dependency_cache is not None else {}
-    cleanups: List[Callable[[], Any]] = (
+    cleanups: list[Callable[[], Any]] = (
         cleanup_callbacks if cleanup_callbacks is not None else []
     )
-    values: Dict[str, Any] = {}
+    values: dict[str, Any] = {}
     # The overwhelmingly common case is a route with nothing to validate. Test
     # the precomputed plan first so those requests never allocate a coroutine.
     validated = (
@@ -531,8 +532,8 @@ async def solve_dependencies(
 
 async def _execute_dependency(
     dependant: Dependant,
-    kwargs: Dict[str, Any],
-    cleanup_callbacks: List[Callable[[], Any]],
+    kwargs: dict[str, Any],
+    cleanup_callbacks: list[Callable[[], Any]],
 ) -> Any:
     """
     Execute a single dependency node and return its produced value.

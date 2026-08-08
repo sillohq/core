@@ -1,39 +1,33 @@
 import json
 import typing
 import uuid
+from typing import ClassVar
 
 from sillo import logging
+
+from . import status
 
 # NOTE: WebsocketRoute is imported lazily inside as_route() to break a
 # circular import: types → websockets → consumers → routing.websocket → types.
 # Moving it to top-level would fail during module initialization.
-
 from .base import WebSocket
 from .channels import Channel, ChannelBox, PayloadTypeEnum
-from . import status
 
 Message = typing.MutableMapping[str, typing.Any]
 
 
 class WebSocketConsumer:
-    """Websocketconsumer
+    """Websocketconsumer"""
 
-    Returns:
-        [description]
+    channel: Channel | None = None
+    middleware: ClassVar[list[typing.Any]] = []
 
-    Raises:
-        [description]
-    """
-
-    channel: typing.Optional[Channel] = None
-    middleware: typing.List[typing.Any] = []
-
-    encoding: typing.Optional[str] = None
+    encoding: str | None = None
 
     def __init__(
         self,
         logging_enabled: bool = True,
-        logger: typing.Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         """
         Args:
@@ -51,36 +45,16 @@ class WebSocketConsumer:
         from sillo.core.routing.websocket import WebsocketRoute
 
         async def handler(
-            websocket: WebSocket, **kwargs: typing.Dict[str, typing.Any]
+            websocket: WebSocket, **kwargs: dict[str, typing.Any]
         ) -> None:
-            """Handler
-
-            Args:
-                websocket: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Handler"""
             instance = cls()
             await instance(websocket, **kwargs)
 
         return WebsocketRoute(path, handler)
 
     async def __call__(self, ws: WebSocket) -> None:
-        """Call
-
-        Args:
-            ws: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Call"""
         self.websocket = ws
 
         self.channel = Channel(
@@ -107,25 +81,14 @@ class WebSocketConsumer:
                         message.get("code") or status.WS_1000_NORMAL_CLOSURE
                     )
                     break
-        except Exception as exc:
+        except Exception:
             close_code = status.WS_1011_INTERNAL_ERROR
-            raise exc
+            raise
         finally:
             await self.on_disconnect(self.websocket, close_code)
 
     async def decode(self, websocket: WebSocket, message: Message) -> typing.Any:
-        """Decode
-
-        Args:
-            websocket: [description]
-            message: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Decode"""
         if self.encoding == "text":
             if "text" not in message:
                 await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
@@ -198,7 +161,7 @@ class WebSocketConsumer:
             channel_id: The UUID of the target channel.
             payload: The message payload to send.
         """
-        for _, channels in ChannelBox.CHANNEL_GROUPS.items():
+        for channels in ChannelBox.CHANNEL_GROUPS.values():
             for channel in channels:
                 if channel.uuid == channel_id:
                     await channel._send(payload)
@@ -210,7 +173,7 @@ class WebSocketConsumer:
         if self.logging_enabled:
             self.logger.warning(f"Channel with ID {channel_id} not found.")
 
-    async def group(self, group_name: str) -> typing.List[Channel]:
+    async def group(self, group_name: str) -> list[Channel]:
         """
         Get all channels in a specific group.
         Args:

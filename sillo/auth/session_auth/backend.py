@@ -9,7 +9,7 @@ it on each incoming request.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
@@ -132,8 +132,8 @@ class SessionAuthBackend(AuthenticationBackend):
         session_key: str = DEFAULT_SESSION_KEY,
         identifier: str = DEFAULT_IDENTIFIER,
         cookie_name: str = "session_id",
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
     ):
         """Initialize the session authentication backend with key configuration.
 

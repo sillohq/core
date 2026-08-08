@@ -2,8 +2,11 @@
 sillo templating system with Jinja2 integration.
 """
 
+from __future__ import annotations
+
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import jinja2
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -13,7 +16,7 @@ from sillo.types import Request
 
 from .middleware import template_context
 
-engine: Union["TemplateEngine", None] = None
+engine: TemplateEngine | None = None
 
 
 class TemplateConfig:
@@ -21,35 +24,17 @@ class TemplateConfig:
 
     def __init__(
         self,
-        template_dir: Union[str, Path] = "templates",
+        template_dir: str | Path = "templates",
         cache_size: int = 100,
         auto_reload: bool = True,
         encoding: str = "utf-8",
         enable_async: bool = True,
         trim_blocks: bool = True,
         lstrip_blocks: bool = True,
-        custom_filters: Dict[str, Callable[[Any], Any]] = {},
-        custom_globals: Dict[str, Any] = {},
+        custom_filters: dict[str, Callable[[Any], Any]] = {},
+        custom_globals: dict[str, Any] = {},
     ):
-        """Init
-
-        Args:
-            template_dir: [description]
-            cache_size: [description]
-            auto_reload: [description]
-            encoding: [description]
-            enable_async: [description]
-            trim_blocks: [description]
-            lstrip_blocks: [description]
-            custom_filters: [description]
-            custom_globals: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.template_dir = template_dir
         self.cache_size = cache_size
         self.auto_reload = auto_reload
@@ -60,7 +45,7 @@ class TemplateConfig:
         self.custom_filters = custom_filters
         self.custom_globals = custom_globals
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "template_dir": self.template_dir,
             "cache_size": self.cache_size,
@@ -102,7 +87,7 @@ class TemplateEngine:
         engine = self
 
     async def render(
-        self, template_name: str, context: Optional[Dict[str, Any]] = None, **kwargs
+        self, template_name: str, context: dict[str, Any] | None = None, **kwargs
     ) -> str:
         """Render a template with context."""
 
@@ -117,10 +102,10 @@ class TemplateEngine:
 
 async def render(
     template_name: str,
-    context: Optional[Dict[str, Any]] = None,
+    context: dict[str, Any] | None = None,
     status_code: int = 200,
-    headers: Optional[Dict[str, str]] = None,
-    request: Optional["Request"] = None,
+    headers: dict[str, str] | None = None,
+    request: Request | None = None,
     **kwargs,
 ) -> HTMLResponse:
     """Render template to response."""

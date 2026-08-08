@@ -4,7 +4,6 @@ import re
 import secrets
 import string as _string
 import unicodedata
-from typing import Optional
 
 _CAMEL_TO_SNAKE_RE = re.compile(r"([A-Z]+)([A-Z][a-z])")
 _CAMEL_TO_SNAKE_RE2 = re.compile(r"([a-z\d])([A-Z])")
@@ -193,7 +192,7 @@ def mask_email(email: str) -> str:
 
 def random_string(
     length: int = 32,
-    chars: Optional[str] = None,
+    chars: str | None = None,
 ) -> str:
     """Generate a cryptographically secure random string.
 

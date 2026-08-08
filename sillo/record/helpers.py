@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -36,27 +36,17 @@ class Seeder:
     """
 
     def __init__(self, db_manager):
-        """Init
-
-        Args:
-            db_manager: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self._db = db_manager
-        self._records: List[tuple[type, Dict[str, Any]]] = []
+        self._records: list[tuple[type, dict[str, Any]]] = []
 
     def seed(
         self,
         model: type,
         records: Annotated[
-            List[Dict[str, Any]], Doc("List of field dicts for the model.")
+            list[dict[str, Any]], Doc("List of field dicts for the model.")
         ],
-    ) -> "Seeder":
+    ) -> Seeder:
         """Register records for a model. Call :meth:`run` to execute."""
         for record in records:
             self._records.append((model, record))
@@ -89,7 +79,7 @@ class FixtureLoader:
         directory: Annotated[str, Doc("Path to fixtures directory.")],
         *,
         models: Annotated[
-            Optional[Dict[str, Any]],
+            dict[str, Any] | None,
             Doc(
                 "Explicit fixture-name to model mapping. Names not listed here "
                 "are resolved against Tortoise's model registry."
@@ -104,7 +94,7 @@ class FixtureLoader:
                 where the filename does not match the model name.
         """
         self._dir = Path(directory)
-        self._models: Dict[str, Any] = dict(models or {})
+        self._models: dict[str, Any] = dict(models or {})
 
     async def load_all(self) -> int:
         """Load every fixture file in the directory.
@@ -170,7 +160,7 @@ class FixtureLoader:
                 await model.create(**record)
         return len(records)
 
-    def _parse(self, path: Path) -> List[Dict[str, Any]]:
+    def _parse(self, path: Path) -> list[dict[str, Any]]:
         """Decode a fixture file into a list of row dicts.
 
         Args:
@@ -274,12 +264,12 @@ class MigrationHelper:
     def __init__(
         self,
         config: Annotated[
-            "Any",
+            Any,
             Doc("A DatabaseManager, a config mapping, or a dotted path to one."),
         ],
         *,
         app: Annotated[
-            Optional[str], Doc("App label to manage. None means all apps.")
+            str | None, Doc("App label to manage. None means all apps.")
         ] = None,
     ) -> None:
         # A path is kept when given, only so an existing dotted-path config
@@ -289,7 +279,7 @@ class MigrationHelper:
         self._app = app
 
     @staticmethod
-    def _resolve(config: "Any") -> Dict[str, Any]:
+    def _resolve(config: Any) -> dict[str, Any]:
         """Return a configuration mapping, whatever form it arrived in.
 
         Raises:
@@ -323,11 +313,11 @@ class MigrationHelper:
         return resolved
 
     @property
-    def _app_labels(self) -> Optional[List[str]]:
+    def _app_labels(self) -> list[str] | None:
         """The app labels to operate on, or None for all of them."""
         return [self._app] if self._app else None
 
-    def _qualify(self, target: Optional[str]) -> Optional[str]:
+    def _qualify(self, target: str | None) -> str | None:
         """Prefix a bare migration name with its app label.
 
         Tortoise addresses migrations as ``app_label.name`` and reports an
@@ -393,7 +383,7 @@ class MigrationHelper:
         """
         await self._cli("init")
 
-    async def make(self, name: Optional[str] = None) -> None:
+    async def make(self, name: str | None = None) -> None:
         """Write a migration file describing the current model changes.
 
         Args:
@@ -405,9 +395,7 @@ class MigrationHelper:
             args += ["--name", name]
         await self._cli(*args)
 
-    async def upgrade(
-        self, target: Optional[str] = None, *, fake: bool = False
-    ) -> None:
+    async def upgrade(self, target: str | None = None, *, fake: bool = False) -> None:
         """Apply every pending migration.
 
         Args:
@@ -461,7 +449,7 @@ class MigrationHelper:
         finally:
             await self._close()
 
-    async def plan(self, target: Optional[str] = None) -> List[str]:
+    async def plan(self, target: str | None = None) -> list[str]:
         """Return the ordered list of migrations that would run."""
         from tortoise.migrations import api
 
@@ -474,7 +462,7 @@ class MigrationHelper:
         finally:
             await self._close()
 
-    async def sql(self, migration: str, *, backward: bool = False) -> List[str]:
+    async def sql(self, migration: str, *, backward: bool = False) -> list[str]:
         """Return the SQL a migration would execute, without running it.
 
         Raises:

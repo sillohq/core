@@ -219,15 +219,13 @@ encoders_by_class_tuples = generate_encoders_by_class_tuples(ENCODERS_BY_TYPE)
 
 def jsonable_encoder(
     obj: typing.Any,
-    include: typing.Optional[typing.Set[str]] = None,
-    exclude: typing.Optional[typing.Set[str]] = None,
+    include: set[str] | None = None,
+    exclude: set[str] | None = None,
     by_alias: bool = True,
     exclude_unset: bool = False,
     exclude_defaults: bool = False,
     exclude_none: bool = False,
-    custom_encoder: typing.Optional[
-        typing.Dict[type, typing.Callable[[typing.Any], typing.Any]]
-    ] = None,
+    custom_encoder: dict[type, typing.Callable[[typing.Any], typing.Any]] | None = None,
 ) -> typing.Any:
     """Convert any Python object into a JSON-serializable representation.
 

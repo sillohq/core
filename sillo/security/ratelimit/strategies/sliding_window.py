@@ -10,11 +10,7 @@ volume (pruned each hit).
 
 from __future__ import annotations
 
-import typing
 import time
-from typing import Any, Optional
-
-from typing_extensions import Doc
 
 from ..backends.base import RateLimitBackend, RateLimitResult
 from .base import RateLimitStrategy
@@ -30,24 +26,9 @@ class SlidingWindowStrategy(RateLimitStrategy):
         limit: int,
         window: int,
         cost: int = 1,
-        now: Optional[float] = None,
+        now: float | None = None,
     ) -> RateLimitResult:
-        """Hit
-
-        Args:
-            backend: [description]
-            key: [description]
-            limit: [description]
-            window: [description]
-            cost: [description]
-            now: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Hit"""
         now = now if now is not None else time.time()
         cutoff = now - window
         state = await backend.fetch_state(key)

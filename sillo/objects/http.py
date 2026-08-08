@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 import shutil
 import typing
-from typing import Any, Dict, Sequence
+from typing import Any
 from urllib.parse import parse_qsl, urlencode
 
 from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
 from pydantic_core import core_schema
+from typing_extensions import Self
 
 from sillo.objects.datastructures import ImmutableMultiDict, MultiDict
 from sillo.utils.concurrency import run_in_threadpool
@@ -28,13 +29,11 @@ class QueryParams(ImmutableMultiDict[str, str]):
 
     def __init__(
         self,
-        *args: typing.Union[
-            "ImmutableMultiDict[str,typing.Any]",
-            typing.Mapping[str, str],
-            typing.List[typing.Tuple[typing.Any, typing.Any]],
-            str,
-            bytes,
-        ],
+        *args: ImmutableMultiDict[str, typing.Any]
+        | typing.Mapping[str, str]
+        | list[tuple[typing.Any, typing.Any]]
+        | str
+        | bytes,
         **kwargs: typing.Any,
     ) -> None:
         """
@@ -103,7 +102,7 @@ class QueryParams(ImmutableMultiDict[str, str]):
         """
         return f"QueryParams('{urlencode(self._list)}')"
 
-    def __call__(self, *args: Any, **kwds: Any) -> Dict[str, Any]:
+    def __call__(self, *args: Any, **kwds: Any) -> dict[str, Any]:
         """
         Returns the underlying dictionary of query parameters.
 
@@ -133,9 +132,9 @@ class Headers(typing.Mapping[str, str]):
 
     def __init__(
         self,
-        headers: typing.Optional[typing.Mapping[str, str]] = None,
-        raw: typing.Optional[typing.List[typing.Tuple[bytes, bytes]]] = None,
-        scope: typing.Optional[typing.MutableMapping[str, typing.Any]] = None,
+        headers: typing.Mapping[str, str] | None = None,
+        raw: list[tuple[bytes, bytes]] | None = None,
+        scope: typing.MutableMapping[str, typing.Any] | None = None,
     ) -> None:
         """
         Initializes Headers from a mapping, raw byte tuples, or an ASGI scope.
@@ -156,7 +155,7 @@ class Headers(typing.Mapping[str, str]):
         Raises:
             AssertionError: If more than one initialization source is provided.
         """
-        self._list: typing.List[typing.Tuple[bytes, bytes]] = []
+        self._list: list[tuple[bytes, bytes]] = []
         if headers is not None:
             assert raw is None, 'Cannot set both "headers" and "raw".'
             assert scope is None, 'Cannot set both "headers" and "scope".'
@@ -187,7 +186,7 @@ class Headers(typing.Mapping[str, str]):
             self._list = list(scope["headers"])
 
     @property
-    def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+    def raw(self) -> list[tuple[bytes, bytes]]:
         """
         Returns a copy of the raw header byte tuples.
 
@@ -240,7 +239,7 @@ class Headers(typing.Mapping[str, str]):
         """
         return [(k.decode("latin-1"), v.decode("latin-1")) for k, v in self._list]
 
-    def getlist(self, key: str) -> typing.List[str]:
+    def getlist(self, key: str) -> list[str]:
         """
         Returns all values for a given header name as a list of strings.
 
@@ -263,7 +262,7 @@ class Headers(typing.Mapping[str, str]):
             if item_key == get_header_key
         ]
 
-    def mutablecopy(self) -> "MutableHeaders":
+    def mutablecopy(self) -> MutableHeaders:
         """
         Create a mutable copy of these headers for modification.
 
@@ -389,7 +388,7 @@ class Headers(typing.Mapping[str, str]):
         """
         return len(self._list)
 
-    def __eq__(self, other: typing.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """
         Compare this Headers instance with another for equality.
 
@@ -467,7 +466,7 @@ class MutableHeaders(Headers):
         set_key = key.lower().encode("latin-1")
         set_value = value.encode("latin-1")
 
-        found_indexes: "typing.List[int]" = []
+        found_indexes: list[int] = []
         for idx, (item_key, _) in enumerate(self._list):
             if item_key == set_key:
                 found_indexes.append(idx)
@@ -498,7 +497,7 @@ class MutableHeaders(Headers):
         """
         del_key = key.lower().encode("latin-1")
 
-        pop_indexes: "typing.List[int]" = []
+        pop_indexes: list[int] = []
         for idx, (item_key, _) in enumerate(self._list):
             if item_key == del_key:
                 pop_indexes.append(idx)
@@ -506,7 +505,7 @@ class MutableHeaders(Headers):
         for idx in reversed(pop_indexes):
             del self._list[idx]
 
-    def __ior__(self, other: typing.Mapping[str, str]) -> "MutableHeaders":
+    def __ior__(self, other: typing.Mapping[str, str]) -> Self:
         """
         Update headers in-place using the |= operator with a mapping.
 
@@ -529,7 +528,7 @@ class MutableHeaders(Headers):
         self.update(other)
         return self
 
-    def __or__(self, other: typing.Mapping[str, str]) -> "MutableHeaders":
+    def __or__(self, other: typing.Mapping[str, str]) -> MutableHeaders:
         """
         Create a new MutableHeaders by merging with a mapping using | operator.
 
@@ -555,7 +554,7 @@ class MutableHeaders(Headers):
         return new
 
     @property
-    def raw(self) -> typing.List[typing.Tuple[bytes, bytes]]:
+    def raw(self) -> list[tuple[bytes, bytes]]:
         """
         Return the raw header byte tuples for ASGI message construction.
 
@@ -664,7 +663,7 @@ class MutableHeaders(Headers):
         """
         existing = self.get("vary")
         if existing is not None:
-            vary = ", ".join([existing, vary])
+            vary = f"{existing}, {vary}"
         self["vary"] = vary
 
 
@@ -683,9 +682,9 @@ class UploadedFile:
         self,
         file: typing.Any,
         *,
-        size: typing.Optional[int] = None,
-        filename: typing.Optional[str] = None,
-        headers: typing.Optional[Headers] = None,
+        size: int | None = None,
+        filename: str | None = None,
+        headers: Headers | None = None,
     ) -> None:
         """
         Initialize an UploadedFile with file object and metadata.
@@ -715,7 +714,7 @@ class UploadedFile:
         self.headers = headers or Headers()
 
     @property
-    def content_type(self) -> typing.Union[str, None]:
+    def content_type(self) -> str | None:
         """
         Return the MIME content type of the uploaded file.
 
@@ -846,7 +845,7 @@ class UploadedFile:
         else:
             await run_in_threadpool(self.file.close)
 
-    async def save(self, destination: typing.Union[str, os.PathLike[str]]) -> None:
+    async def save(self, destination: str | os.PathLike[str]) -> None:
         """
         Save the uploaded file to a destination path on disk.
 
@@ -879,7 +878,7 @@ class UploadedFile:
         else:
             await run_in_threadpool(self._save_to_disk, destination)
 
-    def _save_to_disk(self, destination: typing.Union[str, os.PathLike[str]]) -> None:
+    def _save_to_disk(self, destination: str | os.PathLike[str]) -> None:
         """
         Save the uploaded file to disk (synchronous helper for threadpool).
 
@@ -998,12 +997,10 @@ class FormData(MultiDict):
 
     def __init__(
         self,
-        *args: typing.Union[
-            FormData,
-            typing.Mapping[str, typing.Union[str, UploadedFile]],
-            list[tuple[str, typing.Union[str, UploadedFile]]],
-        ],
-        **kwargs: typing.Union[str, UploadedFile],
+        *args: FormData
+        | typing.Mapping[str, str | UploadedFile]
+        | list[tuple[str, str | UploadedFile]],
+        **kwargs: str | UploadedFile,
     ) -> None:
         """
         Initialize FormData from various input formats.
@@ -1049,7 +1046,7 @@ class FormData(MultiDict):
         self,
         key: str,
         default: typing.Any = None,
-    ) -> typing.Union[UploadedFile, str, None]:
+    ) -> UploadedFile | str | None:
         """
         Get a form field value by key with an optional default.
 

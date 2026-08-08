@@ -6,8 +6,6 @@ import re
 import time
 import unicodedata
 from pathlib import Path
-from typing import List, Optional, Union
-
 
 _SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB"]
 _DANGEROUS_EXTENSIONS = frozenset(
@@ -35,7 +33,7 @@ _SAFE_NAME_RE = re.compile(r"[^\w.\-]")
 _EXT_RE = re.compile(r"\.([a-zA-Z0-9]+)$")
 
 
-def format_size(bytes_value: Union[int, float]) -> str:
+def format_size(bytes_value: float) -> str:
     """Format a byte count as a human-readable string using SI decimal units.
 
     Converts a numeric byte value into a compact, human-friendly string
@@ -61,7 +59,7 @@ def format_size(bytes_value: Union[int, float]) -> str:
     return f"{value:.1f} PB"
 
 
-def format_size_binary(bytes_value: Union[int, float]) -> str:
+def format_size_binary(bytes_value: float) -> str:
     """Format a byte count as a human-readable string using IEC binary units.
 
     Converts a numeric byte value into a compact, human-friendly string
@@ -166,7 +164,7 @@ def get_extension_clean(filename: str) -> str:
     return ext.lstrip(".")
 
 
-def guess_mime_type(filename: str) -> Optional[str]:
+def guess_mime_type(filename: str) -> str | None:
     """Guess the MIME type of a file based on its filename extension.
 
     Uses Python's ``mimetypes`` module to infer the MIME content type
@@ -235,7 +233,7 @@ def safe_filename(filename: str, replacement: str = "_") -> str:
     return name
 
 
-def unique_filename(directory: Union[str, Path], filename: str) -> str:
+def unique_filename(directory: str | Path, filename: str) -> str:
     """Generate a unique filename within a directory by appending a counter.
 
     Checks whether the given filename already exists in the specified
@@ -303,7 +301,7 @@ def is_media_extension(filename: str) -> bool:
     return mime.startswith(("image/", "audio/", "video/"))
 
 
-def file_age(path: Union[str, Path]) -> float:
+def file_age(path: str | Path) -> float:
     """Calculate the age of a file in seconds since its last modification.
 
     Retrieves the last modification timestamp of the file at the given
@@ -324,7 +322,7 @@ def file_age(path: Union[str, Path]) -> float:
     return time.time() - os.path.getmtime(str(path))
 
 
-def file_age_human(path: Union[str, Path]) -> str:
+def file_age_human(path: str | Path) -> str:
     """Calculate the age of a file and return it as a human-friendly string.
 
     Computes the file's age in seconds via ``file_age`` and converts it
@@ -356,7 +354,7 @@ def file_age_human(path: Union[str, Path]) -> str:
     return f"{int(days)}d ago"
 
 
-def ensure_directory(path: Union[str, Path]) -> Path:
+def ensure_directory(path: str | Path) -> Path:
     """Create a directory and all intermediate parent directories if needed.
 
     Ensures that the specified directory path exists by creating it along
@@ -381,10 +379,10 @@ def ensure_directory(path: Union[str, Path]) -> Path:
 
 
 def list_files(
-    directory: Union[str, Path],
+    directory: str | Path,
     pattern: str = "*",
     recursive: bool = False,
-) -> List[Path]:
+) -> list[Path]:
     """List files in a directory matching a glob pattern.
 
     Scans the specified directory for files matching the given glob

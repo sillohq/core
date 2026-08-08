@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import IO, Any, Iterator, Optional
+from typing import IO, Any
 
 __all__ = [
     "Key",
@@ -92,7 +93,7 @@ def _enable_windows_vt(stream: IO[str]) -> bool:
         return False
 
 
-def supports_color(stream: Optional[IO[str]] = None) -> bool:
+def supports_color(stream: IO[str] | None = None) -> bool:
     """Return whether *stream* should be written to in colour.
 
     Checked in order: ``NO_COLOR`` wins over everything, then ``FORCE_COLOR``,
@@ -120,7 +121,7 @@ def supports_color(stream: Optional[IO[str]] = None) -> bool:
     return _enable_windows_vt(stream)
 
 
-def supports_unicode(stream: Optional[IO[str]] = None) -> bool:
+def supports_unicode(stream: IO[str] | None = None) -> bool:
     """Return whether *stream* can encode the box-drawing and marker glyphs.
 
     Args:
@@ -140,8 +141,8 @@ def supports_unicode(stream: Optional[IO[str]] = None) -> bool:
 
 
 def is_interactive(
-    input_stream: Optional[IO[str]] = None,
-    output_stream: Optional[IO[str]] = None,
+    input_stream: IO[str] | None = None,
+    output_stream: IO[str] | None = None,
 ) -> bool:
     """Return whether a prompt may take over the terminal.
 
@@ -243,7 +244,7 @@ _CSI_KEYS = {
 
 
 @contextmanager
-def raw_mode(stream: Optional[IO[str]] = None) -> Iterator[None]:
+def raw_mode(stream: IO[str] | None = None) -> Iterator[None]:
     """Put the terminal into cbreak mode for the duration of the block.
 
     Keys arrive unbuffered and unechoed, which is what makes a menu feel like a
@@ -335,7 +336,7 @@ def _classify(char: str) -> str:
     return char
 
 
-def read_key(stream: Optional[IO[str]] = None) -> str:
+def read_key(stream: IO[str] | None = None) -> str:
     """Read a single keypress, resolving escape sequences to Key constants.
 
     Must be called inside :func:`raw_mode`, otherwise the read blocks until the

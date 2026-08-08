@@ -1,6 +1,7 @@
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Union
+from typing import Any
 
 from sillo.core.http import Request, Response
 from sillo.core.routing import BaseRouter
@@ -32,11 +33,11 @@ class StaticFiles(BaseRouter):
 
     def __init__(
         self,
-        directory: Optional[Union[str, Path]] = None,
-        directories: Optional[List[Union[str, Path]]] = None,
-        allowed_extensions: Optional[List[str]] = None,
-        custom_404_handler: Optional[Callable[[Request, Response], Any]] = None,
-        cache_control: Optional[str] = None,
+        directory: str | Path | None = None,
+        directories: list[str | Path] | None = None,
+        allowed_extensions: list[str] | None = None,
+        custom_404_handler: Callable[[Request, Response], Any] | None = None,
+        cache_control: str | None = None,
     ):
         """
         Initialize the StaticFiles application with directory and serving config.
@@ -75,13 +76,13 @@ class StaticFiles(BaseRouter):
         if not directories:
             directories = [directory] if directory else []
         self.directories = [self._ensure_directory(d) for d in directories or []]
-        self.allowed_extensions = set(
+        self.allowed_extensions = {
             ext.lower().lstrip(".") for ext in (allowed_extensions or [])
-        )
+        }
         self.custom_404_handler = custom_404_handler
         self.cache_control = cache_control
 
-    def _ensure_directory(self, path: Union[str, Path]) -> Path:
+    def _ensure_directory(self, path: str | Path) -> Path:
         """
         Validate and resolve a directory path, creating it if it does not exist.
 

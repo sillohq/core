@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-import typing
-from typing import Any, Dict, ItemsView, Iterator, KeysView, Sequence, ValuesView
+from collections.abc import ItemsView, Iterator, KeysView, Sequence, ValuesView
+from typing import Any
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
+
+from typing_extensions import Self
 
 from sillo.objects.common import Scope
 from sillo.objects.datastructures import MultiDict
@@ -367,7 +369,7 @@ class URL:
         query = urlencode(params.multi_items())
         return self.replace(query=query)
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """
         Compare this URL with another object for string equality.
 
@@ -416,7 +418,7 @@ class URL:
         url = str(self)
         if self.password:
             url = str(self.replace(password="********"))
-        return f"{self.__class__.__name__}({repr(url)})"
+        return f"{self.__class__.__name__}({url!r})"
 
 
 class URLPath(str):
@@ -429,7 +431,7 @@ class URLPath(str):
     host that can be used to construct absolute URLs.
     """
 
-    def __new__(cls, path: str, protocol: str = "", host: str = "") -> "URLPath":
+    def __new__(cls, path: str, protocol: str = "", host: str = "") -> Self:
         """
         Create a new URLPath instance with the given path string.
 
@@ -470,7 +472,7 @@ class URLPath(str):
         self.protocol = protocol
         self.host = host
 
-    def make_absolute_url(self, base_url: typing.Union[str, URL]) -> URL:
+    def make_absolute_url(self, base_url: str | URL) -> URL:
         """
         Construct an absolute URL from this path and a base URL.
 
@@ -516,7 +518,7 @@ class RouteParam:
     to be accessed as object attributes.
     """
 
-    def __init__(self, data: Dict[str, Any]) -> None:
+    def __init__(self, data: dict[str, Any]) -> None:
         """
         Initialize the RouteParam with a dictionary of route parameters.
 
@@ -533,7 +535,7 @@ class RouteParam:
             None: No exceptions are raised during initialization.
         """
         """Initialize the RouteParam with a dictionary."""
-        self.data: Dict[str, Any] = data
+        self.data: dict[str, Any] = data
 
     def __iter__(self) -> Iterator[str]:
         """
@@ -716,7 +718,7 @@ class RouteParam:
         """Return the number of items in the dictionary."""
         return len(self.data)
 
-    def __call__(self, *args: Any, **kwds: Any) -> Dict[str, Any]:
+    def __call__(self, *args: Any, **kwds: Any) -> dict[str, Any]:
         """
         Return the underlying route parameter data dictionary.
 
@@ -760,7 +762,7 @@ class RouteParam:
         """Return the value for the given key, or a default value if the key does not exist."""
         return self.data.get(key, default)
 
-    def __dict__(self) -> Dict[str, Any]:
+    def __dict__(self) -> dict[str, Any]:
         """
         Return the underlying route parameter data dictionary.
 

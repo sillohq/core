@@ -40,7 +40,8 @@ Subclass to add custom logic::
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.exceptions import AuthenticationFailed, PermissionDenied
@@ -66,7 +67,7 @@ LEGACY_SCOPE_ALIASES = {
 }
 
 
-def accepted_identifiers(names: "Sequence[str]") -> set:
+def accepted_identifiers(names: Sequence[str]) -> set:
     """Every identifier a gate written against *names* should accept.
 
     Both the value as written and its modern spelling, because the two can
@@ -87,7 +88,7 @@ def accepted_identifiers(names: "Sequence[str]") -> set:
     return accepted
 
 
-def request_identifiers(request: "Request") -> set:
+def request_identifiers(request: Request) -> set:
     """The identifiers a request authenticated under.
 
     ``auth`` and ``auth_scheme`` hold the same value for every shipped
@@ -159,12 +160,12 @@ class useAuth:
 
     def __init__(
         self,
-        scopes: Optional[list[str]] = None,
-        permissions: Optional[list[str]] = None,
-        backends: Optional[list[AuthenticationBackend]] = None,
-        user_model: Optional[type[BaseUser]] = None,
+        scopes: list[str] | None = None,
+        permissions: list[str] | None = None,
+        backends: list[AuthenticationBackend] | None = None,
+        user_model: type[BaseUser] | None = None,
         required: bool = True,
-        schemes: Optional[Union[list[str], dict[str, list[str]]]] = None,
+        schemes: list[str] | dict[str, list[str]] | None = None,
         all_of: bool = False,
     ) -> None:
         """Initialise the authentication gate with scope, permission, and backend config.
@@ -207,7 +208,7 @@ class useAuth:
             No exceptions are raised during initialisation.
         """
         self.permissions: list[str] = permissions or []
-        self.backends: Optional[list[AuthenticationBackend]] = backends
+        self.backends: list[AuthenticationBackend] | None = backends
         self.user_model: type[BaseUser] = user_model  # ty: ignore[invalid-assignment]
         self.required: bool = required
         # Normalised to {name: oauth_scopes} so the two accepted spellings —
@@ -239,7 +240,7 @@ class useAuth:
             for name in renamed:
                 self.schemes.setdefault(name, [])
 
-    async def authenticate(self, request: "Request") -> bool:
+    async def authenticate(self, request: Request) -> bool:
         """Run the authentication and authorisation gate before the route handler.
 
         This is the main entry point called by the framework before the route
@@ -285,8 +286,8 @@ class useAuth:
         return True
 
     def security_requirements(
-        self, available: Optional[Sequence[str]] = None
-    ) -> Optional[list[dict[str, list[str]]]]:
+        self, available: Sequence[str] | None = None
+    ) -> list[dict[str, list[str]]] | None:
         """The OpenAPI ``security`` this gate implies.
 
         A route declares its auth once, on the gate; this turns that into the
@@ -335,7 +336,7 @@ class useAuth:
 
         return requirements
 
-    def _check_schemes(self, request: "Request") -> None:
+    def _check_schemes(self, request: Request) -> None:
         """Verify the request authenticated through an accepted scheme.
 
         Both ``auth_scheme`` and ``auth`` are consulted. The shipped backends
@@ -377,7 +378,7 @@ class useAuth:
             return self.user_model
         return SimpleUser
 
-    async def _authenticate_with_backends(self, request: "Request") -> None:
+    async def _authenticate_with_backends(self, request: Request) -> None:
         """Authenticate the request using the gate's custom backend list.
 
         Iterates through the configured backends in order, attempting to

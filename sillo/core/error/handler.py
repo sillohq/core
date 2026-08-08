@@ -869,9 +869,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         current_request: The request being processed, stored for error context.
     """
 
-    def __init__(
-        self, handler: typing.Optional[ServerErrHandlerType] = None, debug: bool = True
-    ):
+    def __init__(self, handler: ServerErrHandlerType | None = None, debug: bool = True):
         """Initialize the ServerErrorMiddleware with optional handler and debug flag.
 
         Args:
@@ -1034,7 +1032,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         Raises:
             None.
         """
-        values: typing.Dict[str, typing.Any] = {
+        values: dict[str, typing.Any] = {
             # HTML escape - line could contain < or >
             "line": html.escape(line).replace(" ", "&nbsp"),
             "lineno": (frame_lineno - frame_index) + index,
@@ -1044,7 +1042,7 @@ class ServerErrorMiddleware(BaseMiddleware):
             return LINE.format(**values)
         return CENTER_LINE.format(**values)
 
-    def _format_locals(self, frame_locals: typing.Dict[str, typing.Any]) -> str:
+    def _format_locals(self, frame_locals: dict[str, typing.Any]) -> str:
         """Format local variables from a stack frame for display in the error page.
 
         Iterates over the local variables captured from a traceback frame and
@@ -1125,7 +1123,7 @@ class ServerErrorMiddleware(BaseMiddleware):
             self._format_locals(frame.frame.f_locals) if hasattr(frame, "frame") else ""
         )
 
-        values: typing.Dict[str, typing.Any] = {
+        values: dict[str, typing.Any] = {
             "frame_filename": html.escape(frame.filename),
             "frame_lineno": frame.lineno,
             "frame_name": html.escape(frame.function),
@@ -1355,7 +1353,7 @@ class ServerErrorMiddleware(BaseMiddleware):
             None. Serialization failures are caught internally and produce a
             simplified fallback JSON response.
         """
-        error_data: typing.Dict[str, typing.Any] = {
+        error_data: dict[str, typing.Any] = {
             "error": {
                 "type": exc_type_str,
                 "message": str(exc),
@@ -1409,7 +1407,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         Raises:
             None.
         """
-        suggestions: typing.List[typing.Dict[str, str]] = []
+        suggestions: list[dict[str, str]] = []
 
         # Common error types and suggestions
         if "ImportError" in exc_type_str or "ModuleNotFoundError" in exc_type_str:
@@ -1588,7 +1586,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         try:
             error_json = html.escape(self._generate_error_json(exc, exc_type_str))
         except Exception as e:
-            error_json = html.escape(f"Error generating JSON data: {str(e)}")
+            error_json = html.escape(f"Error generating JSON data: {e!s}")
 
         # Put everything together in the template
         return TEMPLATE.format(

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import ClassVar, Dict, List, Optional
 
 try:
     import ulid
@@ -22,86 +22,37 @@ class SoftDeletesMixin:
     """
 
     async def soft_delete(self) -> None:
-        """Soft Delete
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Soft Delete"""
         self.deleted_at = datetime.now(timezone.utc)
         await self.save(update_fields=["deleted_at"])  # ty: ignore[unresolved-attribute]
 
     async def restore(self) -> None:
-        """Restore
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Restore"""
         self.deleted_at = None
         await self.save(update_fields=["deleted_at"])  # ty: ignore[unresolved-attribute]
 
     async def force_delete(self) -> None:
-        """Force Delete
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Force Delete"""
         await self.delete()  # ty: ignore[unresolved-attribute]
 
     @classmethod
     def active(cls):
-        """Active
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Active"""
         return cls.filter(deleted_at__isnull=True)  # ty: ignore[unresolved-attribute]
 
     @classmethod
     def only_trashed(cls):
-        """Only Trashed
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Only Trashed"""
         return cls.filter(deleted_at__isnull=False)  # ty: ignore[unresolved-attribute]
 
     @classmethod
     def with_trashed(cls):
-        """With Trashed
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """With Trashed"""
         return cls.all()  # ty: ignore[unresolved-attribute]
 
     @property
     def is_trashed(self) -> bool:
-        """Is Trashed
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Trashed"""
         return self.deleted_at is not None
 
 
@@ -119,14 +70,7 @@ class TimestampsMixin:
         await self.save(update_fields=["updated_at"])  # ty: ignore[unresolved-attribute]
 
     def set_created_at(self) -> None:
-        """Set Created At
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Set Created At"""
         if not self.created_at:
             self.created_at = datetime.now(timezone.utc)
 
@@ -135,14 +79,7 @@ class HasUlidMixin:
     """Generates a ULID primary key before creation."""
 
     def generate_ulid(self) -> str:
-        """Generate Ulid
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Generate Ulid"""
         return str(ulid.new())  # ty: ignore[unresolved-attribute]
 
 
@@ -152,18 +89,11 @@ class SerializesToDictMixin:
     def to_dict(
         self,
         *,
-        exclude: Optional[List[str]] = None,
-        include: Optional[List[str]] = None,
+        exclude: list[str] | None = None,
+        include: list[str] | None = None,
         max_depth: int = 3,
-    ) -> Dict:
-        """To Dict
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    ) -> dict:
+        """To Dict"""
         data = {}
         for field_name in self._meta.fields:  # ty: ignore[unresolved-attribute]
             if exclude and field_name in exclude:
@@ -178,15 +108,8 @@ class SerializesToDictMixin:
             data[field_name] = value
         return data
 
-    def to_json(self, *, indent: Optional[int] = None, **kwargs) -> str:
-        """To Json
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_json(self, *, indent: int | None = None, **kwargs) -> str:
+        """To Json"""
         return json.dumps(self.to_dict(**kwargs), indent=indent, default=str)
 
 
@@ -199,17 +122,9 @@ class ValidatesBeforeSaveMixin:
 
     async def validate(self) -> None:
         """Override in your model. Raise ValueError or return None."""
-        pass
 
     async def save(self, *args, **kwargs):
-        """Save
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Save"""
         await self.validate()
         return await super().save(*args, **kwargs)  # ty: ignore[unresolved-attribute]
 
@@ -221,20 +136,12 @@ class CascadesDeletesMixin:
     When ``delete()`` is called, related models are deleted first.
     """
 
-    _cascade_deletes: List[str] = []
+    _cascade_deletes: ClassVar[list[str]] = []
 
     async def delete(self):
-        """Delete
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Delete"""
         for relation in self._cascade_deletes:
             related = getattr(self, relation, None)
-            if related is not None:
-                if hasattr(related, "delete"):
-                    await related.delete()
+            if related is not None and hasattr(related, "delete"):
+                await related.delete()
         return await super().delete()  # ty: ignore[unresolved-attribute]

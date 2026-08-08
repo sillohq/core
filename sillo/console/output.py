@@ -15,8 +15,11 @@ from __future__ import annotations
 import itertools
 import threading
 import time
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import IO, Any, Iterator, Optional, Sequence
+from typing import IO, Any
+
+from typing_extensions import Self
 
 from .style import (
     DANGER,
@@ -125,8 +128,8 @@ class Output:
     def __init__(
         self,
         stream: IO[str],
-        palette: Optional[Palette] = None,
-        unicode: Optional[bool] = None,
+        palette: Palette | None = None,
+        unicode: bool | None = None,
     ) -> None:
         self.stream = stream
         self.palette = palette if palette is not None else Palette(stream)
@@ -135,7 +138,7 @@ class Output:
 
     # -- primitives ----------------------------------------------------
 
-    def paint(self, text: str, style: Optional[Style] = None) -> str:
+    def paint(self, text: str, style: Style | None = None) -> str:
         """Style *text* without writing it.
 
         Args:
@@ -156,7 +159,7 @@ class Output:
         self.stream.write("".join(str(part) for part in parts))
         self.stream.flush()
 
-    def line(self, text: str = "", style: Optional[Style] = None) -> None:
+    def line(self, text: str = "", style: Style | None = None) -> None:
         """Write one line.
 
         Args:
@@ -284,7 +287,7 @@ class Output:
         self,
         headers: Sequence[str],
         rows: Sequence[Sequence[Any]],
-        align: Optional[Sequence[str]] = None,
+        align: Sequence[str] | None = None,
         indent: int = 1,
     ) -> None:
         """Draw a table.
@@ -348,7 +351,7 @@ class Output:
             ]
             self.write(pad, "   ".join(cells).rstrip(), "\n")
 
-    def panel(self, body: str, title: str = "", style: Optional[Style] = None) -> None:
+    def panel(self, body: str, title: str = "", style: Style | None = None) -> None:
         """Draw a bordered box around *body*.
 
         Args:
@@ -394,7 +397,7 @@ class Output:
         total: int,
         label: str = "",
         width: int = 30,
-    ) -> Iterator["ProgressBar"]:
+    ) -> Iterator[ProgressBar]:
         """Show a progress bar for the duration of the block.
 
         Args:
@@ -413,7 +416,7 @@ class Output:
             bar.finish()
 
     @contextmanager
-    def spinner(self, label: str = "Working") -> Iterator["Spinner"]:
+    def spinner(self, label: str = "Working") -> Iterator[Spinner]:
         """Show a spinner for the duration of the block.
 
         Args:
@@ -534,7 +537,7 @@ class Spinner:
         self.interval = interval
         self._live = output.palette.enabled
         self._stop = threading.Event()
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
 
     def _spin(self) -> None:
         """Redraw the spinner until stopped."""
@@ -575,7 +578,7 @@ class Spinner:
         if text:
             self.output.success(text)
 
-    def __enter__(self) -> "Spinner":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exception: object) -> None:

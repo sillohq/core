@@ -8,7 +8,6 @@ contract.
 """
 
 from enum import Enum
-from typing import List
 
 import pytest
 
@@ -43,12 +42,12 @@ def test_type_inferred_from_scalar_default():
 
 def test_type_inferred_from_empty_list_default():
     """An empty list cannot reveal its element type, so it falls back to str."""
-    assert Query([]).resolve_type() == List[str]
+    assert Query([]).resolve_type() == list[str]
 
 
 def test_type_inferred_from_populated_list_default():
-    assert Query([1]).resolve_type() == List[int]
-    assert Query(["a"]).resolve_type() == List[str]
+    assert Query([1]).resolve_type() == list[int]
+    assert Query(["a"]).resolve_type() == list[str]
 
 
 def test_type_falls_back_to_str():

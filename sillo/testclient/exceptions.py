@@ -7,27 +7,10 @@ if TYPE_CHECKING:
 
 
 class UpgradeException(Exception):
-    """Upgradeexception
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Upgradeexception"""
 
     def __init__(self, session: WebSocketTestSession) -> None:
-        """Init
-
-        Args:
-            session: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.session = session
 
 

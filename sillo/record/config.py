@@ -12,20 +12,13 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Annotated, Any, Dict, Optional
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
 
 class DatabaseBackend(Enum):
-    """Databasebackend
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Databasebackend"""
 
     SQLITE = "sqlite"
     POSTGRES = "postgres"
@@ -66,9 +59,9 @@ class DatabaseConfig:
     )
     timezone: str = field(default_factory=lambda: os.getenv("DB_TIMEZONE", "UTC"))
     charset: str = "utf8mb4"
-    ssl_ca: Optional[str] = field(default_factory=lambda: os.getenv("DB_SSL_CA"))
-    ssl_cert: Optional[str] = field(default_factory=lambda: os.getenv("DB_SSL_CERT"))
-    ssl_key: Optional[str] = field(default_factory=lambda: os.getenv("DB_SSL_KEY"))
+    ssl_ca: str | None = field(default_factory=lambda: os.getenv("DB_SSL_CA"))
+    ssl_cert: str | None = field(default_factory=lambda: os.getenv("DB_SSL_CERT"))
+    ssl_key: str | None = field(default_factory=lambda: os.getenv("DB_SSL_KEY"))
 
     #: Create any missing tables from the models on ``init()``.
     #:
@@ -90,14 +83,7 @@ class DatabaseConfig:
     )
 
     def __post_init__(self):
-        """Post Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Post Init"""
         if self.url.startswith("postgres") or self.url.startswith("postgresql"):
             self.backend = DatabaseBackend.POSTGRES
         elif self.url.startswith("mysql"):
@@ -106,7 +92,7 @@ class DatabaseConfig:
             self.backend = DatabaseBackend.MARIADB
 
     @classmethod
-    def from_env(cls, *, prefix: str = "") -> "DatabaseConfig":
+    def from_env(cls, *, prefix: str = "") -> DatabaseConfig:
         """Create config from environment variables. Uses ``DATABASE_URL`` by default.
 
         Set *prefix* to load from ``{PREFIX}_DATABASE_URL`` etc.
@@ -120,7 +106,7 @@ class DatabaseConfig:
     @classmethod
     def sqlite(
         cls, path: Annotated[str, Doc("File path or ':memory:'.")] = ":memory:"
-    ) -> "DatabaseConfig":
+    ) -> DatabaseConfig:
         """SQLite connection."""
         return cls(url=f"sqlite://{path}", backend=DatabaseBackend.SQLITE)
 
@@ -133,7 +119,7 @@ class DatabaseConfig:
         user: Annotated[str, Doc("Username.")] = "postgres",
         host: Annotated[str, Doc("Host.")] = "localhost",
         port: Annotated[int, Doc("Port.")] = 5432,
-    ) -> "DatabaseConfig":
+    ) -> DatabaseConfig:
         """PostgreSQL connection."""
         return cls(
             url=f"postgres://{user}:{password}@{host}:{port}/{database}",
@@ -149,7 +135,7 @@ class DatabaseConfig:
         user: Annotated[str, Doc("Username.")] = "root",
         host: Annotated[str, Doc("Host.")] = "localhost",
         port: Annotated[int, Doc("Port.")] = 3306,
-    ) -> "DatabaseConfig":
+    ) -> DatabaseConfig:
         """MySQL / MariaDB connection."""
         backend = (
             DatabaseBackend.MARIADB
@@ -161,15 +147,8 @@ class DatabaseConfig:
             backend=backend,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
-        """To Dict
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_dict(self) -> dict[str, Any]:
+        """To Dict"""
         d = {k: v for k, v in self.__dict__.items()}
         d["backend"] = self.backend.value
         return d

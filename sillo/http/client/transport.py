@@ -3,8 +3,6 @@ from __future__ import annotations
 import typing
 
 if typing.TYPE_CHECKING:
-    from typing import Optional
-
     import httpx
 
 
@@ -23,7 +21,7 @@ class ConnectionPoolConfig:
         max_connections: int = 50,
         max_keepalive_connections: int = 20,
         keepalive_expiry: float = 30.0,
-        uds: Optional[str] = None,
+        uds: str | None = None,
     ) -> None:
         self.max_connections = max_connections
         self.max_keepalive_connections = max_keepalive_connections

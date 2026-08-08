@@ -1,6 +1,7 @@
 import re
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from sillo.core.http import Request, Response
 from sillo.types import HandlerType

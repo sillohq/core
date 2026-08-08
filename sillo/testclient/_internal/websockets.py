@@ -8,8 +8,10 @@ from concurrent.futures import Future
 from functools import cached_property
 
 import anyio
-import anyio.from_thread  # noqa
+import anyio.from_thread
+import anyio.lowlevel
 from anyio.abc import TaskGroup
+from typing_extensions import Self
 
 from sillo.testclient._internal.types import ASGI3App
 from sillo.types import Message, Scope
@@ -35,8 +37,6 @@ class WebSocketDenialResponse(  # ty: ignore[invalid-method-override]
     A special case of `WebSocketDisconnect`, raised in the `TestClient` if the
     `WebSocket` is closed before being accepted with a `send_denial_response()`.
     """
-
-    ...
 
 
 class WebSocketTestSession:
@@ -66,7 +66,7 @@ class WebSocketTestSession:
         self._send_queue: queue.Queue[Message | BaseException] = queue.Queue()
         self.extra_headers = None
 
-    def __enter__(self) -> WebSocketTestSession:
+    def __enter__(self) -> Self:
         """
         Enter the WebSocketTestSession context.
 
@@ -104,7 +104,7 @@ class WebSocketTestSession:
         """
         self.should_close.set()
 
-    def __exit__(self, *args: typing.Any) -> None:
+    def __exit__(self, *args: object) -> None:
         """
         Exit the WebSocketTestSession context.
         """
@@ -124,17 +124,7 @@ class WebSocketTestSession:
         """
 
         async def run_app(tg: TaskGroup) -> None:
-            """Run App
-
-            Args:
-                tg: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Run App"""
             try:
                 await self.app(self.scope, self._asgi_receive, self._asgi_send)
             except anyio.get_cancelled_exc_class():
@@ -158,7 +148,7 @@ class WebSocketTestSession:
             Message: The received message.
         """
         while self._receive_queue.empty():
-            await anyio.sleep(0)
+            await anyio.lowlevel.checkpoint()
         return self._receive_queue.get()
 
     async def _asgi_send(self, message: Message) -> None:

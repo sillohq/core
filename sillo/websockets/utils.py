@@ -1,4 +1,3 @@
-import typing
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -7,28 +6,14 @@ from uuid import UUID
 
 
 class ChannelAddStatusEnum(Enum):
-    """Channeladdstatusenum
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Channeladdstatusenum"""
 
     CHANNEL_ADDED = "CHANNEL_ADDED"
     CHANNEL_EXIST = "CHANNEL_EXIST"
 
 
 class ChannelRemoveStatusEnum(Enum):
-    """Channelremovestatusenum
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Channelremovestatusenum"""
 
     CHANNEL_REMOVED = "CHANNEL_REMOVED"
     CHANNEL_DOES_NOT_EXIST = "CHANNEL_DOES_NOT_EXIST"
@@ -37,28 +22,14 @@ class ChannelRemoveStatusEnum(Enum):
 
 
 class GroupSendStatusEnum(Enum):
-    """Groupsendstatusenum
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Groupsendstatusenum"""
 
     GROUP_SEND = "GROUP_SEND"
     NO_SUCH_GROUP = "NO_SUCH_GROUP"
 
 
 class PayloadTypeEnum(Enum):
-    """Payloadtypeenum
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Payloadtypeenum"""
 
     JSON = "json"
     TEXT = "text"
@@ -67,16 +38,9 @@ class PayloadTypeEnum(Enum):
 
 @dataclass
 class ChannelMessageDC:
-    """Channelmessagedc
+    """Channelmessagedc"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    payload: typing.Union[str, bytes]
+    payload: str | bytes
     # Factories, not values: a plain default is evaluated once at class
     # definition, which would give every message in history the same id and
     # the import-time timestamp.

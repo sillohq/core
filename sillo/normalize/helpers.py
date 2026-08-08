@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from enum import Enum
-from typing import List
 from urllib.parse import urlparse, urlunparse
 
 
@@ -186,7 +184,7 @@ def clean_url_path(url: str) -> str:
     )
 
 
-def get_path_segments(path: str) -> List[str]:
+def get_path_segments(path: str) -> list[str]:
     """
     Splits a URL path into its individual non-empty segment components.
 
@@ -209,7 +207,7 @@ def get_path_segments(path: str) -> List[str]:
     return path.split("/")
 
 
-def join_path_segments(segments: List[str], trailing_slash: bool = False) -> str:
+def join_path_segments(segments: list[str], trailing_slash: bool = False) -> str:
     """
     Joins a list of path segments into a single URL path string.
 
