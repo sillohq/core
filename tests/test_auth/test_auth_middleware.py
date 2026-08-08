@@ -13,7 +13,7 @@ from functools import partial
 import pytest
 
 from sillo.application import silloApp
-from sillo.auth import AuthenticationMiddleware, BaseUser, auth
+from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
 from sillo.users import SimpleUser, UnauthenticatedUser
@@ -125,8 +125,7 @@ async def test_auth_middleware_multiple_backends_success(test_client):
         AuthenticationMiddleware(SimpleUser, [FirstBackend(), SecondBackend()])
     )
 
-    @app.get("/protected")
-    @auth("first")
+    @app.get("/protected", auth=useAuth(schemes=["first"]))
     async def protected_route(req: Request, res: Response):
         return res.json(
             {"user_id": req.user.identity, "auth_method": req.scope.get("auth")}
@@ -158,8 +157,7 @@ async def test_auth_middleware_multiple_backends_fallback(test_client):
         AuthenticationMiddleware(SimpleUser, [FirstBackend(), SecondBackend()])
     )
 
-    @app.get("/protected")
-    @auth("second")
+    @app.get("/protected", auth=useAuth(schemes=["second"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user_id": req.user.identity})
 
@@ -179,8 +177,7 @@ async def test_auth_middleware_no_backends_succeed(test_client):
 
     app.use(AuthenticationMiddleware(TestUser, FailingBackend()))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -198,8 +195,7 @@ async def test_auth_middleware_user_loading_failure(test_client):
     jwt_backend = JWTAuthBackend(secret_key="a-test-jwt-secret-key-for-hs256")
     app.use(AuthenticationMiddleware(CustomUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -233,8 +229,7 @@ async def test_auth_middleware_backend_exception_handling(test_client):
         )
     )
 
-    @app.get("/protected")
-    @auth("backup")
+    @app.get("/protected", auth=useAuth(schemes=["backup"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user_id": req.user.identity})
 

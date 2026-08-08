@@ -231,6 +231,27 @@ async def test_use_auth_permissions_rejects_non_matching(test_client):
         assert res.status_code == 403
 
 
+async def test_use_auth_permissions_rejects_anonymous_as_401_not_403(test_client):
+    """An anonymous caller is unauthenticated, not merely unauthorised.
+
+    The removed ``@has_permission`` decorator answered 403 here, because it
+    only ever asked ``user.has_permission(...)`` and ``UnauthenticatedUser``
+    says no to everything. ``useAuth`` checks ``is_authenticated`` first, so
+    the same request is now a 401 — which is the correct code, and the one
+    that tells a client to go and log in rather than to give up.
+    """
+    app = silloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get("/admin", auth=useAuth(permissions=["read"]))
+    async def admin(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/admin")
+        assert res.status_code == 401
+
+
 async def test_use_auth_permissions_admin_user(test_client):
     app = silloApp()
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))

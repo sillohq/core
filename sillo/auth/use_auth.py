@@ -2,7 +2,7 @@
 Route-level authentication gate for sillo.
 
 Pass a ``useAuth`` instance as the ``auth`` argument to route registration
-methods instead of the ``@auth()`` decorator::
+methods::
 
     from sillo.auth import useAuth
 
@@ -105,9 +105,9 @@ class useAuth:
     authentication method restrictions, permission-based authorisation, custom
     backend overrides, and optional (non-blocking) authentication modes.
 
-    Unlike the legacy ``@auth()`` decorator, ``useAuth`` instances are passed
-    directly to the router, keeping the handler function clean and allowing
-    the framework to manage the gate lifecycle.
+    Instances are passed directly to the router rather than wrapping the
+    handler, which keeps the handler function clean and lets the framework
+    manage the gate lifecycle.
 
     Parameters
     ----------

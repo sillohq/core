@@ -25,9 +25,8 @@ class AuthenticationMiddleware(BaseMiddleware):
     downstream code can still access ``request.user`` safely.
 
     The middleware does not reject unauthenticated requests on its own — that
-    is the responsibility of route-level gates (``useAuth``) or decorators
-    (``@auth``). This allows some routes to be public while others require
-    authentication.
+    is the responsibility of the route-level gate, ``useAuth``. This allows
+    some routes to be public while others require authentication.
 
     Attributes:
         backends: List of authentication backends to try in order. Each

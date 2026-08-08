@@ -12,7 +12,7 @@ from functools import partial
 import pytest
 
 from sillo.application import silloApp
-from sillo.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, auth
+from sillo.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.apikey import create_api_key, verify_key
 from sillo.auth.model import AuthResult
 from sillo.users import SimpleUser
@@ -53,8 +53,7 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
 
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
-    @app.get("/protected")
-    @auth("apikey")
+    @app.get("/protected", auth=useAuth(schemes=["apikey"]))
     async def protected_route(req: Request, res: Response):
         return res.json(
             {"user_id": req.user.identity, "username": req.user.display_name}
@@ -83,8 +82,7 @@ async def test_apikey_auth_backend_missing_header(test_client):
 
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
-    @app.get("/protected")
-    @auth("apikey")
+    @app.get("/protected", auth=useAuth(schemes=["apikey"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -109,8 +107,7 @@ async def test_apikey_auth_backend_invalid_key(test_client):
 
     app.use(AuthenticationMiddleware(Store, APIKeyAuthBackend()))
 
-    @app.get("/protected")
-    @auth("apikey")
+    @app.get("/protected", auth=useAuth(schemes=["apikey"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -137,8 +134,7 @@ async def test_apikey_auth_backend_custom_header(test_client):
 
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
-    @app.get("/protected")
-    @auth("apikey")
+    @app.get("/protected", auth=useAuth(schemes=["apikey"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user_id": req.user.identity})
 

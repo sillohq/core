@@ -15,10 +15,10 @@ import pytest
 
 from sillo.application import silloApp
 from sillo.auth import (
+    useAuth,
     AuthenticationMiddleware,
     BaseUser,
     JWTAuthBackend,
-    auth,
     create_jwt,
     decode_jwt,
 )
@@ -102,8 +102,7 @@ async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected_route(req: Request, res: Response):
         return res.json(
             {"user_id": req.user.identity, "username": req.user.display_name}
@@ -125,8 +124,7 @@ async def test_jwt_auth_backend_missing_header(test_client):
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected_route(req: Request, res: Response):
         return res.json(
             {"user_id": req.user.identity, "username": req.user.display_name}
@@ -148,8 +146,7 @@ async def test_jwt_auth_backend_missing_header(test_client):
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -164,8 +161,7 @@ async def test_jwt_auth_backend_invalid_header_format(test_client):
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -180,8 +176,7 @@ async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -198,8 +193,7 @@ async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -216,8 +210,7 @@ async def test_jwt_auth_backend_user_not_found(test_client):
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -237,8 +230,7 @@ async def test_jwt_auth_backend_wrong_identifier_field(test_client):
     jwt_backend = JWTAuthBackend(identifier="user_id", secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
-    @app.get("/protected")
-    @auth("jwt")
+    @app.get("/protected", auth=useAuth(schemes=["jwt"]))
     async def protected(req: Request, res: Response):
         return res.json({"user": req.user})
 

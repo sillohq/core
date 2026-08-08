@@ -2,7 +2,7 @@ from sillo import silloApp
 from sillo.auth import BaseUser
 from sillo.auth import JWTAuthBackend, create_jwt
 from sillo.auth.session_auth import SessionAuthBackend, login
-from sillo.auth.decorator import auth
+from sillo.auth import useAuth
 from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.core.http import Request, Response
 
@@ -112,8 +112,8 @@ async def session_login(req: Request, res: Response):
     return res.html("Invalid credentials", status_code=401)
 
 
-@app.get("/dashboard")
-@auth()  # Accepts any authenticated user (JWT or Session)
+# Accepts any authenticated user (JWT or Session)
+@app.get("/dashboard", auth=useAuth())
 async def admin_dashboard(req: Request, res: Response):
     auth_method = req.scope.get("auth", "unknown")
     return res.html(f"""
@@ -124,8 +124,8 @@ async def admin_dashboard(req: Request, res: Response):
     """)
 
 
-@app.get("/user-profile")
-@auth()  # Accepts any authenticated user
+# Accepts any authenticated user
+@app.get("/user-profile", auth=useAuth())
 async def user_profile(req: Request, res: Response):
     auth_method = req.scope.get("auth", "unknown")
     return res.html(f"""
@@ -137,8 +137,8 @@ async def user_profile(req: Request, res: Response):
     """)
 
 
-@app.get("/jwt-only")
-@auth(["jwt"])  # Only accepts JWT authentication
+# Only accepts JWT authentication
+@app.get("/jwt-only", auth=useAuth(schemes=["bearerAuth"]))
 async def jwt_only(req: Request, res: Response):
     return res.html(f"""
     <h1>JWT Only Page</h1>
@@ -148,8 +148,8 @@ async def jwt_only(req: Request, res: Response):
     """)
 
 
-@app.get("/session-only")
-@auth(["session"])  # Only accepts session authentication
+# Only accepts session authentication
+@app.get("/session-only", auth=useAuth(schemes=["sessionCookie"]))
 async def session_only(req: Request, res: Response):
     return res.html(f"""
     <h1>Session Only Page</h1>

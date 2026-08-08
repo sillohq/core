@@ -12,7 +12,7 @@ from functools import partial
 import pytest
 
 from sillo.application import silloApp
-from sillo.auth import AuthenticationMiddleware, BaseUser, auth
+from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
 from sillo.users import SimpleUser
@@ -83,8 +83,7 @@ async def test_custom_auth_backend_success(test_client):
 
     app.use(AuthenticationMiddleware(CustomTestUser, CustomAuthBackend()))
 
-    @app.get("/protected")
-    @auth("custom")
+    @app.get("/protected", auth=useAuth(schemes=["custom"]))
     async def protected_route(req: Request, res: Response):
         return res.json(
             {"user_id": req.user.identity, "permissions": req.user.permissions}
@@ -113,8 +112,7 @@ async def test_custom_auth_backend_failure(test_client):
 
     app.use(AuthenticationMiddleware(CustomTestUser, CustomAuthBackend()))
 
-    @app.get("/protected")
-    @auth("custom")
+    @app.get("/protected", auth=useAuth(schemes=["custom"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -143,8 +141,7 @@ async def test_custom_auth_backend_exception_handling(test_client):
         )
     )
 
-    @app.get("/protected")
-    @auth("backup")
+    @app.get("/protected", auth=useAuth(schemes=["backup"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user_id": req.user.identity})
 
@@ -176,8 +173,7 @@ async def test_custom_auth_backend_complex_logic(test_client):
 
     app.use(AuthenticationMiddleware(SimpleUser, ComplexAuthBackend()))
 
-    @app.get("/protected")
-    @auth("complex")
+    @app.get("/protected", auth=useAuth(schemes=["complex"]))
     async def protected_route(req: Request, res: Response):
         return res.json({"user_id": req.user.identity})
 

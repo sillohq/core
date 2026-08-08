@@ -122,7 +122,9 @@ removed — passing it raises `TypeError`. Gates name schemes:
 | `scopes=["session"]` | `schemes=["sessionCookie"]` |
 | `scopes=["apikey"]` | `schemes=["apiKeyHeader"]` |
 
-The legacy `@auth("jwt")` decorator still matches method labels.
+The old spellings on the left are still accepted as `schemes` values, so a
+gate written as `schemes=["jwt"]` keeps matching a backend that reports
+either label.
 
 <aside>
 

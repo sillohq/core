@@ -13,7 +13,7 @@ from functools import partial
 import pytest
 
 from sillo.application import silloApp
-from sillo.auth import AuthenticationMiddleware, BaseUser, auth
+from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.session_auth import SessionAuthBackend, login, logout
 from sillo.core.http import Request, Response
 from sillo.session.middleware import SessionMiddleware
@@ -76,8 +76,7 @@ async def test_session_auth_backend_success(test_client):
         login(req, user)
         return res.json({"message": "logged in"})
 
-    @app.get("/protected")
-    @auth("session")
+    @app.get("/protected", auth=useAuth(schemes=["session"]))
     async def protected(req: Request, res: Response):
         return res.json(
             {"user_id": req.user.identity, "username": req.user.display_name}
@@ -100,8 +99,7 @@ async def test_session_auth_backend_no_session(test_client):
     app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
     app.use(SessionMiddleware(secret_key="secret"))
 
-    @app.get("/protected")
-    @auth("session")
+    @app.get("/protected", auth=useAuth(schemes=["session"]))
     async def protected(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -115,8 +113,7 @@ async def test_session_auth_backend_missing_session_middleware(test_client):
     app = silloApp()
     app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
 
-    @app.get("/protected")
-    @auth("session")
+    @app.get("/protected", auth=useAuth(schemes=["session"]))
     async def protected(req: Request, res: Response):
         return res.json({"user": req.user})
 
@@ -142,8 +139,7 @@ async def test_session_auth_backend_logout(test_client):
         logout(req)
         return res.json({"message": "logged out"})
 
-    @app.get("/protected")
-    @auth(["session"])
+    @app.get("/protected", auth=useAuth(schemes=["session"]))
     async def protected(req: Request, res: Response):
         return res.json({"user_id": req.user.identity})
 
@@ -185,8 +181,7 @@ async def test_session_auth_backend_custom_session_key(test_client):
         }
         return res.json({"message": "logged in"})
 
-    @app.get("/protected")
-    @auth("session")
+    @app.get("/protected", auth=useAuth(schemes=["session"]))
     async def protected(req: Request, res: Response):
         return res.json({"user_id": req.user.identity})
 

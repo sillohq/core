@@ -2,8 +2,16 @@
 
 This package provides a comprehensive authentication system including
 JWT-based authentication, session-based authentication, and API key
-authentication backends. It exposes decorators, middleware, and utility
-functions for securing application endpoints and managing user identity.
+authentication backends. It exposes middleware, a route-level gate, and
+utility functions for securing application endpoints and managing user
+identity.
+
+Routes are protected by passing :class:`useAuth` as a route's ``auth``
+argument::
+
+    @app.get("/profile", auth=useAuth())
+    @app.get("/admin", auth=useAuth(schemes=["bearerAuth"]))
+    @app.get("/users", auth=useAuth(permissions=["read:users"]))
 
 Attributes:
     AuthenticationMiddleware: ASGI middleware that performs authentication
@@ -13,8 +21,7 @@ Attributes:
     JWTAuthBackend: Authentication backend that validates JSON Web Tokens.
     create_jwt: Helper function to generate a signed JWT token.
     decode_jwt: Helper function to decode and verify a JWT token.
-    useAuth: Dependency-injection helper for accessing the current
-        authenticated user inside route handlers.
+    useAuth: Route-level authentication and authorisation gate.
     BaseUser: Base user model class for authentication identities.
     SimpleUser: Lightweight user representation for common use cases.
 """
@@ -23,7 +30,6 @@ from sillo._internals.lazy import deferred
 from sillo.users import BaseUser, SimpleUser
 
 from .backend import AuthenticationBackend
-from .decorator import auth, has_permission
 from .middleware import AuthenticationMiddleware
 from .use_auth import useAuth
 
