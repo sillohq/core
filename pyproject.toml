@@ -37,7 +37,7 @@ keywords = [
 requires-python = ">=3.10"
 dependencies = [
     "uvicorn>=0.27.0",
-    "anyio==4.14.1",
+    "anyio==4.14.2",
     "itsdangerous>=2.1.2",
     "python-multipart>=0.0.6",
     "pydantic>=2.0,<3.0",
