@@ -105,7 +105,7 @@ document says is impossible.
 
 `strict_security` is off by default so existing applications keep building.
 
-###  `scopes` is the old spelling of `schemes`
+###  `scopes=` is gone — `schemes=` is the only spelling
 
 There used to be two identifiers for one fact: a backend reported a *method
 label* on `AuthResult.scope` (`"jwt"`), while the document named a *scheme*
@@ -113,13 +113,8 @@ label* on `AuthResult.scope` (`"jwt"`), while the document named a *scheme*
 reports its own scheme name, and `request.scope["auth"]` and
 `["auth_scheme"]` carry the same value.
 
-`scopes=` still works. It warns, and tells you what to write instead:
-
-```python
-useAuth(scopes=["jwt"])
-# DeprecationWarning: useAuth(scopes=...) is deprecated; use schemes=.
-# Rewrite scopes=['jwt'] as schemes=['bearerAuth'].
-```
+The old `scopes=` parameter, which matched the method label, has been
+removed — passing it raises `TypeError`. Gates name schemes:
 
 | Old | New |
 | --- | --- |
@@ -127,14 +122,7 @@ useAuth(scopes=["jwt"])
 | `scopes=["session"]` | `schemes=["sessionCookie"]` |
 | `scopes=["apikey"]` | `schemes=["apiKeyHeader"]` |
 
-A deprecated gate is **widened, not rewritten**: `scopes=["jwt"]` accepts
-both `"jwt"` and `"bearerAuth"`. A hand-rolled backend returning
-`AuthResult(scope="jwt")` is not `bearerAuth`, and translating rather than
-widening would reject it — a silent 401 in production, which reads like a
-bad credential rather than an upgrade. Only the modern name reaches the
-document.
-
-The legacy `@auth("jwt")` decorator is widened the same way.
+The legacy `@auth("jwt")` decorator still matches method labels.
 
 <aside>
 
