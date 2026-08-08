@@ -70,7 +70,7 @@ async def profile(req: Request, res: Response) -> Response:
     )
 
 
-@auth_router.get("/admin", auth=useAuth(scopes=["jwt"]))
+@auth_router.get("/admin", auth=useAuth(schemes=["bearerAuth"]))
 async def admin(req: Request, res: Response) -> Response:
     return res.json({"message": "Admin access granted", "user": req.user.display_name})
 
