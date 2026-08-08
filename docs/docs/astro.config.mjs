@@ -173,6 +173,7 @@ export default defineConfig({
                         { label: 'Advanced Templating', link: '/guides/templating/advanced/' },
                         { label: 'Static Files', link: '/guides/static-files/' },
                         { label: 'Frontend (SPA)', link: '/guides/frontend/' },
+                        { label: 'Inertia', link: '/guides/inertia/' },
                         { label: 'HTTP Client', link: '/guides/http/client/' },
                         { label: 'Mail Service', link: '/guides/services/mail/' },
                         { label: 'Console Commands', link: '/guides/console/' },
