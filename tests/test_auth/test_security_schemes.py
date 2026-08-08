@@ -294,20 +294,6 @@ def test_a_request_through_the_wrong_scheme_is_rejected(
         assert client.get("/me").status_code == 401
 
 
-def test_scheme_checking_is_independent_of_scope_checking(
-    test_client_factory: Callable[[silloApp], TestClient],
-):
-    """`scopes=` keeps its old meaning; `schemes=` is the new axis."""
-    app = silloApp(title="T", version="1", auth=[StubBackend("bearerAuth", "jwt")])
-
-    @app.get("/legacy", auth=useAuth(scopes=["jwt"]))
-    async def legacy(request: Request, response: Response):
-        return response.json({"ok": True})
-
-    with test_client_factory(app) as client:
-        assert client.get("/legacy").status_code == 200
-
-
 def test_the_middleware_records_which_scheme_answered(
     test_client_factory: Callable[[silloApp], TestClient],
 ):
@@ -586,104 +572,14 @@ def test_renaming_a_backend_renames_what_it_reports():
     assert backend.name == "adminBearer"
 
 
-def test_legacy_scopes_are_translated_and_warn():
-    with pytest.warns(DeprecationWarning, match="use schemes="):
-        gate = useAuth(scopes=["jwt", "session"])
+def test_the_removed_scopes_parameter_is_rejected():
+    """`scopes=` was the pre-`schemes` spelling of the same idea.
 
-    assert set(gate.schemes) == {"bearerAuth", "sessionCookie"}
-    assert gate.scopes == ["jwt", "session"]
-
-
-def test_the_deprecation_names_the_replacement():
-    """A warning that does not say what to write instead costs a doc lookup."""
-    with pytest.warns(DeprecationWarning) as caught:
-        useAuth(scopes=["apikey"])
-
-    message = str(caught[0].message)
-    assert "scopes=['apikey']" in message
-    assert "schemes=['apiKeyHeader']" in message
-
-
-def test_a_legacy_gate_now_documents_itself(
-    test_client_factory: Callable[[silloApp], TestClient],
-):
-    """`scopes=` produced no `security` before; translated, it does."""
-    app = silloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
-
-    with pytest.warns(DeprecationWarning):
-
-        @app.get("/legacy", auth=useAuth(scopes=["jwt"]))
-        async def legacy(request: Request, response: Response):
-            return response.json({})
-
-    doc = document(app, test_client_factory)
-
-    assert doc["paths"]["/legacy"]["get"]["security"] == [{"bearerAuth": []}]
-
-
-def test_a_legacy_gate_still_admits_a_shipped_backend(
-    test_client_factory: Callable[[silloApp], TestClient],
-):
-    """`scopes=["jwt"]` must keep working against JWTAuthBackend.
-
-    Silently dropping the old spelling would turn a working gate into a 401
-    in production — which reads like a bad credential, not an upgrade.
+    It was removed once the migration to scheme names completed; passing it
+    now is a `TypeError`, not a silent 401 or a warning.
     """
-    app = silloApp(title="T", version="1", auth=[StubBackend("bearerAuth", "bearerAuth")])
-
-    with pytest.warns(DeprecationWarning):
-
-        @app.get("/legacy", auth=useAuth(scopes=["jwt"]))
-        async def legacy(request: Request, response: Response):
-            return response.json({"ok": True})
-
-    with test_client_factory(app) as client:
-        assert client.get("/legacy").status_code == 200
-
-
-def test_a_legacy_gate_still_admits_a_custom_backend(
-    test_client_factory: Callable[[silloApp], TestClient],
-):
-    """A hand-rolled backend reporting `scope="jwt"` is not `bearerAuth`.
-
-    Translating the gate instead of widening it would reject this one, which
-    is the same silent break in the other direction.
-    """
-    app = silloApp(title="T", version="1", auth=[StubBackend("custom", "jwt")])
-
-    with pytest.warns(DeprecationWarning):
-
-        @app.get("/legacy", auth=useAuth(scopes=["jwt"]))
-        async def legacy(request: Request, response: Response):
-            return response.json({"ok": True})
-
-    with test_client_factory(app) as client:
-        assert client.get("/legacy").status_code == 200
-
-
-def test_a_legacy_gate_still_rejects_the_wrong_credential(
-    test_client_factory: Callable[[silloApp], TestClient],
-):
-    """Widening must not become "accept anything"."""
-    app = silloApp(title="T", version="1", auth=[StubBackend("sessionCookie", "sessionCookie")])
-
-    with pytest.warns(DeprecationWarning):
-
-        @app.get("/legacy", auth=useAuth(scopes=["jwt"]))
-        async def legacy(request: Request, response: Response):
-            return response.json({"ok": True})
-
-    with test_client_factory(app) as client:
-        assert client.get("/legacy").status_code == 401
-
-
-def test_schemes_alone_does_not_warn():
-    """The modern spelling must be quiet."""
-    import warnings
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", DeprecationWarning)
-        useAuth(schemes=["bearerAuth"])
+    with pytest.raises(TypeError):
+        useAuth(scopes=["jwt"])
 
 
 def test_the_middleware_survives_having_no_backends(

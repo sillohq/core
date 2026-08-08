@@ -57,30 +57,38 @@ def test_client():
 
 
 class AuthBackend(AuthenticationBackend):
+    name = "bearerAuth"
+
     async def authenticate(self, request: Request):
         if request.headers.get("X-Auth") == "valid":
-            return AuthResult(success=True, identity="1", scope="jwt")
+            return AuthResult(success=True, identity="1", scope="bearerAuth")
         return AuthResult(success=False, identity="", scope="")
 
 
 class AdminBackend(AuthenticationBackend):
+    name = "bearerAuth"
+
     async def authenticate(self, request: Request):
         if request.headers.get("X-Auth") == "admin":
-            return AuthResult(success=True, identity="2", scope="jwt")
+            return AuthResult(success=True, identity="2", scope="bearerAuth")
         return AuthResult(success=False, identity="", scope="")
 
 
 class SessionBackend(AuthenticationBackend):
+    name = "sessionCookie"
+
     async def authenticate(self, request: Request):
         if request.headers.get("X-Session") == "valid":
-            return AuthResult(success=True, identity="1", scope="session")
+            return AuthResult(success=True, identity="1", scope="sessionCookie")
         return AuthResult(success=False, identity="", scope="")
 
 
 class APIKeyBackend(AuthenticationBackend):
+    name = "apiKeyHeader"
+
     async def authenticate(self, request: Request):
         if request.headers.get("X-API-Key") == "secret":
-            return AuthResult(success=True, identity="apikey_user", scope="apikey")
+            return AuthResult(success=True, identity="apikey_user", scope="apiKeyHeader")
         return AuthResult(success=False, identity="", scope="")
 
 
@@ -116,15 +124,15 @@ async def test_use_auth_required_rejects_unauthenticated(test_client):
 
 
 # ---------------------------------------------------------------------------
-# useAuth: scopes
+# useAuth: schemes
 # ---------------------------------------------------------------------------
 
 
-async def test_use_auth_scopes_allows_matching(test_client):
+async def test_use_auth_schemes_allows_matching(test_client):
     app = silloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
-    @app.get("/protected", auth=useAuth(scopes=["jwt"]))
+    @app.get("/protected", auth=useAuth(schemes=["bearerAuth"]))
     async def protected(req: Request, res: Response):
         return res.json({"ok": True})
 
@@ -133,11 +141,11 @@ async def test_use_auth_scopes_allows_matching(test_client):
         assert res.status_code == 200
 
 
-async def test_use_auth_scopes_rejects_non_matching(test_client):
+async def test_use_auth_schemes_rejects_non_matching(test_client):
     app = silloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
-    @app.get("/protected", auth=useAuth(scopes=["apikey"]))
+    @app.get("/protected", auth=useAuth(schemes=["apiKeyHeader"]))
     async def protected(req: Request, res: Response):
         return res.json({"ok": True})
 
@@ -146,11 +154,11 @@ async def test_use_auth_scopes_rejects_non_matching(test_client):
         assert res.status_code == 401
 
 
-async def test_use_auth_scopes_multiple_allows_any(test_client):
+async def test_use_auth_schemes_multiple_allows_any(test_client):
     app = silloApp()
     app.use(AuthenticationMiddleware(TestUser, SessionBackend()))
 
-    @app.get("/protected", auth=useAuth(scopes=["jwt", "session"]))
+    @app.get("/protected", auth=useAuth(schemes=["bearerAuth", "sessionCookie"]))
     async def protected(req: Request, res: Response):
         return res.json({"ok": True})
 
@@ -237,15 +245,15 @@ async def test_use_auth_permissions_admin_user(test_client):
 
 
 # ---------------------------------------------------------------------------
-# useAuth: combined scopes + permissions
+# useAuth: combined schemes + permissions
 # ---------------------------------------------------------------------------
 
 
-async def test_use_auth_scopes_and_permissions(test_client):
+async def test_use_auth_schemes_and_permissions(test_client):
     app = silloApp()
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))
 
-    @app.get("/secure", auth=useAuth(scopes=["jwt"], permissions=["admin"]))
+    @app.get("/secure", auth=useAuth(schemes=["bearerAuth"], permissions=["admin"]))
     async def secure(req: Request, res: Response):
         return res.json({"ok": True})
 
@@ -254,11 +262,11 @@ async def test_use_auth_scopes_and_permissions(test_client):
         assert res.status_code == 200
 
 
-async def test_use_auth_scopes_and_permissions_scope_mismatch(test_client):
+async def test_use_auth_schemes_and_permissions_scheme_mismatch(test_client):
     app = silloApp()
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))
 
-    @app.get("/secure", auth=useAuth(scopes=["apikey"], permissions=["admin"]))
+    @app.get("/secure", auth=useAuth(schemes=["apiKeyHeader"], permissions=["admin"]))
     async def secure(req: Request, res: Response):
         return res.json({"ok": True})
 
@@ -283,7 +291,7 @@ async def test_use_auth_route_backends_override_middleware(test_client):
     async with test_client(app) as client:
         res = await client.get("/api", headers={"X-API-Key": "secret"})
         assert res.status_code == 200
-        assert res.json()["scope"] == "apikey"
+        assert res.json()["scope"] == "apiKeyHeader"
 
 
 async def test_use_auth_route_backends_reject_if_override_fails(test_client):

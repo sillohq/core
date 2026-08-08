@@ -9,7 +9,7 @@ methods instead of the ``@auth()`` decorator::
     @router.get("/profile", auth=useAuth())
     async def profile(request, response): ...
 
-    @router.get("/admin", auth=useAuth(scopes=["jwt"]))
+    @router.get("/admin", auth=useAuth(schemes=["bearerAuth"]))
     async def admin(request, response): ...
 
     @router.get("/users", auth=useAuth(permissions=["read:users"]))
@@ -39,7 +39,6 @@ Subclass to add custom logic::
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -102,7 +101,7 @@ class useAuth:
     """Route-level authentication and authorisation gate for the sillo framework.
 
     Provides a flexible, composable authentication gate that can be passed as
-    the ``auth`` argument to route registration methods. Supports scope-based
+    the ``auth`` argument to route registration methods. Supports scheme-based
     authentication method restrictions, permission-based authorisation, custom
     backend overrides, and optional (non-blocking) authentication modes.
 
@@ -135,11 +134,6 @@ class useAuth:
     required:
         When ``False``, unauthenticated requests are allowed through with
         an :class:`UnauthenticatedUser` on the scope.  Default ``True``.
-    scopes:
-        **Deprecated** — the previous spelling, which matched a method
-        label (``"jwt"``) rather than a scheme name.  Values are
-        translated through :data:`LEGACY_SCOPE_ALIASES` and merged into
-        *schemes*, with a warning naming the replacement.
 
     Attributes:
         schemes: ``{scheme_name: oauth_scopes}`` accepted by this gate.
@@ -148,7 +142,6 @@ class useAuth:
         backends: Optional list of backend overrides for this route.
         user_model: User model class for loading identities.
         required: Whether authentication is mandatory for this route.
-        scopes: The deprecated values as passed, kept for introspection.
 
     Example:
         Use as a route-level auth gate::
@@ -160,7 +153,6 @@ class useAuth:
 
     def __init__(
         self,
-        scopes: list[str] | None = None,
         permissions: list[str] | None = None,
         backends: list[AuthenticationBackend] | None = None,
         user_model: type[BaseUser] | None = None,
@@ -168,16 +160,13 @@ class useAuth:
         schemes: list[str] | dict[str, list[str]] | None = None,
         all_of: bool = False,
     ) -> None:
-        """Initialise the authentication gate with scope, permission, and backend config.
+        """Initialise the authentication gate with scheme, permission, and backend config.
 
         Stores all configuration parameters as instance attributes for use
         during request authentication. Default values are applied for
         optional parameters that are not provided.
 
         Args:
-            scopes: List of auth scope strings accepted for this route.
-                If ``None`` or empty, scope checking is skipped. Each scope
-                string corresponds to a backend's scope label (e.g. ``"jwt"``).
             permissions: List of permission strings required for this route.
                 If ``None`` or empty, permission checking is skipped. Each
                 permission is checked via ``user.has_permission(perm)``.
@@ -191,11 +180,11 @@ class useAuth:
                 unauthenticated requests pass through with an
                 ``UnauthenticatedUser`` on the scope. Default ``True``.
             schemes: OpenAPI security scheme names this route accepts, e.g.
-                ``["bearerAuth", "sessionCookie"]``. Unlike *scopes* these
-                are the names under ``components.securitySchemes``, so the
-                route's documented ``security`` is derived from them and the
-                gate cannot disagree with the document. Pass a mapping to
-                carry OAuth2 scopes: ``{"oauth2": ["read:widgets"]}``.
+                ``["bearerAuth", "sessionCookie"]``. These are the names
+                under ``components.securitySchemes``, so the route's
+                documented ``security`` is derived from them and the gate
+                cannot disagree with the document. Pass a mapping to carry
+                OAuth2 scopes: ``{"oauth2": ["read:widgets"]}``.
             all_of: Whether every entry in *schemes* is required together.
                 ``False`` (the default) means any one will do, which OpenAPI
                 writes as separate requirement objects; ``True`` means all of
@@ -223,30 +212,14 @@ class useAuth:
         )
         self.all_of: bool = all_of
 
-        # `scopes` was the old spelling of the same idea, matching a method
-        # label rather than a scheme name. Translating rather than ignoring it
-        # is the whole point: dropping it would turn a working gate into a
-        # silent 401 in production, which reads like a bad credential and not
-        # like an upgrade.
-        self.scopes: list[str] = list(scopes or [])
-        if self.scopes:
-            renamed = [LEGACY_SCOPE_ALIASES.get(scope, scope) for scope in self.scopes]
-            warnings.warn(
-                "useAuth(scopes=...) is deprecated; use schemes=. "
-                f"Rewrite scopes={self.scopes!r} as schemes={renamed!r}.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            for name in renamed:
-                self.schemes.setdefault(name, [])
-
     async def authenticate(self, request: Request) -> bool:
         """Run the authentication and authorisation gate before the route handler.
 
         This is the main entry point called by the framework before the route
         handler executes. It optionally runs custom backends, checks that the
-        user is authenticated, verifies auth scopes, and validates permissions.
-        The order of checks is: backends -> authentication -> scopes -> permissions.
+        user is authenticated, verifies the authentication scheme, and
+        validates permissions. The order of checks is: backends ->
+        authentication -> schemes -> permissions.
 
         Args:
             request: The incoming HTTP request object. The request scope is
@@ -260,7 +233,7 @@ class useAuth:
 
         Raises:
             AuthenticationFailed: If no authenticated user is found and
-                ``required`` is ``True``, or if scope checking fails.
+                ``required`` is ``True``, or if scheme checking fails.
             PermissionDenied: If the authenticated user does not possess
                 one or more of the required permissions.
         """
@@ -273,8 +246,6 @@ class useAuth:
                 raise AuthenticationFailed
             return True
 
-        # `scopes` was folded into `schemes` at construction, so there is one
-        # check rather than two that could disagree.
         if self.schemes:
             self._check_schemes(request)
 
@@ -351,7 +322,7 @@ class useAuth:
             AuthenticationFailed: If the scheme that authenticated is not one
                 this gate accepts.
         """
-        accepted = accepted_identifiers([*self.schemes, *self.scopes])
+        accepted = accepted_identifiers([*self.schemes])
         if request_identifiers(request).isdisjoint(accepted):
             raise AuthenticationFailed
 

@@ -152,7 +152,7 @@ class AuthenticationMiddleware(BaseMiddleware):
                     request.scope["auth"] = auth_result.scope
                     # Which *scheme* answered, alongside which *method*. A
                     # route gated on schemes matches this; `auth` keeps its
-                    # existing meaning so `useAuth(scopes=...)` is untouched.
+                    # existing meaning for gates written against it.
                     request.scope["auth_scheme"] = backend.name
                     break
 
