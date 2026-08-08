@@ -1,159 +1,141 @@
+from collections.abc import Iterator
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Iterable, Optional
+from typing import Any
 
 
 class Session:
-    """Session
+    """The per-request session, reached as ``request.session``.
 
-    Returns:
-        [description]
+    Behaves like a dictionary. Reads and writes go to an in-memory copy of the
+    session data; the backend is only touched by :meth:`load`, which the
+    middleware calls before the handler runs, and :meth:`save`, which it calls
+    afterwards.
 
-    Raises:
-        [description]
+    Three flags drive that: ``accessed`` records that something looked at the
+    session, ``modified`` that something changed it, and ``deleted`` that
+    something removed a key. The middleware reads them to decide whether to
+    write a cookie at all, so a request that never touches the session costs
+    nothing beyond loading it.
+
+    Example:
+        ```python
+        @app.get("/")
+        async def index(request, response):
+            count = request.session.get("count", 0) + 1
+            request.session["count"] = count
+            return response.text(f"seen you {count} times")
+        ```
     """
 
-    def __init__(self, interface, session_key: Optional[str] = None) -> None:
-        """Init
+    def __init__(self, interface, session_key: str | None = None) -> None:
+        """Bind a session to the backend that will load and store it.
 
         Args:
-            interface: [description]
-            session_key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+            interface: The session backend — a
+                :class:`~sillo.session.base.BaseSessionInterface` — that knows
+                how to read and write this session's data.
+            session_key: The key from the request's cookie, or ``None`` for a
+                visitor who does not have one yet.
         """
         self.interface = interface
         self.session_key = session_key
-        self._session_cache: Dict[str, Any] = {}
+        self._session_cache: dict[str, Any] = {}
 
         self.modified = False
         self.accessed = False
         self.deleted = False
 
-        self._expiration_time: Optional[datetime] = None
+        self._expiration_time: datetime | None = None
 
     def __getitem__(self, key: str) -> Any:
-        """Getitem
+        """Return a value, raising if it is not there.
 
         Args:
-            key: [description]
+            key: The key to look up.
 
         Returns:
-            [description]
+            The stored value.
 
         Raises:
-            [description]
+            KeyError: If the key is not in the session. Use :meth:`get` for a
+                default instead.
         """
         self.accessed = True
         return self._session_cache[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
-        """Setitem
+        """Store a value, marking the session for saving.
 
         Args:
-            key: [description]
-            value: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+            key: The key to store under.
+            value: The value to store. It has to survive the backend's
+                serialization — JSON for the signed-cookie backend, so plain
+                data rather than arbitrary objects.
         """
         self.modified = True
         self.accessed = True
         self._session_cache[key] = value
 
     def __delitem__(self, key: str) -> None:
-        """Delitem
+        """Remove a key, marking the session for saving.
 
         Args:
-            key: [description]
-
-        Returns:
-            [description]
+            key: The key to remove.
 
         Raises:
-            [description]
+            KeyError: If the key is not in the session. Use :meth:`delete` to
+                remove a key that may be absent.
         """
         self.modified = True
         self.deleted = True
         del self._session_cache[key]
 
     def __contains__(self, key: str) -> bool:
-        """Contains
+        """Report whether a key is in the session.
 
         Args:
-            key: [description]
+            key: The key to test.
 
         Returns:
-            [description]
-
-        Raises:
-            [description]
+            ``True`` if present.
         """
         self.accessed = True
         return key in self._session_cache
 
     def __len__(self) -> int:
-        """Len
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Return how many keys the session holds."""
         self.accessed = True
         return len(self._session_cache)
 
     def get(self, key: str, default: Any = None) -> Any:
-        """Get
+        """Return a value, or a default when it is absent.
 
         Args:
-            key: [description]
-            default: [description]
+            key: The key to look up.
+            default: What to return when the key is not there.
 
         Returns:
-            [description]
-
-        Raises:
-            [description]
+            The stored value, or ``default``.
         """
         self.accessed = True
         return self._session_cache.get(key, default)
 
     def set(self, key: str, value: Any) -> None:
-        """Set
+        """Store a value. The method form of ``session[key] = value``.
 
         Args:
-            key: [description]
-            value: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+            key: The key to store under.
+            value: The value to store.
         """
         self.modified = True
         self.accessed = True
         self._session_cache[key] = value
 
     def delete(self, key: str) -> None:
-        """Delete
+        """Remove a key if it is present, without raising when it is not.
 
         Args:
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+            key: The key to remove.
         """
         self.modified = True
         self.deleted = True
@@ -161,13 +143,11 @@ class Session:
             del self._session_cache[key]
 
     def clear(self) -> None:
-        """Clear
+        """Remove everything from the session.
 
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+        This is what logging out should call: the middleware sees an empty,
+        modified session, hands it to the backend so a server-side store can
+        purge its record, and drops the cookie.
         """
         self.accessed = True
         self.modified = True
@@ -175,102 +155,74 @@ class Session:
         self._session_cache.clear()
 
     def keys(self):
-        """Keys
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Return a view of the session's keys."""
         self.accessed = True
         return self._session_cache.keys()
 
     def values(self):
-        """Values
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Return a view of the session's values."""
         self.accessed = True
         return self._session_cache.values()
 
     def items(self):
-        """Items
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Return a view of the session's key/value pairs."""
         self.accessed = True
         return self._session_cache.items()
 
     def is_empty(self) -> bool:
-        """Is Empty
+        """Report whether the session holds nothing.
 
         Returns:
-            [description]
-
-        Raises:
-            [description]
+            ``True`` when there are no keys.
         """
         return len(self._session_cache) == 0
 
-    def update(self, other: Dict[str, Any]):
-        """Update
+    def update(self, other: dict[str, Any]):
+        """Merge a dictionary into the session.
 
         Args:
-            other: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+            other: Keys and values to write. Existing keys are overwritten.
         """
         self.modified = True
         self._session_cache.update(other)
 
     def get_session_key(self) -> str:
-        """Get Session Key
+        """Return this session's key, generating one if it has none.
 
         Returns:
-            [description]
-
-        Raises:
-            [description]
+            The key from the request's cookie, or a freshly generated key for
+            a visitor arriving without one.
         """
         if self.session_key:
             return self.session_key
         return self.interface.generate_session_key()
 
     def set_expiration_time(self, expiration: datetime) -> None:
-        """Set Expiration Time
+        """Override when this session expires.
 
         Args:
-            expiration: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+            expiration: An aware ``datetime`` at which the cookie should
+                expire, overriding whatever the configuration would give it.
         """
         self._expiration_time = expiration
 
     def get_expiration_time(self) -> datetime:
-        """Get Expiration Time
+        """Return when this session expires.
+
+        Uses an explicit :meth:`set_expiration_time` if one was given.
+        Otherwise it comes from the configuration: a non-permanent session
+        expires ``session_expiration_time`` seconds from now, and a permanent
+        one does not expire. Without a reachable configuration it falls back
+        to seven days.
 
         Returns:
-            [description]
-
-        Raises:
-            [description]
+            The expiry. A session that does not expire gets ``datetime.max``,
+            made timezone-aware: every other branch here returns an aware
+            datetime, and :meth:`has_expired` compares the result against an
+            aware ``now``. A naive ``datetime.max`` made that comparison raise
+            ``TypeError: can't compare offset-naive and offset-aware
+            datetimes``, so asking a permanent session whether it had expired
+            crashed instead of answering.
         """
         if self._expiration_time:
             return self._expiration_time
@@ -294,31 +246,24 @@ class Session:
             )
             return self._expiration_time
 
-        return datetime.max
+        return datetime.max.replace(tzinfo=timezone.utc)
 
     def has_expired(self) -> bool:
-        """Has Expired
+        """Report whether this session's expiry has passed.
 
         Returns:
-            [description]
-
-        Raises:
-            [description]
+            ``True`` when the expiry is in the past.
         """
         expiration_time = self.get_expiration_time()
-        if expiration_time and datetime.now(timezone.utc) > expiration_time:
-            return True
-        return False
+        return bool(expiration_time and datetime.now(timezone.utc) > expiration_time)
 
     @property
     def should_set_cookie(self) -> bool:
-        """Should Set Cookie
+        """Whether the response should carry a session cookie.
 
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+        Always true when the session changed. Also true on every response when
+        the session is permanent and ``session_refresh_each_request`` is set,
+        which is what slides the expiry forward for an active visitor.
         """
         config = getattr(self.interface, "config", None)
 
@@ -333,24 +278,24 @@ class Session:
         )
 
     async def load(self) -> None:
-        """Load
+        """Populate this session from the backend.
 
-        Returns:
-            [description]
-
-        Raises:
-            [description]
+        Called by the middleware before the handler runs. A key that is
+        unknown, expired or tampered with leaves the session empty rather
+        than raising.
         """
         return await self.interface.load(self)
 
     async def save(self) -> str:
-        """Save
+        """Write this session to the backend and return its cookie value.
+
+        Clears ``modified``, ``deleted`` and ``accessed``, so a session saved
+        twice in one request does not write twice.
 
         Returns:
-            [description]
-
-        Raises:
-            [description]
+            The value to put in the session cookie — the session key for a
+            server-side store, or the whole signed payload for the
+            signed-cookie backend.
         """
         self.modified = False
         self.deleted = False
@@ -358,35 +303,14 @@ class Session:
         return await self.interface.save(self)
 
     def __str__(self) -> str:
-        """Str
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Return the session's contents, for logging and debugging."""
         return f"<Session {self._session_cache}>"
 
-    def __iter__(self) -> Iterable[str]:
-        """Iter
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def __iter__(self) -> Iterator[str]:
+        """Iterate over the session's keys."""
         self.accessed = True
         return iter(self._session_cache)
 
     def __repr__(self) -> str:
-        """Repr
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Return the session's key and contents, for logging and debugging."""
         return f"<Session {self.session_key} {self._session_cache}>"

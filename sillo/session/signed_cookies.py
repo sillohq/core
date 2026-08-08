@@ -1,32 +1,15 @@
 import typing
+
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 
 from .base import BaseSessionInterface
 
 
 class SignedSessionManager(BaseSessionInterface):
-    """Signedsessionmanager
+    """Signedsessionmanager"""
 
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
-
-    def __init__(self, config=None, secret_key: typing.Optional[str] = None):
-        """Init
-
-        Args:
-            config: [description]
-            secret_key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def __init__(self, config=None, secret_key: str | None = None):
+        """Init"""
         super().__init__(config)
 
         if not secret_key:
@@ -37,32 +20,12 @@ class SignedSessionManager(BaseSessionInterface):
             salt="nexio.session.signed_cookie",
         )
 
-    def sign_session_data(self, session_data: typing.Dict[str, typing.Any]) -> str:
-        """Sign Session Data
-
-        Args:
-            session_data: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def sign_session_data(self, session_data: dict[str, typing.Any]) -> str:
+        """Sign Session Data"""
         return self.serializer.dumps(session_data)
 
-    def verify_session_data(self, token: str | None) -> typing.Dict[str, typing.Any]:
-        """Verify Session Data
-
-        Args:
-            token: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def verify_session_data(self, token: str | None) -> dict[str, typing.Any]:
+        """Verify Session Data"""
         if not token:
             return {}
 
@@ -72,17 +35,7 @@ class SignedSessionManager(BaseSessionInterface):
             return {}
 
     async def load(self, session):
-        """Load
-
-        Args:
-            session: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Load"""
         token = session.session_key
 
         data = self.verify_session_data(token)
@@ -93,17 +46,7 @@ class SignedSessionManager(BaseSessionInterface):
             session._session_cache.clear()
 
     async def save(self, session):
-        """Save
-
-        Args:
-            session: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Save"""
         if session.deleted:
             session.session_key = ""
             return ""

@@ -26,19 +26,28 @@ from sillo.session.middleware import SessionMiddleware
 
 app = silloApp()
 
-# Add the session middleware with secret_key passed directly
 app.use(
     SessionMiddleware(
         secret_key="your-secure-secret-key",
         session_cookie_name="sillo_session",
-        cookie_path="/",
-        cookie_domain=None,
-        cookie_secure=True,
-        cookie_httponly=True,
-        cookie_samesite="lax",
-        session_expiration_time=86400  # 24 hours
+        session_cookie_path="/",
+        session_cookie_domain=None,
+        session_cookie_secure=True,
+        session_cookie_httponly=True,
+        session_cookie_samesite="lax",
+        session_expiration_time=86400,  # 24 hours
     )
 )
+```
+
+Every setting is prefixed `session_`. A name that is not one raises a
+`TypeError` naming the closest real setting, rather than being accepted and
+ignored:
+
+```python
+SessionMiddleware(secret_key=..., cookie_secure=False)
+# TypeError: SessionMiddleware() got a setting it does not understand:
+#   'cookie_secure' — did you mean 'session_cookie_secure'?
 ```
 
 With this minimal setup, sillo will use the default cookie-based session backend. Your routes can now access the session through the request object:
@@ -56,7 +65,9 @@ async def index(request, response):
 
 ##  Session Configuration Options
 
-sillo offers various configuration options for customizing session behavior:
+For anything more than a handful of settings, or to share one configuration
+between applications, build a `SessionConfig` and pass it as `config`:
+
 ```python title="Recommended Approach"
 from sillo import silloApp
 from sillo.session import SessionConfig
@@ -67,33 +78,59 @@ app = silloApp()
 
 session_config = SessionConfig(
     session_cookie_name="sillo_session",
-    cookie_path="/",
-    cookie_domain=None,
-    cookie_secure=True,
-    cookie_httponly=True,
-    cookie_samesite="lax",
+    session_cookie_path="/",
+    session_cookie_domain=None,
+    session_cookie_secure=True,
+    session_cookie_httponly=True,
+    session_cookie_samesite="lax",
     session_expiration_time=86400,  # 24 hours
-    manager=FileSessionManager,
     session_file_storage_path="sessions",
-    session_file_name="session_"
 )
 
-app.use(SessionMiddleware(config=session_config, secret_key="secret-key"))
-
+app.use(
+    SessionMiddleware(
+        config=session_config,
+        manager=FileSessionManager(session_config),
+        secret_key="secret-key",
+    )
+)
 ```
+
+`manager` takes an instance, not the class — the backend needs the same
+configuration to know where to write.
+
+`config` and individual settings cannot be combined. Passing both raises,
+because one of the two would otherwise have to win silently.
 
 ##  Configuration Options Reference
 
-| Option                | Description                                           | Default                |
-| --------------------- | ----------------------------------------------------- | ---------------------- |
-| `session_cookie_name` | Name of the cookie storing the session ID             | `"session_id"`         |
-| `cookie_path`         | Path for which the cookie is valid                    | `"/"`                  |
-| `cookie_domain`       | Domain for which the cookie is valid                  | `None`                 |
-| `cookie_secure`       | Whether cookie should only be sent over HTTPS         | `False`                |
-| `cookie_httponly`     | Whether cookie should be accessible via JavaScript    | `True`                 |
-| `cookie_samesite`     | SameSite attribute (`"lax"`, `"strict"`, or `"none"`) | `"lax"`                |
-| `expiry`              | Session lifetime in seconds                           | `86400` (24 hours)     |
-| `manager`             | Session backend class                                 | `SignedSessionManager` |
+| Option                          | Description                                            | Default                |
+| ------------------------------- | ------------------------------------------------------ | ---------------------- |
+| `session_cookie_name`           | Name of the cookie storing the session ID              | `"session_id"`         |
+| `session_cookie_path`           | Path for which the cookie is valid                     | `"/"`                  |
+| `session_cookie_domain`         | Domain for which the cookie is valid                   | `None`                 |
+| `session_cookie_secure`         | Send the cookie over HTTPS only                        | `True`                 |
+| `session_cookie_httponly`       | Keep the cookie out of reach of JavaScript             | `True`                 |
+| `session_cookie_samesite`       | SameSite attribute (`"lax"`, `"strict"`, or `"none"`)  | `"lax"`                |
+| `session_expiration_time`       | Session lifetime in seconds                            | `86400` (24 hours)     |
+| `session_permanent`             | Whether the cookie carries an expiry at all            | `True`                 |
+| `session_refresh_each_request`  | Re-send the cookie on every response, sliding expiry   | `True`                 |
+| `session_file_storage_path`     | Directory the file backend writes to                   | `None`                 |
+| `manager`                       | A session backend instance                             | `SignedSessionManager` |
+
+<aside>
+
+**`session_cookie_secure` in local development.** It defaults to `True`, and a
+browser will not return a `Secure` cookie over plain `http://`. Serving over
+HTTP without turning it off means the cookie is set and never sent back, so
+every request starts a new empty session and nothing appears to work. Set it
+from your environment:
+
+```python
+session_cookie_secure=config.app_env != "local"
+```
+
+</aside>
 
 ##  Basic Session Operations
 
@@ -145,11 +182,8 @@ Sessions in sillo behave similar to dictionaries but with additional methods:
 By default, sessions expire after 24 hours (86400 seconds). You can customize this:
 
 ```python
-# Set global session expiration time using recommended approach
-session_config = SessionConfig(
-    session_expiration_time=3600  # 1 hour
-)
-app.use(SessionMiddleware(config=session_config))
+# Set global session expiration time
+app.use(SessionMiddleware(secret_key=secret_key, session_expiration_time=3600))  # 1 hour
 
 # Or set per-session expiration time
 @app.post("/login")
@@ -172,11 +206,8 @@ sillo supports multiple session backends to store session data. Each backend has
 The simplest session backend, storing the session data directly in a signed cookie:
 
 ```python
-# Using recommended approach for signed cookie sessions
-session_config = SessionConfig(
-    manager=SignedSessionManager
-)
-app.use(SessionMiddleware(config=session_config))
+# The default: nothing to configure beyond the key it signs with.
+app.use(SessionMiddleware(secret_key=secret_key))
 ```
 
 **Pros**:
@@ -196,13 +227,18 @@ app.use(SessionMiddleware(config=session_config))
 Stores session data in files on the server filesystem:
 
 ```python
-# Using recommended approach for file-based sessions
+from sillo.session.file import FileSessionManager
+
 session_config = SessionConfig(
-    manager=FileSessionInterface,
     session_file_storage_path="sessions",  # Directory to store session files
-    session_file_name="session_"           # Prefix for session files
 )
-app.use(SessionMiddleware(config=session_config))
+app.use(
+    SessionMiddleware(
+        config=session_config,
+        manager=FileSessionManager(session_config),
+        secret_key=secret_key,
+    )
+)
 ```
 
 **Pros**:
@@ -279,14 +315,18 @@ app.use(SessionMiddleware(secret_key=secret_key))
 ####  Enable Secure Cookies
 
 ```python
-# Using recommended approach for secure cookies
-session_config = SessionConfig(
-    cookie_secure=True,      # Only send cookies over HTTPS
-    cookie_httponly=True,    # Prevent JavaScript access
-    cookie_samesite="lax"    # Mitigate CSRF attacks
+app.use(
+    SessionMiddleware(
+        secret_key=secret_key,
+        session_cookie_secure=True,    # Only send cookies over HTTPS
+        session_cookie_httponly=True,  # Keep them away from JavaScript
+        session_cookie_samesite="lax",  # Mitigate CSRF
+    )
 )
-app.use(SessionMiddleware(config=session_config))
 ```
+
+All three are already the defaults. The one worth setting explicitly is
+`session_cookie_secure`, turned *off* for local development over HTTP.
 
 ####  Use Appropriate Session Expiration
 
