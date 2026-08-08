@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1a15] - 2026-08-08
+
 ### Fixed
 
 Everything under this heading was found by giving CI a Redis server. The Redis

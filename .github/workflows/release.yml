@@ -14,6 +14,23 @@ jobs:
       contents: read        # actions/checkout needs repo read access
       id-token: write       # for OIDC (trusted publishing)
 
+    # Without this the Redis tests skip themselves, and a release would be cut
+    # on a suite that never exercised the cache, queue or pub/sub backends.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      REDIS_URL: redis://localhost:6379/0
+      SILLO_TEST_REDIS_URL: redis://localhost:6379/15
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -38,11 +55,19 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      - name: Check directory structure
+      # PyPI takes the version from the package, not the tag. Without this a
+      # tag of sillo-core-v0.0.1a15 against a pyproject still saying a14
+      # publishes a14 and reports success, and the version it claims to have
+      # released is one that does not exist.
+      - name: The tag and the package must agree
         run: |
-          echo "Current directory: $(pwd)"
-          echo "Contents:"
-          ls -la
+          TAG_VERSION="${{ steps.version.outputs.version }}"
+          PKG_VERSION=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag says $TAG_VERSION, pyproject.toml says $PKG_VERSION."
+            exit 1
+          fi
+          echo "both say $PKG_VERSION"
 
       - name: Clean Old Builds
         run: |
