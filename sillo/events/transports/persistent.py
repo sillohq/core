@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .base import (
     BaseTransport,
@@ -121,7 +121,7 @@ class PersistentTransport(BaseTransport):
         self._kwargs = kwargs
         self._max_retries = max_retries
         self._client: Any = None
-        self._worker: Optional[asyncio.Task] = None
+        self._worker: asyncio.Task | None = None
 
     def _backlog_key(self) -> str:
         """Compute the Redis list key holding the unacknowledged backlog.
@@ -200,7 +200,7 @@ class PersistentTransport(BaseTransport):
         """
         try:
             return bool(await self._connect().ping())
-        except Exception:  # noqa: BLE001
+        except Exception:
             return False
 
     async def start(self) -> None:
@@ -226,17 +226,17 @@ class PersistentTransport(BaseTransport):
             self._worker.cancel()
             try:
                 await self._worker
-            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+            except (asyncio.CancelledError, Exception):
                 pass
             self._worker = None
         if self._client is not None:
             try:
                 await self._client.aclose()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
             self._client = None
 
-    async def publish(self, channel: str, envelope: Dict[str, Any]) -> None:
+    async def publish(self, channel: str, envelope: dict[str, Any]) -> None:
         """Append *envelope* to the backlog for later draining.
 
         Stores ``_channel`` (the original, namespaced channel) and ``_attempts``
@@ -257,14 +257,14 @@ class PersistentTransport(BaseTransport):
                 _, raw = result
                 try:
                     envelope = deserialize_envelope(raw)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     logger.warning("Dropped malformed persistent envelope")
                     continue
                 channel = envelope.pop("_channel", "")
                 attempts = envelope.get("_attempts", 0)
                 try:
                     await self._deliver(channel, envelope)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     attempts += 1
                     if attempts <= self._max_retries:
                         requeue = dict(envelope, _channel=channel, _attempts=attempts)
@@ -283,6 +283,6 @@ class PersistentTransport(BaseTransport):
                         )
             except asyncio.CancelledError:
                 break
-            except Exception as exc:  # noqa: BLE001 - reconnect on failure
+            except Exception as exc:
                 logger.warning("Persistent worker error, reconnecting: %s", exc)
                 await asyncio.sleep(RECONNECT_DELAY)

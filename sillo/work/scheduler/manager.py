@@ -9,14 +9,16 @@ a ticker loop, and integrates with the sillo application lifecycle via
 from __future__ import annotations
 
 import asyncio
+import builtins
 import logging
 import time
-from typing import Annotated, Any, Awaitable, Callable, Dict, List, Optional
+from collections.abc import Awaitable, Callable
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
-from .jobs import ScheduledJob, JobStatus
-from .triggers import CronTrigger, DateTrigger, IntervalTrigger
+from .jobs import JobStatus, ScheduledJob
+from .triggers import CronTrigger, IntervalTrigger
 
 logger = logging.getLogger("sillo.work.scheduler.manager")
 
@@ -25,14 +27,7 @@ class SchedulerStats:
     """Aggregated statistics for a scheduler instance."""
 
     def __init__(self):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.jobs_total = 0
         self.jobs_active = 0
         self.jobs_paused = 0
@@ -40,15 +35,8 @@ class SchedulerStats:
         self.errors_total = 0
         self.uptime_seconds = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
-        """To Dict
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_dict(self) -> dict[str, Any]:
+        """To Dict"""
         return {
             "jobs_total": self.jobs_total,
             "jobs_active": self.jobs_active,
@@ -76,17 +64,10 @@ class SchedulerManager:
     """
 
     def __init__(self):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._jobs: Dict[str, ScheduledJob] = {}
+        """Init"""
+        self._jobs: dict[str, ScheduledJob] = {}
         self._running = False
-        self._ticker: Optional[asyncio.Task] = None
+        self._ticker: asyncio.Task | None = None
         self._started_at: float = 0.0
 
     # ── registration ─────────────────────────────────────────────────────
@@ -96,7 +77,7 @@ class SchedulerManager:
         func: Annotated[Callable[..., Awaitable[Any]], Doc("Async callable.")],
         trigger: Annotated[Any, Doc("Trigger instance.")],
         *,
-        name: Annotated[Optional[str], Doc("Label.")] = None,
+        name: Annotated[str | None, Doc("Label.")] = None,
         **kwargs,
     ) -> ScheduledJob:
         """Register a new scheduled job and return it."""
@@ -110,22 +91,12 @@ class SchedulerManager:
         self,
         seconds: Annotated[float, Doc("Interval in seconds.")],
         *,
-        name: Annotated[Optional[str], Doc("Label.")] = None,
+        name: Annotated[str | None, Doc("Label.")] = None,
     ) -> Callable:
         """Decorator: run every *seconds*."""
 
         def decorator(func):
-            """Decorator
-
-            Args:
-                func: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Decorator"""
             return self.schedule(
                 func, IntervalTrigger(seconds), name=name or func.__name__
             )
@@ -136,22 +107,12 @@ class SchedulerManager:
         self,
         expression: Annotated[str, Doc("Cron expression.")],
         *,
-        name: Annotated[Optional[str], Doc("Label.")] = None,
+        name: Annotated[str | None, Doc("Label.")] = None,
     ) -> Callable:
         """Decorator: run on a cron schedule."""
 
         def decorator(func):
-            """Decorator
-
-            Args:
-                func: [description]
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Decorator"""
             return self.schedule(
                 func, CronTrigger(expression), name=name or func.__name__
             )
@@ -167,11 +128,11 @@ class SchedulerManager:
             j.cancel()
         return j is not None
 
-    def get(self, job_id: Annotated[str, Doc("Job ID.")]) -> Optional[ScheduledJob]:
+    def get(self, job_id: Annotated[str, Doc("Job ID.")]) -> ScheduledJob | None:
         """Look up a job by ID."""
         return self._jobs.get(job_id)
 
-    def list(self, status: Optional[JobStatus] = None) -> List[ScheduledJob]:
+    def list(self, status: JobStatus | None = None) -> builtins.list[ScheduledJob]:
         """List all jobs, optionally filtered by status."""
         if status is None:
             return list(self._jobs.values())
@@ -234,14 +195,7 @@ class SchedulerManager:
         logger.info("Scheduler stopped")
 
     async def _loop(self) -> None:
-        """Loop
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Loop"""
         while self._running:
             try:
                 now = time.time()
@@ -266,17 +220,7 @@ class SchedulerManager:
                 await asyncio.sleep(1)
 
     async def _execute(self, job: ScheduledJob) -> None:
-        """Execute
-
-        Args:
-            job: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Execute"""
         try:
             await job.run()
         except asyncio.CancelledError:

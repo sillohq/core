@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from enum import Enum
-from typing import Annotated, Any, Awaitable, Callable, Dict, Optional
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -50,20 +51,9 @@ class Supervisor:
         max_restarts: Annotated[int, Doc("Max total restarts before giving up.")] = 3,
         base_delay: Annotated[float, Doc("Initial backoff seconds.")] = 1.0,
         max_delay: Annotated[float, Doc("Max backoff seconds.")] = 60.0,
-        name: Annotated[Optional[str], Doc("Label for logging.")] = None,
+        name: Annotated[str | None, Doc("Label for logging.")] = None,
     ):
-        """Init
-
-        Args:
-            func: [description]
-            policy: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.func = func
         self.policy = policy
         self.max_restarts = max_restarts
@@ -71,7 +61,7 @@ class Supervisor:
         self.max_delay = max_delay
         self.name = name or func.__name__  # ty: ignore[unresolved-attribute]
         self._restarts = 0
-        self._current_task: Optional[BackgroundTask] = None
+        self._current_task: BackgroundTask | None = None
         self._running = False
         self._stopped = asyncio.Event()
 
@@ -122,19 +112,12 @@ class Supervisor:
         if self._current_task:
             self._current_task.cancel()
 
-    async def wait(self, timeout: Optional[float] = None) -> None:
+    async def wait(self, timeout: float | None = None) -> None:
         """Block until the supervisor stops."""
         await asyncio.wait_for(self._stopped.wait(), timeout=timeout)
 
     def _should_restart(self) -> bool:
-        """Should Restart
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Should Restart"""
         if self.policy == RestartPolicy.NEVER:
             return False
         if self.policy == RestartPolicy.ALWAYS:
@@ -143,15 +126,8 @@ class Supervisor:
             return self.max_restarts == 0 or self._restarts < self.max_restarts
         return False
 
-    def to_dict(self) -> Dict[str, Any]:
-        """To Dict
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def to_dict(self) -> dict[str, Any]:
+        """To Dict"""
         return {
             "name": self.name,
             "policy": self.policy.value,

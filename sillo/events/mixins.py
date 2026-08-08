@@ -1,5 +1,4 @@
 import json
-from typing import Type
 
 from .types import _T, EventProtocol
 
@@ -68,7 +67,7 @@ class EventSerializationMixin(EventProtocol):
         )
 
     @classmethod
-    def from_json(cls: Type[_T], json_str: str) -> _T:
+    def from_json(cls: type[_T], json_str: str) -> _T:
         """Deserialize an event instance from a JSON configuration string.
 
         Parses the JSON string produced by :meth:`to_json` and constructs a new

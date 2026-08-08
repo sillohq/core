@@ -21,15 +21,13 @@ Example:
 from __future__ import annotations
 
 import threading
-import typing
 from dataclasses import dataclass, field
-from typing import Any, Optional
 
 from .backends import MemoryCache
 from .base import BaseCache
 
 # Module-level default backend. ``None`` means "use an implicit MemoryCache".
-_DEFAULT: Optional[BaseCache] = None
+_DEFAULT: BaseCache | None = None
 _LOCK = threading.RLock()
 
 
@@ -146,18 +144,18 @@ class CacheSettings:
         No exceptions are raised during normal instantiation.
     """
 
-    ttl: Optional[int] = None
-    namespace: Optional[str] = None
-    version: Optional[str] = None
-    key_prefix: Optional[str] = None
+    ttl: int | None = None
+    namespace: str | None = None
+    version: str | None = None
+    key_prefix: str | None = None
     serializer: str = "json"
     tags: tuple = field(default_factory=tuple)
     sliding: bool = False
 
 
 __all__ = [
+    "CacheSettings",
     "configure_cache",
     "get_default_backend",
     "reset_cache_config",
-    "CacheSettings",
 ]

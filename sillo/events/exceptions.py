@@ -21,8 +21,6 @@ class EventError(Exception):
         ...     logger.error("Event subsystem failure: %s", exc)
     """
 
-    pass
-
 
 class ListenerAlreadyRegisteredError(EventError):
     """Raised when a listener is already registered for a given event channel.
@@ -47,8 +45,6 @@ class ListenerAlreadyRegisteredError(EventError):
             ...
         ListenerAlreadyRegisteredError: ...
     """
-
-    pass
 
 
 class MaxListenersExceededError(EventError):
@@ -77,8 +73,6 @@ class MaxListenersExceededError(EventError):
         MaxListenersExceededError: ...
     """
 
-    pass
-
 
 class EventCancelledError(EventError):
     """Raised when an event is cancelled before or during dispatch.
@@ -102,5 +96,3 @@ class EventCancelledError(EventError):
         ... except EventCancelledError:
         ...     logger.info("Shutdown event was cancelled by a listener")
     """
-
-    pass

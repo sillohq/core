@@ -17,31 +17,31 @@ from .types import (
     TaskResult,
     TaskStatus,
     TaskTimeout,
-    WorkerStats,
     WorkError,
+    WorkerStats,
 )
 
 __all__ = [
-    "TaskPriority",
-    "TaskStatus",
-    "TaskResult",
-    "TaskError",
-    "TaskTimeout",
-    "TaskCancelled",
-    "TaskRejected",
-    "MemoryBackend",
-    "RedisBackend",
-    "TimeoutMiddleware",
-    "RateLimitMiddleware",
-    "LoggingMiddleware",
     "CircuitBreakerOpen",
     "CircuitState",
-    "WorkerStats",
+    "LoggingMiddleware",
+    "MemoryBackend",
     "QueueFull",
     "QueueHealth",
     "QueueStats",
+    "RateLimitMiddleware",
+    "RedisBackend",
     "SchedulerStats",
+    "TaskCancelled",
+    "TaskError",
+    "TaskPriority",
+    "TaskRejected",
+    "TaskResult",
+    "TaskStatus",
+    "TaskTimeout",
+    "TimeoutMiddleware",
     "WorkError",
+    "WorkerStats",
     "task",
 ]
 
@@ -52,8 +52,8 @@ def setup_work(app, *, queue_backend=None, queue_name: str = "default") -> dict:
     if "work" in state:
         return state["work"]
     from .queue import SyncConnection
-    from .scheduler.manager import SchedulerManager
     from .queue.events import EventDispatcher
+    from .scheduler.manager import SchedulerManager
 
     conn = SyncConnection()
     s = SchedulerManager()
@@ -70,4 +70,4 @@ def setup_work(app, *, queue_backend=None, queue_name: str = "default") -> dict:
 # Queue and scheduler operations as plain functions, for a project's own
 # tooling to call. The `sillo` command, sillo-start and your scripts consume
 # these.
-from sillo.work import commands  # noqa: E402,F401
+from sillo.work import commands

@@ -8,6 +8,7 @@ Features:
 - Stats and monitoring
 """
 
+from .jobs import JobStatus, ScheduledJob
 from .manager import SchedulerManager, SchedulerStats, setup_scheduler
 from .triggers import (
     CompoundLogic,
@@ -17,18 +18,17 @@ from .triggers import (
     IntervalTrigger,
     TriggerType,
 )
-from .jobs import ScheduledJob, JobStatus
 
 __all__ = [
+    "CompoundLogic",
+    "CompoundTrigger",
+    "CronTrigger",
+    "DateTrigger",
+    "IntervalTrigger",
+    "JobStatus",
+    "ScheduledJob",
     "SchedulerManager",
     "SchedulerStats",
-    "setup_scheduler",
-    "CronTrigger",
-    "IntervalTrigger",
-    "DateTrigger",
-    "CompoundTrigger",
-    "CompoundLogic",
     "TriggerType",
-    "ScheduledJob",
-    "JobStatus",
+    "setup_scheduler",
 ]

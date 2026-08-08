@@ -1,8 +1,9 @@
 import asyncio
 import threading
 import warnings
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from .core import Event
 from .enums import EventPriority
@@ -32,7 +33,7 @@ class EventEmitter:
         backend: str = "memory",
         *,
         namespace: str = "",
-        transport: Optional[BaseTransport] = None,
+        transport: BaseTransport | None = None,
         on_error=None,
         loop=None,
         **transport_opts: Any,
@@ -60,7 +61,11 @@ class EventEmitter:
             ``await emitter.start()`` — typically wired to ``app.on_startup`` —
             before cross-instance delivery works.
         """
-        self._events: Dict[str, Event] = {}
+        self._events: dict[str, Event] = {}
+        #: Channels registered before a loop existed, subscribed by start().
+        self._pending_subscriptions: set[str] = set()
+        #: Live subscribe() tasks, held so they are not garbage collected.
+        self._subscription_tasks: set[asyncio.Task] = set()
         self._lock = threading.RLock()
         self._namespace_separator = ":"
         self._backend = backend
@@ -77,7 +82,7 @@ class EventEmitter:
         self._transport.bind(self._dispatch)
         self._transport.set_error_handler(on_error or self._default_error_handler)
 
-    async def _dispatch(self, channel: str, envelope: Dict[str, Any]) -> None:
+    async def _dispatch(self, channel: str, envelope: dict[str, Any]) -> None:
         """Dispatch a received or locally-triggered event to its in-process listeners.
 
         This method serves as the transport-bound callback that is bound during
@@ -158,6 +163,16 @@ class EventEmitter:
         """
         await self._transport.start()
 
+        # Listeners are usually registered at import time, before any loop
+        # exists, so this is where their subscriptions actually happen. Awaited
+        # rather than scheduled: a caller that starts and then immediately
+        # emits must already be subscribed, or the event goes nowhere.
+        subscribe = getattr(self._transport, "subscribe", None)
+        if subscribe is not None:
+            for name in sorted(self._pending_subscriptions | set(self._events)):
+                await subscribe(name)
+            self._pending_subscriptions.clear()
+
     async def stop(self) -> None:
         """Stop the underlying transport and release all associated resources.
 
@@ -223,12 +238,25 @@ class EventEmitter:
             before ``start()`` does not fail.
         """
         subscribe = getattr(self._transport, "subscribe", None)
-        if subscribe is not None:
-            try:
-                subscribe(event_name)
-            except RuntimeError:
-                # Loop not running yet — start() will subscribe on first emit.
-                pass
+        if subscribe is None:
+            return
+
+        # subscribe() is a coroutine function. Calling it bare built a coroutine
+        # and dropped it — "coroutine was never awaited" — so registering a
+        # listener never actually subscribed to anything, and the deferral this
+        # used to claim never happened either because nothing recorded the name
+        # and start() never looked. The Redis backend therefore received no
+        # cross-instance events at all.
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No loop yet. start() subscribes everything registered by then.
+            self._pending_subscriptions.add(event_name)
+            return
+
+        task = loop.create_task(subscribe(event_name))
+        self._subscription_tasks.add(task)
+        task.add_done_callback(self._subscription_tasks.discard)
 
     def __contains__(self, event_name: str) -> bool:
         """Check whether an event with the given name is registered in this emitter.
@@ -351,7 +379,7 @@ class EventEmitter:
         with self._lock:
             self._events.clear()
 
-    def event_names(self) -> List[str]:
+    def event_names(self) -> list[str]:
         """Get list of all event names"""
         return list(self._events.keys())
 
@@ -359,7 +387,7 @@ class EventEmitter:
         """Check if an event exists"""
         return event_name in self._events
 
-    def emit(self, event_name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def emit(self, event_name: str, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """
         Publish an event by name.
 
@@ -386,7 +414,7 @@ class EventEmitter:
 
     async def emit_async(
         self, event_name: str, *args: Any, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Async publish, valid for every backend.
 
@@ -408,14 +436,14 @@ class EventEmitter:
         await self._transport.publish(event_name, envelope)
         return {"event_id": envelope["event_id"], "backend": self._backend}
 
-    def emit_sync(self, event_name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def emit_sync(self, event_name: str, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Alias for :meth:`emit` (memory backend, synchronous)."""
         return self.emit(event_name, *args, **kwargs)
 
     def on(
         self,
         event_name: str,
-        func: Optional[Callable[..., Any]] = None,
+        func: Callable[..., Any] | None = None,
         *,
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
@@ -445,7 +473,7 @@ class EventEmitter:
     def once(
         self,
         event_name: str,
-        func: Optional[Callable[..., Any]] = None,
+        func: Callable[..., Any] | None = None,
         *,
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
@@ -482,7 +510,7 @@ class EventEmitter:
         """
         self.event(event_name).remove_listener(listener)
 
-    def remove_all_listeners(self, event_name: Optional[str] = None):
+    def remove_all_listeners(self, event_name: str | None = None):
         """
         Remove all listeners from an event or all events.
 
@@ -559,7 +587,7 @@ class EventNamespace:
     def on(
         self,
         event_name: str,
-        func: Optional[Callable[..., Any]] = None,
+        func: Callable[..., Any] | None = None,
         *,
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
@@ -579,7 +607,7 @@ class EventNamespace:
     def once(
         self,
         event_name: str,
-        func: Optional[Callable[..., Any]] = None,
+        func: Callable[..., Any] | None = None,
         *,
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
@@ -610,7 +638,7 @@ class AsyncEventEmitter(EventEmitter):
         redundant.  Use :class:`EventEmitter` instead.
     """
 
-    def __init__(self, max_workers: Optional[int] = None):
+    def __init__(self, max_workers: int | None = None):
         warnings.warn(
             "AsyncEventEmitter is deprecated and will be removed in a future version. "
             "Use EventEmitter instead, which supports async listeners natively.",
@@ -622,7 +650,7 @@ class AsyncEventEmitter(EventEmitter):
 
     async def emit_async(
         self, event_name: str, *args: Any, **kwargs: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Asynchronously trigger an event by name.
 

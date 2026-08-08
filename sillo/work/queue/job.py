@@ -14,22 +14,14 @@ a queue.  Jobs support:
 from __future__ import annotations
 
 import asyncio
-import inspect
 import json
 import logging
 import time
-import traceback
+from collections.abc import Awaitable
 from typing import (
     Annotated,
     Any,
-    Awaitable,
-    Callable,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
-    TypeVar,
 )
 
 from typing_extensions import Doc
@@ -71,7 +63,7 @@ def _run_blocking(coro: Awaitable[Any], called: str, instead: str) -> Any:
 class Dispatchable:
     """Mixin that adds ``.dispatch()`` / ``.dispatch_after()`` to any Job class."""
 
-    _connection: ClassVar[Optional[Any]] = None
+    _connection: ClassVar[Any | None] = None
     _queue_name: ClassVar[str] = "default"
 
     @classmethod
@@ -131,7 +123,7 @@ class Dispatchable:
         return _run_blocking(
             cls.dispatch_after(delay, *args, **kwargs),
             f"{cls.__name__}.dispatch_blocking()",
-            "await {}.dispatch(...)".format(cls.__name__),
+            f"await {cls.__name__}.dispatch(...)",
         )
 
     @classmethod
@@ -163,9 +155,7 @@ class Dispatchable:
         )
 
     @classmethod
-    def on_queue(
-        cls, queue: Annotated[str, Doc("Queue name.")]
-    ) -> Type["Dispatchable"]:
+    def on_queue(cls, queue: Annotated[str, Doc("Queue name.")]) -> type[Dispatchable]:
         """Set the queue name for this job class."""
         cls._queue_name = queue
         return cls
@@ -173,7 +163,7 @@ class Dispatchable:
     @classmethod
     def on_connection(
         cls, connection: Annotated[Any, Doc("QueueConnection instance.")]
-    ) -> Type["Dispatchable"]:
+    ) -> type[Dispatchable]:
         """Set the connection for this job class."""
         cls._connection = connection
         return cls
@@ -191,7 +181,7 @@ class Dispatchable:
         return _run_blocking(
             cls.perform_now(*args, **kwargs),
             f"{cls.__name__}.dispatch_sync()",
-            "await {}.perform_now(...)".format(cls.__name__),
+            f"await {cls.__name__}.perform_now(...)",
         )
 
     @classmethod
@@ -231,21 +221,14 @@ class Job(Dispatchable):
     queue: ClassVar[str] = "default"
     connection_name: ClassVar[str] = "default"
     tries: ClassVar[int] = 1
-    timeout: ClassVar[Optional[float]] = 30.0
+    timeout: ClassVar[float | None] = 30.0
     backoff: ClassVar[int] = 0
     delete_when_completed: ClassVar[bool] = True
-    middleware: ClassVar[List[Any]] = []
+    middleware: ClassVar[list[Any]] = []
 
     def __init__(self, *args: Any, **kwargs: Any):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._job_id: Optional[str] = None
+        """Init"""
+        self._job_id: str | None = None
         self._attempts: int = 0
         self._started_at: float = 0.0
 
@@ -255,9 +238,8 @@ class Job(Dispatchable):
 
     async def failed(self, exception: Exception) -> None:
         """Called when the job has permanently failed. Override for custom handling."""
-        pass
 
-    def middleware_pipeline(self) -> List[Any]:
+    def middleware_pipeline(self) -> list[Any]:
         """Return the middleware stack for this job."""
         return list(self.__class__.middleware)
 
@@ -267,14 +249,7 @@ class Job(Dispatchable):
         pipeline = self.middleware_pipeline()
 
         async def call_handle():
-            """Call Handle
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Call Handle"""
             if self.timeout:
                 return await asyncio.wait_for(self.handle(), timeout=self.timeout)
             return await self.handle()
@@ -286,47 +261,19 @@ class Job(Dispatchable):
         return await handler()
 
     def max_tries(self) -> int:
-        """Max Tries
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Max Tries"""
         return self.__class__.tries
 
     def retry_after(self) -> int:
-        """Retry After
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Retry After"""
         return self.__class__.backoff
 
     def display_name(self) -> str:
-        """Display Name
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Display Name"""
         return self.__class__.__name__
 
-    def payload(self) -> Dict[str, Any]:
-        """Payload
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def payload(self) -> dict[str, Any]:
+        """Payload"""
         return {
             "job": self.__class__.job_reference(),
             "maxTries": self.max_tries(),
@@ -335,7 +282,7 @@ class Job(Dispatchable):
         }
 
 
-async def dispatch(job_class: Type[Job], *args: Any, **kwargs: Any) -> str:
+async def dispatch(job_class: type[Job], *args: Any, **kwargs: Any) -> str:
     """Convenience function to dispatch any Job subclass.
 
     Must be awaited, like :meth:`Job.dispatch` itself::

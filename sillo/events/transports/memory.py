@@ -8,7 +8,7 @@ round-trip beyond the envelope bookkeeping.  This is the backend selected when
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from .base import BaseTransport
 
@@ -43,7 +43,7 @@ class MemoryTransport(BaseTransport):
 
     name = "memory"
 
-    async def publish(self, channel: str, envelope: Dict[str, Any]) -> None:
+    async def publish(self, channel: str, envelope: dict[str, Any]) -> None:
         """Deliver an envelope to local listeners immediately and in-process.
 
         Because the memory transport has no remote hop, this method simply

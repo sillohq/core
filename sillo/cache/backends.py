@@ -15,15 +15,14 @@ from __future__ import annotations
 
 import collections
 import time
-import typing
-from typing import Any, Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from .base import (
+    _MISSING,
     BaseCache,
     CacheError,
     CacheStats,
-    SerializationError,
-    _MISSING,
     deserialize,
     serialize,
     tag_key,
@@ -33,9 +32,6 @@ try:
     import redis.asyncio as aioredis  # type: ignore[import-untyped]
 except ImportError:
     aioredis = None  # ty: ignore[invalid-assignment]
-
-if typing.TYPE_CHECKING:
-    pass
 
 
 class MemoryCache(BaseCache):
@@ -69,11 +65,11 @@ class MemoryCache(BaseCache):
     def __init__(
         self,
         *,
-        namespace: Optional[str] = None,
-        default_ttl: Optional[int] = None,
+        namespace: str | None = None,
+        default_ttl: int | None = None,
         serializer: str = "json",
-        max_size: Optional[int] = None,
-        stats: Optional[CacheStats] = None,
+        max_size: int | None = None,
+        stats: CacheStats | None = None,
     ) -> None:
         """Initialize the in-memory cache backend with storage configuration.
 
@@ -103,8 +99,12 @@ class MemoryCache(BaseCache):
         )
         self.max_size = max_size
         # OrderedDict doubles as the LRU: most-recently-used at the end.
-        self._store: collections.OrderedDict[str, "_Entry"] = collections.OrderedDict()  # ty: ignore[unresolved-reference]
-        self._tags: Dict[str, set] = {}
+        # Quoted: _Entry is a nested class defined below this method, so the
+        # annotation cannot be evaluated at runtime.
+        self._store: collections.OrderedDict[str, MemoryCache._Entry] = (
+            collections.OrderedDict()
+        )
+        self._tags: dict[str, set] = {}
 
     # ---- internal entry type ---------------------------------------
 
@@ -124,12 +124,12 @@ class MemoryCache(BaseCache):
             ttl: The TTL in seconds that was configured for this entry.
         """
 
-        __slots__ = ("payload", "expire_at", "sliding", "ttl")
+        __slots__ = ("expire_at", "payload", "sliding", "ttl")
 
         def __init__(
             self,
             payload: bytes,
-            ttl: Optional[int],
+            ttl: int | None,
             sliding: bool,
             now: float,
         ) -> None:
@@ -169,7 +169,7 @@ class MemoryCache(BaseCache):
             """
             return self.expire_at is not None and now >= self.expire_at
 
-        def touch(self, ttl: Optional[int], now: float) -> None:
+        def touch(self, ttl: int | None, now: float) -> None:
             """Refresh the entry's expiration time with a new TTL.
 
             Updates the entry's TTL if a new value is provided, then
@@ -232,9 +232,9 @@ class MemoryCache(BaseCache):
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         *,
-        tags: Optional[Iterable[str]] = None,
+        tags: Iterable[str] | None = None,
         sliding: bool = False,
     ) -> None:
         """Store a value in the in-memory cache under the given key.
@@ -327,7 +327,7 @@ class MemoryCache(BaseCache):
             self._store.move_to_end(key)
             return True
 
-    async def touch(self, key: str, ttl: Optional[int] = None) -> bool:
+    async def touch(self, key: str, ttl: int | None = None) -> bool:
         """Refresh the TTL of an entry in the in-memory store.
 
         Extends the lifetime of a cached key by recomputing its expiration
@@ -506,16 +506,16 @@ class RedisCache(BaseCache):
     def __init__(
         self,
         *,
-        url: Optional[str] = None,
+        url: str | None = None,
         host: str = "localhost",
         port: int = 6379,
         db: int = 0,
-        password: Optional[str] = None,
-        namespace: Optional[str] = None,
-        default_ttl: Optional[int] = None,
+        password: str | None = None,
+        namespace: str | None = None,
+        default_ttl: int | None = None,
         serializer: str = "json",
         client: Any = None,
-        stats: Optional[CacheStats] = None,
+        stats: CacheStats | None = None,
     ) -> None:
         """Initialize the Redis cache backend with connection parameters.
 
@@ -625,16 +625,20 @@ class RedisCache(BaseCache):
         value = deserialize(raw)
         now = time.monotonic()
 
-        # Handle sliding TTL
-        if not isinstance(value, dict):
-            # Simple value
-            await self.touch(key, None, now)
-        else:
-            # Check if it's a sliding TTL stored value
-            if value.get("_sliding", False) or (
-                not value.get("_expire_at") or value["_expire_at"] > now
-            ):
-                await self.touch(key, value.get("_ttl"), now)
+        # Only a value written with sliding=True has its lifetime refreshed on
+        # read, and only that value is wrapped.
+        #
+        # Refreshing unconditionally, as this used to, called touch(key, None)
+        # for every ordinary read — and a None ttl resolves to default_ttl, so
+        # reading a key written with an explicit `ttl=1` pushed its expiry out
+        # to the backend default. An entry given one second lived sixty, and
+        # nothing short-lived expired as asked as long as anything read it.
+        #
+        # Returning the wrapper was the other half: a sliding value came back
+        # as {"_value": ..., "_sliding": True, ...} instead of what was stored.
+        if isinstance(value, dict) and value.get("_sliding"):
+            await self.touch(key, value.get("_ttl"), now)
+            value = value.get("_value")
 
         self._stats.hits += 1
         return value
@@ -643,9 +647,9 @@ class RedisCache(BaseCache):
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         *,
-        tags: Optional[Iterable[str]] = None,
+        tags: Iterable[str] | None = None,
         sliding: bool = False,
     ) -> None:
         """Store a value in the Redis cache under the given key.
@@ -731,7 +735,7 @@ class RedisCache(BaseCache):
         return await redis.exists(key) > 0
 
     async def touch(
-        self, key: str, ttl: Optional[int] = None, now: Optional[float] = None
+        self, key: str, ttl: int | None = None, now: float | None = None
     ) -> bool:
         """Refresh the TTL of a key in the Redis cache store.
 
@@ -827,8 +831,11 @@ class RedisCache(BaseCache):
         """
         if self._owns_client and self._client:
             try:
-                await self._client.close()
-            except Exception:  # noqa: BLE001
+                # aclose() since redis 5.0.1; close() still works but warns on
+                # every shutdown.
+                closer = getattr(self._client, "aclose", None) or self._client.close
+                await closer()
+            except Exception:
                 pass
 
 

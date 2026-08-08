@@ -9,7 +9,7 @@ worker side.
 from __future__ import annotations
 
 import json
-from typing import Annotated, Any, Dict, Optional
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -20,26 +20,15 @@ class JobPayload:
     def __init__(
         self,
         job_class: Annotated[str, Doc("Fully qualified class name.")],
-        data: Annotated[Dict[str, Any], Doc("Job constructor kwargs.")],
+        data: Annotated[dict[str, Any], Doc("Job constructor kwargs.")],
         *,
         max_tries: Annotated[int, Doc("Max attempts.")] = 1,
-        timeout: Annotated[Optional[float], Doc("Per-job timeout in seconds.")] = None,
+        timeout: Annotated[float | None, Doc("Per-job timeout in seconds.")] = None,
         delay: Annotated[int, Doc("Seconds to delay.")] = 0,
         priority: Annotated[int, Doc("0=normal, higher=more urgent.")] = 0,
         queue: Annotated[str, Doc("Target queue name.")] = "default",
     ):
-        """Init
-
-        Args:
-            job_class: [description]
-            data: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.job_class = job_class
         self.data = data
         self.max_tries = max_tries
@@ -49,14 +38,7 @@ class JobPayload:
         self.queue = queue
 
     def to_json(self) -> str:
-        """To Json
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """To Json"""
         return json.dumps(self.__dict__, default=str)
 
 
@@ -69,11 +51,11 @@ class PayloadSerializer:
             str, Doc("Fully qualified job class name (e.g. 'mymodule.MyJob').")
         ],
         data: Annotated[
-            Dict[str, Any], Doc("Keyword arguments for the job constructor.")
+            dict[str, Any], Doc("Keyword arguments for the job constructor.")
         ],
         *,
         max_tries: Annotated[int, Doc("Maximum execution attempts.")] = 1,
-        timeout: Annotated[Optional[float], Doc("Per-job timeout.")] = None,
+        timeout: Annotated[float | None, Doc("Per-job timeout.")] = None,
         delay: Annotated[int, Doc("Delay in seconds.")] = 0,
         queue: Annotated[str, Doc("Queue name.")] = "default",
     ) -> str:
@@ -90,6 +72,6 @@ class PayloadSerializer:
 
     def deserialize(
         self, payload_str: Annotated[str, Doc("JSON string from the queue.")]
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Decode a queue payload back into a dict ready for job construction."""
         return json.loads(payload_str)

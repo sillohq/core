@@ -199,8 +199,13 @@ async def test_persistent_durable_delivery():
     async def handler(payload):
         got.append(payload)
 
-    await publisher.start()  # publisher pushes to backlog
-    await worker.start()     # worker drains
+    # The publisher is deliberately not started. This backend is a durable
+    # work queue, not fan-out: every started emitter runs a drain loop and
+    # they compete on one backlog list, so a started publisher takes its own
+    # message off the queue and delivers it to its own (empty) listener set,
+    # where it is silently dropped. Publishing needs no start() — the client
+    # connects lazily — so only consumers should be started.
+    await worker.start()  # worker drains
     await publisher.emit_async("job", {"id": 1})
     for _ in range(50):
         if got:

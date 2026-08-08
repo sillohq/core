@@ -13,7 +13,8 @@ import asyncio
 import inspect
 import logging
 import time
-from typing import Annotated, Any, Awaitable, Callable, Dict, List, Optional, Set
+from collections.abc import Awaitable, Callable
+from typing import Annotated, Any, ClassVar
 
 from typing_extensions import Doc
 
@@ -39,7 +40,7 @@ class BackgroundTask:
         bt = BackgroundTask.run(process_file, path, on_done=notify_user)
     """
 
-    _instances: Set["BackgroundTask"] = set()
+    _instances: ClassVar[set[BackgroundTask]] = set()
     _lock = asyncio.Lock()
 
     def __init__(
@@ -49,39 +50,29 @@ class BackgroundTask:
         ],
         *args: Annotated[Any, Doc("Positional arguments forwarded to *func*.")],
         name: Annotated[
-            Optional[str], Doc("Human-readable label. Defaults to func.__name__.")
+            str | None, Doc("Human-readable label. Defaults to func.__name__.")
         ] = None,
         on_done: Annotated[
-            Optional[Callable[[TaskResult], Awaitable[None]]],
+            Callable[[TaskResult], Awaitable[None]] | None,
             Doc("Callback on completion (success or failure)."),
         ] = None,
         on_success: Annotated[
-            Optional[Callable[[TaskResult], Awaitable[None]]],
+            Callable[[TaskResult], Awaitable[None]] | None,
             Doc("Callback on success only."),
         ] = None,
         on_failure: Annotated[
-            Optional[Callable[[TaskResult], Awaitable[None]]],
+            Callable[[TaskResult], Awaitable[None]] | None,
             Doc("Callback on failure only."),
         ] = None,
         timeout: Annotated[
-            Optional[float], Doc("Per-task execution timeout in seconds.")
+            float | None, Doc("Per-task execution timeout in seconds.")
         ] = None,
         metadata: Annotated[
-            Optional[Dict[str, Any]], Doc("Arbitrary metadata for observability.")
+            dict[str, Any] | None, Doc("Arbitrary metadata for observability.")
         ] = None,
         **kwargs: Annotated[Any, Doc("Keyword arguments forwarded to *func*.")],
     ) -> None:
-        """Init
-
-        Args:
-            func: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self._task_obj = Task(
             func,
             *args,
@@ -103,7 +94,7 @@ class BackgroundTask:
     async def wait(
         self,
         timeout: Annotated[
-            Optional[float], Doc("Max seconds to wait. None = forever.")
+            float | None, Doc("Max seconds to wait. None = forever.")
         ] = None,
     ) -> Any:
         """Block until the task completes and return its result.
@@ -129,7 +120,7 @@ class BackgroundTask:
         return self._task_obj.status == TaskStatus.RUNNING
 
     @property
-    def result(self) -> Optional[TaskResult]:
+    def result(self) -> TaskResult | None:
         """The TaskResult if completed, else None."""
         return self._task_obj.result
 
@@ -148,7 +139,7 @@ class BackgroundTask:
         """Seconds since the task was launched."""
         return time.time() - self._started_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialise task metadata for monitoring."""
         return {
             "id": self.id,
@@ -166,7 +157,7 @@ class BackgroundTask:
         func: Annotated[Callable[..., Awaitable[Any]], Doc("Async callable.")],
         *args: Annotated[Any, Doc("Positional arguments.")],
         **kwargs: Annotated[Any, Doc("Keyword arguments.")],
-    ) -> "BackgroundTask":
+    ) -> BackgroundTask:
         """Create and immediately start a background task.
 
         Must be called from within an async context (running event loop).
@@ -184,19 +175,12 @@ class BackgroundTask:
         func: Annotated[Callable[..., Any], Doc("Sync or async callable.")],
         *args: Annotated[Any, Doc("Positional arguments.")],
         **kwargs: Annotated[Any, Doc("Keyword arguments.")],
-    ) -> "BackgroundTask":
+    ) -> BackgroundTask:
         """Create a background task, auto-wrapping sync functions."""
         if not inspect.iscoroutinefunction(func):
 
             async def _wrapper(*a, **kw):
-                """Wrapper
-
-                Returns:
-                    [description]
-
-                Raises:
-                    [description]
-                """
+                """Wrapper"""
                 return func(*a, **kw)
 
             return cls(_wrapper, *args, **kwargs)
@@ -209,7 +193,7 @@ class BackgroundTask:
         cancel_remaining: Annotated[
             bool, Doc("Cancel tasks that don't finish in time.")
         ] = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Wait for all tracked background tasks to complete.
 
         Returns a summary dict of completed/cancelled counts.
@@ -234,7 +218,7 @@ class BackgroundTask:
         }
 
     @classmethod
-    def count(cls) -> Dict[str, int]:
+    def count(cls) -> dict[str, int]:
         """Return counts of tracked tasks by status."""
         total = len(cls._instances)
         running = sum(1 for t in cls._instances if t.running)
@@ -247,12 +231,5 @@ class BackgroundTask:
         }
 
     def __repr__(self) -> str:
-        """Repr
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Repr"""
         return f"BackgroundTask({self.name}, done={self.done})"

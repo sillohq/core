@@ -26,10 +26,10 @@ from __future__ import annotations
 import asyncio
 import functools
 import inspect
-import typing
-from typing import Any, Callable, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
-from .base import BaseCache, _MISSING
+from .base import _MISSING, BaseCache
 from .config import CacheSettings, get_default_backend
 
 _ = asyncio  # keep import referenced for lint clarity
@@ -37,16 +37,16 @@ _ = asyncio  # keep import referenced for lint clarity
 
 def cache(
     *,
-    backend: Optional[BaseCache] = None,
-    ttl: Optional[int] = None,
-    namespace: Optional[str] = None,
-    version: Optional[str] = None,
-    key_prefix: Optional[str] = None,
-    tags: Optional[Tuple[str, ...]] = None,
+    backend: BaseCache | None = None,
+    ttl: int | None = None,
+    namespace: str | None = None,
+    version: str | None = None,
+    key_prefix: str | None = None,
+    tags: tuple[str, ...] | None = None,
     sliding: bool = False,
-    skip_cache_if: Optional[Callable[..., bool]] = None,
-    serializer: Optional[str] = None,
-    settings: Optional[CacheSettings] = None,
+    skip_cache_if: Callable[..., bool] | None = None,
+    serializer: str | None = None,
+    settings: CacheSettings | None = None,
 ) -> Callable[[Callable], Callable]:
     """Create a caching decorator for synchronous or asynchronous callables.
 
@@ -134,7 +134,7 @@ def cache(
         _params = list(inspect.signature(func).parameters.values())
         _has_self = bool(_params) and _params[0].name in ("self", "cls")
 
-        def build_key(args: Tuple, kwargs: Any) -> str:
+        def build_key(args: tuple, kwargs: Any) -> str:
             """Construct a deterministic cache key for the given call arguments.
 
             Combines the optional key prefix, the function's fully-qualified

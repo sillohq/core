@@ -10,11 +10,10 @@ brokers multiple backends, each identified by a name like ``"default"``,
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Annotated, Any, Dict, List, Optional, Set
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -46,7 +45,7 @@ class QueueConnection(ABC):
         queue_name: Annotated[str, Doc("Queue to pop from.")],
         *,
         timeout: Annotated[float, Doc("Seconds to block waiting for a job.")] = 0,
-    ) -> Optional[tuple[str, str]]:
+    ) -> tuple[str, str] | None:
         """Pop the next available job. Returns (job_id, payload) or None."""
         ...
 
@@ -57,7 +56,6 @@ class QueueConnection(ABC):
 
     async def clear(self, queue_name: Annotated[str, Doc("Queue name.")]) -> None:
         """Remove all pending jobs from *queue_name*."""
-        ...
 
     async def ack(
         self,
@@ -65,7 +63,6 @@ class QueueConnection(ABC):
         job_id: Annotated[str, Doc("Job ID to acknowledge.")],
     ) -> None:
         """Mark a job as successfully processed."""
-        ...
 
     async def fail(
         self,
@@ -77,7 +74,6 @@ class QueueConnection(ABC):
         exception: Annotated[str, Doc("Exception message.")],
     ) -> None:
         """Record a permanently failed job."""
-        ...
 
 
 class SyncConnection(QueueConnection):
@@ -87,31 +83,14 @@ class SyncConnection(QueueConnection):
     """
 
     def __init__(self):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._queues: Dict[str, asyncio.PriorityQueue] = {}
-        self._delayed: Dict[str, List[tuple[float, str, str]]] = {}
-        self._pending: Dict[str, Dict[str, str]] = {}
-        self._acks: Dict[str, Set[str]] = {}
+        """Init"""
+        self._queues: dict[str, asyncio.PriorityQueue] = {}
+        self._delayed: dict[str, list[tuple[float, str, str]]] = {}
+        self._pending: dict[str, dict[str, str]] = {}
+        self._acks: dict[str, set[str]] = {}
 
     def _ensure(self, name: str) -> None:
-        """Ensure
-
-        Args:
-            name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Ensure"""
         if name not in self._queues:
             self._queues[name] = asyncio.PriorityQueue()
             self._delayed[name] = []
@@ -119,18 +98,7 @@ class SyncConnection(QueueConnection):
             self._acks[name] = set()
 
     async def push(self, queue_name: str, payload: str, *, delay: int = 0) -> str:
-        """Push
-
-        Args:
-            queue_name: [description]
-            payload: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Push"""
         self._ensure(queue_name)
         job_id = f"{int(time.time() * 1e6)}-{id(payload)}"
         if delay > 0:
@@ -144,18 +112,8 @@ class SyncConnection(QueueConnection):
 
     async def pop(
         self, queue_name: str, *, timeout: float = 0
-    ) -> Optional[tuple[str, str]]:
-        """Pop
-
-        Args:
-            queue_name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    ) -> tuple[str, str] | None:
+        """Pop"""
         self._ensure(queue_name)
 
         self._release_delayed(queue_name)
@@ -169,32 +127,12 @@ class SyncConnection(QueueConnection):
             return None
 
     async def size(self, queue_name: str) -> int:
-        """Size
-
-        Args:
-            queue_name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Size"""
         self._ensure(queue_name)
         return self._queues[queue_name].qsize() + len(self._delayed.get(queue_name, []))
 
     async def clear(self, queue_name: str) -> None:
-        """Clear
-
-        Args:
-            queue_name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Clear"""
         self._ensure(queue_name)
         while not self._queues[queue_name].empty():
             self._queues[queue_name].get_nowait()
@@ -202,17 +140,7 @@ class SyncConnection(QueueConnection):
         self._pending[queue_name].clear()
 
     def _release_delayed(self, name: str) -> None:
-        """Release Delayed
-
-        Args:
-            name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Release Delayed"""
         now = time.monotonic()
         remaining = []
         for when, jid, payload in self._delayed[name]:
@@ -235,48 +163,20 @@ class RedisConnection(QueueConnection):
         *,
         prefix: Annotated[str, Doc("Key prefix.")] = "sillo:queue:",
     ):
-        """Init
-
-        Args:
-            url: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.url = url
         self.prefix = prefix
         self._redis: Any = None
 
     async def _r(self):
-        """R
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """R"""
         if self._redis is not None:
             return self._redis
         self._redis = aioredis.from_url(self.url, decode_responses=True)
         return self._redis
 
     async def push(self, queue_name: str, payload: str, *, delay: int = 0) -> str:
-        """Push
-
-        Args:
-            queue_name: [description]
-            payload: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Push"""
         r = await self._r()
         job_id = f"{int(time.time() * 1e6)}-{hash(payload)}"
         key = f"{self.prefix}{queue_name}"
@@ -289,18 +189,8 @@ class RedisConnection(QueueConnection):
 
     async def pop(
         self, queue_name: str, *, timeout: float = 0
-    ) -> Optional[tuple[str, str]]:
-        """Pop
-
-        Args:
-            queue_name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    ) -> tuple[str, str] | None:
+        """Pop"""
         r = await self._r()
         key = f"{self.prefix}{queue_name}"
         await self._migrate_delayed(r, key)
@@ -317,49 +207,18 @@ class RedisConnection(QueueConnection):
         return None
 
     async def size(self, queue_name: str) -> int:
-        """Size
-
-        Args:
-            queue_name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Size"""
         r = await self._r()
         key = f"{self.prefix}{queue_name}"
         return await r.llen(key)
 
     async def clear(self, queue_name: str) -> None:
-        """Clear
-
-        Args:
-            queue_name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Clear"""
         r = await self._r()
         await r.delete(f"{self.prefix}{queue_name}")
 
     async def _migrate_delayed(self, r, key: str) -> None:
-        """Migrate Delayed
-
-        Args:
-            r: [description]
-            key: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Migrate Delayed"""
         now = time.time()
         delayed_key = f"{key}:delayed"
         items = await r.zrangebyscore(delayed_key, 0, now)
@@ -382,21 +241,14 @@ class ConnectionManager:
     """
 
     def __init__(self):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._connections: Dict[str, QueueConnection] = {}
+        """Init"""
+        self._connections: dict[str, QueueConnection] = {}
 
     def add(
         self,
         name: Annotated[str, Doc("Connection name (e.g. 'default', 'redis').")],
         connection: Annotated[QueueConnection, Doc("Connection instance.")],
-    ) -> "ConnectionManager":
+    ) -> ConnectionManager:
         """Register a named connection. Returns self for chaining."""
         self._connections[name] = connection
         return self

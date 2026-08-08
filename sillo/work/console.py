@@ -29,7 +29,8 @@ fresh process. ``queue:failed`` reports that distinction instead of printing
 
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, List, Optional, Type, Union
+from collections.abc import Callable
+from typing import Any, ClassVar, Union
 
 from sillo.console import Argument, Command, Flag, Option
 
@@ -70,8 +71,8 @@ class _Config:
 
     def __init__(
         self,
-        url: Optional[str],
-        queues: Optional[List[str]],
+        url: str | None,
+        queues: list[str] | None,
         prefix: str,
         scheduler: Source,
         failed: Source,
@@ -101,7 +102,7 @@ class WorkCommand(Command):
         config: Set by :func:`work_commands` on a subclass.
     """
 
-    config: ClassVar[Optional[_Config]] = None
+    config: ClassVar[_Config | None] = None
 
     def context(self) -> Any:
         """Open the bound context manager around the command.
@@ -189,9 +190,9 @@ class Work(WorkCommand):
 
     name = "queue:work"
     help = "Run the queue worker until stopped"
-    aliases = ["worker"]
+    aliases: ClassVar[list[str]] = ["worker"]
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Option(
             "queue",
             short="q",
@@ -240,7 +241,7 @@ class QueueList(WorkCommand):
     name = "queue:list"
     help = "Show how much work is waiting on each queue"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Option(
             "queue",
             short="q",
@@ -275,7 +276,7 @@ class QueueFailed(WorkCommand):
     name = "queue:failed"
     help = "List jobs that exhausted their retries"
 
-    arguments = [
+    arguments: ClassVar[list] = [
         Option("limit", type=int, default=50, short="l", help="Maximum rows"),
         Option("offset", type=int, default=0, help="Rows to skip"),
     ]
@@ -319,7 +320,7 @@ class QueueForget(WorkCommand):
     name = "queue:forget"
     help = "Drop one failed job from the record"
 
-    arguments = [Argument("id", help="The failed job's id")]
+    arguments: ClassVar[list] = [Argument("id", help="The failed job's id")]
 
     async def handle(self) -> None:
         removed = await self.repository().forget(self.argument("id"))
@@ -334,9 +335,9 @@ class QueueFlush(WorkCommand):
     name = "queue:flush"
     help = "Drop every failed job from the record"
 
-    arguments = [Flag("force", short="f", help="Skip the confirmation")]
+    arguments: ClassVar[list] = [Flag("force", short="f", help="Skip the confirmation")]
 
-    async def handle(self) -> Optional[int]:
+    async def handle(self) -> int | None:
         if not self.flag("force") and not self.confirm(
             "Drop every recorded failure?", default=False
         ):
@@ -356,7 +357,7 @@ class ScheduleRun(WorkCommand):
 
     name = "schedule:run"
     help = "Run scheduled tasks until stopped"
-    aliases = ["scheduler"]
+    aliases: ClassVar[list[str]] = ["scheduler"]
 
     async def handle(self) -> None:
         from .commands import run_scheduler
@@ -442,7 +443,7 @@ class SchedulePause(WorkCommand):
     name = "schedule:pause"
     help = "Stop a scheduled task from running"
 
-    arguments = [Argument("id", help="The task's id")]
+    arguments: ClassVar[list] = [Argument("id", help="The task's id")]
 
     async def handle(self) -> None:
         if not self.manager().pause(self.argument("id")):
@@ -456,7 +457,7 @@ class ScheduleResume(WorkCommand):
     name = "schedule:resume"
     help = "Let a paused task run again"
 
-    arguments = [Argument("id", help="The task's id")]
+    arguments: ClassVar[list] = [Argument("id", help="The task's id")]
 
     async def handle(self) -> None:
         if not self.manager().resume(self.argument("id")):
@@ -465,7 +466,7 @@ class ScheduleResume(WorkCommand):
 
 
 #: Every command this module defines, in the order they are listed.
-COMMANDS: List[Type[WorkCommand]] = [
+COMMANDS: list[type[WorkCommand]] = [
     Work,
     QueueList,
     QueueFailed,
@@ -480,14 +481,14 @@ COMMANDS: List[Type[WorkCommand]] = [
 
 def work_commands(
     *,
-    url: Optional[str] = None,
-    queues: Optional[List[str]] = None,
+    url: str | None = None,
+    queues: list[str] | None = None,
     prefix: str = "sillo:queue:",
     scheduler: Source = None,
     failed: Source = None,
     context: Source = None,
-    only: Optional[List[str]] = None,
-) -> List[Type[Command]]:
+    only: list[str] | None = None,
+) -> list[type[Command]]:
     """Return the queue and scheduler commands.
 
     Args:

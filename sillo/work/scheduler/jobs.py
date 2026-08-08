@@ -8,11 +8,11 @@ and retry.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from enum import Enum
-from typing import Annotated, Any, Awaitable, Callable, Dict, List, Optional
+from typing import Annotated, Any
 from uuid import uuid4
 
 from typing_extensions import Doc
@@ -23,14 +23,7 @@ logger = logging.getLogger("sillo.work.scheduler.jobs")
 
 
 class JobStatus(Enum):
-    """Jobstatus
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Jobstatus"""
 
     ACTIVE = "active"
     PAUSED = "paused"
@@ -67,30 +60,19 @@ class ScheduledJob:
         ],
         trigger: Annotated[Any, Doc("Trigger instance.")],
         *,
-        name: Annotated[Optional[str], Doc("Human-readable label.")] = None,
+        name: Annotated[str | None, Doc("Human-readable label.")] = None,
         args: Annotated[tuple, Doc("Positional arguments for func.")] = (),
         kwargs: Annotated[
-            Optional[Dict[str, Any]], Doc("Keyword arguments for func.")
+            dict[str, Any] | None, Doc("Keyword arguments for func.")
         ] = None,
         max_instances: Annotated[int, Doc("Max concurrent runs. 0 = unlimited.")] = 1,
         coalesce: Annotated[bool, Doc("Skip if previous run still active.")] = True,
-        middleware: Annotated[Optional[List[Any]], Doc("Middleware factories.")] = None,
+        middleware: Annotated[list[Any] | None, Doc("Middleware factories.")] = None,
         id: Annotated[
-            Optional[str], Doc("Explicit job ID. Auto-generated if omitted.")
+            str | None, Doc("Explicit job ID. Auto-generated if omitted.")
         ] = None,
     ):
-        """Init
-
-        Args:
-            func: [description]
-            trigger: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.id = id or str(uuid4())
         self.name = name or func.__name__  # ty: ignore[unresolved-attribute]
         self.func = func
@@ -101,14 +83,14 @@ class ScheduledJob:
         self.coalesce = coalesce
         self._middleware_factories = middleware or []
         self.status = JobStatus.ACTIVE
-        self.next_run_time: Optional[float] = None
+        self.next_run_time: float | None = None
         self.last_run_time: float = 0
         self._runs = 0
         self._errors = 0
         self.current_instances = 0
         self.created_at = time.time()
 
-    def compute_next(self, now: Optional[float] = None) -> None:
+    def compute_next(self, now: float | None = None) -> None:
         """Calculate and store the next fire timestamp."""
         result = self.trigger.next_fire(self.last_run_time)
         if result is None:
@@ -153,7 +135,7 @@ class ScheduledJob:
             if isinstance(self.trigger, DateTrigger):
                 self.status = JobStatus.COMPLETED
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialise job metadata for monitoring."""
         return {
             "id": self.id,

@@ -24,19 +24,12 @@ Usage::
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import (
     Annotated,
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Type,
     TypeVar,
 )
 
@@ -62,7 +55,7 @@ class Event:
 ListenerCallback = Callable[[Event], Awaitable[None]]
 
 
-def listen(*events: Type[Event], priority: int = 0) -> Callable:
+def listen(*events: type[Event], priority: int = 0) -> Callable:
     """Decorator that registers a function as a listener for given event types.
 
     Usage::
@@ -73,17 +66,7 @@ def listen(*events: Type[Event], priority: int = 0) -> Callable:
     """
 
     def decorator(func: ListenerCallback) -> ListenerCallback:
-        """Decorator
-
-        Args:
-            func: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Decorator"""
         func._listens_to = events  # ty: ignore[unresolved-attribute]
         func._listener_priority = priority  # ty: ignore[unresolved-attribute]
         return func
@@ -96,7 +79,7 @@ class ListenerRegistration:
     """Internal registration entry for a listener."""
 
     callback: ListenerCallback
-    event_type: Type[Event]
+    event_type: type[Event]
     priority: int = 0
     name: str = ""
 
@@ -117,20 +100,13 @@ class EventDispatcher:
     """
 
     def __init__(self):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._listeners: Dict[Type[Event], List[ListenerRegistration]] = {}
-        self._wildcards: List[ListenerRegistration] = []
+        """Init"""
+        self._listeners: dict[type[Event], list[ListenerRegistration]] = {}
+        self._wildcards: list[ListenerRegistration] = []
 
     def register(
         self,
-        event_type: Annotated[Type[Event], Doc("Event class to listen for.")],
+        event_type: Annotated[type[Event], Doc("Event class to listen for.")],
         callback: Annotated[
             ListenerCallback, Doc("Async callable receiving the event instance.")
         ],
@@ -169,7 +145,7 @@ class EventDispatcher:
 
     def forget(
         self,
-        event_type: Annotated[Type[Event], Doc("Event class.")],
+        event_type: Annotated[type[Event], Doc("Event class.")],
         callback: Annotated[ListenerCallback, Doc("Callback to remove.")],
     ) -> bool:
         """Remove a specific listener. Returns True if found."""
@@ -181,7 +157,7 @@ class EventDispatcher:
         ]
         return len(self._listeners[event_type]) < before
 
-    def has_listeners(self, event_type: Type[Event]) -> bool:
+    def has_listeners(self, event_type: type[Event]) -> bool:
         """Check if any listeners are registered for *event_type*."""
         return bool(self._listeners.get(event_type)) or bool(self._wildcards)
 
@@ -211,18 +187,7 @@ class EventDispatcher:
         return event
 
     async def _call_listener(self, reg: ListenerRegistration, event: Event) -> None:
-        """Call Listener
-
-        Args:
-            reg: [description]
-            event: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Call Listener"""
         try:
             await reg.callback(event)
         except Exception:

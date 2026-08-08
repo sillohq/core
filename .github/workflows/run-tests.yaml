@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-      
+
   pull_request:
 
 jobs:
@@ -13,26 +13,59 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
+    # Without a Redis server the cache backend and the transport skip
+    # themselves, quietly, on every version — so two shipped features were
+    # covered by tests that never ran anywhere.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      REDIS_URL: redis://localhost:6379/0
+      SILLO_TEST_REDIS_URL: redis://localhost:6379/15
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
+      # The install script has moved between ~/.cargo/bin and ~/.local/bin
+      # across uv versions. Add both so the PATH does not depend on which
+      # installer layout ships today.
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Setup Virtual Environment
         run: uv venv
 
       - name: Install dependencies
         run: uv pip install -e ".[dev]"
 
-     
       - name: Run Tests
         run: uv run pytest tests
 
+      # A skip is how these tests report "no Redis here", which is exactly the
+      # failure this job exists to prevent. Assert they actually ran.
+      - name: The Redis tests must not have skipped
+        run: |
+          uv run pytest tests/test_redis tests/test_cache/test_redis_backend.py \
+            -q --tb=short -p no:randomly -rs > redis.log 2>&1 || (cat redis.log; exit 1)
+          cat redis.log
+          if grep -qi "no Redis" redis.log; then
+            echo "::error::Redis tests skipped — the service container is not reachable."
+            exit 1
+          fi

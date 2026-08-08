@@ -9,7 +9,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Annotated, Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -25,14 +26,7 @@ async def timeout_middleware(
     """Enforce a hard deadline on the scheduled job."""
 
     async def wrapper():
-        """Wrapper
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Wrapper"""
         return await asyncio.wait_for(handler(), timeout=seconds)
 
     return wrapper
@@ -51,14 +45,7 @@ async def rate_limit_middleware(
     last_refill = time.monotonic()
 
     async def wrapper():
-        """Wrapper
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Wrapper"""
         nonlocal tokens, last_refill
         now = time.monotonic()
         elapsed = now - last_refill
@@ -86,14 +73,7 @@ async def retry_middleware(
     """Retry on failure with exponential backoff."""
 
     async def wrapper():
-        """Wrapper
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Wrapper"""
         for attempt in range(1, max_attempts + 1):
             try:
                 return await handler()

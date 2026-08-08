@@ -54,7 +54,8 @@ import json
 import logging
 import time
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 logger = logging.getLogger("sillo.events.transport")
 
@@ -62,12 +63,12 @@ logger = logging.getLogger("sillo.events.transport")
 #: already-decoded envelope dict, and runs the matching local listeners.
 #: It must be awaitable and must *not* raise — failures are isolated by the
 #: transport in :meth:`BaseTransport._deliver`.
-DispatchFn = Callable[[str, Dict[str, Any]], Awaitable[None]]
+DispatchFn = Callable[[str, dict[str, Any]], Awaitable[None]]
 
 #: Called when a listener raises, so hosts can observe failures without the
 #: subscriber/worker loop dying.  Receives the exception, channel, and the
 #: decoded envelope.
-ErrorFn = Callable[[BaseException, str, Dict[str, Any]], Awaitable[None]]
+ErrorFn = Callable[[BaseException, str, dict[str, Any]], Awaitable[None]]
 
 
 class TransportError(Exception):
@@ -96,7 +97,7 @@ class TransportError(Exception):
     """
 
 
-def serialize_payload(args: tuple, kwargs: dict) -> Dict[str, Any]:
+def serialize_payload(args: tuple, kwargs: dict) -> dict[str, Any]:
     """Encode emit arguments into a transport-agnostic envelope dictionary.
 
     Constructs the canonical wire-format envelope that every backend uses to
@@ -168,7 +169,7 @@ def serialize_payload(args: tuple, kwargs: dict) -> Dict[str, Any]:
     }
 
 
-def serialize_envelope(envelope: Dict[str, Any]) -> str:
+def serialize_envelope(envelope: dict[str, Any]) -> str:
     """Serialize an envelope dictionary to a JSON wire-format string.
 
     Converts the in-memory envelope dict (as produced by :func:`serialize_payload`)
@@ -200,7 +201,7 @@ def serialize_envelope(envelope: Dict[str, Any]) -> str:
     return json.dumps(envelope, default=str)
 
 
-def deserialize_envelope(raw: str) -> Dict[str, Any]:
+def deserialize_envelope(raw: str) -> dict[str, Any]:
     """Parse a JSON wire-format string back into an envelope dictionary.
 
     Reverses the encoding performed by :func:`serialize_envelope`, converting
@@ -269,8 +270,8 @@ class BaseTransport(abc.ABC):
         self,
         *,
         namespace: str = "",
-        on_error: Optional[ErrorFn] = None,
-        loop: Optional[asyncio.AbstractEventLoop] = None,
+        on_error: ErrorFn | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
     ) -> None:
         """Initialize the base transport with namespace, error handler, and loop.
 
@@ -294,10 +295,10 @@ class BaseTransport(abc.ABC):
         self.namespace = namespace
         self._on_error = on_error
         self._loop = loop
-        self._dispatch: Optional[DispatchFn] = None
+        self._dispatch: DispatchFn | None = None
         self._running = False
         # Per-instance seen event_ids for lightweight dedup on reconnect.
-        self._seen: "set[str]" = set()
+        self._seen: set[str] = set()
         self._seen_max = 10_000
 
     def bind(self, dispatch: DispatchFn) -> None:
@@ -466,7 +467,7 @@ class BaseTransport(abc.ABC):
         return self._running
 
     @abc.abstractmethod
-    async def publish(self, channel: str, envelope: Dict[str, Any]) -> None:
+    async def publish(self, channel: str, envelope: dict[str, Any]) -> None:
         """Publish an envelope to the given channel.  Must be implemented by subclasses.
 
         Sends the serialized envelope dictionary to the specified channel using
@@ -496,7 +497,7 @@ class BaseTransport(abc.ABC):
             >>> await transport.publish("my_channel", envelope)
         """
 
-    async def _deliver(self, channel: str, envelope: Dict[str, Any]) -> None:
+    async def _deliver(self, channel: str, envelope: dict[str, Any]) -> None:
         """Execute the local dispatch callback for a received envelope.
 
         This is the central delivery method that bridges the transport layer
@@ -538,12 +539,12 @@ class BaseTransport(abc.ABC):
                 self._seen = set(list(self._seen)[-self._seen_max // 2 :])
         try:
             await self._dispatch(channel, envelope)
-        except Exception as exc:  # noqa: BLE001 - isolate listener failures
+        except Exception as exc:
             logger.exception("Listener error on channel %r", channel)
             if self._on_error is not None:
                 try:
                     await self._on_error(exc, channel, envelope)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     logger.exception("on_error handler raised")
 
     def _get_loop(self) -> asyncio.AbstractEventLoop:

@@ -4,6 +4,19 @@ RedisTransport and RedisBackend against a live server.
 Skipped when no Redis is reachable. Pub/sub delivery and queue semantics are
 exactly the behavior a mock cannot confirm, so these are integration tests by
 design.
+
+Like the cache tests beside them, these were written against an older API and
+never corrected, because no CI job had a Redis server to run them against. The
+signatures they now use are the ones the rest of the suite uses:
+
+  * ``subscribe(channel)`` takes no handler. Delivery goes through the dispatch
+    callback registered with ``bind()``, which is what the emitter does.
+  * The queue backend is task-oriented: ``enqueue`` takes a ``Task``, and
+    ``dequeue``/``flush``/``queue_size``/``queue_stats`` take a queue name.
+  * ``is_duplicate`` and ``clear_dedup`` take a queue name and a dedup key.
+
+They are async tests, not ``asyncio.run`` per call: a Redis client opened in
+one loop cannot be used from the next.
 """
 
 import asyncio
@@ -12,192 +25,206 @@ import pytest
 
 from sillo.events.transports.redis import RedisTransport
 from sillo.work.backends import RedisBackend
+from sillo.work.task import Task, TaskResult
 
 from ..conftest import requires_redis
 
 pytestmark = requires_redis
 
+QUEUE = "default"
 
-def _run(coro):
-    return asyncio.run(coro)
+
+async def noop() -> str:
+    """A real coroutine function, because Task wants something it can await."""
+    return "done"
+
+
+def make_task(**kwargs) -> Task:
+    return Task(noop, queue_name=QUEUE, **kwargs)
 
 
 # ── transport lifecycle ──────────────────────────────────────────────────
 
 
-def test_start_and_stop(redis_url):
-    async def scenario():
-        t = RedisTransport(url=redis_url)
-        await t.start()
-        running = t.running
-        await t.stop()
-        return running, t.running
-
-    started, stopped = _run(scenario())
-    assert started is True
-    assert stopped is False
+async def test_start_and_stop(redis_url):
+    transport = RedisTransport(url=redis_url)
+    await transport.start()
+    assert transport.running is True
+    await transport.stop()
+    assert transport.running is False
 
 
-def test_ping(redis_url):
-    async def scenario():
-        t = RedisTransport(url=redis_url)
-        await t.start()
-        try:
-            return await t.ping()
-        finally:
-            await t.stop()
-
-    assert _run(scenario()) is not False
+async def test_ping(redis_url):
+    transport = RedisTransport(url=redis_url)
+    await transport.start()
+    try:
+        assert await transport.ping() is True
+    finally:
+        await transport.stop()
 
 
-def test_stopping_a_transport_that_never_started(redis_url):
-    _run(RedisTransport(url=redis_url).stop())
+async def test_stopping_a_transport_that_never_started(redis_url):
+    await RedisTransport(url=redis_url).stop()
 
 
-def test_the_transport_reports_its_name(redis_url):
+async def test_the_transport_reports_its_name(redis_url):
     assert isinstance(RedisTransport(url=redis_url).name, str)
+
+
+async def test_an_error_handler_can_be_installed(redis_url):
+    RedisTransport(url=redis_url).set_error_handler(lambda exc: None)
 
 
 # ── publish and subscribe ────────────────────────────────────────────────
 
 
-def test_a_published_event_reaches_a_subscriber(redis_url):
-    received = []
+async def started(url, **kwargs):
+    """A transport that records everything dispatched to it."""
+    received: list = []
+    transport = RedisTransport(url=url, **kwargs)
 
-    async def scenario():
-        t = RedisTransport(url=redis_url)
-        await t.start()
-        try:
-            await t.subscribe("greetings", lambda evt: received.append(evt))
-            await asyncio.sleep(0.2)
-            await t.publish("greetings", {"msg": "hello"})
-            await asyncio.sleep(0.5)
-        finally:
-            await t.stop()
+    async def dispatch(channel, envelope):
+        received.append((channel, envelope))
 
-    _run(scenario())
+    transport.bind(dispatch)
+    await transport.start()
+    return transport, received
+
+
+async def test_a_published_event_reaches_a_subscriber(redis_url):
+    transport, received = await started(redis_url)
+    try:
+        await transport.subscribe("greetings")
+        await asyncio.sleep(0.2)
+        await transport.publish("greetings", {"msg": "hello"})
+        await asyncio.sleep(0.5)
+    finally:
+        await transport.stop()
+
     assert received, "the subscriber never fired"
+    assert received[0][1]["msg"] == "hello"
 
 
-def test_a_subscriber_only_hears_its_own_channel(redis_url):
-    heard = []
+async def test_a_subscriber_only_hears_its_own_channel(redis_url):
+    transport, received = await started(redis_url)
+    try:
+        await transport.subscribe("wanted")
+        await asyncio.sleep(0.2)
+        await transport.publish("unwanted", {"msg": "nope"})
+        await asyncio.sleep(0.4)
+    finally:
+        await transport.stop()
 
-    async def scenario():
-        t = RedisTransport(url=redis_url)
-        await t.start()
-        try:
-            await t.subscribe("wanted", lambda evt: heard.append(evt))
-            await asyncio.sleep(0.2)
-            await t.publish("unwanted", {"msg": "nope"})
-            await asyncio.sleep(0.4)
-        finally:
-            await t.stop()
-
-    _run(scenario())
-    assert heard == []
+    assert received == []
 
 
-def test_namespacing_isolates_two_transports(redis_url):
-    heard = []
+async def test_namespacing_isolates_two_transports(redis_url):
+    listener, heard = await started(redis_url, namespace="app-a")
+    speaker = RedisTransport(url=redis_url, namespace="app-b")
+    await speaker.start()
+    try:
+        await listener.subscribe("chan")
+        await asyncio.sleep(0.2)
+        await speaker.publish("chan", {"msg": "from b"})
+        await asyncio.sleep(0.4)
+    finally:
+        await listener.stop()
+        await speaker.stop()
 
-    async def scenario():
-        a = RedisTransport(url=redis_url, namespace="app-a")
-        b = RedisTransport(url=redis_url, namespace="app-b")
-        await a.start()
-        await b.start()
-        try:
-            await a.subscribe("chan", lambda evt: heard.append(evt))
-            await asyncio.sleep(0.2)
-            await b.publish("chan", {"msg": "from b"})
-            await asyncio.sleep(0.4)
-        finally:
-            await a.stop()
-            await b.stop()
-
-    _run(scenario())
     assert heard == [], "namespaces must not leak into each other"
-
-
-def test_an_error_handler_can_be_installed(redis_url):
-    t = RedisTransport(url=redis_url)
-    t.set_error_handler(lambda exc: None)
 
 
 # ── work backend ─────────────────────────────────────────────────────────
 
 
 @pytest.fixture
-def backend(redis_url):
-    b = RedisBackend(url=redis_url)
-    yield b
-    _run(b.flush())
+async def backend(redis_url):
+    # A registry is not optional for this backend: a worker in another process
+    # only receives a task *name*, so without the mapping every dequeue logs
+    # "not in registry" and drops the task on the floor.
+    registry = {"noop": noop, "low": noop, "high": noop}
+    b = RedisBackend(url=redis_url, task_registry=registry)
+    try:
+        yield b
+    finally:
+        await b.flush(QUEUE)
 
 
-def test_backend_ping(backend):
-    assert _run(backend.ping()) is not False
+async def test_backend_ping(backend):
+    assert await backend.ping() is True
 
 
-def test_enqueue_then_dequeue(backend):
-    async def scenario():
-        await backend.enqueue({"task": "send_email", "args": [1]})
-        return await backend.dequeue()
-
-    assert _run(scenario()) is not None
+async def test_enqueue_then_dequeue(backend):
+    await backend.enqueue(make_task())
+    assert await backend.dequeue(QUEUE) is not None
 
 
-def test_dequeue_on_an_empty_queue(backend):
-    assert _run(backend.dequeue()) is None
+async def test_dequeue_on_an_empty_queue(backend):
+    assert await backend.dequeue(QUEUE, timeout=0.05) is None
 
 
-def test_queue_size_tracks_enqueues(backend):
-    async def scenario():
-        before = await backend.queue_size()
-        await backend.enqueue({"task": "t"})
-        return before, await backend.queue_size()
-
-    before, after = _run(scenario())
-    assert after == before + 1
+async def test_queue_size_tracks_enqueues(backend):
+    before = await backend.queue_size(QUEUE)
+    await backend.enqueue(make_task())
+    assert await backend.queue_size(QUEUE) == before + 1
 
 
-def test_flush_empties_the_queue(backend):
-    async def scenario():
-        await backend.enqueue({"task": "t"})
-        await backend.flush()
-        return await backend.queue_size()
-
-    assert _run(scenario()) == 0
+async def test_flush_empties_the_queue(backend):
+    await backend.enqueue(make_task())
+    await backend.flush(QUEUE)
+    assert await backend.queue_size(QUEUE) == 0
 
 
-def test_queue_stats(backend):
-    assert isinstance(_run(backend.queue_stats()), dict)
+async def test_higher_priority_comes_out_first(backend):
+    """The score is built from priority, so ordering is the point of the zset."""
+    from sillo.work.task import TaskPriority
+
+    low = make_task(name="low", priority=TaskPriority.LOW)
+    high = make_task(name="high", priority=TaskPriority.HIGH)
+    await backend.enqueue(low)
+    await backend.enqueue(high)
+
+    first = await backend.dequeue(QUEUE)
+    assert first is not None
+    assert first.name == "high"
 
 
-def test_a_result_round_trips(backend):
-    async def scenario():
-        await backend.store_result("job-1", {"ok": True})
-        return await backend.get_result("job-1")
-
-    assert _run(scenario()) is not None
+async def test_queue_stats(backend):
+    stats = await backend.queue_stats(QUEUE)
+    assert stats.name == QUEUE
+    assert stats.size == 0
 
 
-def test_a_missing_result_is_none(backend):
-    assert _run(backend.get_result("never-ran")) is None
+# ── results ──────────────────────────────────────────────────────────────
 
 
-def test_duplicate_detection(backend):
-    async def scenario():
-        first = await backend.is_duplicate("dedup-key")
-        second = await backend.is_duplicate("dedup-key")
-        return first, second
-
-    first, second = _run(scenario())
-    assert first != second, "the second submission should be seen as a duplicate"
+async def test_a_result_round_trips(backend):
+    task = make_task()
+    await backend.store_result(
+        TaskResult(task_id=task.id, name=task.name, status=task.status)
+    )
+    assert await backend.get_result(task.id) is not None
 
 
-def test_clearing_dedup_state(backend):
-    async def scenario():
-        await backend.is_duplicate("k")
-        await backend.clear_dedup("k")
-        return await backend.is_duplicate("k")
+async def test_a_missing_result_is_none(backend):
+    assert await backend.get_result("never-ran") is None
 
-    assert _run(scenario()) is False
+
+# ── deduplication ────────────────────────────────────────────────────────
+
+
+async def test_duplicate_detection(backend):
+    assert await backend.is_duplicate(QUEUE, "dedup-key") is False
+    assert await backend.is_duplicate(QUEUE, "dedup-key") is True
+
+
+async def test_dedup_keys_are_scoped_to_their_queue(backend):
+    await backend.is_duplicate(QUEUE, "shared")
+    assert await backend.is_duplicate("other", "shared") is False
+    await backend.clear_dedup("other", "shared")
+
+
+async def test_clearing_dedup_state(backend):
+    await backend.is_duplicate(QUEUE, "k")
+    await backend.clear_dedup(QUEUE, "k")
+    assert await backend.is_duplicate(QUEUE, "k") is False

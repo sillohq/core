@@ -15,7 +15,7 @@ shared dispatch callback; the row is then marked ``delivered`` or ``failed``.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .base import (
     BaseTransport,
@@ -167,7 +167,7 @@ class RecordTransport(BaseTransport):
         """Mark the transport stopped."""
         self._running = False
 
-    async def publish(self, channel: str, envelope: Dict[str, Any]) -> None:
+    async def publish(self, channel: str, envelope: dict[str, Any]) -> None:
         """Persist *envelope* as a row, then fire local listeners.
 
         The row starts as ``pending``; on success it becomes ``delivered``, on
@@ -184,7 +184,7 @@ class RecordTransport(BaseTransport):
         try:
             await self._deliver(channel, envelope)
             row.status = "delivered"
-        except Exception:  # noqa: BLE001
+        except Exception:
             row.status = "failed"
             row.attempts = row.attempts + 1
             logger.exception("Event %s dispatch failed", envelope.get("event_id"))
@@ -224,7 +224,7 @@ class RecordTransport(BaseTransport):
                 row.status = "delivered"
                 await row.save(update_fields=["status"])
                 replayed += 1
-            except Exception:  # noqa: BLE001
+            except Exception:
                 row.attempts = row.attempts + 1
                 await row.save(update_fields=["attempts"])
                 logger.exception("Replay failed for event row %s", row.id)

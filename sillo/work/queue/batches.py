@@ -10,13 +10,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
 import uuid
-from typing import Annotated, Any, Awaitable, Callable, Dict, List, Optional, Set
+from collections.abc import Awaitable, Callable
+from typing import Annotated, Any
 
 from typing_extensions import Doc
-
-from .job import Job, Dispatchable
 
 logger = logging.getLogger("sillo.work.queue.batches")
 
@@ -37,32 +35,22 @@ class Batch:
         name: Annotated[str, Doc("Human-readable batch name.")],
         *,
         on_complete: Annotated[
-            Optional[Callable[["Batch"], Awaitable[None]]],
+            Callable[[Batch], Awaitable[None]] | None,
             Doc("Callback when all jobs finish."),
         ] = None,
         allow_failures: Annotated[
             bool, Doc("If True, individual failures don't fail the batch.")
         ] = False,
         timeout: Annotated[
-            Optional[float], Doc("Max seconds before timing out the batch.")
+            float | None, Doc("Max seconds before timing out the batch.")
         ] = None,
     ):
-        """Init
-
-        Args:
-            name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.id = str(uuid.uuid4())
         self.name = name
-        self._jobs: List[str] = []
-        self._completed: Set[str] = set()
-        self._failed: Dict[str, str] = {}
+        self._jobs: list[str] = []
+        self._completed: set[str] = set()
+        self._failed: dict[str, str] = {}
         self._on_complete = on_complete
         self._allow_failures = allow_failures
         self._timeout = timeout
@@ -72,7 +60,7 @@ class Batch:
 
     def add(
         self, job_id: Annotated[str, Doc("Job ID returned by dispatch().")]
-    ) -> "Batch":
+    ) -> Batch:
         """Add a job to the batch. Returns self for chaining."""
         self._jobs.append(job_id)
         return self
@@ -97,28 +85,14 @@ class Batch:
             self._check_done()
 
     def _check_done(self) -> None:
-        """Check Done
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Check Done"""
         total = len(self._jobs)
         done = len(self._completed) + len(self._failed)
         if total > 0 and done >= total:
             self._finish()
 
     def _finish(self) -> None:
-        """Finish
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Finish"""
         if self._finished:
             return
         self._finished = True
@@ -126,56 +100,28 @@ class Batch:
         if self._on_complete:
             asyncio.create_task(self._on_complete(self))  # ty: ignore[invalid-argument-type]
 
-    async def wait(self, timeout: Optional[float] = None) -> None:
+    async def wait(self, timeout: float | None = None) -> None:
         """Block until the batch completes or times out."""
         await asyncio.wait_for(self._done.wait(), timeout=timeout)
 
     @property
     def completed_count(self) -> int:
-        """Completed Count
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Completed Count"""
         return len(self._completed)
 
     @property
     def failed_count(self) -> int:
-        """Failed Count
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Failed Count"""
         return len(self._failed)
 
     @property
     def total(self) -> int:
-        """Total
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Total"""
         return len(self._jobs)
 
     @property
     def is_done(self) -> bool:
-        """Is Done
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Is Done"""
         return self._finished
 
 
@@ -190,15 +136,8 @@ class JobChain:
     """
 
     def __init__(self):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._jobs: List[Callable[[], Awaitable[Any]]] = []
+        """Init"""
+        self._jobs: list[Callable[[], Awaitable[Any]]] = []
 
     def then(
         self,
@@ -206,12 +145,12 @@ class JobChain:
             Callable[[], Awaitable[Any]],
             Doc("Async callable (usually a job dispatch)."),
         ],
-    ) -> "JobChain":
+    ) -> JobChain:
         """Append a job to the chain."""
         self._jobs.append(job)
         return self
 
-    async def run(self) -> List[Any]:
+    async def run(self) -> list[Any]:
         """Execute all jobs sequentially. Returns list of results."""
         results = []
         for job in self._jobs:

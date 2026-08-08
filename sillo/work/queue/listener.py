@@ -11,10 +11,10 @@ Extends the basic event dispatcher with:
 
 from __future__ import annotations
 
-import asyncio
 import fnmatch
 import logging
-from typing import Annotated, Any, Awaitable, Callable, Dict, List, Optional, Set, Type
+from collections.abc import Callable
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -36,21 +36,10 @@ class WildcardListener:
         priority: Annotated[int, Doc("Higher = earlier.")] = 0,
         once: Annotated[bool, Doc("Auto-unsubscribe after first fire.")] = False,
         guard: Annotated[
-            Optional[Callable[[Event], bool]], Doc("Only fire if this returns True.")
+            Callable[[Event], bool] | None, Doc("Only fire if this returns True.")
         ] = None,
     ):
-        """Init
-
-        Args:
-            pattern: [description]
-            callback: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.pattern = pattern
         self.callback = callback
         self.priority = priority
@@ -59,31 +48,11 @@ class WildcardListener:
         self._fired = False
 
     def matches(self, event_name: str) -> bool:
-        """Matches
-
-        Args:
-            event_name: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Matches"""
         return fnmatch.fnmatch(event_name, self.pattern)
 
     async def handle(self, event: Event) -> None:
-        """Handle
-
-        Args:
-            event: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Handle"""
         if self.once and self._fired:
             return
         if self.guard and not self.guard(event):
@@ -103,20 +72,10 @@ class ListenerRegistry:
     """
 
     def __init__(self, dispatcher: EventDispatcher):
-        """Init
-
-        Args:
-            dispatcher: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.dispatcher = dispatcher
-        self._wildcards: List[WildcardListener] = []
-        self._typed: Dict[Type[Event], List[ListenerCallback]] = {}
+        self._wildcards: list[WildcardListener] = []
+        self._typed: dict[type[Event], list[ListenerCallback]] = {}
 
     def on(
         self,
@@ -143,17 +102,7 @@ class ListenerRegistry:
         else:
 
             async def _once(evt):
-                """Once
-
-                Args:
-                    evt: [description]
-
-                Returns:
-                    [description]
-
-                Raises:
-                    [description]
-                """
+                """Once"""
                 self.dispatcher.forget(event, callback)
                 await callback(evt)
 
@@ -190,17 +139,7 @@ class EventListener:
     """
 
     def __init__(self, dispatcher: EventDispatcher):
-        """Init
-
-        Args:
-            dispatcher: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.registry = ListenerRegistry(dispatcher)
         self.dispatcher = dispatcher
 

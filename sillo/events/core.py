@@ -5,8 +5,9 @@ import threading
 import time
 import uuid
 import weakref
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Optional
 from weakref import WeakMethod, ref
 
 from .enums import EventPhase, EventPriority
@@ -48,7 +49,7 @@ class Event(EventSerializationMixin):
 
     DEFAULT_MAX_LISTENERS = 100
 
-    def __init__(self, name: str, max_listeners: Optional[int] = None):
+    def __init__(self, name: str, max_listeners: int | None = None):
         """Initialize an Event instance with the given name and listener limit.
 
         Sets up internal data structures for priority-bucketed listener storage,
@@ -68,14 +69,14 @@ class Event(EventSerializationMixin):
             ValueError: If ``max_listeners`` is provided and is less than zero.
         """
         self.name = name
-        self._listeners: Dict[EventPriority, List[ListenerType]] = {
+        self._listeners: dict[EventPriority, list[ListenerType]] = {
             EventPriority.HIGHEST: [],
             EventPriority.HIGH: [],
             EventPriority.NORMAL: [],
             EventPriority.LOW: [],
             EventPriority.LOWEST: [],
         }
-        self._once_listeners: Dict[EventPriority, List[ListenerType]] = {
+        self._once_listeners: dict[EventPriority, list[ListenerType]] = {
             EventPriority.HIGHEST: [],
             EventPriority.HIGH: [],
             EventPriority.NORMAL: [],
@@ -84,11 +85,11 @@ class Event(EventSerializationMixin):
         }
         self._max_listeners = max_listeners or self.DEFAULT_MAX_LISTENERS
         self._lock = threading.RLock()
-        self._parent: Optional["Event"] = None
-        self._children: List["Event"] = []
+        self._parent: Event | None = None
+        self._children: list[Event] = []
         self._enabled = True
-        self._history: List[Dict[str, Any]] = []
-        self._metrics: Dict[str, Any] = {
+        self._history: list[dict[str, Any]] = []
+        self._metrics: dict[str, Any] = {
             "trigger_count": 0,
             "total_listeners_executed": 0,
             "average_execution_time": 0.0,
@@ -233,7 +234,7 @@ class Event(EventSerializationMixin):
                 value._children.append(weakref.proxy(self))  # type: ignore
 
     @property
-    def children(self) -> List["Event"]:
+    def children(self) -> list["Event"]:
         """Get a snapshot of the child events registered under this event.
 
         Returns a shallow copy of the internal children list so that callers
@@ -280,7 +281,7 @@ class Event(EventSerializationMixin):
 
     def listen(
         self,
-        func: Optional[Callable[..., Any]] = None,
+        func: Callable[..., Any] | None = None,
         *,
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
@@ -324,7 +325,7 @@ class Event(EventSerializationMixin):
 
     def once(
         self,
-        func: Optional[Callable[..., Any]] = None,
+        func: Callable[..., Any] | None = None,
         *,
         priority: EventPriority = EventPriority.NORMAL,
         weak_ref: bool = False,
@@ -518,7 +519,7 @@ class Event(EventSerializationMixin):
                     return True
             return False
 
-    def trigger(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    def trigger(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """
         Trigger the event and notify all listeners.
 
@@ -542,7 +543,7 @@ class Event(EventSerializationMixin):
             )
 
             # Prepare event data
-            event_data: Dict[str, Any] = {
+            event_data: dict[str, Any] = {
                 "args": args,
                 "kwargs": kwargs,
                 "context": context,
@@ -582,11 +583,11 @@ class Event(EventSerializationMixin):
                 }
             except Exception as e:
                 logger.error(
-                    f"Error triggering event '{self.name}': {str(e)}", exc_info=True
+                    f"Error triggering event '{self.name}': {e!s}", exc_info=True
                 )
                 raise
 
-    def _propagate(self, event_data: Dict[str, Any], phase: EventPhase):
+    def _propagate(self, event_data: dict[str, Any], phase: EventPhase):
         """Propagate event to parent or children"""
         if phase == EventPhase.CAPTURING and self.parent:
             event_data["context"].phase = phase
@@ -596,7 +597,7 @@ class Event(EventSerializationMixin):
                 event_data["context"].phase = phase
                 child.trigger(*event_data["args"], **event_data["kwargs"])
 
-    async def trigger_async(self, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+    async def trigger_async(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         """Async variant of :meth:`trigger`.
 
         Identical semantics to ``trigger`` but coroutine listeners are
@@ -612,7 +613,7 @@ class Event(EventSerializationMixin):
             context = EventContext(
                 timestamp=time.time(), event_id=event_id, source=self
             )
-            event_data: Dict[str, Any] = {
+            event_data: dict[str, Any] = {
                 "args": args,
                 "kwargs": kwargs,
                 "context": context,
@@ -644,12 +645,10 @@ class Event(EventSerializationMixin):
                 "cancelled": event_data["cancelled"],
             }
         except Exception as e:
-            logger.error(
-                f"Error triggering event '{self.name}': {str(e)}", exc_info=True
-            )
+            logger.error(f"Error triggering event '{self.name}': {e!s}", exc_info=True)
             raise
 
-    async def _propagate_async(self, event_data: Dict[str, Any], phase: EventPhase):
+    async def _propagate_async(self, event_data: dict[str, Any], phase: EventPhase):
         if phase == EventPhase.CAPTURING and self.parent:
             event_data["context"].phase = phase
             await self.parent.trigger_async(*event_data["args"], **event_data["kwargs"])
@@ -659,8 +658,8 @@ class Event(EventSerializationMixin):
                 await child.trigger_async(*event_data["args"], **event_data["kwargs"])
 
     async def _execute_listeners_async(
-        self, event_data: Dict[str, Any], phase: EventPhase
-    ) -> Dict[str, Any]:
+        self, event_data: dict[str, Any], phase: EventPhase
+    ) -> dict[str, Any]:
         """Async listener execution: coroutine listeners are awaited.
 
         Unlike the synchronous :meth:`_execute_listeners` (which fire-and-forgets
@@ -675,7 +674,7 @@ class Event(EventSerializationMixin):
         cancelled = False
 
         with self._lock:
-            all_listeners: List[Tuple[ListenerType, EventPriority, bool]] = []
+            all_listeners: list[tuple[ListenerType, EventPriority, bool]] = []
             for priority in EventPriority:
                 all_listeners.extend(
                     (listener, priority, False)
@@ -693,7 +692,7 @@ class Event(EventSerializationMixin):
                 cancelled = True
                 break
             try:
-                actual_listener: Optional[Callable[..., Any]] = None
+                actual_listener: Callable[..., Any] | None = None
                 if isinstance(listener, (ref, WeakMethod)):
                     actual_listener = listener()
                     if actual_listener is None:
@@ -717,7 +716,7 @@ class Event(EventSerializationMixin):
                 break
             except Exception as e:
                 logger.error(
-                    f"Error in event listener for '{self.name}': {str(e)}",
+                    f"Error in event listener for '{self.name}': {e!s}",
                     exc_info=True,
                 )
 
@@ -730,8 +729,8 @@ class Event(EventSerializationMixin):
         }
 
     def _execute_listeners(
-        self, event_data: Dict[str, Any], phase: EventPhase
-    ) -> Dict[str, Any]:
+        self, event_data: dict[str, Any], phase: EventPhase
+    ) -> dict[str, Any]:
         """
         Execute all appropriate listeners.
 
@@ -748,7 +747,7 @@ class Event(EventSerializationMixin):
 
         # Collect listeners to execute
         with self._lock:
-            all_listeners: List[Tuple[ListenerType, EventPriority, bool]] = []
+            all_listeners: list[tuple[ListenerType, EventPriority, bool]] = []
             for priority in EventPriority:
                 all_listeners.extend(
                     (listener, priority, False)
@@ -771,7 +770,7 @@ class Event(EventSerializationMixin):
 
             try:
                 # Resolve weak references
-                actual_listener: Optional[Callable[..., Any]] = None
+                actual_listener: Callable[..., Any] | None = None
                 if isinstance(listener, (ref, WeakMethod)):
                     actual_listener = listener()
                     if actual_listener is None:
@@ -800,7 +799,7 @@ class Event(EventSerializationMixin):
                 break
             except Exception as e:
                 logger.error(
-                    f"Error in event listener for '{self.name}': {str(e)}",
+                    f"Error in event listener for '{self.name}': {e!s}",
                     exc_info=True,
                 )
 
@@ -813,7 +812,7 @@ class Event(EventSerializationMixin):
             "cancelled": cancelled,
         }
 
-    def _update_metrics(self, stats: Dict[str, Any]):
+    def _update_metrics(self, stats: dict[str, Any]):
         """Update performance metrics"""
         with self._lock:
             self._metrics["trigger_count"] += 1
@@ -826,7 +825,7 @@ class Event(EventSerializationMixin):
                 old_avg * (new_count - 1) + stats["average_time"]
             ) / new_count
 
-    def _record_history(self, event_data: Dict[str, Any], stats: Dict[str, Any]):
+    def _record_history(self, event_data: dict[str, Any], stats: dict[str, Any]):
         """Record event trigger in history"""
         with self._lock:
             self._history.append(
@@ -845,11 +844,11 @@ class Event(EventSerializationMixin):
             if len(self._history) > 100:
                 self._history.pop(0)
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get event performance metrics"""
         return self._metrics.copy()
 
-    def get_history(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_history(self, limit: int | None = None) -> list[dict[str, Any]]:
         """Get event trigger history"""
         with self._lock:
             if limit is None:

@@ -9,19 +9,18 @@ and handles retries / failures.
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
 import logging
 import signal
 import time
 import traceback
-import importlib
-from typing import Annotated, Any, Dict, List, Optional, Set
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
-from .connection import QueueConnection, ConnectionManager
-from .failed import FailedJobRepository, MemoryFailedRepository
-from .job import Job
+from .connection import ConnectionManager, QueueConnection
+from .failed import FailedJobRepository
 from .payloads import PayloadSerializer
 
 logger = logging.getLogger("sillo.work.queue.workers")
@@ -46,19 +45,12 @@ class WorkerOptions:
             float, Doc("Max seconds the worker runs before restarting. 0 = unlimited.")
         ] = 0,
         queues: Annotated[
-            List[str],
+            list[str],
             Doc("Queue names to listen on. First queue has highest priority."),
         ] = ["default"],
         backoff: Annotated[float, Doc("Base backoff seconds for retries.")] = 0.0,
     ):
-        """Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.concurrency = concurrency
         self.memory_limit = memory_limit
         self.timeout = timeout
@@ -84,23 +76,9 @@ class QueueWorker:
         serializer: Annotated[PayloadSerializer, Doc("Payload codec.")],
         failed_repo: Annotated[FailedJobRepository, Doc("Failed job storage.")],
         *,
-        options: Annotated[
-            Optional[WorkerOptions], Doc("Worker configuration.")
-        ] = None,
+        options: Annotated[WorkerOptions | None, Doc("Worker configuration.")] = None,
     ):
-        """Init
-
-        Args:
-            manager: [description]
-            serializer: [description]
-            failed_repo: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.manager = manager
         self.serializer = serializer
         self.failed_repo = failed_repo
@@ -108,7 +86,7 @@ class QueueWorker:
         self._running = False
         self._shutting_down = False
         self._paused = False
-        self._active: Set[asyncio.Task] = set()
+        self._active: set[asyncio.Task] = set()
         self._jobs_processed = 0
         self._started_at = 0.0
 
@@ -146,14 +124,7 @@ class QueueWorker:
         logger.info("QueueWorker resumed")
 
     def _register_signals(self) -> None:
-        """Register Signals
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Register Signals"""
         try:
             loop = asyncio.get_event_loop()
             for sig in (signal.SIGINT, signal.SIGTERM):
@@ -162,17 +133,7 @@ class QueueWorker:
             pass
 
     async def _run_worker(self, worker_id: int) -> None:
-        """Run Worker
-
-        Args:
-            worker_id: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Run Worker"""
         while self._running:
             if self._paused:
                 await asyncio.sleep(1)
@@ -206,23 +167,10 @@ class QueueWorker:
         self,
         conn: QueueConnection,
         queue_name: str,
-        job_data: Dict[str, Any],
+        job_data: dict[str, Any],
         worker_id: int,
     ) -> None:
-        """Process Job
-
-        Args:
-            conn: [description]
-            queue_name: [description]
-            job_data: [description]
-            worker_id: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Process Job"""
         job_id = job_data.get("_job_id", "unknown")
         job_class_name = job_data.get("job", "unknown")
 
@@ -252,7 +200,7 @@ class QueueWorker:
                 logger.exception("Failed to log failed job")
 
     @staticmethod
-    def _build_job(job_cls: type, job_data: Dict[str, Any]) -> Any:
+    def _build_job(job_cls: type, job_data: dict[str, Any]) -> Any:
         """Reconstruct the job from what was queued.
 
         Two payload shapes exist. ``dispatch`` records the call —
@@ -307,7 +255,7 @@ class QueueWorker:
         )
 
     @staticmethod
-    def _search_subclasses(name: str) -> "type | None":
+    def _search_subclasses(name: str) -> type | None:
         """Depth-first search of every imported job class for *name*."""
         from .job import Dispatchable
 
@@ -336,52 +284,21 @@ class WorkerPool:
     """
 
     def __init__(self):
-        """Init
+        """Init"""
+        self._workers: list[QueueWorker] = []
+        self._tasks: list[asyncio.Task] = []
 
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
-        self._workers: List[QueueWorker] = []
-        self._tasks: List[asyncio.Task] = []
-
-    def add(self, worker: QueueWorker) -> "WorkerPool":
-        """Add
-
-        Args:
-            worker: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def add(self, worker: QueueWorker) -> WorkerPool:
+        """Add"""
         self._workers.append(worker)
         return self
 
     async def start(self) -> None:
-        """Start
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Start"""
         self._tasks = [asyncio.create_task(w.run()) for w in self._workers]
 
     async def shutdown(self) -> None:
-        """Shutdown
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Shutdown"""
         for w in self._workers:
             w.stop()
         await asyncio.gather(*self._tasks, return_exceptions=True)

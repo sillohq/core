@@ -14,10 +14,9 @@ Supports the full Vixie cron syntax:
 
 from __future__ import annotations
 
-import calendar
 import time
 from datetime import datetime, timedelta
-from typing import Annotated, Optional, Set
+from typing import Annotated
 
 from typing_extensions import Doc
 
@@ -35,17 +34,7 @@ class CronParser:
         self,
         expression: Annotated[str, Doc("5-field cron: 'min hour day month weekday'.")],
     ):
-        """Init
-
-        Args:
-            expression: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         fields = expression.strip().split()
         if len(fields) != 5:
             raise ValueError(f"Cron requires 5 fields, got {len(fields)}: {expression}")
@@ -60,23 +49,11 @@ class CronParser:
         self._has_hash = "#" in fields[4]
 
     @staticmethod
-    def _parse_field(field: str, lo: int, hi: int) -> Set[int]:
-        """Parse Field
-
-        Args:
-            field: [description]
-            lo: [description]
-            hi: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+    def _parse_field(field: str, lo: int, hi: int) -> set[int]:
+        """Parse Field"""
         if field == "*":
             return set(range(lo, hi + 1))
-        result: Set[int] = set()
+        result: set[int] = set()
         for part in field.split(","):
             step = 1
             if "/" in part and "L" not in part and "W" not in part and "#" not in part:
@@ -105,7 +82,7 @@ class CronParser:
         self,
         after: Annotated[float, Doc("Epoch timestamp to start searching from.")],
         *,
-        tz: Annotated[Optional[str], Doc("Timezone name.")] = None,
+        tz: Annotated[str | None, Doc("Timezone name.")] = None,
     ) -> float:
         """Find the next timestamp matching the cron schedule after *after*."""
         dt = datetime.fromtimestamp(after)

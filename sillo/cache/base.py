@@ -15,8 +15,11 @@ import threading
 import typing
 from dataclasses import dataclass
 
+from typing_extensions import Self
+
 if typing.TYPE_CHECKING:
-    from typing import Any, Dict, Iterable, Optional
+    from collections.abc import Iterable
+    from typing import Any
 
 # Sentinel for "no value / cache miss".
 _MISSING = object()
@@ -103,7 +106,7 @@ class CacheStats:
             return 0.0
         return self.hits / self.total
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Serialize the statistics into a plain dictionary.
 
         Produces a dictionary suitable for JSON serialization or logging,
@@ -129,8 +132,8 @@ class CacheStats:
 
 def build_key(
     *parts: Any,
-    namespace: Optional[str] = None,
-    version: Optional[str] = None,
+    namespace: str | None = None,
+    version: str | None = None,
 ) -> str:
     """Build a deterministic cache key from ordered parts.
 
@@ -205,7 +208,7 @@ def _stable_repr(value: Any) -> str:
     return repr(value)
 
 
-def tag_key(namespace: Optional[str], tag: str) -> str:
+def tag_key(namespace: str | None, tag: str) -> str:
     """Return the storage key for a tag's membership set.
 
     Constructs a deterministic key used internally by cache backends to
@@ -350,10 +353,10 @@ class BaseCache(abc.ABC):
     def __init__(
         self,
         *,
-        namespace: Optional[str] = None,
-        default_ttl: Optional[int] = None,
+        namespace: str | None = None,
+        default_ttl: int | None = None,
         serializer: str = "json",
-        stats: Optional[CacheStats] = None,
+        stats: CacheStats | None = None,
     ) -> None:
         """Initialize the base cache backend with common configuration.
 
@@ -415,8 +418,8 @@ class BaseCache(abc.ABC):
     def make_key(
         self,
         *parts: Any,
-        namespace: Optional[str] = None,
-        version: Optional[str] = None,
+        namespace: str | None = None,
+        version: str | None = None,
     ) -> str:
         """Build a cache key using this backend's namespace as the default.
 
@@ -467,9 +470,9 @@ class BaseCache(abc.ABC):
         self,
         key: str,
         value: Any,
-        ttl: Optional[int] = None,
+        ttl: int | None = None,
         *,
-        tags: Optional[Iterable[str]] = None,
+        tags: Iterable[str] | None = None,
         sliding: bool = False,
     ) -> None:
         """Store a value in the cache under the given key.
@@ -526,7 +529,7 @@ class BaseCache(abc.ABC):
         """
 
     @abc.abstractmethod
-    async def touch(self, key: str, ttl: Optional[int] = None) -> bool:
+    async def touch(self, key: str, ttl: int | None = None) -> bool:
         """Refresh or update the TTL of an existing cache entry.
 
         Extends the lifetime of a cached key by resetting its expiration
@@ -584,7 +587,7 @@ class BaseCache(abc.ABC):
 
     # ---- context manager -------------------------------------------
 
-    async def __aenter__(self) -> "BaseCache":
+    async def __aenter__(self) -> Self:
         """Enter the async context manager, returning the backend instance.
 
         Allows the cache backend to be used with ``async with`` syntax for
@@ -597,7 +600,7 @@ class BaseCache(abc.ABC):
         """
         return self
 
-    async def __aexit__(self, *exc: Any) -> None:
+    async def __aexit__(self, *exc: object) -> None:
         """Exit the async context manager, releasing backend resources.
 
         Called automatically when the ``async with`` block exits, whether
@@ -611,7 +614,7 @@ class BaseCache(abc.ABC):
         """
         await self.close()
 
-    def _resolve_ttl(self, ttl: Optional[int]) -> Optional[int]:
+    def _resolve_ttl(self, ttl: int | None) -> int | None:
         """Resolve the effective TTL for a cache operation.
 
         Returns the explicitly provided TTL if not ``None``, otherwise
@@ -632,13 +635,13 @@ class BaseCache(abc.ABC):
 
 
 __all__ = [
+    "_MISSING",
     "BaseCache",
     "CacheError",
-    "SerializationError",
     "CacheStats",
+    "SerializationError",
     "build_key",
-    "tag_key",
-    "serialize",
     "deserialize",
-    "_MISSING",
+    "serialize",
+    "tag_key",
 ]

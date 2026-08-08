@@ -16,7 +16,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import Annotated, Any, Awaitable, Callable, List, Optional
+from collections.abc import Awaitable, Callable
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -41,48 +42,19 @@ class RetryMiddleware:
         base_delay: Annotated[float, Doc("Initial backoff seconds.")] = 1.0,
         max_delay: Annotated[float, Doc("Cap on backoff.")] = 60.0,
     ):
-        """Init
-
-        Args:
-            max_attempts: [description]
-            base_delay: [description]
-            max_delay: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.max_attempts = max_attempts
         self.base_delay = base_delay
         self.max_delay = max_delay
 
     def __call__(self, handler: JobHandler) -> JobHandler:
-        """Call
-
-        Args:
-            handler: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Call"""
         max_attempts = self.max_attempts
         base_delay = self.base_delay
         max_delay = self.max_delay
 
         async def wrapper() -> Any:
-            """Wrapper
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Wrapper"""
             last_exc = None
             for attempt in range(1, max_attempts + 1):
                 try:
@@ -118,19 +90,7 @@ class RateLimitMiddleware:
         per_seconds: Annotated[float, Doc("Time window in seconds.")] = 60.0,
         burst: Annotated[int, Doc("Initial burst capacity.")] = 1,
     ):
-        """Init
-
-        Args:
-            max_jobs: [description]
-            per_seconds: [description]
-            burst: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.max_jobs = max_jobs
         self.per_seconds = per_seconds
         self.burst = burst
@@ -138,28 +98,11 @@ class RateLimitMiddleware:
         self._last_refill = time.monotonic()
 
     def __call__(self, handler: JobHandler) -> JobHandler:
-        """Call
-
-        Args:
-            handler: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Call"""
         rate = self.max_jobs / self.per_seconds
 
         async def wrapper() -> Any:
-            """Wrapper
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Wrapper"""
             now = time.monotonic()
             elapsed = now - self._last_refill
             self._tokens = min(self.burst, self._tokens + elapsed * rate)
@@ -188,42 +131,15 @@ class TimeoutMiddleware:
     """
 
     def __init__(self, seconds: Annotated[float, Doc("Max execution seconds.")] = 30.0):
-        """Init
-
-        Args:
-            seconds: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Init"""
         self.seconds = seconds
 
     def __call__(self, handler: JobHandler) -> JobHandler:
-        """Call
-
-        Args:
-            handler: [description]
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Call"""
         seconds = self.seconds
 
         async def wrapper() -> Any:
-            """Wrapper
-
-            Returns:
-                [description]
-
-            Raises:
-                [description]
-            """
+            """Wrapper"""
             return await asyncio.wait_for(handler(), timeout=seconds)
 
         return wrapper

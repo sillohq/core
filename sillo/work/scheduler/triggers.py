@@ -15,7 +15,7 @@ import random
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from typing_extensions import Doc
 
@@ -23,14 +23,7 @@ from .cron import CronParser
 
 
 class TriggerType(Enum):
-    """Triggertype
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Triggertype"""
 
     INTERVAL = "interval"
     CRON = "cron"
@@ -39,14 +32,7 @@ class TriggerType(Enum):
 
 
 class CompoundLogic(Enum):
-    """Compoundlogic
-
-    Returns:
-        [description]
-
-    Raises:
-        [description]
-    """
+    """Compoundlogic"""
 
     AND = "and"
     OR = "or"
@@ -92,17 +78,10 @@ class CronTrigger:
     """
 
     expression: Annotated[str, Doc("Cron expression — 'min hour day month weekday'.")]
-    timezone: Annotated[Optional[str], Doc("IANA timezone name.")] = None
+    timezone: Annotated[str | None, Doc("IANA timezone name.")] = None
 
     def __post_init__(self):
-        """Post Init
-
-        Returns:
-            [description]
-
-        Raises:
-            [description]
-        """
+        """Post Init"""
         parser = CronParser(self.expression)
         self._parser = parser
 
@@ -128,7 +107,7 @@ class DateTrigger:
 
     def next_fire(
         self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]
-    ) -> Optional[float]:
+    ) -> float | None:
         """Return the fire time. Returns None after first fire."""
         return None if last_fire > 0 else self.at
 
@@ -148,14 +127,14 @@ class CompoundTrigger:
         ``CompoundLogic.OR`` (default) or ``CompoundLogic.AND``.
     """
 
-    triggers: Annotated[List[object], Doc("Child triggers.")] = field(
+    triggers: Annotated[list[object], Doc("Child triggers.")] = field(
         default_factory=list
     )
     logic: Annotated[CompoundLogic, Doc("OR or AND logic.")] = CompoundLogic.OR
 
     def next_fire(
         self, last_fire: Annotated[float, Doc("Timestamp of last execution.")]
-    ) -> Optional[float]:
+    ) -> float | None:
         """Calculate the next fire time based on the compound logic."""
         candidates = []
         for t in self.triggers:

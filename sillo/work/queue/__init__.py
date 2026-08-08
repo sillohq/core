@@ -1,51 +1,57 @@
 """sillo.work.queue — Laravel-style queue subsystem."""
 
+from .batches import Batch, JobChain
 from .connection import (
     ConnectionManager,
     QueueConnection,
-    SyncConnection,
     RedisConnection,
+    SyncConnection,
 )
 from .events import Event, EventDispatcher, listen
 from .failed import FailedJob, FailedJobRepository, MemoryFailedRepository
-from .job import Job, Dispatchable, dispatch
+from .job import Dispatchable, Job, dispatch
 from .listener import EventListener, ListenerRegistry, WildcardListener
 from .middleware import (
     JobMiddleware,
+)
+from .middleware import (
     RateLimitMiddleware as QRateLimitMiddleware,
+)
+from .middleware import (
     RetryMiddleware as QRetryMiddleware,
+)
+from .middleware import (
     TimeoutMiddleware as QTimeoutMiddleware,
 )
 from .payloads import JobPayload, PayloadSerializer
 from .workers import QueueWorker, WorkerOptions, WorkerPool
-from .batches import Batch, JobChain
 
 __all__ = [
+    "Batch",
     "ConnectionManager",
-    "QueueConnection",
-    "SyncConnection",
-    "RedisConnection",
+    "Dispatchable",
     "Event",
     "EventDispatcher",
-    "listen",
+    "EventListener",
     "FailedJob",
     "FailedJobRepository",
-    "MemoryFailedRepository",
     "Job",
-    "Dispatchable",
-    "dispatch",
-    "EventListener",
-    "ListenerRegistry",
-    "WildcardListener",
+    "JobChain",
     "JobMiddleware",
+    "JobPayload",
+    "ListenerRegistry",
+    "MemoryFailedRepository",
+    "PayloadSerializer",
     "QRateLimitMiddleware",
     "QRetryMiddleware",
     "QTimeoutMiddleware",
-    "JobPayload",
-    "PayloadSerializer",
+    "QueueConnection",
     "QueueWorker",
+    "RedisConnection",
+    "SyncConnection",
+    "WildcardListener",
     "WorkerOptions",
     "WorkerPool",
-    "Batch",
-    "JobChain",
+    "dispatch",
+    "listen",
 ]

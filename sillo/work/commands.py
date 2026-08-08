@@ -27,7 +27,8 @@ import asyncio
 import contextlib
 import logging
 import signal
-from typing import Annotated, Any, Callable, List, Optional
+from collections.abc import Callable
+from typing import Annotated, Any
 
 from typing_extensions import Doc
 
@@ -36,7 +37,7 @@ logger = logging.getLogger("sillo.work")
 
 def connection_for(
     url: Annotated[
-        Optional[str],
+        str | None,
         Doc(
             "Broker URL. A redis:// URL gives a shared queue; None keeps it in-process."
         ),
@@ -70,10 +71,10 @@ def connection_for(
 def build_worker(
     *,
     url: Annotated[
-        Optional[str], Doc("Broker URL. None keeps the queue in-process.")
+        str | None, Doc("Broker URL. None keeps the queue in-process.")
     ] = None,
     queues: Annotated[
-        Optional[List[str]], Doc("Queues to consume, highest priority first.")
+        list[str] | None, Doc("Queues to consume, highest priority first.")
     ] = None,
     concurrency: Annotated[int, Doc("Jobs to run at once.")] = 4,
     timeout: Annotated[float, Doc("Seconds a single job may run.")] = 60.0,
@@ -121,10 +122,10 @@ def build_worker(
 async def run_worker(
     *,
     url: Annotated[
-        Optional[str], Doc("Broker URL. None keeps the queue in-process.")
+        str | None, Doc("Broker URL. None keeps the queue in-process.")
     ] = None,
     queues: Annotated[
-        Optional[List[str]], Doc("Queues to consume, highest priority first.")
+        list[str] | None, Doc("Queues to consume, highest priority first.")
     ] = None,
     concurrency: Annotated[int, Doc("Jobs to run at once.")] = 4,
     timeout: Annotated[float, Doc("Seconds a single job may run.")] = 60.0,
@@ -170,7 +171,7 @@ async def run_worker(
 
 async def run_scheduler(
     register: Annotated[
-        Optional[Callable[[Any], Any]],
+        Callable[[Any], Any] | None,
         Doc("Called with the manager to register tasks before it starts."),
     ] = None,
     *,

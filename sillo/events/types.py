@@ -1,10 +1,20 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Protocol, TypeVar, Union
+from typing import Any, Protocol, TypeVar, Union
 from weakref import ReferenceType, WeakMethod
 
 from .enums import EventPhase
 
-_T = TypeVar("_T", bound="EventProtocol")
+# Exported: sillo.events.core imports this. PYI018 sees an unused private
+# TypeVar because nothing in *this* module uses it, which is not the same
+# as nothing using it.
+_T = TypeVar("_T", bound="EventProtocol")  # noqa: PYI018
+
+# Exported: sillo.events.core imports this. PYI018 flags it as an unused
+# private TypeVar because nothing in this module uses it, which is not the
+# same as nothing using it.
 
 
 @dataclass

@@ -5,7 +5,7 @@ sillo.work.background — Fire-and-forget tasks with supervision.
 - ``Supervisor`` — auto-restart on failure with configurable policies
 """
 
+from .supervisor import RestartPolicy, Supervisor
 from .tasks import BackgroundTask
-from .supervisor import Supervisor, RestartPolicy
 
-__all__ = ["BackgroundTask", "Supervisor", "RestartPolicy"]
+__all__ = ["BackgroundTask", "RestartPolicy", "Supervisor"]
