@@ -213,6 +213,17 @@ export default defineConfig({
                     ],
                 },
                 {
+                    label: 'OAuth2 & Social Login',
+                    collapsed: true,
+                    items: [
+                        { label: 'OAuth2 Overview', link: '/guides/oauth/' },
+                        { label: 'OAuth Providers', link: '/guides/oauth/providers/' },
+                        { label: 'Persisting the Login', link: '/guides/oauth/persisting-logins/' },
+                        { label: 'OAuth in OpenAPI', link: '/guides/oauth/openapi/' },
+                        { label: 'The Security Model', link: '/guides/oauth/security/' },
+                    ],
+                },
+                {
                     label: 'Security',
                     collapsed: true,
                     items: [
