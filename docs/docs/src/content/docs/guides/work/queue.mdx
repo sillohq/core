@@ -118,29 +118,85 @@ await conn.clear("emails")
 
 ###  RedisConnection — Persistent, Cross-Process
 
-Stores jobs in Redis.  Delayed jobs use sorted sets (scored by wake
-time).  Active jobs use lists.  Workers block on `BRPOP` rather than
-polling.  Jobs survive process restarts and can be consumed by workers
-on different machines.
+Stores jobs in Redis, so they survive process restarts and can be consumed by
+workers on other machines.
 
 ```python
 from sillo.work.queue import RedisConnection
 
 conn = RedisConnection(
     "redis://localhost:6379",
-    prefix="myapp:queue:",    # all keys namespaced under this
+    prefix="myapp:queue:",       # all keys namespaced under this
+    visibility_timeout=300,      # seconds a worker may hold a job
 )
 
 await conn.push("critical", '{"priority":"high"}')
-result = await conn.pop("critical", timeout=30)
+job_id, payload = await conn.pop("critical", timeout=30)
+# ... run it ...
+await conn.ack("critical", job_id)
 ```
 
 **How Redis keys are structured:**
 
-| Purpose | Key |
-|---|---|
-| Active jobs | `myapp:queue:emails` (Redis list) |
-| Delayed jobs | `myapp:queue:emails:delayed` (sorted set) |
+| Purpose | Key | Type |
+|---|---|---|
+| Ready jobs | `myapp:queue:emails` | list |
+| Delayed jobs | `myapp:queue:emails:delayed` | sorted set, scored by wake time |
+| Jobs held by a worker | `myapp:queue:emails:processing` | list |
+| When each held job expires | `myapp:queue:emails:claims` | sorted set, scored by deadline |
+
+####  Delivery is at-least-once
+
+Taking a job does not remove it. `pop` moves the job to the in-flight list and
+records a deadline; only `ack` removes it. `QueueWorker` acknowledges for you
+after the job returns, so this matters only if you drive a connection
+yourself.
+
+That is what makes a crash survivable: a worker that dies mid-job has not
+consumed anything, and once the deadline passes the job returns to the ready
+list for someone else.
+
+The price is that **a job can run more than once**:
+
+- it outlives `visibility_timeout` while still working, so the queue assumes
+  the worker is gone and hands it to another one;
+- or the worker finishes, dies before acknowledging, and the job comes back.
+
+**Write jobs so a second run is harmless** — key writes on the job's own id,
+or check whether the work is already done before doing it. No setting removes
+this. A queue cannot offer exactly-once delivery; anything claiming otherwise
+is doing idempotency on your behalf and hoping.
+
+####  Choosing a visibility timeout
+
+Set it comfortably above your slowest job.
+
+- **Too low** and healthy jobs are re-run underneath themselves, so a slow job
+  gets a second worker while the first is still going.
+- **Too high** and a job whose worker died sits idle that long before anyone
+  retries it.
+
+The default of 300s suits jobs measured in seconds. If one queue holds a job
+that takes an hour, give that queue its own connection rather than raising the
+timeout for everything.
+
+####  Inspecting what is in flight
+
+```python
+await conn.size("emails")        # ready + delayed, waiting to be taken
+await conn.in_flight("emails")   # taken by a worker, not yet acknowledged
+```
+
+`in_flight` that climbs and never falls means jobs are being taken and never
+acknowledged — usually a worker crashing on a specific payload, retrying it,
+and crashing again.
+
+<Aside type="caution" title="Redis 6.2 or newer">
+
+The blocking path uses `BLMOVE`, which moves a job to the in-flight list in
+one step. It was added in Redis 6.2. Nothing here works on older servers.
+
+</Aside>
 
 ###  ConnectionManager — The Broker
 
@@ -970,8 +1026,11 @@ class PostgresBackend(QueueConnection):
   atomically claim a job — no two workers can get the same one.
 - `ack()` is a no-op because the job was deleted on pop.  If the worker
   crashes before ack, the job is lost — but the `DELETE` was committed.
-- For "at-least-once" delivery, move the job to a "processing" list on
-  pop and delete on ack.
+- For "at-least-once" delivery, move the job to a "processing" table on
+  pop and delete it on ack, with a deadline column so an abandoned job can
+  be reclaimed. `RedisConnection` does exactly this — see
+  [Delivery is at-least-once](#delivery-is-at-least-once) — and it is worth
+  copying rather than reinventing.
 
 
 ---

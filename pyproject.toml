@@ -132,6 +132,11 @@ dev = [
     "pytest-asyncio>=0.25.3,<1.5.0",
     "coverage>=6.3,<8.0",
     "httpx>=0.23.3,<0.29.0",
+    # The Redis queue's durability tests need a server that executes Lua, so
+    # the atomicity they assert is the scripts' and not a stub's. The [lua]
+    # extra pulls lupa; without it fakeredis answers EVAL with "unknown
+    # command" and the tests skip rather than silently passing.
+    "fakeredis[lua]>=2.26.0",
     "mypy>=1.15.0",
     # ty and ruff are both pre-1.0 and gate CI. On a floor constraint an
     # upstream release turns the build red with no change from us, and ty in

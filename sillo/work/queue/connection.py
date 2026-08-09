@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+import uuid
 from abc import ABC, abstractmethod
 from typing import Annotated, Any
 
@@ -100,7 +101,7 @@ class SyncConnection(QueueConnection):
     async def push(self, queue_name: str, payload: str, *, delay: int = 0) -> str:
         """Push"""
         self._ensure(queue_name)
-        job_id = f"{int(time.time() * 1e6)}-{id(payload)}"
+        job_id = uuid.uuid4().hex
         if delay > 0:
             self._delayed[queue_name].append(
                 (time.monotonic() + delay, job_id, payload)
@@ -151,10 +152,98 @@ class SyncConnection(QueueConnection):
         self._delayed[name] = remaining
 
 
+#: Move every job whose delay has elapsed onto the ready list, atomically.
+#:
+#: The read-then-write this replaces could not be made safe from the client:
+#: two workers both saw the same due set and pushed it twice, and the delete
+#: was ``ZREMRANGEBYSCORE(0, now)`` — a *range* — so a job that became due
+#: between the read and the delete was erased without ever being pushed.
+#: Removing each member by name, inside one script, closes both.
+_MIGRATE_LUA = """
+local due = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
+for i = 1, #due do
+    redis.call('LPUSH', KEYS[2], due[i])
+    redis.call('ZREM', KEYS[1], due[i])
+end
+return #due
+"""
+
+#: Take one job from the ready list and claim it, atomically.
+#:
+#: The move and the claim have to happen together, or a crash between them
+#: leaves an entry in ``processing`` that no deadline covers.
+_CLAIM_LUA = """
+local raw = redis.call('RPOP', KEYS[1])
+if not raw then return false end
+redis.call('LPUSH', KEYS[2], raw)
+redis.call('ZADD', KEYS[3], ARGV[1], raw)
+return raw
+"""
+
+#: Return timed-out claims to the ready list, and adopt orphans.
+#:
+#: Two jobs in one script. Any claim past its deadline goes back to the ready
+#: list — that is the recovery path for a worker that died holding a job. And
+#: anything sitting in ``processing`` with no claim at all is given one: that
+#: is the entry a crash in the gap between ``BLMOVE`` and the claim would
+#: otherwise strand forever, invisible to the deadline sweep.
+_REAP_LUA = """
+local expired = redis.call('ZRANGEBYSCORE', KEYS[2], '-inf', ARGV[1])
+for i = 1, #expired do
+    if redis.call('LREM', KEYS[1], 1, expired[i]) > 0 then
+        redis.call('LPUSH', KEYS[3], expired[i])
+    end
+    redis.call('ZREM', KEYS[2], expired[i])
+end
+local held = redis.call('LRANGE', KEYS[1], 0, -1)
+for i = 1, #held do
+    if redis.call('ZSCORE', KEYS[2], held[i]) == false then
+        redis.call('ZADD', KEYS[2], ARGV[2], held[i])
+    end
+end
+return #expired
+"""
+
+#: Drop a finished job's claim.
+#:
+#: ``ack`` is handed a job id, not the raw entry, and the raw entry is what
+#: the list holds. The in-flight list is bounded by the number of workers, so
+#: scanning it is cheaper than maintaining a second index to avoid the scan.
+_ACK_LUA = """
+local held = redis.call('LRANGE', KEYS[1], 0, -1)
+local prefix = ARGV[1] .. ':'
+for i = 1, #held do
+    if string.sub(held[i], 1, string.len(prefix)) == prefix then
+        redis.call('LREM', KEYS[1], 1, held[i])
+        redis.call('ZREM', KEYS[2], held[i])
+        return 1
+    end
+end
+return 0
+"""
+
+
 class RedisConnection(QueueConnection):
     """Redis-backed persistent queue connection.
 
-    Uses sorted sets for pending/delayed jobs and lists for active work.
+    Delivery is **at-least-once**. A job is moved to an in-flight list when a
+    worker takes it and only removed once that worker acknowledges it, so a
+    worker that dies mid-job does not take the job with it — the job returns
+    to the queue after ``visibility_timeout`` seconds and another worker runs
+    it.
+
+    The cost of that guarantee is that a job can run twice: once if it
+    outlives its visibility timeout while still working, and once if a worker
+    dies after finishing but before acknowledging. **Jobs must be
+    idempotent.** There is no configuration that removes this; exactly-once
+    delivery is not something a queue can offer.
+
+    Attributes:
+        visibility_timeout: Seconds a worker may hold a job before it is
+            considered abandoned. Set it comfortably above the slowest job on
+            the queue — too low and healthy jobs are re-run underneath
+            themselves; too high and a crashed worker's job sits idle that
+            long before anyone retries it.
     """
 
     def __init__(
@@ -162,10 +251,15 @@ class RedisConnection(QueueConnection):
         url: Annotated[str, Doc("Redis connection URL.")] = "redis://localhost:6379",
         *,
         prefix: Annotated[str, Doc("Key prefix.")] = "sillo:queue:",
+        visibility_timeout: Annotated[
+            float,
+            Doc("Seconds before an unacknowledged job is handed to another worker."),
+        ] = 300.0,
     ):
         """Init"""
         self.url = url
         self.prefix = prefix
+        self.visibility_timeout = visibility_timeout
         self._redis: Any = None
 
     async def _r(self):
@@ -175,14 +269,31 @@ class RedisConnection(QueueConnection):
         self._redis = aioredis.from_url(self.url, decode_responses=True)
         return self._redis
 
+    def _keys(self, queue_name: str) -> tuple[str, str, str, str]:
+        """The four keys a queue occupies.
+
+        Args:
+            queue_name: Logical queue name.
+
+        Returns:
+            ``(ready, delayed, processing, claims)``. ``ready`` is the list
+            workers take from, ``delayed`` the sorted set of not-yet-due jobs,
+            ``processing`` the list of jobs currently held by a worker, and
+            ``claims`` the sorted set of their deadlines.
+        """
+        key = f"{self.prefix}{queue_name}"
+        return key, f"{key}:delayed", f"{key}:processing", f"{key}:claims"
+
     async def push(self, queue_name: str, payload: str, *, delay: int = 0) -> str:
         """Push"""
         r = await self._r()
-        job_id = f"{int(time.time() * 1e6)}-{hash(payload)}"
-        key = f"{self.prefix}{queue_name}"
+        # `hash()` is seeded per process, so the same payload produced a
+        # different id in every worker and ids collided within a microsecond.
+        # An id nothing can correlate on is not an id.
+        job_id = uuid.uuid4().hex
+        key, delayed, _, _ = self._keys(queue_name)
         if delay > 0:
-            score = time.time() + delay
-            await r.zadd(f"{key}:delayed", {f"{job_id}:{payload}": score})
+            await r.zadd(delayed, {f"{job_id}:{payload}": time.time() + delay})
         else:
             await r.lpush(key, f"{job_id}:{payload}")
         return job_id
@@ -192,40 +303,118 @@ class RedisConnection(QueueConnection):
     ) -> tuple[str, str] | None:
         """Pop"""
         r = await self._r()
-        key = f"{self.prefix}{queue_name}"
+        key, _delayed, processing, claims = self._keys(queue_name)
+
         await self._migrate_delayed(r, key)
+        await self._reap_expired(r, queue_name)
+
+        deadline = time.time() + self.visibility_timeout
 
         if timeout > 0:
-            result = await r.brpop(key, timeout=int(timeout))
+            # BLMOVE is itself atomic, so the job is never in neither list.
+            # The claim lands a moment later; an entry that misses it because
+            # this process died in between is adopted by the next reap.
+            raw = await r.blmove(key, processing, timeout, "RIGHT", "LEFT")
+            if raw:
+                await r.zadd(claims, {raw: deadline})
         else:
-            result = await r.rpop(key)
+            raw = await r.eval(_CLAIM_LUA, 3, key, processing, claims, deadline)
 
-        if result:
-            raw = result if isinstance(result, str) else result[1]
-            jid, _, payload = raw.partition(":")
-            return jid, payload
-        return None
+        if not raw:
+            return None
+        jid, _, payload = raw.partition(":")
+        return jid, payload
 
     async def size(self, queue_name: str) -> int:
         """Size"""
         r = await self._r()
-        key = f"{self.prefix}{queue_name}"
-        return await r.llen(key)
+        key, delayed, _, _ = self._keys(queue_name)
+        return int(await r.llen(key)) + int(await r.zcard(delayed))
 
     async def clear(self, queue_name: str) -> None:
         """Clear"""
         r = await self._r()
-        await r.delete(f"{self.prefix}{queue_name}")
+        await r.delete(*self._keys(queue_name))
+
+    async def ack(self, queue_name: str, job_id: str) -> None:
+        """Drop a finished job's claim so it is never redelivered.
+
+        Until this lands the job is still in flight as far as the queue is
+        concerned, which is the whole point — a worker that dies before
+        acknowledging has its job handed to someone else.
+
+        Args:
+            queue_name: Queue the job came from.
+            job_id: Id returned by :meth:`push` and handed back by
+                :meth:`pop`.
+        """
+        r = await self._r()
+        _, _, processing, claims = self._keys(queue_name)
+        await r.eval(_ACK_LUA, 2, processing, claims, job_id)
+
+    async def fail(
+        self, queue_name: str, job_id: str, payload: str, exception: str
+    ) -> None:
+        """Release a permanently failed job.
+
+        The failure itself is recorded by the worker's failed-job repository;
+        all this does is stop the queue holding the job in flight, so it is
+        not redelivered once its visibility window closes.
+
+        Args:
+            queue_name: Queue the job came from.
+            job_id: Id of the failed job.
+            payload: Serialised payload, kept for the repository's benefit.
+            exception: Exception message, likewise.
+        """
+        await self.ack(queue_name, job_id)
+
+    async def in_flight(self, queue_name: str) -> int:
+        """How many jobs are currently held by workers.
+
+        Args:
+            queue_name: Queue name.
+
+        Returns:
+            The number of jobs taken but not yet acknowledged. A number that
+            keeps climbing means jobs are being taken and never acknowledged.
+        """
+        r = await self._r()
+        _, _, processing, _ = self._keys(queue_name)
+        return int(await r.llen(processing))
 
     async def _migrate_delayed(self, r, key: str) -> None:
-        """Migrate Delayed"""
+        """Move every due delayed job onto the ready list.
+
+        Args:
+            r: Redis client.
+            key: The ready-list key; the delayed set is derived from it.
+        """
+        await r.eval(_MIGRATE_LUA, 2, f"{key}:delayed", key, time.time())
+
+    async def _reap_expired(self, r, queue_name: str) -> int:
+        """Return abandoned jobs to the queue.
+
+        Args:
+            r: Redis client.
+            queue_name: Queue name.
+
+        Returns:
+            How many jobs were reclaimed.
+        """
+        key, _, processing, claims = self._keys(queue_name)
         now = time.time()
-        delayed_key = f"{key}:delayed"
-        items = await r.zrangebyscore(delayed_key, 0, now)
-        if items:
-            for item in items:
-                await r.lpush(key, item)
-            await r.zremrangebyscore(delayed_key, 0, now)
+        return int(
+            await r.eval(
+                _REAP_LUA,
+                3,
+                processing,
+                claims,
+                key,
+                now,
+                now + self.visibility_timeout,
+            )
+        )
 
 
 class ConnectionManager:
