@@ -2919,22 +2919,3 @@ class SilloApp:
             )
         logger.info(f"Starting server with uvicorn: {host}:{port}")
         uvicorn.run(self, host=host, port=port, reload=reload)
-
-
-def __getattr__(name: str) -> Any:
-    """Resolve the pre-0.0.2a1 spelling, with a warning.
-
-    ``sillo.application`` is imported directly often enough — the framework
-    does it itself in :mod:`sillo.graphql.handler` — that the alias has to
-    live here too, not only on the package. See the matching hook in
-    ``sillo/__init__.py``.
-    """
-    if name == "silloApp":
-        warnings.warn(
-            "silloApp was renamed to SilloApp in 0.0.2a1 and the old name "
-            "will be removed in 0.1.0. Use `from sillo import SilloApp`.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return SilloApp
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

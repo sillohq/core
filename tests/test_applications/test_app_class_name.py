@@ -1,19 +1,19 @@
-"""The application class is `SilloApp`, and the old name still resolves.
+"""The application class is `SilloApp`, and `silloApp` no longer exists.
 
 `silloApp` was the spelling up to 0.0.1a15. It violated every naming
-convention Python has for classes, so 0.0.2a1 renamed it — but an alpha with
-fifteen releases behind it has real applications importing the old name, and
-a rename with no bridge breaks all of them at import time, before any of
-their code runs.
+convention Python has for classes — a lowercase-initial name reads as a
+function at every call site, which is exactly how `app = silloApp()` looked.
 
-These tests pin both halves of that bargain: the new name is the real one and
-the only one advertised, and the old name keeps working while saying it is on
-the way out.
+0.0.2a1 renamed it and kept the old name resolvable behind a deprecation
+warning. 0.0.2a2 removes it outright: an alias that still works is an alias
+people keep writing, and the framework is early enough that a clean break
+costs less than a name nobody trusts.
+
+These tests pin both directions. The new name is the real one, and the old
+one raises rather than silently resolving to anything.
 """
 
 from __future__ import annotations
-
-import warnings
 
 import pytest
 
@@ -38,64 +38,61 @@ class TestTheNewName:
     def test_it_is_the_advertised_name(self):
         assert "SilloApp" in sillo.__all__
 
+    def test_a_star_import_brings_it_in(self):
+        namespace: dict = {}
+        exec("from sillo import *", namespace)  # noqa: S102
+
+        assert namespace["SilloApp"] is SilloApp
+
     def test_an_instance_stringifies_under_the_new_name(self):
         """`__str__` reaches logs and dev-server output; it must not still
         say `silloApp`."""
         assert str(SilloApp(title="Projects")) == "<SilloApp: Projects>"
 
 
-class TestTheOldNameStillWorks:
-    def test_the_package_still_resolves_it(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
+class TestTheOldNameIsGone:
+    """Removed, not merely undocumented.
 
-            assert sillo.silloApp is SilloApp
-
-    def test_the_module_still_resolves_it(self):
-        """`from sillo.application import ...` is a path the framework itself
-        uses, so the alias cannot live on the package alone."""
-        import sillo.application
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-
-            assert sillo.application.silloApp is SilloApp
+    The failure has to be loud and immediate. A name that resolves to
+    something plausible — a shim, a subclass, `None` — fails later and
+    somewhere else, which is worse than not existing.
+    """
 
     @pytest.mark.parametrize("module", ["sillo", "sillo.application"])
-    def test_using_it_warns(self, module):
+    def test_the_attribute_does_not_exist(self, module):
         import importlib
 
         mod = importlib.import_module(module)
 
-        with pytest.warns(DeprecationWarning, match="renamed to SilloApp"):
-            getattr(mod, "silloApp")  # noqa: B009
+        with pytest.raises(AttributeError):
+            mod.silloApp
 
-    def test_the_warning_names_the_removal_version(self):
-        """A deprecation with no deadline is a deprecation nobody acts on."""
-        with pytest.warns(DeprecationWarning) as caught:
-            sillo.silloApp
+    @pytest.mark.parametrize("module", ["sillo", "sillo.application"])
+    def test_importing_it_fails(self, module):
+        """The form real code uses: `from sillo import silloApp`."""
+        with pytest.raises(ImportError):
+            exec(f"from {module} import silloApp")  # noqa: S102
 
-        assert "0.1.0" in str(caught[0].message)
-
-
-class TestTheOldNameIsNotAdvertised:
     def test_it_is_absent_from_all(self):
-        """A star-import must not hand back the deprecated spelling."""
         assert "silloApp" not in sillo.__all__
 
     def test_a_star_import_does_not_bring_it_in(self):
         namespace: dict = {}
         exec("from sillo import *", namespace)  # noqa: S102
 
-        assert "SilloApp" in namespace
         assert "silloApp" not in namespace
 
-    @pytest.mark.parametrize("module", ["sillo", "sillo.application"])
-    def test_an_unrelated_attribute_still_raises(self, module):
-        """The `__getattr__` hook must not swallow genuine typos."""
-        import importlib
+    def test_it_is_absent_from_dir(self):
+        """`dir()` drives editor completion; the old name must not appear."""
+        assert "silloApp" not in dir(sillo)
 
-        mod = importlib.import_module(module)
+    def test_no_deprecation_shim_survives(self):
+        """A module `__getattr__` is how the 0.0.2a1 alias worked.
 
-        with pytest.raises(AttributeError, match="no attribute 'sillLoApp'"):
-            mod.sillLoApp
+        Asserting the hook itself is gone catches a partial revert that
+        reinstates the shim while leaving these tests otherwise passing.
+        """
+        import sillo.application
+
+        assert not hasattr(sillo, "__getattr__")
+        assert not hasattr(sillo.application, "__getattr__")

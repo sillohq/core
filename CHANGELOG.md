@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2a2] - 2026-08-09
+
+### Removed
+
+- **`silloApp` is gone.** 0.0.2a1, released hours earlier, kept it resolvable
+  behind a `DeprecationWarning`. That bridge is removed: `from sillo import
+  silloApp` now raises `ImportError`, and `sillo.silloApp` raises
+  `AttributeError`.
+
+  ```python
+  from sillo import SilloApp
+
+  app = SilloApp(title="Projects API")
+  ```
+
+  The reasoning against a deprecation period is that an alias which still
+  works is an alias people keep writing, and every copy of it that reaches a
+  tutorial or a StackOverflow answer outlives the release that removed it.
+  The framework is early enough that a clean break costs less than a name
+  nobody can trust.
+
+  The failure is deliberately immediate and loud. Nothing resolves to a shim,
+  a subclass or `None` — an old call site fails at import, before any of your
+  code runs, rather than somewhere further in.
+
+  If you are coming from 0.0.2a1, run your suite with
+  `-W error::DeprecationWarning` first; it will point at every remaining use.
+
 ## [0.0.2a1] - 2026-08-09
 
 ### Changed
@@ -17,8 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exactly how `app = silloApp()` looked.
 
   The old name still resolves, from both `sillo` and `sillo.application`, and
-  emits a `DeprecationWarning` naming its removal in **0.1.0**. Nothing breaks
-  on upgrade; the migration is one find-and-replace:
+  emits a `DeprecationWarning` naming its removal in **0.1.0**. (Superseded:
+  0.0.2a2 removed it instead. This entry describes 0.0.2a1 as released.)
+  Nothing breaks on upgrade; the migration is one find-and-replace:
 
   ```python
   from sillo import SilloApp

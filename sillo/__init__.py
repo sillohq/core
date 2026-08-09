@@ -101,12 +101,9 @@ Common Patterns:
     GraphQL(app, schema, path="/graphql", graphiql=True)
 """
 
-import warnings
-from typing import Any
-
 from sillo.core.routing import Route, Router
 
-__version__: str = "0.0.2a1"
+__version__: str = "0.0.2a2"
 
 from sillo.core.dependencies import Depend
 
@@ -140,27 +137,3 @@ __all__ = [
     "SilloApp",
     "UploadFile",
 ]
-
-
-def __getattr__(name: str) -> Any:
-    """Keep ``from sillo import silloApp`` working, loudly.
-
-    The class was named ``silloApp`` up to 0.0.1a15. Renaming it outright
-    would break every existing application at import, so the old name stays
-    resolvable for one more cycle — but deliberately outside ``__all__``, so
-    it never shows up in completions, ``dir()`` or a star-import, and never
-    reads as a supported spelling.
-
-    Module-level ``__getattr__`` (PEP 562) is what makes the warning possible
-    at all: a plain ``silloApp = SilloApp`` assignment binds at import time
-    and has no moment at which to say anything.
-    """
-    if name == "silloApp":
-        warnings.warn(
-            "silloApp was renamed to SilloApp in 0.0.2a1 and the old name "
-            "will be removed in 0.1.0. Use `from sillo import SilloApp`.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return SilloApp
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

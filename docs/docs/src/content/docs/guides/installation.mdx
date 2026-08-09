@@ -133,7 +133,7 @@ If you are using a manually managed virtual environment, prefer switching the pr
 
 ## Upgrading from 0.0.1a15 or earlier
 
-The application class was renamed from `silloApp` to `SilloApp` in **0.0.2a1**. Classes in Python are `CapWords`, and the old spelling made `app = silloApp()` read like a function call at every entry point.
+The application class was renamed from `silloApp` to `SilloApp`. Classes in Python are `CapWords`, and the old spelling made `app = silloApp()` read like a function call at every entry point.
 
 The migration is one find-and-replace:
 
@@ -143,17 +143,13 @@ from sillo import SilloApp
 app = SilloApp(title="Projects API")
 ```
 
-Nothing breaks if you upgrade before doing it. The old name still resolves from both `sillo` and `sillo.application`, and warns:
+<Aside type="danger" title="`silloApp` no longer exists">
+Do this before you upgrade. `silloApp` was removed in **0.0.2a2** — there is no alias and no deprecation period left, so `from sillo import silloApp` raises `ImportError` at import time, before any of your code runs.
 
-```python
-from sillo import silloApp  # DeprecationWarning
-```
-
-<Aside type="caution" title="The old name goes away in 0.1.0">
-`silloApp` is kept only as a bridge, and it is not in `__all__` — a star-import and your editor's completions offer `SilloApp` alone. Run your test suite with `-W error::DeprecationWarning` to find every remaining use.
+0.0.2a1 briefly kept the old name working behind a `DeprecationWarning`. If you are on that release, run your suite with `-W error::DeprecationWarning` to find every remaining use before moving on.
 </Aside>
 
-One other visible change: `str(app)` now reads `<SilloApp: title>`. If you assert on dev-server output or log lines, update those too.
+Nothing else in the constructor changed — every argument, and every method on the returned application, is the same. The only other visible difference is that `str(app)` now reads `<SilloApp: title>`, which matters if you assert on dev-server output or log lines.
 
 ## Why uv?
 
