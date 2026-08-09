@@ -265,14 +265,12 @@ the only way to know.
 On Python 3.11, 3.12 and 3.13, on every push, and once a week on a
 schedule.
 
-<aside>
-
+:::caution
 **The weekly run is not busywork.** The failure it catches is a new sillo
 release breaking the project — which happens on the framework's calendar,
 not on yours. A scheduled run turns "someone discovers this in three
 months" into "we knew on Monday".
-
-</aside>
+:::
 
 `make migrate` in CI is also a real check: it runs the committed migration
 against an empty database, which is exactly what a new contributor does.

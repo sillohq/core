@@ -53,14 +53,12 @@ copy `.env` between machines, which is the moment to check.
 **`CORS_ALLOW_ORIGINS` should name your front end**, not `*`. The default
 is a local Vite server, which is wrong everywhere else.
 
-<aside>
-
+:::note
 **Nothing is read from a file at runtime.** `app/config.py` declares the
 settings and their types; `.env` is loaded at import for convenience in
 development. In production, set real environment variables — a container
 image should not contain a `.env`.
-
-</aside>
+:::
 
 ##  Migrations
 
@@ -108,14 +106,12 @@ _register_work(application)
 `run_worker` installs a SIGTERM handler, so a container stop finishes the
 job in flight rather than killing it halfway.
 
-<aside>
-
+:::caution
 **Run one scheduler, not one per replica.** Each application process
 running `_register_work` gets its own scheduler, so a nightly task fires
 once per replica. Run `sillo schedule:run` as a single process, or guard
 the task with a lock.
-
-</aside>
+:::
 
 ##  Static files
 

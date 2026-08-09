@@ -84,15 +84,13 @@ request being answered, so the adapter can read it back.
 object as a `<script type="application/json" data-page="app">` element, which
 is where Inertia 2.x and later read it from.
 
-<aside>
-
+:::caution
 **Do not put the page object on the root `<div>` as `data-page`.** That was the
 Inertia 1.x convention. Current clients never look there, so the page boots
 with a null page object and throws
 `Cannot read properties of null (reading 'component')` from inside
 `createInertiaApp`.
-
-</aside>
+:::
 
 ##  Handlers that only produce props
 

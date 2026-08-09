@@ -59,9 +59,11 @@ from sillo import silloApp
 app = silloApp()
 @app.get("/")
 async def set_headers(request, response):
-    response.set_header("X-Custom-Header", "Custom Value")
-    response.set_header("Cache-Control", "no-store")
-    return response.text("Hello, World!")
+    return (
+        response.text("Hello, World!")
+        .set_header("X-Custom-Header", "Custom Value")
+        .set_header("Cache-Control", "no-store")
+    )
 ```
 
 ###  Common Response Headers
@@ -168,6 +170,7 @@ For enhanced security, consider these recommended headers:
 
 ```python
 async def add_security_headers(request, response, call_next):
+    response = await call_next()
     response.set_headers({
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
@@ -176,7 +179,7 @@ async def add_security_headers(request, response, call_next):
         "Content-Security-Policy": "default-src 'self'; script-src 'self'",
         "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload"
     })
-    return await call_next()
+    return response
 
 app.use(add_security_headers)
 ```
@@ -187,9 +190,10 @@ Optimize client-side caching and resource loading:
 
 ```python
 async def add_performance_headers(request, response, call_next):
+    response = await call_next()
     if request.path.endswith(('.js', '.css', '.png', '.jpg')):
         response.set_header("Cache-Control", "public, max-age=31536000, immutable")
-    return await call_next()
+    return response
 
 app.use(add_performance_headers)
 ```
@@ -201,7 +205,7 @@ Cookies are set via special `Set-Cookie` headers:
 ```python
 @app.get("/login")
 async def login(request, response):
-    response.set_cookie(
+    return response.redirect("/dashboard").set_cookie(
         key="session_id",
         value="abc123",
         max_age=3600,
@@ -209,7 +213,6 @@ async def login(request, response):
         httponly=True,
         samesite="strict"
     )
-    return response.redirect("/dashboard")
 ```
 
 ##  Conditional Headers

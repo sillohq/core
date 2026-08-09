@@ -149,8 +149,7 @@ async def get_or_create_from_oauth(provider: str, profile: OAuthProfile) -> User
     return user
 ```
 
-<aside>
-
+:::danger
 **Never match an existing account on an unverified email.** If a provider will
 issue a profile for `admin@yourcompany.com` without proving control of it,
 matching on that address hands over the account. `profile.email_verified` is
@@ -160,8 +159,7 @@ above is the safe one either way.
 Creating users with `create_user` and no password leaves the password unusable,
 which is what you want: the account exists but cannot be signed into with a
 password nobody set.
-
-</aside>
+:::
 
 ##  Wiring
 

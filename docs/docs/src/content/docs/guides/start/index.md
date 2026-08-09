@@ -74,14 +74,12 @@ Dependencies are **not** installed by default, so creating a project takes
 a second rather than a minute. `make setup` in the new project does it,
 along with everything else a first run needs.
 
-<aside>
-
+:::note
 **Which should you use?** `git clone` if you want the starter as it is and
 intend to keep pulling from it. `create-app` if you want the project named
 after itself from the first commit, with no upstream history to delete.
 They produce the same application.
-
-</aside>
+:::
 
 ##  Requirements
 

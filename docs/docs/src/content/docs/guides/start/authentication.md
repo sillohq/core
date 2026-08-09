@@ -190,8 +190,7 @@ should be a 409.
 user = request.user
 ```
 
-<aside>
-
+:::caution
 **`request.user` raises when no authentication middleware is installed.**
 It does not return `None`. Guard it if the route might run without one:
 
@@ -200,8 +199,7 @@ user = getattr(request, "user", None)
 if user is None or not user.is_authenticated:
     return response.json({"detail": "Not authenticated."}, status_code=401)
 ```
-
-</aside>
+:::
 
 `is_authenticated` is `True` for an active signed-in user. A deactivated
 account that still holds a session reads as not authenticated, so
@@ -228,15 +226,13 @@ from sillo.auth.jwt_auth import TokenForUser
 pair = TokenForUser(user, secret=config.jwt_secret).token_pair()
 ```
 
-<aside>
-
+:::caution
 **`identifier="sub"` is required, not cosmetic.** The backend defaults to
 reading an `id` claim, but tokens carry the user id in `sub`. With the
 default, every authenticated request silently fails to load a user — no
 error, no log line, just an anonymous request where you expected a
 signed-in one.
-
-</aside>
+:::
 
 **Keep the session middleware either way.** The admin authenticates
 through the session regardless of what the rest of the application uses.
@@ -292,16 +288,14 @@ make migration m="add user profile fields"
 Because there is one user model, that field exists everywhere — the API,
 the admin, your scripts — with no second model to mirror it into.
 
-<aside>
-
+:::danger
 **Do not add `sillo.users` to `MODEL_MODULES`.** Models are keyed by class
 name, so the framework's built-in `User` would displace yours and your
 extra columns would silently stop being created.
 
 Nor `sillo.admin.default_user`, which would add a parallel `admin_users`
 table.
-
-</aside>
+:::
 
 ##  Managing accounts
 

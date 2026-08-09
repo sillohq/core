@@ -361,7 +361,7 @@ Use the `.set_header()` method to add or modify HTTP headers.
 ```python
 @app.get("/data")
 async def get_data(request, response):
-    response.set_header("Cache-Control", "no-cache").json({"data": "some data"})
+    return response.json({"data": "some data"}).set_header("Cache-Control", "no-cache")
 ```
 
 ###  Setting Cookies
@@ -371,12 +371,12 @@ Use the `.set_cookie()` method to set a cookie on the client's browser.
 ```python
 @app.post("/login")
 async def login(request, response):
-    response.set_cookie(
+    return response.json({"message": "Logged in"}).set_cookie(
         key="user_token",
         value="secret-token",
         httponly=True,
         max_age=3600 # 1 hour
-    ).json({"message": "Logged in"})
+    )
 ```
 
 ##  File Responses

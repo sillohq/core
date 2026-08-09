@@ -67,15 +67,13 @@ alternatives rather than leaving the route looking public. The same applies
 to `useAuth(permissions=[...])`: needing a permission implies needing an
 identity.
 
-<aside>
-
+:::note
 A route documented as public that answers **401** is worse than one
 documented as protected that answers 200 — the reader has no reason to
 suspect their client, and nothing in the reference suggests a credential is
 wanted. That is why the fallback exists rather than leaving `security`
 absent.
-
-</aside>
+:::
 
 ###  Why this matters more than the shorter syntax
 
@@ -126,13 +124,11 @@ The old spellings on the left are still accepted as `schemes` values, so a
 gate written as `schemes=["jwt"]` keeps matching a backend that reports
 either label.
 
-<aside>
-
+:::note
 OpenAPI also says "scopes", meaning OAuth2 permission strings — a third
 thing again. Those live inside `schemes` as the mapping form:
 `schemes={"oauth2": ["read:widgets"]}`.
-
-</aside>
+:::
 
 ###  Naming two backends of the same kind
 
@@ -177,15 +173,13 @@ no backend for — `openIdConnect`, an OAuth2 flow handled by an identity
 provider, or mutual TLS terminated at a load balancer. The rest of this page
 covers that path.
 
-<aside>
-
+:::caution
 **An application that declares no backends still advertises `bearerAuth`.**
 `silloApp()` has always registered that scheme unconditionally, whether or
 not the app has any JWT anywhere. Passing `auth=` is the opt-out; it is left
 in place otherwise so existing `security=[{"bearerAuth": []}]` declarations
 keep resolving.
-
-</aside>
+:::
 
 ##  Why Document Authentication?
 

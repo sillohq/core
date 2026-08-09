@@ -46,14 +46,12 @@ cleared helps only them. Expiry is separate because it has a blameless cause —
 someone left the consent screen open — and deserves "try again" rather than a
 security-flavoured message.
 
-<aside>
-
+:::note
 **The provider binding matters more than it looks.** Without it, an
 application offering two providers could have a login started at the weaker one
 completed at the stronger one's callback. The provider name is signed into the
 state, so a GitHub cookie cannot satisfy a Google callback.
-
-</aside>
+:::
 
 ##  State is verified before the provider is contacted
 

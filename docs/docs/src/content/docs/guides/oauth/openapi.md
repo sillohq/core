@@ -76,8 +76,7 @@ Doing so makes sillo publish each backend's own description of itself under
 OAuth makes non-obvious, and it is the only place in the reference you can say
 so.
 
-<aside>
-
+:::caution
 **Installing the middleware by hand documents the wrong credential.** It
 authenticates requests perfectly well, but registers no scheme — so the
 document falls back to a legacy default that advertises `bearerAuth`.
@@ -89,8 +88,7 @@ a reader would, by failing to authenticate.
 
 The same legacy default applies to an application that declares no backends at
 all: its document claims `bearerAuth` regardless.
-
-</aside>
+:::
 
 The `sessionCookie` scheme names the cookie a caller must send, so keep it in
 step with your session configuration:
@@ -217,14 +215,12 @@ The mapping form of `schemes` carries OAuth2 scopes onto a route:
 "security": [{ "googleOAuth": ["openid", "email"] }]
 ```
 
-<aside>
-
+:::caution
 **Registering the scheme does not make the gate accept it.** A scheme in the
 document is prose. The gate matches on the name a backend *reports*, and no
 shipped backend calls itself `googleOAuth` — so the route above refuses every
 caller, including one holding a perfectly valid JWT.
-
-</aside>
+:::
 
 To make the gate and the document agree, the backend has to report that name
 and describe itself as that scheme:

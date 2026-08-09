@@ -49,15 +49,13 @@ too, that is a separate decision:
 app = silloApp(docs=[], openapi_url="/internal/openapi.json")
 ```
 
-<aside>
-
+:::caution
 **A public API with the viewer disabled still publishes its schema.**
 `/openapi.json` describes every route, parameter and model. Moving it
 somewhere unguessable is not access control — if the schema should not be
 public, put the route behind authentication or generate it into a file at
 build time.
-
-</aside>
+:::
 
 ##  The viewers
 
@@ -93,16 +91,14 @@ on. Method badges are the exception and stay a functional set — telling
 79 KB with no dependencies and its styles inlined, so the page is one
 script tag — against roughly 1.4 MB for Swagger UI.
 
-<aside>
-
+:::note
 **It sends requests to the origin you are on.** A document declaring
 `http://localhost:8000` is right on the author's machine and wrong on a
 colleague's port 8001, on a LAN address, or behind a proxy. When the
 document was fetched from the same origin as the page — that is, when your
 API is serving its own documentation — Atlas offers that origin as *This
 server* and selects it. The declared servers stay in the dropdown.
-
-</aside>
+:::
 
 ####  Pinning and self-hosting
 

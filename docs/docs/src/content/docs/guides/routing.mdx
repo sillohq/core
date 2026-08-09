@@ -89,13 +89,11 @@ async def handle_items(request, response):
 ```python title="Head/Options"
 @app.head("/status")
 async def status(request, response):
-    response.set_header("X-API-Version", "1.0")
-    return response.json(None)
+    return response.json(None).set_header("X-API-Version", "1.0")
 
 @app.options("/items")
 async def items_options(request, response):
-    response.set_header("Allow", "GET, POST, PUT, DELETE")
-    return response.json(None)
+    return response.json(None).set_header("Allow", "GET, POST, PUT, DELETE")
 
 # If you forget to return a response, sillo will raise an error indicating the handler did not return a response object.
 ```

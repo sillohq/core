@@ -118,8 +118,7 @@ because one of the two would otherwise have to win silently.
 | `session_file_storage_path`     | Directory the file backend writes to                   | `None`                 |
 | `manager`                       | A session backend instance                             | `SignedSessionManager` |
 
-<aside>
-
+:::caution
 **`session_cookie_secure` in local development.** It defaults to `True`, and a
 browser will not return a `Secure` cookie over plain `http://`. Serving over
 HTTP without turning it off means the cookie is set and never sent back, so
@@ -129,8 +128,7 @@ from your environment:
 ```python
 session_cookie_secure=config.app_env != "local"
 ```
-
-</aside>
+:::
 
 ##  Basic Session Operations
 

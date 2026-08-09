@@ -55,8 +55,7 @@ create `admin_users` and `admin_roles` beside your `users`: a second set
 of accounts to keep in step, or to forget about, that nothing would ever
 write a row to.
 
-<aside>
-
+:::note
 **If you *want* the standalone admin user model** — an admin panel for a
 system whose users are not the application's users — register that module
 and let `AdminSite` use its default:
@@ -71,8 +70,7 @@ admin = AdminSite(title="Myapp Admin", prefix=config.admin_prefix)
 
 Then run `make migration m="admin users"`. You now maintain two sets of
 accounts, deliberately.
-
-</aside>
+:::
 
 ##  Registering models
 
@@ -98,13 +96,11 @@ class PostAdmin(ModelAdmin):
 | `readonly_fields` | Shown but not editable |
 | `ordering` | Default sort, `-` for descending |
 
-<aside>
-
+:::caution
 **Register before `admin.mount()`.** Mounting registers the user model
 with a default presentation if nothing has claimed it yet, so registering
 your `UserAdmin` first is what lets your columns and filters take effect.
-
-</aside>
+:::
 
 ##  What the admin gives you per model
 
@@ -143,8 +139,7 @@ def may_enter(user) -> bool:
     return bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
 ```
 
-<aside>
-
+:::danger
 **Why the flag is load-bearing.** With one shared user model, every
 account that ever signed up holds a session. If a session alone were
 enough to reach `/admin/`, the sign-up form would be the way in:
@@ -157,8 +152,7 @@ GET  /admin/             ->  200      # read and write on every model
 
 Anonymous requests were always redirected. It was specifically *any
 signed-up account* that walked in.
-
-</aside>
+:::
 
 The account is read on each request rather than trusted from the session,
 which carries only an identity and a display name. So clearing `is_staff`
@@ -212,8 +206,7 @@ registers the log without knowing whether your application wanted it, so a
 registered model with no table is a real case, and a nav link that leads
 to a 500 is worse than no link.
 
-<aside>
-
+:::note
 **How the admin decides.** Whether a model is usable is asked **per
 request**, by resolving a connection the way a query would — not at
 startup.
@@ -226,8 +219,7 @@ honest answer at that moment is always "no".
 
 This is worth knowing if you write anything that hooks the admin's
 startup.
-
-</aside>
+:::
 
 ##  Permissions
 

@@ -113,8 +113,7 @@ def create_app() -> silloApp:
 Every step is a named function with its reasoning in the docstring. The
 order is not cosmetic, and one part of it is genuinely surprising:
 
-<aside>
-
+:::caution
 **Middleware order is inside-out.** `application.use()` puts the newest
 registration *outermost*, so whatever registers **last runs first** at
 request time.
@@ -126,8 +125,7 @@ leaves the session middleware outside, and therefore ahead of it.
 Register the admin after, and every admin page 500s with "No Session
 Middleware Installed" while the session middleware is demonstrably
 installed.
-
-</aside>
+:::
 
 The same ordering has a second consequence, and it catches people writing
 framework code rather than application code: the admin's startup hook is
@@ -175,8 +173,7 @@ A typo in a variable name then fails at startup with a clear message,
 instead of becoming `None` at request time and failing three layers down
 in something that looks unrelated.
 
-<aside>
-
+:::caution
 **`db_generate_schemas` is `False` on purpose.** Schema generation issues
 DDL on every startup, which creates tables outside the migration history —
 so a later `make migration` sees them as new and writes a migration that
@@ -186,8 +183,7 @@ file will raise "database is locked" on boot.
 
 Migrations own the schema. See
 [Database & Migrations](/guides/start/database/).
-
-</aside>
+:::
 
 ###  `app/admin.py`
 
@@ -293,8 +289,7 @@ async with database():
     await User.all()
 ```
 
-<aside>
-
+:::note
 **`MODEL_MODULES` is a short list on purpose.**
 
 `sillo.admin.models` is the admin's activity log — who changed what, and
@@ -309,8 +304,7 @@ The admin signs people in with *your* `User`.
 Do not add `sillo.users` either — models are keyed by class name, so the
 framework's built-in `User` would displace your own and your extra columns
 would silently stop being created.
-
-</aside>
+:::
 
 ###  `database/models/`
 
@@ -351,8 +345,7 @@ project small enough to have one `routes/` directory is better served by
 | `auth.py` | JSON auth endpoints: register, login, logout, me |
 | `api.py` | Everything else under `/api` |
 
-<aside>
-
+:::caution
 **A prefix-less router swallows everything.** Mounting a `Router` with no
 prefix claims `""` and every path beneath it — including routes registered
 later during startup, like the admin's.
@@ -366,8 +359,7 @@ application.get("/", handler=web.welcome, name="welcome")
 And when mounting routers, **order matters**: a router claims its whole
 prefix subtree, so mount the most specific prefix first. Mounting `/api`
 before `/api/auth` leaves every auth route unreachable.
-
-</aside>
+:::
 
 ---
 
@@ -379,8 +371,7 @@ Jinja templates and files served as-is.
 deployments. With a proxy in front it never sees traffic — see
 [Deployment](/guides/start/deployment/#static-files).
 
-<aside>
-
+:::note
 **`StaticFiles` takes no prefix.** The prefix comes from the `Group` that
 mounts it:
 
@@ -390,8 +381,7 @@ Group(path="/static", app=StaticFiles(directory="static"))
 
 Passing a prefix to `StaticFiles` itself is silently ignored, and every
 asset 404s at a path that looks right in the template.
-
-</aside>
+:::
 
 ---
 
@@ -412,14 +402,12 @@ storage/*.db-shm
 storage/*.db-wal
 ```
 
-<aside>
-
+:::caution
 **The `-shm` and `-wal` entries are not decoration.** Committing SQLite's
 write-ahead log leaves a fresh clone with a WAL referring to a database
 that is not there, which SQLite reports as `disk I/O error` — an alarming
 message for what is actually a stale file.
-
-</aside>
+:::
 
 ---
 

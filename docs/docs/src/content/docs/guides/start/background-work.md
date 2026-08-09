@@ -204,8 +204,7 @@ Use `await Resize.perform_now(...)` instead.
 The same class works all three ways. Dispatching it later changes nothing
 about it.
 
-<aside>
-
+:::caution
 **With the default in-memory queue, a separate `make worker` processes
 nothing.** `SyncConnection` lives inside one process, so the worker has
 its own empty queue while the application dispatches into another. Nothing
@@ -216,8 +215,7 @@ errors; nothing happens.
 | `in_process=True`, default queue | jobs run |
 | `make worker`, default queue | separate queue — nothing to do |
 | `make worker` + `QUEUE_URL=redis://…` | jobs run |
-
-</aside>
+:::
 
 ##  How the in-process worker is wired
 
@@ -286,13 +284,11 @@ __main__.Backfill  ->  AttributeError: module '__main__' has no attribute 'Backf
 Your app's `__main__` is your entry script; the worker's `__main__` is the
 worker. Put job classes in `app/jobs/`.
 
-<aside>
-
+:::caution
 **Moving or renaming a job class while payloads are queued** breaks those
 payloads: they still name the old path. Drain the queue before moving a
 job, or leave an import behind at the old location.
-
-</aside>
+:::
 
 `app/jobs/__init__.py` importing everything is a convention rather than a
 requirement — the worker imports the module itself from the reference. It
@@ -320,14 +316,12 @@ uv run sillo schedule:run
 With `_register_work` on, the scheduler runs inside the application and
 that separate process is unnecessary.
 
-<aside>
-
+:::caution
 **Several application replicas each run their own scheduler**, so a
 nightly task runs once per replica. For anything that must happen exactly
 once, run one scheduler process on its own and leave `in_process` off, or
 guard the task with a lock.
-
-</aside>
+:::
 
 ##  Running the worker in production
 

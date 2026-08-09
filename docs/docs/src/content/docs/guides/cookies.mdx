@@ -46,13 +46,13 @@ You can set cookies in responses using the `response.set_cookie()` method:
 ```python
 @app.get("/set-cookie")
 async def set_cookie(request, response):
-    return response.set_cookie(
+    return response.json({"status": "Cookie set"}).set_cookie(
         key="user_id",
         value="12345",
         max_age=3600,  # Expires in 1 hour (in seconds)
         httponly=True,
         secure=True
-    ).json({"status": "Cookie set"})
+    )
 ```
 
 ###  Cookie Options
@@ -86,7 +86,7 @@ To delete a cookie, set an expired cookie with the same name:
 ```python
 @app.get("/logout")
 async def logout(request, response):
-    return response.delete_cookie("auth_token").json({"status": "Logged out"})
+    return response.json({"status": "Logged out"}).delete_cookie("auth_token")
 ```
 
 ##  Permanent Cookies
@@ -96,10 +96,10 @@ For long-lived cookies (like "remember me" functionality), use `set_permanent_co
 ```python
 @app.get("/remember-me")
 async def remember_me(request, response):
-    return response.set_permanent_cookie(
+    return response.text("Cookie set for 10 years").set_permanent_cookie(
         key="remember_me",
         value="true"
-    ).text("Cookie set for 10 years")
+    )
 ```
 
 ##  Multiple Cookies
@@ -113,7 +113,7 @@ async def multi_cookie(request, response):
         {"key": "user", "value": "john", "max_age": 3600},
         {"key": "theme", "value": "dark", "max_age": 86400}
     ]
-    return response.set_cookies(cookies).json({"status": "Cookies set"})
+    return response.json({"status": "Cookies set"}).set_cookies(cookies)
 ```
 
 ##  Cookie Security Considerations
@@ -143,14 +143,14 @@ async def login(request, response):
     data = await request.json
     # Validate credentials (pseudo-code)
     if validate_credentials(data["username"], data["password"]):
-        return response.set_cookie(
+        return response.json({"status": "Login successful"}).set_cookie(
             key="auth_token",
             value=generate_token(data["username"]),
             max_age=3600 * 24,  # 1 day
             httponly=True,
             secure=True,
             samesite="strict"
-        ).json({"status": "Login successful"})
+        )
     else:
         return response.status(401).json({"error": "Invalid credentials"})
 
@@ -162,13 +162,13 @@ async def protected_route(request, response):
     # Verify token (pseudo-code)
     user = verify_token(request.cookies["auth_token"])
     if not user:
-        return response.delete_cookie("auth_token").status(401).json({"error": "Invalid token"})
+        return response.status(401).json({"error": "Invalid token"}).delete_cookie("auth_token")
     
     return response.json({"message": f"Welcome {user}"})
 
 @app.get("/logout")
 async def logout(request, response):
-    return response.delete_cookie("auth_token").json({"status": "Logged out"})
+    return response.json({"status": "Logged out"}).delete_cookie("auth_token")
 ```
 
 ##  Best Practices

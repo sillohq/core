@@ -109,15 +109,13 @@ from database.models.user import User
 __all__ = ["Post", "User"]
 ```
 
-<aside>
-
+:::caution
 **A model not imported there is invisible.** The ORM discovers by module
 scan, so a model in a file nobody imports never gets a table — and the
 first query against it fails with `default_connection cannot be None`,
 which points at the database rather than at the missing import. It is the
 most confusing error a new project can produce, and it always means this.
-
-</aside>
+:::
 
 ###  A model's docstring is not just documentation
 
@@ -240,8 +238,7 @@ DB_SSL_CA=/path/to/ca.pem
 `max_inactive_connection_lifetime` on PostgreSQL, which are the same idea
 under different names.
 
-<aside>
-
+:::danger
 **If you develop on SQLite and deploy on PostgreSQL, your migrations are
 being tested against the wrong engine.** SQLite cannot drop a column,
 change a type, or add a constraint; the engine works around that by
@@ -250,8 +247,7 @@ drops anything the recreation did not know to preserve.
 
 Run migrations against a real PostgreSQL instance in CI before they reach
 production.
-
-</aside>
+:::
 
 ##  What lives in the database
 

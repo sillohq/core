@@ -77,14 +77,12 @@ async def finish(request, response):
 That is the entire integration. Two routes you wrote, at paths you chose,
 returning responses you built.
 
-<aside>
-
+:::caution
 **Set the cookie *after* the redirect.** `response.redirect(...).set_cookie(...)`
 works; `response.set_cookie(...)` followed by `return response.redirect(...)`
 raises `AttributeError`, because sillo's `Responder` has no response to attach
 a cookie to until `redirect()` or `json()` has been called.
-
-</aside>
+:::
 
 ##  What happens, in order
 
