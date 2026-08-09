@@ -17,7 +17,7 @@ Quick Start:
     config = AppConfig()
 
     # Type-safe access
-    app = silloApp(debug=config.debug)
+    app = SilloApp(debug=config.debug)
 """
 
 from .core import Config, Field

@@ -11,7 +11,7 @@ from functools import partial
 
 import pytest
 
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.apikey import create_api_key, verify_key
 from sillo.auth.model import AuthResult
@@ -32,7 +32,7 @@ def api_key_data():
 
 
 async def test_apikey_auth_backend_success(test_client, api_key_data):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):
@@ -70,7 +70,7 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
 
 
 async def test_apikey_auth_backend_missing_header(test_client):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):
@@ -92,7 +92,7 @@ async def test_apikey_auth_backend_missing_header(test_client):
 
 
 async def test_apikey_auth_backend_invalid_key(test_client):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     class Store(SimpleUser):
@@ -117,7 +117,7 @@ async def test_apikey_auth_backend_invalid_key(test_client):
 
 
 async def test_apikey_auth_backend_custom_header(test_client):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):

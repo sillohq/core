@@ -4,7 +4,7 @@ Tests for simple CORS requests (GET, POST, PUT, DELETE)
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
@@ -23,7 +23,7 @@ def cors_app():
         debug=True,
     )
 
-    app = silloApp()
+    app = SilloApp()
 
     # Add test routes
     @app.get("/test")
@@ -167,7 +167,7 @@ class TestSimpleRequests:
             allow_credentials=True,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/port-test")
         async def port_route(request: Request, response: Response):

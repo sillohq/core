@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth.session_auth import SessionAuthBackend, login
 from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.auth.users.base import BaseUser
@@ -49,7 +49,7 @@ class db:
         return {"id": "123", "username": "user", "password": "password"}
 
 
-app = silloApp()
+app = SilloApp()
 
 # Session backend - no authenticate_func needed
 session_backend = SessionAuthBackend()

@@ -9,7 +9,7 @@ every 404 in every deployment answered as though debug were on.
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.handlers.not_found import GENERIC_MESSAGE
 from sillo.testclient import TestClient
 
@@ -20,12 +20,12 @@ PLAIN = {"Accept": "text/plain"}
 
 @pytest.fixture
 def production():
-    return TestClient(silloApp(debug=False))
+    return TestClient(SilloApp(debug=False))
 
 
 @pytest.fixture
 def development():
-    return TestClient(silloApp(debug=True))
+    return TestClient(SilloApp(debug=True))
 
 
 # ── content negotiation ──────────────────────────────────────────────────
@@ -97,8 +97,8 @@ def test_debug_includes_a_traceback(development):
 
 def test_the_flag_is_read_from_the_application_not_assumed():
     """Both settings are honoured; neither is hard-coded."""
-    on = TestClient(silloApp(debug=True)).get("/missing", headers=API).json()["message"]
-    off = TestClient(silloApp(debug=False)).get("/missing", headers=API).json()["message"]
+    on = TestClient(SilloApp(debug=True)).get("/missing", headers=API).json()["message"]
+    off = TestClient(SilloApp(debug=False)).get("/missing", headers=API).json()["message"]
 
     assert on != off
     assert off == GENERIC_MESSAGE
@@ -117,7 +117,7 @@ def test_debug_is_off_when_there_is_no_application_to_ask():
 
 
 def test_a_matched_route_is_untouched(production):
-    app = silloApp(debug=False)
+    app = SilloApp(debug=False)
 
     @app.get("/exists")
     async def handler(request, response):

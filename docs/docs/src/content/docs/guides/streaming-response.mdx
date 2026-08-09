@@ -79,9 +79,9 @@ Before diving into the code, it's important to understand how async generators w
 Here's how to create a simple streaming endpoint using an async generator. This example demonstrates the basic pattern you'll use for most streaming responses:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/stream")
 async def stream_data(request, response):

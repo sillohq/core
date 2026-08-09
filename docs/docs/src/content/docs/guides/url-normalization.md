@@ -16,10 +16,10 @@ Use it to avoid duplicate content, broken bookmarks, and split analytics, and to
 ##  The smallest useful form
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.normalize import Normalize, SlashAction
 
-app = silloApp()
+app = SilloApp()
 
 app.use(Normalize(slash_action=SlashAction.REDIRECT_REMOVE))
 
@@ -111,13 +111,13 @@ clean_url_path("https://x.com//a//b")  # "https://x.com/a/b"
 Use `TestClient` and assert the redirect (or the served path) for redirect vs silent modes:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.normalize import Normalize, SlashAction
 from sillo.testclient import TestClient
 
 
 def test_redirect_remove():
-    app = silloApp()
+    app = SilloApp()
     app.use(Normalize(slash_action=SlashAction.REDIRECT_REMOVE))
 
     @app.get("/users")
@@ -131,7 +131,7 @@ def test_redirect_remove():
 
 
 def test_silent_remove():
-    app = silloApp()
+    app = SilloApp()
     app.use(Normalize(slash_action=SlashAction.REMOVE))
 
     seen = {}

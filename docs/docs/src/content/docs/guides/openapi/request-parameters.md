@@ -32,11 +32,11 @@ sillo supports four main parameter types:
 Path parameters are automatically detected and documented by sillo when you use parameter syntax in your route paths:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.openapi.models import Path, Query, Header, Cookie
 from typing import Optional
 
-app = silloApp()
+app = SilloApp()
 
 @app.get(
     "/users/{user_id}",

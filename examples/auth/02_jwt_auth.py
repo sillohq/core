@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth import JWTAuthBackend, create_jwt
 from sillo.auth.base import BaseUser
 from sillo.auth.middleware import AuthenticationMiddleware
@@ -43,7 +43,7 @@ class db:
         return {"id": user_id, "username": "admin", "email": "admin@example.com"}
 
 
-app = silloApp()
+app = SilloApp()
 
 # JWT backend - no authenticate_func needed
 jwt_backend = JWTAuthBackend()

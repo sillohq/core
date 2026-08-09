@@ -21,10 +21,10 @@ Session management is a critical component of web applications, allowing you to 
 Setting up sessions in your sillo application is straightforward:
 
 ```python [Recommended Approach]
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.session.middleware import SessionMiddleware
 
-app = silloApp()
+app = SilloApp()
 
 app.use(
     SessionMiddleware(
@@ -69,12 +69,12 @@ For anything more than a handful of settings, or to share one configuration
 between applications, build a `SessionConfig` and pass it as `config`:
 
 ```python title="Recommended Approach"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
 from sillo.session.file import FileSessionManager
 
-app = silloApp()
+app = SilloApp()
 
 session_config = SessionConfig(
     session_cookie_name="sillo_session",

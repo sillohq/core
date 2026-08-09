@@ -156,7 +156,7 @@ Read [adoption-guide.md](adoption-guide.md) for:
 
 When generating or explaining sillo code:
 
-- Use `silloApp()` as the default app entry point.
+- Use `SilloApp()` as the default app entry point.
 - Use `async def` handlers unless the docs explicitly suggest another pattern.
 - Include both `request` and `response` parameters in teaching examples.
 - Pass typed path params directly into the handler signature.

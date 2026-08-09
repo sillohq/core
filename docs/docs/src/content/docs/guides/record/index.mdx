@@ -83,10 +83,10 @@ be closed cleanly on shutdown. `setup_record` does all three against a
 sillo application.
 
 ```python title="app.py"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.record import DatabaseConfig, setup_record
 
-app = silloApp()
+app = SilloApp()
 
 db = setup_record(
     app,
@@ -312,10 +312,10 @@ class Article(Model):
 ```
 
 ```python title="myapp/app.py"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.record import DatabaseConfig, register_db_exception_handlers, setup_record
 
-app = silloApp()
+app = SilloApp()
 
 setup_record(
     app,

@@ -12,7 +12,7 @@ import re
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.openapi.ui import (
     ATLAS_VERSION,
     SCALAR_JS,
@@ -51,24 +51,24 @@ class TestDefaults:
     def test_default_mounts_atlas_and_redoc(self):
         # Atlas is sillo's own reference and the default at /docs. Swagger
         # is still shipped and one line away.
-        app = silloApp()
+        app = SilloApp()
 
         assert [ui.name for ui in app.docs] == ["atlas", "redoc"]
         assert [ui.path for ui in app.docs] == ["/docs", "/redoc"]
 
     def test_the_default_page_mounts_atlas(self):
-        page = TestClient(silloApp()).get("/docs").text
+        page = TestClient(SilloApp()).get("/docs").text
 
         assert "Atlas.createApiReference" in page
         assert "SwaggerUIBundle" not in page
 
     def test_swagger_is_still_available(self):
-        client = TestClient(silloApp(docs=[Swagger(path="/docs")]))
+        client = TestClient(SilloApp(docs=[Swagger(path="/docs")]))
 
         assert "SwaggerUIBundle" in client.get("/docs").text
 
     def test_default_pages_are_served(self):
-        client = TestClient(silloApp())
+        client = TestClient(SilloApp())
 
         assert client.get("/docs").status_code == 200
         assert client.get("/redoc").status_code == 200
@@ -84,7 +84,7 @@ class TestDefaults:
 
 class TestSelectingViewers:
     def test_scalar_can_be_mounted(self):
-        app = silloApp(docs=[Scalar(path="/reference")])
+        app = SilloApp(docs=[Scalar(path="/reference")])
         client = TestClient(app)
 
         response = client.get("/reference")
@@ -93,21 +93,21 @@ class TestSelectingViewers:
         assert "@scalar/api-reference" in response.text
 
     def test_only_the_listed_viewers_are_mounted(self):
-        client = TestClient(silloApp(docs=[Scalar(path="/reference")]))
+        client = TestClient(SilloApp(docs=[Scalar(path="/reference")]))
 
         assert client.get("/reference").status_code == 200
         assert client.get("/docs").status_code == 404
         assert client.get("/redoc").status_code == 404
 
     def test_empty_list_serves_no_ui(self):
-        client = TestClient(silloApp(docs=[]))
+        client = TestClient(SilloApp(docs=[]))
 
         assert client.get("/docs").status_code == 404
         assert client.get("/redoc").status_code == 404
 
     def test_empty_list_still_serves_the_document(self):
         # Turning off the viewers must not turn off the spec they render.
-        client = TestClient(silloApp(docs=[]))
+        client = TestClient(SilloApp(docs=[]))
 
         response = client.get("/openapi.json")
 
@@ -115,14 +115,14 @@ class TestSelectingViewers:
         assert response.json()["openapi"].startswith("3.")
 
     def test_one_viewer_can_be_mounted_twice(self):
-        app = silloApp(docs=[Swagger(path="/docs"), Swagger(path="/internal/docs")])
+        app = SilloApp(docs=[Swagger(path="/docs"), Swagger(path="/internal/docs")])
         client = TestClient(app)
 
         assert client.get("/docs").status_code == 200
         assert client.get("/internal/docs").status_code == 200
 
     def test_all_three_together(self):
-        client = TestClient(silloApp(docs=[Swagger(), ReDoc(), Scalar()]))
+        client = TestClient(SilloApp(docs=[Swagger(), ReDoc(), Scalar()]))
 
         assert client.get("/docs").status_code == 200
         assert client.get("/redoc").status_code == 200
@@ -177,7 +177,7 @@ class TestMountPrefix:
     def test_the_page_points_at_the_prefixed_document(self):
         # Under a mount, '/openapi.json' is not where the document lives; a
         # page hardcoding it renders an empty viewer with no visible error.
-        app = silloApp(docs=[Swagger()])
+        app = SilloApp(docs=[Swagger()])
         client = TestClient(app, root_path="/api/v1")
 
         html = client.get("/docs").text
@@ -185,14 +185,14 @@ class TestMountPrefix:
         assert "/api/v1/openapi.json" in html
 
     def test_context_carries_the_prefixed_url(self):
-        app = silloApp()
+        app = SilloApp()
 
         ctx = app._docs_context("/api/v1")
 
         assert ctx.openapi_url == "/api/v1/openapi.json"
 
     def test_no_prefix_leaves_the_url_alone(self):
-        assert silloApp()._docs_context("").openapi_url == "/openapi.json"
+        assert SilloApp()._docs_context("").openapi_url == "/openapi.json"
 
 
 class TestUIConfig:
@@ -304,7 +304,7 @@ class TestCustomPresenter:
                     f"</body></html>"
                 )
 
-        client = TestClient(silloApp(title="Widgets", docs=[RapiDoc()]))
+        client = TestClient(SilloApp(title="Widgets", docs=[RapiDoc()]))
         response = client.get("/rapidoc")
 
         assert response.status_code == 200
@@ -320,7 +320,7 @@ class TestCustomPresenter:
             def render(self, ctx):
                 return "<html>ok</html>"
 
-        client = TestClient(silloApp(docs=[Minimal()]))
+        client = TestClient(SilloApp(docs=[Minimal()]))
 
         assert client.get("/minimal").text == "<html>ok</html>"
 
@@ -337,7 +337,7 @@ class TestEachRouteGetsItsOwnPresenter:
         # Registering routes in a loop is where a closure over the loop
         # variable makes every path render the last presenter. That failure
         # is invisible unless the pages are compared.
-        client = TestClient(silloApp(docs=[Swagger(), ReDoc(), Scalar()]))
+        client = TestClient(SilloApp(docs=[Swagger(), ReDoc(), Scalar()]))
 
         swagger = client.get("/docs").text
         redoc = client.get("/redoc").text
@@ -348,7 +348,7 @@ class TestEachRouteGetsItsOwnPresenter:
         assert "api-reference" in scalar and "SwaggerUIBundle" not in scalar
 
     def test_same_class_at_two_paths_keeps_its_own_config(self):
-        app = silloApp(
+        app = SilloApp(
             docs=[
                 Swagger(path="/docs", title="Public"),
                 Swagger(path="/internal", title="Internal"),
@@ -363,7 +363,7 @@ class TestEachRouteGetsItsOwnPresenter:
 class TestValidation:
     def test_duplicate_paths_are_rejected_at_construction(self):
         with pytest.raises(ValueError, match="/docs"):
-            silloApp(docs=[Swagger(path="/docs"), Scalar(path="/docs")])
+            SilloApp(docs=[Swagger(path="/docs"), Scalar(path="/docs")])
 
     def test_a_path_must_start_with_a_slash(self):
         with pytest.raises(ValueError, match="must start with"):
@@ -371,65 +371,65 @@ class TestValidation:
 
     def test_a_non_presenter_is_rejected(self):
         with pytest.raises(TypeError, match="render"):
-            silloApp(docs=["/docs"])
+            SilloApp(docs=["/docs"])
 
     def test_an_object_without_render_is_rejected(self):
         class NoRender:
             path = "/x"
 
         with pytest.raises(TypeError, match="render"):
-            silloApp(docs=[NoRender()])
+            SilloApp(docs=[NoRender()])
 
 
 class TestLegacyArguments:
     def test_swagger_docs_still_moves_the_page(self):
-        client = TestClient(silloApp(swagger_docs="/api-docs"))
+        client = TestClient(SilloApp(swagger_docs="/api-docs"))
 
         assert client.get("/api-docs").status_code == 200
         assert client.get("/docs").status_code == 404
 
     def test_redoc_docs_still_moves_the_page(self):
-        client = TestClient(silloApp(redoc_docs="/api-redoc"))
+        client = TestClient(SilloApp(redoc_docs="/api-redoc"))
 
         assert client.get("/api-redoc").status_code == 200
         assert client.get("/redoc").status_code == 404
 
     def test_both_legacy_paths_together(self):
-        app = silloApp(swagger_docs="/s", redoc_docs="/r")
+        app = SilloApp(swagger_docs="/s", redoc_docs="/r")
 
         assert [ui.path for ui in app.docs] == ["/s", "/r"]
 
     def test_docs_with_moved_swagger_path_is_refused(self):
         # The two say the same thing; silently preferring one hides a typo.
         with pytest.raises(TypeError, match="swagger_docs"):
-            silloApp(swagger_docs="/api-docs", docs=[Scalar()])
+            SilloApp(swagger_docs="/api-docs", docs=[Scalar()])
 
     def test_docs_with_moved_redoc_path_is_refused(self):
         with pytest.raises(TypeError, match="redoc_docs"):
-            silloApp(redoc_docs="/api-redoc", docs=[Scalar()])
+            SilloApp(redoc_docs="/api-redoc", docs=[Scalar()])
 
     def test_docs_with_default_legacy_paths_is_fine(self):
         # Passing the defaults explicitly is not a conflict.
-        app = silloApp(swagger_docs="/docs", redoc_docs="/redoc", docs=[Scalar()])
+        app = SilloApp(swagger_docs="/docs", redoc_docs="/redoc", docs=[Scalar()])
 
         assert [ui.name for ui in app.docs] == ["scalar"]
 
 
 class TestLookup:
     def test_a_mounted_presenter_is_found_by_name(self):
-        app = silloApp(docs=[Swagger(path="/docs")])
+        app = SilloApp(docs=[Swagger(path="/docs")])
 
         found = app.get_docs_ui("swagger")
 
         assert found is not None and found.path == "/docs"
 
     def test_an_absent_presenter_is_none(self):
-        assert silloApp(docs=[]).get_docs_ui("swagger") is None
+        assert SilloApp(docs=[]).get_docs_ui("swagger") is None
 
 
 class TestDocsAreNotDocumented:
     def test_ui_routes_are_absent_from_the_schema(self):
-        client = TestClient(silloApp(docs=[Swagger(), ReDoc(), Scalar()]))
+        client = TestClient(SilloApp(docs=[Swagger(), ReDoc(), Scalar()]))
 
         paths = client.get("/openapi.json").json()["paths"]
 
@@ -444,7 +444,7 @@ class TestDocsAreNotDocumented:
             def render(self, ctx):
                 return "<html></html>"
 
-        client = TestClient(silloApp(docs=[Custom()]))
+        client = TestClient(SilloApp(docs=[Custom()]))
 
         assert "/custom-docs" not in client.get("/openapi.json").json()["paths"]
 
@@ -453,7 +453,7 @@ class TestBuilderHelpers:
     """The pre-plugin generators still work, delegating to the presenters."""
 
     def test_swagger_generator_still_renders(self):
-        app = silloApp(title="Widgets")
+        app = SilloApp(title="Widgets")
 
         html = app.openapi._generate_swagger_ui("/api/openapi.json")
 
@@ -462,7 +462,7 @@ class TestBuilderHelpers:
         assert "<title>Widgets</title>" in html
 
     def test_redoc_generator_still_renders(self):
-        app = silloApp(title="Widgets")
+        app = SilloApp(title="Widgets")
 
         html = app.openapi._generate_redoc_ui("/api/openapi.json")
 
@@ -470,7 +470,7 @@ class TestBuilderHelpers:
         assert "/api/openapi.json" in html
 
     def test_generators_fall_back_to_the_configured_url(self):
-        app = silloApp(openapi_url="/spec.json")
+        app = SilloApp(openapi_url="/spec.json")
 
         assert "/spec.json" in app.openapi._generate_swagger_ui()
 

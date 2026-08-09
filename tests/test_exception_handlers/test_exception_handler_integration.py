@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.exceptions import HTTPException
 from sillo.core.http import Request, Response
 from sillo.core.routing import Router
@@ -16,10 +16,10 @@ from sillo.testclient import TestClient
 
 
 def test_exception_handler_with_middleware(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler working with middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_log = []
 
@@ -58,10 +58,10 @@ def test_exception_handler_with_middleware(
 
 
 def test_exception_handler_middleware_order(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler execution order with multiple middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_order = []
 
@@ -99,10 +99,10 @@ def test_exception_handler_middleware_order(
 
 
 def test_exception_handler_middleware_state_access(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler accessing state set by middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     class AuthError(Exception):
         pass
@@ -133,10 +133,10 @@ def test_exception_handler_middleware_state_access(
 
 
 def test_exception_handler_with_nested_routers(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler with nested routers"""
-    app = silloApp()
+    app = SilloApp()
     parent_router = Router(prefix="/api")
     child_router = Router(prefix="/child")
 
@@ -166,10 +166,10 @@ def test_exception_handler_with_nested_routers(
 
 
 def test_exception_handler_different_methods(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler works with different HTTP methods"""
-    app = silloApp()
+    app = SilloApp()
 
     class MethodError(Exception):
         pass
@@ -208,10 +208,10 @@ def test_exception_handler_different_methods(
 
 
 def test_exception_handler_with_query_params(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler accessing query parameters"""
-    app = silloApp()
+    app = SilloApp()
 
     class QueryError(Exception):
         pass
@@ -237,10 +237,10 @@ def test_exception_handler_with_query_params(
 
 
 def test_exception_handler_with_path_params(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler accessing path parameters"""
-    app = silloApp()
+    app = SilloApp()
 
     class ItemNotFoundError(Exception):
         pass
@@ -268,10 +268,10 @@ def test_exception_handler_with_path_params(
 
 
 def test_exception_handler_with_request_body(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler that can access request body"""
-    app = silloApp()
+    app = SilloApp()
 
     class ValidationError(Exception):
         pass
@@ -301,10 +301,10 @@ def test_exception_handler_with_request_body(
 
 
 def test_exception_handler_with_request_headers(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler accessing request headers"""
-    app = silloApp()
+    app = SilloApp()
 
     class HeaderError(Exception):
         pass
@@ -330,10 +330,10 @@ def test_exception_handler_with_request_headers(
 
 
 def test_exception_handler_with_cookies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler accessing cookies"""
-    app = silloApp()
+    app = SilloApp()
 
     class SessionError(Exception):
         pass
@@ -360,10 +360,10 @@ def test_exception_handler_with_cookies(
 
 
 def test_exception_handler_priority_specific_over_general(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that specific exception handlers take priority"""
-    app = silloApp()
+    app = SilloApp()
 
     class BaseError(Exception):
         pass
@@ -402,10 +402,10 @@ def test_exception_handler_priority_specific_over_general(
 
 
 def test_exception_handler_complex_scenario(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test exception handler in complex scenario with middleware and routers"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     execution_log = []
@@ -449,10 +449,10 @@ def test_exception_handler_complex_scenario(
 
 
 def test_exception_handler_no_handler_defined(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test behavior when no exception handler is defined for an error"""
-    app = silloApp()
+    app = SilloApp()
 
     class UnhandledError(Exception):
         pass
@@ -467,10 +467,10 @@ def test_exception_handler_no_handler_defined(
 
 
 def test_exception_handler_with_successful_request(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that exception handler doesn't interfere with successful requests"""
-    app = silloApp()
+    app = SilloApp()
 
     class TestError(Exception):
         pass

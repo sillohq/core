@@ -31,10 +31,10 @@ uv add sillo-contrib
 ### Basic Usage
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.timeout import Timeout
 from sillo.core.http import Request, Response
-app = silloApp()
+app = SilloApp()
 
 # Add timeout middleware with default 30s timeout
 app.use(Timeout(default_timeout=30.0))
@@ -49,11 +49,11 @@ async def slow_endpoint(request :Request, response:Response):
 ### Per-Request Timeout
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo_contrib.timeout import Timeout, get_timeout_from_request
 
-app = silloApp()
+app = SilloApp()
 app.use(Timeout())
 
 @app.get("/api/data")
@@ -189,10 +189,10 @@ async def duration_logger(request, response, call_next):
 ### API with Different Timeout Strategies
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.timeout import Timeout, timeout_after, TimeoutException
 from sillo.core.http import Request, Response
-app = silloApp()
+app = SilloApp()
 
 # Global timeout middleware
 app.use(
@@ -302,11 +302,11 @@ async def get_external_data(request :Request,response :Response):
 ### Production Configuration
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.timeout import Timeout
 import logging
 
-app = silloApp()
+app = SilloApp()
 
 # Configure timeout middleware for production
 app.use(

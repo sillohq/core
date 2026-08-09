@@ -11,7 +11,7 @@ One declaration drives three things: how a value is coerced, how it is validated
 
 ```python
 from pydantic import BaseModel
-from sillo import silloApp, Depend, Path, Query
+from sillo import SilloApp, Depend, Path, Query
 
 class UserCreate(BaseModel):
     name: str
@@ -22,7 +22,7 @@ class UserOut(BaseModel):
     id: int
     name: str
 
-app = silloApp()
+app = SilloApp()
 
 @app.post("/teams/{team_id}/users",
           request_model=UserCreate,      # JSON body
@@ -209,7 +209,7 @@ Both styles coexist in the same application, and even in the same handler. Docum
 To validate everything in an application, including parameters written the short way:
 
 ```python
-app = silloApp(strict_validation=True)
+app = SilloApp(strict_validation=True)
 ```
 
 ##  Performance

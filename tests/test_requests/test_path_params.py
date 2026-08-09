@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
@@ -14,10 +14,10 @@ from sillo.testclient import TestClient
 
 
 def test_request_path_params_single(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test single path parameter"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/users/{user_id}")
     async def handler(request: Request, response: Response, user_id: str):
@@ -30,10 +30,10 @@ def test_request_path_params_single(
 
 
 def test_request_path_params_multiple(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test multiple path parameters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/users/{user_id}/posts/{post_id}")
     async def handler(request: Request, response: Response, user_id: str, post_id: str):
@@ -47,10 +47,10 @@ def test_request_path_params_multiple(
 
 
 def test_request_path_params_numeric(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test path parameters with numeric values"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/products/{product_id}")
     async def handler(request: Request, response: Response, product_id: str):
@@ -69,10 +69,10 @@ def test_request_path_params_numeric(
 
 
 def test_request_path_params_with_special_chars(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test path parameters with special characters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/files/{filename}")
     async def handler(request: Request, response: Response, filename: str):
@@ -84,10 +84,10 @@ def test_request_path_params_with_special_chars(
 
 
 def test_request_path_params_uuid_like(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test path parameters with UUID-like values"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/resources/{resource_id}")
     async def handler(request: Request, response: Response, resource_id: str):
@@ -100,10 +100,10 @@ def test_request_path_params_uuid_like(
 
 
 def test_request_path_params_with_hyphens(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test path parameters with hyphens"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/posts/{post_slug}")
     async def handler(request: Request, response: Response, post_slug: str):
@@ -115,10 +115,10 @@ def test_request_path_params_with_hyphens(
 
 
 def test_request_path_params_with_underscores(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test path parameters with underscores"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/files/{file_name}")
     async def handler(request: Request, response: Response, file_name: str):
@@ -130,10 +130,10 @@ def test_request_path_params_with_underscores(
 
 
 def test_request_path_params_nested_resources(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test path parameters for nested resources"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/users/{user_id}/posts/{post_id}/comments/{comment_id}")
     async def handler(

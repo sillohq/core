@@ -28,9 +28,9 @@ Both are resolved by the same machinery, so you can mix them freely in one signa
 ##  The smallest useful form
 
 ```python
-from sillo import silloApp, Depend
+from sillo import SilloApp, Depend
 
-app = silloApp()
+app = SilloApp()
 
 
 def get_greeting() -> str:
@@ -101,9 +101,9 @@ Both forms work; `get_request=True` is the shorthand when a dependency *only* ne
 Dependencies can depend on other dependencies. sillo resolves the full tree, deepest first, and passes each result into its parent.
 
 ```python
-from sillo import silloApp, Depend
+from sillo import SilloApp, Depend
 
-app = silloApp()
+app = SilloApp()
 
 
 def get_db():
@@ -205,9 +205,9 @@ They compose cleanly:
 
 ```python
 from pydantic import BaseModel
-from sillo import silloApp, Depend, Query
+from sillo import SilloApp, Depend, Query
 
-app = silloApp()
+app = SilloApp()
 
 
 class CreateOrder(BaseModel):
@@ -238,13 +238,13 @@ async def create_order(
 
 ##  Using dependencies at the router and app level
 
-DI isn't limited to one route. You can attach `Dependencies` to a `Router` or `silloApp` so every route under it gets them — useful for "require auth on everything under `/admin`" style wiring:
+DI isn't limited to one route. You can attach `Dependencies` to a `Router` or `SilloApp` so every route under it gets them — useful for "require auth on everything under `/admin`" style wiring:
 
 ```python
-from sillo import silloApp, Depend
+from sillo import SilloApp, Depend
 from sillo.core.routing import Router
 
-app = silloApp()
+app = SilloApp()
 
 admin = Router(prefix="/admin")
 # every route registered on `admin` resolves `actor` automatically
@@ -260,9 +260,9 @@ This ties the pieces together. A `db_session` dependency opens a connection for 
 ```python
 import asyncio
 from pydantic import BaseModel
-from sillo import silloApp, Depend, Query
+from sillo import SilloApp, Depend, Query
 
-app = silloApp()
+app = SilloApp()
 
 
 # --- resource-owning dependency (generator => auto cleanup) ---

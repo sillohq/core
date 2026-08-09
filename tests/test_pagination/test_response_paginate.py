@@ -11,7 +11,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.pagination import LimitOffsetPagination, PageNumberPagination
 from sillo.testclient import TestClient
@@ -20,7 +20,7 @@ ITEMS = [{"id": i, "name": f"item-{i:03d}"} for i in range(50)]
 
 
 def _app(handler_body, *, route="/items"):
-    app = silloApp()
+    app = SilloApp()
     app.get(route)(handler_body)
     return app
 
@@ -30,7 +30,7 @@ def _app(handler_body, *, route="/items"):
 
 @pytest.fixture
 def sync_app():
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -40,7 +40,7 @@ def sync_app():
 
 
 def test_the_first_page_is_returned(
-    sync_app, test_client_factory: Callable[[silloApp], TestClient]
+    sync_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(sync_app) as client:
         body = client.get("/items").json()
@@ -48,7 +48,7 @@ def test_the_first_page_is_returned(
 
 
 def test_the_page_is_bounded(
-    sync_app, test_client_factory: Callable[[silloApp], TestClient]
+    sync_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(sync_app) as client:
         body = client.get("/items").json()
@@ -56,7 +56,7 @@ def test_the_page_is_bounded(
 
 
 def test_the_metadata_reports_the_total(
-    sync_app, test_client_factory: Callable[[silloApp], TestClient]
+    sync_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(sync_app) as client:
         body = client.get("/items").json()
@@ -64,7 +64,7 @@ def test_the_metadata_reports_the_total(
 
 
 def test_the_page_comes_from_the_query_string(
-    sync_app, test_client_factory: Callable[[silloApp], TestClient]
+    sync_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(sync_app) as client:
         body = client.get("/items?page=2").json()
@@ -73,7 +73,7 @@ def test_the_page_comes_from_the_query_string(
 
 
 def test_the_page_size_comes_from_the_query_string(
-    sync_app, test_client_factory: Callable[[silloApp], TestClient]
+    sync_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(sync_app) as client:
         body = client.get("/items?page_size=5").json()
@@ -81,7 +81,7 @@ def test_the_page_size_comes_from_the_query_string(
 
 
 def test_the_last_page_may_be_short(
-    sync_app, test_client_factory: Callable[[silloApp], TestClient]
+    sync_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(sync_app) as client:
         body = client.get("/items?page=3").json()
@@ -89,9 +89,9 @@ def test_the_last_page_may_be_short(
 
 
 def test_an_empty_collection_paginates(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -106,8 +106,8 @@ def test_an_empty_collection_paginates(
 # ── strategy selection ───────────────────────────────────────────────────
 
 
-def test_limit_offset_by_name(test_client_factory: Callable[[silloApp], TestClient]):
-    app = silloApp()
+def test_limit_offset_by_name(test_client_factory: Callable[[SilloApp], TestClient]):
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -119,8 +119,8 @@ def test_limit_offset_by_name(test_client_factory: Callable[[silloApp], TestClie
     assert body["items"][0]["id"] == 10
 
 
-def test_cursor_by_name(test_client_factory: Callable[[silloApp], TestClient]):
-    app = silloApp()
+def test_cursor_by_name(test_client_factory: Callable[[SilloApp], TestClient]):
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -133,9 +133,9 @@ def test_cursor_by_name(test_client_factory: Callable[[silloApp], TestClient]):
 
 
 def test_an_unknown_strategy_name_is_rejected(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -146,9 +146,9 @@ def test_an_unknown_strategy_name_is_rejected(
 
 
 def test_a_strategy_instance_is_used_as_given(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -159,9 +159,9 @@ def test_a_strategy_instance_is_used_as_given(
 
 
 def test_an_instance_of_another_strategy(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -175,11 +175,11 @@ def test_an_instance_of_another_strategy(
 
 
 def test_strategy_configuration_is_applied(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Recognised keys configure the strategy rather than being forwarded to
     ``paginate`` as parameter overrides."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -190,9 +190,9 @@ def test_strategy_configuration_is_applied(
 
 
 def test_a_custom_page_parameter_name(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -204,10 +204,10 @@ def test_a_custom_page_parameter_name(
 
 
 def test_the_max_page_size_caps_the_request(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """A client asking for everything in one page must not be able to."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -218,9 +218,9 @@ def test_the_max_page_size_caps_the_request(
 
 
 def test_an_unrecognised_keyword_is_a_parameter_override(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -231,9 +231,9 @@ def test_an_unrecognised_keyword_is_a_parameter_override(
 
 
 def test_an_override_beats_the_query_string(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -248,7 +248,7 @@ def test_an_override_beats_the_query_string(
 
 @pytest.fixture
 def async_app():
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -258,7 +258,7 @@ def async_app():
 
 
 def test_the_async_form_paginates(
-    async_app, test_client_factory: Callable[[silloApp], TestClient]
+    async_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(async_app) as client:
         body = client.get("/items").json()
@@ -267,16 +267,16 @@ def test_the_async_form_paginates(
 
 
 def test_the_async_form_reads_the_query_string(
-    async_app, test_client_factory: Callable[[silloApp], TestClient]
+    async_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(async_app) as client:
         assert client.get("/items?page=2").json()["items"][0]["id"] == 20
 
 
 def test_the_async_form_supports_limit_offset(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -289,9 +289,9 @@ def test_the_async_form_supports_limit_offset(
 
 
 def test_the_async_form_supports_cursor(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -302,9 +302,9 @@ def test_the_async_form_supports_cursor(
 
 
 def test_the_async_form_rejects_an_unknown_strategy(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -315,9 +315,9 @@ def test_the_async_form_rejects_an_unknown_strategy(
 
 
 def test_the_async_form_takes_a_strategy_instance(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -330,9 +330,9 @@ def test_the_async_form_takes_a_strategy_instance(
 
 
 def test_the_async_form_applies_configuration(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -343,9 +343,9 @@ def test_the_async_form_applies_configuration(
 
 
 def test_the_async_form_paginates_an_empty_collection(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def items(request: Request, response: Response):
@@ -356,7 +356,7 @@ def test_the_async_form_paginates_an_empty_collection(
 
 
 def test_both_forms_agree(
-    sync_app, async_app, test_client_factory: Callable[[silloApp], TestClient]
+    sync_app, async_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     with test_client_factory(sync_app) as client:
         sync_body = client.get("/items?page=2").json()

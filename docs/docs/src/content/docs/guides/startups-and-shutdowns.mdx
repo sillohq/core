@@ -26,9 +26,9 @@ The ``on_startup`` function is used to run code when the application is starting
 
 
 ```python {3}
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 @app.on_startup
 async def startup():
     print("Application starting up...")
@@ -41,9 +41,9 @@ The ``on_shutdown`` function is used to run code when the application is shuttin
 
 
 ```python {3}
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 @app.on_shutdown
 async def shutdown():
     print("Application shutting down...")
@@ -63,7 +63,7 @@ sillo also supports using an asynchronous context manager to handle both startup
 
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from contextlib import asynccontextmanager
 
 
@@ -75,7 +75,7 @@ async def app_lifespan(app):
     # Application shutdown logic
     print("Application shutting down...")
 
-app = silloApp(lifespan=app_lifespan)
+app = SilloApp(lifespan=app_lifespan)
 ```
 
 <Aside type="tip">
@@ -83,7 +83,7 @@ app = silloApp(lifespan=app_lifespan)
 You cannot use ``on_startup`` and ``on_shutdown`` together with ``lifespan`` But You can use this trick 
 
 ```py
-from sillo import silloApp
+from sillo import SilloApp
 from contextlib import asynccontextmanager
 
 
@@ -98,7 +98,7 @@ async def app_lifespan(app):
     await app._shutdown()
     print("Application shutting down...")
 
-app = silloApp(lifespan=app_lifespan)
+app = SilloApp(lifespan=app_lifespan)
 
 ```
 
@@ -160,7 +160,7 @@ One function, with setup before the `yield` and teardown after:
 ```python title="setup and teardown together"
 from contextlib import asynccontextmanager
 
-from sillo import silloApp
+from sillo import SilloApp
 
 
 @asynccontextmanager
@@ -173,7 +173,7 @@ async def lifespan(app):
         await pool.close()
 
 
-app = silloApp(lifespan=lifespan)
+app = SilloApp(lifespan=lifespan)
 ```
 
 Two advantages over paired hooks. The teardown sits next to the setup, so

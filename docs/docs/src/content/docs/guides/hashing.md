@@ -633,11 +633,11 @@ hashed = hash_password("password", scheme="pbkdf2_sha256")
 ### User Registration
 
 ```python
-from sillo import silloApp, Query
+from sillo import SilloApp, Query
 from sillo.hashing import validate_password
 from sillo.users import User
 
-app = silloApp()
+app = SilloApp()
 
 @app.post("/register")
 async def register(

@@ -2,7 +2,7 @@ import sqlite3
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
 
-from sillo import Depends, silloApp
+from sillo import Depends, SilloApp
 from sillo.types import Request, Response, State
 
 # Database setup
@@ -45,7 +45,7 @@ class Database:
 
 # Application lifespan
 @asynccontextmanager
-async def lifespan(app: silloApp) -> AsyncGenerator[State, None]:
+async def lifespan(app: SilloApp) -> AsyncGenerator[State, None]:
     # Startup: Initialize database connection
     db = Database(DB_PATH)
     await db.connect()
@@ -60,7 +60,7 @@ async def lifespan(app: silloApp) -> AsyncGenerator[State, None]:
     await db.close()
 
 
-app = silloApp(lifespan=lifespan)
+app = SilloApp(lifespan=lifespan)
 
 
 # Dependency to get database connection

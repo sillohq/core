@@ -21,10 +21,10 @@ async-friendly client, adds Jinja2 templating and attachments, and hooks
 connection setup and teardown into the application lifecycle.
 
 ```python title="the minimum"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.mail import MailConfig, setup_mail
 
-app = silloApp()
+app = SilloApp()
 mail = setup_mail(app, MailConfig.for_gmail("you@gmail.com", "app-password"))
 
 

@@ -2,7 +2,7 @@ from functools import partial
 
 import pytest
 
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.auth.session_auth.backend import login, logout
 from sillo.auth.session_auth.guard import SessionGuard
 from sillo.core.http import Request, Response
@@ -47,7 +47,7 @@ def make_mock_model(return_user):
 
 
 async def test_login_sets_session(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="test-key"))
 
     @app.post("/login")
@@ -69,7 +69,7 @@ async def test_login_sets_session(test_client):
 
 
 async def test_logout_clears_session(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="test-key"))
 
     @app.post("/login")
@@ -104,7 +104,7 @@ async def test_logout_clears_session(test_client):
 
 async def test_guard_attempt_and_check(test_client):
     mock_model = make_mock_model(MockUser("alice", user_id="1"))
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="test-key"))
     guard = SessionGuard(backend=None, user_model=mock_model)
 
@@ -138,7 +138,7 @@ async def test_guard_attempt_and_check(test_client):
 
 async def test_guard_attempt_wrong_password(test_client):
     mock_model = make_mock_model(MockUser("alice", user_id="1"))
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="test-key"))
     guard = SessionGuard(backend=None, user_model=mock_model)
 
@@ -156,7 +156,7 @@ async def test_guard_attempt_wrong_password(test_client):
 
 async def test_guard_attempt_user_not_found(test_client):
     mock_model = make_mock_model(None)
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="test-key"))
     guard = SessionGuard(backend=None, user_model=mock_model)
 
@@ -174,7 +174,7 @@ async def test_guard_attempt_user_not_found(test_client):
 
 async def test_guard_logout(test_client):
     mock_model = make_mock_model(MockUser("alice", user_id="1"))
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="test-key"))
     guard = SessionGuard(backend=None, user_model=mock_model)
 
@@ -211,7 +211,7 @@ async def test_guard_logout(test_client):
 
 async def test_guard_validate(test_client):
     mock_model = make_mock_model(MockUser("alice", user_id="1"))
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="test-key"))
     guard = SessionGuard(backend=None, user_model=mock_model)
 

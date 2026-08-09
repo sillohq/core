@@ -7,9 +7,9 @@ The JSON body is the one input declared on the **decorator** rather than with a 
 
 ```python
 from pydantic import BaseModel
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 class UserCreate(BaseModel):
     name: str

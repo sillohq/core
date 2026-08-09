@@ -22,7 +22,7 @@ from sillo.formparser import (
 from sillo.objects import URL, Address, FormData, Headers, QueryParams, State
 
 if typing.TYPE_CHECKING:
-    from sillo import silloApp
+    from sillo import SilloApp
     from sillo.session.session_objects import Session
     from sillo.users import BaseUser
 
@@ -246,17 +246,17 @@ class HTTPConnection:
         return self.scope["app"]
 
     @property
-    def base_app(self) -> silloApp:
+    def base_app(self) -> SilloApp:
         """The root ASGI application instance for the sillo framework.
 
         Retrieves the base application object from the ASGI scope.  This
-        is the top-level application instance (``silloApp``) that was
+        is the top-level application instance (``SilloApp``) that was
         originally created by the developer, before any middleware wrapping.
         It provides access to framework-level utilities such as URL
         generation via ``url_for``.
 
         Returns:
-            The root ``silloApp`` instance stored in the scope under the
+            The root ``SilloApp`` instance stored in the scope under the
             ``"base_app"`` key.
 
         Raises:

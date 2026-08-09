@@ -13,13 +13,13 @@ Securing your API is crucial for protecting user data and enabling safe integrat
 An authentication backend already knows which credential it reads.
 `JWTAuthBackend` reads `Authorization: Bearer <token>` — which *is*
 `HTTPBearer(scheme="bearer", bearerFormat="JWT")`. So pass your backends to
-`silloApp(auth=...)` and the document follows from them:
+`SilloApp(auth=...)` and the document follows from them:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth import JWTAuthBackend, APIKeyAuthBackend, SessionAuthBackend, useAuth
 
-app = silloApp(
+app = SilloApp(
     auth=[
         JWTAuthBackend(secret_key=SECRET, description="A JWT from `POST /login`."),
         APIKeyAuthBackend(header_name="X-API-Key"),
@@ -85,7 +85,7 @@ accepted an API key, forever, with no test failing.
 Turn that into an error:
 
 ```python
-app = silloApp(auth=[JWTAuthBackend(secret_key=SECRET)], strict_security=True)
+app = SilloApp(auth=[JWTAuthBackend(secret_key=SECRET)], strict_security=True)
 ```
 
 Building the document now fails if a route requires a scheme nothing
@@ -175,7 +175,7 @@ covers that path.
 
 :::caution
 **An application that declares no backends still advertises `bearerAuth`.**
-`silloApp()` has always registered that scheme unconditionally, whether or
+`SilloApp()` has always registered that scheme unconditionally, whether or
 not the app has any JWT anywhere. Passing `auth=` is the opt-out; it is left
 in place otherwise so existing `security=[{"bearerAuth": []}]` declarations
 keep resolving.
@@ -196,9 +196,9 @@ Proper authentication documentation provides several benefits:
 Bearer token authentication (typically JWT) is the most common modern authentication method. sillo includes built-in support with automatic documentation:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 # Basic bearer authentication
 @app.get(

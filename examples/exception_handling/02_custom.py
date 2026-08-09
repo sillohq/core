@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.exceptions import HTTPException
 from sillo.core.http import Request, Response
 
@@ -8,7 +8,7 @@ class CustomException(HTTPException):
         super().__init__(status_code=400, detail="Custom Exception")
 
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/test-custom-exception")

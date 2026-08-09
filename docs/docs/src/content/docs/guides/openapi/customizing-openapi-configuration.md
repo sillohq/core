@@ -20,12 +20,12 @@ Customizing your OpenAPI configuration provides several benefits:
 
 ##  Basic Configuration
 
-Set fundamental API information directly in the `silloApp` constructor:
+Set fundamental API information directly in the `SilloApp` constructor:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(
+app = SilloApp(
     title="E-Commerce API",
     version="2.1.0",
     description="""
@@ -58,9 +58,9 @@ For complete control over your OpenAPI specification, use the configuration syst
 
 ```python
 from sillo.openapi.models import Contact, License, Server, Tag, ExternalDocumentation
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(
+app = SilloApp(
     title="Enterprise E-Commerce API",
     version="2.1.0",
     description="""
@@ -285,13 +285,13 @@ Configure different environments with appropriate settings:
 
 ```python
 import os
-from sillo import silloApp
+from sillo import SilloApp
 
 # Environment-based configuration
 environment = os.getenv('ENVIRONMENT', 'development')
 
 if environment == 'production':
-    app = silloApp(
+    app = SilloApp(
         title="E-Commerce API",
         version="2.1.0",
         description="Production e-commerce API"
@@ -305,7 +305,7 @@ if environment == 'production':
     ]
     
 elif environment == 'staging':
-    app = silloApp(
+    app = SilloApp(
         title="E-Commerce API (Staging)",
         version="2.1.0-staging",
         description="Staging environment for testing"
@@ -319,7 +319,7 @@ elif environment == 'staging':
     ]
     
 else:  # development
-    app = silloApp(
+    app = SilloApp(
         title="E-Commerce API (Development)",
         version="2.1.0-dev",
         description="Development environment"
@@ -356,7 +356,7 @@ Paths are set at construction, because the routes are registered there:
 ```python
 from sillo.openapi.ui import Atlas, ReDoc
 
-app = silloApp(
+app = SilloApp(
     title="Custom API",
     version="1.0.0",
     openapi_url="/api-spec.json",
@@ -375,8 +375,8 @@ app = silloApp(
 To drop a viewer, leave it out of the list:
 
 ```python
-app = silloApp(docs=[Atlas()])     # Atlas only
-app = silloApp(docs=[])            # no documentation UI at all
+app = SilloApp(docs=[Atlas()])     # Atlas only
+app = SilloApp(docs=[])            # no documentation UI at all
 ```
 
 <aside type="caution">
@@ -492,7 +492,7 @@ def create_api_for_role(role: str):
     """Create API instance with role-specific documentation"""
     
     if role == "admin":
-        app = silloApp(
+        app = SilloApp(
             title="Admin API",
             version="2.1.0",
             description="Administrative interface with full access"
@@ -503,7 +503,7 @@ def create_api_for_role(role: str):
             return response.json({"users": []})
             
     elif role == "partner":
-        app = silloApp(
+        app = SilloApp(
             title="Partner API",
             version="2.1.0",
             description="Partner integration API with limited access"
@@ -514,7 +514,7 @@ def create_api_for_role(role: str):
             return response.json({"orders": []})
             
     else:  # public
-        app = silloApp(
+        app = SilloApp(
             title="Public API",
             version="2.1.0",
             description="Public API with read-only access"
@@ -594,7 +594,7 @@ class APIConfig:
     LICENSE_URL = os.getenv('API_LICENSE_URL', 'https://opensource.org/licenses/MIT')
     TERMS_URL = os.getenv('API_TERMS_URL', 'https://example.com/terms')
 
-app = silloApp(
+app = SilloApp(
     title=APIConfig.TITLE,
     version=APIConfig.VERSION,
     description=APIConfig.DESCRIPTION
@@ -625,7 +625,7 @@ VERSION_INFO = {
     "changelog_url": "https://example.com/changelog/v2.1.0"
 }
 
-app = silloApp(
+app = SilloApp(
     title="Versioned API",
     version=VERSION_INFO["version"],
     description=f"""

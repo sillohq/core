@@ -21,7 +21,7 @@ Got it! I'll go through each CORS configuration setting in **sillo**, explaining
 
 Before diving into individual settings, here's a simple CORS setup using `CorsConfig`:
 ```python title="Recommended Approach"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security.cors import CorsConfig
 from sillo.security.cors import CORSMiddleware
 
@@ -33,7 +33,7 @@ cors_config = CorsConfig(
     max_age=600,
     debug=True
 )
-app = silloApp()
+app = SilloApp()
 app.use(CORSMiddleware(config=cors_config))
 ```
 
@@ -266,13 +266,13 @@ When `allow_credentials=True`, `allow_origins` cannot be `["*"]` — the spec fo
 Drive CORS through `TestClient`. A simple request reflects the allow-list; a preflight (`OPTIONS`) echoes the method/header policy.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
 
 
 def test_simple_request_allowed_origin():
-    app = silloApp()
+    app = SilloApp()
     app.use(
         CORSMiddleware(
             CorsConfig(
@@ -293,7 +293,7 @@ def test_simple_request_allowed_origin():
 
 
 def test_preflight_reflects_methods():
-    app = silloApp()
+    app = SilloApp()
     app.use(
         CORSMiddleware(
             CorsConfig(
@@ -321,7 +321,7 @@ def test_preflight_reflects_methods():
 
 
 def test_disallowed_origin_gets_no_header():
-    app = silloApp()
+    app = SilloApp()
     app.use(CORSMiddleware(CorsConfig(allow_origins=["http://example.com"])))
 
     @app.get("/data")

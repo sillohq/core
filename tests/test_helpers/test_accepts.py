@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.http.accepts import (
     AcceptItem,
@@ -123,7 +123,7 @@ class TestVaryHeader:
 
 class TestAcceptsMiddleware:
     def test_middleware_sets_content_type(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
@@ -135,7 +135,7 @@ class TestAcceptsMiddleware:
         assert "Content-Type" in response.headers
 
     def test_middleware_sets_vary_header(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
@@ -152,7 +152,7 @@ class TestAcceptsMiddleware:
         assert mw.default_content_type == "text/html"
 
     def test_middleware_parses_accepts(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(AcceptsMiddleware(store_accepts_info=True))
 
         @app.get("/test")
@@ -167,7 +167,7 @@ class TestAcceptsMiddleware:
 
 class TestAcceptsInfo:
     def test_accepted_types(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
@@ -182,7 +182,7 @@ class TestAcceptsInfo:
 
 class TestContentNegotiationMiddleware:
     def test_negotiate_content_type_method(self):
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/test")
         async def test_route(request: Request, response: Response):

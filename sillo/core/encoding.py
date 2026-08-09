@@ -89,7 +89,7 @@ def decimal_encoder(dec_value: Decimal) -> int | float:
 
 
 #: Global registry of user-defined encoders. Populated via
-#: :func:`register_encoder` or ``silloApp.add_encoder`` and automatically
+#: :func:`register_encoder` or ``SilloApp.add_encoder`` and automatically
 #: consulted by :func:`jsonable_encoder`.
 CUSTOM_ENCODERS: dict[type[typing.Any], typing.Callable[[typing.Any], typing.Any]] = {}
 

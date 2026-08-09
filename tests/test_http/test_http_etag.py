@@ -1,11 +1,11 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.http import ETag, ETagMiddleware, generate_etag_from_bytes
 from sillo.testclient import TestClient
 
 
 def test_etag_middleware_sets_etag_on_get():
-    app = silloApp()
+    app = SilloApp()
     app.use(ETagMiddleware())
 
     @app.get("/test")
@@ -20,7 +20,7 @@ def test_etag_middleware_sets_etag_on_get():
 
 
 def test_etag_middleware_ignores_post_by_default():
-    app = silloApp()
+    app = SilloApp()
     app.use(ETagMiddleware())
 
     @app.post("/test")
@@ -35,7 +35,7 @@ def test_etag_middleware_ignores_post_by_default():
 
 
 def test_etag_middleware_honors_existing_etag():
-    app = silloApp()
+    app = SilloApp()
     app.use(ETag())
 
     @app.get("/test")
@@ -49,7 +49,7 @@ def test_etag_middleware_honors_existing_etag():
 
 
 def test_etag_conditional_get_returns_304():
-    app = silloApp()
+    app = SilloApp()
     app.use(ETagMiddleware())
 
     @app.get("/test")

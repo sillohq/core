@@ -84,10 +84,10 @@ hashing.verify_password("", hashed)                        # False
 The full login flow:
 
 ```python title="Registration and login"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.helpers.hashing import hash_password, verify_password
 
-app = silloApp()
+app = SilloApp()
 
 @app.post("/register")
 async def register(request, response):

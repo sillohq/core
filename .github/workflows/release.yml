@@ -59,15 +59,24 @@ jobs:
       # tag of sillo-core-v0.0.1a15 against a pyproject still saying a14
       # publishes a14 and reports success, and the version it claims to have
       # released is one that does not exist.
-      - name: The tag and the package must agree
+      #
+      # `sillo.__version__` is checked too because it is what a user reads at
+      # runtime, and nothing had been checking it: 0.0.1a15 shipped with the
+      # module still reporting a14, and the release passed.
+      - name: The tag, the package and __version__ must agree
         run: |
           TAG_VERSION="${{ steps.version.outputs.version }}"
           PKG_VERSION=$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          MOD_VERSION=$(python -c "import re,pathlib; print(re.search(r'__version__.*?\"(.*?)\"', pathlib.Path('sillo/__init__.py').read_text()).group(1))")
           if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
             echo "::error::Tag says $TAG_VERSION, pyproject.toml says $PKG_VERSION."
             exit 1
           fi
-          echo "both say $PKG_VERSION"
+          if [ "$TAG_VERSION" != "$MOD_VERSION" ]; then
+            echo "::error::Tag says $TAG_VERSION, sillo/__init__.py says $MOD_VERSION."
+            exit 1
+          fi
+          echo "all three say $PKG_VERSION"
 
       - name: Clean Old Builds
         run: |

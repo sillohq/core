@@ -28,13 +28,13 @@ Two middleware pieces are involved:
 `SessionMiddleware` **must** run before `AuthenticationMiddleware` (the auth backend reads `request.session`):
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.session import SessionMiddleware, SessionConfig
 from sillo.auth import AuthenticationMiddleware, useAuth
 from sillo.auth.session_auth import SessionAuthBackend
 from sillo.users import User
 
-app = silloApp()
+app = SilloApp()
 
 app.use(SessionMiddleware(
     SessionConfig(secret_key="change-me"),   # signs the cookie

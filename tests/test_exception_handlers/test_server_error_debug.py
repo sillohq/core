@@ -9,7 +9,7 @@ application is already failing — a bug here hides the original error.
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.error.handler import ServerErrorMiddleware
 from sillo.testclient import TestClient
 
@@ -153,7 +153,7 @@ def test_suggestions_cover_common_exception_types(middleware, exc, name):
 
 
 def test_debug_mode_returns_an_html_traceback():
-    app = silloApp(debug=True)
+    app = SilloApp(debug=True)
 
     @app.get("/boom")
     async def boom(request, response):
@@ -167,7 +167,7 @@ def test_debug_mode_returns_an_html_traceback():
 
 
 def test_non_debug_mode_hides_the_detail():
-    app = silloApp(debug=False)
+    app = SilloApp(debug=False)
 
     @app.get("/boom")
     async def boom(request, response):
@@ -184,7 +184,7 @@ def test_a_custom_server_error_handler_takes_over():
     async def custom(request, response, exc):
         return response.json({"handled": str(exc)}, status_code=500)
 
-    app = silloApp(debug=False, server_error_handler=custom)
+    app = SilloApp(debug=False, server_error_handler=custom)
 
     @app.get("/boom")
     async def boom(request, response):

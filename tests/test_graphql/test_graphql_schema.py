@@ -1,5 +1,5 @@
 import strawberry
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.graphql import GraphQL
 from sillo.testclient import TestClient
 
@@ -25,7 +25,7 @@ schema = strawberry.Schema(query=Query)
 
 
 def test_graphql_query():
-    app = silloApp()
+    app = SilloApp()
     GraphQL(app, schema)
     client = TestClient(app)
 
@@ -36,7 +36,7 @@ def test_graphql_query():
 
 
 def test_graphql_context_user_agent():
-    app = silloApp()
+    app = SilloApp()
     GraphQL(app, schema)
     client = TestClient(app)
 
@@ -51,7 +51,7 @@ def test_graphql_context_user_agent():
 
 
 def test_graphql_context_request_method():
-    app = silloApp()
+    app = SilloApp()
     GraphQL(app, schema)
     client = TestClient(app)
 
@@ -62,7 +62,7 @@ def test_graphql_context_request_method():
 
 
 def test_graphiql_html():
-    app = silloApp()
+    app = SilloApp()
     GraphQL(app, schema, graphiql=True)
     client = TestClient(app)
 

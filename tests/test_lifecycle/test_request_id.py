@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.http.lifecycle import (
     RequestIdMiddleware,
@@ -13,7 +13,7 @@ from sillo.testclient import TestClient
 
 class TestRequestIdMiddleware:
     def test_basic_request_id_generation(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(RequestIdMiddleware())
 
         @app.get("/test")
@@ -27,7 +27,7 @@ class TestRequestIdMiddleware:
         assert validate_request_id(response.headers["X-Request-ID"])
 
     def test_request_id_stored_in_state(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(RequestIdMiddleware(store_in_request=True))
 
         @app.get("/test")
@@ -42,7 +42,7 @@ class TestRequestIdMiddleware:
         assert data["request_id"] is not None
 
     def test_force_generate_ignores_incoming_header(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(RequestIdMiddleware(force_generate=True))
 
         @app.get("/test")
@@ -55,7 +55,7 @@ class TestRequestIdMiddleware:
         assert response.headers["X-Request-ID"] != incoming_id
 
     def test_custom_header_name(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(RequestIdMiddleware(header_name="X-Custom-ID"))
 
         @app.get("/test")
@@ -67,7 +67,7 @@ class TestRequestIdMiddleware:
         assert "X-Custom-ID" in response.headers
 
     def test_include_in_response_disabled(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(RequestIdMiddleware(include_in_response=False))
 
         @app.get("/test")
@@ -90,7 +90,7 @@ class TestRequestIdHelpers:
         assert not validate_request_id("123")
 
     def test_get_or_generate_creates_new(self):
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/test")
         async def test_route(request: Request, response: Response):

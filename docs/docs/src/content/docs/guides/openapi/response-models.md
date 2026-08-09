@@ -24,7 +24,7 @@ Response models provide essential benefits for API development:
 Define response schemas using Pydantic's `BaseModel`:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
@@ -38,7 +38,7 @@ class UserResponse(BaseModel):
     created_at: datetime = Field(..., description="Account creation timestamp")
     last_login: Optional[datetime] = Field(None, description="Last login timestamp")
 
-app = silloApp()
+app = SilloApp()
 
 @app.get(
     "/users/{user_id}",

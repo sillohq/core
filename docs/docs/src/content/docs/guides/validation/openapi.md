@@ -327,7 +327,7 @@ Checking that file into version control turns an unintended API change into a vi
 
 ##  The interactive UIs
 
-Three routes are mounted by default, all configurable on `silloApp`:
+Three routes are mounted by default, all configurable on `SilloApp`:
 
 | Path | What it serves |
 | --- | --- |
@@ -339,7 +339,7 @@ Swagger UI and Scalar ship too; which viewers are mounted is the `docs`
 argument. See [Documentation UI](/guides/openapi/documentation-ui/).
 
 ```python
-app = silloApp(
+app = SilloApp(
     title="My API",
     version="2.1.0",
     description="What this service does",

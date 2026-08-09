@@ -18,10 +18,10 @@ sillo generates one OpenAPI document and can render it through any number
 of viewers. Which ones you get is a list you pass at construction:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.openapi.ui import Atlas, Swagger, ReDoc, Scalar
 
-app = silloApp(
+app = SilloApp(
     title="Myapp",
     docs=[
         Atlas(path="/docs"),
@@ -36,7 +36,7 @@ Leave `docs` unset and you get **Atlas** at `/docs` and ReDoc at `/redoc`.
 ##  Turning documentation off
 
 ```python
-app = silloApp(docs=[])
+app = SilloApp(docs=[])
 ```
 
 No viewer is mounted and `/docs` is a 404.
@@ -46,7 +46,7 @@ render the document; they do not produce it. If you want the schema gone
 too, that is a separate decision:
 
 ```python
-app = silloApp(docs=[], openapi_url="/internal/openapi.json")
+app = SilloApp(docs=[], openapi_url="/internal/openapi.json")
 ```
 
 :::caution
@@ -183,7 +183,7 @@ Atlas(title="Myapp — Internal API", favicon_url="/static/favicon.svg")
 Atlas(favicon_url=None)                      # no icon at all
 ```
 
-`title` defaults to the API title, so `silloApp(title="Myapp")` already
+`title` defaults to the API title, so `SilloApp(title="Myapp")` already
 names the tab correctly. The favicon defaults to sillo's own, and its
 media type follows the file extension — an `.svg` is labelled
 `image/svg+xml` rather than handed to the browser as a PNG.
@@ -217,7 +217,7 @@ Nothing stops you mounting one presenter more than once with different
 configuration:
 
 ```python
-app = silloApp(docs=[
+app = SilloApp(docs=[
     Swagger(path="/docs", title="API"),
     Swagger(path="/internal/docs", ui_config={"tryItOutEnabled": True}),
     ReDoc(path="/reference"),
@@ -254,7 +254,7 @@ class RapiDoc(DocsUI):
 </html>"""
 
 
-app = silloApp(docs=[RapiDoc()])
+app = SilloApp(docs=[RapiDoc()])
 ```
 
 Subclassing `DocsUI` gets you the `path`/`title`/`favicon_url` handling
@@ -297,14 +297,14 @@ Returns `None` when that viewer is not mounted, which is the useful case
 The old arguments still work and still move the pages:
 
 ```python
-app = silloApp(swagger_docs="/api-docs", redoc_docs="/api-redoc")
+app = SilloApp(swagger_docs="/api-docs", redoc_docs="/api-redoc")
 ```
 
 They are deprecated in favour of `docs`. Combining the two raises
 `TypeError` rather than silently preferring one:
 
 ```python
-silloApp(swagger_docs="/api-docs", docs=[Scalar()])
+SilloApp(swagger_docs="/api-docs", docs=[Scalar()])
 # TypeError: docs= cannot be combined with swagger_docs; set the path on
 # the presenter instead, e.g. docs=[Swagger(path='/api-docs')]
 ```

@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
-from sillo import Depend, silloApp
+from sillo import Depend, SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Router
 from sillo.websockets import WebSocket, WebSocketDisconnect
@@ -245,7 +245,7 @@ async def chat_websocket(websocket: WebSocket):
         print(f"Client disconnected from room {room_id}")
 
 
-def create_app() -> silloApp:
+def create_app() -> SilloApp:
     """
     Create the sillo application.
 
@@ -256,7 +256,7 @@ def create_app() -> silloApp:
     """
 
     # Create application with OpenAPI documentation
-    app = silloApp(
+    app = SilloApp(
         title="Enhanced sillo API Demo",
         version="1.0.0",
         description="Demonstration of sillo framework with comprehensive documentation",

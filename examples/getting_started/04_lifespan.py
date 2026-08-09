@@ -14,7 +14,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http.request import Request
 from sillo.core.http.response import Response
 
@@ -98,7 +98,7 @@ async def lifespan_context(app):
 # Create application instances to demonstrate different approaches
 
 # 1. Application with regular startup/shutdown handlers
-regular_app = silloApp(title="Regular Handlers Example")
+regular_app = SilloApp(title="Regular Handlers Example")
 
 
 @regular_app.on_startup()
@@ -130,11 +130,11 @@ async def shutdown_handler2():
 
 
 # 2. Application with custom lifespan context manager
-custom_app = silloApp(title="Custom Lifespan Example", lifespan=lifespan_context)
+custom_app = SilloApp(title="Custom Lifespan Example", lifespan=lifespan_context)
 
 
 # 3. Application demonstrating error handling
-error_app = silloApp(title="Error Handling Example")
+error_app = SilloApp(title="Error Handling Example")
 
 
 @error_app.on_startup()
@@ -153,7 +153,7 @@ async def error_cleanup():
 
 
 # Main application that combines regular handlers and custom lifespan
-app = silloApp(title="sillo Lifespan Demo", lifespan=lifespan_context)
+app = SilloApp(title="sillo Lifespan Demo", lifespan=lifespan_context)
 
 
 # Add some regular handlers too (these won't run when custom lifespan is used)

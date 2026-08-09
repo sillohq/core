@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.exceptions import WebSocketException
 from sillo.core.routing import Router
 from sillo.testclient import TestClient
@@ -154,7 +154,7 @@ class TestWebSocketErrorIntegration:
         self, test_client_factory: pytest.FixtureRequest
     ):
         """Test websocket route that raises WebSocketException"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.ws_route("/ws/error")
         async def error_endpoint(websocket: WebSocket):
@@ -170,7 +170,7 @@ class TestWebSocketErrorIntegration:
         self, test_client_factory: pytest.FixtureRequest
     ):
         """Test websocket route that raises general exception"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.ws_route("/ws/general-error")
         async def general_error_endpoint(websocket: WebSocket):
@@ -184,7 +184,7 @@ class TestWebSocketErrorIntegration:
 
     def test_websocket_route_normal_operation(self, test_client_factory):
         """Test that normal websocket operation still works"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.ws_route("/ws/normal")
         async def normal_endpoint(websocket: WebSocket):
@@ -207,7 +207,7 @@ class TestWebSocketErrorIntegration:
         async def router_error_endpoint(websocket: WebSocket):
             raise WebSocketException(code=1009, reason="Router error")
 
-        app = silloApp()
+        app = SilloApp()
         app.mount_router(router)
 
         with test_client_factory(app) as client:

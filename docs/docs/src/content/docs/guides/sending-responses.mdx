@@ -166,9 +166,9 @@ For clarity and to leverage the full power of sillo's response handling, we reco
 You can chain multiple methods together to configure the response before sending it. This makes your code more concise and expressive.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/")
 async def home(request, response):
@@ -222,9 +222,9 @@ configured). You never call `return` after them.
 ###  `response.abort()`
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/admin")
 async def admin(request, response):
@@ -458,10 +458,10 @@ Instead of using the `response` object's methods, you can return an instance of 
 **Example:**
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http.response import JSONResponse, HTMLResponse
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/users-json")
 async def get_users_json(request, response):
@@ -481,7 +481,7 @@ You can create your own custom response classes by inheriting from `sillo.http.r
 **Example: Creating an `XMLResponse` class**
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http.response import BaseResponse
 from dicttoxml import dicttoxml
 
@@ -491,7 +491,7 @@ class XMLResponse(BaseResponse):
         # BaseResponse stores the already-encoded body and a content_type
         super().__init__(body=xml_content, content_type="application/xml", *args, **kwargs)
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/data.xml")
 async def get_xml_data(request, response):

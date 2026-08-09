@@ -17,9 +17,9 @@ Use this reference when the request is about the sillo event system itself rathe
 sillo events follow a publish-subscribe model:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.events.on("user.created")

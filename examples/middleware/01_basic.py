@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 
@@ -19,7 +19,7 @@ class LoggingMiddleware(BaseMiddleware):
         return response
 
 
-app = silloApp()
+app = SilloApp()
 app.add_middleware(LoggingMiddleware())
 app.add_middleware(logging_middleware)
 

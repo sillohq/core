@@ -31,10 +31,10 @@ uv add tortoise-orm
 ### Basic Setup
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.tortoise import init_tortoise
 
-app = silloApp()
+app = SilloApp()
 
 # Initialize Tortoise ORM
 init_tortoise(
@@ -244,10 +244,10 @@ register_tortoise(
 )
 
 # sillo style  
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.tortoise import init_tortoise
 
-app = silloApp()
+app = SilloApp()
 init_tortoise(
     app,
     db_url="sqlite://db.sqlite3",

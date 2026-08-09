@@ -35,7 +35,7 @@ Here is a simple example of how to set up a GraphQL server with sillo:
 
 ```python
 import strawberry
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.graphql import GraphQL
 
 # 1. Define your schema using Strawberry
@@ -48,7 +48,7 @@ class Query:
 schema = strawberry.Schema(query=Query)
 
 # 2. Create your sillo app
-app = silloApp()
+app = SilloApp()
 
 # 3. Instantiate the GraphQL handler
 # By default, this mounts the GraphQL endpoint at /graphql
@@ -86,7 +86,7 @@ Response:
 
 The `GraphQL` class accepts the following arguments:
 
-- `app` (silloApp): The sillo application instance.
+- `app` (SilloApp): The sillo application instance.
 - `schema` (strawberry.Schema): The Strawberry schema to use.
 - `path` (str, optional): The path to mount the GraphQL endpoint. Defaults to `/graphql`.
 - `graphiql` (bool, optional): Whether to enable the GraphiQL interface. Defaults to `True`.
@@ -148,7 +148,7 @@ Drive queries through `TestClient` with a `POST` of a JSON `{"query": ...}` body
 
 ```python
 import strawberry
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.graphql import GraphQL
 from sillo.testclient import TestClient
 
@@ -161,7 +161,7 @@ class Query:
 
 
 schema = strawberry.Schema(query=Query)
-app = silloApp()
+app = SilloApp()
 GraphQL(app, schema)
 client = TestClient(app)
 

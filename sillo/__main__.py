@@ -9,7 +9,7 @@ application already knows what the project has: the database manager that
 :func:`sillo.record.manager.setup_record` put on ``app.state``, the scheduler
 :func:`sillo.work.scheduler.setup_scheduler` put there, the user model it
 authenticates against, and whatever commands the project registered with
-:meth:`silloApp.add_command`. Everything follows from importing it.
+:meth:`SilloApp.add_command`. Everything follows from importing it.
 
 The application is looked for in this order:
 

@@ -52,12 +52,12 @@ Creating a JSON-RPC server with sillo is straightforward. The server automatical
 
 ```python
 # server.py
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.jrpc.server import JsonRpcPlugin
 from sillo_contrib.jrpc.registry import get_registry
 
 def main():
-    app = silloApp()
+    app = SilloApp()
     registry = get_registry()
 
     @registry.register("add")
@@ -82,13 +82,13 @@ if __name__ == "__main__":
 
 ```python
 # server.py
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.jrpc.server import JsonRpcPlugin
 from sillo_contrib.jrpc.registry import get_registry
 
 def main():
     # Create sillo app - this is your main application instance
-    app = silloApp()
+    app = SilloApp()
 
     # Get the global registry - this is a singleton that stores all RPC methods
     # The registry acts as a central method dispatcher for JSON-RPC calls
@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
 **Understanding the Server Components:**
 
-1. **silloApp**: The main application instance that handles HTTP requests and routing
+1. **SilloApp**: The main application instance that handles HTTP requests and routing
 2. **Registry**: A method storage and dispatch system that maps method names to Python functions
 3. **JsonRpcPlugin**: The bridge between sillo HTTP handling and JSON-RPC protocol
 4. **Method Registration**: The `@registry.register()` decorator makes Python functions available as RPC methods
@@ -496,12 +496,12 @@ async def process_user_data(user_data: dict) -> dict:
 The JSON-RPC plugin offers extensive configuration options for production deployments and complex scenarios.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.jrpc.server import JsonRpcPlugin
 from sillo_contrib.jrpc.registry import Registry, get_registry
 import logging
 
-app = silloApp()
+app = SilloApp()
 
 # Method 1: Using Custom Registry (Isolated Method Namespace)
 # Create a separate registry for specific functionality
@@ -1016,12 +1016,12 @@ JSON-RPC seamlessly integrates with sillo's middleware system, allowing you to a
 Here's a simple example of adding logging middleware:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.jrpc.server import JsonRpcPlugin
 import time
 import logging
 
-app = silloApp()
+app = SilloApp()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -1044,7 +1044,7 @@ JsonRpcPlugin(app, {"path_prefix": "/rpc"})
 <summary>View Advanced Middleware Examples</summary>
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.jrpc.server import JsonRpcPlugin
 from sillo_contrib.jrpc.exceptions import JsonRpcError
 import time
@@ -1052,7 +1052,7 @@ import json
 import logging
 from collections import defaultdict, deque
 
-app = silloApp()
+app = SilloApp()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -1246,13 +1246,13 @@ registry.register_method("area", calculate_area)
 Here's a simple calculator service to demonstrate JSON-RPC in action:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.jrpc.server import JsonRpcPlugin
 from sillo_contrib.jrpc.registry import get_registry
 from sillo_contrib.jrpc.exceptions import JsonRpcError
 import math
 
-app = silloApp()
+app = SilloApp()
 registry = get_registry()
 
 @registry.register("add")
@@ -1290,7 +1290,7 @@ if __name__ == "__main__":
 <summary>View Complete Calculator Service with Advanced Features</summary>
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.jrpc.server import JsonRpcPlugin
 from sillo_contrib.jrpc.registry import get_registry
 from sillo_contrib.jrpc.exceptions import JsonRpcError
@@ -1302,7 +1302,7 @@ from typing import Union, List
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = silloApp()
+app = SilloApp()
 registry = get_registry()
 
 def validate_number(value, param_name: str) -> float:
@@ -1614,7 +1614,7 @@ if __name__ == "__main__":
 This example demonstrates a production-ready user management system with comprehensive validation, audit logging, and advanced features.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.jrpc.server import JsonRpcPlugin
 from sillo_contrib.jrpc.registry import get_registry
 from sillo_contrib.jrpc.exceptions import JsonRpcError
@@ -1631,7 +1631,7 @@ from datetime import datetime, timedelta
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = silloApp()
+app = SilloApp()
 registry = get_registry()
 
 @dataclass

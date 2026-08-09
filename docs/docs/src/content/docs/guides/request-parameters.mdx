@@ -12,9 +12,9 @@ sillo provides a clean, declarative way to extract query parameters, HTTP header
 ##  Quick Example
 
 ```python
-from sillo import silloApp, Query, Header, Cookie
+from sillo import SilloApp, Query, Header, Cookie
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/search")
 async def search(

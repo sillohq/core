@@ -16,7 +16,7 @@ from decimal import Decimal
 import pytest
 from tortoise import Tortoise, fields
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.admin import ModelAdmin, setup_admin
 from sillo.admin.default_user import AdminRole, AdminUser
 from sillo.admin.models import AdminActivity
@@ -76,7 +76,7 @@ class ProductAdmin(ModelAdmin):
 
 
 def _make_app(db_path, *, product_admin=ProductAdmin):
-    app = silloApp(title="Admin Export Test")
+    app = SilloApp(title="Admin Export Test")
     setup_record(
         app,
         DatabaseConfig.sqlite(str(db_path)),

@@ -18,10 +18,10 @@ uv add sillo-contrib
 ## Quick Start
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 import sillo_contrib.trusted as trusted
 
-app = silloApp()
+app = SilloApp()
 
 # Add the Trusted Host middleware
 app.use(
@@ -166,10 +166,10 @@ When a request comes from an untrusted host, the middleware raises:
 ### Custom Error Handling
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.exceptions import HTTPException
 
-app = silloApp()
+app = SilloApp()
 
 @app.add_exception_handler(HTTPException)
 async def handle_bad_request(request, response, exc):

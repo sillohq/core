@@ -6,7 +6,7 @@ import warnings
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.security.csrf import CSRFConfig, CSRFMiddleware
 
@@ -14,7 +14,7 @@ from sillo.security.csrf import CSRFConfig, CSRFMiddleware
 def test_protected_request_missing_token(test_client_factory):
     """POST to protected route without CSRF should fail."""
     csrf_config = CSRFConfig(enabled=True, secret_key="secret")
-    app = silloApp()
+    app = SilloApp()
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.post("/protected")
@@ -30,7 +30,7 @@ def test_protected_request_missing_token(test_client_factory):
 def test_protected_request_valid_token(test_client_factory):
     """POST to protected route with valid CSRF token should pass."""
     csrf_config = CSRFConfig(enabled=True, secret_key="secret")
-    app = silloApp()
+    app = SilloApp()
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -63,7 +63,7 @@ def test_protected_request_valid_token(test_client_factory):
 def test_protected_request_invalid_token(test_client_factory):
     """POST to protected route with wrong CSRF token should fail."""
     csrf_config = CSRFConfig(enabled=True, secret_key="secret")
-    app = silloApp()
+    app = SilloApp()
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -94,7 +94,7 @@ def test_protected_request_invalid_token(test_client_factory):
 def test_cookie_is_reset_on_response(test_client_factory):
     """Every response should set or refresh CSRF cookie."""
     csrf_config = CSRFConfig(enabled=True, secret_key="secret")
-    app = silloApp()
+    app = SilloApp()
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
@@ -123,7 +123,7 @@ def test_csrf_custom_configuration(test_client_factory):
         secure=True,
         httponly=False,
     )
-    app = silloApp()
+    app = SilloApp()
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")

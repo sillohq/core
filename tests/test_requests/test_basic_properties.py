@@ -6,16 +6,16 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 # ========== Request Method Tests ==========
 
 
-def test_request_method_get(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_method_get(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test GET request method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -27,9 +27,9 @@ def test_request_method_get(test_client_factory: Callable[[silloApp], TestClient
         assert resp.json()["method"] == "GET"
 
 
-def test_request_method_post(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_method_post(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test POST request method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.post("/test")
     async def handler(request: Request, response: Response):
@@ -41,9 +41,9 @@ def test_request_method_post(test_client_factory: Callable[[silloApp], TestClien
         assert resp.json()["method"] == "POST"
 
 
-def test_request_method_put(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_method_put(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test PUT request method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.put("/test")
     async def handler(request: Request, response: Response):
@@ -55,9 +55,9 @@ def test_request_method_put(test_client_factory: Callable[[silloApp], TestClient
         assert resp.json()["method"] == "PUT"
 
 
-def test_request_method_delete(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_method_delete(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test DELETE request method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.delete("/test")
     async def handler(request: Request, response: Response):
@@ -69,9 +69,9 @@ def test_request_method_delete(test_client_factory: Callable[[silloApp], TestCli
         assert resp.json()["method"] == "DELETE"
 
 
-def test_request_method_patch(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_method_patch(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test PATCH request method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.patch("/test")
     async def handler(request: Request, response: Response):
@@ -83,9 +83,9 @@ def test_request_method_patch(test_client_factory: Callable[[silloApp], TestClie
         assert resp.json()["method"] == "PATCH"
 
 
-def test_request_is_method(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_is_method(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test is_method helper"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.route("/test", methods=["GET", "POST"])
     async def handler(request: Request, response: Response):
@@ -108,9 +108,9 @@ def test_request_is_method(test_client_factory: Callable[[silloApp], TestClient]
 # ========== Request URL Tests ==========
 
 
-def test_request_url(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_url(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test request URL property"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test/path")
     async def handler(request: Request, response: Response):
@@ -122,9 +122,9 @@ def test_request_url(test_client_factory: Callable[[silloApp], TestClient]):
         assert "/test/path" in resp.json()["url"]
 
 
-def test_request_path(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_path(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test request path property"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/api/users")
     async def handler(request: Request, response: Response):
@@ -136,9 +136,9 @@ def test_request_path(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.json()["path"] == "/api/users"
 
 
-def test_request_url_scheme(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_url_scheme(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test request URL scheme"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -150,9 +150,9 @@ def test_request_url_scheme(test_client_factory: Callable[[silloApp], TestClient
         assert resp.json()["scheme"] in ["http", "https"]
 
 
-def test_request_url_netloc(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_url_netloc(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test request URL netloc"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -164,9 +164,9 @@ def test_request_url_netloc(test_client_factory: Callable[[silloApp], TestClient
         assert resp.json()["netloc"] != ""
 
 
-def test_request_base_url(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_base_url(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test request base_url property"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test/path")
     async def handler(request: Request, response: Response):
@@ -182,9 +182,9 @@ def test_request_base_url(test_client_factory: Callable[[silloApp], TestClient])
 # ========== Request Headers Tests ==========
 
 
-def test_request_headers(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_headers(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test accessing request headers"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -202,9 +202,9 @@ def test_request_headers(test_client_factory: Callable[[silloApp], TestClient]):
         assert data["has_headers"] is True
 
 
-def test_request_get_header(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_get_header(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test get_header method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -220,9 +220,9 @@ def test_request_get_header(test_client_factory: Callable[[silloApp], TestClient
         assert data["custom"] == "custom-value"
 
 
-def test_request_has_header(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_has_header(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test has_header method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -240,9 +240,9 @@ def test_request_has_header(test_client_factory: Callable[[silloApp], TestClient
         assert data["has_missing"] is False
 
 
-def test_request_user_agent(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_user_agent(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test user_agent property"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -253,9 +253,9 @@ def test_request_user_agent(test_client_factory: Callable[[silloApp], TestClient
         assert resp.json()["user_agent"] == "Mozilla/5.0"
 
 
-def test_request_content_type(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_content_type(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test content_type property"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.post("/test")
     async def handler(request: Request, response: Response):
@@ -266,9 +266,9 @@ def test_request_content_type(test_client_factory: Callable[[silloApp], TestClie
         assert "json" in resp.json()["content_type"].lower()
 
 
-def test_request_content_length(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_content_length(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test content_length property"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.post("/test")
     async def handler(request: Request, response: Response):
@@ -279,9 +279,9 @@ def test_request_content_length(test_client_factory: Callable[[silloApp], TestCl
         assert resp.json()["content_length"] >= 0
 
 
-def test_request_get_client_ip(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_get_client_ip(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test get_client_ip method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -295,10 +295,10 @@ def test_request_get_client_ip(test_client_factory: Callable[[silloApp], TestCli
 
 
 def test_request_get_client_ip_with_forwarded_for(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test get_client_ip with X-Forwarded-For header"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -310,10 +310,10 @@ def test_request_get_client_ip_with_forwarded_for(
 
 
 def test_request_get_client_ip_with_real_ip(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test get_client_ip with X-Real-IP header"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -327,9 +327,9 @@ def test_request_get_client_ip_with_real_ip(
 # ========== Request Validation Tests ==========
 
 
-def test_request_valid(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_valid(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test valid() method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -344,10 +344,10 @@ def test_request_valid(test_client_factory: Callable[[silloApp], TestClient]):
 
 
 def test_request_str_representation(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test __str__ method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -370,9 +370,9 @@ def test_request_str_representation(
 # ========== Request Origin and Referrer Tests ==========
 
 
-def test_request_origin(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_origin(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test origin property"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -384,10 +384,10 @@ def test_request_origin(test_client_factory: Callable[[silloApp], TestClient]):
 
 
 def test_request_origin_without_header(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test origin property without Origin header"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -399,9 +399,9 @@ def test_request_origin_without_header(
         assert origin is not None
 
 
-def test_request_referrer(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_referrer(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test referrer property"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -412,9 +412,9 @@ def test_request_referrer(test_client_factory: Callable[[silloApp], TestClient])
         assert resp.json()["referrer"] == "https://example.com/page"
 
 
-def test_request_referrer_empty(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_referrer_empty(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test referrer property when not set"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -428,9 +428,9 @@ def test_request_referrer_empty(test_client_factory: Callable[[silloApp], TestCl
 # ========== Request Security Tests ==========
 
 
-def test_request_is_secure_http(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_is_secure_http(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test is_secure property with HTTP"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -446,10 +446,10 @@ def test_request_is_secure_http(test_client_factory: Callable[[silloApp], TestCl
 
 
 def test_request_build_absolute_uri(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test build_absolute_uri method"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -463,10 +463,10 @@ def test_request_build_absolute_uri(
 
 
 def test_request_build_absolute_uri_with_query(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test build_absolute_uri with query parameters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):

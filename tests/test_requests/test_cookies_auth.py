@@ -7,16 +7,16 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 # ========== Cookies Tests ==========
 
 
-def test_request_cookies(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_cookies(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test reading request cookies"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -33,9 +33,9 @@ def test_request_cookies(test_client_factory: Callable[[silloApp], TestClient]):
         assert data["user_id"] == "user456"
 
 
-def test_request_cookies_empty(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_cookies_empty(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test request with no cookies"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -50,10 +50,10 @@ def test_request_cookies_empty(test_client_factory: Callable[[silloApp], TestCli
 
 
 def test_request_cookies_multiple(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test multiple cookies"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -72,10 +72,10 @@ def test_request_cookies_multiple(
 
 
 def test_request_cookies_special_characters(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test cookies with special characters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -89,10 +89,10 @@ def test_request_cookies_special_characters(
 
 
 def test_request_cookies_contains(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test checking if cookie exists"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -109,10 +109,10 @@ def test_request_cookies_contains(
 
 
 def test_request_cookies_iteration(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test iterating over cookies"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -131,9 +131,9 @@ def test_request_cookies_iteration(
 # ========== Basic Authentication Tests ==========
 
 
-def test_request_is_ajax(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_is_ajax(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test AJAX request detection"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -145,10 +145,10 @@ def test_request_is_ajax(test_client_factory: Callable[[silloApp], TestClient]):
 
 
 def test_request_is_ajax_case_insensitive(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test AJAX detection is case insensitive"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):

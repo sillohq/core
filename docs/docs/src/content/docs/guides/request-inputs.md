@@ -19,9 +19,9 @@ sillo gives every handler a `Request` object (the first parameter) that lazily p
 ##  The smallest useful form
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.post("/submit")
 async def submit_data(request, response):

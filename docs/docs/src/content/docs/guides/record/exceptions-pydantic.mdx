@@ -29,10 +29,10 @@ answer, since nothing is broken and the client asked for something that
 is not there.
 
 ```python title="one line of setup"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.record import register_db_exception_handlers
 
-app = silloApp()
+app = SilloApp()
 register_db_exception_handlers(app)
 ```
 

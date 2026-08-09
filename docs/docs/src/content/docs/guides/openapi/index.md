@@ -13,9 +13,9 @@ sillo provides comprehensive, automatic API documentation powered by the OpenAPI
 By default, sillo generates complete OpenAPI documentation for all your routes:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(
+app = SilloApp(
     title="My API",
     version="1.0.0", 
     description="A comprehensive API built with sillo"
@@ -389,7 +389,7 @@ Configure OpenAPI metadata when creating your app:
 ```python
 from sillo.openapi.models import Contact, License, Server
 
-app = silloApp(
+app = SilloApp(
     title="E-Commerce API",
     version="2.1.0",
     description="""
@@ -570,7 +570,7 @@ Customize the documentation endpoint URLs:
 ```python
 from sillo.openapi.ui import ReDoc, Swagger
 
-app = silloApp(
+app = SilloApp(
     openapi_url="/api-spec.json",
     docs=[
         Swagger(path="/api-docs"),
@@ -590,10 +590,10 @@ When mounting sub-applications, each maintains its own documentation:
 
 ```python
 # Main application
-main_app = silloApp(title="Main API", version="1.0.0")
+main_app = SilloApp(title="Main API", version="1.0.0")
 
 # Sub-application for admin features
-admin_app = silloApp(title="Admin API", version="1.0.0")
+admin_app = SilloApp(title="Admin API", version="1.0.0")
 
 @admin_app.get("/users")
 async def admin_list_users(request, response):

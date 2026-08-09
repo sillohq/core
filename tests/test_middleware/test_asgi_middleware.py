@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 from sillo.types import ASGIApp, Receive, Scope, Send
@@ -15,10 +15,10 @@ from sillo.types import ASGIApp, Receive, Scope, Send
 
 
 def test_pure_asgi_middleware_basic(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test basic pure ASGI middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     executed = []
 
@@ -47,10 +47,10 @@ def test_pure_asgi_middleware_basic(
 
 
 def test_pure_asgi_middleware_modifies_scope(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test ASGI middleware modifying scope"""
-    app = silloApp()
+    app = SilloApp()
 
     class ScopeModifierMiddleware:
         def __init__(self, app: ASGIApp):
@@ -74,10 +74,10 @@ def test_pure_asgi_middleware_modifies_scope(
 
 
 def test_pure_asgi_middleware_intercepts_send(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test ASGI middleware intercepting send"""
-    app = silloApp()
+    app = SilloApp()
 
     class HeaderInjectorMiddleware:
         def __init__(self, app: ASGIApp):
@@ -105,10 +105,10 @@ def test_pure_asgi_middleware_intercepts_send(
 
 
 def test_pure_asgi_middleware_multiple_layers(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test multiple pure ASGI middleware layers"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_order = []
 
@@ -145,10 +145,10 @@ def test_pure_asgi_middleware_multiple_layers(
 
 
 def test_pure_asgi_middleware_request_logging(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test ASGI middleware for request logging"""
-    app = silloApp()
+    app = SilloApp()
 
     logs = []
 
@@ -182,10 +182,10 @@ def test_pure_asgi_middleware_request_logging(
 
 
 def test_pure_asgi_middleware_handles_websocket(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test ASGI middleware handling different connection types"""
-    app = silloApp()
+    app = SilloApp()
 
     handled_types = []
 
@@ -209,10 +209,10 @@ def test_pure_asgi_middleware_handles_websocket(
 
 
 def test_pure_asgi_middleware_timing(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test ASGI middleware for request timing"""
-    app = silloApp()
+    app = SilloApp()
 
     import time
 
@@ -247,10 +247,10 @@ def test_pure_asgi_middleware_timing(
 
 
 def test_pure_asgi_middleware_with_sillo_middleware(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test combining pure ASGI middleware with sillo middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_order = []
 
@@ -287,10 +287,10 @@ def test_pure_asgi_middleware_with_sillo_middleware(
 
 
 def test_pure_asgi_middleware_error_handling(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test ASGI middleware handling errors"""
-    app = silloApp()
+    app = SilloApp()
 
     class ErrorHandlerMiddleware:
         def __init__(self, app: ASGIApp):
@@ -328,10 +328,10 @@ def test_pure_asgi_middleware_error_handling(
 
 
 def test_pure_asgi_middleware_conditional_processing(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test ASGI middleware with conditional processing"""
-    app = silloApp()
+    app = SilloApp()
 
     class ConditionalMiddleware:
         def __init__(self, app: ASGIApp):
@@ -363,10 +363,10 @@ def test_pure_asgi_middleware_conditional_processing(
 
 
 def test_pure_asgi_middleware_request_id(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test ASGI middleware adding request ID"""
-    app = silloApp()
+    app = SilloApp()
 
     import uuid
 
@@ -409,10 +409,10 @@ def test_pure_asgi_middleware_request_id(
 
 
 def test_wrap_asgi_basic(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test basic wrap_asgi() method usage"""
-    app = silloApp()
+    app = SilloApp()
 
     executed = []
 
@@ -441,10 +441,10 @@ def test_wrap_asgi_basic(
 
 
 def test_wrap_asgi_with_kwargs(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test wrap_asgi() with keyword arguments"""
-    app = silloApp()
+    app = SilloApp()
 
     class ConfigurableMiddleware:
         def __init__(self, app: ASGIApp, prefix: str = "", suffix: str = ""):
@@ -471,10 +471,10 @@ def test_wrap_asgi_with_kwargs(
 
 
 def test_wrap_asgi_multiple_times(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test calling wrap_asgi() multiple times"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_order = []
 
@@ -523,10 +523,10 @@ def test_wrap_asgi_multiple_times(
 
 
 def test_wrap_asgi_returns_none(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that wrap_asgi() returns None (not chainable)"""
-    app = silloApp()
+    app = SilloApp()
 
     class DummyMiddleware:
         def __init__(self, app: ASGIApp):
@@ -540,10 +540,10 @@ def test_wrap_asgi_returns_none(
 
 
 def test_wrap_asgi_with_sillo_middleware(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test wrap_asgi() combined with use()"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_order = []
 
@@ -580,10 +580,10 @@ def test_wrap_asgi_with_sillo_middleware(
 
 
 def test_wrap_asgi_header_injection(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test wrap_asgi() with header injection middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     class HeaderMiddleware:
         def __init__(
@@ -618,10 +618,10 @@ def test_wrap_asgi_header_injection(
 
 
 def test_wrap_asgi_scope_modification(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test wrap_asgi() modifying scope"""
-    app = silloApp()
+    app = SilloApp()
 
     class ScopeMiddleware:
         def __init__(self, app: ASGIApp, key: str = "custom", value: str = "default"):
@@ -647,10 +647,10 @@ def test_wrap_asgi_scope_modification(
 
 
 def test_wrap_asgi_error_handling(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test wrap_asgi() with error handling middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     class ErrorHandlerMiddleware:
         def __init__(self, app: ASGIApp):

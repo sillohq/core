@@ -14,7 +14,7 @@ head:
 
 #  Routers & Sub-Applications
 
-As an app grows, a single flat list of `@app.get(...)` decorators becomes hard to navigate. sillo lets you group routes into **`Router`** objects with their own path prefix, mount them under the main app, and nest them arbitrarily. You can also mount an entire **sub-application** — another `silloApp`, or any ASGI app such as a FastAPI service — under a path using a **`Group`**.
+As an app grows, a single flat list of `@app.get(...)` decorators becomes hard to navigate. sillo lets you group routes into **`Router`** objects with their own path prefix, mount them under the main app, and nest them arbitrarily. You can also mount an entire **sub-application** — another `SilloApp`, or any ASGI app such as a FastAPI service — under a path using a **`Group`**.
 
 The mental model:
 
@@ -26,10 +26,10 @@ Both flatten into the app's route table at startup, so nesting adds no per-reque
 ##  The smallest useful form
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.routing import Router
 
-app = silloApp()
+app = SilloApp()
 
 v1 = Router(prefix="/v1")
 
@@ -74,7 +74,7 @@ v1 = Router(
 A router can mount another router, building a deep prefix tree:
 
 ```python
-app = silloApp()
+app = SilloApp()
 
 v1 = Router(prefix="/v1")
 users = Router(prefix="/users")
@@ -100,10 +100,10 @@ Final paths: `/v1/users/` and `/v1/users/{id}`. You can nest as deeply as you li
 Middleware and dependencies declared on a router run only for routes under that router. This is how you scope "require auth for everything under `/admin`" without touching each handler:
 
 ```python
-from sillo import silloApp, Depend
+from sillo import SilloApp, Depend
 from sillo.core.routing import Router
 
-app = silloApp()
+app = SilloApp()
 
 admin = Router(prefix="/admin", tags=["admin"])
 
@@ -124,16 +124,16 @@ Here `require_staff` resolves for every route registered on `admin`. (You can al
 
 ##  Groups: mounting a sub-application
 
-When the thing you want to mount is itself an app — a separate `silloApp`, or any ASGI app — use `Group`. A `Group` takes either `app=` (an ASGI app) or `routes=` (a list of `Route` objects), plus a `path` prefix.
+When the thing you want to mount is itself an app — a separate `SilloApp`, or any ASGI app — use `Group`. A `Group` takes either `app=` (an ASGI app) or `routes=` (a list of `Route` objects), plus a `path` prefix.
 
-###  Mounting another silloApp
+###  Mounting another SilloApp
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.routing import Group
 
-main_app = silloApp()
-admin_app = silloApp()
+main_app = SilloApp()
+admin_app = SilloApp()
 
 @admin_app.get("/dashboard")
 async def dashboard(request, response):
@@ -149,7 +149,7 @@ Now `/admin/dashboard` is served by `admin_app`. The sub-app keeps its own route
 
 ```python
 from sillo.core.routing import Router, Group, Route
-from sillo import silloApp
+from sillo import SilloApp
 
 users = Router()
 
@@ -166,7 +166,7 @@ group = Group(
         Route(path="/{id}", methods=["GET"], handler=get_user),
     ],
 )
-app = silloApp()
+app = SilloApp()
 app.add_route(group)
 ```
 
@@ -177,11 +177,11 @@ This answers `/users` and `/users/{id}`. `Group` with `routes=` is essentially a
 Because a `Group` accepts any ASGI app, you can mount a FastAPI (or Starlette, Quart, …) service under a path without rewriting it:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.routing import Group
 from fastapi import FastAPI
 
-app = silloApp()
+app = SilloApp()
 fast_app = FastAPI()
 
 @fast_app.get("/ping")
@@ -218,10 +218,10 @@ When a route lives under a router prefix, `url_for` includes that prefix automat
 ##  Putting it together: a modular app
 
 ```python
-from sillo import silloApp, Depend
+from sillo import SilloApp, Depend
 from sillo.core.routing import Router, Group
 
-app = silloApp()
+app = SilloApp()
 
 # public API v1
 api = Router(prefix="/api/v1", tags=["api"])
@@ -231,7 +231,7 @@ async def health(request, response):
     return response.json({"status": "ok"})
 
 # admin sub-app
-admin = silloApp()
+admin = SilloApp()
 
 @admin.get("/stats")
 async def stats(request, response):

@@ -3,10 +3,10 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 from tortoise.expressions import Q
 from tortoise.functions import Count
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 
-app = silloApp()
+app = SilloApp()
 
 
 # Define Tortoise ORM models

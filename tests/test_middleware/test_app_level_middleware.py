@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 from sillo.testclient import TestClient
@@ -15,10 +15,10 @@ from sillo.testclient import TestClient
 
 
 def test_app_level_middleware_basic(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test basic app-level middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     executed = []
 
@@ -42,10 +42,10 @@ def test_app_level_middleware_basic(
 
 
 def test_app_level_middleware_modifies_request(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test middleware that modifies request"""
-    app = silloApp()
+    app = SilloApp()
 
     async def add_custom_header_middleware(
         request: Request, response: Response, call_next
@@ -67,10 +67,10 @@ def test_app_level_middleware_modifies_request(
 
 
 def test_app_level_middleware_modifies_response(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test middleware that modifies response"""
-    app = silloApp()
+    app = SilloApp()
 
     async def add_response_header_middleware(
         request: Request, response: Response, call_next
@@ -91,10 +91,10 @@ def test_app_level_middleware_modifies_response(
 
 
 def test_app_level_middleware_multiple(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test multiple app-level middleware execution order"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_order = []
 
@@ -140,10 +140,10 @@ def test_app_level_middleware_multiple(
 
 
 def test_app_level_middleware_early_return(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test middleware that returns early without calling next"""
-    app = silloApp()
+    app = SilloApp()
 
     async def auth_middleware(request: Request, response: Response, call_next):
         token = request.headers.get("Authorization")
@@ -171,10 +171,10 @@ def test_app_level_middleware_early_return(
 
 
 def test_app_level_middleware_exception_handling(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test middleware handling exceptions"""
-    app = silloApp()
+    app = SilloApp()
 
     async def error_handler_middleware(request: Request, response: Response, call_next):
         try:
@@ -196,10 +196,10 @@ def test_app_level_middleware_exception_handling(
 
 
 def test_app_level_middleware_applies_to_all_routes(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that app-level middleware applies to all routes"""
-    app = silloApp()
+    app = SilloApp()
 
     request_count = {"count": 0}
 
@@ -232,9 +232,9 @@ def test_app_level_middleware_applies_to_all_routes(
 # ========== BaseMiddleware Class Tests ==========
 
 
-def test_base_middleware_class(test_client_factory: Callable[[silloApp], TestClient]):
+def test_base_middleware_class(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test using BaseMiddleware class"""
-    app = silloApp()
+    app = SilloApp()
 
     class CustomMiddleware(BaseMiddleware):
         async def process_request(
@@ -262,10 +262,10 @@ def test_base_middleware_class(test_client_factory: Callable[[silloApp], TestCli
 
 
 def test_base_middleware_with_config(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test BaseMiddleware with configuration"""
-    app = silloApp()
+    app = SilloApp()
 
     class ConfigurableMiddleware(BaseMiddleware):
         def __init__(self, prefix: str = "X-", **kwargs):
@@ -297,10 +297,10 @@ def test_base_middleware_with_config(
 
 
 def test_middleware_request_state(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test middleware using request state"""
-    app = silloApp()
+    app = SilloApp()
 
     async def state_middleware(request: Request, response: Response, call_next):
         request.state.user_id = "12345"
@@ -323,9 +323,9 @@ def test_middleware_request_state(
         assert data["role"] == "admin"
 
 
-def test_middleware_timing(test_client_factory: Callable[[silloApp], TestClient]):
+def test_middleware_timing(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test middleware for request timing"""
-    app = silloApp()
+    app = SilloApp()
 
     import time
 
@@ -349,9 +349,9 @@ def test_middleware_timing(test_client_factory: Callable[[silloApp], TestClient]
         assert process_time >= 0
 
 
-def test_middleware_request_id(test_client_factory: Callable[[silloApp], TestClient]):
+def test_middleware_request_id(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test middleware adding request ID"""
-    app = silloApp()
+    app = SilloApp()
 
     import uuid
 

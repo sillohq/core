@@ -51,10 +51,10 @@ This matters because many sillo concepts are really pipeline concepts: middlewar
 Use this as the default introduction:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 import uvicorn
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/")
@@ -77,9 +77,9 @@ uv add sillo
 Use explicit constructor arguments for application metadata:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(debug=True, title="My API", version="1.0.0")
+app = SilloApp(debug=True, title="My API", version="1.0.0")
 ```
 
 ## Request Lifecycle
@@ -101,7 +101,7 @@ That model is enough to explain most framework behavior without going source-dee
 
 Use these defaults when generating sillo examples:
 
-- Start with `silloApp()`
+- Start with `SilloApp()`
 - Prefer `async def`
 - Include `request` and `response`
 - Use `response.json(...)` for clarity

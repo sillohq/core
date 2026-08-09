@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 
 
 # Define raw ASGI middleware
@@ -25,8 +25,8 @@ def another_asgi_middleware(app):
     return middleware
 
 
-# Create silloApp instance
-app = silloApp()
+# Create SilloApp instance
+app = SilloApp()
 
 # Wrap ASGI middleware using sillo' wrap_middleware
 app.wrap_asgi(my_asgi_middleware)

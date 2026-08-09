@@ -5,7 +5,7 @@ description: Install Sillo with uv, the recommended Python package manager for f
 comment: true
 ---
 
-import { TabItem, Tabs } from '@astrojs/starlight/components';
+import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
 
 # Installation
 
@@ -75,9 +75,9 @@ uv add uvicorn
 Create `main.py`:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/")
@@ -130,6 +130,30 @@ uv add sillo-framework
 ```
 
 If you are using a manually managed virtual environment, prefer switching the project to `uv` before adding Sillo. This keeps the install command, lockfile, and local run commands consistent across your team.
+
+## Upgrading from 0.0.1a15 or earlier
+
+The application class was renamed from `silloApp` to `SilloApp` in **0.0.2a1**. Classes in Python are `CapWords`, and the old spelling made `app = silloApp()` read like a function call at every entry point.
+
+The migration is one find-and-replace:
+
+```python
+from sillo import SilloApp
+
+app = SilloApp(title="Projects API")
+```
+
+Nothing breaks if you upgrade before doing it. The old name still resolves from both `sillo` and `sillo.application`, and warns:
+
+```python
+from sillo import silloApp  # DeprecationWarning
+```
+
+<Aside type="caution" title="The old name goes away in 0.1.0">
+`silloApp` is kept only as a bridge, and it is not in `__all__` — a star-import and your editor's completions offer `SilloApp` alone. Run your test suite with `-W error::DeprecationWarning` to find every remaining use.
+</Aside>
+
+One other visible change: `str(app)` now reads `<SilloApp: title>`. If you assert on dev-server output or log lines, update those too.
 
 ## Why uv?
 

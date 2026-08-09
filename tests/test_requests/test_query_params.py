@@ -6,16 +6,16 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 # ========== Query Parameters Tests ==========
 
 
-def test_request_query_params(test_client_factory: Callable[[silloApp], TestClient]):
+def test_request_query_params(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test basic query parameters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/search")
     async def handler(request: Request, response: Response):
@@ -32,10 +32,10 @@ def test_request_query_params(test_client_factory: Callable[[silloApp], TestClie
 
 
 def test_request_query_params_multiple_values(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test query parameters with multiple values"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/filter")
     async def handler(request: Request, response: Response):
@@ -53,10 +53,10 @@ def test_request_query_params_multiple_values(
 
 
 def test_request_query_params_empty(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test request with no query parameters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -74,10 +74,10 @@ def test_request_query_params_empty(
 
 
 def test_request_query_params_special_characters(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test query parameters with special characters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/search")
     async def handler(request: Request, response: Response):
@@ -90,10 +90,10 @@ def test_request_query_params_special_characters(
 
 
 def test_request_query_params_unicode(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test query parameters with unicode characters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/search")
     async def handler(request: Request, response: Response):
@@ -106,10 +106,10 @@ def test_request_query_params_unicode(
 
 
 def test_request_get_query_params_flat(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test get_query_params with flat=True"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -125,10 +125,10 @@ def test_request_get_query_params_flat(
 
 
 def test_request_get_query_params_not_flat(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test get_query_params with flat=False"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -141,10 +141,10 @@ def test_request_get_query_params_not_flat(
 
 
 def test_request_query_params_boolean_like(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test query parameters with boolean-like values"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -160,10 +160,10 @@ def test_request_query_params_boolean_like(
 
 
 def test_request_query_params_numbers(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test query parameters with numeric values"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -188,10 +188,10 @@ def test_request_query_params_numbers(
 
 
 def test_request_query_params_empty_value(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test query parameters with empty values"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -204,10 +204,10 @@ def test_request_query_params_empty_value(
 
 
 def test_request_query_params_default_value(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test query parameters with default values"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -223,10 +223,10 @@ def test_request_query_params_default_value(
 
 
 def test_request_query_params_mixed(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test mixed query parameters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/search")
     async def handler(request: Request, response: Response):
@@ -246,10 +246,10 @@ def test_request_query_params_mixed(
 
 
 def test_request_query_params_iteration(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test iterating over query parameters"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -265,10 +265,10 @@ def test_request_query_params_iteration(
 
 
 def test_request_query_params_contains(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test checking if query parameter exists"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -288,10 +288,10 @@ def test_request_query_params_contains(
 
 
 def test_request_query_params_keys(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test getting query parameter keys"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -307,10 +307,10 @@ def test_request_query_params_keys(
 
 
 def test_request_query_params_values(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test getting query parameter values"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):
@@ -326,10 +326,10 @@ def test_request_query_params_values(
 
 
 def test_request_query_params_items(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test getting query parameter items"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/test")
     async def handler(request: Request, response: Response):

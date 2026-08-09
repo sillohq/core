@@ -7,7 +7,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.dependencies import Depend
 from sillo.core.http import Request, Response
 from sillo.core.routing import Router
@@ -17,10 +17,10 @@ from sillo.testclient import TestClient
 
 
 def test_basic_dependency_injection(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test basic dependency injection with a simple function"""
-    app = silloApp()
+    app = SilloApp()
 
     def get_user_id():
         return "user_123"
@@ -38,10 +38,10 @@ def test_basic_dependency_injection(
 
 
 def test_async_dependency_injection(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test async dependency injection"""
-    app = silloApp()
+    app = SilloApp()
 
     async def async_get_user_id():
         return "async_user_456"
@@ -61,9 +61,9 @@ def test_async_dependency_injection(
 # ========== Nested Dependency Tests ==========
 
 
-def test_nested_dependencies(test_client_factory: Callable[[silloApp], TestClient]):
+def test_nested_dependencies(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test nested dependencies where one dependency depends on another"""
-    app = silloApp()
+    app = SilloApp()
 
     def get_user_id():
         return "user_123"
@@ -87,10 +87,10 @@ def test_nested_dependencies(test_client_factory: Callable[[silloApp], TestClien
 
 
 def test_async_nested_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test nested dependencies with async functions"""
-    app = silloApp()
+    app = SilloApp()
 
     async def async_get_user_id():
         return "async_user_789"
@@ -117,10 +117,10 @@ def test_async_nested_dependencies(
 
 
 def test_deeply_nested_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test deeply nested dependencies (3+ levels)"""
-    app = silloApp()
+    app = SilloApp()
 
     def get_base_value():
         return "base_value"
@@ -150,10 +150,10 @@ def test_deeply_nested_dependencies(
 
 
 def test_async_deeply_nested_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test deeply nested dependencies with mixed sync/async functions"""
-    app = silloApp()
+    app = SilloApp()
 
     async def async_get_base_value():
         return "async_base"
@@ -186,12 +186,12 @@ def test_async_deeply_nested_dependencies(
 
 
 def test_dependency_with_query_extractor(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test dependency uses Query extractor (exercises request tunnelling through DI)."""
     from sillo import Query
 
-    app = silloApp()
+    app = SilloApp()
 
     def get_filtered_user(limit: str = Query(default="10")):
         return {"user_id": "query_user", "limit": limit}
@@ -213,12 +213,12 @@ def test_dependency_with_query_extractor(
 
 
 def test_dependency_with_mixed_extractor_and_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test dependency uses both Query extractor and other DI dependencies."""
     from sillo import Query
 
-    app = silloApp()
+    app = SilloApp()
 
     def get_user_id():
         return "mixed_user_123"
@@ -250,13 +250,13 @@ def test_dependency_with_mixed_extractor_and_dependencies(
 # ========== App-Level Dependency Tests ==========
 
 
-def test_app_level_dependencies(test_client_factory: Callable[[silloApp], TestClient]):
+def test_app_level_dependencies(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test dependencies defined at the app level"""
 
     def get_app_config():
         return {"app_name": "test_app", "version": "1.0"}
 
-    app = silloApp(dependencies=[Depend(get_app_config)])
+    app = SilloApp(dependencies=[Depend(get_app_config)])
 
     @app.get("/app-config")
     async def get_app_config_endpoint(
@@ -272,14 +272,14 @@ def test_app_level_dependencies(test_client_factory: Callable[[silloApp], TestCl
 
 
 def test_app_level_async_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test async dependencies at the app level"""
 
     async def async_get_app_config():
         return {"app_name": "async_app", "version": "2.0", "async": True}
 
-    app = silloApp(dependencies=[Depend(async_get_app_config)])
+    app = SilloApp(dependencies=[Depend(async_get_app_config)])
 
     @app.get("/async-app-config")
     async def get_async_app_config(
@@ -302,10 +302,10 @@ def test_app_level_async_dependencies(
 
 
 def test_router_level_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test dependencies defined at the router level"""
-    app = silloApp()
+    app = SilloApp()
 
     def get_router_config():
         return {"router_name": "test_router", "prefix": "/api"}
@@ -328,7 +328,7 @@ def test_router_level_dependencies(
 
 
 def test_router_level_dependencies_with_app_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test router-level dependencies combined with app-level dependencies"""
 
@@ -344,7 +344,7 @@ def test_router_level_dependencies_with_app_dependencies(
     ):
         return {**app_config, **router_config, "combined": True}
 
-    app = silloApp(dependencies=[Depend(get_app_config)])
+    app = SilloApp(dependencies=[Depend(get_app_config)])
     router = Router(prefix="/api", dependencies=[Depend(get_router_config)])
 
     @router.get("/combined-config")
@@ -368,10 +368,10 @@ def test_router_level_dependencies_with_app_dependencies(
 
 
 def test_nested_router_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test dependencies in nested routers"""
-    app = silloApp()
+    app = SilloApp()
 
     def get_api_config():
         return {"api_version": "v1"}
@@ -412,10 +412,10 @@ def test_nested_router_dependencies(
 
 
 def test_deeply_nested_router_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test dependencies in deeply nested routers (3+ levels)"""
-    app = silloApp()
+    app = SilloApp()
 
     def get_app_config():
         return {"app": "main"}
@@ -449,7 +449,7 @@ def test_deeply_nested_router_dependencies(
         }
 
     # App level
-    app = silloApp(dependencies=[Depend(get_app_config)])
+    app = SilloApp(dependencies=[Depend(get_app_config)])
 
     # API router
     api_router = Router(prefix="/api", dependencies=[Depend(get_api_config)])
@@ -494,10 +494,10 @@ def test_deeply_nested_router_dependencies(
 
 
 def test_mixed_app_router_nested_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test complex scenario with app, router, and nested dependencies"""
-    app = silloApp()
+    app = SilloApp()
 
     def get_database_connection():
         return {"db": "connected", "pool": "active"}
@@ -520,7 +520,7 @@ def test_mixed_app_router_nested_dependencies(
         return {"handler": "user_handler", "auth": auth, "api": api}
 
     # App-level dependencies
-    app = silloApp(dependencies=[Depend(get_database_connection)])
+    app = SilloApp(dependencies=[Depend(get_database_connection)])
 
     # API router with dependencies
     api_router = Router(prefix="/api", dependencies=[Depend(get_api_config)])
@@ -552,9 +552,9 @@ def test_mixed_app_router_nested_dependencies(
         assert data["api"]["api"] == "v1"
 
 
-def test_generator_dependencies(test_client_factory: Callable[[silloApp], TestClient]):
+def test_generator_dependencies(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test generator-based dependencies"""
-    app = silloApp()
+    app = SilloApp()
 
     def get_database_connection():
         db_pool = {"connections": []}
@@ -581,10 +581,10 @@ def test_generator_dependencies(test_client_factory: Callable[[silloApp], TestCl
 
 
 def test_async_generator_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test async generator-based dependencies"""
-    app = silloApp()
+    app = SilloApp()
 
     async def async_get_database_connection():
         db_pool = {"connections": []}
@@ -613,10 +613,10 @@ def test_async_generator_dependencies(
 
 
 def test_generator_dependency_cleanup(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Ensure generator dependencies run cleanup after request."""
-    app = silloApp()
+    app = SilloApp()
     cleanup_state = {"closed": False}
 
     def get_resource():
@@ -640,10 +640,10 @@ def test_generator_dependency_cleanup(
 
 
 def test_nested_yield_dependencies(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test nested dependencies that both use yield."""
-    app = silloApp()
+    app = SilloApp()
     flags = {"inner_closed": False, "outer_closed": False}
 
     def outer_dep():
@@ -675,10 +675,10 @@ def test_nested_yield_dependencies(
 
 
 def test_async_yield_dependencies_cleanup(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Ensure async generator dependencies properly cleanup."""
-    app = silloApp()
+    app = SilloApp()
     state = {"closed": False}
 
     async def async_dep():
@@ -701,10 +701,10 @@ def test_async_yield_dependencies_cleanup(
 
 
 def test_deep_yield_dependency_chain(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Deep chain of async+sync yield dependencies ensuring teardown order."""
-    app = silloApp()
+    app = SilloApp()
     order = []
 
     def dep_a():
@@ -754,10 +754,10 @@ def test_deep_yield_dependency_chain(
 
 
 def test_depend_get_request_in_handler(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Depend(get_request=True) in handler injects raw Request."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/request-injected")
     async def handler(
@@ -776,10 +776,10 @@ def test_depend_get_request_in_handler(
 
 
 def test_depend_get_request_in_subdependency(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Depend(get_request=True) in a sub-dependency receives Request."""
-    app = silloApp()
+    app = SilloApp()
 
     def get_auth_info(req: Request = Depend(get_request=True)):
         return {"token": req.headers.get("authorization", "none")}
@@ -799,10 +799,10 @@ def test_depend_get_request_in_subdependency(
 
 
 def test_depend_get_request_with_other_deps(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Depend(get_request=True) combined with other Depend deps."""
-    app = silloApp()
+    app = SilloApp()
 
     def get_user_id():
         return "user_42"
@@ -835,10 +835,10 @@ def test_depend_get_request_with_other_deps(
 
 
 def test_depend_get_request_and_normal_dep_in_handler(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Mix Depend(get_request=True) and Depend(callable) in same handler."""
-    app = silloApp()
+    app = SilloApp()
 
     def get_db():
         return "db_connected"

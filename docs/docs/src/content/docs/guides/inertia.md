@@ -34,11 +34,11 @@ pip install sillo-inertia
 ##  A page
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo_inertia import Inertia, vite_react
 
-app = silloApp()
+app = SilloApp()
 inertia = Inertia(
     app,
     root_view="resources/views/app.html",

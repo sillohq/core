@@ -78,10 +78,10 @@ hashed = hash_password("password")
 ## In a Sillo App
 
 ```python
-from sillo import silloApp, Query
+from sillo import SilloApp, Query
 from sillo.hashing import hash_password, verify_password
 
-app = silloApp()
+app = SilloApp()
 
 @app.post("/register")
 async def register(request, response, username: str = Query(...), password: str = Query(...)):

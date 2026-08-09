@@ -18,9 +18,9 @@ Use this reference for day-to-day endpoint authoring in sillo.
 The most common sillo shape is:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/health")

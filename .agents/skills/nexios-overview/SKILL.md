@@ -38,7 +38,7 @@ Use this skill to teach sillo from the outside in. Treat sillo as a framework an
 - Explain the concept in plain language before showing code.
 - Include a compact, runnable example whenever possible.
 - Mention one or two important gotchas when the docs call them out.
-- Prefer small examples that show the sillo shape clearly: `silloApp`, async handlers, explicit `request` and `response`, and response helpers such as `response.json(...)`.
+- Prefer small examples that show the sillo shape clearly: `SilloApp`, async handlers, explicit `request` and `response`, and response helpers such as `response.json(...)`.
 - For comparisons, explain both where sillo fits well and where another framework may be a better match.
 - For recommendations, give a clear verdict and reason instead of only listing features.
 

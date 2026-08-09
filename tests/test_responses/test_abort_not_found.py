@@ -10,7 +10,7 @@ ways:
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.core.http import Request, Response
 from sillo.core.http.response import Responder
@@ -69,7 +69,7 @@ def test_not_found_passes_headers():
 def test_abort_rendered_as_json(
     test_client_factory: callable,
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/admin")
     async def admin(request: Request, response: Response):
@@ -85,7 +85,7 @@ def test_abort_rendered_as_json(
 def test_abort_does_not_return_body_after_raise(
     test_client_factory: callable,
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/boom")
     async def boom(request: Request, response: Response):
@@ -101,7 +101,7 @@ def test_abort_does_not_return_body_after_raise(
 def test_not_found_rendered_as_404(
     test_client_factory: callable,
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items/{item_id:int}")
     async def get_item(request: Request, response: Response, item_id: int):

@@ -210,10 +210,10 @@ While direct MailClient usage is simple, integrating with sillo applications pro
 For sillo applications, use the `setup_mail` function for automatic lifecycle management:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.mail import setup_mail, MailConfig
 
-app = silloApp()
+app = SilloApp()
 
 # Setup with environment variables
 mail_client = setup_mail(app)
@@ -506,7 +506,7 @@ The mail module integrates seamlessly with the sillo-contrib tasks module for as
 from sillo_contrib.tasks import setup_tasks
 from sillo_contrib.mail import setup_mail
 
-app = silloApp()
+app = SilloApp()
 
 # Setup tasks first
 task_manager = setup_tasks(app)
@@ -537,12 +537,12 @@ mail_client._template_env = template_env
 ### Complete Email Service
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.mail import setup_mail, MailConfig, MailDepend
 from sillo_contrib.tasks import setup_tasks
 import os
 
-app = silloApp()
+app = SilloApp()
 
 # Setup background tasks
 task_manager = setup_tasks(app)

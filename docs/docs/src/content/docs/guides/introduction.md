@@ -27,9 +27,9 @@ Sillo Core is the open framework foundation of the Sillo platform. It is designe
 A Sillo application can begin with one route:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/")
 async def home(request, response):
@@ -44,7 +44,7 @@ Sillo is built around a small set of concepts that appear consistently across th
 
 | Concept | What it means |
 |---|---|
-| `silloApp` | The application object. It owns routes, middleware, lifecycle hooks, state, and framework configuration. |
+| `SilloApp` | The application object. It owns routes, middleware, lifecycle hooks, state, and framework configuration. |
 | Request | The incoming HTTP boundary: headers, query params, path params, body data, cookies, user state, and request-scoped data. |
 | Response | A fluent response builder for JSON, text, HTML, files, streams, redirects, cookies, headers, and status codes. |
 | Routes | Decorated functions or router definitions that bind HTTP methods and paths to handlers. |
@@ -65,10 +65,10 @@ This example shows a validated endpoint, path parameter, and response object wor
 ```python
 from pydantic import BaseModel
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 
-app = silloApp()
+app = SilloApp()
 
 
 class CreateProject(BaseModel):
@@ -306,9 +306,9 @@ syntax, and `asyncio.timeout`, which is 3.11+.
 The smallest thing that runs, to anchor everything above:
 
 ```python title="main.py"
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/")

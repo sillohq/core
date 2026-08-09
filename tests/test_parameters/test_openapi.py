@@ -3,13 +3,13 @@ Tests for OpenAPI integration with Query, Header, Cookie parameters.
 """
 
 import pytest
-from sillo import silloApp, Query, Header, Cookie
+from sillo import SilloApp, Query, Header, Cookie
 from sillo.core.http import Request, Response
 
 
 @pytest.fixture
 def app():
-    return silloApp()
+    return SilloApp()
 
 
 def test_query_params_in_openapi(app):

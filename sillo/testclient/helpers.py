@@ -5,7 +5,7 @@ Helper functions for creating sync and async test clients for sillo applications
 from collections.abc import Sequence
 from typing import Any
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.dependencies import Depend
 from sillo.core.routing import Route
 from sillo.core.routing.base import BaseRoute
@@ -25,13 +25,13 @@ def create_client(
 ) -> TestClient:
     """Create a synchronous ``TestClient`` for a sillo application.
 
-    Builds a minimal ``silloApp`` with the supplied parameters, then wraps
+    Builds a minimal ``SilloApp`` with the supplied parameters, then wraps
     it in a ``TestClient`` that speaks ASGI directly (no network socket).
     An optional ``client_config`` dict overrides the default client
     settings (base URL, redirect behaviour, ASGI backend, etc.).
 
     Args:
-        title: Application title forwarded to ``silloApp``.
+        title: Application title forwarded to ``SilloApp``.
         version: Application version.
         description: Application description.
         server_error_handler: Custom 500 error handler.
@@ -43,7 +43,7 @@ def create_client(
     Returns:
         A configured synchronous ``TestClient`` instance.
     """
-    app = silloApp(
+    app = SilloApp(
         title=title,
         version=version,
         description=description,
@@ -98,7 +98,7 @@ def create_async_client(
     variant so tests can ``await`` ASGI calls directly.
 
     Args:
-        title: Application title forwarded to ``silloApp``.
+        title: Application title forwarded to ``SilloApp``.
         version: Application version.
         description: Application description.
         server_error_handler: Custom 500 error handler.
@@ -110,7 +110,7 @@ def create_async_client(
     Returns:
         A configured ``AsyncTestClient`` instance.
     """
-    app = silloApp(
+    app = SilloApp(
         title=title,
         version=version,
         description=description,

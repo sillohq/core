@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Group, Route, Router
 from sillo.testclient import TestClient
@@ -14,9 +14,9 @@ from sillo.testclient import TestClient
 # ========== Basic Router Mounting Tests ==========
 
 
-def test_mount_router_basic(test_client_factory: Callable[[silloApp], TestClient]):
+def test_mount_router_basic(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test basic router mounting"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.get("/hello")
@@ -32,10 +32,10 @@ def test_mount_router_basic(test_client_factory: Callable[[silloApp], TestClient
 
 
 def test_mount_router_without_path(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test mounting router without explicit path"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.get("/status")
@@ -50,9 +50,9 @@ def test_mount_router_without_path(
         assert resp.json()["status"] == "ok"
 
 
-def test_mount_multiple_routers(test_client_factory: Callable[[silloApp], TestClient]):
+def test_mount_multiple_routers(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test mounting multiple routers"""
-    app = silloApp()
+    app = SilloApp()
 
     users_router = Router(prefix="/users")
 
@@ -80,9 +80,9 @@ def test_mount_multiple_routers(test_client_factory: Callable[[silloApp], TestCl
 # ========== Nested Router Tests ==========
 
 
-def test_nested_routers(test_client_factory: Callable[[silloApp], TestClient]):
+def test_nested_routers(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test nested router structure"""
-    app = silloApp()
+    app = SilloApp()
 
     # Inner router
     inner_router = Router(prefix="/inner")
@@ -104,9 +104,9 @@ def test_nested_routers(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.json()["data"] == "nested"
 
 
-def test_deeply_nested_routers(test_client_factory: Callable[[silloApp], TestClient]):
+def test_deeply_nested_routers(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test deeply nested router structure"""
-    app = silloApp()
+    app = SilloApp()
 
     # Level 3 (deepest)
     level3_router = Router(prefix="/level3")
@@ -135,9 +135,9 @@ def test_deeply_nested_routers(test_client_factory: Callable[[silloApp], TestCli
 # ========== Router with Prefix Tests ==========
 
 
-def test_router_prefix_basic(test_client_factory: Callable[[silloApp], TestClient]):
+def test_router_prefix_basic(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test router with prefix"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api/v1")
 
     @router.get("/users")
@@ -155,10 +155,10 @@ def test_router_prefix_basic(test_client_factory: Callable[[silloApp], TestClien
 # ========== Sub-application Mounting Tests ==========
 
 
-def test_mount_sub_application(test_client_factory: Callable[[silloApp], TestClient]):
+def test_mount_sub_application(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test mounting a sub-application"""
-    main_app = silloApp()
-    sub_app = silloApp()
+    main_app = SilloApp()
+    sub_app = SilloApp()
 
     @sub_app.get("/hello")
     async def sub_hello(request: Request, response: Response):
@@ -174,18 +174,18 @@ def test_mount_sub_application(test_client_factory: Callable[[silloApp], TestCli
 
 
 def test_multiple_sub_applications(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test mounting multiple sub-applications"""
-    main_app = silloApp()
+    main_app = SilloApp()
 
-    admin_app = silloApp()
+    admin_app = SilloApp()
 
     @admin_app.get("/dashboard")
     async def admin_dashboard(request: Request, response: Response):
         return response.json({"area": "admin"})
 
-    user_app = silloApp()
+    user_app = SilloApp()
 
     @user_app.get("/dashboard")
     async def user_dashboard(request: Request, response: Response):
@@ -207,9 +207,9 @@ def test_multiple_sub_applications(
 # ========== Router Isolation Tests ==========
 
 
-def test_router_isolation(test_client_factory: Callable[[silloApp], TestClient]):
+def test_router_isolation(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test that routers are properly isolated"""
-    app = silloApp()
+    app = SilloApp()
 
     router1 = Router(prefix="/r1")
 
@@ -235,10 +235,10 @@ def test_router_isolation(test_client_factory: Callable[[silloApp], TestClient])
 
 
 def test_nested_router_route_priority(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route priority in nested routers"""
-    app = silloApp()
+    app = SilloApp()
 
     specific_router = Router(prefix="/items")
 

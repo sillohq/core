@@ -1,9 +1,9 @@
 from typing import Any, Dict
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/")

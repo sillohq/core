@@ -5,11 +5,11 @@ from pathlib import Path
 
 import aiofiles
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.responses import FileResponse, StreamingResponse
 
-app = silloApp()
+app = SilloApp()
 
 # Configure upload directory
 UPLOAD_DIR = Path("uploads")

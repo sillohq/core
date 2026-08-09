@@ -11,7 +11,7 @@ in local development — with no error anywhere to explain why.
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
@@ -82,7 +82,7 @@ class TestSettingsOnTheMiddlewareTakeEffect:
     """Settings passed to the middleware went to BaseMiddleware and vanished."""
 
     def build(self, **settings):
-        app = silloApp()
+        app = SilloApp()
         app.use(SessionMiddleware(secret_key=SECRET, **settings))
 
         @app.get("/set")
@@ -128,7 +128,7 @@ class TestSessionsSurviveOverPlainHttp:
     """The end-to-end shape of the original bug."""
 
     def test_a_session_round_trips_without_secure(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(SessionMiddleware(secret_key=SECRET, session_cookie_secure=False))
 
         @app.get("/login")

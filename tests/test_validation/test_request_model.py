@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
@@ -13,7 +13,7 @@ class UserCreate(BaseModel):
 
 def test_request_model_validated_data_on_request():
     """request_model validates body and sets request.validated_data."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.post("/users", request_model=UserCreate)
     async def create_user(request: Request, response: Response):
@@ -33,7 +33,7 @@ def test_request_model_validated_data_on_request():
 
 def test_request_model_injected_as_third_param():
     """When handler has third positional param, validated data is injected."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.post("/users", request_model=UserCreate)
     async def create_user(request: Request, response: Response, data):
@@ -50,7 +50,7 @@ def test_request_model_injected_as_third_param():
 
 def test_request_model_validation_error():
     """Invalid body returns 422 with Pydantic error details."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.post("/users", request_model=UserCreate)
     async def create_user(request: Request, response: Response):
@@ -70,7 +70,7 @@ def test_request_model_with_di_does_not_clash():
     """Handler with Depend and request_model — validated_data goes to request, not injected."""
     from sillo.core.dependencies import Depend
 
-    app = silloApp()
+    app = SilloApp()
 
     def get_db():
         return "db_connected"
@@ -91,7 +91,7 @@ def test_request_model_with_di_does_not_clash():
 
 def test_no_request_model_no_validation():
     """Without request_model, validated_data is None."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.post("/echo")
     async def echo(request: Request, response: Response):

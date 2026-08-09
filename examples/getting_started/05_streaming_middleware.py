@@ -1,7 +1,7 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 
-app = silloApp()
+app = SilloApp()
 
 
 async def log_request(req: Request, res: Response, next) -> None:

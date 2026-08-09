@@ -15,7 +15,7 @@ authenticated requests.
 import pytest
 from tortoise import Tortoise, fields
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.record import Model, setup_record, DatabaseConfig
 from sillo.record.fields import PasswordField
 from sillo.session import SessionMiddleware, SessionConfig
@@ -101,7 +101,7 @@ class AccountAdmin(ModelAdmin):
 
 
 def _make_app(db_path):
-    app = silloApp(title="Admin Test")
+    app = SilloApp(title="Admin Test")
     setup_record(
         app,
         DatabaseConfig.sqlite(str(db_path)),

@@ -31,7 +31,7 @@ Request schemas provide multiple benefits for API development:
 Define request schemas using Pydantic's `BaseModel`. These work with POST, PUT, PATCH, and any endpoint expecting a request body:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
@@ -43,7 +43,7 @@ class UserCreateRequest(BaseModel):
     full_name: Optional[str] = Field(None, description="User's full name")
     is_active: bool = Field(True, description="Account activation status")
 
-app = silloApp()
+app = SilloApp()
 
 @app.post(
     "/users",

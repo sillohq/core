@@ -13,11 +13,11 @@ Use this reference for a deeper view of session storage and session-backed state
 ## Basic Session Setup
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
 
-app = silloApp()
+app = SilloApp()
 
 session_config = SessionConfig(
     session_cookie_name="sillo_session",

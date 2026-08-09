@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2a1] - 2026-08-09
+
+### Changed
+
+- **The application class is now `SilloApp`.** It was `silloApp`, which is a
+  spelling no Python convention endorses — classes are `CapWords`, and a
+  lowercase-initial name reads as a function at every call site, which is
+  exactly how `app = silloApp()` looked.
+
+  The old name still resolves, from both `sillo` and `sillo.application`, and
+  emits a `DeprecationWarning` naming its removal in **0.1.0**. Nothing breaks
+  on upgrade; the migration is one find-and-replace:
+
+  ```python
+  from sillo import SilloApp
+
+  app = SilloApp(title="Projects API")
+  ```
+
+  `silloApp` is deliberately *not* in `__all__`, so a star-import and any
+  editor completion offer only the new name.
+
+  `str(app)` now reads `<SilloApp: title>`, which matters to anyone matching
+  on dev-server output.
+
+### Fixed
+
+- **A release could ship with `sillo.__version__` reporting the wrong
+  version.** The release workflow compared the tag against `pyproject.toml`
+  only, so 0.0.1a15 published with the module still saying `0.0.1a14` and the
+  job reported success. The check now covers `sillo/__init__.py` as well, and
+  fails the release when the three disagree.
+
 ## [0.0.1a15] - 2026-08-08
 
 ### Fixed

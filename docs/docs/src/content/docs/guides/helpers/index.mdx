@@ -110,12 +110,12 @@ Some of these overlap, and choosing wrong is the usual source of bugs.
 A registration endpoint touching five of these modules:
 
 ```python title="Registration, end to end"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.helpers.hashing import hash_password
 from sillo.helpers.strings import random_token, slugify, mask_email
 from sillo.helpers.network import get_client_ip
 
-app = silloApp()
+app = SilloApp()
 TRUSTED_PROXIES = ["10.0.0.0/8"]
 
 @app.post("/register")

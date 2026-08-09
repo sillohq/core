@@ -4,7 +4,7 @@ Tests for CORS preflight requests (OPTIONS)
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
@@ -28,7 +28,7 @@ def cors_app():
         debug=True,
     )
 
-    app = silloApp()
+    app = SilloApp()
 
     # Add test routes
     @app.get("/test")
@@ -102,7 +102,7 @@ class TestPreflightRequests:
             allow_credentials=True,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/wildcard-headers")
         async def wildcard_headers_route(request: Request, response: Response):
@@ -258,7 +258,7 @@ class TestPreflightRequests:
             allow_credentials=False,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/no-creds-preflight")
         async def no_creds_preflight_route(request: Request, response: Response):
@@ -290,7 +290,7 @@ class TestPreflightRequests:
             max_age=86400,  # 24 hours
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/max-age-test")
         async def max_age_route(request: Request, response: Response):
@@ -321,7 +321,7 @@ class TestPreflightRequests:
             allow_credentials=True,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/blacklist-preflight")
         async def blacklist_preflight_route(request: Request, response: Response):

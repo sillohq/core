@@ -38,10 +38,10 @@ Follow these steps to integrate background tasks into your sillo application:
 Initialize the task manager in your application to enable background task functionality:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.tasks import setup_tasks, create_task
 
-app = silloApp()
+app = SilloApp()
 
 # Initialize the task manager
 task_manager = setup_tasks(app)
@@ -458,12 +458,12 @@ Real-world implementations demonstrating common background task patterns.
 Process files asynchronously with progress tracking:
 
 ```python title="Dependency Injection Approach"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.tasks import setup_tasks, TaskDependency
 import asyncio
 import os
 
-app = silloApp()
+app = SilloApp()
 task_manager = setup_tasks(app)
 
 async def process_file(file_path: str, task_id: str) -> dict:
@@ -520,12 +520,12 @@ async def start_file_processing(
 ```
 
 ```python title="create_task Approach"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.tasks import setup_tasks, create_task
 import asyncio
 import os
 
-app = silloApp()
+app = SilloApp()
 task_manager = setup_tasks(app)
 
 async def process_file(file_path: str, task_id: str) -> dict:
@@ -589,7 +589,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-app = silloApp()
+app = SilloApp()
 task_manager = setup_tasks(app)
 
 async def send_bulk_emails(recipients: list, subject: str, body: str, task_id: str) -> dict:
@@ -651,7 +651,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-app = silloApp()
+app = SilloApp()
 task_manager = setup_tasks(app)
 
 async def send_bulk_emails(recipients: list, subject: str, body: str, task_id: str) -> dict:
@@ -715,7 +715,7 @@ import csv
 import json
 from datetime import datetime
 
-app = silloApp()
+app = SilloApp()
 task_manager = setup_tasks(app)
 
 async def export_data(format: str, filters: dict, task_id: str) -> dict:
@@ -802,7 +802,7 @@ import csv
 import json
 from datetime import datetime
 
-app = silloApp()
+app = SilloApp()
 task_manager = setup_tasks(app)
 
 async def export_data(format: str, filters: dict, task_id: str) -> dict:

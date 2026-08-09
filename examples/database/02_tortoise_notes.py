@@ -4,7 +4,7 @@ from typing import AsyncGenerator, List, Optional
 
 from tortoise import Tortoise, fields, models
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.types import Request, Response, State
 
 # Database configuration
@@ -26,7 +26,7 @@ class Note(models.Model):
 
 # Application lifespan
 @asynccontextmanager
-async def lifespan(app: silloApp) -> AsyncGenerator[State, None]:
+async def lifespan(app: SilloApp) -> AsyncGenerator[State, None]:
     # Startup: Initialize database connection
     await Tortoise.init(
         db_url=DATABASE_URL,
@@ -42,7 +42,7 @@ async def lifespan(app: silloApp) -> AsyncGenerator[State, None]:
 
 
 # Initialize app with lifespan
-app = silloApp(lifespan=lifespan)
+app = SilloApp(lifespan=lifespan)
 
 
 @app.post("/notes")

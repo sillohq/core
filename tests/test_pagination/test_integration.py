@@ -1,6 +1,6 @@
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.pagination import (
     AsyncListDataHandler,
@@ -16,7 +16,7 @@ from sillo.testclient import TestClient
 @pytest.fixture
 def test_client(test_client_factory):
     """Create a test client for integration testing"""
-    app = silloApp()
+    app = SilloApp()
     with test_client_factory(app) as client:
         yield client, app
 

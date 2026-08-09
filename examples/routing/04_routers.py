@@ -1,7 +1,7 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.routing import Router
 
-app = silloApp()
+app = SilloApp()
 
 v1_router = Router(prefix="/v1")
 v2_router = Router(prefix="/v2")

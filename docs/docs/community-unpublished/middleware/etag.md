@@ -21,10 +21,10 @@ uv add sillo-contrib
 ## Quick Start
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 import sillo_contrib.etag as etag
 
-app = silloApp()
+app = SilloApp()
 
 # Add the ETag middleware (defaults shown)
 app.use(
@@ -65,10 +65,10 @@ That's it! Responses to `GET`/`HEAD` will carry an `ETag` header. Clients sendin
 ### Basic Usage
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 import sillo_contrib.etag as etag
 
-app = silloApp()
+app = SilloApp()
 app.use(etag.ETag())
 
 @app.get("/api/data")

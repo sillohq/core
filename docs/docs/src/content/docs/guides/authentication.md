@@ -27,13 +27,13 @@ This is the whole thing: a JWT backend that resolves `request.user`, and a prote
 
 ```python
 # app.py
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.record import setup_record, DatabaseConfig
 from sillo.auth import AuthenticationMiddleware, useAuth
 from sillo.auth.jwt_auth import JWTAuthBackend
 from sillo.users import User
 
-app = silloApp()
+app = SilloApp()
 
 # database (creates the "users" table)
 db = setup_record(app, DatabaseConfig.sqlite("app.db"), model_modules=["myapp.models"])
@@ -51,12 +51,12 @@ async def me(request, response):
 
 ###  Or let the app mount it
 
-`silloApp(auth=...)` mounts the same middleware **and** publishes each
+`SilloApp(auth=...)` mounts the same middleware **and** publishes each
 backend as an OpenAPI security scheme, so your reference documents the auth
 you actually enforce rather than a list you maintain separately:
 
 ```python
-app = silloApp(
+app = SilloApp(
     auth=[JWTAuthBackend(secret_key="change-me", identifier="sub")],
     auth_user_model=User,
 )

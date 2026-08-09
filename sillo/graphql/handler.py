@@ -17,7 +17,7 @@ else:
         strawberry = None
         ExecutionResult = None
 
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Route
 
@@ -39,7 +39,7 @@ class GraphQL:
 
     def __init__(
         self,
-        app: silloApp,
+        app: SilloApp,
         schema: "strawberry.Schema",
         path: str = "/graphql",
         graphiql: bool = True,

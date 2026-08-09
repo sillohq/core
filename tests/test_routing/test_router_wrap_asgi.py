@@ -1,6 +1,6 @@
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Router
 from sillo.testclient import TestClient
@@ -8,7 +8,7 @@ from sillo.types import ASGIApp, Receive, Scope, Send
 
 
 def test_router_wrap_asgi_basic(test_client_factory):
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     executed = []
@@ -39,7 +39,7 @@ def test_router_wrap_asgi_basic(test_client_factory):
 
 
 def test_router_wrap_asgi_websocket(test_client_factory):
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/ws")
 
     executed = []

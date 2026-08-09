@@ -41,10 +41,10 @@ immediately.  Resolution is 1 second.
 ##  Setup
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.work.scheduler import setup_scheduler
 
-app = silloApp()
+app = SilloApp()
 scheduler = setup_scheduler(app)
 # Auto-starts on app startup. Stores in app.state["scheduler"]
 ```

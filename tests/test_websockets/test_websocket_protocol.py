@@ -11,7 +11,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.testclient import TestClient
 from sillo.websockets import WebSocket, WebSocketDisconnect
 
@@ -20,9 +20,9 @@ from sillo.websockets import WebSocket, WebSocketDisconnect
 
 
 def test_binary_json_is_sent_and_received(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.ws_route("/ws")
     async def endpoint(websocket: WebSocket):
@@ -38,9 +38,9 @@ def test_binary_json_is_sent_and_received(
 
 
 def test_an_unknown_receive_mode_is_rejected(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     seen = []
 
     @app.ws_route("/ws")
@@ -60,9 +60,9 @@ def test_an_unknown_receive_mode_is_rejected(
 
 
 def test_an_unknown_send_mode_is_rejected(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     seen = []
 
     @app.ws_route("/ws")
@@ -81,8 +81,8 @@ def test_an_unknown_send_mode_is_rejected(
     assert seen and "mode" in seen[0]
 
 
-def test_bytes_round_trip(test_client_factory: Callable[[silloApp], TestClient]):
-    app = silloApp()
+def test_bytes_round_trip(test_client_factory: Callable[[SilloApp], TestClient]):
+    app = SilloApp()
 
     @app.ws_route("/ws")
     async def endpoint(websocket: WebSocket):
@@ -101,9 +101,9 @@ def test_bytes_round_trip(test_client_factory: Callable[[silloApp], TestClient])
 
 
 def test_iterating_text_messages(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     received = []
 
     @app.ws_route("/ws")
@@ -122,11 +122,11 @@ def test_iterating_text_messages(
 
 
 def test_iteration_ends_on_disconnect(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """The loop must terminate when the client hangs up rather than raise
     out of the handler."""
-    app = silloApp()
+    app = SilloApp()
     finished = []
 
     @app.ws_route("/ws")
@@ -145,9 +145,9 @@ def test_iteration_ends_on_disconnect(
 
 
 def test_iterating_bytes_messages(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     received = []
 
     @app.ws_route("/ws")
@@ -166,9 +166,9 @@ def test_iterating_bytes_messages(
 
 
 def test_iterating_json_messages(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     received = []
 
     @app.ws_route("/ws")
@@ -190,9 +190,9 @@ def test_iterating_json_messages(
 
 
 def test_a_socket_reports_itself_connected(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     states = []
 
     @app.ws_route("/ws")
@@ -213,9 +213,9 @@ def test_a_socket_reports_itself_connected(
 
 
 def test_receiving_after_a_disconnect_is_refused(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     errors = []
 
     @app.ws_route("/ws")
@@ -239,9 +239,9 @@ def test_receiving_after_a_disconnect_is_refused(
 
 
 def test_receiving_text_from_a_closed_socket_raises_disconnect(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     disconnected = []
 
     @app.ws_route("/ws")
@@ -260,11 +260,11 @@ def test_receiving_text_from_a_closed_socket_raises_disconnect(
 
 
 def test_receiving_text_when_the_frame_is_binary_is_an_error(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """The typed helpers index the frame directly, so asking for the wrong
     kind surfaces as a ``KeyError`` on the missing field."""
-    app = silloApp()
+    app = SilloApp()
     errors = []
 
     @app.ws_route("/ws")
@@ -284,9 +284,9 @@ def test_receiving_text_when_the_frame_is_binary_is_an_error(
 
 
 def test_receiving_bytes_when_the_frame_is_text_is_an_error(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     errors = []
 
     @app.ws_route("/ws")
@@ -306,9 +306,9 @@ def test_receiving_bytes_when_the_frame_is_text_is_an_error(
 
 
 def test_receiving_before_accepting_is_refused(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     errors = []
 
     @app.ws_route("/ws")
@@ -328,9 +328,9 @@ def test_receiving_before_accepting_is_refused(
 
 
 def test_sending_before_accepting_is_refused(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     errors = []
 
     @app.ws_route("/ws")
@@ -353,9 +353,9 @@ def test_sending_before_accepting_is_refused(
 
 
 def test_a_custom_close_code_reaches_the_client(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.ws_route("/ws")
     async def endpoint(websocket: WebSocket):
@@ -370,9 +370,9 @@ def test_a_custom_close_code_reaches_the_client(
 
 
 def test_the_close_reason_reaches_the_client(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.ws_route("/ws")
     async def endpoint(websocket: WebSocket):
@@ -387,10 +387,10 @@ def test_the_close_reason_reaches_the_client(
 
 
 def test_a_connection_can_be_refused_before_accepting(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Rejecting without accepting is how auth failures are signalled."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.ws_route("/ws")
     async def endpoint(websocket: WebSocket):
@@ -404,9 +404,9 @@ def test_a_connection_can_be_refused_before_accepting(
 
 
 def test_the_default_close_code_is_normal(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
 
     @app.ws_route("/ws")
     async def endpoint(websocket: WebSocket):
@@ -423,8 +423,8 @@ def test_the_default_close_code_is_normal(
 # ── request information ──────────────────────────────────────────────────
 
 
-def test_the_path_is_available(test_client_factory: Callable[[silloApp], TestClient]):
-    app = silloApp()
+def test_the_path_is_available(test_client_factory: Callable[[SilloApp], TestClient]):
+    app = SilloApp()
     seen = []
 
     @app.ws_route("/ws/room")
@@ -441,9 +441,9 @@ def test_the_path_is_available(test_client_factory: Callable[[silloApp], TestCli
 
 
 def test_query_parameters_are_available(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     seen = []
 
     @app.ws_route("/ws")
@@ -459,8 +459,8 @@ def test_query_parameters_are_available(
     assert seen == ["abc123"]
 
 
-def test_headers_are_available(test_client_factory: Callable[[silloApp], TestClient]):
-    app = silloApp()
+def test_headers_are_available(test_client_factory: Callable[[SilloApp], TestClient]):
+    app = SilloApp()
     seen = []
 
     @app.ws_route("/ws")
@@ -477,9 +477,9 @@ def test_headers_are_available(test_client_factory: Callable[[silloApp], TestCli
 
 
 def test_path_parameters_are_available(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp()
+    app = SilloApp()
     seen = []
 
     @app.ws_route("/ws/{room_id}")

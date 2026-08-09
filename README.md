@@ -42,9 +42,9 @@ uv add "sillo-framework[all]"
 ## Hello World
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(title="My API")
+app = SilloApp(title="My API")
 
 
 @app.get("/")
@@ -65,9 +65,9 @@ Sillo validates request bodies with Pydantic through `request_model`.
 
 ```python
 from pydantic import BaseModel
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 class CreateUser(BaseModel):
@@ -87,9 +87,9 @@ The validated model is also available as `request.validated_data`.
 Use `Depend` to inject request-scoped dependencies into handlers.
 
 ```python
-from sillo import Depend, silloApp
+from sillo import Depend, SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 async def get_current_user():
@@ -114,9 +114,9 @@ def auth_header(request=Depend(get_request=True)):
 ## Routing
 
 ```python
-from sillo import Router, silloApp
+from sillo import Router, SilloApp
 
-app = silloApp()
+app = SilloApp()
 api = Router(prefix="/api")
 
 

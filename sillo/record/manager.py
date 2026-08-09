@@ -310,10 +310,10 @@ def setup_record(
 
     Usage::
 
-        from sillo import silloApp
+        from sillo import SilloApp
         from sillo.record import setup_record, DatabaseConfig
 
-        app = silloApp()
+        app = SilloApp()
         db = setup_record(app, DatabaseConfig.sqlite("myapp.db"),
                           model_modules=["myapp.models"])
     """

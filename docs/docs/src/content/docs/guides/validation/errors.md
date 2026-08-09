@@ -170,9 +170,9 @@ A stable custom `type` is what lets a client show a translated message of its ow
 Register a handler for `RequestValidationError`:
 
 ```python
-from sillo import silloApp, RequestValidationError
+from sillo import SilloApp, RequestValidationError
 
-app = silloApp()
+app = SilloApp()
 
 async def my_validation_handler(request, response, exc):
     return response.json(
@@ -274,7 +274,7 @@ This shape predates the unified contract and applies only to models you validate
 Bodies declared with `request_model=` return a bare list of Pydantic errors for the same historical reason. Enable `strict_validation=True` to move them onto the unified envelope:
 
 ```python
-app = silloApp(strict_validation=True)
+app = SilloApp(strict_validation=True)
 ```
 
 ```json

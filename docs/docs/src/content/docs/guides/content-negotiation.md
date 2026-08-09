@@ -18,10 +18,10 @@ It automatically:
 ##  Quick Start
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import Accepts
 
-app = silloApp()
+app = SilloApp()
 
 app.use(Accepts())
 
@@ -39,10 +39,10 @@ async def home(request, response):
 ###  Basic Usage
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import Accepts
 
-app = silloApp()
+app = SilloApp()
 app.use(Accepts())
 
 @app.get("/api/data")
@@ -56,10 +56,10 @@ async def get_data(request, response):
 ###  Manual Content Negotiation
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import ContentNegotiationMiddleware, negotiate_content_type
 
-app = silloApp()
+app = SilloApp()
 app.use(ContentNegotiationMiddleware())
 
 @app.get("/api/content")
@@ -81,10 +81,10 @@ async def get_content(request, response):
 ###  Language Negotiation
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import ContentNegotiationMiddleware, negotiate_language
 
-app = silloApp()
+app = SilloApp()
 app.use(ContentNegotiationMiddleware())
 
 @app.get("/greetings")
@@ -104,10 +104,10 @@ async def get_greetings(request, response):
 ###  Strict Content Negotiation
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import StrictContentNegotiationMiddleware
 
-app = silloApp()
+app = SilloApp()
 app.use(
     StrictContentNegotiationMiddleware(
         available_types=["application/json", "application/xml"],
@@ -152,20 +152,20 @@ async def strict_api(request, response):
 ###  Basic Setup
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import Accepts
 
-app = silloApp()
+app = SilloApp()
 app.use(Accepts())
 ```
 
 ###  Custom Configuration
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import Accepts
 
-app = silloApp()
+app = SilloApp()
 app.use(
     Accepts(
         default_content_type="application/json",
@@ -293,7 +293,7 @@ best = get_best_match(
 ###  Custom Content Negotiation
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import ContentNegotiationMiddleware
 
 class CustomNegotiationMiddleware(ContentNegotiationMiddleware):
@@ -313,17 +313,17 @@ class CustomNegotiationMiddleware(ContentNegotiationMiddleware):
                         return fallback
         return super().negotiate_content_type(request, available_types, default_type)
 
-app = silloApp()
+app = SilloApp()
 app.use(CustomNegotiationMiddleware())
 ```
 
 ###  API Versioning with Content Negotiation
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import ContentNegotiationMiddleware
 
-app = silloApp()
+app = SilloApp()
 app.use(ContentNegotiationMiddleware())
 
 @app.get("/api/users")
@@ -340,10 +340,10 @@ async def get_users(request, response):
 ###  Internationalization (i18n)
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import ContentNegotiationMiddleware, negotiate_language
 
-app = silloApp()
+app = SilloApp()
 app.use(ContentNegotiationMiddleware())
 
 @app.get("/messages")
@@ -386,13 +386,13 @@ Quality values (`q`) do **not** override specificity: `text/html, application/js
 Drive negotiation through `TestClient` by setting request headers. Assert both the chosen format and the `Content-Type`/`Vary` response headers.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import Accepts
 from sillo.testclient import TestClient
 
 
 def test_negotiates_json():
-    app = silloApp()
+    app = SilloApp()
     app.use(Accepts())
 
     @app.get("/data")
@@ -408,7 +408,7 @@ def test_negotiates_json():
 def test_strict_returns_406():
     from sillo.http.accepts import StrictContentNegotiationMiddleware
 
-    app = silloApp()
+    app = SilloApp()
     app.use(
         StrictContentNegotiationMiddleware(available_types=["application/json"])
     )
@@ -426,7 +426,7 @@ For handlers that read `request.state.accepts`, assert the parsed structure rath
 
 ```python
 def test_stores_accepts_info():
-    app = silloApp()
+    app = SilloApp()
     app.use(Accepts())
 
     @app.get("/debug")
@@ -459,10 +459,10 @@ def test_stores_accepts_info():
 ###  Example Production Configuration
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import StrictContentNegotiationMiddleware
 
-app = silloApp()
+app = SilloApp()
 app.use(
     StrictContentNegotiationMiddleware(
         available_types=[

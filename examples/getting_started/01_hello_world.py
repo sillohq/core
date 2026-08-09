@@ -7,11 +7,11 @@ The app.run() method now uses uvicorn.run(app, ...) directly instead of
 creating temporary files, which fixes the import error.
 """
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 
 # Create the application
-app = silloApp(
+app = SilloApp(
     title="Simple sillo App",
     version="1.0.0",
     description="A simple example of sillo usage",

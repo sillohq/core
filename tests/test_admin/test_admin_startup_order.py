@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 from tortoise import fields
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.admin import AdminSite
 from sillo.record import DatabaseConfig, Model, setup_record
 from sillo.users import UserBaseModel
@@ -39,11 +39,11 @@ ADMIN_EMAIL = "boss@example.com"
 ADMIN_PASSWORD = "Hunter2!pass"
 
 
-def _app(tmp_path: Path) -> silloApp:
+def _app(tmp_path: Path) -> SilloApp:
     """Build an application the conventional way: admin first, database second."""
     from sillo.session import SessionConfig, SessionMiddleware
 
-    app = silloApp(title="Order Test")
+    app = SilloApp(title="Order Test")
 
     admin = AdminSite(title="Order Test", prefix="/admin", user_model=Account)
     admin.mount(app)

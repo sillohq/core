@@ -4,7 +4,7 @@ Tests for CORS middleware error handling and edge cases
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
@@ -20,7 +20,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/malformed-origin")
         async def malformed_origin_route(request: Request, response: Response):
@@ -45,7 +45,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/invalid-origin-chars")
         async def invalid_origin_route(request: Request, response: Response):
@@ -77,7 +77,7 @@ class TestCORSErrorHandling:
         """Test CORS middleware with empty configuration"""
         cors_config = CorsConfig()
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/empty-cors")
         async def empty_cors_route(request: Request, response: Response):
@@ -99,7 +99,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/no-cors-config")
         async def no_cors_config_route(request: Request, response: Response):
@@ -125,7 +125,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/non-callable-validator")
         async def non_callable_validator_route(request: Request, response: Response):
@@ -151,7 +151,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/multiple-origins")
         async def multiple_origins_route(request: Request, response: Response):
@@ -179,7 +179,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/long-origin")
         async def long_origin_route(request: Request, response: Response):
@@ -204,7 +204,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/null-byte-origin")
         async def null_byte_origin_route(request: Request, response: Response):
@@ -229,7 +229,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/exception-route")
         async def exception_route(request: Request, response: Response):
@@ -254,7 +254,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/invalid-method-preflight")
         async def invalid_method_preflight_route(request: Request, response: Response):
@@ -283,7 +283,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/empty-method-preflight")
         async def empty_method_preflight_route(request: Request, response: Response):
@@ -312,7 +312,7 @@ class TestCORSErrorHandling:
             allow_methods=["GET"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/whitespace-method-preflight")
         async def whitespace_method_preflight_route(

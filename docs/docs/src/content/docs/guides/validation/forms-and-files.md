@@ -6,9 +6,9 @@ description: Declare form fields and uploads with Form and File markers. sillo p
 Form fields and file uploads are parameter markers, like every other input except the JSON body:
 
 ```python
-from sillo import silloApp, Form, File
+from sillo import SilloApp, Form, File
 
-app = silloApp()
+app = SilloApp()
 
 @app.post("/login")
 async def login(request, response,
@@ -32,7 +32,7 @@ Everything else is usually better served by a JSON body, where you get nested st
 ##  File uploads
 
 ```python
-from sillo import silloApp, Form, File, Path
+from sillo import SilloApp, Form, File, Path
 
 @app.post("/users/{user_id}/avatar")
 async def upload_avatar(request, response,
@@ -387,7 +387,7 @@ Everything above, applied.
 import uuid
 from pathlib import Path as FSPath
 
-from sillo import File, Form, silloApp
+from sillo import File, Form, SilloApp
 
 UPLOAD_ROOT = FSPath("/var/lib/app/uploads")     # outside any served path
 MAX_BYTES = 10 * 1024 * 1024

@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth import BaseUser
 from sillo.auth import JWTAuthBackend, create_jwt
 from sillo.auth.session_auth import SessionAuthBackend, login
@@ -40,7 +40,7 @@ class db:
         return {"id": user_id, "username": "admin"}
 
 
-app = silloApp()
+app = SilloApp()
 
 # Multiple backends - JWT and Session
 jwt_backend = JWTAuthBackend()

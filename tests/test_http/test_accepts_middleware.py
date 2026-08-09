@@ -8,7 +8,7 @@ rejects clients it cannot satisfy with a 406.
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.accepts import (
     Accepts,
     AcceptsInfo,
@@ -32,7 +32,7 @@ from sillo.testclient import TestClient
 
 @pytest.fixture
 def client():
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/info")
     async def info(request, response):
@@ -113,7 +113,7 @@ def test_the_accepts_wrapper_is_available(client):
 
 
 def test_accepts_info_exposes_each_header():
-    app = silloApp()
+    app = SilloApp()
     captured = {}
 
     @app.get("/x")
@@ -153,7 +153,7 @@ def test_accepts_info_exposes_each_header():
 
 
 def _app_with(middleware):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/x")
     async def x(request, response):

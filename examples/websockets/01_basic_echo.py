@@ -1,7 +1,7 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.websockets import WebSocket
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.ws_route("/ws")

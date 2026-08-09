@@ -23,9 +23,9 @@ sillo provides a powerful, flexible pagination system that supports multiple str
 Here's a quick example of how to paginate a list of items using `response.paginate()`:
 
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/get-items")
 async def get_items(request, response):
@@ -36,9 +36,9 @@ async def get_items(request, response):
 For async endpoints, use `response.apaginate()`:
 
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/get-items")
 async def get_items(request, response):
@@ -86,9 +86,9 @@ sillo supports three main pagination strategies, each suited for different use c
 The most common pagination style, using page numbers and page sizes. Perfect for traditional web applications.
 
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/get-items")
 async def get_items(request, response):
@@ -113,9 +113,9 @@ async def get_items(request, response):
 Traditional SQL-style pagination using limit and offset. Ideal for database queries and APIs that follow REST conventions.
 
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/get-items")
 async def get_items(request, response):
@@ -139,9 +139,9 @@ async def get_items(request, response):
 Cursor-based pagination for consistent pagination with changing datasets. Perfect for real-time feeds, infinite scroll, and large datasets.
 
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/get-items")
 async def get_items(request, response):
@@ -174,10 +174,10 @@ Cursors are base64-encoded JSON objects containing the sort field value. This ma
 You can customize pagination strategies by passing strategy instances instead of strings:
 
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.pagination import PageNumberPagination, CursorPagination
 
-app = silloApp()
+app = SilloApp()
 
 # Custom page number pagination
 @app.get("/items-page")
@@ -211,11 +211,11 @@ async def get_items_cursor(request, response):
 sillo provides built-in error handling for invalid pagination parameters:
 
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.pagination import InvalidPageError, InvalidPageSizeError, InvalidCursorError
 from sillo.exceptions import HTTPException
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/items")
 async def get_items(request, response):
@@ -240,9 +240,9 @@ async def get_items(request, response):
 Pagination works seamlessly with filtering and sorting:
 
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/products")
 async def get_products(request, response):
@@ -318,12 +318,12 @@ Create custom data handlers to integrate with databases, external APIs, or any d
 
 ####  Tortoise ORM Example
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.pagination import AsyncDataHandler
 from tortoise.models import Model
 from .models import Item
 
-app = silloApp()
+app = SilloApp()
 
 class TortoiseDataHandler(AsyncDataHandler):
     def __init__(self, query):
@@ -349,11 +349,11 @@ Create custom pagination strategies by subclassing `BasePaginationStrategy`:
 
 ###  Custom Strategy Example
 ```python {6}
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.pagination import BasePaginationStrategy
 from typing import Any, Dict, Tuple
 
-app = silloApp()
+app = SilloApp()
 
 class SeekPagination(BasePaginationStrategy):
     """Custom seek-based pagination similar to Facebook's API"""

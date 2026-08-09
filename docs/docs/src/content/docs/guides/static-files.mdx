@@ -31,11 +31,11 @@ put it in front of production traffic, and the whole of this page is
 really about where that boundary sits.
 
 ```python title="the whole API"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.routing import Group
 from sillo.static import StaticFiles
 
-app = silloApp()
+app = SilloApp()
 
 app.add_route(
     Group(path="/static", app=StaticFiles(directory="public"))

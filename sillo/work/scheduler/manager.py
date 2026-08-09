@@ -237,7 +237,7 @@ def setup_scheduler(app) -> SchedulerManager:
 
     Usage::
 
-        app = silloApp()
+        app = SilloApp()
         scheduler = setup_scheduler(app)
         scheduler.every(3600)(my_cleanup_task)
     """

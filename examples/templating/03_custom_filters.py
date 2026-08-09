@@ -3,10 +3,10 @@ from datetime import datetime
 import humanize
 import markdown2
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.templating import TemplateConfig, TemplateEngine, render
 
-app = silloApp()
+app = SilloApp()
 
 
 def format_datetime(value, format="%Y-%m-%d %H:%M"):

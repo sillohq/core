@@ -66,11 +66,11 @@ allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 logger = create_logger("sillo")
 lifespan_manager = Callable[
-    ["silloApp"], AsyncContextManager[Any] | ContextManager[Any]
+    ["SilloApp"], AsyncContextManager[Any] | ContextManager[Any]
 ]
 
 
-class silloApp:
+class SilloApp:
     """
     Core application class for the sillo ASGI web framework.
 
@@ -919,7 +919,7 @@ class silloApp:
             ```
         """
 
-        # Authentication can be configured two ways: silloApp(auth_user_model=…)
+        # Authentication can be configured two ways: SilloApp(auth_user_model=…)
         # or AuthenticationMiddleware(user_model=…) passed to use(). Both name
         # the same thing, and tooling that wants to know which model this
         # application authenticates against should not have to care which was
@@ -1030,7 +1030,7 @@ class silloApp:
 
         Example::
 
-            app = silloApp()
+            app = SilloApp()
 
             @app.get("/api/health")
             async def health(request, response):
@@ -2776,7 +2776,7 @@ class silloApp:
             **kwargs: Additional keyword arguments to pass to the middleware
 
         Returns:
-            silloApp: The application instance for method chaining
+            SilloApp: The application instance for method chaining
 
 
         """
@@ -2875,13 +2875,13 @@ class silloApp:
             None
 
         Returns:
-            str: A string in the format ``<silloApp: {title}>`` where
+            str: A string in the format ``<SilloApp: {title}>`` where
                 ``{title}`` is the application's configured title.
 
         Raises:
             None
         """
-        return f"<silloApp: {self.title}>"
+        return f"<SilloApp: {self.title}>"
 
     def run(
         self,
@@ -2919,3 +2919,22 @@ class silloApp:
             )
         logger.info(f"Starting server with uvicorn: {host}:{port}")
         uvicorn.run(self, host=host, port=port, reload=reload)
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve the pre-0.0.2a1 spelling, with a warning.
+
+    ``sillo.application`` is imported directly often enough — the framework
+    does it itself in :mod:`sillo.graphql.handler` — that the alias has to
+    live here too, not only on the package. See the matching hook in
+    ``sillo/__init__.py``.
+    """
+    if name == "silloApp":
+        warnings.warn(
+            "silloApp was renamed to SilloApp in 0.0.2a1 and the old name "
+            "will be removed in 0.1.0. Use `from sillo import SilloApp`.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return SilloApp
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

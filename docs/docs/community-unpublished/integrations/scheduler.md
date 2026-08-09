@@ -31,10 +31,10 @@ uv add sillo-contrib
 Initialize the scheduler with your sillo application:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.scheduler import setup_scheduler
 
-app = silloApp()
+app = SilloApp()
 scheduler = setup_scheduler(app)
 ```
 
@@ -285,7 +285,7 @@ JobStatus.CANCELLED  # Permanently removed
 ```python
 import asyncio
 import logging
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo_contrib.scheduler import (
     setup_scheduler,
@@ -295,7 +295,7 @@ from sillo_contrib.scheduler import (
     DateTimeTrigger,
 )
 
-app = silloApp()
+app = SilloApp()
 
 # --- Setup ---
 scheduler = setup_scheduler(app)

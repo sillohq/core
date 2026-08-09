@@ -6,9 +6,9 @@ description: Query strings, headers, cookies, and path segments, declared with m
 Every input except the JSON body is declared with a marker, placed as the parameter's default value:
 
 ```python
-from sillo import silloApp, Query, Header, Cookie, Path
+from sillo import SilloApp, Query, Header, Cookie, Path
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/teams/{team_id}/items")
 async def list_items(request, response,
@@ -389,7 +389,7 @@ tags = Query([], type=List[str])  # ?tags=a&tags=b -> ["a","b"]
 To validate everything in an application, including parameters written the short way:
 
 ```python
-app = silloApp(strict_validation=True)
+app = SilloApp(strict_validation=True)
 ```
 
 

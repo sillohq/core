@@ -12,7 +12,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.testclient import TestClient
 from sillo.websockets import (
     Channel,

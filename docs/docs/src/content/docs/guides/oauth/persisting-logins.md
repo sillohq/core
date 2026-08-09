@@ -168,12 +168,12 @@ by hand. This is what makes the OpenAPI document describe the credential you
 actually check — see [OAuth in OpenAPI](/guides/oauth/openapi/).
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth.jwt_auth import JWTAuthBackend
 from sillo.auth.session_auth import SessionAuthBackend
 from sillo.session import SessionMiddleware
 
-app = silloApp(
+app = SilloApp(
     title="My API",
     auth=[
         JWTAuthBackend(
@@ -188,7 +188,7 @@ app = silloApp(
 app.use(SessionMiddleware(secret_key=settings.secret_key))
 ```
 
-`silloApp(auth=[...])` installs `AuthenticationMiddleware` for you, in the
+`SilloApp(auth=[...])` installs `AuthenticationMiddleware` for you, in the
 right place. If you install it yourself instead, register it *before*
 `SessionMiddleware` — `app.use` builds the chain inside-out, so the last
 registered runs first, and a session backend that runs before the session

@@ -60,13 +60,13 @@ Always prefer `async def` handlers unless the work is trivially cheap.
 
 ##  Basic usage
 
-Every `silloApp` (and every `Router`) exposes a default emitter at `app.events`.
+Every `SilloApp` (and every `Router`) exposes a default emitter at `app.events`.
 You subscribe with a decorator and emit from anywhere:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.events.on("user.created")
 async def handle_user_created(user):
@@ -86,8 +86,8 @@ You can also build standalone emitters that are not attached to an app — see
 Register a listener that runs on every emission:
 
 ```python {3}
-from sillo import silloApp
-app = silloApp()
+from sillo import SilloApp
+app = SilloApp()
 
 @app.events.on("user.created")
 async def handle_user_created(user):
@@ -444,10 +444,10 @@ For networked backends, create the emitter and start/stop it with the
 application lifespan:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.events import EventEmitter
 
-app = silloApp()
+app = SilloApp()
 app.events = EventEmitter("redis", url="redis://localhost:6379/0")
 
 @app.on_startup

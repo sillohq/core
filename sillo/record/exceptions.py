@@ -101,7 +101,7 @@ def register_db_exception_handlers(app) -> None:
 
     Call once during application setup::
 
-        app = silloApp()
+        app = SilloApp()
         register_db_exception_handlers(app)
     """
     app.add_exception_handler(DoesNotExist, handle_does_not_exist)

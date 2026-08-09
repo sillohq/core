@@ -3,14 +3,14 @@ Tests for Query parameter extractor.
 """
 
 import pytest
-from sillo import silloApp, Query
+from sillo import SilloApp, Query
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 
 @pytest.fixture
 def app():
-    return silloApp()
+    return SilloApp()
 
 
 @pytest.fixture

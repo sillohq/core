@@ -19,10 +19,10 @@ Key Features:
 - Testing utilities with TestClient
 
 Quick Start:
-    from sillo import silloApp
+    from sillo import SilloApp
     from pydantic import BaseModel
 
-    app = silloApp(title="My API", version="1.0.0")
+    app = SilloApp(title="My API", version="1.0.0")
 
     @app.get("/hello/{name}")
     async def hello(request, response, name: str):
@@ -60,7 +60,7 @@ Common Patterns:
         {"detail": [{"loc": ["query", "page"], "msg": "...", "type": "..."}]}
 
     Markers written the old way — Query(1), Header(), Cookie("dark") — keep
-    their original behavior. Pass silloApp(strict_validation=True) to validate
+    their original behavior. Pass SilloApp(strict_validation=True) to validate
     those too, and to get the unified error shape for request_model bodies.
 
 2. Dependency Injection:
@@ -101,13 +101,16 @@ Common Patterns:
     GraphQL(app, schema, path="/graphql", graphiql=True)
 """
 
+import warnings
+from typing import Any
+
 from sillo.core.routing import Route, Router
 
-__version__: str = "0.0.1a14"
+__version__: str = "0.0.2a1"
 
 from sillo.core.dependencies import Depend
 
-from .application import silloApp
+from .application import SilloApp
 from .frontend import FrontendApp
 from .validation import (
     Cookie,
@@ -134,6 +137,30 @@ __all__ = [
     "ResponseValidationError",
     "Route",
     "Router",
+    "SilloApp",
     "UploadFile",
-    "silloApp",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Keep ``from sillo import silloApp`` working, loudly.
+
+    The class was named ``silloApp`` up to 0.0.1a15. Renaming it outright
+    would break every existing application at import, so the old name stays
+    resolvable for one more cycle — but deliberately outside ``__all__``, so
+    it never shows up in completions, ``dir()`` or a star-import, and never
+    reads as a supported spelling.
+
+    Module-level ``__getattr__`` (PEP 562) is what makes the warning possible
+    at all: a plain ``silloApp = SilloApp`` assignment binds at import time
+    and has no moment at which to say anything.
+    """
+    if name == "silloApp":
+        warnings.warn(
+            "silloApp was renamed to SilloApp in 0.0.2a1 and the old name "
+            "will be removed in 0.1.0. Use `from sillo import SilloApp`.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return SilloApp
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

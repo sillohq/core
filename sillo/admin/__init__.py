@@ -7,10 +7,10 @@ with a modern dark-themed UI.
 
 Usage::
 
-    from sillo import silloApp
+    from sillo import SilloApp
     from sillo.admin import AdminSite, ModelAdmin, setup_admin
 
-    app = silloApp()
+    app = SilloApp()
     admin = setup_admin(app, title="My App Admin")
 
     @admin.register(User)
@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Type
 
 if TYPE_CHECKING:
-    from sillo import silloApp
+    from sillo import SilloApp
 
 from sillo.core.routing import Group
 from sillo.static import StaticFiles
@@ -94,7 +94,7 @@ class AdminSite:
         self.registry.register(model_class, admin_class)
         return admin_class
 
-    def mount(self, app: silloApp) -> None:
+    def mount(self, app: SilloApp) -> None:
         """Register auth middleware, static files, and routes on startup."""
         self._register_system_models()
         self._register_activity_log()
@@ -156,7 +156,7 @@ class AdminSite:
 
             self.registry.register(AdminActivity, _ActivityAdmin)
 
-    def _mount_static(self, app: silloApp) -> None:
+    def _mount_static(self, app: SilloApp) -> None:
         """Mount Static"""
         static_dir = Path(__file__).parent / "static"
         if static_dir.is_dir():

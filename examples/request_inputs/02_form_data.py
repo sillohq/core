@@ -1,6 +1,6 @@
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.post("/submit-form")

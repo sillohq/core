@@ -7,7 +7,7 @@ from typing import Any, Callable, List
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.routing import Router
 from sillo.testclient import TestClient
 from sillo.websockets import WebSocket, WebSocketConsumer
@@ -152,9 +152,9 @@ class MultiGroupConsumer(WebSocketConsumer):
             await self.leave_group(group)
 
 
-def test_group_join_and_leave(test_client_factory: Callable[[silloApp], TestClient]):
+def test_group_join_and_leave(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test joining and leaving groups"""
-    app = silloApp()
+    app = SilloApp()
     route = GroupChatConsumer.as_route("/ws/chat")
     app.add_ws_route(route)
 
@@ -178,9 +178,9 @@ def test_group_join_and_leave(test_client_factory: Callable[[silloApp], TestClie
             assert leave_msg["group"] == "lobby"
 
 
-def test_group_broadcast(test_client_factory: Callable[[silloApp], TestClient]):
+def test_group_broadcast(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test broadcasting to a group"""
-    app = silloApp()
+    app = SilloApp()
     route = GroupChatConsumer.as_route("/ws/chat")
     app.add_ws_route(route)
 
@@ -211,9 +211,9 @@ def test_group_broadcast(test_client_factory: Callable[[silloApp], TestClient]):
                 assert msg2["message"] == "Hello everyone"
 
 
-def test_room_based_groups(test_client_factory: Callable[[silloApp], TestClient]):
+def test_room_based_groups(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test room-based group communication"""
-    app = silloApp()
+    app = SilloApp()
     route = RoomConsumer.as_route("/ws/room/{room_id}")
     app.add_ws_route(route)
 
@@ -243,10 +243,10 @@ def test_room_based_groups(test_client_factory: Callable[[silloApp], TestClient]
 
 
 def test_multiple_groups_per_consumer(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test consumer joining multiple groups"""
-    app = silloApp()
+    app = SilloApp()
     route = MultiGroupConsumer.as_route("/ws/multi")
     app.add_ws_route(route)
 
@@ -278,9 +278,9 @@ def test_multiple_groups_per_consumer(
             assert leave_msg["total_groups"] == 2
 
 
-def test_group_isolation(test_client_factory: Callable[[silloApp], TestClient]):
+def test_group_isolation(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test that groups are isolated from each other"""
-    app = silloApp()
+    app = SilloApp()
     route = GroupChatConsumer.as_route("/ws/chat")
     app.add_ws_route(route)
 
@@ -317,10 +317,10 @@ def test_group_isolation(test_client_factory: Callable[[silloApp], TestClient]):
 
 
 def test_channel_cleanup_on_disconnect(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that channels are cleaned up on disconnect"""
-    app = silloApp()
+    app = SilloApp()
     route = GroupChatConsumer.as_route("/ws/chat")
     app.add_ws_route(route)
 
@@ -338,9 +338,9 @@ def test_channel_cleanup_on_disconnect(
         # Note: This would require additional verification logic
 
 
-def test_broadcast_with_history(test_client_factory: Callable[[silloApp], TestClient]):
+def test_broadcast_with_history(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test broadcasting with message history"""
-    app = silloApp()
+    app = SilloApp()
 
     class HistoryConsumer(WebSocketConsumer):
         encoding = "json"
@@ -378,9 +378,9 @@ def test_broadcast_with_history(test_client_factory: Callable[[silloApp], TestCl
             assert msg["message"] == "Historical message"
 
 
-def test_group_with_router(test_client_factory: Callable[[silloApp], TestClient]):
+def test_group_with_router(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test groups with mounted router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     route = GroupChatConsumer.as_route("/chat")

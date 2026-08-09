@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.templating import TemplateConfig, TemplateEngine, render
 
-app = silloApp()
+app = SilloApp()
 
 # Configure templating with inheritance support
 template_config = TemplateConfig(

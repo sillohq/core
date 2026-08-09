@@ -1,6 +1,6 @@
 """sillo.cache.config — Domain-level cache configuration.
 
-sillo.cache is intentionally decoupled from :class:`sillo.silloApp`. Instead of
+sillo.cache is intentionally decoupled from :class:`sillo.SilloApp`. Instead of
 wiring a backend through app config, you configure caching at the *domain*
 level: instantiate a backend and register it as the default, then the
 :func:`sillo.cache.cache` decorator uses that default unless you pass a

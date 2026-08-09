@@ -63,10 +63,10 @@ Accents fold to their base letters, so `café` becomes `cafe` rather than being 
 A typical use in a handler:
 
 ```python title="Slugs from user-supplied titles"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.helpers.strings import slugify
 
-app = silloApp()
+app = SilloApp()
 
 @app.post("/posts")
 async def create_post(request, response):

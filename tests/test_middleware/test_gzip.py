@@ -10,7 +10,7 @@ import gzip
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.middleware.gzip import GZipMiddleware
 from sillo.testclient import TestClient
 
@@ -20,7 +20,7 @@ SMALL = "tiny"
 
 @pytest.fixture
 def client():
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/big")
     async def big(request, response):
@@ -102,7 +102,7 @@ def test_a_streaming_response_still_delivers_every_chunk(client):
 
 
 def test_the_threshold_is_configurable():
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/medium")
     async def medium(request, response):
@@ -113,7 +113,7 @@ def test_the_threshold_is_configurable():
 
 
 def test_a_high_threshold_disables_compression_in_practice():
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/big")
     async def big(request, response):
@@ -125,7 +125,7 @@ def test_a_high_threshold_disables_compression_in_practice():
 
 @pytest.mark.parametrize("level", [1, 5, 9])
 def test_every_compression_level_round_trips(level):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/big")
     async def big(request, response):
@@ -137,7 +137,7 @@ def test_every_compression_level_round_trips(level):
 
 def test_compression_actually_reduces_the_payload():
     """Verified against the raw bytes, not the decoded body."""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/big")
     async def big(request, response):

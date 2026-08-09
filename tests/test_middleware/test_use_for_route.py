@@ -8,15 +8,15 @@ as is the pass-through branch where the pattern does not match.
 
 from typing import Callable
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 from sillo.middleware.utils import use_for_route
 from sillo.testclient import TestClient
 
 
-def _app_with(middleware) -> silloApp:
-    app = silloApp()
+def _app_with(middleware) -> SilloApp:
+    app = SilloApp()
     app.use(middleware)
 
     @app.get("/api/users")
@@ -38,7 +38,7 @@ def _app_with(middleware) -> silloApp:
 
 
 def test_the_middleware_runs_on_the_matching_path(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     seen = []
 
@@ -53,7 +53,7 @@ def test_the_middleware_runs_on_the_matching_path(
 
 
 def test_the_middleware_is_skipped_elsewhere(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     seen = []
 
@@ -68,7 +68,7 @@ def test_the_middleware_is_skipped_elsewhere(
 
 
 def test_an_exact_pattern_does_not_match_a_longer_path(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """``/api`` is anchored at both ends, so it must not catch ``/api/users``."""
     seen = []
@@ -84,7 +84,7 @@ def test_an_exact_pattern_does_not_match_a_longer_path(
 
 
 def test_a_skipped_middleware_still_reaches_the_handler(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     @use_for_route("/nothing-here")
     async def guard(request: Request, response: Response, call_next):
@@ -98,7 +98,7 @@ def test_a_skipped_middleware_still_reaches_the_handler(
 
 
 def test_a_wildcard_matches_a_child_path(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     seen = []
 
@@ -114,7 +114,7 @@ def test_a_wildcard_matches_a_child_path(
 
 
 def test_a_wildcard_does_not_leak_to_a_sibling_prefix(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     seen = []
 
@@ -129,7 +129,7 @@ def test_a_wildcard_does_not_leak_to_a_sibling_prefix(
 
 
 def test_a_scoped_middleware_can_short_circuit_the_request(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     @use_for_route("/api/*")
     async def guard(request: Request, response: Response, call_next):
@@ -144,7 +144,7 @@ def test_a_scoped_middleware_can_short_circuit_the_request(
 
 
 def test_a_scoped_middleware_can_set_a_header(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     @use_for_route("/api/*")
     async def tag(request: Request, response: Response, call_next):
@@ -161,7 +161,7 @@ def test_a_scoped_middleware_can_set_a_header(
 
 
 def test_a_scoped_class_middleware_runs_on_a_match(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """A ``__call__`` method needs the wrapper that passes ``self`` through."""
     seen = []
@@ -178,7 +178,7 @@ def test_a_scoped_class_middleware_runs_on_a_match(
 
 
 def test_a_scoped_class_middleware_is_skipped_elsewhere(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     seen = []
 
@@ -194,7 +194,7 @@ def test_a_scoped_class_middleware_is_skipped_elsewhere(
 
 
 def test_a_scoped_class_middleware_keeps_access_to_instance_state(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Counting(BaseMiddleware):
         def __init__(self):

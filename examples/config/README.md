@@ -53,9 +53,9 @@ PORT=8000
 ### 3. Use in Application
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(debug=config.debug, title="My API")
+app = SilloApp(debug=config.debug, title="My API")
 
 @app.get("/health")
 async def health(request, response):
@@ -201,7 +201,7 @@ class AppConfig(Config):
 config = AppConfig()  # Loads from .env
 
 # Use throughout app
-app = silloApp(debug=config.debug)
+app = SilloApp(debug=config.debug)
 ```
 
 ### 3. Use Type Hints

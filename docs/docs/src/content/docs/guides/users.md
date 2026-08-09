@@ -22,13 +22,13 @@ You don't need to understand the whole contract to get a working user. sillo shi
 
 ```python
 # app.py
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.record import setup_record, DatabaseConfig
 from sillo.auth import AuthenticationMiddleware, useAuth
 from sillo.auth.jwt_auth import JWTAuthBackend
 from sillo.users import User
 
-app = silloApp()
+app = SilloApp()
 
 # 1. Connect the database (creates the "users" table)
 db = setup_record(app, DatabaseConfig.sqlite("app.db"), model_modules=["myapp.models"])

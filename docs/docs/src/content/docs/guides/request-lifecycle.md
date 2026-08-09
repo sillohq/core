@@ -13,10 +13,10 @@ The `sillo.lifecycle` module provides first‑party middleware and helpers for r
 ##  Quick Start
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.lifecycle import RequestId
 
-app = silloApp()
+app = SilloApp()
 
 app.use(RequestId(
     header_name="X-Request-ID",
@@ -48,20 +48,20 @@ Every request now carries a unique request ID usable for tracing and debugging.
 ###  Basic Usage
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.lifecycle import RequestId
 
-app = silloApp()
+app = SilloApp()
 app.use(RequestId())
 ```
 
 ###  Custom Configuration
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.lifecycle import RequestId
 
-app = silloApp()
+app = SilloApp()
 
 app.use(
     RequestId(
@@ -144,7 +144,7 @@ def some_deep_helper():
 import logging
 from sillo.http.lifecycle import RequestId
 
-app = silloApp()
+app = SilloApp()
 app.use(RequestId())
 
 logging.basicConfig(
@@ -185,7 +185,7 @@ app.use(CustomRequestIdMiddleware(prefix="api"))
 from sillo.http.lifecycle import RequestId
 import opentelemetry.trace as trace
 
-app = silloApp()
+app = SilloApp()
 app.use(RequestId())
 
 async def tracing_middleware(request, response, call_next):
@@ -227,11 +227,11 @@ async def call_external_api(request, response):
 ###  Production Configuration
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.http.lifecycle import RequestId
 import logging
 
-app = silloApp()
+app = SilloApp()
 
 app.use(
     RequestId(

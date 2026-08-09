@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.auth import create_jwt, decode_jwt
 from sillo.auth.apikey import create_api_key, verify_key
 from sillo.auth.session_auth import login, logout
@@ -127,7 +127,7 @@ def test_verify_key_timing_attack_protection():
 
 async def test_session_login_logout():
     """Test session login and logout utilities."""
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request with session
@@ -154,7 +154,7 @@ async def test_session_login_logout():
 
 def test_session_login_without_session_middleware():
     """Test session login without session middleware raises error."""
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session
@@ -171,7 +171,7 @@ def test_session_login_without_session_middleware():
 
 def test_session_logout_without_session_middleware():
     """Test session logout without session middleware raises error."""
-    app = silloApp()
+    app = SilloApp()
     app.use(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session

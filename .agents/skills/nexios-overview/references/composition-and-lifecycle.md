@@ -117,14 +117,14 @@ sillo documents app-level and router-level dependencies.
 ### App-Level
 
 ```python
-from sillo import silloApp, Depend
+from sillo import SilloApp, Depend
 
 
 def global_dep():
     return "global-value"
 
 
-app = silloApp(dependencies=[Depend(global_dep)])
+app = SilloApp(dependencies=[Depend(global_dep)])
 ```
 
 ### Router-Level
@@ -171,7 +171,7 @@ When the user wants one place for startup and shutdown:
 
 ```python
 from contextlib import asynccontextmanager
-from sillo import silloApp
+from sillo import SilloApp
 
 
 @asynccontextmanager
@@ -181,7 +181,7 @@ async def app_lifespan(app):
     print("App shutting down")
 
 
-app = silloApp(lifespan=app_lifespan)
+app = SilloApp(lifespan=app_lifespan)
 ```
 
 Teach lifespan as the structured alternative to separate startup/shutdown decorators.

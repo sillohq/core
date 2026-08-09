@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Route, Router
 from sillo.testclient import TestClient
@@ -15,10 +15,10 @@ from sillo.testclient import TestClient
 
 
 def test_route_level_middleware_basic(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test basic route-level middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     executed = []
 
@@ -42,10 +42,10 @@ def test_route_level_middleware_basic(
 
 
 def test_route_level_middleware_isolated(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that route middleware only applies to that specific route"""
-    app = silloApp()
+    app = SilloApp()
 
     executed = []
 
@@ -81,10 +81,10 @@ def test_route_level_middleware_isolated(
 
 
 def test_route_level_middleware_multiple(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test multiple route-level middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_order = []
 
@@ -116,10 +116,10 @@ def test_route_level_middleware_multiple(
 
 
 def test_route_level_middleware_with_decorator(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route-level middleware using decorator"""
-    app = silloApp()
+    app = SilloApp()
 
     async def auth_middleware(request: Request, response: Response, call_next):
         token = request.headers.get("Authorization")
@@ -143,10 +143,10 @@ def test_route_level_middleware_with_decorator(
 
 
 def test_route_level_middleware_modifies_request(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware modifying request"""
-    app = silloApp()
+    app = SilloApp()
 
     async def add_user_middleware(request: Request, response: Response, call_next):
         request.scope["user"] = {"id": 123, "name": "John"}
@@ -168,10 +168,10 @@ def test_route_level_middleware_modifies_request(
 
 
 def test_route_level_middleware_modifies_response(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware modifying response"""
-    app = silloApp()
+    app = SilloApp()
 
     async def add_header_middleware(request: Request, response: Response, call_next):
         await call_next()
@@ -193,10 +193,10 @@ def test_route_level_middleware_modifies_response(
 
 
 def test_route_with_app_middleware(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware combined with app middleware"""
-    app = silloApp()
+    app = SilloApp()
 
     execution_order = []
 
@@ -232,10 +232,10 @@ def test_route_with_app_middleware(
 
 
 def test_route_with_router_and_app_middleware(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware with both router and app middleware"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     execution_order = []
@@ -279,10 +279,10 @@ def test_route_with_router_and_app_middleware(
 
 
 def test_route_middleware_validation(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware for input validation"""
-    app = silloApp()
+    app = SilloApp()
 
     async def validate_query_middleware(
         request: Request, response: Response, call_next
@@ -312,10 +312,10 @@ def test_route_middleware_validation(
 
 
 def test_route_middleware_rate_limiting(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware for rate limiting"""
-    app = silloApp()
+    app = SilloApp()
 
     request_counts = {}
 
@@ -348,10 +348,10 @@ def test_route_middleware_rate_limiting(
 
 
 def test_route_middleware_caching(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware for response caching"""
-    app = silloApp()
+    app = SilloApp()
 
     cache = {}
     call_count = {"count": 0}
@@ -386,10 +386,10 @@ def test_route_middleware_caching(
 
 
 def test_route_middleware_logging(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware for request logging"""
-    app = silloApp()
+    app = SilloApp()
 
     logs = []
 
@@ -414,10 +414,10 @@ def test_route_middleware_logging(
 
 
 def test_route_middleware_different_methods(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware applies to all methods of the route"""
-    app = silloApp()
+    app = SilloApp()
 
     executed = []
 
@@ -448,10 +448,10 @@ def test_route_middleware_different_methods(
 
 
 def test_route_middleware_error_handling(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route middleware handling errors"""
-    app = silloApp()
+    app = SilloApp()
 
     async def error_handler_middleware(request: Request, response: Response, call_next):
         try:

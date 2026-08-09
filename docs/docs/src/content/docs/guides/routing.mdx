@@ -27,9 +27,9 @@ When a path contains a `{name}` segment, the matched value is **bound to a handl
 sillo provides a simple and intuitive way to define routes using decorators. You can use the `@app.get`, `@app.post`, `@app.put`, `@app.delete`, `@app.head`, and `@app.options` etc decorators to define routes.
 
 ```python [Basic Route]
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/")
 async def index(request, response):
@@ -46,9 +46,9 @@ async def create_item(request, response):
 <summary>More Examples</summary>
 
 ```python title="Basic Route"
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/")
 async def index(request, response):
@@ -106,10 +106,10 @@ sillo also provides a `Route` class that allows you to define routes in a more s
 It's especially useful when you have a lot of routes and want to organize them in a logical manner.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.routing import Route
 
-app = silloApp()
+app = SilloApp()
 
 async def get_user_handler(request, response, user_id):
     return response.json({"user_id": user_id})
@@ -337,9 +337,9 @@ A dynamic route in sillo is a route pattern that can capture parts of the URL as
 When you define a route like:
 
 ```py
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/users/{user_id}")
 async def get_user(request, response, user_id):
@@ -358,9 +358,9 @@ sillo provides several built-in path converters for validating and converting UR
 you can also get the dynamic params as direct function parameters.
 
 ```py
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/users/{user_id}")
 async def get_user(request, response, user_id: str):
@@ -1071,9 +1071,9 @@ print(f"Method allowed: {allowed}")  # False
 Enable debug mode to see route information:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(debug=True)
+app = SilloApp(debug=True)
 
 # In debug mode, you'll see detailed route information
 # and better error messages for route matching issues
@@ -1095,9 +1095,9 @@ The `Group` class in sillo provides a powerful way to organize related routes an
 
 ```python
 from sillo.core.routing import Group, Route
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 # Create a group of routes
 user_group = Group(

@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http.response import (
     BaseResponse,
     FileResponse,
@@ -7,7 +7,7 @@ from sillo.core.http.response import (
     PlainTextResponse,
 )
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/json")

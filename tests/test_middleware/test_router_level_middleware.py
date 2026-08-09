@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
 from sillo.core.routing import Router
@@ -16,10 +16,10 @@ from sillo.testclient import TestClient
 
 
 def test_router_level_middleware_basic(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test basic router-level middleware"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     executed = []
@@ -46,10 +46,10 @@ def test_router_level_middleware_basic(
 
 
 def test_router_level_middleware_isolated(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that router middleware only applies to that router"""
-    app = silloApp()
+    app = SilloApp()
     router1 = Router(prefix="/api1")
     router2 = Router(prefix="/api2")
 
@@ -88,10 +88,10 @@ def test_router_level_middleware_isolated(
 
 
 def test_router_level_middleware_multiple(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test multiple router-level middleware"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     execution_order = []
@@ -130,10 +130,10 @@ def test_router_level_middleware_multiple(
 
 
 def test_router_level_middleware_with_prefix(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test router middleware with path prefix"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     async def add_prefix_header(request: Request, response: Response, call_next):
@@ -162,10 +162,10 @@ def test_router_level_middleware_with_prefix(
 
 
 def test_router_level_middleware_auth(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test router-level authentication middleware"""
-    app = silloApp()
+    app = SilloApp()
     protected_router = Router(prefix="/api")
     public_router = Router(prefix="/public")
 
@@ -204,10 +204,10 @@ def test_router_level_middleware_auth(
 
 
 def test_router_level_middleware_modifies_response(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test router middleware modifying response"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     async def json_wrapper_middleware(request: Request, response: Response, call_next):
@@ -234,10 +234,10 @@ def test_router_level_middleware_modifies_response(
 
 
 def test_router_and_app_middleware_combined(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test router middleware combined with app middleware"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     execution_order = []
@@ -277,10 +277,10 @@ def test_router_and_app_middleware_combined(
 
 
 def test_multiple_routers_different_middleware(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test multiple routers with different middleware"""
-    app = silloApp()
+    app = SilloApp()
     router1 = Router(prefix="/api1")
     router2 = Router(prefix="/api2")
 
@@ -320,10 +320,10 @@ def test_multiple_routers_different_middleware(
 
 
 def test_router_middleware_state_isolation(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that router middleware state is isolated"""
-    app = silloApp()
+    app = SilloApp()
     router1 = Router(prefix="/api1")
     router2 = Router(prefix="/api2")
 
@@ -360,10 +360,10 @@ def test_router_middleware_state_isolation(
 
 
 def test_router_middleware_error_handling(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test router middleware handling errors"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     async def error_handler_middleware(request: Request, response: Response, call_next):
@@ -390,10 +390,10 @@ def test_router_middleware_error_handling(
 
 
 def test_router_middleware_with_nested_routers(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test middleware with nested routers"""
-    app = silloApp()
+    app = SilloApp()
     parent_router = Router(prefix="/api")
     child_router = Router(prefix="/child")
 

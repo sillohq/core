@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth import BaseUser, useAuth
 from sillo.auth import JWTAuthBackend, create_jwt
 from sillo.auth.middleware import AuthenticationMiddleware
@@ -38,7 +38,7 @@ class db:
 
 
 jwt_backend = JWTAuthBackend()
-app = silloApp()
+app = SilloApp()
 app.add_middleware(AuthenticationMiddleware(user_model=User, backend=jwt_backend))
 
 auth_router = Router()

@@ -20,9 +20,9 @@ sillo documents WebSockets as a first-class real-time feature.
 ### Basic WebSocket Route
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.ws_route("/ws")
@@ -62,9 +62,9 @@ Teach this lifecycle:
 sillo documents automatic API docs with `/docs`, `/redoc`, and `/openapi.json`.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(title="My API", version="1.0.0", description="A documented API")
+app = SilloApp(title="My API", version="1.0.0", description="A documented API")
 
 
 @app.get("/users/{user_id}", summary="Get a user", tags=["Users"])
@@ -121,10 +121,10 @@ Teach Pydantic in sillo as optional structure, not mandatory ceremony.
 Use the documented test client when teaching endpoint tests:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.testclient import TestClient
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/")

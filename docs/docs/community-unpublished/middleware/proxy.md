@@ -25,10 +25,10 @@ uv add sillo-contrib
 ## Quick Start
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.proxy import Proxy
 
-app = silloApp()
+app = SilloApp()
 
 # Add basic proxy middleware
 app.use(
@@ -56,10 +56,10 @@ async def home(request, response):
 ### Behind Nginx
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.proxy import Proxy
 
-app = silloApp()
+app = SilloApp()
 
 # Nginx typically sets X-Forwarded-* headers
 app.use(
@@ -73,10 +73,10 @@ app.use(
 ### Behind AWS ELB/ALB
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.proxy import Proxy
 
-app = silloApp()
+app = SilloApp()
 
 # AWS load balancers use specific IP ranges
 app.use(
@@ -93,10 +93,10 @@ app.use(
 ### Behind Cloudflare
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.proxy import Proxy
 
-app = silloApp()
+app = SilloApp()
 
 # Cloudflare IPs are dynamic, use their ranges
 app.use(
@@ -147,10 +147,10 @@ app.use(
 ### Basic Usage
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.proxy import Proxy
 
-app = silloApp()
+app = SilloApp()
 
 app.use(Proxy())
 ```
@@ -158,10 +158,10 @@ app.use(Proxy())
 ### Trusted Proxy Configuration
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.proxy import Proxy
 
-app = silloApp()
+app = SilloApp()
 
 app.use(
     Proxy(
@@ -179,10 +179,10 @@ app.use(
 ### Enhanced Security
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.proxy import TrustedProxyMiddleware
 
-app = silloApp()
+app = SilloApp()
 
 app.use(
     TrustedProxyMiddleware(
@@ -352,10 +352,10 @@ async def log_proxy_info(request, response, call_next):
 ### Example Production Configuration
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.proxy import TrustedProxyMiddleware
 
-app = silloApp()
+app = SilloApp()
 
 app.use(
     TrustedProxyMiddleware(

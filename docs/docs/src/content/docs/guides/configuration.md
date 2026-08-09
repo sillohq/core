@@ -68,9 +68,9 @@ PORT=8000
 ### 3. Use in Application
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(
+app = SilloApp(
     debug=config.debug,
     title="My API"
 )
@@ -233,11 +233,11 @@ debug: bool = config.debug
 ### With Sillo App
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
 config = AppConfig()
 
-app = silloApp(
+app = SilloApp(
     debug=config.debug,
     title="My API",
 )
@@ -528,7 +528,7 @@ except ValidationError as e:
     sys.exit(1)
 
 # Proceed only if config is valid
-app = silloApp(debug=config.debug)
+app = SilloApp(debug=config.debug)
 ```
 
 ### 4. Document All Settings

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder
 from sillo.testclient import TestClient
 
@@ -29,7 +29,7 @@ def teardown_module(module):
 
 class TestAppAddEncoder:
     def test_add_encoder_applies_to_handler_return(self):
-        app = silloApp()
+        app = SilloApp()
         app.add_encoder(Money, lambda m: {"amount": str(m.amount), "currency": m.currency})
 
         @app.get("/price")
@@ -42,7 +42,7 @@ class TestAppAddEncoder:
         assert resp.json() == {"total": {"amount": "19.99", "currency": "USD"}}
 
     def test_add_encoder_nested(self):
-        app = silloApp()
+        app = SilloApp()
         app.add_encoder(Vector, lambda v: [v.x, v.y])
 
         @app.get("/vec")
@@ -53,7 +53,7 @@ class TestAppAddEncoder:
         assert client.get("/vec").json() == {"points": [[1, 2], [3, 4]]}
 
     def test_add_encoder_registers_globally(self):
-        app = silloApp()
+        app = SilloApp()
         app.add_encoder(Vector, lambda v: [v.x, v.y])
         assert Vector in CUSTOM_ENCODERS
         assert Vector in app.custom_encoders
@@ -61,7 +61,7 @@ class TestAppAddEncoder:
 
 class TestResponseJsonCustomEncoder:
     def test_response_json_per_call_encoder(self):
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/raw")
         async def raw(request, response):
@@ -76,7 +76,7 @@ class TestResponseJsonCustomEncoder:
     def test_response_json_per_call_overrides_global(self):
         # global registry encodes Vector as list; per-call overrides to dict
         register_encoder(Vector, lambda v: [v.x, v.y])
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/override")
         async def override(request, response):
@@ -91,7 +91,7 @@ class TestResponseJsonCustomEncoder:
 
 class TestEncoderPrecedence:
     def test_per_call_encoder_wins_over_app_registered(self):
-        app = silloApp()
+        app = SilloApp()
         app.add_encoder(Vector, lambda v: "app-level")
 
         @app.get("/win")

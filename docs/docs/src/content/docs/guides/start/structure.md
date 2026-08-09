@@ -96,8 +96,8 @@ arguments cannot be imported twice safely. This one can.
 The single place where the application is put together. Read it first.
 
 ```python
-def create_app() -> silloApp:
-    application = silloApp(debug=config.debug, title=config.app_name, version="0.1.0")
+def create_app() -> SilloApp:
+    application = SilloApp(debug=config.debug, title=config.app_name, version="0.1.0")
 
     _register_admin(application)
     _register_templating()
@@ -190,7 +190,7 @@ Migrations own the schema. See
 Where admin models are registered. One function, called from bootstrap:
 
 ```python
-def register_admin(application: silloApp) -> AdminSite:
+def register_admin(application: SilloApp) -> AdminSite:
     admin = AdminSite(title="Myapp Admin", prefix=config.admin_prefix, user_model=User)
 
     @admin.register(User)

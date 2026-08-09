@@ -41,7 +41,7 @@ sillo implements the "Synchronizer Token Pattern":
 ##  Basic Setup
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security.csrf import CSRFConfig, CSRFMiddleware
 
 csrf_config = CSRFConfig(
@@ -53,7 +53,7 @@ csrf_config = CSRFConfig(
     header_name="X-CSRFToken"
 )
 
-app = silloApp()
+app = SilloApp()
 app.use(CSRFMiddleware(config=csrf_config))
 ```
 
@@ -333,13 +333,13 @@ On the way out, `process_response` sets the `csrftoken` cookie so the next reque
 Drive CSRF through `TestClient`: fetch a token-bearing response, then replay the cookie + header on a `POST`.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security import CSRFMiddleware, CSRFConfig
 from sillo.testclient import TestClient
 
 
 def test_valid_token_passes():
-    app = silloApp()
+    app = SilloApp()
     app.use(CSRFMiddleware(CSRFConfig(enabled=True, secret_key="secret")))
 
     @app.post("/transfer")
@@ -359,7 +359,7 @@ def test_valid_token_passes():
 
 
 def test_missing_token_rejected():
-    app = silloApp()
+    app = SilloApp()
     app.use(CSRFMiddleware(CSRFConfig(enabled=True, secret_key="secret")))
 
     @app.post("/transfer")

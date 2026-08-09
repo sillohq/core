@@ -6,7 +6,7 @@ A presenter turns the OpenAPI document into a browsable page. sillo ships
 class with a ``render`` method, so a third-party viewer needs no
 registration hook and no changes here.
 
-    app = silloApp(docs=[Atlas(path="/docs"), Scalar(path="/reference")])
+    app = SilloApp(docs=[Atlas(path="/docs"), Scalar(path="/reference")])
 
 ``docs=[]`` serves no documentation UI at all. The raw document stays at
 ``openapi_url`` regardless — presenters render it, they do not produce it.
@@ -82,7 +82,7 @@ class DocsUI:
     Attributes:
         path: Where the page is served. Must begin with ``/``.
         name: Short identifier, used in error messages and by
-            :meth:`silloApp.get_docs_ui`.
+            :meth:`SilloApp.get_docs_ui`.
     """
 
     path: str = "/docs"
@@ -101,7 +101,7 @@ class DocsUI:
             path: Where to serve the page. Defaults to the class's
                 :attr:`path`.
             title: Browser tab title. Defaults to the API title at render
-                time, so it tracks ``silloApp(title=...)`` unless overridden.
+                time, so it tracks ``SilloApp(title=...)`` unless overridden.
             favicon_url: Icon for the page. ``None`` omits the link tag.
 
         Raises:
@@ -452,11 +452,11 @@ def default_docs(swagger_url: str = "/docs", redoc_url: str = "/redoc") -> list[
     ``/docs`` is :class:`Atlas`, sillo's own reference. Swagger UI is still
     shipped and one line away::
 
-        app = silloApp(docs=[Swagger(path="/docs"), ReDoc()])
+        app = SilloApp(docs=[Swagger(path="/docs"), ReDoc()])
 
     Args:
         swagger_url: Path for the primary viewer. Named for the argument it
-            still backs — ``silloApp(swagger_docs=...)`` — which predates
+            still backs — ``SilloApp(swagger_docs=...)`` — which predates
             there being a choice of viewer.
         redoc_url: Path for ReDoc.
 

@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Route, Router
 from sillo.testclient import TestClient
@@ -14,9 +14,9 @@ from sillo.testclient import TestClient
 # ========== GET Method Tests ==========
 
 
-def test_get_method(test_client_factory: Callable[[silloApp], TestClient]):
+def test_get_method(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test GET method routing"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/items")
     async def get_items(request: Request, response: Response):
@@ -28,9 +28,9 @@ def test_get_method(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.json() == {"items": ["item1", "item2"]}
 
 
-def test_get_with_router(test_client_factory: Callable[[silloApp], TestClient]):
+def test_get_with_router(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test GET method on router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.get("/products")
@@ -48,9 +48,9 @@ def test_get_with_router(test_client_factory: Callable[[silloApp], TestClient]):
 # ========== POST Method Tests ==========
 
 
-def test_post_method(test_client_factory: Callable[[silloApp], TestClient]):
+def test_post_method(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test POST method routing"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.post("/items")
     async def create_item(request: Request, response: Response):
@@ -63,9 +63,9 @@ def test_post_method(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.json() == {"created": {"name": "test"}}
 
 
-def test_post_with_router(test_client_factory: Callable[[silloApp], TestClient]):
+def test_post_with_router(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test POST method on router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.post("/users")
@@ -84,9 +84,9 @@ def test_post_with_router(test_client_factory: Callable[[silloApp], TestClient])
 # ========== PUT Method Tests ==========
 
 
-def test_put_method(test_client_factory: Callable[[silloApp], TestClient]):
+def test_put_method(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test PUT method routing"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.put("/items/{item_id}")
     async def update_item(request: Request, response: Response, item_id: str):
@@ -100,9 +100,9 @@ def test_put_method(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.json()["updated"]["name"] == "updated"
 
 
-def test_put_with_router(test_client_factory: Callable[[silloApp], TestClient]):
+def test_put_with_router(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test PUT method on router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.put("/products/{product_id}")
@@ -120,9 +120,9 @@ def test_put_with_router(test_client_factory: Callable[[silloApp], TestClient]):
 # ========== DELETE Method Tests ==========
 
 
-def test_delete_method(test_client_factory: Callable[[silloApp], TestClient]):
+def test_delete_method(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test DELETE method routing"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.delete("/items/{item_id}")
     async def delete_item(request: Request, response: Response, item_id: str):
@@ -134,9 +134,9 @@ def test_delete_method(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.json()["deleted"] == "789"
 
 
-def test_delete_with_router(test_client_factory: Callable[[silloApp], TestClient]):
+def test_delete_with_router(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test DELETE method on router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.delete("/users/{user_id}")
@@ -154,9 +154,9 @@ def test_delete_with_router(test_client_factory: Callable[[silloApp], TestClient
 # ========== PATCH Method Tests ==========
 
 
-def test_patch_method(test_client_factory: Callable[[silloApp], TestClient]):
+def test_patch_method(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test PATCH method routing"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.patch("/items/{item_id}")
     async def patch_item(request: Request, response: Response, item_id: str):
@@ -170,9 +170,9 @@ def test_patch_method(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.json()["patched"]["status"] == "active"
 
 
-def test_patch_with_router(test_client_factory: Callable[[silloApp], TestClient]):
+def test_patch_with_router(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test PATCH method on router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.patch("/settings")
@@ -191,9 +191,9 @@ def test_patch_with_router(test_client_factory: Callable[[silloApp], TestClient]
 # ========== HEAD Method Tests ==========
 
 
-def test_head_method(test_client_factory: Callable[[silloApp], TestClient]):
+def test_head_method(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test HEAD method routing"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.head("/items")
     async def head_items(request: Request, response: Response):
@@ -205,9 +205,9 @@ def test_head_method(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.text == ""
 
 
-def test_head_with_router(test_client_factory: Callable[[silloApp], TestClient]):
+def test_head_with_router(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test HEAD method on router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.head("/status")
@@ -224,9 +224,9 @@ def test_head_with_router(test_client_factory: Callable[[silloApp], TestClient])
 # ========== OPTIONS Method Tests ==========
 
 
-def test_options_method(test_client_factory: Callable[[silloApp], TestClient]):
+def test_options_method(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test OPTIONS method routing"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.options("/items")
     async def options_items(request: Request, response: Response):
@@ -237,9 +237,9 @@ def test_options_method(test_client_factory: Callable[[silloApp], TestClient]):
         assert resp.status_code == 200
 
 
-def test_options_with_router(test_client_factory: Callable[[silloApp], TestClient]):
+def test_options_with_router(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test OPTIONS method on router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.options("/resources")
@@ -257,10 +257,10 @@ def test_options_with_router(test_client_factory: Callable[[silloApp], TestClien
 
 
 def test_route_with_multiple_methods(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test route supporting multiple HTTP methods"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.route("/resource", methods=["GET", "POST", "PUT"])
     async def handle_resource(request: Request, response: Response):
@@ -279,10 +279,10 @@ def test_route_with_multiple_methods(
 
 
 def test_routes_class_with_multiple_methods(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test Route class with multiple methods"""
-    app = silloApp()
+    app = SilloApp()
 
     async def handler(request: Request, response: Response):
         return response.json({"method": request.method})
@@ -304,9 +304,9 @@ def test_routes_class_with_multiple_methods(
         assert delete_resp.json()["method"] == "DELETE"
 
 
-def test_method_not_allowed(test_client_factory: Callable[[silloApp], TestClient]):
+def test_method_not_allowed(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test that non-allowed methods return appropriate error"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/only-get")
     async def only_get(request: Request, response: Response):
@@ -325,10 +325,10 @@ def test_method_not_allowed(test_client_factory: Callable[[silloApp], TestClient
 
 
 def test_all_router_method_decorators(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test all HTTP method decorators on router"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.get("/get")
@@ -372,10 +372,10 @@ def test_all_router_method_decorators(
 
 
 def test_case_insensitive_methods(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that HTTP methods are case-insensitive"""
-    app = silloApp()
+    app = SilloApp()
 
     async def handler(request: Request, response: Response):
         return response.text("ok")

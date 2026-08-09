@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth.base import AuthenticationBackend
 from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.auth.users.base import BaseUser
@@ -56,7 +56,7 @@ class CustomAuthBackend(AuthenticationBackend):
         return UnauthenticatedUser(), "no-auth"
 
 
-app = silloApp()
+app = SilloApp()
 
 # Custom backend
 custom_backend = CustomAuthBackend()

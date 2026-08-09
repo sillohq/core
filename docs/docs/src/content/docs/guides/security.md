@@ -16,10 +16,10 @@ Shield sets **response headers**. It does not handle CORS, CSRF, or authenticati
 ##  The smallest useful form
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security import Shield
 
-app = silloApp()
+app = SilloApp()
 app.use(Shield())
 ```
 
@@ -38,10 +38,10 @@ Defaults that are safe to change:
 ##  Configuring the policy
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security import Shield
 
-app = silloApp()
+app = SilloApp()
 app.use(
     Shield(
         csp_enabled=True,
@@ -69,11 +69,11 @@ app.use(
 An API server wants HSTS, a tight CSP, and CORS for one trusted web origin. CORS is a **separate** middleware layered alongside Shield:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security import Shield
 from sillo.security import CORSMiddleware, CorsConfig
 
-app = silloApp()
+app = SilloApp()
 
 # Headers
 app.use(Shield(hsts_enabled=True, csp_enabled=True))
@@ -120,13 +120,13 @@ Shield and CORS are independent: Shield owns the security headers, `CORSMiddlewa
 Assert headers with `TestClient`; security headers are just response headers:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security import Shield
 from sillo.testclient import TestClient
 
 
 def test_shield_sets_headers():
-    app = silloApp()
+    app = SilloApp()
     app.use(Shield())
 
     @app.get("/")

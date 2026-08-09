@@ -7,13 +7,13 @@ description: response_model turns a documented output schema into an enforced on
 
 ```python
 from pydantic import BaseModel
-from sillo import silloApp, Path
+from sillo import SilloApp, Path
 
 class UserOut(BaseModel):
     id: int
     name: str
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/users/{user_id}", response_model=UserOut)
 async def get_user(request, response, user_id=Path(type=int)):

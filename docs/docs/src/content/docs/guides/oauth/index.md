@@ -44,7 +44,7 @@ users you will already have `sillo-framework[record]` installed for that.
 ##  A complete login
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth.session_auth import login
 from sillo_oauth import GoogleOAuthProvider, OAuthError, authorize_url, exchange
 

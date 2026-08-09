@@ -6,7 +6,7 @@ import tempfile
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.session import SessionConfig
 from sillo.session.file import FileSessionManager
@@ -37,7 +37,7 @@ class TestSessionMiddleware:
 
     def test_signed_cookie_session_middleware(self):
         """Test session middleware with signed cookie backend"""
-        app = silloApp()
+        app = SilloApp()
 
         app.use(
             SessionMiddleware(
@@ -79,7 +79,7 @@ class TestSessionMiddleware:
         temp_dir = tempfile.mkdtemp()
 
         try:
-            app = silloApp()
+            app = SilloApp()
 
             file_manager = FileSessionManager(
                 SessionConfig(session_file_storage_path=temp_dir)
@@ -120,7 +120,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_with_instance_manager(self):
         """Test middleware with manager instance passed directly"""
-        app = silloApp()
+        app = SilloApp()
 
         signed_manager = SignedSessionManager(secret_key="test-secret-key-instance")
 
@@ -144,7 +144,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_with_existing_cookie(self):
         """Test middleware with existing session cookie"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/existing-cookie-test")
         async def existing_cookie_test(request: Request, response: Response):
@@ -169,7 +169,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_session_clear(self):
         """Test clearing session via middleware"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/clear-session-test")
         async def clear_session_test(request: Request, response: Response):
@@ -202,7 +202,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_configuration_options(self):
         """Test session middleware with various configuration options"""
-        app = silloApp()
+        app = SilloApp()
 
         app.use(
             SessionMiddleware(
@@ -238,7 +238,7 @@ class TestSessionMiddleware:
 
     def test_session_middleware_error_handling(self):
         """Test middleware error handling"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/error-test")
         async def error_test(request: Request, response: Response):
@@ -261,7 +261,7 @@ class TestSessionMiddleware:
 
     def test_session_cookie_deletion_on_empty_session(self):
         """Test that cookies are deleted when session is accessed but empty"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/delete-test")
         async def delete_test(request: Request, response: Response):

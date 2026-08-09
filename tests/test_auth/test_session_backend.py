@@ -12,7 +12,7 @@ from functools import partial
 
 import pytest
 
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.session_auth import SessionAuthBackend, login, logout
 from sillo.core.http import Request, Response
@@ -66,7 +66,7 @@ def test_client():
 
 
 async def test_session_auth_backend_success(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, [SessionAuthBackend()]))
     app.use(SessionMiddleware(secret_key="secret"))
 
@@ -95,7 +95,7 @@ async def test_session_auth_backend_success(test_client):
 
 
 async def test_session_auth_backend_no_session(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
     app.use(SessionMiddleware(secret_key="secret"))
 
@@ -110,7 +110,7 @@ async def test_session_auth_backend_no_session(test_client):
 
 
 async def test_session_auth_backend_missing_session_middleware(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
@@ -124,7 +124,7 @@ async def test_session_auth_backend_missing_session_middleware(test_client):
 
 
 async def test_session_auth_backend_logout(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
     app.use(SessionMiddleware(secret_key="secret"))
 
@@ -164,7 +164,7 @@ async def test_session_auth_backend_logout(test_client):
 
 
 async def test_session_auth_backend_custom_session_key(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(
         AuthenticationMiddleware(
             TestUser, SessionAuthBackend(session_key="custom_user")

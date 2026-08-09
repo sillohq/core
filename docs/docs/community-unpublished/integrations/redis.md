@@ -40,10 +40,10 @@ uv add sillo-contrib[redis]
 ### Basic Setup
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.redis import init_redis
 
-app = silloApp()
+app = SilloApp()
 
 # Initialize Redis with default settings
 init_redis(app)
@@ -62,10 +62,10 @@ async def get_cache(request: Request, response: Response, key: str):
 ### With Custom Configuration
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.redis import init_redis, RedisConfig
 
-app = silloApp()
+app = SilloApp()
 
 # Custom Redis configuration
 config = RedisConfig(
@@ -96,10 +96,10 @@ config = RedisConfig.from_env("MY_REDIS_")
 ### Basic Pattern
 
 ```python
-from sillo import silloApp, Depend
+from sillo import SilloApp, Depend
 from sillo_contrib.redis import get_redis
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/user/{user_id}")
 async def get_user(
@@ -119,10 +119,10 @@ async def get_user(
 ### Simplified Pattern
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.redis import RedisDepend
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/user/{user_id}")
 async def get_user(
@@ -300,10 +300,10 @@ config = RedisConfig.from_env()
 The Redis client automatically manages connections:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.redis import init_redis
 
-app = silloApp()
+app = SilloApp()
 
 # Initialize Redis - automatically handles startup/shutdown
 init_redis(app, url="redis://localhost:6379")
@@ -357,13 +357,13 @@ except RedisOperationError as e:
 ### Complete Application
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo_contrib.redis import (
     init_redis, RedisDepend
 )
 
-app = silloApp()
+app = SilloApp()
 
 # Initialize Redis
 init_redis(app, url="redis://localhost:6379", db=1)
@@ -410,12 +410,12 @@ if __name__ == "__main__":
 ### Session Management
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.redis import RedisDepend
 import json
 import uuid
 
-app = silloApp()
+app = SilloApp()
 init_redis(app)
 
 @app.post("/login")
@@ -485,7 +485,7 @@ async def test_my_handler(mock_redis):
 async def test_with_real_redis():
     from sillo_contrib.redis import init_redis, redis_set, redis_get
 
-    app = silloApp()
+    app = SilloApp()
     init_redis(app, url="redis://localhost:6379/15")  # Use test database
 
     await redis_set("test_key", "test_value")

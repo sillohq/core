@@ -27,9 +27,9 @@ sillo provides built-in support for serving single-page applications (SPAs) like
 The simplest way to serve a frontend is via the `app.frontend()` convenience method:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 # API routes registered FIRST take precedence
 @app.get("/api/health")
@@ -51,11 +51,11 @@ With this setup:
 For more control, you can instantiate `FrontendApp` directly and mount it as a route:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.frontend import FrontendApp
 from sillo.core.routing import Group
 
-app = silloApp()
+app = SilloApp()
 
 spa = FrontendApp(
     directory="./dist",
@@ -110,9 +110,9 @@ Unknown paths return a 404 JSON response instead.
 **API routes registered before `frontend()` take precedence.** This is critical — it ensures your backend endpoints are always reachable and not intercepted by the SPA fallback:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 # 1. API routes are registered first
 @app.get("/api/health")
@@ -177,7 +177,7 @@ class FrontendApp(
 )
 ```
 
-###  `silloApp.frontend()`
+###  `SilloApp.frontend()`
 
 ```text
 def app.frontend(

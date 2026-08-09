@@ -2,7 +2,7 @@ from functools import partial
 
 import pytest
 
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
@@ -98,7 +98,7 @@ class APIKeyBackend(AuthenticationBackend):
 
 
 async def test_use_auth_required_allows_authenticated(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth())
@@ -111,7 +111,7 @@ async def test_use_auth_required_allows_authenticated(test_client):
 
 
 async def test_use_auth_required_rejects_unauthenticated(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth())
@@ -129,7 +129,7 @@ async def test_use_auth_required_rejects_unauthenticated(test_client):
 
 
 async def test_use_auth_schemes_allows_matching(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["bearerAuth"]))
@@ -142,7 +142,7 @@ async def test_use_auth_schemes_allows_matching(test_client):
 
 
 async def test_use_auth_schemes_rejects_non_matching(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apiKeyHeader"]))
@@ -155,7 +155,7 @@ async def test_use_auth_schemes_rejects_non_matching(test_client):
 
 
 async def test_use_auth_schemes_multiple_allows_any(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, SessionBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["bearerAuth", "sessionCookie"]))
@@ -173,7 +173,7 @@ async def test_use_auth_schemes_multiple_allows_any(test_client):
 
 
 async def test_use_auth_optional_allows_unauthenticated(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/feed", auth=useAuth(required=False))
@@ -187,7 +187,7 @@ async def test_use_auth_optional_allows_unauthenticated(test_client):
 
 
 async def test_use_auth_optional_attaches_user_if_present(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/feed", auth=useAuth(required=False))
@@ -206,7 +206,7 @@ async def test_use_auth_optional_attaches_user_if_present(test_client):
 
 
 async def test_use_auth_permissions_allows_matching(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/admin", auth=useAuth(permissions=["read"]))
@@ -219,7 +219,7 @@ async def test_use_auth_permissions_allows_matching(test_client):
 
 
 async def test_use_auth_permissions_rejects_non_matching(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/admin", auth=useAuth(permissions=["delete"]))
@@ -240,7 +240,7 @@ async def test_use_auth_permissions_rejects_anonymous_as_401_not_403(test_client
     the same request is now a 401 — which is the correct code, and the one
     that tells a client to go and log in rather than to give up.
     """
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/admin", auth=useAuth(permissions=["read"]))
@@ -253,7 +253,7 @@ async def test_use_auth_permissions_rejects_anonymous_as_401_not_403(test_client
 
 
 async def test_use_auth_permissions_admin_user(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))
 
     @app.get("/admin", auth=useAuth(permissions=["admin"]))
@@ -271,7 +271,7 @@ async def test_use_auth_permissions_admin_user(test_client):
 
 
 async def test_use_auth_schemes_and_permissions(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))
 
     @app.get("/secure", auth=useAuth(schemes=["bearerAuth"], permissions=["admin"]))
@@ -284,7 +284,7 @@ async def test_use_auth_schemes_and_permissions(test_client):
 
 
 async def test_use_auth_schemes_and_permissions_scheme_mismatch(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))
 
     @app.get("/secure", auth=useAuth(schemes=["apiKeyHeader"], permissions=["admin"]))
@@ -302,7 +302,7 @@ async def test_use_auth_schemes_and_permissions_scheme_mismatch(test_client):
 
 
 async def test_use_auth_route_backends_override_middleware(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/api", auth=useAuth(backends=[APIKeyBackend()]))
@@ -316,7 +316,7 @@ async def test_use_auth_route_backends_override_middleware(test_client):
 
 
 async def test_use_auth_route_backends_reject_if_override_fails(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/api", auth=useAuth(backends=[APIKeyBackend()]))
@@ -329,7 +329,7 @@ async def test_use_auth_route_backends_reject_if_override_fails(test_client):
 
 
 async def test_use_auth_route_backends_overrides_user(test_client):
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/api", auth=useAuth(backends=[APIKeyBackend()]))
@@ -357,7 +357,7 @@ async def test_use_auth_subclass_custom_logic(test_client):
                 raise AuthenticationFailed
             return True
 
-    app = silloApp()
+    app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/custom", auth=HeaderAuth())

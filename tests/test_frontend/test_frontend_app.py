@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.frontend import FrontendApp
 from sillo.core.routing import Group
 from sillo.testclient import TestClient
@@ -33,7 +33,7 @@ def _tear_down_frontend_dir(d: Path) -> None:
 def test_frontend_serves_existing_file():
     d = _set_up_frontend_dir(".test_frontend_basic")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback="auto")
         app.add_route(Group(path="/", app=spa))
 
@@ -52,7 +52,7 @@ def test_frontend_serves_existing_file():
 def test_frontend_serves_index_at_root():
     d = _set_up_frontend_dir(".test_frontend_index_root")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback="auto")
         app.add_route(Group(path="/", app=spa))
 
@@ -67,7 +67,7 @@ def test_frontend_serves_index_at_root():
 def test_frontend_spa_fallback_to_index():
     d = _set_up_frontend_dir(".test_frontend_spa_fallback")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback="auto")
         app.add_route(Group(path="/", app=spa))
 
@@ -86,7 +86,7 @@ def test_frontend_spa_fallback_to_404_html():
     )
     (d / "404.html").write_bytes(b"<html><body>not found</body></html>")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback="auto")
         app.add_route(Group(path="/", app=spa))
 
@@ -101,7 +101,7 @@ def test_frontend_spa_fallback_to_404_html():
 def test_frontend_no_fallback():
     d = _set_up_frontend_dir(".test_frontend_no_fallback")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback=None)
         app.add_route(Group(path="/", app=spa))
 
@@ -116,7 +116,7 @@ def test_frontend_custom_fallback():
     d = _set_up_frontend_dir(".test_frontend_custom_fallback")
     (d / "app.html").write_bytes(b"<html><body>app shell</body></html>")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback="app.html")
         app.add_route(Group(path="/", app=spa))
 
@@ -131,7 +131,7 @@ def test_frontend_custom_fallback():
 def test_frontend_only_get_allowed():
     d = _set_up_frontend_dir(".test_frontend_methods")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback="auto")
         app.add_route(Group(path="/", app=spa))
 
@@ -151,7 +151,7 @@ def test_frontend_only_get_allowed():
 def test_frontend_route_precedence():
     d = _set_up_frontend_dir(".test_frontend_precedence")
     try:
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/api/hello")
         async def hello(request, response):
@@ -174,7 +174,7 @@ def test_frontend_route_precedence():
 def test_frontend_cache_control():
     d = _set_up_frontend_dir(".test_frontend_cache")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback="auto", cache_control="public, max-age=3600")
         app.add_route(Group(path="/", app=spa))
 
@@ -193,7 +193,7 @@ def test_frontend_cache_control():
 def test_app_frontend_convenience():
     d = _set_up_frontend_dir(".test_app_frontend_convenience")
     try:
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/ping")
         async def ping(request, response):
@@ -220,7 +220,7 @@ def test_app_frontend_convenience():
 def test_frontend_mounted_at_subpath():
     d = _set_up_frontend_dir(".test_frontend_subpath")
     try:
-        app = silloApp()
+        app = SilloApp()
         spa = FrontendApp(directory=d, fallback="auto")
         app.add_route(Group(path="/app", app=spa))
 

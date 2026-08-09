@@ -57,10 +57,10 @@ Reach for a WebSocket when you genuinely need the client to push too.
 Register a WebSocket endpoint with the `ws_route` decorator:
 
 ```python title="a minimal echo endpoint"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.websockets import WebSocket, WebSocketDisconnect
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.ws_route("/ws/echo")

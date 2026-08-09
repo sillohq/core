@@ -37,9 +37,9 @@ You usually need nothing at all. Return a value sillo already understands:
 ```python
 from datetime import datetime
 
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.get("/now")
@@ -61,9 +61,9 @@ When you return a type sillo does not recognize — a `Money` value object, a `V
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @dataclass
@@ -130,9 +130,9 @@ An e-commerce API returns order totals as a `Money` value object in several endp
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 
 @dataclass
@@ -174,7 +174,7 @@ Use `TestClient` to assert the serialized shape. This mirrors sillo's own suite:
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.testclient import TestClient
 
 
@@ -185,7 +185,7 @@ class Money:
 
 
 def test_money_encoder():
-    app = silloApp()
+    app = SilloApp()
     app.add_encoder(Money, lambda m: {"amount": str(m.amount), "currency": m.currency})
 
     @app.get("/price")
@@ -204,7 +204,7 @@ from sillo.encoding import register_encoder
 
 def test_per_call_overrides_global():
     register_encoder(Vector, lambda v: [v.x, v.y])  # global
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/override")
     async def override(request, response):

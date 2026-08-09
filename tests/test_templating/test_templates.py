@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.templating import TemplateConfig, TemplateEngine, render
 from sillo.templating.middleware import TemplateContextMiddleware
 from sillo.testclient import TestClient
@@ -21,7 +21,7 @@ def template_engine():
 
 @pytest.fixture
 def app():
-    app = silloApp()
+    app = SilloApp()
 
     async def user_context(request):
         return {"user": {"name": "Test User"}}

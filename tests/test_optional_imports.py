@@ -98,9 +98,9 @@ def test_the_application_can_be_built_without_the_orm():
     result = run_without(
         ["tortoise"],
         """
-        from sillo import silloApp
+        from sillo import SilloApp
 
-        app = silloApp(title="Bare")
+        app = SilloApp(title="Bare")
 
         @app.get("/")
         async def home(request, response):

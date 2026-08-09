@@ -1,9 +1,9 @@
 from pydantic import BaseModel, EmailStr, ValidationError
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 
-app = silloApp()
+app = SilloApp()
 
 
 class UserRegistration(BaseModel):

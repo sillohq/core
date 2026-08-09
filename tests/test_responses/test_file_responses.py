@@ -9,16 +9,16 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 # ========== File Response Tests ==========
 
 
-def test_file_response(test_client_factory: Callable[[silloApp], TestClient]):
+def test_file_response(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test serving a file"""
-    app = silloApp()
+    app = SilloApp()
 
     # Create a temporary file
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
@@ -40,10 +40,10 @@ def test_file_response(test_client_factory: Callable[[silloApp], TestClient]):
 
 
 def test_file_response_with_custom_filename(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test serving a file with custom filename"""
-    app = silloApp()
+    app = SilloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
         f.write("Custom filename test")
@@ -65,10 +65,10 @@ def test_file_response_with_custom_filename(
 
 
 def test_file_response_content_type(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test file response content type detection"""
-    app = silloApp()
+    app = SilloApp()
 
     # Create a JSON file
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
@@ -93,10 +93,10 @@ def test_file_response_content_type(
 
 
 def test_file_response_inline_disposition(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test file response with inline disposition"""
-    app = silloApp()
+    app = SilloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
         f.write("Inline content")
@@ -120,9 +120,9 @@ def test_file_response_inline_disposition(
 # ========== Download Response Tests ==========
 
 
-def test_download_response(test_client_factory: Callable[[silloApp], TestClient]):
+def test_download_response(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test forcing file download"""
-    app = silloApp()
+    app = SilloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".pdf") as f:
         f.write("PDF content")
@@ -144,10 +144,10 @@ def test_download_response(test_client_factory: Callable[[silloApp], TestClient]
 
 
 def test_download_with_custom_filename(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test download with custom filename"""
-    app = silloApp()
+    app = SilloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as f:
         f.write("col1,col2\nval1,val2")
@@ -172,9 +172,9 @@ def test_download_with_custom_filename(
 # ========== Large File Tests ==========
 
 
-def test_large_file_response(test_client_factory: Callable[[silloApp], TestClient]):
+def test_large_file_response(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test serving a larger file"""
-    app = silloApp()
+    app = SilloApp()
 
     # Create a larger temporary file (1MB)
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
@@ -199,9 +199,9 @@ def test_large_file_response(test_client_factory: Callable[[silloApp], TestClien
 # ========== Binary File Tests ==========
 
 
-def test_binary_file_response(test_client_factory: Callable[[silloApp], TestClient]):
+def test_binary_file_response(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test serving a binary file"""
-    app = silloApp()
+    app = SilloApp()
 
     # Create a binary file
     with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".bin") as f:
@@ -226,9 +226,9 @@ def test_binary_file_response(test_client_factory: Callable[[silloApp], TestClie
 # ========== File Not Found Tests ==========
 
 
-def test_file_not_found(test_client_factory: Callable[[silloApp], TestClient]):
+def test_file_not_found(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test handling of non-existent file"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/missing-file")
     async def serve_missing_file(request: Request, response: Response):
@@ -249,10 +249,10 @@ def test_file_not_found(test_client_factory: Callable[[silloApp], TestClient]):
 
 
 def test_file_content_length_header(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that content-length header is set correctly for files"""
-    app = silloApp()
+    app = SilloApp()
 
     content = "Test content for length check"
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
@@ -279,10 +279,10 @@ def test_file_content_length_header(
 
 
 def test_file_accept_ranges_header(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test that accept-ranges header is set for file responses"""
-    app = silloApp()
+    app = SilloApp()
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
         f.write("Range test content")
@@ -317,7 +317,7 @@ def range_app(request: pytest.FixtureRequest):
         temp_path = f.name
     request.addfinalizer(lambda: os.unlink(temp_path))
 
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/asset")
     async def serve_asset(req: Request, response: Response):
@@ -337,7 +337,7 @@ def _declared_length_matches(resp) -> bool:
     return declared is not None and int(declared) == len(resp.content)
 
 
-def test_range_single(range_app, test_client_factory: Callable[[silloApp], TestClient]):
+def test_range_single(range_app, test_client_factory: Callable[[SilloApp], TestClient]):
     """A single range returns exactly the bytes asked for."""
     app, payload = range_app
     with test_client_factory(app) as client:
@@ -350,7 +350,7 @@ def test_range_single(range_app, test_client_factory: Callable[[silloApp], TestC
 
 
 def test_range_multipart_declares_the_framing_it_sends(
-    range_app, test_client_factory: Callable[[silloApp], TestClient]
+    range_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     """Multiple ranges: Content-Length must cover the multipart framing.
 
@@ -371,7 +371,7 @@ def test_range_multipart_declares_the_framing_it_sends(
 
 
 def test_range_multipart_is_parseable(
-    range_app, test_client_factory: Callable[[silloApp], TestClient]
+    range_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     """The multipart body parses, and each part carries its own bytes."""
     import email
@@ -398,7 +398,7 @@ def test_range_multipart_is_parseable(
 
 
 def test_range_multipart_sets_one_content_type(
-    range_app, test_client_factory: Callable[[silloApp], TestClient]
+    range_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     """The multipart type replaces the file's type rather than joining it."""
     app, _ = range_app
@@ -410,7 +410,7 @@ def test_range_multipart_sets_one_content_type(
 
 
 def test_range_unsatisfiable_declares_no_body(
-    range_app, test_client_factory: Callable[[silloApp], TestClient]
+    range_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     """A 416 sends no body, so it must not declare the whole file's length."""
     app, _ = range_app
@@ -424,7 +424,7 @@ def test_range_unsatisfiable_declares_no_body(
 
 
 def test_range_first_byte_only(
-    range_app, test_client_factory: Callable[[silloApp], TestClient]
+    range_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     """`bytes=0-0` is one byte, not the whole file.
 
@@ -441,7 +441,7 @@ def test_range_first_byte_only(
     assert resp.content == payload[0:1]
 
 
-def test_range_suffix(range_app, test_client_factory: Callable[[silloApp], TestClient]):
+def test_range_suffix(range_app, test_client_factory: Callable[[SilloApp], TestClient]):
     """`bytes=-100` means the last 100 bytes, not a malformed range."""
     app, payload = range_app
     with test_client_factory(app) as client:
@@ -453,7 +453,7 @@ def test_range_suffix(range_app, test_client_factory: Callable[[silloApp], TestC
 
 
 def test_range_open_ended(
-    range_app, test_client_factory: Callable[[silloApp], TestClient]
+    range_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     """`bytes=500-` runs to the end of the file."""
     app, payload = range_app
@@ -466,7 +466,7 @@ def test_range_open_ended(
 
 
 def test_range_end_past_the_file_is_clamped(
-    range_app, test_client_factory: Callable[[silloApp], TestClient]
+    range_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     """An over-long end offset yields what exists rather than a 416."""
     app, payload = range_app
@@ -482,7 +482,7 @@ def test_range_end_past_the_file_is_clamped(
     "value", ["bytes=abc", "items=0-10", "bytes=", "bytes=10-4", "0-10"]
 )
 def test_range_malformed(
-    value: str, range_app, test_client_factory: Callable[[silloApp], TestClient]
+    value: str, range_app, test_client_factory: Callable[[SilloApp], TestClient]
 ):
     """Anything unparseable is a 416 with an empty body."""
     app, _ = range_app
@@ -498,7 +498,7 @@ def test_range_malformed(
 
 
 def test_set_body_keeps_content_length_in_step(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Replacing the body must re-declare its length.
 
@@ -506,7 +506,7 @@ def test_set_body_keeps_content_length_in_step(
     one; a longer replacement then wrote past the declared length and h11
     tore the connection down mid-response.
     """
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/rewritten")
     async def rewritten(request: Request, response: Response):
@@ -522,7 +522,7 @@ def test_set_body_keeps_content_length_in_step(
 
 
 def test_set_header_override_keeps_headers_mapping_live(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """An overriding set_header must not orphan the cached headers mapping.
 
@@ -530,7 +530,7 @@ def test_set_header_override_keeps_headers_mapping_live(
     list instead of editing it left the view wrapping a list nothing sends,
     so later edits through ``response.headers`` vanished silently.
     """
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/headers")
     async def headers(request: Request, response: Response):

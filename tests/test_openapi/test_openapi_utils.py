@@ -135,10 +135,10 @@ def test_a_container_with_an_empty_routes_attribute():
 
 
 def test_flattening_a_real_application_router():
-    from sillo import silloApp
+    from sillo import SilloApp
     from sillo.core.http import Request, Response
 
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/users")
     async def users(request: Request, response: Response):

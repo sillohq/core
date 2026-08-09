@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: Declare backends with silloApp(auth=[...]) and sillo derives securitySchemes and every route's security from the gate you already wrote.
+    content: Declare backends with SilloApp(auth=[...]) and sillo derives securitySchemes and every route's security from the gate you already wrote.
 ---
 
 #  OAuth in OpenAPI
@@ -34,11 +34,11 @@ So in almost every application:
 
 ##  Declare backends on the application
 
-This is the load-bearing step. Pass backends to `silloApp(auth=[...])` rather
+This is the load-bearing step. Pass backends to `SilloApp(auth=[...])` rather
 than installing `AuthenticationMiddleware` yourself:
 
 ```python
-app = silloApp(
+app = SilloApp(
     title="My API",
     auth=[
         JWTAuthBackend(
@@ -233,7 +233,7 @@ class GoogleTokenBackend(JWTAuthBackend):
         return scheme
 
 
-app = silloApp(
+app = SilloApp(
     auth=[GoogleTokenBackend(secret_key=settings.jwt_secret)],
     strict_security=True,
 )

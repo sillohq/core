@@ -17,13 +17,13 @@ Use this reference for login flows, protected routes, session state, cookie hand
 The docs present authentication as middleware plus protected handlers.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth import SimpleUser
 from sillo.auth.decorators import auth
 from sillo.auth.backends.jwt import JWTAuthBackend
 from sillo.auth.middleware import AuthenticationMiddleware
 
-app = silloApp()
+app = SilloApp()
 
 app.add_middleware(
     AuthenticationMiddleware(user_model=SimpleUser, backend=JWTAuthBackend())

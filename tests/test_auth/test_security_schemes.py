@@ -13,7 +13,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.auth import (
     APIKeyAuthBackend,
     AuthenticationMiddleware,
@@ -27,7 +27,7 @@ from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 
-def document(app: silloApp, client_factory) -> dict:
+def document(app: SilloApp, client_factory) -> dict:
     """Build the app's OpenAPI document the way a viewer would fetch it."""
     with client_factory(app) as client:
         return client.get("/openapi.json").json()
@@ -88,9 +88,9 @@ def test_two_backends_of_a_kind_can_be_named_apart():
 
 
 def test_declaring_backends_registers_their_schemes(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp(
+    app = SilloApp(
         title="T",
         version="1",
         auth=[JWTAuthBackend(secret_key="s"), APIKeyAuthBackend()],
@@ -103,7 +103,7 @@ def test_declaring_backends_registers_their_schemes(
 
 
 def test_declaring_backends_replaces_the_legacy_default(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """An app that declares no JWT must not advertise one.
 
@@ -111,7 +111,7 @@ def test_declaring_backends_replaces_the_legacy_default(
     application claimed JWT bearer auth whether or not it had any. Declaring
     backends is the opt-out.
     """
-    app = silloApp(title="T", version="1", auth=[APIKeyAuthBackend()])
+    app = SilloApp(title="T", version="1", auth=[APIKeyAuthBackend()])
 
     schemes = document(app, test_client_factory)["components"]["securitySchemes"]
 
@@ -119,10 +119,10 @@ def test_declaring_backends_replaces_the_legacy_default(
 
 
 def test_the_legacy_default_survives_without_backends(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Existing apps keep the scheme their `security=` may already name."""
-    app = silloApp(title="T", version="1")
+    app = SilloApp(title="T", version="1")
 
     schemes = document(app, test_client_factory)["components"]["securitySchemes"]
 
@@ -130,7 +130,7 @@ def test_the_legacy_default_survives_without_backends(
 
 
 def test_a_backend_that_declines_is_left_out_of_the_document(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Internal(AuthenticationBackend):
         name = "internal"
@@ -138,7 +138,7 @@ def test_a_backend_that_declines_is_left_out_of_the_document(
         async def authenticate(self, request):
             return AuthResult(success=False, identity="", scope="")
 
-    app = silloApp(
+    app = SilloApp(
         title="T", version="1", auth=[JWTAuthBackend(secret_key="s"), Internal()]
     )
 
@@ -150,7 +150,7 @@ def test_a_backend_that_declines_is_left_out_of_the_document(
 def test_two_backends_claiming_one_name_is_an_error():
     """Silently overwriting would document a credential nothing reads."""
     with pytest.raises(ValueError, match="both claim the scheme 'bearerAuth'"):
-        silloApp(
+        SilloApp(
             title="T",
             version="1",
             auth=[
@@ -190,9 +190,9 @@ def test_a_gate_derives_its_security_requirements(gate, expected):
 
 
 def test_the_document_follows_the_gate(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp(
+    app = SilloApp(
         title="T",
         version="1",
         auth=[JWTAuthBackend(secret_key="s"), SessionAuthBackend()],
@@ -211,14 +211,14 @@ def test_the_document_follows_the_gate(
 
 
 def test_an_explicit_security_still_wins(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """A gateway may terminate auth ahead of the app.
 
     The document then has to describe something this process does not
     enforce, so a hand-written `security=` is never overwritten.
     """
-    app = silloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
+    app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get(
         "/proxied",
@@ -234,9 +234,9 @@ def test_an_explicit_security_still_wins(
 
 
 def test_a_route_with_no_gate_declares_no_security(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
+    app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get("/health")
     async def health(request: Request, response: Response):
@@ -262,9 +262,9 @@ class StubBackend(AuthenticationBackend):
 
 
 def test_a_request_through_an_accepted_scheme_passes(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp(title="T", version="1", auth=[StubBackend("bearerAuth", "jwt")])
+    app = SilloApp(title="T", version="1", auth=[StubBackend("bearerAuth", "jwt")])
 
     @app.get("/me", auth=useAuth(schemes=["bearerAuth"]))
     async def me(request: Request, response: Response):
@@ -275,14 +275,14 @@ def test_a_request_through_an_accepted_scheme_passes(
 
 
 def test_a_request_through_the_wrong_scheme_is_rejected(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Documented bearer, authenticated by cookie — the gate must refuse.
 
     This is the disagreement the whole change exists to make impossible: the
     document promises one credential and something else gets in.
     """
-    app = silloApp(
+    app = SilloApp(
         title="T", version="1", auth=[StubBackend("sessionCookie", "session")]
     )
 
@@ -295,9 +295,9 @@ def test_a_request_through_the_wrong_scheme_is_rejected(
 
 
 def test_the_middleware_records_which_scheme_answered(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp(title="T", version="1", auth=[StubBackend("apiKeyHeader", "apikey")])
+    app = SilloApp(title="T", version="1", auth=[StubBackend("apiKeyHeader", "apikey")])
 
     @app.get("/who")
     async def who(request: Request, response: Response):
@@ -316,7 +316,7 @@ def test_the_middleware_records_which_scheme_answered(
 
 
 def test_an_unauthenticated_request_records_no_scheme(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Never(AuthenticationBackend):
         name = "bearerAuth"
@@ -324,7 +324,7 @@ def test_an_unauthenticated_request_records_no_scheme(
         async def authenticate(self, request):
             return AuthResult(success=False, identity="", scope="")
 
-    app = silloApp(title="T", version="1", auth=[Never()])
+    app = SilloApp(title="T", version="1", auth=[Never()])
 
     @app.get("/who")
     async def who(request: Request, response: Response):
@@ -338,10 +338,10 @@ def test_an_unauthenticated_request_records_no_scheme(
 
 
 def test_strict_security_rejects_an_unregistered_scheme(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """A viewer would render an authorize box wired to nothing."""
-    app = silloApp(
+    app = SilloApp(
         title="T",
         version="1",
         auth=[JWTAuthBackend(secret_key="s")],
@@ -357,7 +357,7 @@ def test_strict_security_rejects_an_unregistered_scheme(
 
 
 def test_strict_security_names_the_route_and_the_scheme():
-    app = silloApp(
+    app = SilloApp(
         title="T",
         version="1",
         auth=[JWTAuthBackend(secret_key="s")],
@@ -379,7 +379,7 @@ def test_strict_security_names_the_route_and_the_scheme():
 
 
 def test_strict_security_passes_when_everything_resolves():
-    app = silloApp(
+    app = SilloApp(
         title="T",
         version="1",
         auth=[JWTAuthBackend(secret_key="s"), SessionAuthBackend()],
@@ -395,7 +395,7 @@ def test_strict_security_passes_when_everything_resolves():
 
 def test_strict_security_is_off_by_default():
     """Existing applications keep building."""
-    app = silloApp(title="T", version="1")
+    app = SilloApp(title="T", version="1")
 
     @app.get("/oops", security=[{"nothingDefinesThis": []}])
     async def oops(request: Request, response: Response):
@@ -405,7 +405,7 @@ def test_strict_security_is_off_by_default():
 
 
 def test_strict_security_ignores_excluded_routes():
-    app = silloApp(
+    app = SilloApp(
         title="T",
         version="1",
         auth=[JWTAuthBackend(secret_key="s")],
@@ -423,7 +423,7 @@ def test_strict_security_ignores_excluded_routes():
 
 
 def test_a_bare_gate_is_documented_as_protected(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """`useAuth()` names no scheme but still refuses anonymous callers.
 
@@ -432,7 +432,7 @@ def test_a_bare_gate_is_documented_as_protected(
     more dangerous way: a consumer reads "no auth needed" and is refused.
     Any registered backend can satisfy the gate, so that is what it says.
     """
-    app = silloApp(
+    app = SilloApp(
         title="T",
         version="1",
         auth=[JWTAuthBackend(secret_key="s"), SessionAuthBackend()],
@@ -451,10 +451,10 @@ def test_a_bare_gate_is_documented_as_protected(
 
 
 def test_a_permissions_only_gate_is_documented_as_protected(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Permissions imply authentication, so the route is not public."""
-    app = silloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
+    app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get("/perm", auth=useAuth(permissions=["audit:read"]))
     async def perm(request: Request, response: Response):
@@ -466,9 +466,9 @@ def test_a_permissions_only_gate_is_documented_as_protected(
 
 
 def test_a_bare_optional_gate_keeps_its_empty_alternative(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    app = silloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
+    app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get("/feed", auth=useAuth(required=False))
     async def feed(request: Request, response: Response):
@@ -480,10 +480,10 @@ def test_a_bare_optional_gate_keeps_its_empty_alternative(
 
 
 def test_a_route_with_no_gate_stays_public(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """The fallback must not protect what nothing gates."""
-    app = silloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
+    app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get("/health")
     async def health(request: Request, response: Response):
@@ -495,14 +495,14 @@ def test_a_route_with_no_gate_stays_public(
 
 
 def test_the_documented_and_enforced_answers_agree(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Whether a route is documented as protected must match whether it is.
 
     Asserting on the pair is the point — either alone passes while the two
     disagree, which is exactly how this went unnoticed.
     """
-    app = silloApp(
+    app = SilloApp(
         title="T",
         version="1",
         auth=[StubBackend("bearerAuth", "jwt"), SessionAuthBackend()],
@@ -540,7 +540,7 @@ def test_a_bare_gate_derives_nothing_without_registered_schemes():
 
 
 def test_a_backend_reports_its_scheme_name_as_the_scope(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """`auth` and `auth_scheme` are the same value now, not two vocabularies.
 
@@ -548,7 +548,7 @@ def test_a_backend_reports_its_scheme_name_as_the_scope(
     a scheme ("bearerAuth"), so a route had to know both. The backend now
     reports one identifier and both keys carry it.
     """
-    app = silloApp(title="T", version="1", auth=[StubBackend("bearerAuth", "bearerAuth")])
+    app = SilloApp(title="T", version="1", auth=[StubBackend("bearerAuth", "bearerAuth")])
 
     @app.get("/who")
     async def who(request: Request, response: Response):
@@ -583,7 +583,7 @@ def test_the_removed_scopes_parameter_is_rejected():
 
 
 def test_the_middleware_survives_having_no_backends(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """`AuthenticationMiddleware()` with no backend used to 500 every request.
 
@@ -592,7 +592,7 @@ def test_the_middleware_survives_having_no_backends(
     was then handled by calling `None.handle_exception`, raising a second
     one from inside the handler for the first.
     """
-    app = silloApp(title="T", version="1")
+    app = SilloApp(title="T", version="1")
     app.use(AuthenticationMiddleware())
 
     @app.get("/anon")

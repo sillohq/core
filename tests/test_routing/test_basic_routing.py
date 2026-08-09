@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Route, Router
 from sillo.testclient import TestClient
@@ -181,9 +181,9 @@ def test_router_add_multiple_routes():
 # ========== Integration Tests ==========
 
 
-def test_basic_route_with_app(test_client_factory: Callable[[silloApp], TestClient]):
+def test_basic_route_with_app(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test basic route integration with app"""
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/hello")
     async def hello(request: Request, response: Response):
@@ -195,9 +195,9 @@ def test_basic_route_with_app(test_client_factory: Callable[[silloApp], TestClie
         assert resp.text == "Hello, World!"
 
 
-def test_router_mounted_to_app(test_client_factory: Callable[[silloApp], TestClient]):
+def test_router_mounted_to_app(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test router mounted to application"""
-    app = silloApp()
+    app = SilloApp()
     router = Router(prefix="/api")
 
     @router.get("/users")
@@ -229,10 +229,10 @@ def test_route_handler_must_be_callable():
 
 
 def test_router_with_multiple_prefixes(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test multiple routers with different prefixes"""
-    app = silloApp()
+    app = SilloApp()
 
     api_v1 = Router(prefix="/api/v1")
     api_v2 = Router(prefix="/api/v2")

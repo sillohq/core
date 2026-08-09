@@ -59,9 +59,9 @@ def write_app(directory, body: str, name: str = "main.py") -> None:
 
 
 PLAIN_APP = """
-    from sillo import silloApp
+    from sillo import SilloApp
 
-    app = silloApp(title="Plain")
+    app = SilloApp(title="Plain")
 
     @app.get("/things")
     async def things(request, response):
@@ -224,10 +224,10 @@ def test_a_broken_application_leaves_the_framework_commands(elsewhere, monkeypat
 
 
 DATABASE_APP = """
-    from sillo import silloApp
+    from sillo import SilloApp
     from sillo.record import DatabaseConfig, setup_record
 
-    app = silloApp(title="With database")
+    app = SilloApp(title="With database")
 
     database = setup_record(
         app,
@@ -273,10 +273,10 @@ def test_the_queue_commands_are_offered_regardless(elsewhere, monkeypatch):
 
 
 SCHEDULER_APP = """
-    from sillo import silloApp
+    from sillo import SilloApp
     from sillo.work.scheduler import setup_scheduler
 
-    app = silloApp()
+    app = SilloApp()
     scheduler = setup_scheduler(app)
 
     @scheduler.cron("0 3 * * *", name="prune")
@@ -312,11 +312,11 @@ def test_the_user_model_comes_from_the_application(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import silloApp
+        from sillo import SilloApp
         from sillo.record import DatabaseConfig, setup_record
         from sillo.users.base import User
 
-        app = silloApp(auth_user_model=User)
+        app = SilloApp(auth_user_model=User)
         setup_record(
             app,
             DatabaseConfig(url="sqlite://:memory:"),
@@ -339,10 +339,10 @@ def test_the_user_model_comes_from_the_application(elsewhere, monkeypatch):
 
 
 REGISTERED_APP = """
-    from sillo import silloApp
+    from sillo import SilloApp
     from sillo.console import Argument, Command
 
-    app = silloApp()
+    app = SilloApp()
 
 
     class Backfill(Command):
@@ -403,11 +403,11 @@ def test_a_projects_name_wins_over_a_bundled_one(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import silloApp
+        from sillo import SilloApp
         from sillo.console import Command
         from sillo.record import DatabaseConfig, setup_record
 
-        app = silloApp()
+        app = SilloApp()
         setup_record(app, DatabaseConfig(url="sqlite://:memory:"))
 
 
@@ -437,9 +437,9 @@ def test_a_projects_name_wins_over_a_bundled_one(elsewhere, monkeypatch):
 
 
 def test_add_command_returns_the_class_so_it_can_decorate():
-    from sillo import silloApp
+    from sillo import SilloApp
 
-    app = silloApp()
+    app = SilloApp()
 
     @app.add_command
     class Thing(Command):
@@ -452,9 +452,9 @@ def test_add_command_returns_the_class_so_it_can_decorate():
 
 
 def test_a_command_without_a_name_is_refused():
-    from sillo import silloApp
+    from sillo import SilloApp
 
-    app = silloApp()
+    app = SilloApp()
 
     class Nameless(Command):
         pass
@@ -464,9 +464,9 @@ def test_a_command_without_a_name_is_refused():
 
 
 def test_registering_the_same_name_twice_is_refused():
-    from sillo import silloApp
+    from sillo import SilloApp
 
-    app = silloApp()
+    app = SilloApp()
 
     class First(Command):
         name = "same"
@@ -480,9 +480,9 @@ def test_registering_the_same_name_twice_is_refused():
 
 
 def test_the_decorator_builds_a_command_from_a_function():
-    from sillo import silloApp
+    from sillo import SilloApp
 
-    app = silloApp()
+    app = SilloApp()
 
     @app.command("ping", help="Say pong", arguments=[Argument("to", default="world")])
     async def ping(command):
@@ -494,9 +494,9 @@ def test_the_decorator_builds_a_command_from_a_function():
 
 
 def test_a_fresh_application_has_no_commands():
-    from sillo import silloApp
+    from sillo import SilloApp
 
-    assert silloApp().commands == []
+    assert SilloApp().commands == []
 
 
 # -- import strings ----------------------------------------------------
@@ -551,9 +551,9 @@ def test_routes_can_filter_by_method(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import silloApp
+        from sillo import SilloApp
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/only-get")
         async def a(request, response):
@@ -660,9 +660,9 @@ def test_routes_descends_into_mounted_routers(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import Router, silloApp
+        from sillo import Router, SilloApp
 
-        app = silloApp()
+        app = SilloApp()
         api = Router(prefix="/api")
 
         @api.get("/health")
@@ -693,9 +693,9 @@ def test_a_mount_is_not_labelled_a_websocket(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import Router, silloApp
+        from sillo import Router, SilloApp
 
-        app = silloApp()
+        app = SilloApp()
         api = Router(prefix="/api")
 
         @api.get("/health")
@@ -718,9 +718,9 @@ def test_a_real_websocket_is_labelled(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import silloApp
+        from sillo import SilloApp
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.ws_route("/ws")
         async def socket(ws):
@@ -741,9 +741,9 @@ def test_filtering_by_method_reaches_mounted_routes(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import Router, silloApp
+        from sillo import Router, SilloApp
 
-        app = silloApp()
+        app = SilloApp()
         api = Router(prefix="/api")
 
         @api.get("/health")

@@ -29,9 +29,9 @@ This page covers all three, how they nest, and how to scope them to a single rou
 A middleware function takes three positional arguments — `request`, `response`, and a continuation (commonly named `next`, `call_next`, or `cnext`). Call and `await` the continuation to pass control downstream; whatever it returns is the response, which you then return:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 async def log_requests(request, response, call_next):
     print(f"→ {request.method} {request.url.path}")
@@ -57,9 +57,9 @@ Anything before `await call_next()` runs *before* the handler; anything after ru
 ```python
 import time
 
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 async def time_it(request, response, call_next):
     start = time.perf_counter()
@@ -185,7 +185,7 @@ A `Router` has its own `use` method. Middleware added there runs for every route
 ```python
 from sillo.core.routing import Router
 
-app = silloApp()
+app = SilloApp()
 api = Router(prefix="/api")
 
 async def api_auth(request, response, call_next):
@@ -284,10 +284,10 @@ See [Security](/guides/security/), [CSRF](/guides/csrf/), [CORS](/guides/cors/),
 Drive middleware through `TestClient` like any endpoint — assert headers, status codes, and short-circuit behavior:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.testclient import TestClient
 
-app = silloApp()
+app = SilloApp()
 
 async def add_header(request, response, call_next):
     response = await call_next()

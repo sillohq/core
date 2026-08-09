@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
@@ -18,7 +18,7 @@ class TestSessionIntegration:
 
     def test_signed_cookie_integration_flow(self):
         """Test complete signed cookie session flow"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.post("/login")
         async def login(request: Request, response: Response):
@@ -80,7 +80,7 @@ class TestSessionIntegration:
 
     def test_session_persistence_across_requests(self):
         """Test session persistence across multiple requests"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/counter")
         async def counter(request: Request, response: Response):

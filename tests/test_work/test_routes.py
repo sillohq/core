@@ -1,4 +1,4 @@
-"""Deep integration tests for sillo.work — real silloApp routes exercising
+"""Deep integration tests for sillo.work — real SilloApp routes exercising
 background tasks, the job queue, the event dispatcher, and the scheduler,
 all wired via setup_work and consumed through the real subsystems.
 """
@@ -6,7 +6,7 @@ all wired via setup_work and consumed through the real subsystems.
 import asyncio
 import json
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.work.background.tasks import BackgroundTask
 from sillo.core.dependencies import Depend
 from sillo.core.http import Request, Response
@@ -20,7 +20,7 @@ from tests.test_work.work_jobs import FLIGHTS, SENT_EMAILS, SendEmail
 
 
 def _make_app():
-    app = silloApp()
+    app = SilloApp()
     setup_work(app)
     return app
 

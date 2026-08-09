@@ -1,8 +1,8 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.templating import TemplateConfig, TemplateEngine, render
 from sillo.templating.middleware import template_context
 
-app = silloApp()
+app = SilloApp()
 
 # Configure templating with custom settings
 template_config = TemplateConfig(

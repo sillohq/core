@@ -13,10 +13,10 @@ fair usage quotas across your API.
 ##  Quick Start
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security import RateLimit
 
-app = silloApp()
+app = SilloApp()
 
 # 100 requests per 60 seconds, per client IP, using the token-bucket strategy.
 app.use(RateLimit(limit=100, window=60))
@@ -53,11 +53,11 @@ app.use(RateLimit(limit=100, window=60, backend="redis"))
 For the Record backend, register the model module with your Record setup:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.record import setup_record, DatabaseConfig
 from sillo.security import RateLimit
 
-app = silloApp()
+app = SilloApp()
 setup_record(
     app,
     DatabaseConfig.sqlite("app.db"),
@@ -150,10 +150,10 @@ Backends store an **opaque state dict**; strategies are stateless and interpret 
 Brute-force protection wants a tight limit keyed by the target account (or IP), strict enough to matter but `fail_open=True` so a Redis blip doesn't lock users out:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security import RateLimit
 
-app = silloApp()
+app = SilloApp()
 
 # 5 attempts per 60s per IP, fixed window (simple, predictable resets)
 app.use(
@@ -188,13 +188,13 @@ Keyed by IP, the limit applies across every login attempt from that address. Swa
 Drive the middleware through `TestClient` and assert status codes and headers. Memory backend state is process-local, so repeated `client.get` calls accumulate against the same counter.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.security import RateLimit, RateLimitConfig
 from sillo.testclient import TestClient
 
 
 def test_allows_up_to_limit_then_429():
-    app = silloApp()
+    app = SilloApp()
     app.use(RateLimit(limit=2, window=60, key_func=lambda r: "tester"))
 
     @app.get("/")
@@ -210,7 +210,7 @@ def test_allows_up_to_limit_then_429():
 
 
 def test_quota_headers():
-    app = silloApp()
+    app = SilloApp()
     app.use(RateLimit(limit=2, window=60, key_func=lambda r: "h"))
 
     @app.get("/")
@@ -222,7 +222,7 @@ def test_quota_headers():
     assert r.headers["X-RateLimit-Remaining"] == "1"
 ```
 
-To reset between cases, call `backend.clear()` (the memory backend supports it) or use a fresh `silloApp()` per test. For `fail_open=False`, assert that taking the backend down yields a `500` rather than `429`.
+To reset between cases, call `backend.clear()` (the memory backend supports it) or use a fresh `SilloApp()` per test. For `fail_open=False`, assert that taking the backend down yields a `500` rather than `429`.
 
 ##  Production considerations
 

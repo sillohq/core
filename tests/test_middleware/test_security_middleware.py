@@ -2,14 +2,14 @@
 Tests for Shield (security headers middleware)
 """
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.security import Shield
 from sillo.testclient import TestClient
 
 
 def create_app():
-    app = silloApp()
+    app = SilloApp()
     app.use(Shield(csp_enabled=True))
 
     @app.get("/test")

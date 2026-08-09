@@ -4,7 +4,7 @@ Integration tests for CORS middleware with realistic scenarios
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
@@ -35,7 +35,7 @@ class TestCORSIntegration:
             max_age=86400,  # 24 hours
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         # API routes like a real web app
         @app.get("/api/users")
@@ -100,7 +100,7 @@ class TestCORSIntegration:
             allow_credentials=True,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         # Middleware execution order tracking
         execution_order = []
@@ -168,7 +168,7 @@ class TestCORSIntegration:
             max_age=3600,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.post("/api/upload")
         async def upload_file(request: Request, response: Response):
@@ -219,7 +219,7 @@ class TestCORSIntegration:
             allow_credentials=True,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.post("/api/login")
         async def login(request: Request, response: Response):
@@ -292,7 +292,7 @@ class TestCORSIntegration:
             allow_credentials=True,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.post("/api/json")
         async def json_endpoint(request: Request, response: Response):
@@ -340,7 +340,7 @@ class TestCORSIntegration:
             expose_headers=["X-Subdomain"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/api/data")
         async def subdomain_data(request: Request, response: Response):
@@ -378,7 +378,7 @@ class TestCORSIntegration:
             allow_credentials=False,
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/performance-test")
         async def performance_route(request: Request, response: Response):
@@ -404,7 +404,7 @@ class TestCORSIntegration:
             expose_headers=["X-Request-ID", "X-Trace-ID"],
         )
 
-        app = silloApp()
+        app = SilloApp()
 
         # Request ID middleware
         async def request_id_middleware(

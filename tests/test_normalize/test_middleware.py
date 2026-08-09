@@ -1,4 +1,4 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.normalize import NormalizeMiddleware, SlashAction, Normalize
 from sillo.testclient import TestClient
@@ -6,7 +6,7 @@ from sillo.testclient import TestClient
 
 class TestNormalizeMiddleware:
     def test_remove_trailing_slash_inline(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(NormalizeMiddleware(slash_action=SlashAction.REMOVE))
 
         @app.get("/test")
@@ -19,7 +19,7 @@ class TestNormalizeMiddleware:
         assert response.json()["path"] == "/test"
 
     def test_add_trailing_slash_inline(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(NormalizeMiddleware(slash_action=SlashAction.ADD))
 
         @app.get("/test/")
@@ -32,7 +32,7 @@ class TestNormalizeMiddleware:
         assert response.json()["path"] == "/test/"
 
     def test_double_slash_normalization(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE))
 
         @app.get("/api/test")
@@ -44,7 +44,7 @@ class TestNormalizeMiddleware:
         assert response.status_code == 200
 
     def test_skip_file_extensions(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE))
 
         @app.get("/style.css")
@@ -62,7 +62,7 @@ class TestNormalizeMiddleware:
         assert mw.redirect_status_code == 308
 
     def test_normalize_case_enabled(self):
-        app = silloApp()
+        app = SilloApp()
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE, normalize_case=True))
 
         @app.get("/api/test")

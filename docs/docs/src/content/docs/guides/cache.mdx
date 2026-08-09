@@ -70,7 +70,7 @@ def expensive(x):
 
 <Aside type="tip" title="Domain-level, not app-level">
 
-Unlike response/cookie/session config which is tied to `silloApp`, caching is
+Unlike response/cookie/session config which is tied to `SilloApp`, caching is
 configured independently. This keeps cached functions testable and reusable
 outside the web layer (CLI commands, workers, background tasks).
 
@@ -284,12 +284,12 @@ cooperate on one cache.
 ##  Full example
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.cache import MemoryCache, configure_cache, cache
 
 configure_cache(MemoryCache(default_ttl=300))
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/products/{product_id:int}")
 async def product(request, response, product_id: int):

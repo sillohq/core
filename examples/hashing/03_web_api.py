@@ -4,11 +4,11 @@ Run with:
     uv run uvicorn examples/hashing/03_web_api:app --reload
 """
 
-from sillo import silloApp, Query
+from sillo import SilloApp, Query
 from sillo.objects.http import Request, Response
 from sillo.hashing import hash_password, verify_password, needs_update
 
-app = silloApp(title="Password Hashing API Example")
+app = SilloApp(title="Password Hashing API Example")
 
 
 @app.get("/")

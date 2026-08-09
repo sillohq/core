@@ -5,9 +5,9 @@ Provides comprehensive security features and headers.
 Usage::
 
     from sillo.security import Shield
-    from sillo import silloApp
+    from sillo import SilloApp
 
-    app = silloApp()
+    app = SilloApp()
     app.use(Shield())
 """
 

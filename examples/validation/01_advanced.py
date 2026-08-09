@@ -17,9 +17,9 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, constr
 
-from sillo import File, Form, Path, Query, silloApp
+from sillo import File, Form, Path, Query, SilloApp
 
-app = silloApp(title="Validation Example", version="1.0.0")
+app = SilloApp(title="Validation Example", version="1.0.0")
 
 
 class UserRole(str, Enum):

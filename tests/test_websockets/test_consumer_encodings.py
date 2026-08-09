@@ -13,7 +13,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.testclient import TestClient
 from sillo.websockets import Channel, ChannelBox, WebSocket, WebSocketConsumer
 from sillo.websockets import status
@@ -34,7 +34,7 @@ def clean_channel_box():
 
 
 def _app_with(consumer_cls, path="/ws"):
-    app = silloApp()
+    app = SilloApp()
     app.router.routes.append(consumer_cls.as_route(path))
     return app
 
@@ -43,7 +43,7 @@ def _app_with(consumer_cls, path="/ws"):
 
 
 def test_a_text_consumer_receives_text(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     received = []
 
@@ -62,7 +62,7 @@ def test_a_text_consumer_receives_text(
 
 
 def test_a_text_consumer_rejects_a_binary_frame(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Echo(WebSocketConsumer):
         encoding = "text"
@@ -80,7 +80,7 @@ def test_a_text_consumer_rejects_a_binary_frame(
 
 
 def test_a_bytes_consumer_receives_bytes(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     received = []
 
@@ -99,7 +99,7 @@ def test_a_bytes_consumer_receives_bytes(
 
 
 def test_a_bytes_consumer_rejects_a_text_frame(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Echo(WebSocketConsumer):
         encoding = "bytes"
@@ -116,7 +116,7 @@ def test_a_bytes_consumer_rejects_a_text_frame(
 
 
 def test_a_json_consumer_parses_text_frames(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     received = []
 
@@ -135,7 +135,7 @@ def test_a_json_consumer_parses_text_frames(
 
 
 def test_a_json_consumer_parses_binary_frames(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     received = []
 
@@ -154,7 +154,7 @@ def test_a_json_consumer_parses_binary_frames(
 
 
 def test_malformed_json_closes_the_connection(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Echo(WebSocketConsumer):
         encoding = "json"
@@ -171,7 +171,7 @@ def test_malformed_json_closes_the_connection(
 
 
 def test_an_unencoded_consumer_passes_text_through(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     received = []
 
@@ -188,7 +188,7 @@ def test_an_unencoded_consumer_passes_text_through(
 
 
 def test_an_unencoded_consumer_passes_bytes_through(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     received = []
 
@@ -208,7 +208,7 @@ def test_an_unencoded_consumer_passes_bytes_through(
 
 
 def test_the_connect_hook_runs(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     events = []
 
@@ -227,7 +227,7 @@ def test_the_connect_hook_runs(
 
 
 def test_the_disconnect_hook_receives_the_close_code(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     codes = []
 
@@ -245,7 +245,7 @@ def test_the_disconnect_hook_receives_the_close_code(
 
 
 def test_the_disconnect_hook_runs_even_after_a_failure(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Cleanup belongs in ``on_disconnect``, so it has to run when the handler
     blows up as well as when the client leaves politely."""
@@ -268,7 +268,7 @@ def test_the_disconnect_hook_runs_even_after_a_failure(
 
 
 def test_several_messages_reach_the_handler(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     received = []
 
@@ -288,7 +288,7 @@ def test_several_messages_reach_the_handler(
     assert received == ["one", "two", "three"]
 
 
-def test_a_consumer_can_reply(test_client_factory: Callable[[silloApp], TestClient]):
+def test_a_consumer_can_reply(test_client_factory: Callable[[SilloApp], TestClient]):
     class Echo(WebSocketConsumer):
         encoding = "text"
 
@@ -305,7 +305,7 @@ def test_a_consumer_can_reply(test_client_factory: Callable[[silloApp], TestClie
 
 
 def test_a_json_consumer_builds_a_json_channel(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     seen = []
 
@@ -324,7 +324,7 @@ def test_a_json_consumer_builds_a_json_channel(
 
 
 def test_a_text_consumer_builds_a_text_channel(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     seen = []
 
@@ -343,7 +343,7 @@ def test_a_text_consumer_builds_a_text_channel(
 
 
 def test_joining_a_group_registers_the_channel(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     sizes = []
 
@@ -363,7 +363,7 @@ def test_joining_a_group_registers_the_channel(
 
 
 def test_leaving_a_group_deregisters_the_channel(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     sizes = []
 
@@ -384,7 +384,7 @@ def test_leaving_a_group_deregisters_the_channel(
 
 
 def test_a_consumer_can_broadcast_to_its_group(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Broadcaster(WebSocketConsumer):
         encoding = "text"
@@ -403,7 +403,7 @@ def test_a_consumer_can_broadcast_to_its_group(
 
 
 def test_a_broadcast_can_be_recorded_in_history(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Broadcaster(WebSocketConsumer):
         encoding = "text"
@@ -424,7 +424,7 @@ def test_a_broadcast_can_be_recorded_in_history(
 
 
 def test_a_message_can_be_addressed_to_one_channel(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     class Direct(WebSocketConsumer):
         encoding = "text"
@@ -443,7 +443,7 @@ def test_a_message_can_be_addressed_to_one_channel(
 
 
 def test_addressing_an_unknown_channel_is_survivable(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """A stale channel id must not take the connection down."""
     finished = []
@@ -464,7 +464,7 @@ def test_addressing_an_unknown_channel_is_survivable(
 
 
 def test_the_group_helper_reports_an_unknown_group_as_empty(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     sizes = []
 

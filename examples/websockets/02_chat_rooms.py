@@ -1,10 +1,10 @@
 from typing import Dict, Set
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.websockets import WebSocket
 
-app = silloApp()
+app = SilloApp()
 
 # Store chat rooms and their connected clients
 chat_rooms: Dict[str, Set[WebSocket]] = {}

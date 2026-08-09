@@ -98,7 +98,7 @@ class APIDocumentation:
 
         Building the document walks every route and generates JSON Schema for
         every model. It is called once, after routes are registered, and the
-        result handed to the serving route — see ``silloApp.build_openapi``.
+        result handed to the serving route — see ``SilloApp.build_openapi``.
         """
         # Memo is scoped to a single build.
         self._validator_memo = {}

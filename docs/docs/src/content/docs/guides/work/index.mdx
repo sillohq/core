@@ -75,10 +75,10 @@ skip those accounts until tomorrow.
 ##  Setting it up
 
 ```python title="wiring the work subsystem"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.work import setup_work
 
-app = silloApp()
+app = SilloApp()
 work = setup_work(app)
 ```
 
@@ -297,12 +297,12 @@ scheduler in a dedicated process that serves no traffic.
 An application that uses all three layers appropriately.
 
 ```python title="app.py"
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.work import setup_work
 from sillo.work.background import BackgroundTask
 from sillo.work.queue import dispatch
 
-app = silloApp()
+app = SilloApp()
 work = setup_work(app)
 scheduler = app.state["scheduler"]
 

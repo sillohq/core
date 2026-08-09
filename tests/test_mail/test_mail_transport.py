@@ -11,7 +11,7 @@ import smtplib
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.mail import MailClient, MailConfig
 from sillo.mail.client import get_mail_client, setup_mail
@@ -495,20 +495,20 @@ def test_autoescaping_is_on_by_default(template_dir):
 
 
 def test_setup_mail_registers_a_client():
-    app = silloApp()
+    app = SilloApp()
     client = setup_mail(app, MailConfig(suppress_send=True))
     assert app.state["mail_client"] is client
 
 
 def test_setup_mail_is_idempotent():
-    app = silloApp()
+    app = SilloApp()
     first = setup_mail(app, MailConfig(suppress_send=True))
     second = setup_mail(app, MailConfig(suppress_send=True))
     assert first is second
 
 
 def test_the_client_is_started_and_stopped_with_the_app():
-    app = silloApp()
+    app = SilloApp()
     client = setup_mail(app, MailConfig(suppress_send=True))
     with TestClient(app):
         assert client._started is True
@@ -516,7 +516,7 @@ def test_the_client_is_started_and_stopped_with_the_app():
 
 
 def test_a_handler_can_reach_the_client(test_client_factory):
-    app = silloApp()
+    app = SilloApp()
     setup_mail(app, MailConfig(default_from="a@example.com", suppress_send=True))
 
     @app.get("/send")
@@ -530,7 +530,7 @@ def test_a_handler_can_reach_the_client(test_client_factory):
 
 
 def test_asking_for_an_unconfigured_client_is_an_explicit_error(test_client_factory):
-    app = silloApp()
+    app = SilloApp()
 
     @app.get("/send")
     async def send(request: Request, response: Response):

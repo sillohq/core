@@ -38,10 +38,10 @@ Write the class, register it on the application:
 
 ```python
 # app/main.py
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.console import Command
 
-app = silloApp()
+app = SilloApp()
 
 
 @app.add_command
@@ -361,11 +361,11 @@ These come from the application, not from configuration you repeat:
 
 ```python
 # app/main.py
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.record import DatabaseConfig, setup_record
 from sillo.work.scheduler import setup_scheduler
 
-app = silloApp(auth_user_model=User)
+app = SilloApp(auth_user_model=User)
 
 database = setup_record(app, DatabaseConfig(...), model_modules=[...])
 database.set_migrations("database.migrations")
@@ -410,7 +410,7 @@ unattended run cannot drop the schema.
 | `user:staff <identifier> [--revoke]` | Grant or revoke admin access |
 
 **No model is required.** The commands use the application's
-`auth_user_model` — set through `silloApp(auth_user_model=…)` or through
+`auth_user_model` — set through `SilloApp(auth_user_model=…)` or through
 `AuthenticationMiddleware(user_model=…)`, whichever you already use. With
 neither, `sillo.users.commands` falls back to the built-in
 `sillo.users.base.User`, so a project that has not defined its own still gets

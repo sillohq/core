@@ -1,13 +1,13 @@
 import pytest
 from pydantic import BaseModel
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.testclient import TestClient
 
 
 @pytest.fixture
 def app():
-    return silloApp()
+    return SilloApp()
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def client(app):
 @pytest.fixture
 def strict_app():
     """An app with every parameter opted into Pydantic validation."""
-    return silloApp(strict_validation=True)
+    return SilloApp(strict_validation=True)
 
 
 class UserCreate(BaseModel):

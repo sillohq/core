@@ -10,7 +10,7 @@ every field it was handed — a silent data leak with no error anywhere.
 import pytest
 from pydantic import BaseModel
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.testclient import TestClient
 
 
@@ -21,7 +21,7 @@ class UserOut(BaseModel):
 
 @pytest.fixture
 def app():
-    return silloApp()
+    return SilloApp()
 
 
 # ── rejection ────────────────────────────────────────────────────────────

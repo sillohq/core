@@ -220,7 +220,7 @@ errors; nothing happens.
 ##  How the in-process worker is wired
 
 ```python
-def _run_worker_in_process(application: silloApp, connection) -> None:
+def _run_worker_in_process(application: SilloApp, connection) -> None:
     worker = build_worker(connection=connection, queues=["default"], concurrency=4)
     state: dict = {}
 

@@ -6,7 +6,7 @@ from typing import Callable
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Group, Route, Router
 from sillo.testclient import TestClient
@@ -56,9 +56,9 @@ def test_group_with_name():
 # ========== Group Mounting Tests ==========
 
 
-def test_group_mounted_to_app(test_client_factory: Callable[[silloApp], TestClient]):
+def test_group_mounted_to_app(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test group mounted to application"""
-    app = silloApp()
+    app = SilloApp()
     router = Router()
 
     @router.get("/users")
@@ -82,9 +82,9 @@ def test_group_mounted_to_app(test_client_factory: Callable[[silloApp], TestClie
         assert posts_resp.json() == {"posts": ["Post 1", "Post 2"]}
 
 
-def test_multiple_groups(test_client_factory: Callable[[silloApp], TestClient]):
+def test_multiple_groups(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test multiple groups mounted to app"""
-    app = silloApp()
+    app = SilloApp()
 
     # API v1 group
     v1_router = Router()
@@ -118,9 +118,9 @@ def test_multiple_groups(test_client_factory: Callable[[silloApp], TestClient]):
 # ========== Nested Groups Tests ==========
 
 
-def test_nested_groups(test_client_factory: Callable[[silloApp], TestClient]):
+def test_nested_groups(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test nested group structure"""
-    app = silloApp()
+    app = SilloApp()
 
     # Inner router
     users_router = Router()
@@ -151,9 +151,9 @@ def test_nested_groups(test_client_factory: Callable[[silloApp], TestClient]):
         assert user_resp.json()["user_id"] == "123"
 
 
-def test_deeply_nested_groups(test_client_factory: Callable[[silloApp], TestClient]):
+def test_deeply_nested_groups(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test deeply nested group structure"""
-    app = silloApp()
+    app = SilloApp()
 
     # Deepest level
     endpoint_router = Router()
@@ -184,9 +184,9 @@ def test_deeply_nested_groups(test_client_factory: Callable[[silloApp], TestClie
 # ========== Group with Path Parameters Tests ==========
 
 
-def test_group_route_isolation(test_client_factory: Callable[[silloApp], TestClient]):
+def test_group_route_isolation(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test that routes in different groups are isolated"""
-    app = silloApp()
+    app = SilloApp()
 
     # Group 1
     admin_router = Router()
@@ -220,9 +220,9 @@ def test_group_route_isolation(test_client_factory: Callable[[silloApp], TestCli
 # ========== Group with Empty Path Tests ==========
 
 
-def test_group_with_empty_path(test_client_factory: Callable[[silloApp], TestClient]):
+def test_group_with_empty_path(test_client_factory: Callable[[SilloApp], TestClient]):
     """Test group with empty path"""
-    app = silloApp()
+    app = SilloApp()
     router = Router()
 
     @router.get("/test")
@@ -242,10 +242,10 @@ def test_group_with_empty_path(test_client_factory: Callable[[silloApp], TestCli
 
 
 def test_organized_api_structure(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test well-organized API structure using groups"""
-    app = silloApp()
+    app = SilloApp()
 
     # Users module
     users_router = Router()
@@ -292,10 +292,10 @@ def test_organized_api_structure(
 
 
 def test_group_with_different_http_methods(
-    test_client_factory: Callable[[silloApp], TestClient],
+    test_client_factory: Callable[[SilloApp], TestClient],
 ):
     """Test group containing routes with different HTTP methods"""
-    app = silloApp()
+    app = SilloApp()
     router = Router()
 
     @router.get("/items")

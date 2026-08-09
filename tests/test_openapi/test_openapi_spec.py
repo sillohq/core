@@ -4,14 +4,14 @@ Tests the actual /openapi.json endpoint with various configurations.
 """
 
 import pytest
-from sillo import silloApp, Query, Header, Cookie, Depend, Router
+from sillo import SilloApp, Query, Header, Cookie, Depend, Router
 from sillo.core.http import Request, Response
 from sillo.testclient import TestClient
 
 
 @pytest.fixture
 def app():
-    return silloApp()
+    return SilloApp()
 
 
 @pytest.fixture
@@ -422,7 +422,7 @@ class TestUrlFieldsSerialize:
     def test_license_url_does_not_break_the_document(self):
         from sillo.openapi.models import License
 
-        app = silloApp(license=License(name="MIT", url="https://example.com/mit"))
+        app = SilloApp(license=License(name="MIT", url="https://example.com/mit"))
         response = TestClient(app).get("/openapi.json")
 
         assert response.status_code == 200
@@ -431,7 +431,7 @@ class TestUrlFieldsSerialize:
     def test_contact_url_does_not_break_the_document(self):
         from sillo.openapi.models import Contact
 
-        app = silloApp(contact=Contact(name="Team", url="https://example.com"))
+        app = SilloApp(contact=Contact(name="Team", url="https://example.com"))
         response = TestClient(app).get("/openapi.json")
 
         assert response.status_code == 200
@@ -442,7 +442,7 @@ class TestUrlFieldsSerialize:
     def test_external_docs_url_does_not_break_the_document(self):
         from sillo.openapi.models import ExternalDocumentation
 
-        app = silloApp()
+        app = SilloApp()
         app.openapi_config.set_external_docs(
             ExternalDocumentation(url="https://example.com/docs", description="More")
         )
@@ -456,7 +456,7 @@ class TestUrlFieldsSerialize:
 
         from sillo.openapi.models import Contact, License, Server
 
-        app = silloApp(
+        app = SilloApp(
             license=License(name="MIT", url="https://example.com/mit"),
             contact=Contact(name="Team", url="https://example.com", email="t@e.com"),
             servers=[Server(url="https://api.example.com", description="Prod")],
@@ -516,7 +516,7 @@ class TestNestedSchemaReferences:
         class Assembly(BaseModel):
             parts: List[Part]  # forces Part into $defs
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/assemblies", responses={200: Assembly})
         async def list_assemblies(request, response):
@@ -576,7 +576,7 @@ class TestSchemaExamples:
             amount: int = Field(..., examples=[1299])
             currency: str = Field("USD", examples=["USD", "EUR"])
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.post("/prices", request_model=Money, responses={200: Money})
         async def create_price(request, response):
@@ -592,7 +592,7 @@ class TestSchemaExamples:
         class Money(BaseModel):
             amount: int = Field(..., examples=[1299])
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.post("/prices", request_model=Money, responses={200: Money})
         async def create_price(request, response):
@@ -615,7 +615,7 @@ class TestSchemaExamples:
         class WithExamples(BaseModel):
             value: int = Field(..., examples=[1])
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/unrelated")
         async def unrelated(request, response):
@@ -659,7 +659,7 @@ class TestDiscriminatorMapping:
         class Send(BaseModel):
             payload: Annotated[Union[Email, Sms], Field(discriminator="channel")]
 
-        app = silloApp()
+        app = SilloApp()
 
         @app.post("/send", request_model=Send, responses={200: Send})
         async def send(request, response):

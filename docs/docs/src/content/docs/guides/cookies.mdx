@@ -23,9 +23,9 @@ Cookies are an essential part of web development, allowing you to store small pi
 When a client makes a request to your sillo application, any cookies sent by the browser are automatically parsed and made available through the `request.cookies` property.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/")
 async def read_cookie(request, response):
@@ -134,9 +134,9 @@ Here's a complete authentication flow using cookies:
 
 ```python
 from datetime import datetime, timedelta
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.post("/login")
 async def login(request, response):

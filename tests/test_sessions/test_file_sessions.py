@@ -11,7 +11,7 @@ import tempfile
 
 import pytest
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.session import SessionConfig
 from sillo.session.base import BaseSessionInterface
 from sillo.session.file import FileSessionManager
@@ -205,7 +205,7 @@ class TestFileSessionIntegration:
 
     def test_file_session_integration(self):
         """Test file session with middleware integration"""
-        app = silloApp()
+        app = SilloApp()
 
         @app.get("/file-session-test")
         async def file_session_test(request: Request, response: Response):

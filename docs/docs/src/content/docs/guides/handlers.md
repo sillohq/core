@@ -21,9 +21,9 @@ This page covers the handler contract end to end: the two arguments every handle
 ##  The smallest useful form
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 @app.get("/")
 async def index(request, response):
@@ -153,9 +153,9 @@ For validated bodies, set `request_model` on the route (or `app.post(...)`) with
 
 ```python
 from pydantic import BaseModel
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp()
+app = SilloApp()
 
 class CreateItem(BaseModel):
     name: str
@@ -291,11 +291,11 @@ Two patterns you may see in older examples are not part of sillo's API: `Context
 
 ```python
 from pydantic import BaseModel
-from sillo import silloApp, Query, Depend
+from sillo import SilloApp, Query, Depend
 from sillo.http.status import HTTP_201_CREATED, HTTP_404_NOT_FOUND
 from sillo.exceptions import HTTPException
 
-app = silloApp()
+app = SilloApp()
 
 class ItemIn(BaseModel):
     name: str

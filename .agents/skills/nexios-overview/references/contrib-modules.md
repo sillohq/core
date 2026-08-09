@@ -15,10 +15,10 @@ Use this reference when the request is about `sillo-contrib` or related integrat
 Basic setup:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.redis import init_redis
 
-app = silloApp()
+app = SilloApp()
 init_redis(app)
 ```
 
@@ -49,10 +49,10 @@ Teach Redis as the caching and data-store integration layer, especially when the
 Basic setup:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.tasks import setup_tasks, create_task
 
-app = silloApp()
+app = SilloApp()
 task_manager = setup_tasks(app)
 ```
 
@@ -90,10 +90,10 @@ async def process_with_deps(
 Application setup:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.mail import setup_mail, MailConfig
 
-app = silloApp()
+app = SilloApp()
 mail_client = setup_mail(
     app,
     config=MailConfig(
@@ -124,10 +124,10 @@ Teach mail as the email delivery layer, often paired with background tasks or ev
 Basic initialization:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo_contrib.tortoise import init_tortoise
 
-app = silloApp()
+app = SilloApp()
 
 init_tortoise(
     app,

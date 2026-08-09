@@ -9,11 +9,11 @@ Or with uvicorn:
     uv run uvicorn 01_basic_password_hashing:app --reload
 """
 
-from sillo import silloApp, Query
+from sillo import SilloApp, Query
 from sillo.objects.http import Request, Response
 from sillo.hashing import hash_password, verify_password
 
-app = silloApp(title="Password Hashing Example")
+app = SilloApp(title="Password Hashing Example")
 
 
 @app.post("/register")

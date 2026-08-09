@@ -12,7 +12,7 @@ from functools import partial
 
 import pytest
 
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
@@ -106,7 +106,7 @@ class CustomUser(BaseUser):
 
 
 async def test_auth_middleware_multiple_backends_success(test_client):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     class FirstBackend(AuthenticationBackend):
@@ -140,7 +140,7 @@ async def test_auth_middleware_multiple_backends_success(test_client):
 
 
 async def test_auth_middleware_multiple_backends_fallback(test_client):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     class FirstBackend(AuthenticationBackend):
@@ -168,7 +168,7 @@ async def test_auth_middleware_multiple_backends_fallback(test_client):
 
 
 async def test_auth_middleware_no_backends_succeed(test_client):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     class FailingBackend(AuthenticationBackend):
@@ -187,7 +187,7 @@ async def test_auth_middleware_no_backends_succeed(test_client):
 
 
 async def test_auth_middleware_user_loading_failure(test_client):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     from sillo.auth import JWTAuthBackend, create_jwt
@@ -210,7 +210,7 @@ async def test_auth_middleware_user_loading_failure(test_client):
 
 
 async def test_auth_middleware_backend_exception_handling(test_client):
-    app = silloApp()
+    app = SilloApp()
     client = test_client(app)
 
     class FaultyAuthBackend(AuthenticationBackend):

@@ -33,7 +33,7 @@ Markers constructed the pre-Pydantic way — with only a default, ``alias``, or
 ``required`` — keep their original behavior exactly, so existing applications
 are unaffected. Supplying a ``type`` or any constraint opts a parameter into
 validation. To opt an entire application in at once, including markers written
-the old way, construct it with ``silloApp(strict_validation=True)``.
+the old way, construct it with ``SilloApp(strict_validation=True)``.
 """
 
 from .compiler import (

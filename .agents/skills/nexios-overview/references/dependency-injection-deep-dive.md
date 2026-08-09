@@ -25,9 +25,9 @@ That framing is better than describing it as a large container system.
 ## Basic Dependency
 
 ```python
-from sillo import silloApp, Depend
+from sillo import SilloApp, Depend
 
-app = silloApp()
+app = SilloApp()
 
 
 def get_settings():
@@ -133,7 +133,7 @@ def global_dep():
     return "global-value"
 
 
-app = silloApp(dependencies=[Depend(global_dep)])
+app = SilloApp(dependencies=[Depend(global_dep)])
 ```
 
 ### Router-Level

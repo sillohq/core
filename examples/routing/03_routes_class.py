@@ -1,7 +1,7 @@
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.routing import Routes
 
-app = silloApp()
+app = SilloApp()
 
 
 # GET /users

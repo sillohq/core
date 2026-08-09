@@ -13,7 +13,7 @@ from functools import partial
 
 import pytest
 
-from sillo.application import silloApp
+from sillo.application import SilloApp
 from sillo.auth import (
     useAuth,
     AuthenticationMiddleware,
@@ -98,7 +98,7 @@ def invalid_jwt_token():
 
 
 async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
-    app = silloApp()
+    app = SilloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -120,7 +120,7 @@ async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
 
 
 async def test_jwt_auth_backend_missing_header(test_client):
-    app = silloApp()
+    app = SilloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -142,7 +142,7 @@ async def test_jwt_auth_backend_missing_header(test_client):
 
 
 async def test_jwt_auth_backend_missing_header(test_client):
-    app = silloApp()
+    app = SilloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -157,7 +157,7 @@ async def test_jwt_auth_backend_missing_header(test_client):
 
 
 async def test_jwt_auth_backend_invalid_header_format(test_client):
-    app = silloApp()
+    app = SilloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -172,7 +172,7 @@ async def test_jwt_auth_backend_invalid_header_format(test_client):
 
 
 async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
-    app = silloApp()
+    app = SilloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -189,7 +189,7 @@ async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
 
 
 async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
-    app = silloApp()
+    app = SilloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -206,7 +206,7 @@ async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
 
 
 async def test_jwt_auth_backend_user_not_found(test_client):
-    app = silloApp()
+    app = SilloApp()
     jwt_backend = JWTAuthBackend(secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
@@ -226,7 +226,7 @@ async def test_jwt_auth_backend_user_not_found(test_client):
 
 
 async def test_jwt_auth_backend_wrong_identifier_field(test_client):
-    app = silloApp()
+    app = SilloApp()
     jwt_backend = JWTAuthBackend(identifier="user_id", secret_key=SECRET)
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 

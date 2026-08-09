@@ -4,7 +4,7 @@ Run with:
     uv run uvicorn examples/config/02_web_app:app --reload
 """
 
-from sillo import silloApp, Query
+from sillo import SilloApp, Query
 from sillo.config import Config, Field
 from sillo.objects.http import Request, Response
 from typing import Literal, Optional
@@ -48,7 +48,7 @@ class AppConfig(Config):
 config = AppConfig()
 
 # Create app with config
-app = silloApp(
+app = SilloApp(
     title=config.app_name,
     debug=config.debug,
 )

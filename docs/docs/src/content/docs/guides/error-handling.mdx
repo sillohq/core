@@ -132,25 +132,25 @@ async def get_premium_content(request, response):
 In the provided example, we demonstrate how to create a custom exception handler for handling specific exceptions in a sillo application. We define a custom exception handler `handle_payment_required_exception`, which returns a JSON response with an error message and a status code when a `PaymentRequiredException` is raised. This handler is registered with the application using `app.add_exception_handler()`. This approach allows for granular control over error responses, improving the user experience by providing clear feedback for specific scenarios, such as when a user tries to access premium content without a subscription.
 
 ##  🖥️ Server Error Handler
-sillo provides a way to register a custom server error handler using the `server_error_handler` parameter from `silloApp`. This allows you to define custom error handling behavior for server errors.
+sillo provides a way to register a custom server error handler using the `server_error_handler` parameter from `SilloApp`. This allows you to define custom error handling behavior for server errors.
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.exceptions import HTTPException
 
 async def server_error_handler(request, response, exception):
     return response.json({"error": "Internal Server Error"}, status=500)
 
-app = silloApp(server_error_handler=server_error_handler)
+app = SilloApp(server_error_handler=server_error_handler)
 ```
 
 ##  Debug Mode
 Enable debug mode for detailed error responses:
 
 ```python
-from sillo import silloApp
+from sillo import SilloApp
 
-app = silloApp(debug=True)
+app = SilloApp(debug=True)
 ```
 
 ##  Customizing 404 Not Found Responses
@@ -229,7 +229,7 @@ body, the status text, and what is disclosed.
 </Aside>
 
 ```text
-from sillo import silloApp
+from sillo import SilloApp
 
     # ... other config options ...
     "not_found": {

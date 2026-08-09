@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from sillo import silloApp
+from sillo import SilloApp
 from sillo.core.http import Request
 from sillo.security import RateLimit, RateLimitConfig, RateLimitMiddleware
 from sillo.testclient import TestClient
 
 
 def make_app(limit=3, window=60, key="client-a", **kw):
-    app = silloApp()
+    app = SilloApp()
     cfg = RateLimitConfig(
         limit=limit, window=window, key_func=lambda r: key, **kw
     )
@@ -61,7 +61,7 @@ def test_retry_after_header():
 
 
 def test_skip_when_key_none():
-    app = silloApp()
+    app = SilloApp()
     cfg = RateLimitConfig(limit=1, window=60, key_func=lambda r: None)
     app.use(RateLimitMiddleware(config=cfg))
 
@@ -76,7 +76,7 @@ def test_skip_when_key_none():
 
 
 def test_rate_limit_convenience_class():
-    app = silloApp()
+    app = SilloApp()
     app.use(RateLimit(limit=1, window=60, key_func=lambda r: "x"))
 
     @app.get("/")
@@ -89,7 +89,7 @@ def test_rate_limit_convenience_class():
 
 
 def test_custom_on_exceed_callable():
-    app = silloApp()
+    app = SilloApp()
     cfg = RateLimitConfig(
         limit=1,
         window=60,
@@ -128,7 +128,7 @@ def test_fail_open_allows_on_backend_error():
         async def clear(self):
             pass
 
-    app = silloApp()
+    app = SilloApp()
     cfg = RateLimitConfig(
         limit=1, window=60, key_func=lambda r: "boom", backend=BoomBackend()
     )
@@ -157,7 +157,7 @@ def test_fail_closed_raises_on_backend_error():
         async def clear(self):
             pass
 
-    app = silloApp()
+    app = SilloApp()
     cfg = RateLimitConfig(
         limit=1,
         window=60,
