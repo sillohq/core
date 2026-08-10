@@ -1,4 +1,0 @@
-interface:
-  display_name: "sillo Overview"
-  short_description: "Comprehensive sillo learning guide"
-  default_prompt: "Use $sillo-overview to teach sillo with concrete examples across routing, auth, pagination, WebSockets, and the rest of the framework."
