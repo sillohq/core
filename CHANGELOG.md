@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2a3] - 2026-08-10
+
+### Fixed
+
+- **A 405 response no longer permanently breaks a route.** `Route.handle`
+  assigned a fresh `JSONResponse` to `self.app` the first time a disallowed
+  method hit the route, silently replacing the real handler and its
+  middleware chain: every later request — even with an allowed method —
+  received 405 forever. The 405 is now built per request and returned
+  directly, with a proper `{"detail": "Method Not Allowed"}` body and a
+  sorted `Allow` header.
+
+  Also fixed in the same pass: the dispatch loop leaking the last
+  iteration's `matched_params` onto the first partial match, a dead
+  `prefix.rstrip("/")` no-op, and per-request rebuilding of a lowercased
+  method generator (methods are now compared in a single `set` check).
+  OpenAPI generation iterates sorted methods so the generated docs are
+  deterministic.
+
 ## [0.0.2a2] - 2026-08-09
 
 ### Removed
