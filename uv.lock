@@ -1136,7 +1136,7 @@ wheels = [
 
 [[package]]
 name = "sillo-framework"
-version = "0.0.2a2"
+version = "0.0.2a3"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
