@@ -127,10 +127,11 @@ a:hover {
 	color: var(--sillo-primary-bright);
 }
 
-header.header {
-	border-bottom: 1px solid var(--sillo-border);
-	background: rgba(5, 5, 5, 0.82);
-	backdrop-filter: blur(18px);
+/* PageFrame paints its own <header> background; make the top bar invisible so the layout reads as if there is no header. */
+[data-slot='layout'] > header {
+    background: transparent !important;
+    border-bottom: none !important;
+    backdrop-filter: none !important;
 }
 
 .sidebar-pane,

@@ -1,8 +1,8 @@
 ---
-import userConfig from 'virtual:lucode-starlight-config';
-import { getTranslation } from './NavBar.astro';
-import { getRelativeLocaleUrl } from 'astro:i18n';
 import type { StarlightRouteData } from '@astrojs/starlight/route-data';
+import SiteTitle from '../SiteTitle.astro';
+import SocialIcons from '../SocialIcons.astro';
+import ThemeSelect from '../ThemeSelect.astro';
 const { sidebar } = Astro.locals.starlightRoute;
 
 /** Filter sidebar groups to only show entries relevant to the current URL section. */
@@ -41,32 +41,11 @@ const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
             <button class="drag-icon" popovertarget="drawer" popovertargetaction="hide">
                 <span></span>
             </button>
+            <div class="drawer-logo">
+                <SiteTitle />
+            </div>
         </div>
         <div class="body">
-            <div class="links-nav">
-                {
-                    userConfig.navLinks?.map((nav) => {
-                        const absoluteLinkRegex = /^https?:\/\//;
-
-                        const link =
-                            !absoluteLinkRegex.test(nav.link) && Astro.currentLocale
-                                ? getRelativeLocaleUrl(Astro.currentLocale, nav.link)
-                                : nav.link;
-                        const label =
-                            typeof nav.label === 'string'
-                                ? nav.label
-                                : getTranslation(nav.label, nav.link, 'label');
-
-                        return (
-                            <a href={link} {...nav.attrs}>
-                                {label}
-                                {nav.badge && <span class="badge">{nav.badge}</span>}
-                            </a>
-                        );
-                    })
-                }
-            </div>
-
             <div class="links-docs">
                 {
                     filteredSidebar.map(
@@ -92,6 +71,11 @@ const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
                     )
                 }
             </div>
+
+            <footer class="drawer-footer">
+                <SocialIcons />
+                <ThemeSelect />
+            </footer>
         </div>
     </div>
 </div>
@@ -161,7 +145,27 @@ const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
 
     .header {
         display: flex;
-        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        gap: calc(var(--spacing) * 1);
+        padding-top: calc(var(--spacing) * 2);
+    }
+
+    .drawer-logo :global(.site-title) {
+        margin-right: 0;
+    }
+
+    .drawer-logo :global(.logo) {
+        max-height: 2.5rem;
+        max-width: 2.5rem;
+    }
+
+    .drawer-logo :global(.title-text) {
+        font-size: 1.5rem;
+    }
+
+    .header .drag-icon {
+        cursor: pointer;
     }
 
     .header .drag-icon span {
@@ -183,23 +187,20 @@ const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
         width: 0;
     }
 
-    .links-nav {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .links-nav a {
-        font-size: 1rem;
-        line-height: 1.5rem;
-        color: inherit;
-        text-decoration: inherit;
-    }
-
     .links-docs {
         display: flex;
         flex-direction: column;
         gap: calc(var(--spacing) * 2);
+    }
+
+    .drawer-footer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: calc(var(--spacing) * 2);
+        margin-top: calc(var(--spacing) * 6);
+        padding-top: calc(var(--spacing) * 4);
+        border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
     }
 
     .container-sidebar-entry {

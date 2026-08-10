@@ -1,12 +1,7 @@
 ---
 import config from 'virtual:starlight/user-config';
 import Search from './Search.astro';
-import SocialIcons from './SocialIcons.astro';
-import LanguageSelect from '@astrojs/starlight/components/LanguageSelect.astro';
-
-import ThemeSelect from './ThemeSelect.astro';
 import SiteTitle from './SiteTitle.astro';
-import NavBar from './parts/NavBar.astro';
 import MobileMenuToggle from './parts/MobileMenuToggle.astro';
 
 /** render the `Search` component if Pagefind is enabled or the default search component has been overridden. */
@@ -14,83 +9,84 @@ const shouldRenderSearch =
     config.pagefind || config.components.Search !== '@astrojs/starlight/components/Search.astro';
 ---
 
-<MobileMenuToggle />
+<div class="header-bar">
+    <div class="header-left">
+        <MobileMenuToggle />
+        <SiteTitle />
+    </div>
 
-<div class="site-title-wrapper">
-    <SiteTitle />
-    <NavBar />
-</div>
+    <div class="header-search">
+        {shouldRenderSearch && <Search />}
+    </div>
 
-<div class="header-right">
-    {shouldRenderSearch && <Search />}
-
-    <nav class="header-nav">
-        <div>
-            <SocialIcons />
-        </div>
-        <div>
-            <ThemeSelect />
-        </div>
-        <div>
-            <LanguageSelect />
-        </div>
-    </nav>
+    <div class="header-right" aria-hidden="true"></div>
 </div>
 
 <style>
-    .site-title-wrapper {
-        display: none;
-        margin-right: calc(var(--spacing) * 4);
+    .header-bar {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: calc(var(--spacing) * 3);
+        width: 100%;
     }
 
-    @media (min-width: 768px) {
-        .site-title-wrapper {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            gap: 50px;
-        }
+    .header-left {
+        display: flex;
+        align-items: center;
+        justify-self: start;
+        min-width: 0;
+    }
+
+    .header-left :global(.site-title) {
+        margin-right: 0;
+    }
+
+    .header-left :global(.logo) {
+        max-height: 3rem;
+        max-width: 3rem;
     }
 
     .header-right {
-        gap: 0.5rem;
-        justify-content: space-between;
-        align-items: center;
-        flex: 1 1 0%;
-        display: flex;
+        /* Balanced spacer: keeps the search bar at the exact center of the screen. */
+        justify-self: end;
     }
 
-    @media (min-width: 768px) {
-        .header-right {
-            justify-content: flex-end;
+    .header-search {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        justify-self: center;
+        width: clamp(14rem, 50vw, 22rem);
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    /*
+     * Mobile: logo hidden entirely — header shows the menu toggle + centered
+     * search. Flexbox centering keeps the search dead-center with only the
+     * toggle visible; the toggle is absolutely positioned so it never affects
+     * the search's center.
+     */
+    @media (max-width: 767px) {
+        .header-bar {
+            display: flex;
+            justify-content: center;
+            gap: calc(var(--spacing) * 2);
         }
-    }
 
-    .header-nav {
-        gap: 0.125rem;
-        align-items: center;
-        display: flex;
-    }
+        .header-left {
+            position: absolute;
+            left: 0;
+            justify-self: auto;
+        }
 
-    .header-nav > div:has(> :not(script)) {
-        display: flex;
-        align-items: center;
-    }
+        .header-left :global(.site-title) {
+            display: none;
+        }
 
-    .header-nav > div:has(> :not(script)) + div:has(> :not(script)) {
-        position: relative;
-        margin-left: calc(var(--spacing) * 1);
-        padding-left: calc(var(--spacing) * 3);
-    }
-
-    .header-nav > div:has(> :not(script)) + div:has(> :not(script))::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 0;
-        width: 1px;
-        height: 1rem;
-        background-color: color-mix(in oklab, var(--border) 85%, transparent);
-        transform: translateY(-50%);
+        .header-right {
+            display: none;
+        }
     }
 </style>

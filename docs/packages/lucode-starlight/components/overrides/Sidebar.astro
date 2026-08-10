@@ -1,5 +1,7 @@
 ---
 import SidebarSublist from './parts/SidebarSublist.astro';
+import SocialIcons from './SocialIcons.astro';
+import ThemeSelect from './ThemeSelect.astro';
 import type { StarlightRouteData } from '@astrojs/starlight/route-data';
 
 const { sidebar } = Astro.locals.starlightRoute;
@@ -36,13 +38,16 @@ const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
 
 <div class="sidebar">
     <div class="sidebar-border-gradient"></div>
-    <div class="sidebar-spacer"></div>
     <div class="container-sidebar">
         <div class="sidebar-entries">
             <span class="sidebar-marker" aria-hidden="true"></span>
             <SidebarSublist sublist={filteredSidebar} />
         </div>
     </div>
+    <footer class="sidebar-footer">
+        <SocialIcons />
+        <ThemeSelect />
+    </footer>
 </div>
 
 <style>
@@ -55,9 +60,15 @@ const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
         flex-direction: column;
     }
 
-    .sidebar-spacer {
-        height: 2.25rem;
+    .sidebar-footer {
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: calc(var(--spacing) * 2);
+        padding: calc(var(--spacing) * 3) 0 calc(var(--spacing) * 4);
+        margin: 0 2rem;
+        border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
     }
 
     .sidebar-border-gradient {
@@ -161,7 +172,7 @@ const filteredSidebar = isRoot ? sidebar : filterSidebar(sidebar, currentPath);
 
     @media (min-width: 1024px) {
         .container-sidebar {
-            max-height: calc(100svh - 10rem - 2.25rem);
+            max-height: none;
         }
     }
 </style>

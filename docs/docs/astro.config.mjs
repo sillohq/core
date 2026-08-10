@@ -57,9 +57,6 @@ export default defineConfig({
                     docs: {
                         includeAiUtilities: true,
                     },
-                    navLinks: [
-                        { label: 'Docs', link: '/guides/introduction/' },
-                    ],
                 }),
             ],
             social: [

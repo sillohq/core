@@ -1,42 +1,69 @@
-<button class="show-modal" popovertargetaction="toggle" popovertarget="drawer">
+<button
+    class="show-modal"
+    popovertargetaction="toggle"
+    popovertarget="drawer"
+    aria-label="Open navigation menu"
+    aria-expanded="false"
+>
     <svg
         xmlns="http://www.w3.org/2000/svg"
-        fill="none"
+        width="24"
+        height="24"
         viewBox="0 0 24 24"
-        stroke-width="1.5"
+        fill="none"
         stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
     >
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5"
-        ></path>
+        <line x1="4" x2="20" y1="6" y2="6"></line>
+        <line x1="4" x2="20" y1="12" y2="12"></line>
+        <line x1="4" x2="20" y1="18" y2="18"></line>
     </svg>
-    <span class="sr-only">Toggle Menu</span>
 </button>
 
 <style>
-    button {
-        all: unset;
-
-        display: inline-flex;
-        margin-right: calc(var(--spacing) * 2);
-        margin-left: calc(var(--spacing) * -2);
-        height: 2rem;
-        width: 2rem;
+    .show-modal {
+        display: flex;
         align-items: center;
         justify-content: center;
-        padding-bottom: calc(var(--spacing) * 2);
-        padding-top: calc(var(--spacing) * 2);
-        font-size: 1rem;
-        line-height: 1.5rem;
-    }
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 0;
+        border: none;
+        border-radius: 0.5rem;
+        background: transparent;
+        color: var(--foreground);
+        cursor: pointer;
 
-    @media (min-width: 1024px) {
-        button {
-            display: none;
+        svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            pointer-events: none;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                background: color-mix(in oklab, var(--foreground) 8%, transparent);
+            }
         }
     }
 
-    button > svg {
-        width: 1.5rem;
-        height: 1.5rem;
+    /* Desktop: the toggle is hidden — navigation lives in the sidebar. */
+    @media (min-width: 768px) {
+        .show-modal {
+            display: none;
+        }
     }
 </style>
+
+<script>
+    const btn = document.querySelector('.show-modal');
+    const drawer = document.getElementById('drawer');
+    if (btn && drawer) {
+        btn.addEventListener('click', () => {
+            const isOpen = drawer.matches(':popover-open');
+            btn.setAttribute('aria-expanded', String(isOpen));
+        });
+    }
+</script>
