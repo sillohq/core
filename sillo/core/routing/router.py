@@ -561,7 +561,7 @@ class Route(BaseRoute):
             matched_params = match.groupdict()
             for key, value in matched_params.items():
                 matched_params[key] = self.route_info.convertor[key].convert(value)
-            is_method_allowed = method.lower() in (m.lower() for m in self.methods)
+            is_method_allowed = method.upper() in self.methods
             if not is_method_allowed:
                 return MatchStatus.PARTIAL, matched_params
 
@@ -740,11 +740,12 @@ class Route(BaseRoute):
         """
 
         if self.methods and scope["method"] not in self.methods:
-            self.app = JSONResponse(
-                {"Method Not Allowed"},
+            response = JSONResponse(
+                {"detail": "Method Not Allowed"},
                 status_code=405,
-                headers={"Allow": ", ".join(self.methods)},
+                headers={"Allow": ", ".join(sorted(self.methods))},
             )
+            return await response(scope, receive, send)
 
         await self.app(scope, receive, send)
 
@@ -824,7 +825,6 @@ class Router(BaseRouter):
                 via decorator methods. Defaults to the standard Route class.
         """
         self.prefix = prefix or ""
-        self.prefix.rstrip("/")
         self.routes = list(routes)
         self.middleware: list[Middleware] = []
         self.sub_routers: dict[str, Router | ASGIApp] = {}
@@ -3221,6 +3221,7 @@ class Router(BaseRouter):
         scope["app"] = self
 
         path_match = None
+        path_match_params: dict[str, Any] = {}
 
         for route in self.routes:
             match, matched_params = route.match(scope)
@@ -3230,9 +3231,10 @@ class Router(BaseRouter):
                 return
             elif match == MatchStatus.PARTIAL and path_match is None:
                 path_match = route
+                path_match_params = matched_params
 
         if path_match is not None:
-            scope["route_params"] = RouteParam(matched_params)
+            scope["route_params"] = RouteParam(path_match_params)
             await path_match.handle(scope, receive, send)
             return
         if scope.get("type") == "http":

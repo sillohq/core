@@ -321,6 +321,81 @@ def test_method_not_allowed(test_client_factory: Callable[[SilloApp], TestClient
         assert post_resp.status_code != 200
 
 
+def test_405_does_not_corrupt_the_route(
+    test_client_factory: Callable[[SilloApp], TestClient],
+):
+    """A 405 must be a per-request response, not a replacement of the route.
+
+    ``Route.handle`` used to assign ``self.app = JSONResponse(...)`` on the
+    first disallowed method, permanently replacing the handler and its
+    middleware chain: every later request, even with an allowed method,
+    would then receive 405.
+    """
+    app = SilloApp()
+
+    @app.get("/only-get")
+    async def only_get(request: Request, response: Response):
+        return response.text("GET only")
+
+    with test_client_factory(app) as client:
+        post_resp = client.post("/only-get")
+        assert post_resp.status_code == 405
+        assert post_resp.json() == {"detail": "Method Not Allowed"}
+
+        get_resp = client.get("/only-get")
+        assert get_resp.status_code == 200
+        assert get_resp.text == "GET only"
+
+
+async def test_405_route_params_come_from_the_partial_match():
+    """The 405 path must carry the first partial match's params.
+
+    The dispatch loop kept ``matched_params`` from the *last* route
+    iteration and handed it to the first partial match, so ``route_params``
+    on the scope could be empty or belong to an unrelated route.
+    """
+    router = Router()
+
+    async def alpha_handler(request: Request, response: Response, x: str):
+        return response.text(x)
+
+    async def beta_handler(request: Request, response: Response):
+        return response.text("beta")
+
+    router.add_route(Route("/alpha/{x}", alpha_handler, methods=["GET"]))
+    router.add_route(Route("/beta", beta_handler, methods=["GET"]))
+
+    sent = []
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        sent.append(message)
+
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/alpha/42",
+        "raw_path": b"/alpha/42",
+        "query_string": b"",
+        "headers": [],
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("testclient", 50000),
+    }
+
+    await router(scope, receive, send)
+
+    status = next(
+        message["status"]
+        for message in sent
+        if message["type"] == "http.response.start"
+    )
+    assert status == 405
+    assert dict(scope["route_params"]) == {"x": "42"}
+
+
 # ========== Router Method Decorators Tests ==========
 
 

@@ -240,7 +240,7 @@ class APIDocumentation:
         openapi_path = self._convert_path_to_openapi_format(full_path)
 
         # Process each HTTP method for this route
-        for method in route.methods:
+        for method in sorted(route.methods):
             # Prepare request body specification
             request_body_spec = self._build_request_body_spec(route, method)
 
