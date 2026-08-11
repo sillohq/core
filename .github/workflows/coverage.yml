@@ -1,27 +1,70 @@
-name: Run Tests & Upload Coverage
+name: Coverage
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
 
 jobs:
-  test:
+  coverage:
     runs-on: ubuntu-latest
+
+    # Without a Redis server the cache backend and the event transport skip
+    # themselves quietly, and the report would look healthy while those
+    # paths were never measured.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      REDIS_URL: redis://localhost:6379/0
+      SILLO_TEST_REDIS_URL: redis://localhost:6379/15
+
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.13"
 
-      - name: Install Tox
-        run: pip install tox
+      # The install script has moved between ~/.cargo/bin and ~/.local/bin
+      # across uv versions. Add both so the PATH does not depend on which
+      # installer layout ships today.
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      - name: Run Tests with Tox
-        run: tox
+      - name: Setup Virtual Environment
+        run: uv venv
 
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v4
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]"
+
+      # pytest runs under the coverage runner so the report is scoped to the
+      # sillo package (see [tool.coverage] in pyproject.toml). fail_under is
+      # enforced here, before anything reaches Codecov.
+      - name: Run tests under coverage
+        run: uv run coverage run -m pytest tests
+
+      - name: Emit coverage.xml
+        run: uv run coverage xml -o coverage.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
+          fail_ci_if_error: true

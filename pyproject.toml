@@ -152,6 +152,17 @@ dev = [
 asyncio_mode = "auto"
 addopts = "--ignore=benchmarks"
 
+[tool.coverage.run]
+# Only the framework is measured; dependencies and the test suite itself are
+# not part of the report.
+source = ["sillo"]
+
+[tool.coverage.report]
+show_missing = true
+# Measured 87% locally with the Redis tests skipped (no server); CI runs them
+# against a real Redis, so this floor leaves headroom without going slack.
+fail_under = 85
+
 [tool.mypy]
 python_version = "3.13"
 ignore_missing_imports = true
