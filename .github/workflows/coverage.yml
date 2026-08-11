@@ -62,9 +62,11 @@ jobs:
       - name: Emit coverage.xml
         run: uv run coverage xml -o coverage.xml
 
+      # Public repo: no token needed, Codecov resolves the slug from
+      # GITHUB_REPOSITORY. A stale CODECOV_TOKEN here caused the
+      # "Repository not found" upload failures.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           fail_ci_if_error: true

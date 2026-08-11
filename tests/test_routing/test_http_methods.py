@@ -393,7 +393,7 @@ async def test_405_route_params_come_from_the_partial_match():
         if message["type"] == "http.response.start"
     )
     assert status == 405
-    assert dict(scope["route_params"]) == {"x": "42"}
+    assert dict(scope["route_params"]) == {"x": "42"}  # ty: ignore[no-matching-overload]
 
 
 # ========== Router Method Decorators Tests ==========
