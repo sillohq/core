@@ -4,16 +4,15 @@ on:
   push:
     branches:
       - main
-
   pull_request:
 
 jobs:
   coverage:
     runs-on: ubuntu-latest
 
-    # Without a Redis server the cache backend and the event transport skip
-    # themselves quietly, and the report would look healthy while those
-    # paths were never measured.
+    # Without a Redis server, the cache backend and event transport
+    # can skip themselves quietly, making coverage look healthy while
+    # those paths were never actually measured.
     services:
       redis:
         image: redis:7-alpine
@@ -38,14 +37,14 @@ jobs:
         with:
           python-version: "3.13"
 
-      # The install script has moved between ~/.cargo/bin and ~/.local/bin
-      # across uv versions. Add both so the PATH does not depend on which
-      # installer layout ships today.
+      # The install script has moved between ~/.cargo/bin and
+      # ~/.local/bin across uv versions. Add both locations so PATH
+      # does not depend on the installer layout.
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Setup Virtual Environment
         run: uv venv
@@ -53,20 +52,18 @@ jobs:
       - name: Install dependencies
         run: uv pip install -e ".[dev]"
 
-      # pytest runs under the coverage runner so the report is scoped to the
-      # sillo package (see [tool.coverage] in pyproject.toml). fail_under is
-      # enforced here, before anything reaches Codecov.
+      # pytest runs under coverage so the report is scoped to the
+      # sillo package according to [tool.coverage] in pyproject.toml.
+      # fail_under is enforced here before anything reaches Codecov.
       - name: Run tests under coverage
         run: uv run coverage run -m pytest tests
 
       - name: Emit coverage.xml
         run: uv run coverage xml -o coverage.xml
 
-      # Public repo: no token needed, Codecov resolves the slug from
-      # GITHUB_REPOSITORY. A stale CODECOV_TOKEN here caused the
-      # "Repository not found" upload failures.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
           fail_ci_if_error: true
