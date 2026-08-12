@@ -12,7 +12,7 @@ else:
         from strawberry.types import ExecutionResult
 
         HAS_STRAWBERRY = True
-    except ImportError:
+    except ImportError:  # pragma: no cover - depends on the graphql extra
         HAS_STRAWBERRY = False
         strawberry = None
         ExecutionResult = None

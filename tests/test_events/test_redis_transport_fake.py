@@ -125,7 +125,7 @@ class TestPublishing:
     async def test_publishing_reaches_a_subscriber(self, transport):
         received = []
 
-        def dispatch(channel, envelope):
+        async def dispatch(channel, envelope):
             received.append((channel, envelope))
 
         transport.bind(dispatch)
@@ -148,7 +148,10 @@ class TestPublishing:
 
     async def test_a_malformed_payload_is_dropped_not_raised(self, transport):
         delivered = []
-        transport.bind(lambda c, e: delivered.append(e))
+        async def dispatch(channel, envelope):
+            delivered.append(envelope)
+
+        transport.bind(dispatch)
 
         await transport.subscribe("orders")
         try:
