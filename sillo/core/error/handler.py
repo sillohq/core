@@ -866,7 +866,10 @@ class ServerErrorMiddleware(BaseMiddleware):
     Attributes:
         handler: Optional user-defined callback for custom error handling.
         debug: Whether to render detailed debug error pages.
-        current_request: The request being processed, stored for error context.
+
+    This middleware holds no per-request state. It is shared by every request
+    that passes through it, so anything written to ``self`` during a request
+    is visible to — and overwritable by — every other request in flight.
     """
 
     def __init__(self, handler: ServerErrHandlerType | None = None, debug: bool = True):
@@ -922,8 +925,12 @@ class ServerErrorMiddleware(BaseMiddleware):
             None. All exceptions are caught internally and converted into
             appropriate error responses based on the debug mode setting.
         """
-        self.current_request = request
-
+        # The request is deliberately not stored on ``self``. One instance of
+        # this middleware serves every request — `use()` keeps the instance,
+        # and the application assembles its chain once — so an attribute
+        # written here is overwritten by whatever request runs during the
+        # ``await`` below, and the debug page renders every header it is
+        # handed. It is passed down to the renderer instead.
         try:
             return await call_next()
         except Exception as exc:
@@ -994,7 +1001,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         if not accept:
             content = self.generate_plain_text(exc)
         elif "text/html" in accept:
-            content = self.generate_html(exc)
+            content = self.generate_html(exc, request)
             return response.html(content, status_code=500)
         else:
             content = self.generate_plain_text(exc)
@@ -1510,7 +1517,7 @@ class ServerErrorMiddleware(BaseMiddleware):
 
         return _html
 
-    def generate_html(self, exc: Exception, limit: int = 7) -> str:
+    def generate_html(self, exc: Exception, request: Request, limit: int = 7) -> str:
         """Generate a full interactive HTML debug page for the given exception.
 
         Assembles a complete error page by combining CSS styles, JavaScript for
@@ -1523,6 +1530,11 @@ class ServerErrorMiddleware(BaseMiddleware):
         Args:
             exc: The exception instance to render, including its type, message,
                 traceback, and captured local variables from each stack frame.
+            request: The request that failed. Passed in rather than read from
+                the middleware, because a middleware instance is shared by
+                every request that goes through it — so a request stored on
+                ``self`` is whichever one wrote last, and this page renders
+                every header it is given.
             limit: The maximum number of source context lines to display around
                 the error line in each traceback frame. Defaults to 7.
 
@@ -1564,7 +1576,7 @@ class ServerErrorMiddleware(BaseMiddleware):
 
         # Get request information if available
         try:
-            request_info = self._format_request_info(self.current_request)
+            request_info = self._format_request_info(request)
         except Exception as e:
             request_info = f"<div class='info-block'><h3>Error retrieving request information</h3><p>{html.escape(str(e))}</p></div>"
 

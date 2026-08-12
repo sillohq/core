@@ -11,12 +11,38 @@ import pytest
 
 from sillo import SilloApp
 from sillo.core.error.handler import ServerErrorMiddleware
+from sillo.core.http import Request
 from sillo.testclient import TestClient
 
 
 @pytest.fixture
 def middleware():
     return ServerErrorMiddleware(debug=True)
+
+
+@pytest.fixture
+def request_():
+    """The request the page is rendering for.
+
+    Passed explicitly because the middleware holds no request of its own: one
+    instance serves every request, so a stored one would be whichever wrote
+    last. See ``test_concurrent_error_pages.py``.
+    """
+    return Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/boom",
+            "raw_path": b"/boom",
+            "query_string": b"",
+            "headers": [(b"host", b"test")],
+            "client": ("127.0.0.1", 1234),
+            "server": ("test", 80),
+            "scheme": "http",
+            "http_version": "1.1",
+            "root_path": "",
+        }
+    )
 
 
 @pytest.fixture
@@ -31,25 +57,25 @@ def caught():
 # ── HTML rendering ───────────────────────────────────────────────────────
 
 
-def test_html_includes_the_exception_type(middleware, caught):
-    assert "ValueError" in middleware.generate_html(caught)
+def test_html_includes_the_exception_type(middleware, caught, request_):
+    assert "ValueError" in middleware.generate_html(caught, request_)
 
 
-def test_html_includes_the_message(middleware, caught):
-    assert "something went wrong" in middleware.generate_html(caught)
+def test_html_includes_the_message(middleware, caught, request_):
+    assert "something went wrong" in middleware.generate_html(caught, request_)
 
 
-def test_html_is_a_document(middleware, caught):
-    html = middleware.generate_html(caught)
+def test_html_is_a_document(middleware, caught, request_):
+    html = middleware.generate_html(caught, request_)
     assert "<html" in html.lower()
     assert "</html>" in html.lower()
 
 
-def test_html_names_the_file_the_error_came_from(middleware, caught):
-    assert "test_server_error_debug" in middleware.generate_html(caught)
+def test_html_names_the_file_the_error_came_from(middleware, caught, request_):
+    assert "test_server_error_debug" in middleware.generate_html(caught, request_)
 
 
-def test_html_respects_the_frame_limit(middleware):
+def test_html_respects_the_frame_limit(middleware, request_):
     def recurse(n):
         if n == 0:
             raise RuntimeError("bottom")
@@ -58,14 +84,14 @@ def test_html_respects_the_frame_limit(middleware):
     try:
         recurse(12)
     except RuntimeError as exc:
-        short = middleware.generate_html(exc, limit=2)
-        long = middleware.generate_html(exc, limit=10)
+        short = middleware.generate_html(exc, request_, limit=2)
+        long = middleware.generate_html(exc, request_, limit=10)
     assert len(long) > len(short)
 
 
-def test_html_for_an_exception_with_no_traceback(middleware):
+def test_html_for_an_exception_with_no_traceback(middleware, request_):
     """A never-raised exception has no frames and must still render."""
-    assert "ValueError" in middleware.generate_html(ValueError("bare"))
+    assert "ValueError" in middleware.generate_html(ValueError("bare"), request_)
 
 
 # ── plain text rendering ─────────────────────────────────────────────────

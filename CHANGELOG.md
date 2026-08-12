@@ -74,7 +74,47 @@ signed-cookie default was never exposed to them.
   backends read it as "purge this session". It now means only the second, which
   is what `clear()` sets.
 
+- **A debug error page could render another request's headers.**
+  `ServerErrorMiddleware` stored the request on itself and read it back while
+  rendering. One instance serves every request — `use()` keeps the instance it
+  is given — so the attribute held whichever request wrote to it last, and the
+  page renders every header it is handed. A request that failed slowly
+  returned a concurrent request's `Cookie` and `Authorization` to the wrong
+  client. It needed `Accept: text/html`, which is to say a browser, and
+  `debug` is on by default.
+
+  The request is now passed to `generate_html`, and the attribute is gone
+  rather than synchronised: a middleware instance is shared, so per-request
+  state does not belong on it at all.
+
+  This was reachable before the chain change below, by registering
+  `ServerErrorMiddleware` through `use()` — nothing documents doing that, so
+  the exposure was small, but it was real. The framework's own instance
+  happened to be rebuilt per request, which concealed it.
+
 ### Changed
+
+- **The middleware chain is assembled once, outside the request path.** It was
+  rebuilt on every request, allocating a stack of wrapper objects identical to
+  the previous request's and discarding them. It is now built in `__init__`
+  and rebuilt by `use()`, `add_middleware()` and setting `debug` — eagerly, so
+  a request only ever reads it. Routes are unaffected: they live on the
+  router, which the chain holds by reference.
+
+  Worth ~1-2% on a request, which is not why it is worth doing; it stops the
+  per-request garbage. It also turned `ServerErrorMiddleware` from a
+  per-request instance into a shared one, which is how the leak above was
+  found.
+
+- **`SilloApp.debug` is a property.** Assigning it rebuilds the chain, because
+  `ServerErrorMiddleware` is constructed with the flag and the chain is no
+  longer assembled per request. `SilloApp(debug=...)` is unchanged; the
+  instance attribute is now `_debug`.
+
+- **`ServerErrorMiddleware.generate_html()` takes the request.** The signature
+  is `generate_html(exc, request, limit=7)`. A caller still passing the old
+  shape fails with a `TypeError` at the call rather than rendering an
+  unrelated request.
 
 - **`logout()` empties the whole session** rather than removing the one entry
   `session_key` names. A server-side store purges its record and the browser is

@@ -339,7 +339,10 @@ class SilloApp:
                 thing two ways.
             ValueError: If two documentation viewers claim the same path.
         """
-        self.debug = debug
+        # Assigned directly: the property setter rebuilds the chain, which
+        # cannot happen before the rest of __init__ has run. The chain is
+        # built once at the end, when everything it needs exists.
+        self._debug = debug
         self.dependencies = dependencies or []
         self.custom_encoders: dict[type, Callable[[Any], Any]] = {}
 
@@ -361,6 +364,8 @@ class SilloApp:
         self.exceptions_handler = ExceptionMiddleware()
         self.router = self.app
         self.route = self.router.route
+        # Ready before the application can receive anything.
+        self._build_request_chain()
         self.lifespan_context: lifespan_manager | None = lifespan
         self.state: dict[str, Any] = {}
 
@@ -931,6 +936,7 @@ class SilloApp:
             0,
             Middleware(ASGIRequestResponseBridge, dispatch=middleware),
         )
+        self._build_request_chain()
 
     def add_encoder(
         self,
@@ -1186,6 +1192,42 @@ class SilloApp:
             None: Exceptions are handled by the middleware layers in the
                 chain, specifically the server error and exception middleware.
         """
+        return self._request_chain(scope, receive, send)
+
+    @property
+    def debug(self) -> bool:
+        """Whether detailed error output is enabled."""
+        return self._debug
+
+    @debug.setter
+    def debug(self, value: bool) -> None:
+        """Set debug mode, rebuilding the chain that carries the flag.
+
+        ``ServerErrorMiddleware`` is constructed with this value, and the
+        chain holding it is assembled once rather than per request — so
+        without rebuilding here, toggling ``app.debug`` after construction
+        would change the attribute and nothing else.
+        """
+        self._debug = value
+        self._build_request_chain()
+
+    def _build_request_chain(self) -> None:
+        """Assemble the middleware chain and keep it on the application.
+
+        Called from ``__init__`` and again from everything that changes what
+        the chain is made of, so a built chain is always sitting ready before
+        any request arrives. Requests only read it.
+
+        Rebuilding eagerly rather than marking the chain stale and rebuilding
+        on next use is what keeps that promise: a lazy rebuild still lands in
+        whichever request happens to arrive first, and gives one unlucky
+        caller the cost plus whatever a half-built chain would do to a
+        second request arriving concurrently.
+
+        Routes are not part of this. They live on the router, which the chain
+        holds by reference, so registering one — which the admin panel does
+        from a startup hook, long after the chain exists — needs no rebuild.
+        """
         app = self.app
         middleware = (
             [
@@ -1201,7 +1243,8 @@ class SilloApp:
         )
         for cls, args, kwargs in reversed(middleware):
             app = cls(app, *args, **kwargs)
-        return app(scope, receive, send)
+
+        self._request_chain = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
@@ -2781,6 +2824,7 @@ class SilloApp:
 
         """
         self.app = middleware_cls(self.app, **kwargs)
+        self._build_request_chain()
 
     def get_all_routes(self) -> list[Route]:
         """
