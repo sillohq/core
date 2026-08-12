@@ -50,17 +50,30 @@ def pydantic_model_from_tortoise(
             continue
 
         py_type = _tortoise_to_python_type(field_obj)
-        default = None if field_obj.null else ...
-        is_required = not field_obj.null and not field_obj.pk
 
-        if field_name in optional_fields or field_obj.null:
-            py_type = Optional[py_type]  # ty: ignore[invalid-type-form]
-            default = None
+        # A field the caller may leave out entirely: one they named in
+        # *optional_fields*, one the column allows to be null, or the primary
+        # key — which the database supplies, so a create schema that demands
+        # it is asking the caller to invent a row id.
+        #
+        # Both the annotation and the default follow from this single answer.
+        # They used to be decided separately, and disagreed: `optional_fields`
+        # widened the type to Optional but still passed `Field(...)`, so the
+        # field stayed required and could only be satisfied by passing None
+        # explicitly. The primary key had the opposite failure — it was
+        # correctly identified as not required and then given a default of
+        # ``...``, which is pydantic's marker for "required".
+        optional = (
+            field_name in optional_fields or field_obj.null or field_obj.pk
+        )
 
-        if is_required and not field_obj.null:
-            fields[field_name] = (py_type, Field(...))
+        if optional:
+            fields[field_name] = (
+                Optional[py_type],  # ty: ignore[invalid-type-form]
+                Field(default=None),
+            )
         else:
-            fields[field_name] = (py_type, Field(default=default))
+            fields[field_name] = (py_type, Field(...))
 
     return create_model(
         name or f"{model_class.__name__}Schema", __base__=BaseModel, **fields

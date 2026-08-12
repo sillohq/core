@@ -7,9 +7,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import ClassVar, Dict, List, Optional
 
-try:
+try:  # pragma: no cover - depends on whether an optional extra is installed
     import ulid
-except ImportError:
+except ImportError:  # pragma: no cover
     ulid = None  # ty: ignore[invalid-assignment]
 
 
@@ -79,8 +79,22 @@ class HasUlidMixin:
     """Generates a ULID primary key before creation."""
 
     def generate_ulid(self) -> str:
-        """Generate Ulid"""
-        return str(ulid.new())  # ty: ignore[unresolved-attribute]
+        """Return a new 26-character ULID.
+
+        ``ulid.new()`` is the API of ``ulid-py``, a different distribution to
+        the ``python-ulid`` this package declares — so this raised
+        ``AttributeError`` on every supported install. ``python-ulid`` spells
+        it ``ULID()``.
+        """
+        if ulid is None:
+            raise RuntimeError(
+                "HasUlidMixin needs the python-ulid package.\n\n"
+                "    uv add python-ulid\n\n"
+                "or install the framework's full feature set with "
+                "`uv add \"sillo-framework[all]\"`."
+            )
+
+        return str(ulid.ULID())
 
 
 class SerializesToDictMixin:

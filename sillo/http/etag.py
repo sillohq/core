@@ -7,6 +7,7 @@ from hashlib import sha1
 from typing import Any
 
 from sillo.core.http import Request, Response
+from sillo.core.http.response import BaseResponse
 from sillo.middleware.base import BaseMiddleware
 
 _WEAK_PREFIX = "W/"
@@ -134,11 +135,46 @@ class ETagMiddleware(BaseMiddleware):
                 compute_and_set_etag(response, body, weak=self.weak, override=True)
 
         if is_fresh(request, response, weak_compare=True):
-            response.status(304)
-            response.set_body(b"")
-            response.set_header("content-length", "0", overide=True)
+            return _not_modified(response)
 
         return response
+
+
+#: Headers RFC 9110 §15.4.5 requires a 304 to carry when the corresponding
+#: 200 would have carried them. Everything else is dropped: a 304 says "your
+#: copy is current", so describing a body that is not being sent is noise at
+#: best and contradictory at worst.
+_NOT_MODIFIED_HEADERS = (
+    "etag",
+    "cache-control",
+    "content-location",
+    "date",
+    "expires",
+    "vary",
+)
+
+
+def _not_modified(response: Response) -> BaseResponse:
+    """Build the 304 to send in place of *response*.
+
+    A fresh response cannot be turned into a 304 by mutating it. What arrives
+    here is a streaming response replaying the inner application's body from a
+    memory stream, and ``set_body`` writes an attribute that the streaming
+    path never reads — so the status changed to 304, ``Content-Length`` was
+    set to 0, and the original body went out behind it. A 304 carrying a body
+    is a protocol violation, and one whose declared length disagrees with what
+    it sends can desync a keep-alive connection.
+
+    Returning a new response replaces the streaming one outright, which is the
+    only way to guarantee nothing follows the headers.
+    """
+    headers = {
+        name: value
+        for name, value in response.headers.items()
+        if name.lower() in _NOT_MODIFIED_HEADERS
+    }
+
+    return BaseResponse(body=b"", status_code=304, headers=headers)
 
 
 def _response_body(response: Response) -> bytes | None:
