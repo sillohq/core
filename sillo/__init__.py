@@ -78,7 +78,9 @@ Common Patterns:
         return req.headers.get("Authorization")
 
 3. Middleware:
-    app.use(CORSMiddleware(config=CorsConfig(allow_origins=["*"])))
+    app.use(CORSMiddleware(config=CorsConfig(
+        allow_origins=["https://app.example.com"], allow_credentials=True,
+    )))
     app.use(RateLimitMiddleware(rate=100))
     app.use(SessionMiddleware(config=SessionConfig()))
 

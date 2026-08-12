@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+Five findings, reported privately on 2026-08-12 and fixed here. The first two
+chain into unauthenticated account takeover for any application using the file
+session backend; that backend is not the default, so an application on the
+signed-cookie default was never exposed to them.
+
+- **A session cookie could read and write any file on the machine.**
+  `FileSessionManager` joined the cookie's value straight into a path, so
+  `session_id=../../../../etc/cron.d/x` addressed a file outside the session
+  directory — arbitrary read through the load path, arbitrary write through the
+  save path, from one request, with no authentication. `os.path.join` made it
+  worse than traversal: an absolute value discarded the configured directory
+  altogether, so `/root/.ssh/authorized_keys` needed no `../` at all.
+
+  A key must now match `[A-Za-z0-9_-]{1,128}`, which is wider than the 64 hex
+  characters `generate_session_key` produces so a project that overrides the
+  generator keeps working, and excludes every character that can address
+  another directory. A cookie that fails is treated as though none was sent —
+  the visitor gets a new session rather than an error, so the response cannot
+  be used to probe the filesystem. `_get_file_path` additionally resolves the
+  result and refuses anything that leaves the store, which covers what the
+  pattern did not anticipate, a symlinked storage directory among them.
+
+- **Logging in did not change the session identifier.** `login()` wrote the
+  user into the session and nothing else, so an identifier known before
+  authentication was still valid after it: an attacker who fixed a session key
+  in a victim's browser held an authenticated session the moment the victim
+  signed in, without stealing a cookie. `Session.cycle_key()` is new and
+  `login()` calls it. The new record is written before the old one is purged,
+  so a failure part-way through leaves a session that still works rather than
+  one dropped from under a signed-in user.
+
+- **`allow_origins=["*"]` returned `Access-Control-Allow-Credentials: true` to
+  every caller.** `allow_credentials` defaulted to `True`, and a wildcard was
+  answered by reflecting the caller's own `Origin` rather than sending `*`.
+  Browsers reject a literal `*` on a credentialed request, and reflecting is
+  precisely what evades that check — so any site could read responses
+  authenticated as your users. This was the configuration our own docstrings
+  showed.
+
+  `allow_credentials` now defaults to `False`, and combining it with a wildcard
+  raises at construction rather than being quietly downgraded: both readings of
+  that configuration are plausible, and guessing would leave whoever wrote it
+  believing the other. A wildcard now answers with the literal `*`, so the
+  response no longer varies by caller and a shared cache cannot serve one
+  origin's headers to another.
+
+- **`update_from_dict()` wrote any field named to it.** Handed a request body
+  it would set any column, including the ones deciding what a user may do. The
+  documentation already warned against passing an unvalidated body, which is
+  weaker than not doing it: models may now declare `fillable` or `guarded`, and
+  a single call may pass `only=`. A model that states none of them behaves
+  exactly as before, since plenty of callers pass a dict they built.
+
+- **A server-side session was never deleted.** `Session.save()` cleared
+  `deleted` *before* handing the session to the backend, so `if session.deleted`
+  was unreachable in both shipped stores and logging out overwrote the file with
+  `{}` instead of removing it. No data survived, so this was not exploitable —
+  but the delete path could not be tested, and session files accumulated
+  forever. The flags are now cleared after the backend runs.
+
+  Fixing that exposed the reason it had gone unnoticed: `deleted` meant two
+  things. `__delitem__` and `delete()` set it for removing *one key*, while the
+  backends read it as "purge this session". It now means only the second, which
+  is what `clear()` sets.
+
+### Changed
+
+- **`logout()` empties the whole session** rather than removing the one entry
+  `session_key` names. A server-side store purges its record and the browser is
+  sent an expired cookie, so the identifier logged out of stops being usable by
+  anyone still holding it. Anything else the session carried goes with it. The
+  `session_key` argument is still accepted and now selects nothing, because
+  everything is removed. This is what `Session.clear()` already documented
+  itself as being for.
+
+- **`CorsConfig(allow_credentials=...)` defaults to `False`.** An application
+  relying on the old default must now say so, and cannot pair it with `"*"`.
+
 ## [0.0.2a3] - 2026-08-10
 
 ### Fixed

@@ -33,6 +33,10 @@ def login(
     a clean state. This function requires the session middleware to be
     installed in the application middleware stack.
 
+    The session identifier is rotated as part of logging in, so the key the
+    visitor arrived with stops being valid and the response carries a new
+    cookie. See :meth:`sillo.session.session_objects.Session.cycle_key`.
+
     Args:
         request: The current HTTP request object. Must have a 'session'
             key in its scope, which is provided by the session middleware.
@@ -55,40 +59,53 @@ def login(
             indicating that the session middleware has not been installed.
     """
     assert "session" in request.scope, "No Session Middleware Installed"
-    if request.session.get(session_key):  # ty: ignore[unresolved-attribute]
-        del request.session[session_key]  # ty: ignore[unresolved-attribute]
-    request.session[session_key] = {  # ty: ignore[unresolved-attribute]
+    session = request.session  # ty: ignore[unresolved-attribute]
+
+    if session.get(session_key):
+        del session[session_key]
+
+    # The identifier a session carried before it was authenticated must not
+    # survive the login. An attacker who fixes a session key in the victim's
+    # browser beforehand — and who therefore knows it — would otherwise hold a
+    # key that is authenticated the moment the victim signs in, without ever
+    # having to steal a cookie.
+    session.cycle_key()
+
+    session[session_key] = {
         identifier: user.identity,
         "display_name": user.display_name,
     }
 
 
 def logout(request: Request, session_key: str = DEFAULT_SESSION_KEY):
-    """Terminate a user's session by removing their data from the session.
+    """Terminate a user's session, emptying it.
 
-    Removes the user data entry from the server-side session associated with
-    the current request, effectively logging the user out. After this call,
-    subsequent requests will not contain any authenticated user information
-    under the specified session key. This function requires the session
-    middleware to be installed in the application middleware stack.
+    The whole session goes, not only the entry *session_key* names: a
+    server-side store is told to purge its record and the browser is sent an
+    expired cookie, so the identifier the visitor logged out of stops being
+    usable by anyone still holding it. Anything else the session carried —
+    a cart, flash messages — goes with it, which is the point rather than a
+    side effect.
+
+    This function requires the session middleware to be installed in the
+    application middleware stack.
 
     Args:
         request: The current HTTP request object. Must have a 'session'
             key in its scope, which is provided by the session middleware.
-        session_key: The key identifying the user data to remove from the
-            session dictionary. Defaults to 'user'. Must match the key
-            used during the corresponding ``login`` call.
+        session_key: Accepted so that a call written against the older
+            behaviour keeps working. It no longer selects what is removed,
+            because everything is.
 
     Returns:
-        None: This function does not return a value. The user data is
-            removed directly from the request's session dictionary.
+        None: This function does not return a value.
 
     Raises:
         AssertionError: If the request does not have a session in its scope,
             indicating that the session middleware has not been installed.
     """
     assert "session" in request.scope, "No Session Middleware Installed"
-    del request.session[session_key]  # ty: ignore[unresolved-attribute]
+    request.session.clear()  # ty: ignore[unresolved-attribute]
 
 
 class SessionAuthBackend(AuthenticationBackend):

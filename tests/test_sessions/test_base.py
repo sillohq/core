@@ -66,7 +66,12 @@ class TestBaseSessionInterface:
 
         del session["key1"]
         assert session.modified is True
-        assert session.deleted is True
+        assert session.accessed is True
+        # Not `deleted`: that means "purge this session", and a session with
+        # key2 still in it must survive to be written back. Asserting it was
+        # True here described a bug — the flag reached no backend, because
+        # Session.save() cleared it before handing the session over.
+        assert session.deleted is False
         assert "key1" not in session._session_cache
         assert session._session_cache["key2"] == "value2"
 

@@ -318,7 +318,10 @@ class TestPreflightRequests:
             allow_origins=["*"],
             blacklist_origins=["http://evil.com"],
             allow_methods=["GET"],
-            allow_credentials=True,
+            # Credentials cannot be combined with a wildcard origin; the
+            # middleware refuses that pairing at construction. The blacklist
+            # is what this test is about, and it does not depend on them.
+            allow_credentials=False,
         )
 
         app = SilloApp()

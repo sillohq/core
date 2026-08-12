@@ -36,8 +36,11 @@ class TestCORSConfiguration:
         response = client.get("/wildcard", headers={"Origin": "http://any-origin.com"})
 
         assert response.status_code == 200
+        # A wildcard configuration answers with the literal `*` rather than
+        # echoing the caller, so the response does not vary by origin and a
+        # shared cache cannot serve one origin's headers to another.
         assert (
-            response.headers["Access-Control-Allow-Origin"] == "http://any-origin.com"
+            response.headers["Access-Control-Allow-Origin"] == "*"
         )
         assert "Access-Control-Allow-Credentials" not in response.headers
 
@@ -236,7 +239,8 @@ class TestCORSConfiguration:
             "/blacklist-test", headers={"Origin": "https://good.com"}
         )
         assert response1.status_code == 200
-        assert response1.headers["Access-Control-Allow-Origin"] == "https://good.com"
+        # Wildcard config, so the literal `*` — see test_wildcard_origin_configuration.
+        assert response1.headers["Access-Control-Allow-Origin"] == "*"
 
         # Should reject blacklisted origin
         response2 = client.get(

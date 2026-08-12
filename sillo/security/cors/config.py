@@ -14,7 +14,12 @@ class CorsConfig:
         allow_methods: list[str] | None = None,
         blacklist_headers: list[str] | None = None,
         allow_headers: list[str] | None = None,
-        allow_credentials: bool = True,
+        # Off unless asked for. Credentialed CORS lets another origin read a
+        # response authenticated as the visitor, which is not something to
+        # turn on by default — and combined with a wildcard origin it is the
+        # difference between a public API and one every site can read as your
+        # signed-in users.
+        allow_credentials: bool = False,
         allow_origin_regex: str | None = None,
         expose_headers: list[str] | None = None,
         max_age: int = 600,

@@ -334,7 +334,8 @@ def test_disallowed_origin_gets_no_header():
 
 ##  Production considerations
 
-- **List explicit origins** — never ship `allow_origins=["*"]` with cookies or auth. Use `allow_origin_regex` for subdomain sets.
+- **List explicit origins** — `allow_origins=["*"]` cannot be combined with `allow_credentials=True`; the middleware raises at construction. Browsers reject a literal `*` on a credentialed request, so honouring both would mean reflecting whatever `Origin` the caller sent, and every site on the internet becomes an allowed one. Use `allow_origin_regex` for subdomain sets.
+- **`allow_credentials` is off by default.** Turn it on only alongside named origins. A wildcard configuration answers with the literal `*`, so the response does not vary by caller.
 - **Keep `max_age` high** in production (e.g. `600`+) to cut preflight chatter, but lower it while the policy is still changing.
 - **Preflight is not auth** — CORS governs which origins may *read* responses in a browser. It does not authenticate the caller or stop non-browser clients. Pair it with CSRF for cookie-auth flows and with real auth for data.
 - **`custom_error_status`** — returning a non-default status on preflight failure is cosmetic (the browser blocks the read regardless). Don't rely on it for security.

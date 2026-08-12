@@ -12,7 +12,7 @@ Features:
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import (
@@ -51,6 +51,15 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
     created_at: ClassVar[CreatedAtField] = CreatedAtField()  # ty: ignore[invalid-assignment]
     updated_at: ClassVar[UpdatedAtField] = UpdatedAtField()  # ty: ignore[invalid-assignment]
     deleted_at: ClassVar[SoftDeleteField] = SoftDeleteField()  # ty: ignore[invalid-assignment]
+
+    #: Field names :meth:`update_from_dict` may write. ``None`` means "not
+    #: stated", and every field is writable; an empty tuple means none are.
+    fillable: ClassVar[Sequence[str] | None] = None
+
+    #: Field names :meth:`update_from_dict` must never write. Consulted only
+    #: when ``fillable`` is unset, since naming what is allowed already says
+    #: what is not.
+    guarded: ClassVar[Sequence[str]] = ()
 
     class Meta:
         """Meta"""
@@ -251,16 +260,64 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
         """Serialize to JSON string."""
         return json.dumps(self.to_dict(**kwargs), indent=indent, default=str)
 
+    @classmethod
+    def mass_assignable_fields(
+        cls,
+        only: Annotated[
+            Sequence[str] | None, Doc("Restrict to these names for one call.")
+        ] = None,
+    ) -> set[str]:
+        """The field names :meth:`update_from_dict` is allowed to write.
+
+        Resolved in order of how specific the instruction is: an explicit
+        *only* for this call, then the model's ``fillable``, then everything
+        the model has minus ``guarded``.
+        """
+        fields = set(cls._meta.fields)
+
+        if only is not None:
+            return fields & set(only)
+
+        if cls.fillable is not None:
+            return fields & set(cls.fillable)
+
+        return fields - set(cls.guarded)
+
     async def update_from_dict(  # ty: ignore[invalid-method-override]
         self,
         data: Annotated[
             dict[str, Any], Doc("Dict to apply, e.g. from pydantic model_dump().")
         ],
+        *,
+        only: Annotated[
+            Sequence[str] | None,
+            Doc("Field names this call may write, overriding the model's own."),
+        ] = None,
     ) -> None:
-        """Apply a dict of field updates and save."""
+        """Apply a dict of field updates and save.
+
+        Keys that do not name a field are ignored, as are fields the model
+        does not consider mass-assignable — see ``fillable`` and ``guarded``.
+
+        Both of those are unset by default, which means every field is
+        writable. That is only safe for a dict you constructed or validated:
+        handed a request body directly, this method will happily set any
+        column a caller names, including the ones deciding what they are
+        allowed to do. Pass ``only=`` for a single call, or declare
+        ``fillable``/``guarded`` on the model so the answer is not restated at
+        each call site::
+
+            class User(Model):
+                guarded = ("is_admin", "email_verified_at")
+
+            await user.update_from_dict(await request.json())
+        """
+        allowed = self.mass_assignable_fields(only)
+
         for key, value in data.items():
-            if key in self._meta.fields:
+            if key in allowed:
                 setattr(self, key, value)
+
         await self.save()
 
     async def save(self, *args, **kwargs) -> None:

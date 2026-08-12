@@ -130,10 +130,16 @@ async def test_session_login_logout():
     app = SilloApp()
     app.use(SessionMiddleware(secret_key="secret"))
 
-    # Create a mock request with session
+    # A real Session, not a bare dict: login() rotates the session identifier,
+    # which is something only a Session can do. A dict stood in for one here
+    # and went on passing while that rotation did not exist.
+    from sillo.session.signed_cookies import SignedSessionManager
+    from sillo.session.session_objects import Session
+
     class MockRequest:
         def __init__(self):
-            self.scope = {"session": {}}
+            manager = SignedSessionManager(secret_key="secret")
+            self.scope = {"session": Session(manager, "a" * 64)}
 
         @property
         def session(self):
@@ -146,10 +152,13 @@ async def test_session_login_logout():
     login(request, user)
     assert request.scope["session"]["user"]["id"] == "test"
     assert request.scope["session"]["user"]["display_name"] == "test"
+    # The identifier the session arrived with must not have survived it.
+    assert request.scope["session"].session_key != "a" * 64
 
     # Test logout
     logout(request)
     assert "user" not in request.scope["session"]
+    assert request.scope["session"].deleted is True
 
 
 def test_session_login_without_session_middleware():

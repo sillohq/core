@@ -14,7 +14,9 @@ Usage::
 
     app = SilloApp()
     app.use(CSRFMiddleware(config=CSRFConfig(enabled=True, secret_key="...")))
-    app.use(CORSMiddleware(config=CorsConfig(allow_origins=["*"])))
+    app.use(CORSMiddleware(config=CorsConfig(
+        allow_origins=["https://app.example.com"], allow_credentials=True,
+    )))
     app.use(Shield())
     app.use(RateLimit(limit=100, window=60))
 """

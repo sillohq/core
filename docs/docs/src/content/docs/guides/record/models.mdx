@@ -174,12 +174,32 @@ async def update_user(request, response, user_id: str):
 with `None` defaults sends `{"name": None, "email": None}` for a request
 that set neither, and `update_from_dict` faithfully nulls both columns.
 
-<Aside type="caution" title="update_from_dict has no field allowlist">
+<Aside type="caution" title="update_from_dict writes every field unless you narrow it">
 
-It writes any key that matches a model field — including `id`,
-`created_at`, `deleted_at`, and `is_admin`. Passing an unvalidated
-request body straight in is a mass-assignment vulnerability. Always route
-it through a schema that only declares the fields a client may change.
+A model that declares neither `fillable` nor `guarded` accepts any key
+matching a field — including `id`, `created_at`, `deleted_at`, and
+`is_admin` — so passing an unvalidated request body straight in is a
+mass-assignment vulnerability.
+
+Narrow it on the model, so the answer is not restated at each call site:
+
+```python
+class User(Model):
+    guarded = ("is_admin", "email_verified_at")   # never writable
+
+class Post(Model):
+    fillable = ("title", "body")                  # the only writable fields
+```
+
+`fillable` wins where both are set, since naming what is allowed already
+says what is not. For one call, pass `only=`:
+
+```python
+await user.update_from_dict(payload, only=["name", "bio"])
+```
+
+Routing the body through a schema that declares only the fields a client
+may change does the same job, and the two compose.
 
 </Aside>
 

@@ -45,6 +45,11 @@ class Session:
         self.accessed = False
         self.deleted = False
 
+        #: Set by :meth:`cycle_key` to the identifier this session had before
+        #: it was rotated, so that :meth:`save` can purge the old record from
+        #: the backend once the new one is written.
+        self._retired_session_key: str | None = None
+
         self._expiration_time: datetime | None = None
 
     def __getitem__(self, key: str) -> Any:
@@ -86,8 +91,11 @@ class Session:
             KeyError: If the key is not in the session. Use :meth:`delete` to
                 remove a key that may be absent.
         """
+        # Not ``deleted``: that flag means "purge this session", which is what
+        # a backend acts on. Removing one key leaves a session that still
+        # exists and must still be stored.
         self.modified = True
-        self.deleted = True
+        self.accessed = True
         del self._session_cache[key]
 
     def __contains__(self, key: str) -> bool:
@@ -137,8 +145,9 @@ class Session:
         Args:
             key: The key to remove.
         """
+        # See __delitem__: removing a key is not deleting the session.
         self.modified = True
-        self.deleted = True
+        self.accessed = True
         if key in self._session_cache:
             del self._session_cache[key]
 
@@ -286,21 +295,59 @@ class Session:
         """
         return await self.interface.load(self)
 
+    def cycle_key(self) -> None:
+        """Give this session a new identifier, keeping its contents.
+
+        Call this whenever the trust level of a session changes — logging in
+        above all. Without it a session identifier that was known before
+        authentication is still valid after it, so anyone who planted or
+        observed that identifier inherits the authenticated session. That is
+        session fixation, and rotating the key is the whole defence.
+
+        The rotation is applied when the session is next saved: the new record
+        is written first and only then is the old one purged, so a failure
+        part-way through leaves a session that still works rather than one
+        that has been dropped from under a signed-in user.
+
+        Backends whose cookie carries the session's whole contents rather than
+        a pointer to it — the signed-cookie default — re-sign on save and so
+        change their cookie value regardless of what this sets.
+        """
+        if self.session_key is not None and self._retired_session_key is None:
+            self._retired_session_key = self.session_key
+
+        self.session_key = self.interface.generate_session_key()
+        self.modified = True
+        self.accessed = True
+
     async def save(self) -> str:
         """Write this session to the backend and return its cookie value.
 
-        Clears ``modified``, ``deleted`` and ``accessed``, so a session saved
-        twice in one request does not write twice.
+        Clears ``modified``, ``deleted`` and ``accessed`` once the backend has
+        been given the session, so a session saved twice in one request does
+        not write twice. The flags are cleared *after* the backend runs and
+        not before: they are part of what it is handed, and a store reading
+        ``deleted`` off a session whose flags had already been reset would
+        never see a deletion at all.
 
         Returns:
             The value to put in the session cookie — the session key for a
             server-side store, or the whole signed payload for the
             signed-cookie backend.
         """
+        retired = self._retired_session_key
+        self._retired_session_key = None
+
+        value = await self.interface.save(self)
+
+        if retired is not None and retired != self.session_key:
+            await self.interface.delete_key(retired)
+
         self.modified = False
         self.deleted = False
         self.accessed = False
-        return await self.interface.save(self)
+
+        return value
 
     def __str__(self) -> str:
         """Return the session's contents, for logging and debugging."""

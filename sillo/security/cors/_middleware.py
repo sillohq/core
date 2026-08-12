@@ -30,8 +30,35 @@ class CORSMiddleware(BaseMiddleware):
         self.allow_credentials = (
             self.config.allow_credentials
             if self.config.allow_credentials is not None
-            else True
+            else False
         )
+
+        # `*` and credentials cannot be combined. The Fetch standard forbids
+        # it, and browsers enforce that by rejecting a literal `*` on a
+        # credentialed request — which is why reflecting the caller's Origin
+        # instead looks like it works. It does work, and that is the problem:
+        # every origin on the internet becomes an allowed one, able to read
+        # responses authenticated as the visitor.
+        #
+        # Refused here rather than quietly downgraded, because both readings
+        # of the configuration are plausible — a public API that wants the
+        # wildcard, or a credentialed one that wants specific origins — and
+        # guessing would leave whoever wrote it believing the other.
+        if "*" in self.allow_origins and self.allow_credentials:
+            raise ValueError(
+                "CORS cannot allow credentials with a wildcard origin.\n\n"
+                "Browsers reject `Access-Control-Allow-Origin: *` on a "
+                "credentialed request, so allowing both means reflecting "
+                "whatever Origin the caller sent — which lets any site read "
+                "responses authenticated as your users.\n\n"
+                "Name the origins that may send credentials:\n\n"
+                "    CorsConfig(\n"
+                '        allow_origins=["https://app.example.com"],\n'
+                "        allow_credentials=True,\n"
+                "    )\n\n"
+                "Or keep the wildcard for a public, unauthenticated API and "
+                "leave allow_credentials off."
+            )
 
         self.allow_origin_regex = (
             re.compile(self.config.allow_origin_regex)
@@ -121,7 +148,11 @@ class CORSMiddleware(BaseMiddleware):
         cnext = await call_next()
 
         if origin and self.is_allowed_origin(origin):
-            response.set_header("Access-Control-Allow-Origin", origin, overide=True)
+            response.set_header(
+                "Access-Control-Allow-Origin",
+                self.allow_origin_value(origin),
+                overide=True,
+            )
 
             if self.allow_credentials:
                 response.set_header(
@@ -135,6 +166,21 @@ class CORSMiddleware(BaseMiddleware):
                 overide=True,
             )
         return cnext
+
+    def allow_origin_value(self, origin: str) -> str:
+        """What to send back in ``Access-Control-Allow-Origin``.
+
+        A wildcard configuration answers with the literal ``*`` rather than
+        the caller's own origin. Both satisfy the browser, but echoing the
+        origin makes the response vary by caller — which turns any shared
+        cache in front of the application into somewhere one origin's headers
+        can be served to another. Credentials are already ruled out alongside
+        a wildcard, so nothing needs the specific form here.
+        """
+        if "*" in self.allow_origins and not self.allow_credentials:
+            return "*"
+
+        return origin
 
     def is_allowed_origin(self, origin: str | None) -> bool:
         """Is Allowed Origin"""
@@ -183,7 +229,8 @@ class CORSMiddleware(BaseMiddleware):
                 status_code=self.custom_error_status,
             )
 
-        headers["Access-Control-Allow-Origin"] = origin
+        if origin:
+            headers["Access-Control-Allow-Origin"] = self.allow_origin_value(origin)
 
         if not self.is_allowed_method(requested_method):
             if self.debug:

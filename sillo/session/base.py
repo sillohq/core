@@ -26,6 +26,19 @@ class BaseSessionInterface:
         """Save"""
         raise NotImplementedError
 
+    async def delete_key(self, session_key: str) -> None:
+        """Purge a stored session by key, if this backend stores anything.
+
+        Called by :meth:`Session.save` after a rotated session has been
+        written under its new key, so that the record the old cookie pointed
+        at stops being usable.
+
+        The default does nothing, which is correct for any backend that keeps
+        no server-side record — the signed-cookie manager holds the session in
+        the cookie itself, so there is nothing to purge. Server-side stores
+        must override it or a rotated key stays live in storage.
+        """
+
     def get_cookie_name(self) -> str:
         """Get Cookie Name"""
         if not self.config:
