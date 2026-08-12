@@ -39,7 +39,7 @@ class db:
 
 jwt_backend = JWTAuthBackend()
 app = SilloApp()
-app.add_middleware(AuthenticationMiddleware(user_model=User, backend=jwt_backend))
+app.use(AuthenticationMiddleware(user_model=User, backend=jwt_backend))
 
 auth_router = Router()
 
@@ -53,7 +53,7 @@ async def login(req: Request, res: Response) -> Response:
     ):
         user = await User.load_user("123")
         if user:
-            token = create_jwt({"sub": user.identity})
+            token = create_jwt({"sub": user.identity}, secret="my-secret-key")
             return res.json({"token": token})
 
     return res.json({"error": "Invalid credentials"}, status_code=401)

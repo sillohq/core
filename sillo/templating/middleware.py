@@ -94,7 +94,7 @@ def template_context(
     Convenience function so users can register the middleware without
     importing the class directly::
 
-        app.add_middleware(template_context(default_context={"site_name": "MyApp"}))
+        app.use(template_context(default_context={"site_name": "MyApp"}))
 
     Args:
         default_context: Static default context dict.

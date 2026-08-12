@@ -1,6 +1,6 @@
 from sillo import SilloApp
 from sillo.auth import JWTAuthBackend, create_jwt
-from sillo.auth.base import BaseUser
+from sillo.users import BaseUser
 from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.core.http import Request, Response
 
@@ -48,7 +48,7 @@ app = SilloApp()
 # JWT backend - no authenticate_func needed
 jwt_backend = JWTAuthBackend()
 
-app.add_middleware(AuthenticationMiddleware(user_model=User, backend=jwt_backend))
+app.use(AuthenticationMiddleware(user_model=User, backend=jwt_backend))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -69,7 +69,7 @@ async def login(req: Request, res: Response):
         # Validate credentials (replace with your logic)
         if username == "admin" and password == "password":
 
-            token = create_jwt({"sub": "123"})
+            token = create_jwt({"sub": "123"}, secret="my-secret-key")
             return res.json({"token": token})
 
         return res.html("Invalid username or password", status_code=401)

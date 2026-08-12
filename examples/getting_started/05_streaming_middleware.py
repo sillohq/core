@@ -10,7 +10,7 @@ async def log_request(req: Request, res: Response, next) -> None:
     print(f"Response sent: {res.status_code}")
 
 
-app.add_middleware(log_request)
+app.use(log_request)
 
 
 @app.post("/stream")

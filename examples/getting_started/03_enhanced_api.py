@@ -309,7 +309,7 @@ def create_app() -> SilloApp:
     app.ws_route("/ws/chat/{room_id}", chat_websocket)
 
     # Add global middleware (example)
-    @app.add_middleware
+    @app.use
     async def logging_middleware(request: Request, response: Response, call_next):
         """Log all requests with timing information."""
         start_time = datetime.now()

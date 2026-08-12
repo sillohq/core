@@ -171,7 +171,7 @@ async def get_stats(request, response):
     # Duration is automatically tracked and added to response headers
     return {"message": "Check the X-Request-Duration header"}
 
-@app.add_middleware
+@app.use
 async def duration_logger(request, response, call_next):
     from sillo_contrib.timeout import get_request_duration
     

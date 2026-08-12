@@ -20,8 +20,8 @@ class LoggingMiddleware(BaseMiddleware):
 
 
 app = SilloApp()
-app.add_middleware(LoggingMiddleware())
-app.add_middleware(logging_middleware)
+app.use(LoggingMiddleware())
+app.use(logging_middleware)
 
 
 @app.get("/")

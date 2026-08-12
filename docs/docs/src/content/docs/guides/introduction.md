@@ -186,7 +186,7 @@ The goal is not to win by having every feature. The goal is to make the repeated
 
 ##  The Platform Direction
 
-Sillo Core is the foundation. The broader platform direction includes first-party products for visual administration, managed deployment, server operations, identity, observability, templates, and integrations.
+Sillo Core is the foundation. The broader platform direction includes first-party products for visual administration, managed deployment, server operations, identity, templates, and integrations.
 
 That long-term direction matters because backend software does not stop at code. Teams also need to deploy it, operate it, secure it, observe it, govern access, and help non-engineering teams use it safely.
 

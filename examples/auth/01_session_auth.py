@@ -1,7 +1,7 @@
 from sillo import SilloApp
 from sillo.auth.session_auth import SessionAuthBackend, login
 from sillo.auth.middleware import AuthenticationMiddleware
-from sillo.auth.users.base import BaseUser
+from sillo.users import BaseUser
 
 
 class User(BaseUser):
@@ -54,7 +54,7 @@ app = SilloApp()
 # Session backend - no authenticate_func needed
 session_backend = SessionAuthBackend()
 
-app.add_middleware(AuthenticationMiddleware(user_model=User, backend=session_backend))
+app.use(AuthenticationMiddleware(user_model=User, backend=session_backend))
 
 
 @app.get("/login")

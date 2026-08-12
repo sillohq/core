@@ -5,7 +5,7 @@ Run with:
 """
 
 from sillo import SilloApp, Query
-from sillo.objects.http import Request, Response
+from sillo.core.http import Request, Response
 from sillo.hashing import hash_password, verify_password, needs_update
 
 app = SilloApp(title="Password Hashing API Example")

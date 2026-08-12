@@ -1,8 +1,8 @@
 from sillo import SilloApp
-from sillo.auth.base import AuthenticationBackend
+from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.middleware import AuthenticationMiddleware
-from sillo.auth.users.base import BaseUser
-from sillo.auth.users.simple import UnauthenticatedUser
+from sillo.users import BaseUser
+from sillo.users import UnauthenticatedUser
 from sillo.core.http import Request, Response
 
 
@@ -61,7 +61,7 @@ app = SilloApp()
 # Custom backend
 custom_backend = CustomAuthBackend()
 
-app.add_middleware(
+app.use(
     AuthenticationMiddleware(user_model=CustomUser, backend=custom_backend)
 )
 

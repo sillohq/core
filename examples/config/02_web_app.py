@@ -6,7 +6,7 @@ Run with:
 
 from sillo import SilloApp, Query
 from sillo.config import Config, Field
-from sillo.objects.http import Request, Response
+from sillo.core.http import Request, Response
 from typing import Literal, Optional
 
 

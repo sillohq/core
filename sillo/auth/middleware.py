@@ -38,7 +38,7 @@ class AuthenticationMiddleware(BaseMiddleware):
     Example:
         Register the middleware with JWT and session backends::
 
-            app.add_middleware(AuthenticationMiddleware(
+            app.use(AuthenticationMiddleware(
                 user_model=MyUser,
                 backend=[JWTAuthBackend(secret_key="..."), SessionAuthBackend()],
             ))

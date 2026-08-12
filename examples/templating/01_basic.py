@@ -19,7 +19,7 @@ async def user_context(request: Request) -> dict:
     return {"user": {"name": "Test User", "id": 123}, "app_version": "1.0.0"}
 
 
-app.add_middleware(
+app.use(
     template_context(
         default_context={"site_name": "sillo Demo"}, context_processor=user_context
     )

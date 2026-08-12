@@ -46,7 +46,7 @@ app = SilloApp()
 jwt_backend = JWTAuthBackend()
 session_backend = SessionAuthBackend()
 
-app.add_middleware(
+app.use(
     AuthenticationMiddleware(
         user_model=User,
         backend=[jwt_backend, session_backend],  # Try JWT first, then session
@@ -86,7 +86,7 @@ async def jwt_login(req: Request, res: Response):
     # Validate credentials (replace with your logic)
     if username == "admin" and password == "password":
 
-        token = create_jwt({"sub": "123"})
+        token = create_jwt({"sub": "123"}, secret="my-secret-key")
         return res.html(f"""
             <h1>JWT Login Successful!</h1>
             <p>Your JWT token: <code>{token}</code></p>
