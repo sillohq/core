@@ -132,15 +132,19 @@ def get_transport(
             namespace=namespace, on_error=on_error, loop=loop, **kwargs
         )
 
-        if backend in _AVAILABLE:
-            module_path, _, attr = _AVAILABLE[backend].partition(":")
-            module = importlib.import_module(module_path)
+    # Anything registered through register_transport(). This block used to be
+    # indented into the `record` branch above, after its unconditional return,
+    # so it could never execute: every registered backend fell through to the
+    # ValueError below and register_transport() did nothing observable.
+    if backend in _AVAILABLE:
+        module_path, _, attr = _AVAILABLE[backend].partition(":")
+        module = importlib.import_module(module_path)
         cls = getattr(module, attr)
         return cls(namespace=namespace, on_error=on_error, loop=loop, **kwargs)
 
     raise ValueError(
         f"Unknown event backend {backend!r}. "
-        f"Available: memory, redis, persistent, record"
+        f"Available: {', '.join(sorted({'memory', 'redis', 'persistent', 'record', *_AVAILABLE}))}"
     )
 
 
