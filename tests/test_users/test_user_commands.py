@@ -1,7 +1,7 @@
 """
 sillo.users.commands — user management as plain functions.
 
-sillo ships no CLI, so these are the operations one would expose. They are
+These are the operations the ``sillo`` CLI exposes for user management. They are
 covered here because a project's tooling calls them directly, which makes them
 public API in the way a private helper is not.
 """

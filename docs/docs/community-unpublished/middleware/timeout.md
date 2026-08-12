@@ -320,7 +320,7 @@ app.use(
 )
 
 # Log timeout events
-@app.add_middleware
+@app.use
 async def timeout_logger(request, response, call_next):
     from sillo_contrib.timeout import get_request_duration
     

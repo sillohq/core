@@ -208,15 +208,21 @@ removed = scheduler.remove_job("my-job-id")  # Returns True/False
 
 ## Dependency Injection
 
-For a cleaner pattern in route handlers, use the injectable dependency:
+For a cleaner pattern in route handlers, use the scheduler stored on `app.state`:
 
 ```python
-from sillo_contrib.scheduler import SchedulerDepends, IntervalTrigger
+from sillo import SilloApp
+from sillo.work.scheduler import setup_scheduler
+from sillo.core.http import Request, Response
+
+app = SilloApp()
+scheduler = setup_scheduler(app)
+
 
 @app.post("/schedule-task")
 async def schedule_task(
-    request, response,
-    scheduler_dep = SchedulerDepends()
+    request: Request,
+    response: Response,
 ):
     """Schedule a new task from an API endpoint."""
 
@@ -226,24 +232,24 @@ async def schedule_task(
         # Your background logic here
         pass
 
-    job = scheduler_dep.add_job(
+    job = scheduler.schedule(
         process,
         IntervalTrigger(seconds=data.get("interval", 60)),
-        name=data.get("name", "api-scheduled-task")
+        name=data.get("name", "api-scheduled-task"),
     )
 
     return response.json({
         "job_id": job.id,
-        "next_run": job.next_run_time
+        "next_run": job.next_run_time,
     })
 ```
 
-The `SchedulerDepends()` exposes the same operations as `SchedulerManager`:
-- `add_job(func, trigger, ...)` — Register a new job
-- `remove_job(job_id)` — Remove a job
-- `get_job(job_id)` — Look up a job
-- `get_jobs(status=None)` — List jobs
-- `pause_job(job_id)` / `resume_job(job_id)` — Pause/resume
+The `SchedulerManager` exposes the same operations:
+- `schedule(func, trigger, ...)` — Register a new job
+- `remove(job_id)` — Remove a job
+- `get(job_id)` — Look up a job
+- `list(status=None)` — List jobs
+- `pause(job_id)` / `resume(job_id)` — Pause/resume
 
 ## Configuration
 
@@ -287,9 +293,8 @@ import asyncio
 import logging
 from sillo import SilloApp
 from sillo.core.http import Request, Response
-from sillo_contrib.scheduler import (
+from sillo.work.scheduler import (
     setup_scheduler,
-    SchedulerDepends,
     IntervalTrigger,
     CronTrigger,
     DateTimeTrigger,
@@ -312,15 +317,15 @@ async def one_off_greeting():
     print("Hello from the past!")
 
 # --- Schedule ---
-scheduler.add_job(every_minute, IntervalTrigger(seconds=60), name="minute_ticker")
-scheduler.add_job(hourly_cleanup, CronTrigger("0 * * * *"), name="hourly_cleanup")
-scheduler.add_job(one_off_greeting, DateTimeTrigger("2026-12-25T10:30:00"), name="xmas_greeting")
+scheduler.schedule(every_minute, IntervalTrigger(seconds=60), name="minute_ticker")
+scheduler.schedule(hourly_cleanup, CronTrigger("0 * * * *"), name="hourly_cleanup")
+scheduler.schedule(one_off_greeting, DateTimeTrigger("2026-12-25T10:30:00"), name="xmas_greeting")
 
 # --- Routes ---
 
 @app.get("/jobs")
-async def list_jobs(request: Request, response: Response, sd = SchedulerDepends()):
-    jobs = sd.get_jobs()
+async def list_jobs(request: Request, response: Response):
+    jobs = scheduler.list()
     return response.json([
         {
             "id": j.id,
@@ -333,18 +338,18 @@ async def list_jobs(request: Request, response: Response, sd = SchedulerDepends(
     ])
 
 @app.post("/jobs/{job_id}/pause")
-async def pause_job(request: Request, response: Response, job_id: str, sd = SchedulerDepends()):
-    ok = sd.pause_job(job_id)
+async def pause_job(request: Request, response: Response, job_id: str):
+    ok = scheduler.pause(job_id)
     return response.json({"success": ok})
 
 @app.post("/jobs/{job_id}/resume")
-async def resume_job(request: Request, response: Response, job_id: str, sd = SchedulerDepends()):
-    ok = sd.resume_job(job_id)
+async def resume_job(request: Request, response: Response, job_id: str):
+    ok = scheduler.resume(job_id)
     return response.json({"success": ok})
 
 @app.delete("/jobs/{job_id}")
-async def remove_job(request: Request, response: Response, job_id: str, sd = SchedulerDepends()):
-    ok = sd.remove_job(job_id)
+async def remove_job(request: Request, response: Response, job_id: str):
+    ok = scheduler.remove(job_id)
     return response.json({"success": ok})
 
 if __name__ == "__main__":
