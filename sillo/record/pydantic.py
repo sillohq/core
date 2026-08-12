@@ -63,9 +63,7 @@ def pydantic_model_from_tortoise(
         # explicitly. The primary key had the opposite failure — it was
         # correctly identified as not required and then given a default of
         # ``...``, which is pydantic's marker for "required".
-        optional = (
-            field_name in optional_fields or field_obj.null or field_obj.pk
-        )
+        optional = field_name in optional_fields or field_obj.null or field_obj.pk
 
         if optional:
             fields[field_name] = (

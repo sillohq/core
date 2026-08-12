@@ -91,7 +91,7 @@ class HasUlidMixin:
                 "HasUlidMixin needs the python-ulid package.\n\n"
                 "    uv add python-ulid\n\n"
                 "or install the framework's full feature set with "
-                "`uv add \"sillo-framework[all]\"`."
+                '`uv add "sillo-framework[all]"`.'
             )
 
         return str(ulid.ULID())
