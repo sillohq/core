@@ -13,12 +13,16 @@ The first beta. The version moves off the 0.0.2 line because five of the
 changes below are breaking, and because a release carrying six security fixes
 should not look like a third patch.
 
-Being a pre-release, `uv add sillo-framework` still resolves the last alpha.
-Install it deliberately:
+**This is what a plain install now gets.** Pre-releases are normally skipped
+unless asked for, but that rule only applies when there is a stable release to
+prefer — and `sillo-framework` has never published one. With every version on
+the index a pre-release, pip and uv both fall back to the newest, so
+`uv add sillo-framework` resolves 0.1.0b1 rather than the last alpha.
+
+To stay on an alpha, pin it:
 
 ```bash
-uv add "sillo-framework==0.1.0b1"
-uv add sillo-framework --prerelease=allow
+uv add "sillo-framework==0.0.2a3"
 ```
 
 Every finding under Security was reported privately and is fixed here. Three
