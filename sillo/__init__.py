@@ -105,7 +105,7 @@ Common Patterns:
 
 from sillo.core.routing import Route, Router
 
-__version__: str = "0.0.2a3"
+__version__: str = "0.1.0b1"
 
 from sillo.core.dependencies import Depend
 

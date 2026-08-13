@@ -10,7 +10,7 @@ packages = ["sillo"]
 
 [project]
 name = "sillo-framework"
-version = "0.0.2a3"
+version = "0.1.0b1"
 description = "An async Python web framework for serious APIs, web applications, real-time systems, and business backends."
 authors = [
     {name = "Chidebele Dunamis", email = "techwithdunamix@gmail.com"}
@@ -307,7 +307,7 @@ ignore = [
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.0.2a3"
+version = "0.1.0b1"
 version_files = [
     "pyproject.toml:version",
     "sillo/__init__.py:__version__"

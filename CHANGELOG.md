@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0b1] - 2026-08-13
+
+The first beta. The version moves off the 0.0.2 line because five of the
+changes below are breaking, and because a release carrying six security fixes
+should not look like a third patch.
+
+Being a pre-release, `uv add sillo-framework` still resolves the last alpha.
+Install it deliberately:
+
+```bash
+uv add "sillo-framework==0.1.0b1"
+uv add sillo-framework --prerelease=allow
+```
+
+Every finding under Security was reported privately and is fixed here. Three
+of them were features that had never worked at all rather than edge cases:
+`generate_ulid()` called an API that does not exist in the ULID package this
+project depends on, a 304 response shipped the whole body behind
+`Content-Length: 0`, and `register_transport()` could never resolve a backend
+it had registered.
+
 ### Security
 
 Five findings, reported privately on 2026-08-12 and fixed here. The first two
@@ -126,6 +147,58 @@ signed-cookie default was never exposed to them.
 
 - **`CorsConfig(allow_credentials=...)` defaults to `False`.** An application
   relying on the old default must now say so, and cannot pair it with `"*"`.
+
+### Fixed
+
+Each of these was found by writing the first test to reach the code, which is
+why three of them are features that had never worked rather than regressions.
+
+- **`HasUlidMixin.generate_ulid()` raised `AttributeError` on every install.**
+  It called `ulid.new()`, which is the API of `ulid-py` — a different
+  distribution from the `python-ulid` this package declares. There was no
+  version of this that worked. A missing package now names the one to install
+  rather than failing on `None`.
+
+- **`register_transport()` registered a backend that could never be
+  resolved.** In `get_transport`, the `_AVAILABLE` lookup was indented into
+  the `record` branch, after its unconditional `return` — so every custom
+  backend fell through to `ValueError: Unknown event backend`, and the
+  documented plugin extension point did nothing observable. The error now
+  lists registered backends alongside the built-in four.
+
+- **`pydantic_model_from_tortoise` ignored `optional_fields` and demanded a
+  primary key.** The two decisions disagreed: `optional_fields` widened the
+  annotation to `Optional` but still passed `Field(...)`, leaving the field
+  required and satisfiable only by passing `None` explicitly, while the
+  primary key was correctly identified as not required and then given a
+  default of `...`, which is pydantic's marker for required. Every generated
+  create schema demanded an `id` the database was going to supply.
+
+- **`OperationalError` maps to 503, not 500.** Unchanged behaviour, recorded
+  because it now has a test asserting it: an operational error is the database
+  being unreachable, which is transient and worth retrying.
+
+### Testing
+
+Coverage went from 87% to 90%, and the suite from roughly 3,700 tests to
+4,247. The Redis-backed classes — the queue backend, the cache, and both
+pub/sub transports — were between 0% and 26% because they could only run with
+a server present, which is how the bugs fixed in 0.0.1a15 shipped in the first
+place. They now run against `fakeredis` through the injection points the code
+already had, so those paths are exercised on every local run rather than only
+in CI.
+
+Two things the new tests record rather than fix, because changing either is a
+decision and not a cleanup:
+
+- `PersistentTransport` cannot retry a failing listener. Its docstring
+  promises that failed deliveries are requeued with a bounded retry count, and
+  the requeue branch exists, but `BaseTransport._deliver` catches every
+  listener exception and routes it to `on_error` without re-raising — so a
+  listener that throws loses the event, which is the durability this transport
+  exists to provide.
+- Dispatch callbacks must be `async`. `_deliver` awaits them, so a synchronous
+  one raises inside the transport and is swallowed as a delivery failure.
 
 ## [0.0.2a3] - 2026-08-10
 
