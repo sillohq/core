@@ -108,7 +108,7 @@ all = [
     "strawberry-graphql>=0.219.0",
     "granian>=1.2.0",
     "cryptography>=41.0.0",
-    "email-validator>=2.0.0",
+    "email-validator>=2.3.0",
     "python-ulid>=2.0.0",
 ]
 
@@ -124,7 +124,7 @@ dev = [
     "strawberry-graphql>=0.219.0",
     "granian>=1.2.0",
     "cryptography>=41.0.0",
-    "email-validator>=2.0.0",
+    "email-validator>=2.3.0",
     "python-ulid>=2.0.0",
     # Testing & QA
     "exceptiongroup>=1.2.0; python_version < '3.11'",
@@ -336,7 +336,7 @@ dev = [
     "strawberry-graphql>=0.219.0",
     "redis>=5.0.0",
     "cryptography>=41.0.0",
-    "email-validator>=2.0.0",
+    "email-validator>=2.3.0",
     "python-ulid>=2.0.0",
     # Testing & QA
     "pytest>=8.3.5",
