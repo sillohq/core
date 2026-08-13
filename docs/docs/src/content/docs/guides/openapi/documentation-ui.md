@@ -1,6 +1,6 @@
 ---
 title: Documentation UI
-description: Choosing which API documentation viewers to serve — Atlas, Swagger UI, ReDoc, Scalar — configuring them, self-hosting their assets, and writing your own.
+description: Choosing which API documentation viewers to serve (Atlas, Swagger UI, ReDoc, Scalar), configuring them, self-hosting their assets, and writing your own.
 head:
   - tag: meta
     attrs:

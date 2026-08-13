@@ -1,6 +1,6 @@
 ---
 title: Users & User Models
-description: How sillo turns an auth identity into a request.user — the simplest integration first, then the UserProtocol contract, the UserBaseModel abstract model, the built-in Record-backed User, UserManager, password hashing, and building custom user classes.
+description: "How sillo turns an auth identity into a request.user: the simplest integration first, then the UserProtocol contract, the UserBaseModel abstract model, the built-in Record-backed User, UserManager, password hashing, and building custom user classes."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: sillo users — simplest integration, UserProtocol contract, UserBaseModel abstract model, built-in User, UserManager, and password hashing.
+    content: "sillo users: simplest integration, UserProtocol contract, UserBaseModel abstract model, built-in User, UserManager, and password hashing."
 ---
 
 #  Users & User Models

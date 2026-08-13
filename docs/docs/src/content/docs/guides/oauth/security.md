@@ -1,6 +1,6 @@
 ---
 title: The OAuth Security Model
-description: How sillo-oauth protects a login without a state store — signed state cookies, PKCE verifiers derived rather than stored, reserved parameters that cannot be overridden, and credentials kept out of logs.
+description: "How sillo-oauth protects a login without a state store: signed state cookies, PKCE verifiers derived rather than stored, reserved parameters that cannot be overridden, and credentials kept out of logs."
 head:
 - tag: meta
   attrs:

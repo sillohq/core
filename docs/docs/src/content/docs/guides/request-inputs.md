@@ -1,6 +1,6 @@
 ---
 title: Handling Request Inputs
-description: Read and validate incoming request data in sillo — JSON bodies, form data, uploaded files, and streaming bodies — with the Request object and Pydantic models.
+description: Read and validate incoming request data in sillo (JSON bodies, form data, uploaded files, and streaming bodies) with the Request object and Pydantic models.
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: Read and validate incoming request data in sillo — JSON bodies, form data, uploaded files, and streaming bodies.
+    content: "Read and validate incoming request data in sillo: JSON bodies, form data, uploaded files, and streaming bodies."
 ---
 
 #  Handling Request Inputs

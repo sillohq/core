@@ -1,6 +1,6 @@
 ---
 title: Console Commands
-description: Build your project's command-line tooling with sillo.console — command classes, explicit arguments, colour, tables, progress bars, and interactive prompts, with no third-party dependency.
+description: "Build your project's command-line tooling with sillo.console: command classes, explicit arguments, colour, tables, progress bars, and interactive prompts, with no third-party dependency."
 head:
 - tag: meta
   attrs:

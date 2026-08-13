@@ -1,6 +1,6 @@
 ---
 title: HTTP Client
-description: Calling other services from sillo — the httpx-based client with caching, retry, Pydantic validation and middleware, plus the failure modes of talking to a network you do not control.
+description: "Calling other services from sillo: the httpx-based client with caching, retry, Pydantic validation and middleware, plus the failure modes of talking to a network you do not control."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: Calling other services from sillo — the httpx-based client with caching, retry, Pydantic validation and middleware, plus the failure modes of talking to a network you do not control.
+      content: "Calling other services from sillo: the httpx-based client with caching, retry, Pydantic validation and middleware, plus the failure modes of talking to a network you do not control."
 ---
 
 #  HTTP Client (`sillo.http.client`)

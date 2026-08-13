@@ -1,6 +1,6 @@
 ---
 title: Persisting the Login
-description: What to do with a verified OAuthProfile — a session cookie, a JWT, a linked account, or nothing at all — and how to protect the routes behind it with useAuth.
+description: What to do with a verified OAuthProfile (a session cookie, a JWT, a linked account, or nothing at all) and how to protect the routes behind it with useAuth.
 head:
 - tag: meta
   attrs:

@@ -1,6 +1,6 @@
 ---
 title: Background Work
-description: Queue jobs and scheduled tasks — writing a job, running the worker inside the application or beside it, and what each choice costs.
+description: "Queue jobs and scheduled tasks: writing a job, running the worker inside the application or beside it, and what each choice costs."
 head:
   - tag: meta
     attrs:

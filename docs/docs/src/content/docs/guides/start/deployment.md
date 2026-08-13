@@ -1,6 +1,6 @@
 ---
 title: Deployment
-description: Taking a Sillo project to production — settings, migrations, workers, static files, a reverse proxy, and the checks worth running before you ship.
+description: "Taking a Sillo project to production: settings, migrations, workers, static files, a reverse proxy, and the checks worth running before you ship."
 head:
   - tag: meta
     attrs:

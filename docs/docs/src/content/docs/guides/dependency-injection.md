@@ -1,6 +1,6 @@
 ---
 title: Dependency Injection
-description: sillo's dependency injection system — from a single injected function to nested, cached, and request-scoped dependencies, plus how Query/Header/Cookie and request_model plug in.
+description: "sillo's dependency injection system: from a single injected function to nested, cached, and request-scoped dependencies, plus how Query/Header/Cookie and request_model plug in."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: How sillo resolves dependencies — nesting, caching, request injection, and parameter extractors.
+    content: "How sillo resolves dependencies: nesting, caching, request injection, and parameter extractors."
 ---
 
 #  Dependency Injection

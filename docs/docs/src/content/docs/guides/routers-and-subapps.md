@@ -1,6 +1,6 @@
 ---
 title: Routers & Sub-Applications
-description: Organize sillo routes into modular Routers and Groups — prefixes, nesting, mounting sub-applications (including external ASGI apps), and per-router middleware and dependencies.
+description: "Organize sillo routes into modular Routers and Groups: prefixes, nesting, mounting sub-applications (including external ASGI apps), and per-router middleware and dependencies."
 head:
 - tag: meta
   attrs:

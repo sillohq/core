@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: Function and class-based middleware in sillo — app.use, BaseMiddleware, route/router scope, and raw ASGI middleware.
+    content: "Function and class-based middleware in sillo: app.use, BaseMiddleware, route/router scope, and raw ASGI middleware."
 ---
 
 #  Middleware

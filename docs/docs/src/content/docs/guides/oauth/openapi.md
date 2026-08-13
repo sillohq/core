@@ -1,6 +1,6 @@
 ---
 title: OAuth in OpenAPI
-description: What your API reference should say about an OAuth login — which credential to document, how sillo derives securitySchemes and per-route security from your backends and gates, and how to publish an OAuth2 flow for a Swagger authorize button.
+description: "What your API reference should say about an OAuth login: which credential to document, how sillo derives securitySchemes and per-route security from your backends and gates, and how to publish an OAuth2 flow for a Swagger authorize button."
 head:
 - tag: meta
   attrs:

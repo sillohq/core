@@ -1,6 +1,6 @@
 ---
 title: Security Headers (Shield)
-description: Apply secure HTTP response headers — CSP, HSTS, frame options, and more — with the first-party sillo.security.Shield middleware.
+description: Apply secure HTTP response headers (CSP, HSTS, frame options, and more) with the first-party sillo.security.Shield middleware.
 ---
 
 #  Security Headers (Shield)

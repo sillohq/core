@@ -1,6 +1,6 @@
 ---
 title: Authentication
-description: How authentication works in sillo — the two-layer model (AuthenticationMiddleware resolves who, useAuth enforces policy), backends, the identity-to-user flow, composing strategies, custom backends, and error handling. Starts with the smallest working integration.
+description: "How authentication works in sillo: the two-layer model (AuthenticationMiddleware resolves who, useAuth enforces policy), backends, the identity-to-user flow, composing strategies, custom backends, and error handling. Starts with the smallest working integration."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: sillo authentication model — middleware, backends, useAuth, identity flow, and JWT/session/API-key strategies.
+    content: "sillo authentication model: middleware, backends, useAuth, identity flow, and JWT/session/API-key strategies."
 ---
 
 #  Authentication

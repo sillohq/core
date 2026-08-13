@@ -1,6 +1,6 @@
 ---
 title: Permissions
-description: sillo's full permission system — define, assign, revoke, check, and organize permissions. Covers direct user permissions, group-inherited permissions, the PermissionMixin, caching, batch operations, queries, and startup seeding.
+description: "sillo's full permission system: define, assign, revoke, check, and organize permissions. Covers direct user permissions, group-inherited permissions, the PermissionMixin, caching, batch operations, queries, and startup seeding."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: Full sillo permission system — direct assignments, group inheritance, PermissionMixin, caching, queries, and seeding.
+    content: "Full sillo permission system: direct assignments, group inheritance, PermissionMixin, caching, queries, and seeding."
 ---
 
 #  Permissions

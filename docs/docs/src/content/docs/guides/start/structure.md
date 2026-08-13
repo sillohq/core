@@ -1,6 +1,6 @@
 ---
 title: Project Structure
-description: Every directory in a Sillo project, what belongs in it, and the reasoning behind the boundaries — app, database, routes, templates, static, storage, scripts, tests.
+description: "Every directory in a Sillo project, what belongs in it, and the reasoning behind the boundaries: app, database, routes, templates, static, storage, scripts, tests."
 head:
   - tag: meta
     attrs:

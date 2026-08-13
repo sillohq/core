@@ -1,6 +1,6 @@
 ---
 title: Response models
-description: response_model turns a documented output schema into an enforced one — coercing declared fields, dropping undeclared ones, and failing loudly when a handler breaks its own contract. Includes Pydantic serialization in full.
+description: "response_model turns a documented output schema into an enforced one: coercing declared fields, dropping undeclared ones, and failing loudly when a handler breaks its own contract. Includes Pydantic serialization in full."
 ---
 
 `response_model` makes the schema you publish the schema you actually return:

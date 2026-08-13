@@ -1,6 +1,6 @@
 ---
 title: Protecting Routes
-description: Enforce authentication and authorization on routes with useAuth — sillo's route-level auth gate. Covers required auth, scopes, permissions, optional auth, per-route backend overrides, and subclassing.
+description: "Enforce authentication and authorization on routes with useAuth: sillo's route-level auth gate. Covers required auth, scopes, permissions, optional auth, per-route backend overrides, and subclassing."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: Enforce auth and authorization with useAuth — scopes, permissions, optional auth, backend overrides, subclassing.
+    content: "Enforce auth and authorization with useAuth: scopes, permissions, optional auth, backend overrides, subclassing."
 ---
 
 #  Protecting Routes

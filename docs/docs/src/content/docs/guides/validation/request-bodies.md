@@ -1,6 +1,6 @@
 ---
 title: Request bodies
-description: Declare a JSON body once with request_model= on the decorator, and learn Pydantic's BaseModel in full — nested models, custom validators, model configuration, unions, and aliases.
+description: "Declare a JSON body once with request_model= on the decorator, and learn Pydantic's BaseModel in full: nested models, custom validators, model configuration, unions, and aliases."
 ---
 
 The JSON body is the one input declared on the **decorator** rather than with a parameter marker:

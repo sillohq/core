@@ -1,6 +1,6 @@
 ---
 title: JWT Authentication
-description: Issuing and verifying JSON Web Tokens in sillo — JWTAuthBackend, TokenForUser for stateless tokens, JWTUserMixin for DB-backed refresh/revocation, and the two current gotchas (identifier claim and refresh jti).
+description: "Issuing and verifying JSON Web Tokens in sillo: JWTAuthBackend, TokenForUser for stateless tokens, JWTUserMixin for DB-backed refresh/revocation, and the two current gotchas (identifier claim and refresh jti)."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: sillo JWT auth — backend, TokenForUser, JWTUserMixin, refresh, revocation, and known gotchas.
+    content: "sillo JWT auth: backend, TokenForUser, JWTUserMixin, refresh, revocation, and known gotchas."
 ---
 
 #  JWT Authentication

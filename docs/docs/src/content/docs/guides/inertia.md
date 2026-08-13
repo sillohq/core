@@ -1,6 +1,6 @@
 ---
 title: Inertia
-description: Build a React or Vue frontend against Sillo routes with sillo-inertia — server-side routing, no API layer, and no client-side router to keep in sync.
+description: "Build a React or Vue frontend against Sillo routes with sillo-inertia: server-side routing, no API layer, and no client-side router to keep in sync."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: Build a React or Vue frontend against Sillo routes with sillo-inertia — server-side routing and no API layer.
+      content: "Build a React or Vue frontend against Sillo routes with sillo-inertia: server-side routing and no API layer."
 ---
 
 #  Inertia

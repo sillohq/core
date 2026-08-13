@@ -1,6 +1,6 @@
 ---
 title: Handlers
-description: Everything a sillo handler does — the (request, response) contract, how return values become responses, path/query/body access, status codes, errors, and dependency injection.
+description: "Everything a sillo handler does: the (request, response) contract, how return values become responses, path/query/body access, status codes, errors, and dependency injection."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: The handler contract in sillo — request/response, return values, errors, and dependency injection.
+    content: "The handler contract in sillo: request/response, return values, errors, and dependency injection."
 ---
 
 #  Handlers

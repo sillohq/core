@@ -1,6 +1,6 @@
 ---
 title: URL Normalization
-description: Keep URLs consistent — trailing slashes, double slashes, and case — with the first-party sillo.normalize middleware.
+description: Keep URLs consistent (trailing slashes, double slashes, and case) with the first-party sillo.normalize middleware.
 ---
 
 #  URL Normalization

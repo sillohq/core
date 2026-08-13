@@ -1,6 +1,6 @@
 ---
 title: Creating a Project
-description: Start a Sillo application from the official starter — with sillo-start or a plain git clone — and understand what you get and why it is shaped that way.
+description: Start a Sillo application from the official starter (with sillo-start or a plain git clone) and understand what you get and why it is shaped that way.
 head:
   - tag: meta
     attrs:

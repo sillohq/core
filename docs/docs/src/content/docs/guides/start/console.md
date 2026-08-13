@@ -1,6 +1,6 @@
 ---
 title: The Console
-description: The sillo command — every command a Sillo project gets, where they come from, and how to add your own.
+description: "The sillo command: every command a Sillo project gets, where they come from, and how to add your own."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: The sillo command — every command a Sillo project gets, and how to add your own.
+      content: "The sillo command: every command a Sillo project gets, and how to add your own."
 ---
 
 #  The Console

@@ -1,6 +1,6 @@
 ---
 title: OAuth2 Overview
-description: Sign in with Google, GitHub, Discord or Microsoft using sillo-oauth — two plain functions that return a URL and a verified profile, with no router, no middleware and no opinion about how you store the login.
+description: "Sign in with Google, GitHub, Discord or Microsoft using sillo-oauth: two plain functions that return a URL and a verified profile, with no router, no middleware and no opinion about how you store the login."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: sillo-oauth is two functions — authorize_url returns a URL, exchange returns a verified profile. Everything else stays in your handlers.
+    content: "sillo-oauth is two functions: authorize_url returns a URL, exchange returns a verified profile. Everything else stays in your handlers."
 ---
 
 #  OAuth2 Overview

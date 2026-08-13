@@ -1,6 +1,6 @@
 ---
 title: API Keys
-description: Scoped, hashed API keys in sillo — APIKeyAuthBackend, ApiKey/ApiKeyManager for storage, and ApiKeyUserMixin for issuing keys from a user.
+description: "Scoped, hashed API keys in sillo: APIKeyAuthBackend, ApiKey/ApiKeyManager for storage, and ApiKeyUserMixin for issuing keys from a user."
 head:
 - tag: meta
   attrs:
@@ -9,7 +9,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: sillo API key auth — backend, ApiKey model, ApiKeyManager, ApiKeyUserMixin, hashing and scopes.
+    content: "sillo API key auth: backend, ApiKey model, ApiKeyManager, ApiKeyUserMixin, hashing and scopes."
 ---
 
 #  API Keys
