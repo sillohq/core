@@ -142,7 +142,7 @@ dev = [
     # upstream release turns the build red with no change from us, and ty in
     # particular adds checks between patch releases. Upper-bounded so a
     # version bump is a commit somebody chose to make.
-    "ruff>=0.16.0,<0.17",
+    "ruff>=0.16.2,<0.17",
     "ty>=0.0.63,<0.1",
     # Type stubs
     "typing-extensions==4.16.0",
@@ -348,7 +348,7 @@ dev = [
     # upstream release turns the build red with no change from us, and ty in
     # particular adds checks between patch releases. Upper-bounded so a
     # version bump is a commit somebody chose to make.
-    "ruff>=0.16.0,<0.17",
+    "ruff>=0.16.2,<0.17",
     "ty>=0.0.63,<0.1",
     # Type hints
     "typing-extensions>=4.12.2",
