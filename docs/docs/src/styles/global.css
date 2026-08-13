@@ -206,3 +206,37 @@ select,
 textarea {
 	font-family: inherit;
 }
+
+/*
+ * lucode-starlight's PageFrame renders its own <footer> from the `footerText`
+ * config string, and its stylesheet hides that footer on any page containing
+ * [data-slot='docs'] — which is every page with a table of contents. So it only
+ * ever showed on splash pages. src/components/SiteFooter replaces it site-wide
+ * (and keeps the theme credit), so the original is retired everywhere rather
+ * than left to appear on the handful of pages that still render it.
+ */
+[data-slot='layout'] > footer {
+	display: none !important;
+}
+
+/*
+ * The table of contents spills out of its own box on long pages.
+ *
+ * lucode-starlight's PageSidebar caps the sticky wrapper with
+ * `max-height: calc(100vh - header)` and leaves it `overflow: visible`, then
+ * asks the ToC inside for `height: 100%`. A percentage height against a parent
+ * with only a max-height resolves to `auto`, so the inner element grows to its
+ * full content height, its own `overflow-y: auto` never engages, and anything
+ * past the cap paints outside the wrapper. On /guides/routing/ that is ~290px
+ * of links hanging below the layout.
+ *
+ * It went unnoticed while the page ended right there and the overflow fell on
+ * empty background; with a footer beneath, it lands on top of it. Moving the
+ * scroll onto the capped wrapper is what the max-height was for.
+ */
+[data-slot='docs'] .toc > div {
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	scrollbar-color: var(--sillo-border-strong) transparent;
+}

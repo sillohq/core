@@ -48,6 +48,14 @@ export default defineConfig({
             ],
             favicon: '/favicon.svg',
             customCss: ['./src/styles/global.css'],
+            // Wraps lucode-starlight's own PageFrame and appends the site
+            // footer beneath it. The theme plugin logs a warning that this
+            // override already exists and steps aside, which is the documented
+            // way to take one of its components over; src/components/PageFrame
+            // re-renders the theme version so the layout is unchanged.
+            components: {
+                PageFrame: './src/components/PageFrame.astro',
+            },
             editLink: {
                 baseUrl: 'https://github.com/sillohq/core/edit/main/docs',
             },

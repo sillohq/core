@@ -1,0 +1,27 @@
+---
+/**
+ * Wraps lucode-starlight's PageFrame so the site footer can render outside the
+ * layout shell.
+ *
+ * Registering `PageFrame` in astro.config.mjs makes the theme plugin skip its
+ * own registration (it warns, then defers to whatever the user configured), so
+ * the theme component is re-rendered here explicitly and the slots are passed
+ * straight through. Nothing about the layout changes.
+ *
+ * The footer goes *after* the theme frame rather than inside it because that
+ * frame is `min-height: 100svh` — anything appended lands below the fold, full
+ * width, clear of the sticky sidebar, which stops at the end of its own grid.
+ * Overriding Starlight's `Footer` instead would have trapped the link map in
+ * the 40rem content column, beside the table of contents.
+ */
+import ThemePageFrame from 'lucode-starlight/components/overrides/PageFrame.astro';
+import SiteFooter from './SiteFooter.astro';
+---
+
+<ThemePageFrame>
+    <Fragment slot="header"><slot name="header" /></Fragment>
+    <Fragment slot="sidebar"><slot name="sidebar" /></Fragment>
+    <slot />
+</ThemePageFrame>
+
+<SiteFooter />

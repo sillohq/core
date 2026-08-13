@@ -1,0 +1,504 @@
+---
+/**
+ * Site-wide docs footer.
+ *
+ * lucode-starlight's own PageFrame footer renders `footerText`, a single
+ * inline-markdown string, and is hidden outright on any page carrying
+ * `[data-slot='docs']` — which is every page with a table of contents. So it
+ * never appeared on the docs at all. This replaces it: a real link map,
+ * rendered on every template, below the layout rather than inside the content
+ * column so it can run the full width.
+ *
+ * Every link here is checked against src/content/docs and against the repos
+ * that actually exist under github.com/sillohq. Nothing points at a page that
+ * has yet to be written.
+ */
+
+// Same two files the header logo uses, so Astro emits one asset per theme and
+// the browser already has both cached by the time the footer is reached.
+// Their aspect ratios differ slightly (800x628 vs 800x607), so the CSS pins
+// height and leaves width auto rather than setting both.
+import logoDark from '../assets/logo-white.svg';
+import logoLight from '../assets/logo-black.svg';
+
+// The site can be served from a sub-path (DOCS_BASE_URL), so internal hrefs
+// are prefixed. External ones are passed through untouched.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const url = (path: string) => (path.startsWith('http') ? path : `${base}${path}`);
+
+const GITHUB = 'https://github.com/sillohq';
+const PYPI = 'https://pypi.org/project';
+
+type Link = { label: string; href: string };
+type Column = { title: string; links: Link[] };
+
+const columns: Column[] = [
+    {
+        title: 'Start here',
+        links: [
+            { label: 'Introduction', href: '/guides/introduction/' },
+            { label: 'Installation', href: '/guides/installation/' },
+            { label: 'Configuration', href: '/guides/configuration/' },
+            { label: 'Request lifecycle', href: '/guides/request-lifecycle/' },
+            { label: 'Creating a project', href: '/guides/start/' },
+            { label: 'Project structure', href: '/guides/start/structure/' },
+            { label: 'Testing', href: '/guides/start/testing/' },
+            { label: 'Deployment', href: '/guides/start/deployment/' },
+        ],
+    },
+    {
+        title: 'Core',
+        links: [
+            { label: 'Routing', href: '/guides/routing/' },
+            { label: 'Routers & sub-apps', href: '/guides/routers-and-subapps/' },
+            { label: 'Handlers', href: '/guides/handlers/' },
+            { label: 'Middleware', href: '/guides/middleware/' },
+            { label: 'Dependency injection', href: '/guides/dependency-injection/' },
+            { label: 'Handling inputs', href: '/guides/request-inputs/' },
+            { label: 'Sending responses', href: '/guides/sending-responses/' },
+            { label: 'Error handling', href: '/guides/error-handling/' },
+            { label: 'Concurrency', href: '/guides/concurrency/' },
+        ],
+    },
+    {
+        title: 'Data',
+        links: [
+            { label: 'Record (ORM)', href: '/guides/record/' },
+            { label: 'Models & mixins', href: '/guides/record/models/' },
+            { label: 'Scopes & events', href: '/guides/record/scopes-events/' },
+            { label: 'Migrations & seeding', href: '/guides/record/migrations/' },
+            { label: 'Transactions & factories', href: '/guides/record/transactions-factories/' },
+            { label: 'Validation', href: '/guides/validation/' },
+            { label: 'Response models', href: '/guides/validation/response-models/' },
+            { label: 'OpenAPI', href: '/guides/openapi/' },
+        ],
+    },
+    {
+        title: 'Background & realtime',
+        links: [
+            { label: 'Background work', href: '/guides/work/' },
+            { label: 'Queues', href: '/guides/work/queue/' },
+            { label: 'Jobs', href: '/guides/work/jobs/' },
+            { label: 'Scheduler', href: '/guides/work/scheduler/' },
+            { label: 'Event system', href: '/guides/events/' },
+            { label: 'WebSockets', href: '/guides/websockets/' },
+            { label: 'Channels & groups', href: '/guides/websockets/channels/' },
+            { label: 'Caching', href: '/guides/cache/' },
+        ],
+    },
+    {
+        title: 'Auth & security',
+        links: [
+            { label: 'Authentication', href: '/guides/authentication/' },
+            { label: 'Session auth', href: '/guides/session-auth/' },
+            { label: 'JWT auth', href: '/guides/jwt-auth/' },
+            { label: 'API keys', href: '/guides/api-keys/' },
+            { label: 'Permissions', href: '/guides/permissions/' },
+            { label: 'OAuth2 & social login', href: '/guides/oauth/' },
+            { label: 'CSRF protection', href: '/guides/csrf/' },
+            { label: 'Rate limiting', href: '/guides/rate-limiting/' },
+            { label: 'Security headers', href: '/guides/security/' },
+        ],
+    },
+    {
+        title: 'Frontend & services',
+        links: [
+            { label: 'Templating', href: '/guides/templating/' },
+            { label: 'Static files', href: '/guides/static-files/' },
+            { label: 'Inertia', href: '/guides/inertia/' },
+            { label: 'Frontend (SPA)', href: '/guides/frontend/' },
+            { label: 'Mail', href: '/guides/services/mail/' },
+            { label: 'Console commands', href: '/guides/console/' },
+            { label: 'HTTP client', href: '/guides/http/client/' },
+            { label: 'GraphQL', href: '/guides/graphql/' },
+            { label: 'Helpers', href: '/guides/helpers/' },
+        ],
+    },
+    {
+        title: 'Packages',
+        links: [
+            { label: 'sillo-framework', href: `${PYPI}/sillo-framework/` },
+            { label: 'sillo-start', href: `${PYPI}/sillo-start/` },
+            { label: 'sillo-oauth', href: `${PYPI}/sillo-oauth/` },
+            { label: 'sillo-inertia', href: `${PYPI}/sillo-inertia/` },
+            { label: 'Starter template', href: `${GITHUB}/starter` },
+            { label: 'Starter (Inertia)', href: `${GITHUB}/starter-inertia` },
+        ],
+    },
+    {
+        title: 'Project',
+        links: [
+            { label: 'sillo.build', href: 'https://sillo.build' },
+            { label: 'GitHub', href: `${GITHUB}/core` },
+            { label: 'Issues', href: `${GITHUB}/core/issues` },
+            { label: 'Changelog', href: `${GITHUB}/core/blob/main/CHANGELOG.md` },
+            { label: 'Security policy', href: `${GITHUB}/core/blob/main/SECURITY.md` },
+            { label: 'License', href: `${GITHUB}/core/blob/main/LICENSE` },
+            { label: 'Edit these docs', href: `${GITHUB}/core/tree/main/docs` },
+        ],
+    },
+];
+
+const INSTALL = 'uv add sillo-framework';
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer" data-slot="site-footer">
+    <div class="inner">
+        <div class="brand">
+            <div class="brand-mark">
+                {/*
+                  `light:sl-hidden` / `dark:sl-hidden` are Starlight's own global
+                  utilities — the same pair SiteTitle uses to swap the logo — so
+                  the mark follows the theme without any extra CSS here. The
+                  images are decorative: the wordmark beside them says the name,
+                  and the link carries its own label.
+                */}
+                <a class="wordmark" href={url('/')} aria-label="sillo documentation home">
+                    <img
+                        class="light:sl-hidden mark"
+                        alt=""
+                        src={logoDark.src}
+                        width={logoDark.width}
+                        height={logoDark.height}
+                    />
+                    <img
+                        class="dark:sl-hidden mark"
+                        alt=""
+                        src={logoLight.src}
+                        width={logoLight.width}
+                        height={logoLight.height}
+                    />
+                    <span class="wordmark-text">sillo<span class="dot">.</span></span>
+                </a>
+                <p class="tagline">
+                    The async Python framework that includes what Django includes. Routing,
+                    validation, ORM, admin, auth, queue and scheduler in one configuration model.
+                </p>
+            </div>
+
+            <div class="install">
+                <code>{INSTALL}</code>
+                <button type="button" class="copy" data-copy={INSTALL} aria-label="Copy install command">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" width="15" height="15">
+                        <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                        <path d="M5 15V5a2 2 0 0 1 2-2h10"></path>
+                    </svg>
+                    <span class="copy-label">Copy</span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="columns" aria-label="Footer">
+            {
+                columns.map((column) => (
+                    <div class="column">
+                        <h2>{column.title}</h2>
+                        <ul>
+                            {column.links.map((link) => {
+                                const external = link.href.startsWith('http');
+                                return (
+                                    <li>
+                                        <a
+                                            href={url(link.href)}
+                                            {...(external
+                                                ? { target: '_blank', rel: 'noopener noreferrer' }
+                                                : {})}
+                                        >
+                                            {link.label}
+                                            {external && (
+                                                <svg
+                                                    class="ext"
+                                                    viewBox="0 0 24 24"
+                                                    aria-hidden="true"
+                                                    width="10"
+                                                    height="10"
+                                                >
+                                                    <path d="M7 17 17 7M9 7h8v8" />
+                                                </svg>
+                                            )}
+                                        </a>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                ))
+            }
+        </nav>
+
+        <div class="baseline">
+            <p>&copy; {year} sillohq. Released under the BSD 3-Clause License.</p>
+        </div>
+    </div>
+</footer>
+
+<style>
+    .site-footer {
+        /* The band runs the full page width; the grid inside is contained. */
+        width: 100%;
+        /*
+         * No ground of its own: the footer sits on whatever body paints, so it
+         * matches the rest of the docs in both themes (and stays under the
+         * dark-mode radial wash rather than cutting a rectangle out of it).
+         * That makes the top hairline the only seam.
+         */
+        background: transparent;
+        border-top: 1px solid var(--border);
+        margin-top: 0;
+    }
+
+    .inner {
+        max-width: var(--container-max-width);
+        margin-inline: auto;
+        padding: calc(var(--spacing) * 14) calc(var(--spacing) * 6) calc(var(--spacing) * 8);
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing) * 12);
+    }
+
+    /* ---- brand ---- */
+
+    .brand {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing) * 6);
+        align-items: flex-start;
+    }
+
+    @media (min-width: 900px) {
+        .brand {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: calc(var(--spacing) * 10);
+        }
+    }
+
+    .brand-mark {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing) * 2);
+        max-width: 46ch;
+    }
+
+    .wordmark {
+        display: inline-flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 2);
+        text-decoration: none;
+        width: fit-content;
+    }
+
+    .mark {
+        /* Height-only, because the two logo files differ in aspect ratio. */
+        height: 1.75rem;
+        width: auto;
+    }
+
+    .wordmark-text {
+        font-size: 1.5rem;
+        font-weight: 600;
+        letter-spacing: var(--tracking-tighter);
+        color: var(--foreground);
+        line-height: 1;
+    }
+
+    .dot {
+        color: var(--sillo-primary);
+    }
+
+    .tagline {
+        margin: 0;
+        font-size: 0.8125rem;
+        line-height: 1.6;
+        color: var(--muted-foreground);
+        text-wrap: pretty;
+    }
+
+    /* ---- install chip ---- */
+
+    .install {
+        display: flex;
+        align-items: stretch;
+        border: 1px solid var(--border);
+        border-radius: calc(var(--radius) - 2px);
+        background: var(--background);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .install code {
+        font-family: var(--sl-font-mono);
+        font-size: 0.8125rem;
+        color: var(--foreground);
+        padding: calc(var(--spacing) * 2.5) calc(var(--spacing) * 4);
+        white-space: nowrap;
+    }
+
+    .copy {
+        display: inline-flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 1.5);
+        border: 0;
+        border-left: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted-foreground);
+        font: inherit;
+        font-size: 0.75rem;
+        padding-inline: calc(var(--spacing) * 3);
+        cursor: pointer;
+        transition:
+            color 0.15s ease,
+            background 0.15s ease;
+    }
+
+    .copy:hover,
+    .copy:focus-visible {
+        color: var(--foreground);
+        background: color-mix(in oklab, var(--foreground) 6%, transparent);
+    }
+
+    .copy svg {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.75;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .copy[data-copied='true'] {
+        color: var(--sillo-primary);
+    }
+
+    /* ---- link columns ---- */
+
+    .columns {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: calc(var(--spacing) * 8) calc(var(--spacing) * 6);
+    }
+
+    @media (min-width: 640px) {
+        .columns {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .columns {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+    }
+
+    @media (min-width: 1280px) {
+        .columns {
+            grid-template-columns: repeat(8, minmax(0, 1fr));
+            gap: calc(var(--spacing) * 6) calc(var(--spacing) * 4);
+        }
+    }
+
+    .column h2 {
+        font-family: var(--sl-font-mono);
+        font-size: 0.6875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--foreground);
+        margin: 0 0 calc(var(--spacing) * 3);
+        text-wrap: balance;
+    }
+
+    .column ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing) * 2);
+    }
+
+    .column a {
+        display: inline-flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 1);
+        font-size: 0.8125rem;
+        line-height: 1.35;
+        color: var(--muted-foreground);
+        text-decoration: none;
+        transition: color 0.15s ease;
+    }
+
+    .column a:hover,
+    .column a:focus-visible {
+        color: var(--sillo-primary);
+    }
+
+    .ext {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: 0.5;
+        flex-shrink: 0;
+    }
+
+    /* ---- baseline ---- */
+
+    .baseline {
+        padding-top: calc(var(--spacing) * 6);
+        border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+        font-size: 0.75rem;
+        color: var(--muted-foreground);
+    }
+
+    .baseline p {
+        margin: 0;
+    }
+
+    /* Focus is otherwise invisible against the muted link colour. */
+    .site-footer a:focus-visible,
+    .site-footer button:focus-visible {
+        outline: 2px solid var(--sillo-primary);
+        outline-offset: 3px;
+        border-radius: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .site-footer * {
+            transition: none !important;
+        }
+    }
+</style>
+
+<script>
+    document.querySelectorAll<HTMLButtonElement>('.site-footer .copy').forEach((button) => {
+        const label = button.querySelector('.copy-label');
+        const original = label?.textContent ?? 'Copy';
+        let timer: ReturnType<typeof setTimeout>;
+
+        button.addEventListener('click', async () => {
+            const text = button.dataset.copy;
+            if (!text) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch {
+                // Clipboard is unavailable over plain HTTP and in some
+                // embedded webviews; leaving the label alone is the honest
+                // signal that nothing was copied.
+                return;
+            }
+
+            if (label) label.textContent = 'Copied';
+            button.dataset.copied = 'true';
+
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                if (label) label.textContent = original;
+                delete button.dataset.copied;
+            }, 1600);
+        });
+    });
+</script>
