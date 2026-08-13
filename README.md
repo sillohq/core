@@ -5,12 +5,12 @@
 </p>
 
 <p align="center">
-  <strong>Build serious Python backends with one coherent application model.</strong>
+  <strong>Python With the Pieces Already in Place.</strong>
 </p>
 
-Sillo is an async Python web framework for building APIs, web applications, real-time systems, and business backends. Routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules that share one configuration model.
+Sillo is an async Python web framework for APIs, web applications, real-time systems, and business backends. The language does not change — you write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
 
-The pitch is coherence, not breadth. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI spec. The queue and the scheduler start with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
+Each of those is a solved problem with good packages behind it. The work that remains is the fitting, and that is what Sillo does once so you do not do it per project. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI spec. The queue and the scheduler start with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
 
 ## Requirements
 

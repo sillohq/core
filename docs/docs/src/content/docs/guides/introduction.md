@@ -1,28 +1,28 @@
 ---
 title: Introduction
-description: Learn what Sillo is, the core concepts behind it, what you can build, who it is for, and why teams choose it for serious Python software.
+description: Sillo is an async Python web framework for APIs, real-time systems and production backends, with the ORM, authentication, admin, queues, scheduler and WebSockets already in place.
 head:
 - tag: meta
   attrs:
     property: og:title
-    content: Introduction to Sillo
+    content: "Sillo: Python With the Pieces Already in Place"
 - tag: meta
   attrs:
     property: og:description
-    content: Learn what Sillo is, the core concepts behind it, what you can build, who it is for, and why teams choose it for serious Python software.
+    content: The same Python you already write, with the ORM, auth, admin, queues, scheduler and WebSockets designed against each other and sharing one config model.
 ---
 
 #  Introduction
 
-Sillo is a Python framework for building serious backend software: web applications, APIs, real-time systems, background workloads, internal tools, and business platforms.
+Sillo is Python with the pieces already in place.
 
-It starts as a productive async web framework, but the goal is larger than routing requests. Sillo gives teams one coherent application model across HTTP, validation, dependency injection, records, authentication, sessions, background jobs, scheduling, caching, WebSockets, testing, and production operations.
+The language does not change. You write the same Python, with the same type hints and the same `async`/`await` you already know. What changes is how much of the backend is waiting for you when you start: routing, validation, dependency injection, the ORM, authentication, sessions, background jobs, scheduling, caching, WebSockets, the admin, and the testing tools are all first-party modules that share one configuration model.
 
-The core idea is simple: teams should not have to assemble a fragile collection of unrelated tools before they can build reliable software.
+Each of those is a solved problem, and there are good packages for every one of them. The work that remains is the fitting — reconciling interfaces, configuration styles, failure modes, and upgrade cycles that were never designed against each other. Sillo does that fitting once, so your time goes into the product instead.
 
 ##  What Sillo Is
 
-Sillo Core is the open framework foundation of the Sillo platform. It is designed to help a project start small and grow without replacing its architecture every time the product becomes more real.
+Sillo Core is the open foundation of the framework. It is designed to help a project start small and grow without replacing its architecture every time the product becomes more real.
 
 A Sillo application can begin with one route:
 
@@ -56,7 +56,7 @@ Sillo is built around a small set of concepts that appear consistently across th
 | WebSockets | Real-time connections, consumers, channels, and broadcast patterns for interactive systems. |
 | Testing | Test clients and framework patterns for exercising routes, validation, dependencies, auth, jobs, and application behaviour. |
 
-These concepts are meant to form one product language. A developer should not feel like every feature belongs to a different framework.
+These concepts recur across the framework in the same shape. Reading one subsystem teaches you how to read the next, so no feature feels like it was borrowed from somewhere else.
 
 ##  A Simple Example
 
@@ -100,9 +100,9 @@ What is happening:
 - The validated Pydantic object can be injected into the handler.
 - The response object builds a JSON response with a status code.
 
-##  Features
+##  What Is Already in Place
 
-Sillo includes the common backend pieces teams repeatedly need:
+These are first-party modules, in the framework, each with a page in these docs:
 
 - async ASGI application foundation
 - routing, route groups, routers, and sub-apps
@@ -155,47 +155,32 @@ Sillo is less suitable if you only need a tiny script, a one-off HTTP handler, o
 
 ##  Why Sillo?
 
-Software teams rarely fail because they cannot write a route or database query. They struggle because the surrounding system becomes fragmented.
+Writing a route or a database query is rarely the hard part. The time goes into the system around them: making a dozen well-built components agree on configuration, on how they start and stop, on what a user is, and on what happens when one of them fails.
 
-Sillo exists to make that surrounding system coherent.
+Sillo puts those pieces in place already agreeing with each other. That coherence shows up in small, checkable ways. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI document, so the gate and the spec cannot drift apart. The scheduler registers on `app.state` and starts with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
 
 The framework is guided by these principles:
 
 - Strong defaults, open boundaries.
-- Developer experience is part of the product.
-- Enterprise readiness should be real, not theatrical.
-- Operations belong in the product story.
+- Convenience without mystery.
 - Documentation is part of the interface.
 - Compatibility and upgrade paths matter.
-- Open source earns trust.
+- Anything the framework does on your behalf is something you can read, override, or replace.
 
-Sillo is opinionated where teams benefit from a clear default, but it should remain transparent and replaceable at the boundaries. Convenience should not mean mystery. Enterprise readiness should not mean unnecessary ceremony.
+Sillo is opinionated where a clear default helps, and transparent at the boundaries. Auth backends, middleware, cache drivers, session stores, and hashing algorithms are all contracts you can implement yourself.
 
 ##  Comparison
 
-Sillo is not a drop-in clone of another Python framework. It combines ideas from productive web frameworks, async API frameworks, and full-stack application platforms.
+Sillo is not a drop-in clone of another Python framework, and the frameworks below are all good at what they are built for. The difference is scope: how much of the application is first-party and designed against the rest.
 
-| Framework | Good at | Sillo difference |
+| Framework | Good at | Where Sillo differs |
 |---|---|---|
-| Flask | Minimal apps, simple routing, extension-based composition. | Sillo provides a broader first-party application model for validation, DI, auth, records, jobs, scheduling, caching, WebSockets, and testing. |
-| FastAPI | Typed APIs, Pydantic validation, async endpoints. | Sillo focuses on the complete backend lifecycle, explicit dependency patterns, first-party workload primitives, and a path toward operations. |
-| Django | Batteries-included web apps, ORM, admin, mature ecosystem. | Sillo is async-first and designed around modern Python APIs, explicit handlers, background workloads, real-time systems, and deployment/operations coherence. |
-| Starlette | Low-level ASGI toolkit and primitives. | Sillo builds a higher-level product framework on top of ASGI ideas so teams do not assemble every application concern manually. |
+| Flask | Minimal apps, simple routing, extension-based composition. | A broader first-party surface: validation, DI, auth, records, jobs, scheduling, caching, WebSockets, and testing all in the framework. |
+| FastAPI | Typed APIs, Pydantic validation, async endpoints. | The same typed, async request layer, plus the ORM, admin, durable queue, and scheduler as first-party modules on one config model. |
+| Django | A complete web framework with ORM, admin, and a mature ecosystem. | The same completeness, built async-first around `async`/`await` handlers, background workloads, and real-time systems. |
+| Starlette | A low-level ASGI toolkit and primitives. | A higher-level application framework over the same ASGI foundation, so the application concerns above are already assembled. |
 
-The goal is not to win by having every feature. The goal is to make the repeated work of serious backend development feel like one designed system.
-
-##  The Platform Direction
-
-Sillo Core is the foundation. The broader platform direction includes first-party products for visual administration, managed deployment, server operations, identity, templates, and integrations.
-
-That long-term direction matters because backend software does not stop at code. Teams also need to deploy it, operate it, secure it, observe it, govern access, and help non-engineering teams use it safely.
-
-Sillo’s promise is to help developers move from an idea to dependable enterprise software with fewer disconnected decisions, clearer systems, and tools that grow with their ambition.
-
-##  Next Step
-
-Continue with [Installation](/guides/installation/) to install Sillo with `uv` and build your first application.
-
+Ecosystem size and years in production are real advantages, and Django, Flask, and FastAPI have both. Sillo's argument is scope and coherence, not maturity.
 
 ##  How the pieces fit
 
@@ -323,3 +308,8 @@ sillo serve main:app --reload
 That is a complete ASGI application. Everything else in these guides —
 validation, the ORM, background work, WebSockets — is something you add
 to this when you need it, and nothing is required to get here.
+
+##  Next step
+
+Continue with [Installation](/guides/installation/) to install Sillo with
+`uv` and build your first application.

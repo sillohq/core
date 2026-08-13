@@ -45,6 +45,39 @@ export default defineConfig({
                         type: 'image/svg+xml',
                     },
                 },
+                // Site-wide social defaults. Starlight already emits og:title
+                // and og:description per page from the frontmatter; these are
+                // the tags it does not set, so a shared docs link renders as a
+                // Sillo card instead of a bare URL. A page can still override
+                // any of them through its own `head` frontmatter.
+                {
+                    tag: 'meta',
+                    attrs: { property: 'og:site_name', content: 'Sillo Documentation' },
+                },
+                {
+                    tag: 'meta',
+                    attrs: { property: 'og:type', content: 'article' },
+                },
+                {
+                    tag: 'meta',
+                    attrs: { property: 'og:locale', content: 'en_US' },
+                },
+                {
+                    tag: 'meta',
+                    attrs: { name: 'twitter:card', content: 'summary_large_image' },
+                },
+                {
+                    tag: 'meta',
+                    attrs: { name: 'twitter:site', content: '@sillohq' },
+                },
+                {
+                    tag: 'meta',
+                    attrs: {
+                        name: 'keywords',
+                        content:
+                            'Python web framework, async Python framework, Python backend framework, ASGI framework, Python ORM, Python authentication, Python job queue, Python scheduler, Python WebSockets, full-stack Python',
+                    },
+                },
             ],
             favicon: '/favicon.svg',
             customCss: ['./src/styles/global.css'],

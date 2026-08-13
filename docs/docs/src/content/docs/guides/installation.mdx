@@ -1,8 +1,17 @@
 ---
 icon: down-to-line
 title: Installation
-description: Install Sillo with uv, the recommended Python package manager for fast, reproducible projects.
+description: Install Sillo with uv and get an async Python application running, with routing, validation and the middleware stack in place from the first command.
 comment: true
+head:
+- tag: meta
+  attrs:
+    property: og:title
+    content: Install Sillo
+- tag: meta
+  attrs:
+    property: og:description
+    content: One command puts the framework in place. Add the ORM, JWT, templating or Redis as optional extras when the product needs them.
 ---
 
 import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
@@ -10,6 +19,8 @@ import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
 # Installation
 
 Install Sillo with [`uv`](https://docs.astral.sh/uv/). It is the recommended package manager for Sillo projects because it is fast, creates reproducible environments, and keeps dependency management simple.
+
+One command puts the framework in place: routing, validation, dependency injection, the response builder, and the middleware stack. The heavier pieces — the ORM, JWT, templating, Redis — are optional extras you add when the product needs them, so the dependency tree stays proportional to what you build.
 
 ## Requirements
 
