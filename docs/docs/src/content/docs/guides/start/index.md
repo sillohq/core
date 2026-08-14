@@ -25,22 +25,7 @@ on three Python versions.
 That distinction is the whole design, and the rest of this page explains
 why it is worth caring about.
 
-##  The quickest path
-
-```bash
-git clone https://github.com/sillohq/starter.git myapp
-cd myapp
-make setup
-make dev
-```
-
-Then open <http://localhost:8000>.
-
-`make setup` installs dependencies, writes a `.env` with a freshly
-generated `SECRET_KEY`, creates the database and applies the initial
-migration. It is safe to re-run; an existing `.env` is never overwritten.
-
-##  With sillo-start
+##  Creating one
 
 ```bash
 uvx sillo-start create-app myapp
@@ -49,16 +34,37 @@ make setup
 make dev
 ```
 
-`sillo-start` fetches the starter as a tarball, renames the project to
-yours, and gives it its own secrets. It has exactly one command, because
-creating a project is the only thing it does — see
-[The sillo-start tool](#the-sillo-start-tool) below.
+Then open <http://localhost:8000>.
+
+`sillo-start` fetches the starter, renames the project to yours, and gives it
+its own secrets. `uvx` runs it without installing anything.
+
+`make setup` then installs dependencies, writes a `.env` with a freshly
+generated `SECRET_KEY`, creates the database and applies the initial
+migration. It is safe to re-run; an existing `.env` is never overwritten.
+
+:::tip[Building with React?]
+There is a second starter. `sillohq/starter-inertia` serves a React front end
+with no API between it and the server — the page's props are delivered with the
+page rather than fetched after it.
 
 ```bash
-sillo-start create-app myapp                       # the default starter
-sillo-start create-app sillohq/starter myapp       # named explicitly
-sillo-start create-app sillohq/starter@v1.2 myapp  # pinned to a tag
-sillo-start create-app acme/our-template myapp     # your own starter
+uvx sillo-start create-app sillohq/starter-inertia myapp
+```
+
+The [Inertia](/guides/inertia/) section covers it.
+:::
+
+###  Choosing a starter
+
+`create-app` takes the repository as an argument. Any public GitHub
+repository works, so your own team template is a first-class option.
+
+```bash
+sillo-start create-app myapp                            # sillohq/starter
+sillo-start create-app sillohq/starter-inertia myapp    # the React one
+sillo-start create-app sillohq/starter@v1.2 myapp       # pinned to a tag
+sillo-start create-app acme/our-template myapp          # your own
 ```
 
 | Option | |
@@ -74,12 +80,20 @@ Dependencies are **not** installed by default, so creating a project takes
 a second rather than a minute. `make setup` in the new project does it,
 along with everything else a first run needs.
 
-:::note
-**Which should you use?** `git clone` if you want the starter as it is and
-intend to keep pulling from it. `create-app` if you want the project named
-after itself from the first commit, with no upstream history to delete.
-They produce the same application.
-:::
+###  Or clone it
+
+The starter is a real repository, so cloning works and gives you the same
+application:
+
+```bash
+git clone https://github.com/sillohq/starter.git myapp
+cd myapp
+make setup
+```
+
+Prefer this when you want to keep pulling from upstream. Prefer `create-app`
+when you want the project named after itself from the first commit, with no
+upstream history to delete.
 
 ##  Requirements
 

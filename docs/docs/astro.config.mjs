@@ -182,6 +182,18 @@ export default defineConfig({
                     ],
                 },
                 {
+                    label: 'Inertia',
+                    collapsed: true,
+                    items: [
+                        { label: 'Overview', link: '/guides/inertia/' },
+                        { label: 'Creating a Project', link: '/guides/inertia/start/' },
+                        { label: 'Project Structure', link: '/guides/inertia/structure/' },
+                        { label: 'Pages & Props', link: '/guides/inertia/pages/' },
+                        { label: 'Forms & Validation', link: '/guides/inertia/forms/' },
+                        { label: 'Assets & Deployment', link: '/guides/inertia/assets/' },
+                    ],
+                },
+                {
                     label: 'Deep Dive',
                     collapsed: true,
                     items: [
@@ -211,7 +223,6 @@ export default defineConfig({
                         { label: 'Advanced Templating', link: '/guides/templating/advanced/' },
                         { label: 'Static Files', link: '/guides/static-files/' },
                         { label: 'Frontend (SPA)', link: '/guides/frontend/' },
-                        { label: 'Inertia', link: '/guides/inertia/' },
                         { label: 'HTTP Client', link: '/guides/http/client/' },
                         { label: 'Mail Service', link: '/guides/services/mail/' },
                         { label: 'Console Commands', link: '/guides/console/' },
