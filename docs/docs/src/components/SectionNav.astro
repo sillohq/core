@@ -1,0 +1,312 @@
+---
+/**
+ * The section bar — the second row of the sticky header.
+ *
+ * The docs are five separate manuals rather than one long book, and
+ * lucode-starlight's Sidebar already scopes itself to the first segment of the
+ * URL: on `/orm/anything` it keeps only the sidebar groups whose links start
+ * `/orm/`. That gives every section its own sidebar for free, but nothing in
+ * the layout tells you the other four exist. This bar is that missing piece —
+ * it is the only way to cross between manuals.
+ *
+ * Which is why it lives in the header rather than at the top of the sidebar:
+ * it has to stay reachable from every page, including the ones where the
+ * sidebar is scrolled away or collapsed into the drawer.
+ */
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+type Section = {
+    /** First URL segment. This is what the sidebar filters on. */
+    segment: string;
+    label: string;
+    /** Where the tab points — the section's landing page. */
+    href: string;
+    icon: string;
+};
+
+const sections: Section[] = [
+    { segment: 'guides', label: 'Guides', href: '/guides/introduction/', icon: 'book' },
+    { segment: 'start', label: 'Sillo Start', href: '/start/', icon: 'spark' },
+    { segment: 'cli', label: 'CLI', href: '/cli/', icon: 'terminal' },
+    { segment: 'orm', label: 'ORM & Admin', href: '/orm/', icon: 'database' },
+    { segment: 'advanced', label: 'Advanced', href: '/advanced/', icon: 'layers' },
+];
+
+/*
+ * The active tab is decided by the first path segment, the same value the
+ * theme's Sidebar filters on — so the highlighted tab and the visible sidebar
+ * can never disagree about which section you are in.
+ */
+const pathname = Astro.url.pathname;
+const withoutBase = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
+const current = withoutBase.split('/').filter(Boolean)[0] ?? '';
+
+/*
+ * Five 16px stroke icons, inlined. An icon package for five glyphs would be
+ * weight for nothing, and inlining leaves them on `currentColor` so each one
+ * inherits its tab's colour and hover state without a second rule.
+ */
+const icons: Record<string, string> = {
+    book: '<svg viewBox="0 0 16 16"><path d="M2 3.2A1.2 1.2 0 0 1 3.2 2H6.5A1.5 1.5 0 0 1 8 3.5v9A1.5 1.5 0 0 0 6.5 11H2Z"/><path d="M14 3.2A1.2 1.2 0 0 0 12.8 2H9.5A1.5 1.5 0 0 0 8 3.5v9A1.5 1.5 0 0 1 9.5 11H14Z"/></svg>',
+    spark: '<svg viewBox="0 0 16 16"><path d="M8 1.5 9.6 6l4.4 1.6L9.6 9.2 8 13.7 6.4 9.2 2 7.6 6.4 6Z"/><path d="M12.8 11.4 13.4 13l1.6.6-1.6.6-.6 1.6-.6-1.6L10.6 13.6l1.6-.6Z"/></svg>',
+    terminal:
+        '<svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="m4.6 6.4 2 1.6-2 1.6"/><path d="M8.6 10.2h3"/></svg>',
+    database:
+        '<svg viewBox="0 0 16 16"><ellipse cx="8" cy="3.6" rx="5.5" ry="2.1"/><path d="M2.5 3.6v4.8c0 1.16 2.46 2.1 5.5 2.1s5.5-.94 5.5-2.1V3.6"/><path d="M2.5 8.4v4c0 1.16 2.46 2.1 5.5 2.1s5.5-.94 5.5-2.1v-4"/></svg>',
+    layers: '<svg viewBox="0 0 16 16"><path d="M8 1.6 14.5 5 8 8.4 1.5 5Z"/><path d="m1.5 8 6.5 3.4L14.5 8"/><path d="m1.5 11 6.5 3.4L14.5 11"/></svg>',
+};
+---
+
+<nav class="section-nav" aria-label="Documentation sections">
+    <div class="rail">
+        <ul>
+            {
+                sections.map((section) => {
+                    const active = section.segment === current;
+                    return (
+                        <li>
+                            <a
+                                class="tab"
+                                href={`${BASE}${section.href}`}
+                                aria-current={active ? 'page' : undefined}
+                            >
+                                <span class="ico" aria-hidden="true" set:html={icons[section.icon]} />
+                                <span class="label">{section.label}</span>
+                            </a>
+                        </li>
+                    );
+                })
+            }
+        </ul>
+        {/* Decoration: the tabs themselves carry `aria-current`. */}
+        <span class="marker" aria-hidden="true"></span>
+    </div>
+</nav>
+
+<style>
+    .section-nav {
+        display: flex;
+        align-items: stretch;
+        min-width: 0;
+        height: var(--sillo-subnav-height);
+        /*
+         * Separates the header from the page. The main bar above deliberately
+         * has none of its own, so the two rows read as one object with a single
+         * edge at the bottom.
+         */
+        border-bottom: 1px solid var(--sillo-border);
+    }
+
+    .rail {
+        position: relative;
+        display: flex;
+        align-items: stretch;
+        min-width: 0;
+        width: 100%;
+        /*
+         * Narrow screens scroll the tabs sideways instead of wrapping them —
+         * wrapping would change the header's height, and the sidebar and table
+         * of contents are both positioned against `--header-height`.
+         */
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        /* Fades the tabs out at both ends so a cut-off label reads as
+           scrollable rather than broken. */
+        -webkit-mask-image: linear-gradient(
+            to right,
+            transparent 0,
+            #000 1.25rem,
+            #000 calc(100% - 1.25rem),
+            transparent 100%
+        );
+        mask-image: linear-gradient(
+            to right,
+            transparent 0,
+            #000 1.25rem,
+            #000 calc(100% - 1.25rem),
+            transparent 100%
+        );
+    }
+
+    .rail::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Everything fits comfortably here, so the fade would only clip the first
+       and last tab for no reason. */
+    @media (min-width: 900px) {
+        .rail {
+            overflow-x: visible;
+            -webkit-mask-image: none;
+            mask-image: none;
+        }
+    }
+
+    ul {
+        display: flex;
+        align-items: stretch;
+        gap: calc(var(--spacing) * 1);
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        min-width: max-content;
+    }
+
+    .tab {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 2);
+        height: 100%;
+        padding-inline: calc(var(--spacing) * 3);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+        white-space: nowrap;
+        text-decoration: none;
+        color: var(--muted-foreground);
+        transition:
+            color 0.18s ease,
+            opacity 0.18s ease;
+    }
+
+    .tab:hover {
+        color: var(--foreground);
+    }
+
+    .tab[aria-current='page'] {
+        color: var(--foreground);
+        font-weight: 600;
+    }
+
+    .ico {
+        display: inline-flex;
+        width: 0.9375rem;
+        height: 0.9375rem;
+        opacity: 0.6;
+        transition: opacity 0.18s ease;
+    }
+
+    .tab:hover .ico,
+    .tab[aria-current='page'] .ico {
+        opacity: 1;
+    }
+
+    .tab[aria-current='page'] .ico {
+        color: var(--sillo-primary);
+    }
+
+    .ico :global(svg) {
+        width: 100%;
+        height: 100%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    /*
+     * One indicator that slides between tabs, rather than a border on each —
+     * the same device the theme's sidebar uses for its own marker, so the two
+     * behave alike.
+     */
+    .marker {
+        position: absolute;
+        left: 0;
+        bottom: -1px;
+        height: 2px;
+        border-radius: 2px 2px 0 0;
+        background: var(--sillo-primary);
+        box-shadow: 0 0 12px color-mix(in srgb, var(--sillo-primary) 60%, transparent);
+        width: var(--marker-width, 0);
+        transform: translateX(var(--marker-left, 0));
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .rail[data-marker] .marker {
+        opacity: 1;
+    }
+
+    /* Hovering another section previews where the indicator would land. */
+    .rail[data-marker='hover'] .marker {
+        opacity: 0.5;
+    }
+
+    /* Transitions switch on one frame after the first measurement, so the
+       indicator appears already under the current tab instead of sliding in
+       from the left edge on every page load. */
+    .rail[data-marker-ready] .marker {
+        transition:
+            transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+            width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+            opacity 0.2s ease;
+    }
+
+    .tab:focus-visible {
+        outline: 2px solid var(--sillo-primary);
+        outline-offset: -4px;
+        border-radius: 0.35rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .rail[data-marker-ready] .marker {
+            transition: opacity 0.2s ease;
+        }
+
+        .tab,
+        .ico {
+            transition: none;
+        }
+    }
+</style>
+
+<script>
+    function setupSectionNav() {
+        const rail = document.querySelector<HTMLElement>('.section-nav .rail');
+        const marker = rail?.querySelector<HTMLElement>('.marker');
+        if (!rail || !marker) return;
+
+        const activeTab = () => rail.querySelector<HTMLAnchorElement>('.tab[aria-current="page"]');
+
+        function moveTo(tab: HTMLElement | null, settled: boolean) {
+            if (!tab) {
+                rail!.removeAttribute('data-marker');
+                return;
+            }
+            // offsetLeft, not getBoundingClientRect: the rail scrolls sideways
+            // on narrow screens, and a viewport-relative rect would leave the
+            // indicator behind as soon as it did.
+            marker!.style.setProperty('--marker-left', `${tab.offsetLeft}px`);
+            marker!.style.setProperty('--marker-width', `${tab.offsetWidth}px`);
+            rail!.setAttribute('data-marker', settled ? 'active' : 'hover');
+        }
+
+        const settle = () => moveTo(activeTab(), true);
+
+        const onPointerOver = (event: PointerEvent) => {
+            const tab = (event.target as Element | null)?.closest<HTMLElement>('.tab');
+            if (tab) moveTo(tab, tab.matches('[aria-current="page"]'));
+        };
+
+        settle();
+        requestAnimationFrame(() => rail.setAttribute('data-marker-ready', ''));
+
+        rail.addEventListener('pointerover', onPointerOver);
+        rail.addEventListener('pointerleave', settle);
+
+        // Labels do not wrap, but the fonts load late — the tabs get wider once
+        // Instrument Sans replaces the fallback, which moves every offset.
+        const observer = new ResizeObserver(settle);
+        observer.observe(rail);
+
+        // Keep the section you are in on screen when the rail is scrollable.
+        activeTab()?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'instant' });
+    }
+
+    setupSectionNav();
+    document.addEventListener('astro:after-swap', setupSectionNav);
+</script>

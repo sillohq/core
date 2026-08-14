@@ -140,9 +140,52 @@ a:hover {
  */
 [data-slot='layout'] > header {
     background: var(--sl-color-bg-nav) !important;
-    border-bottom: 1px solid var(--sillo-border) !important;
     backdrop-filter: blur(14px) saturate(180%) !important;
     -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
+}
+
+/*
+ * Sidebar group headings wrap now that some are two words long
+ * ("Architecture & Foundations", "Dependency Injection & Validation"), and the
+ * theme sets `line-height: 1` on them — which is fine for one line and collides
+ * the ascenders and descenders of two. Only the leading is changed; the size,
+ * tracking and colour stay the theme's.
+ */
+.sidebar .entry-title {
+    line-height: 1.35;
+    text-wrap: balance;
+}
+
+/*
+ * The header is two rows now: the bar, and the section tabs beneath it.
+ *
+ * `--header-height` is the theme's single source of truth for how far down the
+ * page starts — base.css positions the sidebar at `top: calc(var(--header-height)
+ * + 1px)` and sizes it `calc(100vh - var(--header-height) - 1px)`, and
+ * PageSidebar does the same for the table of contents. Redefining it as the sum
+ * of both rows moves all four of those together, so nothing ends up underneath
+ * the tabs. customCss is unlayered and the theme's value lives in `@layer
+ * lucode`, so this wins without `!important`.
+ */
+:root {
+    --sillo-bar-height: calc(var(--spacing) * 14);
+    --sillo-subnav-height: calc(var(--spacing) * 11);
+    --header-height: calc(var(--sillo-bar-height) + var(--sillo-subnav-height));
+}
+
+/*
+ * The theme centres the header slot in a fixed-height flex row, which would put
+ * the two rows side by side. Blocking it out hands the vertical split to
+ * src/components/Header, which owns both rows.
+ */
+[data-slot='layout'] > header .container {
+    display: block !important;
+}
+
+/* The bottom edge belongs to the section tabs, so the header itself must not
+   also draw one — otherwise the two stack into a double rule. */
+[data-slot='layout'] > header {
+    border-bottom: none !important;
 }
 
 .sidebar-pane,

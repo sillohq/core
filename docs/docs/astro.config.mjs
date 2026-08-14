@@ -104,7 +104,267 @@ export default defineConfig({
                     href: 'https://github.com/sillohq/core',
                 },
             ],
+            /*
+             * One sidebar per section of the top bar.
+             *
+             * lucode-starlight's Sidebar keeps only the groups whose links
+             * start with the current URL's first path segment, so a group
+             * under `/orm/` is invisible everywhere except `/orm/**`. That is
+             * what makes these five manuals independent without five configs:
+             * the segment is the divider, and src/components/SectionNav reads
+             * the same one to decide which tab is current.
+             */
             sidebar: [
+                // -- Sillo Start ------------------------------------------
+                {
+                    label: 'Sillo Start',
+                    items: [
+                        { label: 'Overview', link: '/start/' },
+                        { label: 'Installing', link: '/start/install/' },
+                        { label: 'create-app', link: '/start/create-app/' },
+                        { label: 'The Official Starters', link: '/start/starters/' },
+                    ],
+                },
+                {
+                    label: 'What It Does',
+                    items: [
+                        { label: 'Project Names', link: '/start/naming/' },
+                        { label: 'Personalisation', link: '/start/personalisation/' },
+                        { label: 'Secrets & .env', link: '/start/secrets/' },
+                        { label: 'After Creating', link: '/start/after-creating/' },
+                    ],
+                },
+                {
+                    label: 'Going Further',
+                    items: [
+                        { label: 'Custom Starters', link: '/start/custom-starters/' },
+                        { label: 'Package Managers', link: '/start/package-managers/' },
+                        { label: 'Errors & Exit Codes', link: '/start/errors/' },
+                        { label: 'Internals', link: '/start/internals/' },
+                    ],
+                },
+
+                // -- CLI ---------------------------------------------------
+                {
+                    label: 'The CLI',
+                    items: [
+                        { label: 'Overview', link: '/cli/' },
+                        { label: 'Finding Your Application', link: '/cli/discovery/' },
+                        { label: 'Framework Commands', link: '/cli/framework-commands/' },
+                    ],
+                },
+                {
+                    label: 'Bundled Commands',
+                    items: [
+                        { label: 'Database', link: '/cli/database/' },
+                        { label: 'Users', link: '/cli/users/' },
+                        { label: 'Queues', link: '/cli/queues/' },
+                        { label: 'Scheduler', link: '/cli/scheduler/' },
+                    ],
+                },
+                {
+                    label: 'Building Your Own',
+                    items: [
+                        { label: 'Writing Commands', link: '/cli/custom-commands/' },
+                        { label: 'Arguments & Options', link: '/cli/arguments/' },
+                        { label: 'Output', link: '/cli/output/' },
+                        { label: 'Prompts', link: '/cli/prompts/' },
+                        { label: 'Styling & Terminal', link: '/cli/styling/' },
+                        { label: 'Building a Console', link: '/cli/standalone-consoles/' },
+                    ],
+                },
+
+                // -- ORM & Admin -------------------------------------------
+                {
+                    label: 'ORM & Admin',
+                    items: [
+                        { label: 'Overview', link: '/orm/' },
+                        { label: 'Setup', link: '/orm/setup/' },
+                        { label: 'Configuration', link: '/orm/configuration/' },
+                    ],
+                },
+                {
+                    label: 'Models',
+                    items: [
+                        { label: 'Models', link: '/orm/models/' },
+                        { label: 'Fields', link: '/orm/fields/' },
+                        { label: 'Mass Assignment', link: '/orm/mass-assignment/' },
+                        { label: 'Mixins', link: '/orm/mixins/' },
+                        { label: 'Attribute Casting', link: '/orm/casting/' },
+                        { label: 'Query Scopes', link: '/orm/scopes/' },
+                        { label: 'Model Events', link: '/orm/events/' },
+                    ],
+                },
+                {
+                    label: 'Reading & Writing',
+                    items: [
+                        { label: 'Queries', link: '/orm/queries/' },
+                        { label: 'Collections', link: '/orm/collections/' },
+                        { label: 'Pagination', link: '/orm/pagination/' },
+                        { label: 'Bulk Operations', link: '/orm/bulk/' },
+                        { label: 'Transactions', link: '/orm/transactions/' },
+                    ],
+                },
+                {
+                    label: 'Testing & Schemas',
+                    items: [
+                        { label: 'Factories', link: '/orm/factories/' },
+                        { label: 'Seeding & Fixtures', link: '/orm/seeding/' },
+                        { label: 'Pydantic Schemas', link: '/orm/pydantic/' },
+                        { label: 'Exception Handlers', link: '/orm/exceptions/' },
+                    ],
+                },
+                {
+                    label: 'Migrations',
+                    items: [
+                        { label: 'How Migrations Work', link: '/orm/migrations/' },
+                        { label: 'Applying Them', link: '/orm/migrations-applying/' },
+                        { label: 'Programmatically', link: '/orm/migrations-programmatic/' },
+                    ],
+                },
+                {
+                    label: 'The Admin Panel',
+                    items: [
+                        { label: 'Overview', link: '/orm/admin/' },
+                        { label: 'Registering Models', link: '/orm/admin-registering/' },
+                        { label: 'Customising', link: '/orm/admin-customising/' },
+                        { label: 'Permissions & Auth', link: '/orm/admin-permissions/' },
+                    ],
+                },
+
+                // -- Advanced (the internal engineering reference) ---------
+                //
+                // Grouped exactly as docs-internal/00-TABLE-OF-CONTENTS.md
+                // groups them, so the numbered ordering of those files is
+                // preserved here rather than in the page titles.
+                {
+                    label: 'Internal Reference',
+                    items: [{ label: 'Contents', link: '/advanced/' }],
+                },
+                {
+                    label: 'Architecture & Foundations',
+                    collapsed: true,
+                    items: [
+                        { label: 'Architecture Overview', link: '/advanced/architecture-overview/' },
+                        { label: 'Application Lifecycle', link: '/advanced/application-lifecycle/' },
+                        { label: 'Configuration System', link: '/advanced/configuration/' },
+                        { label: 'Type System & Encoding', link: '/advanced/types-and-encoding/' },
+                    ],
+                },
+                {
+                    label: 'HTTP Layer',
+                    collapsed: true,
+                    items: [
+                        { label: 'Routing System', link: '/advanced/routing/' },
+                        { label: 'Middleware Pipeline', link: '/advanced/middleware/' },
+                        { label: 'HTTP Request', link: '/advanced/http-request/' },
+                        { label: 'HTTP Response', link: '/advanced/http-response/' },
+                        { label: 'HTTP Correctness', link: '/advanced/http-correctness/' },
+                        { label: 'Exception Handling', link: '/advanced/exception-handling/' },
+                    ],
+                },
+                {
+                    label: 'Dependency Injection & Validation',
+                    collapsed: true,
+                    items: [
+                        { label: 'Dependency Injection', link: '/advanced/dependency-injection/' },
+                        { label: 'Parameter Extraction', link: '/advanced/parameters/' },
+                        { label: 'Validation System', link: '/advanced/validation/' },
+                        { label: 'OpenAPI Generation', link: '/advanced/openapi/' },
+                    ],
+                },
+                {
+                    label: 'Authentication & Authorization',
+                    collapsed: true,
+                    items: [
+                        { label: 'Authentication Architecture', link: '/advanced/authentication/' },
+                        { label: 'Auth Backends', link: '/advanced/auth-backends/' },
+                        { label: 'User System', link: '/advanced/users/' },
+                        { label: 'Permissions & Groups', link: '/advanced/permissions/' },
+                        { label: 'Password Hashing', link: '/advanced/hashing/' },
+                    ],
+                },
+                {
+                    label: 'Security',
+                    collapsed: true,
+                    items: [
+                        { label: 'Security Middleware', link: '/advanced/security/' },
+                    ],
+                },
+                {
+                    label: 'Database & ORM',
+                    collapsed: true,
+                    items: [
+                        { label: 'Record ORM - Models', link: '/advanced/record-models/' },
+                        { label: 'Record ORM - Queries', link: '/advanced/record-queries/' },
+                        { label: 'Record ORM - Transactions', link: '/advanced/record-transactions/' },
+                        { label: 'Record ORM - Migrations', link: '/advanced/record-migrations/' },
+                        { label: 'Record ORM - Factories & Seeders', link: '/advanced/record-factories/' },
+                    ],
+                },
+                {
+                    label: 'Background Work',
+                    collapsed: true,
+                    items: [
+                        { label: 'Work - Task System', link: '/advanced/work-tasks/' },
+                        { label: 'Work - Queue System', link: '/advanced/work-queues/' },
+                        { label: 'Work - Scheduler', link: '/advanced/work-scheduler/' },
+                        { label: 'Work - Background Tasks', link: '/advanced/work-background/' },
+                    ],
+                },
+                {
+                    label: 'Real-Time',
+                    collapsed: true,
+                    items: [
+                        { label: 'Events System', link: '/advanced/events/' },
+                        { label: 'WebSockets', link: '/advanced/websockets/' },
+                    ],
+                },
+                {
+                    label: 'Application Features',
+                    collapsed: true,
+                    items: [
+                        { label: 'Session Management', link: '/advanced/sessions/' },
+                        { label: 'Cache System', link: '/advanced/cache/' },
+                        { label: 'Templating', link: '/advanced/templating/' },
+                        { label: 'Mail Service', link: '/advanced/mail/' },
+                        { label: 'Console Framework', link: '/advanced/console/' },
+                        { label: 'Admin Panel', link: '/advanced/admin/' },
+                        { label: 'Pagination', link: '/advanced/pagination/' },
+                    ],
+                },
+                {
+                    label: 'Testing & Tools',
+                    collapsed: true,
+                    items: [
+                        { label: 'Test Client', link: '/advanced/test-client/' },
+                        { label: 'Helpers & Utilities', link: '/advanced/helpers/' },
+                    ],
+                },
+                {
+                    label: 'Ecosystem Packages',
+                    collapsed: true,
+                    items: [
+                        { label: 'sillo-oauth', link: '/advanced/oauth/' },
+                        { label: 'sillo-inertia', link: '/advanced/inertia/' },
+                        { label: 'sillo-start', link: '/advanced/start/' },
+                        { label: '@sillo/atlas', link: '/advanced/atlas/' },
+                        { label: 'records-orm', link: '/advanced/records-orm/' },
+                    ],
+                },
+                {
+                    label: 'Cross-Cutting Concerns',
+                    collapsed: true,
+                    items: [
+                        { label: 'Architectural Decisions', link: '/advanced/decisions/' },
+                        { label: 'Debugging Guide', link: '/advanced/debugging/' },
+                        { label: 'Extending Sillo', link: '/advanced/extending/' },
+                        { label: 'Change Impact Analysis', link: '/advanced/change-impact/' },
+                        { label: 'Glossary', link: '/advanced/glossary/' },
+                    ],
+                },
+
+                // -- Guides ------------------------------------------------
                 {
                     label: 'Start Here',
                     items: [

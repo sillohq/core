@@ -16,6 +16,7 @@
 import Search from 'lucode-starlight/components/overrides/Search.astro';
 import SiteTitle from 'lucode-starlight/components/overrides/SiteTitle.astro';
 import config from 'virtual:starlight/user-config';
+import SectionNav from './SectionNav.astro';
 
 const GITHUB = 'https://github.com/sillohq/core';
 const INSTALL = 'uv add sillo-framework';
@@ -26,6 +27,7 @@ const shouldRenderSearch =
     config.components.Search !== '@astrojs/starlight/components/Search.astro';
 ---
 
+<div class="header-shell">
 <div class="header-bar">
     <div class="header-left">
         <button
@@ -71,8 +73,27 @@ const shouldRenderSearch =
     </div>
 </div>
 
+<SectionNav />
+</div>
+
 <style>
+    /*
+     * Two rows: the bar, then the section tabs. The theme's PageFrame gives the
+     * header slot a fixed `height: var(--header-height)` container, so this
+     * shell fills it and splits it — and `--header-height` is redefined in
+     * global.css as the sum of both rows, which keeps the sticky sidebar and
+     * table of contents (both positioned against it) clear of the tabs.
+     */
+    .header-shell {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+    }
+
     .header-bar {
+        flex: 1;
+        min-height: 0;
         /*
          * 1fr auto 1fr, so the centre cell is centred on the viewport rather
          * than on whatever space the two sides leave over.
@@ -95,9 +116,16 @@ const shouldRenderSearch =
         margin-right: 0;
     }
 
+    /*
+     * Sized to the wordmark beside it rather than to the bar. The asset is
+     * portrait (213 x 314), so height is what has to be pinned — capping the
+     * width instead lets it grow to roughly twice the height of the text.
+     */
     .header-left :global(.logo) {
-        max-height: 3rem;
-        max-width: 3rem;
+        height: 1.6rem;
+        max-height: 1.6rem;
+        width: auto;
+        max-width: none;
     }
 
     .header-search {
