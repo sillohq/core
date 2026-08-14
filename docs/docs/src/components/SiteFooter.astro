@@ -242,7 +242,7 @@ const year = new Date().getFullYear();
       width, and this is meant to run to both edges of the viewport.
     */}
     <div class="wordmark-band" aria-hidden="true">
-        <span>SILLO</span>
+        <span>S</span><span>I</span><span>L</span><span>L</span><span>O</span>
     </div>
 </footer>
 
@@ -262,9 +262,14 @@ const year = new Date().getFullYear();
     }
 
     .inner {
-        max-width: var(--container-max-width);
-        margin-inline: auto;
-        padding: calc(var(--spacing) * 14) calc(var(--spacing) * 6) calc(var(--spacing) * 8);
+        /*
+         * No container cap. The page content above is held to
+         * --container-max-width, but the footer is a full-bleed band and the
+         * link map reads better spanning it than boxed in the middle of it.
+         * The side padding is what keeps the first and last columns off the
+         * viewport edge.
+         */
+        padding: calc(var(--spacing) * 14) calc(var(--spacing) * 8) calc(var(--spacing) * 8);
         display: flex;
         flex-direction: column;
         gap: calc(var(--spacing) * 12);
@@ -474,59 +479,40 @@ const year = new Date().getFullYear();
 
     .wordmark-band {
         /*
-         * `--wordmark-size` is the one number to tune. The word is five
-         * glyphs of Instrument Sans, so its width is a fixed multiple of the
-         * font size; expressing that size in vw is what keeps it touching
-         * both edges at every viewport rather than only at one.
+         * The letters are laid out individually and pushed apart, rather than
+         * set as one word sized to fill the width. Setting a word to span the
+         * viewport locks its height to its width through the font's aspect
+         * ratio — at this width that is half a screen of wordmark, and
+         * cropping it back only leaves the tops of the letters, which reads as
+         * shapes rather than a name.
+         *
+         * Spacing them means the font size controls the height on its own and
+         * the band still touches both edges exactly, at every viewport.
          */
-        --wordmark-size: 38vw;
-
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
         overflow: hidden;
-        /* Clipped to its own box, so a wide glyph cannot scroll the page. */
-        line-height: 1;
-        text-align: center;
         user-select: none;
         /*
-         * Fades out downward instead of ending on a hard baseline. The caps
-         * occupy roughly 12%-84% of this box, so the gradient holds full
-         * opacity past their midpoint and only then falls away — a fade that
-         * began at the top would wash out the whole word rather than sink it.
+         * Fades downward instead of ending on a hard cut. Held opaque well
+         * past the top of the letterforms so the mark stays legible, then
+         * gone before the bottom edge.
          */
-        -webkit-mask-image: linear-gradient(to bottom, #000 46%, transparent 93%);
-        mask-image: linear-gradient(to bottom, #000 46%, transparent 93%);
+        -webkit-mask-image: linear-gradient(to bottom, #000 38%, transparent 96%);
+        mask-image: linear-gradient(to bottom, #000 38%, transparent 96%);
     }
 
     .wordmark-band span {
-        display: block;
         /*
-         * Caps reach only to cap-height, leaving the font's whole ascent
-         * empty above them — about 0.12em of dead space between the baseline
-         * rule and the top of the S. Pulled back in em so it scales with the
-         * word rather than drifting at other viewport widths.
-         */
-        margin-top: -0.09em;
-        font-size: var(--wordmark-size);
-        /*
-         * 700 is the top of Instrument Sans Variable's weight axis (400–700).
-         * Asking for more would get a synthesised bold, which smears the
-         * letterforms at this size.
+         * 700 is the top of Instrument Sans Variable's weight axis (400-700).
+         * Asking for more gets a synthesised bold, which smears at this size.
          */
         font-weight: 700;
-        /*
-         * Set in caps. Lowercase puts the dot of the `i` and the ascenders of
-         * the `l`s well above the x-height, and at this size the band has to
-         * clip them — they come out as detached rectangles floating over the
-         * word. Caps are one even block, which is what this treatment wants.
-         */
-        letter-spacing: -0.045em;
-        /*
-         * Centring accounts for the whole text box, and a negative
-         * letter-spacing leaves a negative gap trailing the final glyph — so
-         * the visible word lands right of centre by half of it. Half the
-         * letter-spacing, taken back off, is what actually centres it.
-         */
-        text-indent: -0.0275em;
-        white-space: nowrap;
+        font-size: 17vw;
+        /* Trims the font's empty ascent, so the band is the letters and not
+           the metrics box around them. */
+        line-height: 0.74;
         color: var(--foreground);
         opacity: 0.13;
     }
