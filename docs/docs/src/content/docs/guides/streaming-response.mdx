@@ -150,32 +150,83 @@ retry: <milliseconds>
 
 ###  Implementing SSE in sillo
 
-Here's how to implement an SSE endpoint. The key is to use the `text/event-stream` content type and follow the SSE message format:
+`response.sse()` takes an async iterable and handles the encoding, the
+headers, and the keepalive:
 
 ```python
-@app.get("/events")
-async def sse_events(request, response):
-    async def event_stream():
-        try:
-            while True:
-                data = await get_latest_event()  # Your event source
-                yield f"data: {data}\n\n"
-                # Keep the connection alive
-                await asyncio.sleep(1)
-                yield ":keepalive\n\n"
-        except asyncio.CancelledError:
-            # Handle client disconnection
-            pass
+from sillo import Request, Response
 
-    return response.stream(
-        event_stream(),
-        content_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive"
-        }
-    )
+@app.get("/events")
+async def events(request: Request, response: Response):
+    async def source():
+        while True:
+            yield {"price": await next_tick()}
+
+    return response.sse(source())
 ```
+
+Yield whatever is convenient. A `dict` or list is JSON-encoded, a `str` is sent
+unchanged, and a `ServerSentEvent` gives you the rest of the protocol:
+
+```python
+from sillo.http.sse import ServerSentEvent
+
+async def source():
+    yield ServerSentEvent(data={"n": 1}, event="tick", id="1")
+```
+
+On the client:
+
+```js
+const events = new EventSource("/events")
+events.addEventListener("tick", (e) => console.log(JSON.parse(e.data)))
+```
+
+####  Keepalive
+
+An idle SSE connection gets closed by whatever sits between you and the
+browser — nginx's `proxy_read_timeout` defaults to 60 seconds, and most load
+balancers are similar. `response.sse()` sends a comment line every 15 seconds
+of silence to prevent that. Clients ignore comments, so it costs the page
+nothing.
+
+```python
+return response.sse(source(), keepalive=30.0)   # or None to disable
+```
+
+####  Reconnection
+
+`EventSource` reconnects on its own, and sends the last `id` it saw as the
+`Last-Event-ID` header. Read it to resume rather than replay:
+
+```python
+from sillo.http.sse import last_event_id
+
+@app.get("/events")
+async def events(request: Request, response: Response):
+    since = last_event_id(request)
+
+    async def source():
+        async for row in changes_since(since):
+            yield ServerSentEvent(data=row, id=str(row["id"]))
+
+    # How long the browser waits before reconnecting, in milliseconds.
+    return response.sse(source(), retry=5000)
+```
+
+:::caution[TestClient cannot verify SSE timing]
+The ASGI test transport buffers the whole response, so every event arrives at
+once and a test cannot tell incremental delivery from a batch. Assert on the
+payload with `TestClient`; verify streaming behaviour against a real server.
+:::
+
+####  Headers
+
+Three are set for you beyond `text/event-stream`: `no-cache` keeps the stream
+out of caches, `no-transform` stops a proxy re-encoding it, and
+`x-accel-buffering: no` disables nginx's response buffering — without which
+events are held back and delivered in batches. Anything you pass in `headers`
+overrides them.
 
 ##  Understanding File Streaming
 

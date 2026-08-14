@@ -8,7 +8,7 @@ import os
 import stat
 import typing
 from base64 import b64encode
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterable, AsyncIterator, Callable
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime, formatdate
 from functools import partial
@@ -1409,6 +1409,75 @@ class Responder:
         )
         self._response = new_response
         return self
+
+    def sse(
+        self,
+        source: AsyncIterable[Any],
+        *,
+        keepalive: float | None = 15.0,
+        ping: str = "ping",
+        retry: int | None = None,
+        encoder: typing.Callable[[Any], str] | None = None,
+        status_code: int = 200,
+        headers: dict[str, Any] | None = None,
+    ):
+        """Send a Server-Sent Events stream.
+
+        Yield a ``dict`` (JSON-encoded), a ``str`` (sent as-is), or a
+        :class:`~sillo.http.sse.ServerSentEvent` for control over the event
+        name, id and reconnection delay::
+
+            @app.get("/events")
+            async def events(request: Request, response: Response):
+                async def source():
+                    while True:
+                        yield {"price": await next_tick()}
+
+                return response.sse(source())
+
+        Args:
+            source: An async iterable of events.
+            keepalive: Seconds of silence after which a comment line is sent to
+                stop an idle connection being closed by a proxy. None disables
+                it. The default is below the 60s that nginx and most load
+                balancers use for ``proxy_read_timeout``.
+            ping: Comment text used for the keepalive.
+            retry: Reconnection delay in milliseconds, sent once at the start.
+                ``EventSource`` remembers it across reconnects.
+            encoder: Applied to non-string payloads. Defaults to ``json.dumps``.
+            status_code: Response status.
+            headers: Extra headers, merged over the defaults below.
+
+        Returns:
+            This responder, for chaining.
+
+        Note:
+            Three headers are set that a plain ``stream`` would not. ``no-cache``
+            keeps the response out of caches; ``no-transform`` stops a proxy
+            re-encoding it; and ``x-accel-buffering: no`` disables nginx's
+            response buffering, without which events are held back and delivered
+            in batches rather than as they happen. Pass them in ``headers`` to
+            override any of it.
+        """
+        from sillo.http.sse import sse_stream
+
+        options: dict[str, Any] = {"keepalive": keepalive, "ping": ping, "retry": retry}
+        if encoder is not None:
+            options["encoder"] = encoder
+
+        merged: dict[str, Any] = {
+            "cache-control": "no-cache, no-transform",
+            "connection": "keep-alive",
+            "x-accel-buffering": "no",
+        }
+        merged.update(headers or {})
+
+        return self.stream(
+            sse_stream(source, **options),
+            content_type="text/event-stream",
+            status_code=status_code,
+            headers=merged,
+        )
 
     def redirect(
         self,
