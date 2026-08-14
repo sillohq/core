@@ -19,14 +19,19 @@ Key Features:
 - Testing utilities with TestClient
 
 Quick Start:
-    from sillo import SilloApp
-    from pydantic import BaseModel
+    from sillo import Request, Response, SilloApp
 
     app = SilloApp(title="My API", version="1.0.0")
 
     @app.get("/hello/{name}")
-    async def hello(request, response, name: str):
+    async def hello(request: Request, response: Response, name: str):
         return response.json({"message": f"Hello, {name}!"})
+
+    Request, Response and the routing and exception classes are importable
+    from `sillo` directly. Their original paths — `sillo.core.http`,
+    `sillo.core.routing`, `sillo.exceptions`, `sillo.websockets` — still work
+    and are not deprecated. The subsystems keep their own namespaces:
+    `sillo.record`, `sillo.auth`, `sillo.work`, `sillo.testclient`.
 
 Common Patterns:
 
@@ -103,11 +108,27 @@ Common Patterns:
     GraphQL(app, schema, path="/graphql", graphiql=True)
 """
 
-from sillo.core.routing import Route, Router
+from sillo.core.routing import Group, Route, Router, WebsocketRoute
 
 __version__: str = "0.1.0b1"
 
 from sillo.core.dependencies import Depend
+
+# Re-exported at the root because they are what a handler signature is written
+# against. `from sillo.core.http import Request, Response` was the single most
+# common import in this repo's own docs and starters, which is a long path for
+# the two objects every route takes.
+#
+# Every module named here is already pulled in by `.application` below, so
+# these lines cost nothing at import time. That is also the line drawn:
+# `sillo.record`, `sillo.testclient` and the other subsystems are *not*
+# imported by default — several need optional extras — and pulling them in here
+# would make `import sillo` fail without them. They keep their own namespaces.
+#
+# The deep paths continue to work. These are aliases, not a move.
+from sillo.core.http import Request, Response
+from sillo.exceptions import HTTPException, NotFoundException, WebSocketException
+from sillo.websockets import WebSocket, WebSocketDisconnect
 
 from .application import SilloApp
 from .frontend import FrontendApp
@@ -129,13 +150,22 @@ __all__ = [
     "File",
     "Form",
     "FrontendApp",
+    "Group",
+    "HTTPException",
     "Header",
+    "NotFoundException",
     "Path",
     "Query",
+    "Request",
     "RequestValidationError",
+    "Response",
     "ResponseValidationError",
     "Route",
     "Router",
     "SilloApp",
     "UploadFile",
+    "WebSocket",
+    "WebSocketDisconnect",
+    "WebSocketException",
+    "WebsocketRoute",
 ]
