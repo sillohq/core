@@ -1,0 +1,377 @@
+---
+/**
+ * The top bar.
+ *
+ * Replaces lucode-starlight's Header, which leaves the right-hand cell as an
+ * empty spacer. The three-column grid is kept exactly as that component had
+ * it — `1fr auto 1fr` — because that is what holds the search box at the
+ * true centre of the viewport regardless of how wide the two sides are.
+ *
+ * `SiteTitle` and `Search` are the theme's own components, imported through
+ * its exports. The menu toggle is reproduced here rather than imported: it
+ * lives under `components/overrides/parts/`, which the package does not
+ * export, so a deep import would fail to resolve at build time. It is a
+ * button targeting the `drawer` popover that PageFrame renders.
+ */
+import Search from 'lucode-starlight/components/overrides/Search.astro';
+import SiteTitle from 'lucode-starlight/components/overrides/SiteTitle.astro';
+import config from 'virtual:starlight/user-config';
+
+const GITHUB = 'https://github.com/sillohq/core';
+const INSTALL = 'uv add sillo-framework';
+
+/** Render search when Pagefind is on, or when the component was overridden. */
+const shouldRenderSearch =
+    config.pagefind ||
+    config.components.Search !== '@astrojs/starlight/components/Search.astro';
+---
+
+<div class="header-bar">
+    <div class="header-left">
+        <button
+            class="show-modal"
+            popovertargetaction="toggle"
+            popovertarget="drawer"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="4" x2="20" y1="6" y2="6"></line>
+                <line x1="4" x2="20" y1="12" y2="12"></line>
+                <line x1="4" x2="20" y1="18" y2="18"></line>
+            </svg>
+        </button>
+        <SiteTitle />
+    </div>
+
+    <div class="header-search">
+        {shouldRenderSearch && <Search />}
+    </div>
+
+    <div class="header-right">
+        <a class="gh" href={GITHUB} target="_blank" rel="noopener noreferrer" aria-label="Sillo on GitHub">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+                <path
+                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+                ></path>
+            </svg>
+        </a>
+
+        <button type="button" class="install" data-copy={INSTALL} aria-label={`Copy: ${INSTALL}`}>
+            <span class="prompt" aria-hidden="true">$</span>
+            <code>{INSTALL}</code>
+            <span class="icon" aria-hidden="true">
+                <svg class="i-copy" viewBox="0 0 24 24">
+                    <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                    <path d="M5 15V5a2 2 0 0 1 2-2h10"></path>
+                </svg>
+                <svg class="i-done" viewBox="0 0 24 24"><path d="m4 12.5 5 5L20 6.5"></path></svg>
+            </span>
+        </button>
+    </div>
+</div>
+
+<style>
+    .header-bar {
+        /*
+         * 1fr auto 1fr, so the centre cell is centred on the viewport rather
+         * than on whatever space the two sides leave over.
+         */
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: calc(var(--spacing) * 3);
+        width: 100%;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        justify-self: start;
+        min-width: 0;
+    }
+
+    .header-left :global(.site-title) {
+        margin-right: 0;
+    }
+
+    .header-left :global(.logo) {
+        max-height: 3rem;
+        max-width: 3rem;
+    }
+
+    .header-search {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        justify-self: center;
+        width: clamp(14rem, 50vw, 22rem);
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        justify-self: end;
+        gap: calc(var(--spacing) * 2);
+        min-width: 0;
+    }
+
+    /* ---- menu toggle ---- */
+
+    .show-modal {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 0;
+        border: none;
+        border-radius: 0.5rem;
+        background: transparent;
+        color: var(--foreground);
+        cursor: pointer;
+    }
+
+    .show-modal svg {
+        width: 1.5rem;
+        height: 1.5rem;
+        pointer-events: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    @media (hover: hover) {
+        .show-modal:hover {
+            background: color-mix(in oklab, var(--foreground) 8%, transparent);
+        }
+    }
+
+    @media (min-width: 768px) {
+        /* Navigation lives in the sidebar at this width. */
+        .show-modal {
+            display: none;
+        }
+    }
+
+    /* ---- GitHub ---- */
+
+    .gh {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.6rem;
+        color: var(--muted-foreground);
+        transition:
+            color 0.15s ease,
+            background 0.15s ease;
+    }
+
+    .gh svg {
+        width: 1.15rem;
+        height: 1.15rem;
+    }
+
+    .gh:hover {
+        color: var(--foreground);
+        background: color-mix(in oklab, var(--foreground) 8%, transparent);
+    }
+
+    /* ---- the install pill ---- */
+
+    .install {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 2);
+        height: 2.25rem;
+        padding-inline: calc(var(--spacing) * 3.5);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--foreground) 4%, transparent);
+        color: var(--muted-foreground);
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        transition:
+            border-color 0.2s ease,
+            color 0.2s ease,
+            background 0.2s ease;
+    }
+
+    /*
+     * The sheen. A single wide highlight parked off the left edge, slid across
+     * on hover — cheaper than animating a gradient's colour stops, and it
+     * cannot repaint the text because it sits behind it.
+     */
+    .install::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(
+            100deg,
+            transparent 20%,
+            color-mix(in oklab, var(--sillo-primary) 22%, transparent) 50%,
+            transparent 80%
+        );
+        transition: transform 0.55s ease;
+        pointer-events: none;
+    }
+
+    .install:hover,
+    .install:focus-visible {
+        color: var(--foreground);
+        border-color: color-mix(in oklab, var(--sillo-primary) 55%, var(--border));
+        background: color-mix(in oklab, var(--sillo-primary) 8%, transparent);
+    }
+
+    .install:hover::before,
+    .install:focus-visible::before {
+        transform: translateX(100%);
+    }
+
+    .install code {
+        font-family: var(--sl-font-mono);
+        font-size: 0.75rem;
+        background: none;
+        padding: 0;
+        color: inherit;
+    }
+
+    .prompt {
+        font-family: var(--sl-font-mono);
+        font-size: 0.75rem;
+        color: var(--sillo-primary);
+    }
+
+    .icon {
+        display: inline-grid;
+        place-items: center;
+        width: 0.9rem;
+        height: 0.9rem;
+    }
+
+    /* Both icons occupy the same cell, so swapping one for the other cannot
+       change the pill's width and make it twitch on copy. */
+    .icon svg {
+        grid-area: 1 / 1;
+        width: 0.9rem;
+        height: 0.9rem;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: opacity 0.15s ease;
+    }
+
+    .i-done {
+        opacity: 0;
+        color: var(--sillo-primary);
+    }
+
+    .install[data-copied='true'] .i-copy {
+        opacity: 0;
+    }
+
+    .install[data-copied='true'] .i-done {
+        opacity: 1;
+    }
+
+    .install[data-copied='true'] {
+        border-color: color-mix(in oklab, var(--sillo-primary) 55%, var(--border));
+    }
+
+    /*
+     * Below 1080px the pill would start squeezing the search box, so the
+     * command itself drops and the pill becomes the icon alone. GitHub goes at
+     * the point the header needs the room for the toggle and the search.
+     */
+    @media (max-width: 1080px) {
+        .install code,
+        .install .prompt {
+            display: none;
+        }
+
+        .install {
+            width: 2.25rem;
+            padding-inline: 0;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .header-bar {
+            display: flex;
+            justify-content: center;
+            gap: calc(var(--spacing) * 2);
+        }
+
+        .header-left {
+            position: absolute;
+            left: 0;
+            justify-self: auto;
+        }
+
+        .header-left :global(.site-title) {
+            display: none;
+        }
+
+        .header-right {
+            position: absolute;
+            right: 0;
+            justify-self: auto;
+        }
+
+        .gh {
+            display: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .install,
+        .install::before,
+        .icon svg,
+        .gh {
+            transition: none;
+        }
+    }
+</style>
+
+<script>
+    const toggle = document.querySelector('.show-modal');
+    const drawer = document.getElementById('drawer');
+    if (toggle && drawer) {
+        toggle.addEventListener('click', () => {
+            toggle.setAttribute('aria-expanded', String(drawer.matches(':popover-open')));
+        });
+    }
+
+    const install = document.querySelector<HTMLButtonElement>('.header-bar .install');
+    if (install) {
+        let timer: ReturnType<typeof setTimeout>;
+        install.addEventListener('click', async () => {
+            const text = install.dataset.copy;
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch {
+                // Clipboard is unavailable over plain HTTP and in some embedded
+                // webviews. Leaving the icon alone is the honest signal that
+                // nothing was copied.
+                return;
+            }
+            install.dataset.copied = 'true';
+            clearTimeout(timer);
+            timer = setTimeout(() => delete install.dataset.copied, 1600);
+        });
+    }
+</script>

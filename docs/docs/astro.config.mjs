@@ -88,11 +88,8 @@ export default defineConfig({
             // re-renders the theme version so the layout is unchanged.
             components: {
                 PageFrame: './src/components/PageFrame.astro',
+                Header: './src/components/Header.astro',
             },
-            editLink: {
-                baseUrl: 'https://github.com/sillohq/core/edit/main/docs',
-            },
-            lastUpdated: true,
             plugins: [
                 lucode({
                     docs: {

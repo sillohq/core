@@ -127,11 +127,22 @@ a:hover {
 	color: var(--sillo-primary-bright);
 }
 
-/* PageFrame paints its own <header> background; make the top bar invisible so the layout reads as if there is no header. */
+/*
+ * The top bar reads as a bar.
+ *
+ * PageFrame paints its own opaque <header>; this replaces that with the
+ * translucent nav ground plus a hairline, so the bar is distinct from the page
+ * without cutting a hard block across it. `--sl-color-bg-nav` is already
+ * defined per theme above, so one declaration covers both.
+ *
+ * The header is sticky, so the blur is what keeps content legible as it
+ * scrolls underneath rather than showing through.
+ */
 [data-slot='layout'] > header {
-    background: transparent !important;
-    border-bottom: none !important;
-    backdrop-filter: none !important;
+    background: var(--sl-color-bg-nav) !important;
+    border-bottom: 1px solid var(--sillo-border) !important;
+    backdrop-filter: blur(14px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(180%) !important;
 }
 
 .sidebar-pane,
