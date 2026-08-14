@@ -39,7 +39,7 @@ A project with no database gets no `db:*` — there is nothing to migrate. The
 queue commands are always offered, because a queue needs no setup to inspect.
 
 The starter wires the first three in `app/bootstrap.py`, so all of it is
-available from the first `make setup`.
+available as soon as dependencies are installed.
 
 ###  How the application is found
 
@@ -292,26 +292,19 @@ uv run sillo routes -m post          # only POST
 Both default to the application `sillo` already found, so neither needs an
 import string.
 
-##  Make targets
+##  A fresh clone has no migration yet
 
-The Makefile wraps the commands typed most often. They are shorthand, not a
-different mechanism.
+`db:migrate` applies what exists. On a brand-new project there is nothing to
+apply, so the first run is two commands:
 
-| Target | Runs |
-|---|---|
-| `make migrate` | `db:init` + `db:make initial` on a fresh clone, then `db:migrate` |
-| `make migration m="add_posts"` | `db:make "add_posts" --apply` |
-| `make plan` | `db:plan` |
-| `make rollback to=0001_initial` | `db:rollback 0001_initial` |
-| `make admin e=… u=…` | `user:admin` |
-| `make users` | `user:list` |
-| `make dev` | `serve --reload` |
-| `make worker` / `make scheduler` | `queue:work` / `schedule:run` |
+```bash
+sillo db:init          # create the migrations package
+sillo db:make initial  # write the first migration from the models
+sillo db:migrate       # apply it
+```
 
-`make migrate` is the one that does more than rename: on a fresh clone there is
-no migration to apply yet, so it writes the first one before applying it. That
-bootstrap only runs when the migrations package is empty, so a later
-`make migrate` never writes one behind your back.
+After that, `sillo db:migrate` on its own is all you need — and
+`sillo-start` runs the first two for you when it creates the project.
 
 ##  Adding your own
 

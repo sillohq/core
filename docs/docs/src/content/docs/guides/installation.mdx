@@ -18,15 +18,20 @@ import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
 
 # Installation
 
-Install Sillo with [`uv`](https://docs.astral.sh/uv/). It is the recommended package manager for Sillo projects because it is fast, creates reproducible environments, and keeps dependency management simple.
-
-One command puts the framework in place: routing, validation, dependency injection, the response builder, and the middleware stack. The heavier pieces — the ORM, JWT, templating, Redis — are optional extras you add when the product needs them, so the dependency tree stays proportional to what you build.
+One command puts the framework in place: routing, validation, dependency
+injection, the response builder, and the middleware stack. The heavier pieces
+— the ORM, JWT, templating, Redis — are optional extras you add when the
+product needs them, so the dependency tree stays proportional to what you
+build.
 
 ## Requirements
 
 - Python 3.10 or newer
-- `uv`
 - Basic familiarity with `async` / `await`
+
+Nothing else. [`uv`](https://docs.astral.sh/uv/) is recommended below and is
+what the rest of these guides use, but every command has a `venv` and `pip`
+equivalent that needs no third-party tool.
 
 Check your Python version:
 
@@ -34,52 +39,130 @@ Check your Python version:
 python --version
 ```
 
-## Install uv
+## Create a project
 
-If you do not have `uv` yet, install it first:
-
-<Tabs syncKey="os">
-  <TabItem label="macOS / Linux">
+<Tabs syncKey="pkg">
+  <TabItem label="uv (recommended)">
 
     ```bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    uv init my-sillo-app
+    cd my-sillo-app
+    uv add sillo-framework
     ```
 
-  </TabItem>
-  <TabItem label="Windows">
+    This writes a `pyproject.toml`, creates `.venv`, and records both the
+    dependency and an exact `uv.lock`. Run anything inside the environment
+    without activating it:
 
-    ```powershell
+    ```bash
+    uv run sillo --version
+    uv run python -c "import sillo; print(sillo.__version__)"
+    ```
+
+    Do not have `uv` yet?
+
+    ```bash
+    # macOS / Linux
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    # Windows
     powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
     ```
 
   </TabItem>
+  <TabItem label="Poetry">
+
+    ```bash
+    poetry new my-sillo-app --src
+    cd my-sillo-app
+    poetry add sillo-framework
+    ```
+
+    Or, in a directory you already have:
+
+    ```bash
+    poetry init          # answer the prompts, or --no-interaction
+    poetry add sillo-framework
+    ```
+
+    `poetry add` resolves, installs, writes `poetry.lock`, and records the
+    dependency in `pyproject.toml`. Run inside the environment with:
+
+    ```bash
+    poetry run sillo --version
+    ```
+
+    Or open a shell in it once: `poetry env activate` on Poetry 2.x,
+    `poetry shell` on 1.x.
+
+  </TabItem>
+  <TabItem label="venv + pip">
+
+    ```bash
+    mkdir my-sillo-app && cd my-sillo-app
+    python -m venv .venv
+    source .venv/bin/activate        # Windows: .venv\Scripts\activate
+    pip install sillo-framework
+    ```
+
+    `venv` and `pip` ship with Python, so this needs nothing installed first.
+    With the environment activated, commands are typed as they appear —
+    `sillo --version`, no prefix.
+
+    Nothing records what you installed, so pin it yourself:
+
+    ```bash
+    pip freeze > requirements.txt
+    ```
+
+    Reproduce it later with `pip install -r requirements.txt`.
+
+  </TabItem>
 </Tabs>
 
-Confirm it works:
+:::tip[Use uv if you have no reason not to]
+It resolves and installs far faster than the alternatives, manages the Python
+version as well as the packages, and needs no separate step to create or
+activate an environment. Everything in these guides is written against it.
 
-```bash
-uv --version
-```
+Sillo does not care either way. It is an ordinary package with a standard
+`pyproject.toml`, so PDM, Hatch, Pipenv or a bare `venv` all work — nothing in
+the framework reads a lockfile or shells out to a package manager.
+:::
 
-## Create a Sillo project
-
-Use `uv init` to create a project and `uv add` to install Sillo:
-
-```bash
-uv init my-sillo-app
-cd my-sillo-app
-uv add sillo-framework
-```
-
-This creates a project with a managed virtual environment and records dependencies in your project files.
+:::note
+Every later example is written as a bare command — `sillo db:migrate`. Prefix
+it with `uv run` under uv, or `poetry run` under Poetry. With an activated
+`venv`, type it as written.
+:::
 
 ## Add a development server
 
-Sillo is ASGI-based. Use `uvicorn` for local development:
+Sillo is ASGI-based, so it needs a server. `uvicorn` is the usual choice:
 
-```bash
-uv add uvicorn
-```
+<Tabs syncKey="pkg">
+  <TabItem label="uv (recommended)">
+
+    ```bash
+    uv add uvicorn
+    ```
+
+  </TabItem>
+  <TabItem label="Poetry">
+
+    ```bash
+    poetry add uvicorn
+    ```
+
+  </TabItem>
+  <TabItem label="venv + pip">
+
+    ```bash
+    pip install uvicorn
+    ```
+
+  </TabItem>
+</Tabs>
 
 ## Create your first app
 
@@ -96,10 +179,10 @@ async def home(request, response):
     return response.json({"message": "Hello from Sillo"})
 ```
 
-Run it with `uv`:
+Run it:
 
 ```bash
-uv run uvicorn main:app --reload
+sillo serve main:app --reload
 ```
 
 Open:
@@ -118,29 +201,57 @@ You should see:
 
 Sillo ships optional extras for integrations that need additional dependencies. Add them only when your project needs them.
 
-```bash
-uv add "sillo-framework[templating]"
-uv add "sillo-framework[jwt]"
-uv add "sillo-framework[cache]"
-uv add "sillo-framework[record]"
-uv add "sillo-framework[graphql]"
-```
+<Tabs syncKey="pkg">
+  <TabItem label="uv (recommended)">
 
-For a full development setup:
+    ```bash
+    uv add "sillo-framework[templating]"
+    uv add "sillo-framework[jwt]"
+    uv add "sillo-framework[cache]"
+    uv add "sillo-framework[record]"
+    uv add "sillo-framework[graphql]"
+    uv add "sillo-framework[all]"      # everything
+    ```
 
-```bash
-uv add "sillo-framework[all]"
-```
+  </TabItem>
+  <TabItem label="Poetry">
+
+    ```bash
+    poetry add "sillo-framework[templating]"
+    poetry add "sillo-framework[jwt]"
+    poetry add "sillo-framework[cache]"
+    poetry add "sillo-framework[record]"
+    poetry add "sillo-framework[graphql]"
+    poetry add "sillo-framework[all]"     # everything
+    ```
+
+  </TabItem>
+  <TabItem label="venv + pip">
+
+    ```bash
+    pip install "sillo-framework[templating]"
+    pip install "sillo-framework[jwt]"
+    pip install "sillo-framework[cache]"
+    pip install "sillo-framework[record]"
+    pip install "sillo-framework[graphql]"
+    pip install "sillo-framework[all]"    # everything
+    ```
+
+  </TabItem>
+</Tabs>
 
 ## Existing projects
 
-If you already have a Python project, install Sillo into it with:
+Install it into whatever the project already uses:
 
 ```bash
-uv add sillo-framework
+uv add sillo-framework            # uv
+poetry add sillo-framework        # Poetry
+pip install sillo-framework       # venv + pip
 ```
 
-If you are using a manually managed virtual environment, prefer switching the project to `uv` before adding Sillo. This keeps the install command, lockfile, and local run commands consistent across your team.
+Sillo does not care which. It is an ordinary package with a standard
+`pyproject.toml`, so it installs the same way anything else does.
 
 ## Upgrading from 0.0.1a15 or earlier
 
@@ -162,15 +273,20 @@ Do this before you upgrade. `silloApp` was removed in **0.0.2a2** — there is n
 
 Nothing else in the constructor changed — every argument, and every method on the returned application, is the same. The only other visible difference is that `str(app)` now reads `<SilloApp: title>`, which matters if you assert on dev-server output or log lines.
 
-## Why uv?
+## Why uv is recommended
 
-`uv` is the default recommendation for Sillo because it gives you:
+Recommended, not required — and recommended strongly. It resolves and
+installs an order of magnitude faster than pip, produces a lockfile without a
+separate tool, installs the Python interpreter itself when you need a version
+you do not have, and runs commands inside the environment without an activate
+step to forget.
 
-- fast installs
-- isolated virtual environments
-- reproducible dependency resolution
-- simple project commands with `uv run`
-- a modern workflow that works well for applications, libraries, CI, and deployment pipelines
+Poetry gives you the lockfile and the dependency groups but not the speed or
+the interpreter management. `venv` and `pip` give you neither, in exchange for
+needing nothing installed.
+
+If your team already has a workflow, keep it. Nothing in Sillo reads a
+lockfile or shells out to a package manager, so the choice is yours alone.
 
 ## Next step
 

@@ -20,11 +20,11 @@ head:
 module replacement. Nothing is built.
 
 **`VITE_DEV=false`** — the shell reads the build manifest and emits the hashed
-filenames from it. `make build` must have run.
+filenames from it. `npm run build` must have run.
 
 ```bash
-make build                     # writes static/build
-VITE_DEV=false make serve
+npm run build                     # writes static/build
+VITE_DEV=false sillo serve
 ```
 
 That is the whole difference. `{{ inertia_head }}` in `root.html` expands to
@@ -66,7 +66,7 @@ The directory served must be the `assets` folder **inside** the build output,
 not the output itself. Mount one level up and every script 404s against a
 manifest that is perfectly correct.
 
-The mount is skipped when nothing is built, so `make test` and `make dev` do
+The mount is skipped when nothing is built, so `pytest` and `sillo serve --reload` do
 not require `npm run build` first.
 
 In production, put nginx or Caddy in front and let it serve `static/build/assets`
@@ -98,7 +98,7 @@ Everything on [Deployment](/guides/start/deployment/) applies. Three things
 are specific here:
 
 1. **Build the front end** as part of the release, before the application
-   starts. `make build`.
+   starts. `npm run build`.
 2. **Set `VITE_DEV=false`.** Left true, production serves script tags pointing
    at a dev server that is not running.
 3. **Set `ASSET_VERSION`** per release, so clients pick up the new bundle.
@@ -107,9 +107,9 @@ A release looks like:
 
 ```bash
 uv sync --no-dev
-npm ci && make build
+npm ci && npm run build
 uv run sillo db:migrate
-VITE_DEV=false ASSET_VERSION=$(git rev-parse --short HEAD) make serve
+VITE_DEV=false ASSET_VERSION=$(git rev-parse --short HEAD) sillo serve
 ```
 
 ##  Things that will bite you
@@ -123,7 +123,7 @@ production silently ships a page with no script tag.
 level too high — it must be `static/build/assets`, not `static/build`.
 
 **Styles missing in production only.** Tailwind is a Vite plugin here, so the
-stylesheet is an output of the build like any other. If `make build` did not
+stylesheet is an output of the build like any other. If `npm run build` did not
 run, there is no CSS to name.
 
 **A client stuck on an old bundle.** `ASSET_VERSION` did not change between

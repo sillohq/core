@@ -18,10 +18,10 @@ A new project uses SQLite at `storage/myapp.db` and needs nothing
 installed. Changing that is one environment variable.
 
 ```bash
-make migrate                   # create the database, apply what is pending
-make migration m="add_posts"   # write a migration from your models, and apply it
-make plan                      # what would run
-make rollback to=0001_initial  # go back
+sillo db:migrate                   # create the database, apply what is pending
+sillo db:make add_posts --apply   # write a migration from your models, and apply it
+sillo db:plan                      # what would run
+sillo db:rollback 0001_initial  # go back
 ```
 
 ##  One definition of the connection
@@ -120,7 +120,7 @@ most confusing error a new project can produce, and it always means this.
 ###  A model's docstring is not just documentation
 
 It becomes the table's `table_description` in the database. Change it and
-the next `make migration` writes a migration whose only content is a
+the next `sillo db:make` writes a migration whose only content is a
 changed comment.
 
 That is harmless but noisy, and it is why project renaming deliberately
@@ -132,7 +132,7 @@ skips model files.
 
 ```bash
 # edit database/models/post.py
-make migration m="add post slug"
+sillo db:make add post slug --apply
 ```
 
 That writes a migration **and applies it**. To write without applying:
@@ -146,7 +146,7 @@ uv run sillo db:migrate       # apply it
 ###  After pulling someone else's work
 
 ```bash
-make migrate
+sillo db:migrate
 ```
 
 Applies anything new. Safe when there is nothing to do.
@@ -180,8 +180,8 @@ for statement in await sql(database(), "0003_add_post_slug"):
 ###  Rolling back
 
 ```bash
-make rollback to=0002_add_tags   # back to this migration
-make rollback to=zero            # unapply everything
+sillo db:rollback 0002_add_tags   # back to this migration
+sillo db:rollback zero            # unapply everything
 ```
 
 There is no "one step back" — you name where to stop. That is deliberate:
@@ -199,7 +199,7 @@ every startup. Convenient for a scratch database; wrong once you have
 migrations, for two reasons.
 
 **It creates tables outside the migration history.** A later
-`make migration` sees them as new and writes a migration that then fails
+`sillo db:make` sees them as new and writes a migration that then fails
 to apply against tables that already exist.
 
 **Every process does it at once.** An application, a worker and a
@@ -272,7 +272,7 @@ beside your `users`, a second set of accounts to keep in step or forget
 about. See [The Admin Panel](/guides/start/admin/).
 
 To drop the audit log, remove that entry and run
-`make migration m="drop activity log"`. The admin works either way: without
+`sillo db:make drop activity log --apply`. The admin works either way: without
 the table it records nothing, and the entry disappears from the sidebar
 rather than leading to an error.
 
@@ -360,7 +360,7 @@ an ordinary Python module shaped the way your project wants.
    write-ahead log reports `disk I/O error`, which sounds like hardware
    and is not.
 
-4. **`make migration` with no `m=` writes a migration called `update`.**
+4. **`sillo db:make` with no `m=` writes a migration called `update`.**
    Harmless, uninformative, and permanent.
 
 5. **Two people adding migrations in parallel** produce two `0002_`

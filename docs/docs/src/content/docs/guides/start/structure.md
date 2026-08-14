@@ -38,7 +38,6 @@ myapp/
   scripts/
     smoke.py          Boots the app and hits every route
   tests/
-  Makefile
   pyproject.toml
   .env.example
 ```
@@ -176,7 +175,7 @@ in something that looks unrelated.
 :::caution
 **`db_generate_schemas` is `False` on purpose.** Schema generation issues
 DDL on every startup, which creates tables outside the migration history —
-so a later `make migration` sees them as new and writes a migration that
+so a later `sillo db:make` sees them as new and writes a migration that
 then fails to apply against tables that already exist. It also has every
 process do it at once: an app, a worker and a scheduler sharing one SQLite
 file will raise "database is locked" on boot.
@@ -329,7 +328,7 @@ truth, and the database file is gitignored precisely so that they have to
 be.
 
 They are excluded from linting: they are engine output, and formatting
-generated code makes `make check` fail the first time you add a model.
+generated code makes `ruff check .` fail the first time you add a model.
 
 ---
 

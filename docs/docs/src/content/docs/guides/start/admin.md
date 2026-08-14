@@ -17,8 +17,8 @@ head:
 At `/admin/` — note the trailing slash, the routes need it.
 
 ```bash
-make admin e=ada@example.com u=ada
-make dev
+sillo user:admin ada@example.com ada
+sillo serve --reload
 ```
 
 Then sign in at <http://localhost:8000/admin/> with that email and
@@ -68,7 +68,7 @@ MODEL_MODULES = ["database.models", "sillo.admin.models", "sillo.admin.default_u
 admin = AdminSite(title="Myapp Admin", prefix=config.admin_prefix)
 ```
 
-Then run `make migration m="admin users"`. You now maintain two sets of
+Then run `sillo db:sillo user:admin users --apply`. You now maintain two sets of
 accounts, deliberately.
 :::
 
@@ -125,7 +125,7 @@ than creating an account with an unverified password.
 
 ##  Who may enter
 
-An account needs `is_staff` — `make admin` sets it, along with
+An account needs `is_staff` — `sillo user:admin` sets it, along with
 `is_superuser`.
 
 The rule is **active, and staff or superuser**, and it is checked at
@@ -198,7 +198,7 @@ MODEL_MODULES = ["database.models"]
 ```
 
 ```bash
-make migration m="drop activity log"
+sillo db:make drop activity log --apply
 ```
 
 The sidebar entry disappears with the table. That is deliberate: the admin

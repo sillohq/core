@@ -15,7 +15,7 @@ head:
 #  Deployment
 
 ```bash
-make serve
+sillo serve
 ```
 
 which is:
@@ -47,7 +47,7 @@ forge a session cookie. Generate one per environment:
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-`make setup` does this for a fresh clone. It does **not** happen when you
+`sillo-start` does this when it creates the project. It does **not** happen when you
 copy `.env` between machines, which is the moment to check.
 
 **`CORS_ALLOW_ORIGINS` should name your front end**, not `*`. The default
@@ -245,7 +245,7 @@ afternoon:
 - [ ] Worker running with `QUEUE_URL`, if you dispatch jobs
 - [ ] Exactly one scheduler, if you have scheduled tasks
 - [ ] An administrator account created
-- [ ] `make check` green on the commit being deployed
+- [ ] Lint, tests and the smoke check green on the commit being deployed
 
 ##  Health checks
 
@@ -297,10 +297,10 @@ To move:
 
 ```bash
 uv lock --upgrade-package sillo-framework
-make check
+ruff check . && pytest && python scripts/smoke.py
 ```
 
-`make check` is the point of that sequence. It lints, tests, and boots the
+That last line is the point of the sequence. It lints, tests, and boots the
 application against the new version — which is what catches a release that
 changes something your project depends on.
 
@@ -318,7 +318,7 @@ The starter's own CI runs weekly for the same reason.
 4. **Forgetting `X-Forwarded-Proto`** makes the application think it is
    on HTTP.
 
-5. **`make dev` is not a production server.** It is one process with
+5. **`sillo serve --reload` is not a production server.** It is one process with
    reload watching your files.
 
 6. **One scheduler per replica** means your nightly job runs four times.
@@ -328,5 +328,5 @@ The starter's own CI runs weekly for the same reason.
 - [Creating a Project](/guides/start/) — what you are deploying
 - [Database & Migrations](/guides/start/database/) — migrating safely
 - [Background Work](/guides/start/background-work/) — workers in production
-- [Testing](/guides/start/testing/) — what `make check` covers
+- [Testing](/guides/start/testing/) — the suite and the smoke check
 - [The Console](/guides/start/console/) — the commands a deployment runs

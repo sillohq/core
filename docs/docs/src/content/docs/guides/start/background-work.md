@@ -37,7 +37,7 @@ _register_work(application)
 ```
 
 ```bash
-make worker
+sillo queue:work
 ```
 
 Which of those you want is the substance of this page — see
@@ -205,7 +205,7 @@ The same class works all three ways. Dispatching it later changes nothing
 about it.
 
 :::caution
-**With the default in-memory queue, a separate `make worker` processes
+**With the default in-memory queue, a separate `sillo queue:work` processes
 nothing.** `SyncConnection` lives inside one process, so the worker has
 its own empty queue while the application dispatches into another. Nothing
 errors; nothing happens.
@@ -213,8 +213,8 @@ errors; nothing happens.
 | Setup | |
 | --- | --- |
 | `in_process=True`, default queue | jobs run |
-| `make worker`, default queue | separate queue — nothing to do |
-| `make worker` + `QUEUE_URL=redis://…` | jobs run |
+| `sillo queue:work`, default queue | separate queue — nothing to do |
+| `sillo queue:work` + `QUEUE_URL=redis://…` | jobs run |
 :::
 
 ##  How the in-process worker is wired
@@ -369,7 +369,7 @@ removing the dispatch and watching it go red.
 
 1. **Jobs must be module-level classes** in an importable module.
 
-2. **`make worker` with the in-memory queue does nothing.** Use
+2. **`sillo queue:work` with the in-memory queue does nothing.** Use
    `in_process=True` or point `QUEUE_URL` at Redis.
 
 3. **Dispatch plain data**, never model instances.

@@ -15,9 +15,9 @@ head:
 #  Testing
 
 ```bash
-make test     # the pytest suite
-make smoke    # boot the application and call every route
-make check    # lint, tests, smoke — everything CI runs
+pytest     # the pytest suite
+python scripts/smoke.py    # boot the application and call every route
+ruff check . && pytest && python scripts/smoke.py   # everything CI runs
 ```
 
 Two kinds of test, doing different jobs. The reason for the second one is
@@ -136,7 +136,7 @@ app.on_startup(seed)
 ##  The smoke test
 
 ```bash
-make smoke
+python scripts/smoke.py
 uv run python scripts/smoke.py
 ```
 
@@ -159,7 +159,7 @@ all checks passed
 ```
 
 It boots the real application through its lifespan and calls every route.
-Exit code 0 or 1, so CI and `make check` can gate on it.
+Exit code 0 or 1, so CI can gate on it.
 
 ###  Why it exists
 
@@ -248,7 +248,7 @@ the only way to know.
 - name: Apply migrations
   run: |
     cp .env.example .env
-    make migrate
+    sillo db:migrate
 
 - name: Test
   run: uv run pytest -q
@@ -272,18 +272,18 @@ not on yours. A scheduled run turns "someone discovers this in three
 months" into "we knew on Monday".
 :::
 
-`make migrate` in CI is also a real check: it runs the committed migration
+`sillo db:migrate` in CI is also a real check: it runs the committed migration
 against an empty database, which is exactly what a new contributor does.
 
 ##  Local equivalents
 
 ```bash
-make check      # lint + test + smoke, the same three
-make lint       # ruff check and format --check
-make format     # apply both
+ruff check . && pytest && python scripts/smoke.py
+ruff check .       # ruff check and format --check
+ruff format .     # apply both
 ```
 
-Run `make check` before pushing and CI holds no surprises.
+Run those three before pushing and CI holds no surprises.
 
 ##  Testing background jobs
 
@@ -325,7 +325,7 @@ worker sleeps between polls — a test that waits 100ms will flake.
 4. **Do not assert on log lines you have not configured.** `caplog` needs
    the logger at the right level; the starter's job logger is `app.jobs`.
 
-5. **`make smoke` writes to your development database** unless you point
+5. **`python scripts/smoke.py` writes to your development database** unless you point
    `DATABASE_URL` elsewhere. It creates a user each run.
 
 ##  Related

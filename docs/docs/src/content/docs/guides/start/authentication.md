@@ -282,7 +282,7 @@ class User(UserBaseModel):
 ```
 
 ```bash
-make migration m="add user profile fields"
+sillo db:make add user profile fields --apply
 ```
 
 Because there is one user model, that field exists everywhere — the API,

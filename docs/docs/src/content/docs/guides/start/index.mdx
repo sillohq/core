@@ -12,6 +12,8 @@ head:
       content: Start a Sillo application from the official starter, with sillo-start or a plain git clone.
 ---
 
+import { TabItem, Tabs } from '@astrojs/starlight/components';
+
 #  Creating a Project
 
 Sillo does not generate applications. It publishes one.
@@ -25,23 +27,105 @@ on three Python versions.
 That distinction is the whole design, and the rest of this page explains
 why it is worth caring about.
 
+:::tip[New to Sillo? Start smaller]
+The starter is a complete application — auth, an admin panel, migrations, a
+queue — and it is a lot to meet at once. If you have not written a Sillo
+route yet, [Installation](/guides/installation/) builds a single-file
+application from nothing in about a minute, and
+[Routing](/guides/routing/) → [Handlers](/guides/handlers/) →
+[Validation](/guides/validation/) is enough to build something real.
+
+Come back here when you want the wiring — sessions, the user model, the admin
+— rather than the framework.
+:::
+
+##  Install sillo-start
+
+`sillo-start` is a separate tool, installed once and used for every project
+after that.
+
+<Tabs syncKey="tool">
+  <TabItem label="uv (recommended)">
+
+    ```bash
+    uv tool install sillo-start
+    ```
+
+    Installs it as a standalone command on your PATH, in its own isolated
+    environment — nothing is added to any project.
+
+  </TabItem>
+  <TabItem label="pip">
+
+    ```bash
+    pip install sillo-start
+    ```
+
+    Install it globally, or into whichever environment you keep your tooling
+    in. It is a small command-line tool with two dependencies, not a runtime
+    dependency of anything you build.
+
+  </TabItem>
+</Tabs>
+
+Python 3.11 or newer. Check it is there:
+
+```bash
+sillo-start --help
+```
+
 ##  Creating one
 
 ```bash
-uvx sillo-start create-app myapp
+sillo-start create-app myapp
 cd myapp
-make setup
-make dev
 ```
 
-Then open <http://localhost:8000>.
+Then install dependencies and set the database up:
 
-`sillo-start` fetches the starter, renames the project to yours, and gives it
-its own secrets. `uvx` runs it without installing anything.
+<Tabs syncKey="pkg">
+  <TabItem label="uv (recommended)">
 
-`make setup` then installs dependencies, writes a `.env` with a freshly
-generated `SECRET_KEY`, creates the database and applies the initial
-migration. It is safe to re-run; an existing `.env` is never overwritten.
+    ```bash
+    uv sync
+    uv run sillo db:migrate
+    uv run sillo serve --reload
+    ```
+
+  </TabItem>
+  <TabItem label="venv + pip">
+
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate        # Windows: .venv\Scripts\activate
+    pip install -e ".[dev]"
+
+    sillo db:migrate
+    sillo serve --reload
+    ```
+
+  </TabItem>
+</Tabs>
+
+Then open [http://localhost:8000](http://localhost:8000).
+
+`sillo-start` fetches the starter, renames the project to yours, and writes a
+`.env` with freshly generated secrets. It prefers `uv` when it is installed
+and falls back to `pip` when it is not, so neither path needs anything the
+other does.
+
+Everything after that is the `sillo` command, which the project has as soon as
+dependencies are installed. `sillo` on its own lists what this project can do.
+
+:::note
+Examples from here on are written bare — `sillo db:migrate`. Prefix them with
+`uv run` under uv, or `poetry run` under Poetry. With an activated `venv`,
+type them as written.
+:::
+
+The starter ships a `uv.lock`, so `uv sync` reproduces the exact set of
+versions its CI tested. Poetry and PDM install it too — the `pyproject.toml`
+is standard PEP 621 — but they resolve fresh rather than reading that lock.
 
 :::tip[Building with React?]
 There is a second starter. `sillohq/starter-inertia` serves a React front end
@@ -49,7 +133,7 @@ with no API between it and the server — the page's props are delivered with th
 page rather than fetched after it.
 
 ```bash
-uvx sillo-start create-app sillohq/starter-inertia myapp
+sillo-start create-app sillohq/starter-inertia myapp
 ```
 
 The [Inertia](/guides/inertia/) section covers it.
@@ -76,20 +160,22 @@ sillo-start create-app acme/our-template myapp          # your own
 | `--force` | Allow a directory that is not empty |
 | `-v`, `--verbose` | Show tracebacks |
 
-Dependencies are **not** installed by default, so creating a project takes
-a second rather than a minute. `make setup` in the new project does it,
-along with everything else a first run needs.
+Dependencies are **not** installed by default, so creating a project takes a
+second rather than a minute. `--install` does it during creation if you would
+rather not run the install step yourself.
 
 ###  Or clone it
 
 The starter is a real repository, so cloning works and gives you the same
-application:
+application. The one difference is that `.env` is not written for you:
 
 ```bash
 git clone https://github.com/sillohq/starter.git myapp
 cd myapp
-make setup
+cp .env.example .env        # then set SECRET_KEY to something of your own
 ```
+
+Then install and migrate as above.
 
 Prefer this when you want to keep pulling from upstream. Prefer `create-app`
 when you want the project named after itself from the first commit, with no
@@ -98,8 +184,10 @@ upstream history to delete.
 ##  Requirements
 
 - Python 3.11 or newer
-- [uv](https://docs.astral.sh/uv/) —
-  `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+[uv](https://docs.astral.sh/uv/) is recommended and is what these guides use,
+but nothing here requires it — `venv` and `pip` ship with Python and do the
+same job.
 
 SQLite needs nothing else. PostgreSQL or MySQL need a running server and
 one extra driver — see
@@ -131,7 +219,7 @@ So the starter is an application, and its CI runs it:
 - name: Apply migrations
   run: |
     cp .env.example .env
-    make migrate
+    uv run sillo db:migrate
 
 - name: Test
   run: uv run pytest -q
@@ -165,7 +253,7 @@ has to be upgraded before the next person who clones it gets the fix.
 | **API** | JSON routes under `/api`, documented by [Atlas](/guides/openapi/documentation-ui/#atlas) at `/docs` |
 | **Queue** | A worker and scheduler, wired and switched off |
 | **Console** | `sillo` — migrations, users, worker, scheduler, serve |
-| **Tooling** | `make` targets, ruff, pytest, and CI on three Python versions |
+| **Tooling** | ruff, pytest, a smoke check, and CI on three Python versions |
 
 Two things are deliberately *not* there, and both are covered later:
 
@@ -211,7 +299,7 @@ written. What changes:
 
 Model files are deliberately excluded. A model's docstring becomes its
 `table_description` in the database, so rewriting one puts your models out
-of step with the committed migration, and the next `make migration`
+of step with the committed migration, and the next `sillo db:make`
 writes a spurious second one describing nothing but a changed comment.
 
 ###  It gets its own secrets
@@ -221,8 +309,8 @@ writes a spurious second one describing nothing but a changed comment.
 
 A secret committed to a starter is a placeholder by definition. Without
 this step every project created from it would sign its sessions with a
-key published on GitHub. `make setup` does the same thing when you clone
-directly.
+key published on GitHub. Cloning directly skips this step, which is why
+`.env.example` has to be copied and edited by hand.
 
 An existing `.env` is never touched — it may hold real credentials.
 
@@ -294,16 +382,18 @@ which you can fix by hand.
 ##  Your first five minutes
 
 ```bash
-make setup                              # dependencies, .env, database
-make admin e=you@example.com u=you      # an account that can reach /admin/
-make dev                                # http://localhost:8000
+sillo db:migrate                          # create the database
+sillo user:admin you@example.com you      # an account that can reach /admin/
+sillo serve --reload                      # http://localhost:8000
 ```
+
+`sillo` on its own lists every command this project has.
 
 Then:
 
-- <http://localhost:8000> — the welcome page
-- <http://localhost:8000/docs> — the generated OpenAPI documentation
-- <http://localhost:8000/admin/> — the admin panel, note the trailing slash
+- [http://localhost:8000](http://localhost:8000) — the welcome page
+- [http://localhost:8000/docs](http://localhost:8000/docs) — the generated OpenAPI documentation
+- [http://localhost:8000/admin/](http://localhost:8000/admin/) — the admin panel, note the trailing slash
 
 `app/bootstrap.py` is the one file worth reading first. Everything the
 application is made of is assembled there, in order, with the reasoning
@@ -313,16 +403,18 @@ written down beside each step.
 
 Collected from actually running this, not from reading the source.
 
-1. **Run the console through `uv run`, not bare `python`.** A virtual
-   environment activated in a parent directory shadows the project's own,
-   and the sillo it finds there is usually older than the project needs.
-   `uv run` avoids the question entirely.
+1. **Make sure you are running the project's own `sillo`.** A virtual
+   environment activated in a parent directory shadows the project's, and
+   the sillo it finds there is usually older than the project needs. `uv run
+   sillo` settles it under uv; under `venv`, activate the project's own
+   `.venv` first.
 
 2. **Admin routes need the trailing slash.** `/admin/login/`, not
    `/admin/login`.
 
-3. **`make setup` is not `make install`.** `install` only installs
-   dependencies; `setup` also writes `.env` and creates the database.
+3. **Installing dependencies is not the same as creating the database.**
+   Installing gets you the `sillo` command; `sillo db:migrate` is what
+   creates the schema.
 
 4. **The database file is gitignored, the migrations are not.** Commit
    `database/migrations/`; it is the schema's source of truth.

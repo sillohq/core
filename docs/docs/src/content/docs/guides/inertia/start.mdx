@@ -1,0 +1,156 @@
+---
+title: Creating a Project
+description: Start an Inertia application from sillohq/starter-inertia — the two development processes, and every task the project ships with.
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Creating an Inertia Project with Sillo
+  - tag: meta
+    attrs:
+      property: og:description
+      content: A React front end served by Sillo, running in two processes, with the full task reference.
+---
+
+import { TabItem, Tabs } from '@astrojs/starlight/components';
+
+#  Creating a Project
+
+[`sillohq/starter-inertia`](https://github.com/sillohq/starter-inertia) is a
+working application: session authentication, a persistent layout, server-side
+validation whose errors render on the form, Record, a queue, and a production
+asset pipeline. You copy it and make it yours.
+
+```bash
+sillo-start create-app sillohq/starter-inertia myapp
+cd myapp
+```
+
+Install it once if you have not already — `uv tool install sillo-start`, or
+`pip install sillo-start`. See [Creating a Project](/guides/start/#install-sillo-start).
+
+Then install dependencies and set the database up:
+
+<Tabs syncKey="pkg">
+  <TabItem label="uv (recommended)">
+
+    ```bash
+    uv sync
+    npm install
+    uv run sillo db:migrate
+    ```
+
+  </TabItem>
+  <TabItem label="venv + pip">
+
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate        # Windows: .venv\Scripts\activate
+    pip install -e ".[dev]"
+    npm install
+
+    sillo db:migrate
+    ```
+
+  </TabItem>
+</Tabs>
+
+`sillo-start` takes the repository as an argument — there is no `--inertia`
+flag, because it fetches a real starter rather than rendering a template. It
+renames the project to yours and writes a `.env` with fresh secrets.
+
+Node is required here as well as Python, because the front end is compiled.
+`npm install` is the one step the standard starter does not have.
+
+Everything on [Creating a Project](/guides/start/) applies here too — the
+requirements, what `sillo-start` does to the files, using your own starter.
+This page covers what is different.
+
+##  Two processes in development
+
+This is the part that catches everyone once.
+
+```bash
+sillo serve --reload     # the application, on :8000
+npm run dev              # the Vite dev server, on :5173 — second terminal
+```
+
+Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+Both are required. The page is served by Sillo, but it loads its JavaScript
+from Vite, so with only `sillo serve` running you get a blank page and a
+console full of failed module requests. With only `npm run dev` you get
+nothing at all — Vite serves modules, not your application.
+
+They are kept as two commands rather than one wrapper on purpose: running both
+under a single process hides which one printed an error, and the HMR output is
+worth having where you can see it.
+
+:::note
+Open the application's origin, `127.0.0.1:8000` — not Vite's `:5173`. Vite
+serves modules to the page; it does not serve the page.
+:::
+
+##  Tasks
+
+Everything the project does is either the `sillo` command or an npm script.
+`sillo` on its own lists what this project can do.
+
+| | |
+| --- | --- |
+| `sillo serve --reload` | The application, with reload. Needs `npm run dev` alongside |
+| `npm run dev` | The Vite dev server |
+| `sillo db:migrate` | Apply every pending migration |
+| `sillo db:make add_posts --apply` | Write a migration and apply it |
+| `sillo db:plan` | Show which migrations would run |
+| `sillo db:rollback 0001_initial` | Roll back to a migration |
+| `sillo user:admin ada@example.com ada` | Create an administrator |
+| `sillo user:list` | List users |
+| `sillo queue:work` | Run the queue worker |
+| `npm run build` | Compile the front end into `static/build` |
+| `npm run typecheck` | Type-check the front end |
+| `sillo serve` | Run as production would. Needs `npm run build` and `VITE_DEV=false` |
+| `pytest` | The Python suite |
+| `ruff check .` / `ruff format .` | Lint, checking or fixing |
+
+See [The Console](/guides/start/console/) for what the `sillo` commands do and
+how to add your own.
+
+##  Testing
+
+`pytest` runs the Python suite. The tests drive real requests through the
+application and assert on the page object, so they cover the handler, the
+props, and the adapter together.
+
+What CI runs, in this order:
+
+```bash
+ruff check . && ruff format --check .
+npm run typecheck
+npm run build
+pytest
+```
+
+The `build` before `pytest` is not incidental. The production-asset tests skip
+themselves when there is nothing built, and a check that silently skips its
+most fragile assertions is not a check.
+
+##  Things that will bite you
+
+**A blank page with failed module requests.** `npm run dev` is not running, or
+`VITE_DEV=false` is set with nothing built.
+
+**Every module blocked by CORS.** The browser is on the Sillo origin and pulls
+modules from Vite's, which is cross-origin. `server.cors` in `vite.config.ts`
+is set for this reason — removing it renders the page blank with only a
+console error to say so.
+
+**A full page refresh on every save instead of HMR.** Vite guesses the HMR
+host from the page, which is the Sillo origin rather than its own.
+`server.hmr.host` states it.
+
+##  Next
+
+- [Project Structure](/guides/inertia/structure/) — what is in the box and
+  where it lives
+- [Pages and Props](/guides/inertia/pages/) — adding a page of your own
