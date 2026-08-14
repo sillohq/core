@@ -231,18 +231,15 @@ const year = new Date().getFullYear();
         <div class="baseline">
             <p>&copy; {year} sillohq. Released under the BSD 3-Clause License.</p>
         </div>
-    </div>
 
-    {/*
-      Decoration, so it is hidden from assistive technology and unselectable —
-      the name is already in the brand block above, and a screen reader
-      announcing "SILLO" a second time at the end of every page is noise.
-
-      Deliberately outside `.inner`: that wrapper is capped at the container
-      width, and this is meant to run to both edges of the viewport.
-    */}
-    <div class="wordmark-band" aria-hidden="true">
-        <span>S</span><span>I</span><span>L</span><span>L</span><span>O</span>
+        {/*
+          Decoration, so it is hidden from assistive technology and
+          unselectable — the name is already in the brand block above, and a
+          screen reader announcing it again at the end of every page is noise.
+        */}
+        <div class="wordmark-band" aria-hidden="true">
+            <span>sillo</span>
+        </div>
     </div>
 </footer>
 
@@ -263,12 +260,12 @@ const year = new Date().getFullYear();
 
     .inner {
         /*
-         * No container cap. The page content above is held to
-         * --container-max-width, but the footer is a full-bleed band and the
-         * link map reads better spanning it than boxed in the middle of it.
-         * The side padding is what keeps the first and last columns off the
-         * viewport edge.
+         * 1520px, matching sillo.build's footer rather than the docs content
+         * width — the two footers are the same component to a reader moving
+         * between the sites, so they are held to the same measure.
          */
+        max-width: 1520px;
+        margin-inline: auto;
         padding: calc(var(--spacing) * 14) calc(var(--spacing) * 8) calc(var(--spacing) * 8);
         display: flex;
         flex-direction: column;
@@ -418,12 +415,12 @@ const year = new Date().getFullYear();
 
     .column h2 {
         font-family: var(--sl-font-mono);
-        font-size: 0.6875rem;
-        font-weight: 500;
+        font-size: 0.625rem;
+        font-weight: 400;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--foreground);
-        margin: 0 0 calc(var(--spacing) * 3);
+        letter-spacing: 0.14em;
+        color: var(--sillo-dimmed);
+        margin: 0 0 calc(var(--spacing) * 8);
         text-wrap: balance;
     }
 
@@ -433,16 +430,17 @@ const year = new Date().getFullYear();
         padding: 0;
         display: flex;
         flex-direction: column;
-        gap: calc(var(--spacing) * 2);
+        gap: calc(var(--spacing) * 5);
     }
 
     .column a {
         display: inline-flex;
         align-items: center;
         gap: calc(var(--spacing) * 1);
-        font-size: 0.8125rem;
+        font-size: 0.875rem;
+        font-weight: 600;
         line-height: 1.35;
-        color: var(--muted-foreground);
+        color: color-mix(in oklab, var(--foreground) 90%, transparent);
         text-decoration: none;
         transition: color 0.15s ease;
     }
@@ -466,60 +464,49 @@ const year = new Date().getFullYear();
 
     .baseline {
         padding-top: calc(var(--spacing) * 6);
-        border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
-        font-size: 0.75rem;
-        color: var(--muted-foreground);
+        border-top: 1px solid var(--border);
+        font-family: var(--sl-font-mono);
+        font-size: 0.625rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--sillo-dimmed);
     }
 
     .baseline p {
         margin: 0;
     }
 
-    /* ---- the wordmark band ---- */
+    /* ---- the wordmark ---- */
 
     .wordmark-band {
         /*
-         * The letters are laid out individually and pushed apart, rather than
-         * set as one word sized to fill the width. Setting a word to span the
-         * viewport locks its height to its width through the font's aspect
-         * ratio — at this width that is half a screen of wordmark, and
-         * cropping it back only leaves the tops of the letters, which reads as
-         * shapes rather than a name.
-         *
-         * Spacing them means the font size controls the height on its own and
-         * the band still touches both edges exactly, at every viewport.
+         * Sized the way sillo.build sizes its own oversized footer type: a
+         * clamp with a hard ceiling, rather than a vw that keeps growing.
+         * Spanning the viewport ties the height to the width through the
+         * font's aspect ratio, which is what made this half a screen tall.
          */
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
         overflow: hidden;
         user-select: none;
-        /*
-         * Fades downward instead of ending on a hard cut. Held opaque well
-         * past the top of the letterforms so the mark stays legible, then
-         * gone before the bottom edge.
-         */
-        -webkit-mask-image: linear-gradient(to bottom, #000 38%, transparent 96%);
-        mask-image: linear-gradient(to bottom, #000 38%, transparent 96%);
+        padding-top: calc(var(--spacing) * 10);
+        /* Gone before the bottom edge, so the crop never shows as a line. */
+        -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 97%);
+        mask-image: linear-gradient(to bottom, #000 40%, transparent 97%);
     }
 
     .wordmark-band span {
-        /*
-         * 700 is the top of Instrument Sans Variable's weight axis (400-700).
-         * Asking for more gets a synthesised bold, which smears at this size.
-         */
-        font-weight: 700;
-        font-size: 17vw;
-        /* Trims the font's empty ascent, so the band is the letters and not
-           the metrics box around them. */
-        line-height: 0.74;
+        display: block;
+        font-family: var(--sl-font-mono);
+        font-size: clamp(3.5rem, 8vw, 8.5rem);
+        font-weight: 600;
+        line-height: 0.9;
+        letter-spacing: -0.08em;
         color: var(--foreground);
-        opacity: 0.13;
+        opacity: 0.1;
     }
 
     :root[data-theme='light'] .wordmark-band span {
         /* Dark ink on a light ground reads heavier at the same alpha. */
-        opacity: 0.09;
+        opacity: 0.08;
     }
 
     /* Focus is otherwise invisible against the muted link colour. */
