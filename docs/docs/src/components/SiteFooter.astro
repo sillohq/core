@@ -232,6 +232,18 @@ const year = new Date().getFullYear();
             <p>&copy; {year} sillohq. Released under the BSD 3-Clause License.</p>
         </div>
     </div>
+
+    {/*
+      Decoration, so it is hidden from assistive technology and unselectable —
+      the name is already in the brand block above, and a screen reader
+      announcing "SILLO" a second time at the end of every page is noise.
+
+      Deliberately outside `.inner`: that wrapper is capped at the container
+      width, and this is meant to run to both edges of the viewport.
+    */}
+    <div class="wordmark-band" aria-hidden="true">
+        <span>SILLO</span>
+    </div>
 </footer>
 
 <style>
@@ -456,6 +468,72 @@ const year = new Date().getFullYear();
 
     .baseline p {
         margin: 0;
+    }
+
+    /* ---- the wordmark band ---- */
+
+    .wordmark-band {
+        /*
+         * `--wordmark-size` is the one number to tune. The word is five
+         * glyphs of Instrument Sans, so its width is a fixed multiple of the
+         * font size; expressing that size in vw is what keeps it touching
+         * both edges at every viewport rather than only at one.
+         */
+        --wordmark-size: 38vw;
+
+        overflow: hidden;
+        /* Clipped to its own box, so a wide glyph cannot scroll the page. */
+        line-height: 1;
+        text-align: center;
+        user-select: none;
+        /*
+         * Fades out downward instead of ending on a hard baseline. The caps
+         * occupy roughly 12%-84% of this box, so the gradient holds full
+         * opacity past their midpoint and only then falls away — a fade that
+         * began at the top would wash out the whole word rather than sink it.
+         */
+        -webkit-mask-image: linear-gradient(to bottom, #000 46%, transparent 93%);
+        mask-image: linear-gradient(to bottom, #000 46%, transparent 93%);
+    }
+
+    .wordmark-band span {
+        display: block;
+        /*
+         * Caps reach only to cap-height, leaving the font's whole ascent
+         * empty above them — about 0.12em of dead space between the baseline
+         * rule and the top of the S. Pulled back in em so it scales with the
+         * word rather than drifting at other viewport widths.
+         */
+        margin-top: -0.09em;
+        font-size: var(--wordmark-size);
+        /*
+         * 700 is the top of Instrument Sans Variable's weight axis (400–700).
+         * Asking for more would get a synthesised bold, which smears the
+         * letterforms at this size.
+         */
+        font-weight: 700;
+        /*
+         * Set in caps. Lowercase puts the dot of the `i` and the ascenders of
+         * the `l`s well above the x-height, and at this size the band has to
+         * clip them — they come out as detached rectangles floating over the
+         * word. Caps are one even block, which is what this treatment wants.
+         */
+        letter-spacing: -0.045em;
+        /*
+         * Centring accounts for the whole text box, and a negative
+         * letter-spacing leaves a negative gap trailing the final glyph — so
+         * the visible word lands right of centre by half of it. Half the
+         * letter-spacing, taken back off, is what actually centres it.
+         */
+        text-indent: -0.0275em;
+        white-space: nowrap;
+        color: var(--foreground);
+        opacity: 0.13;
+    }
+
+    :root[data-theme='light'] .wordmark-band span {
+        /* Dark ink on a light ground reads heavier at the same alpha. */
+        opacity: 0.09;
     }
 
     /* Focus is otherwise invisible against the muted link colour. */
