@@ -1,223 +1,114 @@
 ---
 /**
- * Site-wide docs footer.
+ * Site-wide docs footer — the same footer sillo.build has.
+ *
+ * Structure, groups and link count are copied from that site's
+ * `FooterSection`, so someone moving between the two sees one footer rather
+ * than two designs: the sign-up block beside four link groups, then the
+ * bottom bar.
  *
  * lucode-starlight's own PageFrame footer renders `footerText`, a single
  * inline-markdown string, and is hidden outright on any page carrying
  * `[data-slot='docs']` — which is every page with a table of contents. So it
- * never appeared on the docs at all. This replaces it: a real link map,
- * rendered on every template, below the layout rather than inside the content
- * column so it can run the full width.
- *
- * Every link here is checked against src/content/docs and against the repos
- * that actually exist under github.com/sillohq. Nothing points at a page that
- * has yet to be written.
+ * never appeared on the docs at all. This replaces it.
  */
 
-// Same two files the header logo uses, so Astro emits one asset per theme and
-// the browser already has both cached by the time the footer is reached.
-// Their aspect ratios differ slightly (800x628 vs 800x607), so the CSS pins
-// height and leaves width auto rather than setting both.
-import logoDark from '../assets/logo-white.svg';
-import logoLight from '../assets/logo-black.svg';
+const DOCS = import.meta.env.BASE_URL.replace(/\/$/, '');
+const GITHUB = 'https://github.com/sillohq/core';
 
-// The site can be served from a sub-path (DOCS_BASE_URL), so internal hrefs
-// are prefixed. External ones are passed through untouched.
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-const url = (path: string) => (path.startsWith('http') ? path : `${base}${path}`);
+type Group = { title: string; links: { label: string; href: string }[] };
 
-const GITHUB = 'https://github.com/sillohq';
-const PYPI = 'https://pypi.org/project';
-
-type Link = { label: string; href: string };
-type Column = { title: string; links: Link[] };
-
-const columns: Column[] = [
+/*
+ * The four groups from sillo.build, with the same labels and the same
+ * sixteen links.
+ *
+ * Two of them point at pages that exist on neither site — `/community/` and
+ * `/community/contribution-guide/` are 404s there as well — so those keep
+ * their labels and point at the real thing on GitHub rather than being
+ * copied across as dead links.
+ */
+const groups: Group[] = [
     {
-        title: 'Start here',
+        title: 'Resources',
         links: [
-            { label: 'Introduction', href: '/guides/introduction/' },
-            { label: 'Installation', href: '/guides/installation/' },
-            { label: 'Configuration', href: '/guides/configuration/' },
-            { label: 'Request lifecycle', href: '/guides/request-lifecycle/' },
-            { label: 'Creating a project', href: '/guides/start/' },
-            { label: 'Project structure', href: '/guides/start/structure/' },
-            { label: 'Testing', href: '/guides/start/testing/' },
-            { label: 'Deployment', href: '/guides/start/deployment/' },
+            { label: 'Documentation', href: `${DOCS}/guides/introduction/` },
+            { label: 'Guides', href: `${DOCS}/guides/routing/` },
+            { label: 'Examples', href: `${GITHUB}/tree/main/examples` },
+            { label: 'API reference', href: `${DOCS}/reference/plugin-api/` },
         ],
     },
     {
-        title: 'Core',
+        title: 'Tools',
         links: [
-            { label: 'Routing', href: '/guides/routing/' },
-            { label: 'Routers & sub-apps', href: '/guides/routers-and-subapps/' },
-            { label: 'Handlers', href: '/guides/handlers/' },
-            { label: 'Middleware', href: '/guides/middleware/' },
-            { label: 'Dependency injection', href: '/guides/dependency-injection/' },
-            { label: 'Handling inputs', href: '/guides/request-inputs/' },
-            { label: 'Sending responses', href: '/guides/sending-responses/' },
-            { label: 'Error handling', href: '/guides/error-handling/' },
-            { label: 'Concurrency', href: '/guides/concurrency/' },
-        ],
-    },
-    {
-        title: 'Data',
-        links: [
-            { label: 'Record (ORM)', href: '/guides/record/' },
-            { label: 'Models & mixins', href: '/guides/record/models/' },
-            { label: 'Scopes & events', href: '/guides/record/scopes-events/' },
-            { label: 'Migrations & seeding', href: '/guides/record/migrations/' },
-            { label: 'Transactions & factories', href: '/guides/record/transactions-factories/' },
-            { label: 'Validation', href: '/guides/validation/' },
-            { label: 'Response models', href: '/guides/validation/response-models/' },
-            { label: 'OpenAPI', href: '/guides/openapi/' },
-        ],
-    },
-    {
-        title: 'Background & realtime',
-        links: [
-            { label: 'Background work', href: '/guides/work/' },
-            { label: 'Queues', href: '/guides/work/queue/' },
-            { label: 'Jobs', href: '/guides/work/jobs/' },
-            { label: 'Scheduler', href: '/guides/work/scheduler/' },
-            { label: 'Event system', href: '/guides/events/' },
-            { label: 'WebSockets', href: '/guides/websockets/' },
-            { label: 'Channels & groups', href: '/guides/websockets/channels/' },
-            { label: 'Caching', href: '/guides/cache/' },
-        ],
-    },
-    {
-        title: 'Auth & security',
-        links: [
-            { label: 'Authentication', href: '/guides/authentication/' },
-            { label: 'Session auth', href: '/guides/session-auth/' },
-            { label: 'JWT auth', href: '/guides/jwt-auth/' },
-            { label: 'API keys', href: '/guides/api-keys/' },
-            { label: 'Permissions', href: '/guides/permissions/' },
-            { label: 'OAuth2 & social login', href: '/guides/oauth/' },
-            { label: 'CSRF protection', href: '/guides/csrf/' },
-            { label: 'Rate limiting', href: '/guides/rate-limiting/' },
-            { label: 'Security headers', href: '/guides/security/' },
-        ],
-    },
-    {
-        title: 'Frontend & services',
-        links: [
-            { label: 'Templating', href: '/guides/templating/' },
-            { label: 'Static files', href: '/guides/static-files/' },
-            { label: 'Inertia', href: '/guides/inertia/' },
-            { label: 'Frontend (SPA)', href: '/guides/frontend/' },
-            { label: 'Mail', href: '/guides/services/mail/' },
-            { label: 'Console commands', href: '/guides/console/' },
-            { label: 'HTTP client', href: '/guides/http/client/' },
-            { label: 'GraphQL', href: '/guides/graphql/' },
-            { label: 'Helpers', href: '/guides/helpers/' },
-        ],
-    },
-    {
-        title: 'Packages',
-        links: [
-            { label: 'sillo-framework', href: `${PYPI}/sillo-framework/` },
-            { label: 'sillo-start', href: `${PYPI}/sillo-start/` },
-            { label: 'sillo-oauth', href: `${PYPI}/sillo-oauth/` },
-            { label: 'sillo-inertia', href: `${PYPI}/sillo-inertia/` },
-            { label: 'Starter template', href: `${GITHUB}/starter` },
-            { label: 'Starter (Inertia)', href: `${GITHUB}/starter-inertia` },
+            { label: 'Admin panel', href: `${DOCS}/guides/start/admin/` },
+            { label: 'Console', href: `${DOCS}/guides/start/console/` },
+            { label: 'Test clients', href: `${DOCS}/guides/start/testing/` },
+            { label: 'OpenAPI', href: `${DOCS}/guides/openapi/` },
         ],
     },
     {
         title: 'Project',
         links: [
-            { label: 'sillo.build', href: 'https://sillo.build' },
-            { label: 'GitHub', href: `${GITHUB}/core` },
-            { label: 'Issues', href: `${GITHUB}/core/issues` },
-            { label: 'Changelog', href: `${GITHUB}/core/blob/main/CHANGELOG.md` },
-            { label: 'Security policy', href: `${GITHUB}/core/blob/main/SECURITY.md` },
-            { label: 'License', href: `${GITHUB}/core/blob/main/LICENSE` },
-            { label: 'Edit these docs', href: `${GITHUB}/core/tree/main/docs` },
+            { label: 'GitHub', href: GITHUB },
+            { label: 'Issues', href: `${GITHUB}/issues` },
+            { label: 'Discussions', href: `${GITHUB}/discussions` },
+            { label: 'Releases', href: `${GITHUB}/releases` },
+        ],
+    },
+    {
+        title: 'About',
+        links: [
+            { label: 'Installation', href: `${DOCS}/guides/installation/` },
+            { label: 'Contributing', href: `${GITHUB}/blob/main/.github/CONTRIBUTING.md` },
+            { label: 'Sillo', href: 'https://sillo.build/about' },
+            { label: 'License', href: `${GITHUB}/blob/main/LICENSE` },
         ],
     },
 ];
 
-const INSTALL = 'uv add sillo-framework';
 const year = new Date().getFullYear();
 ---
 
 <footer class="site-footer" data-slot="site-footer">
-    <div class="inner">
-        <div class="brand">
-            <div class="brand-mark">
-                {/*
-                  `light:sl-hidden` / `dark:sl-hidden` are Starlight's own global
-                  utilities — the same pair SiteTitle uses to swap the logo — so
-                  the mark follows the theme without any extra CSS here. The
-                  images are decorative: the wordmark beside them says the name,
-                  and the link carries its own label.
-                */}
-                <a class="wordmark" href={url('/')} aria-label="sillo documentation home">
-                    <img
-                        class="light:sl-hidden mark"
-                        alt=""
-                        src={logoDark.src}
-                        width={logoDark.width}
-                        height={logoDark.height}
-                    />
-                    <img
-                        class="dark:sl-hidden mark"
-                        alt=""
-                        src={logoLight.src}
-                        width={logoLight.width}
-                        height={logoLight.height}
-                    />
-                    <span class="wordmark-text">sillo<span class="dot">.</span></span>
-                </a>
-                <p class="tagline">
-                    Python with the pieces already in place. Routing, validation, the ORM,
-                    the admin, auth, the queue and the scheduler are first-party modules
-                    sharing one configuration model.
-                </p>
-            </div>
-
-            <div class="install">
-                <code>{INSTALL}</code>
-                <button type="button" class="copy" data-copy={INSTALL} aria-label="Copy install command">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" width="15" height="15">
-                        <rect x="9" y="9" width="11" height="11" rx="2"></rect>
-                        <path d="M5 15V5a2 2 0 0 1 2-2h10"></path>
-                    </svg>
-                    <span class="copy-label">Copy</span>
-                </button>
-            </div>
+    <div class="measure middle">
+        <div class="signup">
+            <h2>Want to stay in touch?</h2>
+            <p>Release notes and framework updates, sent when a version ships.</p>
+            {/*
+              A link to the releases feed rather than an input posting nowhere.
+              sillo.build's markup has no action and no submit handler, so its
+              form silently discards whatever is typed into it — copying that
+              here would ship a control that lies about what it does. Watching
+              releases is what actually notifies you today.
+            */}
+            <a
+                class="signup-action"
+                href={`${GITHUB}/releases`}
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <span>Watch releases on GitHub</span>
+                <span class="signup-cta">Subscribe</span>
+            </a>
         </div>
 
         <nav class="columns" aria-label="Footer">
             {
-                columns.map((column) => (
+                groups.map((group) => (
                     <div class="column">
-                        <h2>{column.title}</h2>
+                        <h3>{group.title}</h3>
                         <ul>
-                            {column.links.map((link) => {
+                            {group.links.map((link) => {
                                 const external = link.href.startsWith('http');
                                 return (
                                     <li>
                                         <a
-                                            href={url(link.href)}
+                                            href={link.href}
                                             {...(external
                                                 ? { target: '_blank', rel: 'noopener noreferrer' }
                                                 : {})}
                                         >
                                             {link.label}
-                                            {external && (
-                                                <svg
-                                                    class="ext"
-                                                    viewBox="0 0 24 24"
-                                                    aria-hidden="true"
-                                                    width="10"
-                                                    height="10"
-                                                >
-                                                    <path d="M7 17 17 7M9 7h8v8" />
-                                                </svg>
-                                            )}
                                         </a>
                                     </li>
                                 );
@@ -227,201 +118,149 @@ const year = new Date().getFullYear();
                 ))
             }
         </nav>
+    </div>
 
-        <div class="baseline">
-            <p>&copy; {year} sillohq. Released under the BSD 3-Clause License.</p>
+    <div class="measure bottom">
+        <div>Released under the BSD 3-Clause License / Copyright &copy; {year} Sillo</div>
+        <div class="bottom-links">
+            <a href={`${DOCS}/guides/introduction/`}>Docs</a>
+            <a href={`${GITHUB}/releases`} target="_blank" rel="noopener noreferrer">Releases</a>
+            <a href={GITHUB} target="_blank" rel="noopener noreferrer">GitHub</a>
         </div>
+    </div>
 
-        {/*
-          Decoration, so it is hidden from assistive technology and
-          unselectable — the name is already in the brand block above, and a
-          screen reader announcing it again at the end of every page is noise.
-        */}
-        <div class="wordmark-band" aria-hidden="true">
-            <span>sillo</span>
-        </div>
+    {/*
+      Decoration, so it is hidden from assistive technology and unselectable —
+      the name is in the bottom bar already, and a screen reader announcing it
+      again at the end of every page is noise.
+    */}
+    <div class="measure wordmark-band" aria-hidden="true">
+        <span>sillo</span>
     </div>
 </footer>
 
 <style>
     .site-footer {
-        /* The band runs the full page width; the grid inside is contained. */
         width: 100%;
-        /*
-         * No ground of its own: the footer sits on whatever body paints, so it
-         * matches the rest of the docs in both themes (and stays under the
-         * dark-mode radial wash rather than cutting a rectangle out of it).
-         * That makes the top hairline the only seam.
-         */
+        /* No ground of its own, so it matches the page in both themes. */
         background: transparent;
         border-top: 1px solid var(--border);
-        margin-top: 0;
     }
 
-    .inner {
-        /*
-         * 1520px, matching sillo.build's footer rather than the docs content
-         * width — the two footers are the same component to a reader moving
-         * between the sites, so they are held to the same measure.
-         */
+    /* The measure every block is held to, matching sillo.build's footer. */
+    .measure {
         max-width: 1520px;
         margin-inline: auto;
-        padding: calc(var(--spacing) * 14) calc(var(--spacing) * 8) calc(var(--spacing) * 8);
-        display: flex;
-        flex-direction: column;
-        gap: calc(var(--spacing) * 12);
+        padding-inline: calc(var(--spacing) * 8);
     }
 
-    /* ---- brand ---- */
-
-    .brand {
-        display: flex;
-        flex-direction: column;
-        gap: calc(var(--spacing) * 6);
-        align-items: flex-start;
-    }
-
-    @media (min-width: 900px) {
-        .brand {
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-            gap: calc(var(--spacing) * 10);
+    @media (min-width: 768px) {
+        .measure {
+            padding-inline: calc(var(--spacing) * 12);
         }
     }
 
-    .brand-mark {
-        display: flex;
-        flex-direction: column;
-        gap: calc(var(--spacing) * 2);
-        max-width: 46ch;
+    /* ---- sign-up + link groups ---- */
+
+    .middle {
+        display: grid;
+        grid-template-columns: 1fr;
+        border-bottom: 1px solid var(--border);
     }
 
-    .wordmark {
-        display: inline-flex;
-        align-items: center;
-        gap: calc(var(--spacing) * 2);
-        text-decoration: none;
-        width: fit-content;
+    @media (min-width: 768px) {
+        .middle {
+            grid-template-columns: 36% 64%;
+        }
     }
 
-    .mark {
-        /* Height-only, because the two logo files differ in aspect ratio. */
-        height: 1.75rem;
-        width: auto;
+    .signup {
+        padding-block: calc(var(--spacing) * 16);
+        border-bottom: 1px solid var(--border);
     }
 
-    .wordmark-text {
+    @media (min-width: 768px) {
+        .signup {
+            border-bottom: 0;
+            border-right: 1px solid var(--border);
+            padding-right: calc(var(--spacing) * 16);
+        }
+    }
+
+    .signup h2 {
+        margin: 0 0 calc(var(--spacing) * 6);
         font-size: 1.5rem;
         font-weight: 600;
-        letter-spacing: var(--tracking-tighter);
+        letter-spacing: -0.04em;
         color: var(--foreground);
-        line-height: 1;
     }
 
-    .dot {
-        color: var(--sillo-primary);
-    }
-
-    .tagline {
-        margin: 0;
-        font-size: 0.8125rem;
+    .signup p {
+        margin: 0 0 calc(var(--spacing) * 9);
+        max-width: 380px;
+        font-family: var(--sl-font-mono);
+        font-size: 0.875rem;
         line-height: 1.6;
         color: var(--muted-foreground);
-        text-wrap: pretty;
     }
 
-    /* ---- install chip ---- */
-
-    .install {
+    .signup-action {
         display: flex;
-        align-items: stretch;
-        border: 1px solid var(--border);
-        border-radius: calc(var(--radius) - 2px);
-        background: var(--background);
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-
-    .install code {
-        font-family: var(--sl-font-mono);
-        font-size: 0.8125rem;
-        color: var(--foreground);
-        padding: calc(var(--spacing) * 2.5) calc(var(--spacing) * 4);
-        white-space: nowrap;
-    }
-
-    .copy {
-        display: inline-flex;
         align-items: center;
-        gap: calc(var(--spacing) * 1.5);
-        border: 0;
-        border-left: 1px solid var(--border);
-        background: transparent;
-        color: var(--muted-foreground);
-        font: inherit;
+        justify-content: space-between;
+        gap: calc(var(--spacing) * 3);
+        max-width: 420px;
+        padding: calc(var(--spacing) * 1);
+        border: 1px solid var(--sillo-border-strong);
+        border-radius: 999px;
+        text-decoration: none;
+    }
+
+    .signup-action > span:first-child {
+        min-width: 0;
+        padding-inline: calc(var(--spacing) * 5);
+        font-family: var(--sl-font-mono);
         font-size: 0.75rem;
-        padding-inline: calc(var(--spacing) * 3);
-        cursor: pointer;
-        transition:
-            color 0.15s ease,
-            background 0.15s ease;
+        color: var(--muted-foreground);
     }
 
-    .copy:hover,
-    .copy:focus-visible {
-        color: var(--foreground);
-        background: color-mix(in oklab, var(--foreground) 6%, transparent);
+    .signup-cta {
+        flex-shrink: 0;
+        border-radius: 999px;
+        background: var(--foreground);
+        color: var(--background);
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: calc(var(--spacing) * 3) calc(var(--spacing) * 6);
+        transition: transform 0.15s ease;
     }
 
-    .copy svg {
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 1.75;
-        stroke-linecap: round;
-        stroke-linejoin: round;
+    .signup-action:hover .signup-cta {
+        transform: scale(1.02);
     }
-
-    .copy[data-copied='true'] {
-        color: var(--sillo-primary);
-    }
-
-    /* ---- link columns ---- */
 
     .columns {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: calc(var(--spacing) * 8) calc(var(--spacing) * 6);
+        gap: calc(var(--spacing) * 10);
+        padding-block: calc(var(--spacing) * 16);
     }
 
-    @media (min-width: 640px) {
-        .columns {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-    }
-
-    @media (min-width: 1024px) {
+    @media (min-width: 768px) {
         .columns {
             grid-template-columns: repeat(4, minmax(0, 1fr));
+            padding-left: calc(var(--spacing) * 16);
         }
     }
 
-    @media (min-width: 1280px) {
-        .columns {
-            grid-template-columns: repeat(8, minmax(0, 1fr));
-            gap: calc(var(--spacing) * 6) calc(var(--spacing) * 4);
-        }
-    }
-
-    .column h2 {
+    .column h3 {
+        margin: 0 0 calc(var(--spacing) * 8);
         font-family: var(--sl-font-mono);
         font-size: 0.625rem;
         font-weight: 400;
         text-transform: uppercase;
         letter-spacing: 0.14em;
         color: var(--sillo-dimmed);
-        margin: 0 0 calc(var(--spacing) * 8);
-        text-wrap: balance;
     }
 
     .column ul {
@@ -434,12 +273,8 @@ const year = new Date().getFullYear();
     }
 
     .column a {
-        display: inline-flex;
-        align-items: center;
-        gap: calc(var(--spacing) * 1);
         font-size: 0.875rem;
         font-weight: 600;
-        line-height: 1.35;
         color: color-mix(in oklab, var(--foreground) 90%, transparent);
         text-decoration: none;
         transition: color 0.15s ease;
@@ -450,21 +285,13 @@ const year = new Date().getFullYear();
         color: var(--sillo-primary);
     }
 
-    .ext {
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        opacity: 0.5;
-        flex-shrink: 0;
-    }
+    /* ---- bottom bar ---- */
 
-    /* ---- baseline ---- */
-
-    .baseline {
-        padding-top: calc(var(--spacing) * 6);
-        border-top: 1px solid var(--border);
+    .bottom {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing) * 4);
+        padding-block: calc(var(--spacing) * 8);
         font-family: var(--sl-font-mono);
         font-size: 0.625rem;
         text-transform: uppercase;
@@ -472,36 +299,69 @@ const year = new Date().getFullYear();
         color: var(--sillo-dimmed);
     }
 
-    .baseline p {
-        margin: 0;
+    @media (min-width: 768px) {
+        .bottom {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+    }
+
+    .bottom-links {
+        display: flex;
+        gap: calc(var(--spacing) * 5);
+    }
+
+    .bottom-links a {
+        color: inherit;
+        text-decoration: none;
+        transition: color 0.15s ease;
+    }
+
+    .bottom-links a:hover {
+        color: var(--foreground);
     }
 
     /* ---- the wordmark ---- */
 
     .wordmark-band {
         /*
-         * Sized the way sillo.build sizes its own oversized footer type: a
-         * clamp with a hard ceiling, rather than a vw that keeps growing.
-         * Spanning the viewport ties the height to the width through the
-         * font's aspect ratio, which is what made this half a screen tall.
+         * Container query units, not vw. The word is sized against this
+         * block's own width — the 1520px measure, or the viewport minus its
+         * padding on anything narrower — so it keeps the same proportion to
+         * the footer at every width rather than tracking the screen.
          */
+        container-type: inline-size;
         overflow: hidden;
         user-select: none;
         padding-top: calc(var(--spacing) * 10);
-        /* Gone before the bottom edge, so the crop never shows as a line. */
-        -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 97%);
-        mask-image: linear-gradient(to bottom, #000 40%, transparent 97%);
+        /*
+         * Fades downward instead of ending on a hard baseline. Held opaque
+         * past the middle of the letterforms so the name stays legible, and
+         * clear of the bottom edge so the cut never shows as a line.
+         */
+        -webkit-mask-image: linear-gradient(to bottom, #000 52%, transparent 96%);
+        mask-image: linear-gradient(to bottom, #000 52%, transparent 96%);
     }
 
     .wordmark-band span {
         display: block;
-        font-family: var(--sl-font-mono);
-        font-size: clamp(3.5rem, 8vw, 8.5rem);
-        font-weight: 600;
-        line-height: 0.9;
-        letter-spacing: -0.08em;
+        /* Sized against the measure, at about half of it. */
+        font-size: 30cqw;
+        /*
+         * 700 is the top of Instrument Sans Variable's weight axis (400-700).
+         * Asking for more gets a synthesised bold, which smears at this size.
+         */
+        font-weight: 700;
+        line-height: 0.78;
+        letter-spacing: -0.055em;
+        /* Half the letter-spacing, taken back off: centring counts the whole
+           text box, including the gap trailing the final glyph. */
+        text-indent: -0.0275em;
+        text-align: center;
+        white-space: nowrap;
         color: var(--foreground);
-        opacity: 0.1;
+        opacity: 0.11;
     }
 
     :root[data-theme='light'] .wordmark-band span {
@@ -509,7 +369,6 @@ const year = new Date().getFullYear();
         opacity: 0.08;
     }
 
-    /* Focus is otherwise invisible against the muted link colour. */
     .site-footer a:focus-visible,
     .site-footer button:focus-visible {
         outline: 2px solid var(--sillo-primary);
@@ -523,34 +382,3 @@ const year = new Date().getFullYear();
         }
     }
 </style>
-
-<script>
-    document.querySelectorAll<HTMLButtonElement>('.site-footer .copy').forEach((button) => {
-        const label = button.querySelector('.copy-label');
-        const original = label?.textContent ?? 'Copy';
-        let timer: ReturnType<typeof setTimeout>;
-
-        button.addEventListener('click', async () => {
-            const text = button.dataset.copy;
-            if (!text) return;
-
-            try {
-                await navigator.clipboard.writeText(text);
-            } catch {
-                // Clipboard is unavailable over plain HTTP and in some
-                // embedded webviews; leaving the label alone is the honest
-                // signal that nothing was copied.
-                return;
-            }
-
-            if (label) label.textContent = 'Copied';
-            button.dataset.copied = 'true';
-
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-                if (label) label.textContent = original;
-                delete button.dataset.copied;
-            }, 1600);
-        });
-    });
-</script>
