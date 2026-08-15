@@ -14,7 +14,7 @@ head:
     content: One command puts the framework in place. Add the ORM, JWT, templating or Redis as optional extras when the product needs them.
 ---
 
-import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
+import { TabItem, Tabs } from '@astrojs/starlight/components';
 
 # Installation
 
@@ -230,14 +230,6 @@ from sillo import SilloApp
 
 app = SilloApp(title="Projects API")
 ```
-
-<Aside type="danger" title="`silloApp` no longer exists">
-Do this before you upgrade. `silloApp` was removed in **0.0.2a2**. There is no
-alias and no deprecation period left, so `from sillo import silloApp` raises
-`ImportError` at import time, before any of your code runs.
-
-0.0.2a1 briefly kept the old name working behind a `DeprecationWarning`. If you are on that release, run your suite with `-W error::DeprecationWarning` to find every remaining use before moving on.
-</Aside>
 
 Nothing else in the constructor changed: every argument, and every method on
 the returned application, is the same. The only other visible difference is
