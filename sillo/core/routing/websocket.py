@@ -1,4 +1,4 @@
-import asyncio
+import inspect
 from typing import Annotated, Any
 
 from typing_extensions import Doc
@@ -161,7 +161,7 @@ class WebsocketRoute(BaseRoute):
                 coroutine function.
         """
         assert callable(handler), "Route handler must be callable"
-        assert asyncio.iscoroutinefunction(handler), "Route handler must be async"
+        assert inspect.iscoroutinefunction(handler), "Route handler must be async"
         self.raw_path = path
         self.handler: WsHandlerType = handler
         self.route_info = RouteBuilder.create_pattern(path)

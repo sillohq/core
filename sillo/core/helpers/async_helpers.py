@@ -7,8 +7,8 @@ managers. Import from ``sillo.helpers.async_helpers``.
 
 from __future__ import annotations
 
-import asyncio
 import functools
+import inspect
 import sys
 import typing
 from contextlib import contextmanager
@@ -59,8 +59,8 @@ def is_async_callable(obj: typing.Any) -> typing.Any:
     while isinstance(obj, functools.partial):
         obj = obj.func
 
-    return asyncio.iscoroutinefunction(obj) or (
-        callable(obj) and asyncio.iscoroutinefunction(obj.__call__)
+    return inspect.iscoroutinefunction(obj) or (
+        callable(obj) and inspect.iscoroutinefunction(obj.__call__)
     )
 
 

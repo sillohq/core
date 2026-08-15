@@ -704,7 +704,7 @@ class Event(EventSerializationMixin):
 
                 event_data["context"].phase = phase
 
-                if asyncio.iscoroutinefunction(actual_listener):
+                if inspect.iscoroutinefunction(actual_listener):
                     await actual_listener(*event_data["args"], **event_data["kwargs"])
                 else:
                     actual_listener(*event_data["args"], **event_data["kwargs"])
@@ -785,7 +785,7 @@ class Event(EventSerializationMixin):
                 event_data["context"].phase = phase
 
                 # Execute the listener
-                if asyncio.iscoroutinefunction(actual_listener):
+                if inspect.iscoroutinefunction(actual_listener):
                     asyncio.create_task(
                         actual_listener(*event_data["args"], **event_data["kwargs"])
                     )

@@ -9,9 +9,16 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # 3.15 is still a beta. It runs so a break shows up here first, but it does
+    # not gate the branch: a beta can regress under us, and pydantic-core has no
+    # 3.15 wheel yet, so that leg compiles Rust and is slow.
+    continue-on-error: ${{ matrix.python-version == '3.15' }}
     strategy:
+      # One version failing should not cancel the others. Knowing 3.14 broke
+      # while 3.10 is fine is most of the diagnosis.
+      fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
 
     # Without a Redis server the cache backend and the transport skip
     # themselves, quietly, on every version — so two shipped features were
@@ -39,6 +46,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          # Without this, setup-python cannot resolve 3.15 while it is a beta.
+          allow-prereleases: true
 
       # The install script has moved between ~/.cargo/bin and ~/.local/bin
       # across uv versions. Add both so the PATH does not depend on which

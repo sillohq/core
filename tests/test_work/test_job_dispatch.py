@@ -8,6 +8,7 @@ asyncio.
 """
 
 import asyncio
+import inspect
 import json
 
 import pytest
@@ -135,5 +136,5 @@ async def test_a_refused_blocking_call_does_not_leak_a_coroutine(job_class, recw
 
 
 def test_dispatch_is_a_coroutine_function(job_class):
-    assert asyncio.iscoroutinefunction(job_class.dispatch)
-    assert asyncio.iscoroutinefunction(job_class.dispatch_after)
+    assert inspect.iscoroutinefunction(job_class.dispatch)
+    assert inspect.iscoroutinefunction(job_class.dispatch_after)

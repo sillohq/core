@@ -35,6 +35,30 @@ keywords = [
     "websocket"
 ]
 requires-python = ">=3.10"
+# There were none of these at all, so PyPI listed no supported Python versions
+# for any release, which reads as "does not run on your interpreter" whatever
+# version you are on. `license` is an SPDX expression, so no `License ::`
+# classifier belongs here. 3.15 joins the list once it ships a final release;
+# CI already runs it.
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Typing :: Typed",
+]
 dependencies = [
     "uvicorn>=0.27.0",
     "anyio==4.14.1",
