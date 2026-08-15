@@ -410,7 +410,10 @@ class Route(BaseRoute):
                 if isinstance(encoded, str):
                     response = BaseResponse(body=encoded, content_type="text/plain")
                 else:
-                    response = JSONResponse(content=encoded)
+                    # Already encoded a line above. Letting JSONResponse encode
+                    # again walks the whole payload a second time for a result
+                    # it already has.
+                    response = JSONResponse(content=encoded, use_encoder=False)
             return await response(scope, receive, send)
 
         route_handler_as_asgi_app = _route_asgi_app

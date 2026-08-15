@@ -93,6 +93,11 @@ def decimal_encoder(dec_value: Decimal) -> int | float:
 #: consulted by :func:`jsonable_encoder`.
 CUSTOM_ENCODERS: dict[type[typing.Any], typing.Callable[[typing.Any], typing.Any]] = {}
 
+#: Types that :func:`jsonable_encoder` returns untouched. Matched by exact type
+#: rather than ``isinstance``, so subclasses (a ``str``-valued ``Enum``, say)
+#: still take the full dispatch path.
+_PASSTHROUGH_TYPES = frozenset({str, int, float, bool, type(None)})
+
 
 def register_encoder(
     type_: type[typing.Any],
@@ -277,7 +282,30 @@ def jsonable_encoder(
         (10) dict()/vars() fallback. This order ensures the most specific
         encoder is always preferred.
     """
-    custom_encoder = {**CUSTOM_ENCODERS, **(custom_encoder or {})}
+    if CUSTOM_ENCODERS or custom_encoder:
+        custom_encoder = {**CUSTOM_ENCODERS, **(custom_encoder or {})}
+    else:
+        custom_encoder = {}
+        # Nothing in this call can change how a dict or list is walked, so the
+        # JSON-native shapes are returned directly. The checks are on the exact
+        # type: a str-valued Enum, a defaultdict or a tuple all have to keep
+        # falling through to the full dispatch below.
+        if (
+            not include
+            and not exclude
+            and not exclude_unset
+            and not exclude_defaults
+            and not exclude_none
+        ):
+            obj_type = type(obj)
+            if obj_type in _PASSTHROUGH_TYPES:
+                return obj
+            if obj_type is dict:
+                return {
+                    jsonable_encoder(k): jsonable_encoder(v) for k, v in obj.items()
+                }
+            if obj_type is list:
+                return [jsonable_encoder(v) for v in obj]
     if custom_encoder:
         if type(obj) in custom_encoder:
             return custom_encoder[type(obj)](obj)
