@@ -28,14 +28,20 @@ needs them, so the dependency tree stays proportional to what you build.
 - Python 3.10 or newer
 - Basic familiarity with `async` / `await`
 
-Nothing else. [`uv`](https://docs.astral.sh/uv/) is recommended below and is
-what the rest of these guides use, but every command has a `venv` and `pip`
-equivalent that needs no third-party tool.
-
-Check your Python version:
-
 ```bash
 python --version
+```
+
+Nothing else. These guides are written against
+[`uv`](https://docs.astral.sh/uv/), but every command below has a Poetry and a
+`venv` plus `pip` equivalent, so none of it depends on having uv. To install it:
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
 ## Create a project
@@ -49,24 +55,7 @@ python --version
     uv add sillo-framework
     ```
 
-    This writes a `pyproject.toml`, creates `.venv`, and records both the
-    dependency and an exact `uv.lock`. Run anything inside the environment
-    without activating it:
-
-    ```bash
-    uv run sillo --version
-    uv run python -c "import sillo; print(sillo.__version__)"
-    ```
-
-    Do not have `uv` yet?
-
-    ```bash
-    # macOS / Linux
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-
-    # Windows
-    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-    ```
+    You get a `pyproject.toml`, a `.venv`, and an exact `uv.lock`.
 
   </TabItem>
   <TabItem label="Poetry">
@@ -77,22 +66,8 @@ python --version
     poetry add sillo-framework
     ```
 
-    Or, in a directory you already have:
-
-    ```bash
-    poetry init          # answer the prompts, or --no-interaction
-    poetry add sillo-framework
-    ```
-
-    `poetry add` resolves, installs, writes `poetry.lock`, and records the
-    dependency in `pyproject.toml`. Run inside the environment with:
-
-    ```bash
-    poetry run sillo --version
-    ```
-
-    Or open a shell in it once: `poetry env activate` on Poetry 2.x,
-    `poetry shell` on 1.x.
+    You get a `pyproject.toml` and a `poetry.lock`. The environment is created
+    on the first `poetry add`.
 
   </TabItem>
   <TabItem label="venv + pip">
@@ -105,34 +80,24 @@ python --version
     ```
 
     `venv` and `pip` ship with Python, so this needs nothing installed first.
-    With the environment activated, commands are typed as they appear, `sillo
-    --version`, no prefix.
-
-    Nothing records what you installed, so pin it yourself:
-
-    ```bash
-    pip freeze > requirements.txt
-    ```
-
-    Reproduce it later with `pip install -r requirements.txt`.
+    Nothing records what you installed, so pin it yourself with
+    `pip freeze > requirements.txt`.
 
   </TabItem>
 </Tabs>
 
-:::tip[Use uv if you have no reason not to]
-It resolves and installs far faster than the alternatives, manages the Python
-version as well as the packages, and needs no separate step to create or
-activate an environment. Everything in these guides is written against it.
+Confirm it worked:
 
-Sillo does not care either way. It is an ordinary package with a standard
-`pyproject.toml`, so PDM, Hatch, Pipenv or a bare `venv` all work. Nothing in
-the framework reads a lockfile or shells out to a package manager.
-:::
+```bash
+uv run sillo --version          # uv
+poetry run sillo --version      # Poetry
+sillo --version                 # venv + pip, with the environment activated
+```
 
-:::note
-Every later example is written as a bare command: `sillo db:migrate`. Prefix it
-with `uv run` under uv, or `poetry run` under Poetry. With an activated `venv`,
-type it as written.
+:::note[Prefixing commands]
+Every later example is written bare, as `sillo db:migrate`. Prefix it with `uv
+run` under uv, or `poetry run` under Poetry. With an activated `venv`, type it
+as written.
 :::
 
 ## Add a development server
@@ -250,7 +215,9 @@ pip install sillo-framework       # venv + pip
 ```
 
 Sillo does not care which. It is an ordinary package with a standard
-`pyproject.toml`, so it installs the same way anything else does.
+`pyproject.toml`, so it installs the same way anything else does. In a
+directory that has no `pyproject.toml` yet, run `uv init` or `poetry init`
+first.
 
 ## Upgrading from 0.0.1a15 or earlier
 
