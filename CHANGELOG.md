@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0b2] - 2026-08-15
+
 ### Security
 
 - **The `encrypted` cast is now real encryption.** It was XOR against a
