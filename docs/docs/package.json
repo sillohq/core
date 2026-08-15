@@ -17,6 +17,8 @@
         "@fontsource-variable/instrument-sans": "^5.2.8",
         "astro": "^6.0.1",
         "lucode-starlight": "workspace:*",
-        "sharp": "^0.34.2"
+        "mermaid": "^11.16.1",
+        "sharp": "^0.34.2",
+        "unist-util-visit": "^5.1.0"
     }
 }

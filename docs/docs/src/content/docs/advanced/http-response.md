@@ -19,14 +19,15 @@ send)` triple that ASGI servers (Uvicorn, Hypercorn, Daphne) expect.
 
 The hierarchy is intentionally shallow:
 
-```
-BaseResponse                    ← raw ASGI, headers, cookies, caching
-├── PlainTextResponse           ← text/plain
-├── JSONResponse                ← application/json + jsonable_encoder
-├── HTMLResponse                ← text/html; charset=utf-8
-├── FileResponse                ← async file I/O + range requests
-├── StreamingResponse           ← async iterator + disconnect detection
-└── RedirectResponse            ← 3xx + Location header
+```mermaid
+graph TD
+    B["BaseResponse<br/><i>raw ASGI, headers, cookies, caching</i>"]
+    B --> P["PlainTextResponse<br/><i>text/plain</i>"]
+    B --> J["JSONResponse<br/><i>application/json, jsonable_encoder</i>"]
+    B --> H["HTMLResponse<br/><i>text/html; charset=utf-8</i>"]
+    B --> F["FileResponse<br/><i>async file I/O, range requests</i>"]
+    B --> S["StreamingResponse<br/><i>async iterator, disconnect detection</i>"]
+    B --> R["RedirectResponse<br/><i>3xx, Location header</i>"]
 ```
 
 On top of these, the **`Responder`** class provides a fluent builder API that

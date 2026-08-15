@@ -476,10 +476,11 @@ future timestamp-based expiry.
 
 ### Exception hierarchy
 
-```
-TokenError(Exception)
-├── ExpiredTokenError
-└── InvalidTokenError_     (trailing underscore — avoids clash with PyJWT)
+```mermaid
+graph TD
+    T["TokenError(Exception)"]
+    T --> E["ExpiredTokenError"]
+    T --> I["InvalidTokenError_<br/><i>trailing underscore avoids the PyJWT clash</i>"]
 ```
 
 ### Key constants
@@ -1059,10 +1060,11 @@ Functions: `get_default_scheme()`, `is_scheme_available(scheme)`, `get_available
 
 ### `exceptions.py`
 
-```
-HashingError(Exception)
-├── InvalidSchemeError
-└── VerificationError
+```mermaid
+graph TD
+    H["HashingError(Exception)"]
+    H --> I["InvalidSchemeError"]
+    H --> V["VerificationError"]
 ```
 
 ### `core.py`: Password Hashing Engine

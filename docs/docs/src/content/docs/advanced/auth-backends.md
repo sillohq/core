@@ -275,7 +275,7 @@ class JWTAuthBackend(AuthenticationBackend):
 ```mermaid
 flowchart TD
     A[Extract Authorization header] --> B{Header present and starts with Bearer?}
-    B -->|no| FAIL[Return AuthResult(success=False)]
+    B -->|no| FAIL["Return AuthResult(success=False)"]
     B -->|yes| C[Extract token]
     C --> D{check_blacklist enabled?}
     D -->|yes| E{Token blacklisted?}

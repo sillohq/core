@@ -600,31 +600,25 @@ stateDiagram-v2
 
     Disconnected --> Disconnected: Any subsequent call\n→ immediate disconnect
 
-    state NotConsumed {
-        note right of NotConsumed
-            Neither body() nor stream()
-            has been fully consumed.
-            Chunks are forwarded as they
-            arrive from the network.
-        end note
-    }
+    note right of NotConsumed
+        Neither body() nor stream()
+        has been fully consumed.
+        Chunks are forwarded as they
+        arrive from the network.
+    end note
 
-    state Consumed {
-        note right of Consumed
-            Body is fully consumed.
-            Downstream gets empty body
-            or cached body, then waits
-            for disconnect.
-        end note
-    }
+    note right of Consumed
+        Body is fully consumed.
+        Downstream gets empty body
+        or cached body, then waits
+        for disconnect.
+    end note
 
-    state Disconnected {
-        note right of Disconnected
-            Client has disconnected.
-            All calls return
-            http.disconnect immediately.
-        end note
-    }
+    note right of Disconnected
+        Client has disconnected.
+        All calls return
+        http.disconnect immediately.
+    end note
 ```
 
 ### 9.2 State Transition Code
@@ -1102,7 +1096,6 @@ graph LR
         USE_C["app.use(C) → [C, B, A]"]
         USE_A --> USE_B --> USE_C
     end
-end
 ```
 
 ```mermaid

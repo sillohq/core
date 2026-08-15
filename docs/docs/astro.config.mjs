@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import lucode from 'lucode-starlight';
+import { remarkMermaid } from './src/plugins/remark-mermaid.mjs';
 
 // https://astro.build/config
 const docsBaseUrl = process.env.DOCS_BASE_URL ?? '/';
@@ -589,6 +590,13 @@ export default defineConfig({
             ],
         }),
     ],
+
+    // Runs ahead of Expressive Code's own remark plugin, which is the whole
+    // point: once the fence is an `html` node it is no longer a `code` node for
+    // Expressive Code to highlight.
+    markdown: {
+        remarkPlugins: [remarkMermaid],
+    },
 
     vite: {
         plugins: [],

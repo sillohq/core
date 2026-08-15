@@ -457,16 +457,17 @@ subclass to rename.
 
 ##  How it all connects
 
-```
-create_user()  ──►  User row in DB (password hashed)
-       │
-login handler  ──►  User.verify_credentials(...)  OR  TokenForUser/Guard issues credential
-       │
-request  ──►  AuthenticationMiddleware
-       │         └─ backend resolves identity "1"
-       │         └─ User.load_user("1")  ──►  loads active User
-       ▼
-request.user  ──►  useAuth() checks is_authenticated / scopes / permissions
+```mermaid
+graph TD
+    CU["create_user()"] --> ROW["User row in DB<br/><i>password hashed</i>"]
+    ROW --> LH["login handler"]
+    LH --> VC["User.verify_credentials(...)<br/><i>or TokenForUser / Guard issues a credential</i>"]
+    VC --> REQ["request"]
+    REQ --> AM["AuthenticationMiddleware"]
+    AM --> BR["backend resolves identity '1'"]
+    BR --> LU["User.load_user('1')<br/><i>loads active User</i>"]
+    LU --> RU["request.user"]
+    RU --> UA["useAuth()<br/><i>checks is_authenticated, scopes, permissions</i>"]
 ```
 
 If you internalize that arrow (*identity → `load_user` → `request.user`*) every

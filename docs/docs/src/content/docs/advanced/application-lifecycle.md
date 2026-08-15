@@ -268,16 +268,26 @@ need it (e.g., writing it to disk, serving it via a different mechanism).
 
 The ASGI lifespan protocol defines two events:
 
-```
-Server → App:  {"type": "lifespan.startup"}
-App → Server:  {"type": "lifespan.startup.complete"}
-               — or —
-App → Server:  {"type": "lifespan.startup.failed", "message": "..."}
+```mermaid
+sequenceDiagram
+    participant S as Server
+    participant A as Application
 
-Server → App:  {"type": "lifespan.shutdown"}
-App → Server:  {"type": "lifespan.shutdown.complete"}
-               — or —
-App → Server:  {"type": "lifespan.shutdown.failed", "message": "..."}
+    S->>A: lifespan.startup
+    alt startup succeeded
+        A->>S: lifespan.startup.complete
+    else startup raised
+        A->>S: lifespan.startup.failed (message)
+    end
+
+    Note over S,A: requests are served
+
+    S->>A: lifespan.shutdown
+    alt shutdown succeeded
+        A->>S: lifespan.shutdown.complete
+    else shutdown raised
+        A->>S: lifespan.shutdown.failed (message)
+    end
 ```
 
 ### handle_lifespan Implementation

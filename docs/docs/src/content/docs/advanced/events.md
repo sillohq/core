@@ -121,11 +121,12 @@ class EventProtocol(Protocol):
 
 **File:** `/Users/admin/sillo.build/core/sillo/events/exceptions.py`
 
-```
-EventError (base)
-├── ListenerAlreadyRegisteredError
-├── MaxListenersExceededError
-└── EventCancelledError
+```mermaid
+graph TD
+    E["EventError<br/><i>base</i>"]
+    E --> A["ListenerAlreadyRegisteredError"]
+    E --> B["MaxListenersExceededError"]
+    E --> C["EventCancelledError"]
 ```
 
 ---

@@ -105,11 +105,12 @@ message and the hint alone, which is the right default: a traceback through
 
 Every deliberate failure derives from `SilloStartError`:
 
-```
-SilloStartError          message, hint, exit_code
-├── UsageError           exit_code = 2
-├── CommandError         + command, returncode, output
-└── ToolNotFoundError    a required tool is missing
+```mermaid
+graph TD
+    S["SilloStartError<br/><i>message, hint, exit_code</i>"]
+    S --> U["UsageError<br/><i>exit_code = 2</i>"]
+    S --> C["CommandError<br/><i>adds command, returncode, output</i>"]
+    S --> T["ToolNotFoundError<br/><i>a required tool is missing</i>"]
 ```
 
 `CommandError` keeps the failed subprocess's output on the exception, which is

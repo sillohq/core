@@ -35,16 +35,18 @@ The design achieves three things:
 Sillo defines three top-level exception classes, each in its own module. The
 full inheritance tree looks like this:
 
-```
-Exception
-├── HTTPException                        # core/sillo/exceptions.py
-│   ├── NotFoundException                # core/sillo/exceptions.py
-│   └── AuthException                    # core/sillo/auth/exceptions.py
-│       ├── AuthenticationFailed         # core/sillo/auth/exceptions.py
-│       └── PermissionDenied             # core/sillo/auth/exceptions.py
-├── RequestValidationError               # core/sillo/validation/errors.py
-├── ResponseValidationError              # core/sillo/validation/errors.py
-└── WebSocketException                   # core/sillo/exceptions.py
+```mermaid
+graph TD
+    EX["Exception"]
+    EX --> HTTP["HTTPException<br/><i>sillo/exceptions.py</i>"]
+    EX --> RVE["RequestValidationError<br/><i>sillo/validation/errors.py</i>"]
+    EX --> RSE["ResponseValidationError<br/><i>sillo/validation/errors.py</i>"]
+    EX --> WSE["WebSocketException<br/><i>sillo/exceptions.py</i>"]
+
+    HTTP --> NF["NotFoundException<br/><i>sillo/exceptions.py</i>"]
+    HTTP --> AUTH["AuthException<br/><i>sillo/auth/exceptions.py</i>"]
+    AUTH --> AF["AuthenticationFailed"]
+    AUTH --> PD["PermissionDenied"]
 ```
 
 ```mermaid

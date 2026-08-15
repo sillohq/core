@@ -98,12 +98,15 @@ Two things to internalize from this snippet:
 
 For every request, the middleware walks its backends in order and stops at the first that succeeds:
 
-```
-request
-  → backend 1 (e.g. JWT)      → success? use it
-  → backend 2 (e.g. session)  → success? use it
-  → ...
-  → none succeed              → request.user = AnonymousUser
+```mermaid
+graph TD
+    R["request"]
+    R --> B1["backend 1<br/><i>e.g. JWT</i>"]
+    B1 -->|"succeeded"| U["use it"]
+    B1 -->|"no match"| B2["backend 2<br/><i>e.g. session</i>"]
+    B2 -->|"succeeded"| U
+    B2 -->|"no match"| BN["..."]
+    BN -->|"none succeed"| AN["request.user = AnonymousUser"]
 ```
 
 On success a backend returns an `AuthResult(identity, scope)`. The middleware then calls `user_model.load_user(identity)` to build the full user object and stores it on `request.scope["user"]`. It also stores the backend's `scope` string (e.g. `"jwt"`, `"session"`, `"apikey"`) on `request.scope["auth"]`.
@@ -230,13 +233,15 @@ async def on_401(request, response, exc):
 
 ##  How it all connects
 
-```
-credential (token / cookie / key)
-   │  AuthenticationMiddleware
-   ├─ backend resolves identity "1"   (scope "jwt"/"session"/"apikey")
-   ├─ user_model.load_user("1")  ──►  request.user (loaded User)
-   ▼
-useAuth()  ── checks is_authenticated / scope / permissions ──►  401 / 403 / handler
+```mermaid
+graph TD
+    C["credential<br/><i>token, cookie or key</i>"]
+    C --> M["AuthenticationMiddleware"]
+    M --> B["backend resolves identity '1'<br/><i>scope: jwt, session or apikey</i>"]
+    B --> L["user_model.load_user('1')"]
+    L --> RU["request.user<br/><i>loaded User</i>"]
+    RU --> UA["useAuth()<br/><i>checks is_authenticated, scope, permissions</i>"]
+    UA --> OUT["401 / 403 / handler"]
 ```
 
 If you keep that diagram in mind, every other auth feature in sillo is just a different way of producing the credential or the identity on the left.

@@ -226,13 +226,13 @@ match on without touching the exception class:
 
 ```mermaid
 graph TD
-    O[OAuthError<br/>code: "oauth_error"] --> D[OAuthDenied<br/>code: "denied"]
-    O --> PR[ProviderRejected<br/>code: "provider_error"]
-    O --> SM[StateMismatch<br/>code: "state_mismatch"]
-    O --> SE[StateExpired<br/>code: "state_expired"]
-    O --> TE[TokenExchangeFailed<br/>code: "exchange_failed"]
-    O --> PF[ProfileFetchFailed<br/>code: "profile_failed"]
-    O --> PM[ProviderMisconfigured<br/>code: "provider_misconfigured"]
+    O["OAuthError<br/>code: 'oauth_error'"] --> D["OAuthDenied<br/>code: 'denied'"]
+    O --> PR["ProviderRejected<br/>code: 'provider_error'"]
+    O --> SM["StateMismatch<br/>code: 'state_mismatch'"]
+    O --> SE["StateExpired<br/>code: 'state_expired'"]
+    O --> TE["TokenExchangeFailed<br/>code: 'exchange_failed'"]
+    O --> PF["ProfileFetchFailed<br/>code: 'profile_failed'"]
+    O --> PM["ProviderMisconfigured<br/>code: 'provider_misconfigured'"]
 ```
 
 | Class | `code` | Raised When |

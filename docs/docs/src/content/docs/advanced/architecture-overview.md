@@ -11,25 +11,14 @@ protocol via `__call__(scope, receive, send)`.
 
 The codebase is organized into four concentric layers:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Layer 4 — User Application                                      │
-│  (app = SilloApp(), route handlers, middleware, config)           │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 3 — Framework Surface                                     │
-│  application.py · route_builder.py · exception_handler.py        │
-│  config/ · events/ · auth/ · mail/ · session/ · cache/           │
-│  templating/ · graphql/ · permissions/ · users/ · validation/    │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 2 — Core Engine                                           │
-│  core/routing/ · core/dependencies/ · core/encoding.py           │
-│  core/http/ · core/error/ · core/helpers/                        │
-│  _internals/_middleware.py · middleware/                          │
-├─────────────────────────────────────────────────────────────────┤
-│  Layer 1 — ASGI Primitives                                       │
-│  types.py · objects/ (Scope, Message, Receive, Send, etc.)       │
-│  websockets/                                                     │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    L4["<b>Layer 4 · User Application</b><br/>app = SilloApp(), route handlers, middleware, config"]
+    L3["<b>Layer 3 · Framework Surface</b><br/>application.py · route_builder.py · exception_handler.py<br/>config/ · events/ · auth/ · mail/ · session/ · cache/<br/>templating/ · graphql/ · permissions/ · users/ · validation/"]
+    L2["<b>Layer 2 · Core Engine</b><br/>core/routing/ · core/dependencies/ · core/encoding.py<br/>core/http/ · core/error/ · core/helpers/<br/>_internals/_middleware.py · middleware/"]
+    L1["<b>Layer 1 · ASGI Primitives</b><br/>types.py · objects/ (Scope, Message, Receive, Send)<br/>websockets/"]
+
+    L4 --> L3 --> L2 --> L1
 ```
 
 **Layer 1: ASGI Primitives** defines the type aliases and data structures that
@@ -316,14 +305,22 @@ dispatch-style middleware into proper ASGI middleware. It:
 
 **Middleware ordering** (outermost first, as seen by the request):
 
-```
-ServerErrorMiddleware          ← catches unhandled exceptions, debug pages
-  └─ User Middleware (N)       ← app.use() calls, LIFO order
-    └─ User Middleware (N-1)
-      └─ ...
-        └─ User Middleware (1)
-          └─ ExceptionMiddleware  ← catches HTTPException, ValidationError, etc.
-            └─ Router             ← route matching + handler execution
+```mermaid
+graph TD
+    SEM["ServerErrorMiddleware"] --> UN["User Middleware (N)"]
+    UN --> UN1["User Middleware (N-1)"]
+    UN1 --> DOTS["..."]
+    DOTS --> U1["User Middleware (1)"]
+    U1 --> EM["ExceptionMiddleware"]
+    EM --> R["Router"]
+
+    SEM -.- SEMN["catches unhandled exceptions, serves debug pages"]
+    UN -.- UNN["app.use() calls, LIFO order"]
+    EM -.- EMN["catches HTTPException, ValidationError"]
+    R -.- RN["route matching, handler execution"]
+
+    classDef note fill:none,stroke:none;
+    class SEMN,UNN,EMN,RN note;
 ```
 
 **`app.use()` insertion order**: Each `app.use(middleware)` call does:

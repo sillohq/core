@@ -504,7 +504,7 @@ graph TD
     G -->|Yes| H{strict_security enabled?}
     H -->|Yes| I{Startup error?}
     I -->|Yes| J[Fix scheme names in useAuth]
-    I -->|No| K[Check backend.describe()]
+    I -->|No| K["Check backend.describe()"]
     H -->|No| L[Check useAuth schemes parameter]
     G -->|No| M{Schema incomplete?}
     M --> N[Check response_model, request_model]

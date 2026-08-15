@@ -410,7 +410,7 @@ function exampleFromSchema(
 graph TD
     A[exampleFromSchema] --> B{Author-supplied example?}
     B -->|Yes| C[Return it]
-    B -->|No| D{examples[0] or default or enum[0] or const?}
+    B -->|No| D{"examples[0] or default or enum[0] or const?"}
     D -->|Yes| E[Return it]
     D -->|No| F{allOf?}
     F -->|Yes| G[Merge each part's examples]

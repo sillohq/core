@@ -1,0 +1,261 @@
+---
+/**
+ * Renders the <pre class="mermaid"> blocks that src/plugins/remark-mermaid.mjs
+ * leaves behind.
+ *
+ * Included from PageFrame so it is present on every page, but the mermaid
+ * bundle is a dynamic import behind a check for a diagram on the page: only the
+ * 50 pages under /advanced/ that actually carry one pay for it.
+ *
+ * The source text stays in the DOM until a diagram has rendered successfully,
+ * so a failed parse or a blocked bundle leaves the definition on screen rather
+ * than an empty gap.
+ */
+---
+
+<script>
+    type MermaidApi = {
+        initialize: (config: Record<string, unknown>) => void;
+        render: (id: string, source: string) => Promise<{ svg: string }>;
+    };
+
+    const SANS =
+        "'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif";
+
+    // Mermaid resolves these into the SVG at render time, so they cannot be CSS
+    // custom properties. They are the same values global.css defines, kept in
+    // step by hand: nodes stay on the surface greys and the crimson is spent
+    // only on cluster borders, which is the one place it reads as structure
+    // rather than as decoration.
+    const DARK = {
+        fontSize: '15px',
+        fontFamily: SANS,
+        background: '#0b0b0c',
+        primaryColor: '#171719',
+        primaryTextColor: '#f7f7f5',
+        primaryBorderColor: '#3f3f45',
+        secondaryColor: '#111112',
+        secondaryTextColor: '#f7f7f5',
+        secondaryBorderColor: '#3f3f45',
+        tertiaryColor: '#0b0b0c',
+        tertiaryTextColor: '#8b8b91',
+        tertiaryBorderColor: '#2a2a2e',
+        lineColor: '#8b8b91',
+        textColor: '#f7f7f5',
+        mainBkg: '#171719',
+        nodeBorder: '#3f3f45',
+        clusterBkg: '#100b0d',
+        clusterBorder: '#5a0a20',
+        titleColor: '#f7f7f5',
+        edgeLabelBackground: '#0b0b0c',
+        actorBkg: '#171719',
+        actorBorder: '#3f3f45',
+        actorTextColor: '#f7f7f5',
+        actorLineColor: '#55555b',
+        signalColor: '#f7f7f5',
+        signalTextColor: '#f7f7f5',
+        labelBoxBkgColor: '#171719',
+        labelBoxBorderColor: '#3f3f45',
+        labelTextColor: '#f7f7f5',
+        loopTextColor: '#f7f7f5',
+        noteBkgColor: '#1d1416',
+        noteTextColor: '#f7f7f5',
+        noteBorderColor: '#5a0a20',
+    };
+
+    const LIGHT = {
+        ...DARK,
+        background: '#ffffff',
+        primaryColor: '#ffffff',
+        primaryTextColor: '#1a1a1a',
+        primaryBorderColor: '#d4d4d4',
+        secondaryColor: '#f5f5f5',
+        secondaryTextColor: '#1a1a1a',
+        secondaryBorderColor: '#d4d4d4',
+        tertiaryColor: '#fafafa',
+        tertiaryTextColor: '#6b6b6b',
+        tertiaryBorderColor: '#e5e5e5',
+        lineColor: '#6b6b6b',
+        textColor: '#1a1a1a',
+        mainBkg: '#ffffff',
+        nodeBorder: '#d4d4d4',
+        clusterBkg: '#fff7f9',
+        clusterBorder: '#ffc9d4',
+        titleColor: '#1a1a1a',
+        edgeLabelBackground: '#ffffff',
+        actorBkg: '#ffffff',
+        actorBorder: '#d4d4d4',
+        actorTextColor: '#1a1a1a',
+        actorLineColor: '#a3a3a3',
+        signalColor: '#1a1a1a',
+        signalTextColor: '#1a1a1a',
+        labelBoxBkgColor: '#ffffff',
+        labelBoxBorderColor: '#d4d4d4',
+        labelTextColor: '#1a1a1a',
+        loopTextColor: '#1a1a1a',
+        noteBkgColor: '#fff7f9',
+        noteTextColor: '#1a1a1a',
+        noteBorderColor: '#ffc9d4',
+    };
+
+    /** A diagram that has not drawn by now is treated as one that never will. */
+    const RENDER_TIMEOUT_MS = 20000;
+
+    let mermaid: MermaidApi | null = null;
+    let counter = 0;
+    let configuredDark: boolean | null = null;
+
+    /** Starlight always stamps the resolved theme, so there is no third state. */
+    function isDark(): boolean {
+        return document.documentElement.dataset.theme !== 'light';
+    }
+
+    async function load(): Promise<MermaidApi> {
+        if (!mermaid) {
+            // Bare specifier, so this has to be bundled rather than injected as
+            // a raw <script> in `head`: the browser cannot resolve 'mermaid'.
+            mermaid = ((await import('mermaid')) as unknown as { default: MermaidApi })
+                .default;
+        }
+        if (configuredDark === isDark()) return mermaid;
+        configuredDark = isDark();
+        mermaid.initialize({
+            startOnLoad: false,
+            // 'base' is the only theme that honours every variable below.
+            // 'dark' and 'default' hard-code their own palette on top.
+            theme: 'base',
+            securityLevel: 'strict',
+            fontFamily: SANS,
+            // Wide graphs are shrunk to fit by default, which on the larger
+            // /advanced/ diagrams made the labels unreadable. They render at
+            // their natural size and the container scrolls instead.
+            flowchart: { useMaxWidth: false, htmlLabels: true, curve: 'basis' },
+            sequence: { useMaxWidth: false },
+            gantt: { useMaxWidth: false },
+            themeVariables: isDark() ? DARK : LIGHT,
+        });
+        return mermaid;
+    }
+
+    /**
+     * Each diagram is drawn on its own, deliberately not chained behind the
+     * others. mermaid.render does not always settle: some diagrams leave the
+     * promise pending for good, and when the calls were queued one of those
+     * stopped every diagram below it on the page from ever being drawn.
+     *
+     * The timeout is what makes that survivable. A diagram that has not
+     * produced an SVG within it is abandoned and keeps its source text, and
+     * the others are unaffected because nothing was waiting on it.
+     */
+    function enqueue(block: HTMLElement): Promise<void> {
+        return Promise.race([
+            draw(block),
+            new Promise<void>((resolve) => setTimeout(resolve, RENDER_TIMEOUT_MS)),
+        ]).catch(() => undefined);
+    }
+
+    async function draw(block: HTMLElement): Promise<void> {
+        // Kept on first render so a theme switch can re-render from the
+        // definition rather than from the SVG it produced last time.
+        const source = block.dataset.mermaidSource || block.textContent || '';
+        if (!source.trim()) return;
+        block.dataset.mermaidSource = source;
+
+        const api = await load();
+        counter += 1;
+        try {
+            const { svg } = await api.render(`mermaid-${counter}`, source);
+            block.innerHTML = svg;
+            block.dataset.mermaidRendered = 'true';
+        } catch {
+            // Leave the definition visible. A diagram that will not parse is
+            // still readable as text, and the page keeps its layout.
+            delete block.dataset.mermaidRendered;
+        }
+    }
+
+    function start(): void {
+        const blocks = Array.from(
+            document.querySelectorAll<HTMLElement>('pre.mermaid'),
+        );
+        if (blocks.length === 0) return;
+
+        // A single mermaid render costs a good fraction of a second, and the
+        // deeper /advanced/ pages carry a dozen. Rendering the lot up front left
+        // the last one about thirty seconds out. Each diagram is drawn as it
+        // comes within a screen of the viewport instead, so what the reader is
+        // looking at is always the next thing built.
+        const watcher = new IntersectionObserver(
+            (entries, observer) => {
+                for (const entry of entries) {
+                    if (!entry.isIntersecting) continue;
+                    observer.unobserve(entry.target);
+                    void enqueue(entry.target as HTMLElement);
+                }
+            },
+            { rootMargin: '600px 0px' },
+        );
+        for (const block of blocks) watcher.observe(block);
+
+        // The theme toggle rewrites data-theme on <html>. Mermaid bakes its
+        // colours into the SVG at render time, so the diagrams have to be built
+        // again rather than restyled.
+        //
+        // Only the ones already drawn are redrawn. The rest are still being
+        // watched and will pick up the current theme when they are reached.
+        // The existing SVG stays in place while its replacement is built:
+        // clearing it first put the raw `graph TD` source back on screen for
+        // the second or so a re-render takes.
+        new MutationObserver(() => {
+            for (const block of document.querySelectorAll<HTMLElement>(
+                'pre.mermaid[data-mermaid-rendered]',
+            )) {
+                void enqueue(block);
+            }
+        }).observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme'],
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start, { once: true });
+    } else {
+        start();
+    }
+</script>
+
+<style is:global>
+    pre.mermaid {
+        display: flex;
+        justify-content: center;
+        margin: 1.5rem 0;
+        padding: 1.25rem;
+        overflow-x: auto;
+        background: var(--sl-color-black);
+        border: 1px solid var(--sl-color-gray-5);
+        border-radius: 0.5rem;
+    }
+
+    /* Until it renders it is still a code listing, so it should read as one. */
+    pre.mermaid:not([data-mermaid-rendered]) {
+        display: block;
+        font-family: var(--sl-font-mono);
+        font-size: 0.8125rem;
+        line-height: 1.6;
+        white-space: pre;
+    }
+
+    /* useMaxWidth is off, so a wide graph keeps its natural size and this
+       container scrolls. Shrinking it to the column width instead made the
+       labels on the larger /advanced/ graphs too small to read. */
+    pre.mermaid[data-mermaid-rendered] {
+        display: block;
+        text-align: center;
+    }
+
+    pre.mermaid[data-mermaid-rendered] svg {
+        height: auto;
+        max-width: none;
+    }
+</style>

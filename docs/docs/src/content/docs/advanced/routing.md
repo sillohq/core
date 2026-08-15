@@ -24,21 +24,21 @@ description: "Route compilation, path matching, typed converters, groups, mounte
 
 The routing subsystem is split into two logical layers:
 
-```
-┌───────────────────────────────────────────────────────────────┐
-│                    route_builder.py                            │
-│   PARAM_REGEX → compile_path → RoutePattern / RouteBuilder    │
-│              (pure path compilation, no ASGI)                  │
-└────────────────────────────┬──────────────────────────────────┘
-                             │ produces RoutePattern
-                             ▼
-┌───────────────────────────────────────────────────────────────┐
-│              core/routing/ package                             │
-│   BaseRouter ─► Router          BaseRoute ─► Route             │
-│                            ─► Group                            │
-│   _utils.MatchStatus   converters.Convertor hierarchy          │
-│              (ASGI dispatch, DI, middleware, auth)              │
-└───────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph builder["route_builder.py · pure path compilation, no ASGI"]
+        RB["PARAM_REGEX → compile_path → RoutePattern / RouteBuilder"]
+    end
+
+    subgraph core["core/routing/ · ASGI dispatch, DI, middleware, auth"]
+        BR["BaseRouter"] --> RT["Router"]
+        BRT["BaseRoute"] --> RO["Route"]
+        BRT --> GR["Group"]
+        MS["_utils.MatchStatus"]
+        CV["converters.Convertor hierarchy"]
+    end
+
+    builder -->|"produces RoutePattern"| core
 ```
 
 **Key design decisions**:
@@ -975,9 +975,12 @@ flowchart LR
 
 Router middleware wraps the entire dispatch, while route middleware wraps only the individual route handler. The full chain is:
 
-```
-Router MW 1 → Router MW 2 → ... → Router.app → route.match → route.handle
-    → Route MW 1 → Route MW 2 → ... → _route_asgi_app → handler()
+```mermaid
+graph LR
+    RM1["Router MW 1"] --> RM2["Router MW 2"] --> RMD["..."]
+    RMD --> RA["Router.app"] --> MATCH["route.match"] --> HANDLE["route.handle"]
+    HANDLE --> TM1["Route MW 1"] --> TM2["Route MW 2"] --> TMD["..."]
+    TMD --> ASGI["_route_asgi_app"] --> H["handler()"]
 ```
 
 ### Auth gate

@@ -317,7 +317,7 @@ flowchart TD
     A[load_permissions called] --> B[Query UserPermission for direct assignments]
     B --> C[Query Group.of_user for group memberships]
     C --> D[Query GroupPermission for group-inherited permissions]
-    D --> E[Union: direct | inherited]
+    D --> E["Union: direct | inherited"]
     E --> F[Store as _perm_cache on instance]
 ```
 

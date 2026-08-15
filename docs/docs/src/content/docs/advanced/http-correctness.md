@@ -666,7 +666,7 @@ flowchart TD
     A["Range: bytes=0-99"] --> B["_parse_ranges(header, file_size)"]
     B --> C{Valid?}
     C -- No --> D["416 Range Not Satisfiable"]
-    C -- Yes --> E{len(ranges) == 1?}
+    C -- Yes --> E{"len(ranges) == 1?"}
     E -- Yes --> F["Set Content-Range: bytes 0-99/1000<br/>Set Content-Length: 100<br/>Status: 206 Partial Content"]
     E -- No --> G["Multipart response"]
 

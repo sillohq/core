@@ -919,33 +919,30 @@ async def work_health(request):
 
 ## 14. Exception Hierarchy Reference
 
-```
-WorkError (base)
-│   ├── task_id: str
-│   └── queue_name: str
-│
-├── TaskError (alias for WorkError)
-│
-├── TaskRejected
-│   └── Queue refused to accept (duplicate, full)
-│
-├── TaskTimeout
-│   └── Exceeded time budget
-│
-├── TaskCancelled
-│   └── Externally cancelled
-│
-├── QueueFull
-│   └── Backend at capacity
-│
-├── BackendUnavailable
-│   └── Cannot reach persistence layer
-│
-├── CircuitBreakerOpen
-│   └── Worker circuit is open
-│
-└── InvalidTrigger
-    └── Scheduler trigger malformed
+```mermaid
+classDiagram
+    class WorkError {
+        <<base>>
+        +str task_id
+        +str queue_name
+    }
+    class TaskError["TaskError (alias for WorkError)"]
+    class TaskRejected["TaskRejected: queue refused to accept (duplicate, full)"]
+    class TaskTimeout["TaskTimeout: exceeded time budget"]
+    class TaskCancelled["TaskCancelled: externally cancelled"]
+    class QueueFull["QueueFull: backend at capacity"]
+    class BackendUnavailable["BackendUnavailable: cannot reach persistence layer"]
+    class CircuitBreakerOpen["CircuitBreakerOpen: worker circuit is open"]
+    class InvalidTrigger["InvalidTrigger: scheduler trigger malformed"]
+
+    WorkError <|-- TaskError
+    WorkError <|-- TaskRejected
+    WorkError <|-- TaskTimeout
+    WorkError <|-- TaskCancelled
+    WorkError <|-- QueueFull
+    WorkError <|-- BackendUnavailable
+    WorkError <|-- CircuitBreakerOpen
+    WorkError <|-- InvalidTrigger
 ```
 
 ### 14.1 Exception Context

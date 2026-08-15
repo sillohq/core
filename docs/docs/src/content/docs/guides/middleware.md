@@ -358,9 +358,12 @@ Middleware runs as nested layers: the first registered is the outermost,
 sees the request first and the response last. Everything about how a
 stack behaves follows from that.
 
-```text
-request  →  CORS  →  logging  →  auth  →  rate limit  →  handler
-response ←  CORS  ←  logging  ←  auth  ←  rate limit  ←  handler
+```mermaid
+graph LR
+    RQ["request"] --> C1["CORS"] --> L1["logging"] --> A1["auth"]
+    A1 --> R1["rate limit"] --> H["handler"]
+    H --> R2["rate limit"] --> A2["auth"] --> L2["logging"]
+    L2 --> C2["CORS"] --> RS["response"]
 ```
 
 Four ordering rules that come up in practice.

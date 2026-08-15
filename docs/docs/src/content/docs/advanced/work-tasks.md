@@ -188,16 +188,17 @@ class SchedulerStats:
 
 ### 2.5 Exception Hierarchy
 
-```
-WorkError (base)
-├── TaskError          (alias for WorkError)
-├── TaskRejected       (queue refused: duplicate, full)
-├── TaskTimeout        (exceeded time budget)
-├── TaskCancelled      (externally cancelled)
-├── QueueFull          (backend at capacity)
-├── BackendUnavailable (cannot reach persistence)
-├── CircuitBreakerOpen (worker circuit is open)
-└── InvalidTrigger     (scheduler trigger malformed)
+```mermaid
+graph TD
+    W["WorkError<br/><i>base</i>"]
+    W --> TE["TaskError<br/><i>alias for WorkError</i>"]
+    W --> TR["TaskRejected<br/><i>queue refused: duplicate, full</i>"]
+    W --> TT["TaskTimeout<br/><i>exceeded time budget</i>"]
+    W --> TC["TaskCancelled<br/><i>externally cancelled</i>"]
+    W --> QF["QueueFull<br/><i>backend at capacity</i>"]
+    W --> BU["BackendUnavailable<br/><i>cannot reach persistence</i>"]
+    W --> CB["CircuitBreakerOpen<br/><i>worker circuit is open</i>"]
+    W --> IT["InvalidTrigger<br/><i>scheduler trigger malformed</i>"]
 ```
 
 All exceptions carry structured context:
