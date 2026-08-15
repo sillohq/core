@@ -40,9 +40,14 @@ its query compiler, or replace its connection handling.
 
 Every Tortoise feature — fields, querysets, `Q` objects, relations,
 prefetching, aggregation, raw SQL — behaves exactly as the Tortoise
-documentation describes, because it **is** Tortoise underneath. When you need
-something this section does not cover, their documentation is the right place
-to look and the answer will work.
+documentation describes, because it **is** Tortoise underneath.
+
+You should not need to go and read that documentation. This section covers the
+whole surface — [fields](/orm/field-reference/),
+[relationships](/orm/relationships/), the [queryset API](/orm/queryset/), the
+[lookups](/orm/lookups/), [aggregation](/orm/aggregation/),
+[eager loading](/orm/eager-loading/) and [raw SQL](/orm/raw-sql/) — as Sillo
+exposes it, with the Record layer in place rather than described separately.
 
 What Record adds is the layer Django and Laravel developers reach for on day
 one:
@@ -68,21 +73,35 @@ one:
 
 ### Models
 
-- [Models](/orm/models/) — the base class, `Meta`, serialisation
-- [Fields](/orm/fields/) — the field types Record adds
+- [Models](/orm/models/) — the base class, serialisation, fetch shortcuts
+- [Field reference](/orm/field-reference/) — every field type and its arguments
+- [Record's own fields](/orm/fields/) — `PasswordField`, `SlugField`, `ULIDField`
+- [Relationships](/orm/relationships/) — foreign keys, one-to-one, many-to-many
+- [Meta, indexes & constraints](/orm/meta/) — table options and the schema
 - [Mass assignment](/orm/mass-assignment/) — `fillable`, `guarded`, `update_from_dict`
 - [Mixins](/orm/mixins/) — composable behaviours, including soft deletes
 - [Casting](/orm/casting/) — `_casts` and the cast registry
 - [Scopes](/orm/scopes/) — local and global query scopes
 - [Events](/orm/events/) — lifecycle hooks and observers
 
+### Querying
+
+- [The QuerySet API](/orm/queryset/) — every method, and when the query runs
+- [Field lookups](/orm/lookups/) — everything you can put after `__`
+- [Filtering with Q and F](/orm/filtering/) — OR, negation, column references
+- [Aggregation](/orm/aggregation/) — `annotate`, counting, grouping
+- [Eager loading](/orm/eager-loading/) — `select_related`, `prefetch_related`
+- [Values & projections](/orm/values/) — fetching less than a whole row
+- [Raw SQL](/orm/raw-sql/) — when the ORM cannot express it
+
 ### Reading and writing
 
-- [Queries](/orm/queries/) — the helpers around a queryset
+- [Queries](/orm/queries/) — the helpers Record adds around a queryset
 - [Collections](/orm/collections/) — working with a result set
 - [Pagination](/orm/pagination/) — pages, and the framework's paginators
 - [Bulk operations](/orm/bulk/) — `bulk_create`, `upsert`, `bulk_upsert`
 - [Transactions](/orm/transactions/) — atomicity and savepoints
+- [Connections](/orm/connections/) — replicas, routing and pooling
 
 ### Testing and schemas
 

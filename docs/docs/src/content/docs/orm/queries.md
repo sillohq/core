@@ -12,9 +12,11 @@ head:
       content: paginate, iter_all, explain, find_by_ids and count_by.
 ---
 
-Querying is Tortoise's. `filter`, `exclude`, `order_by`, `limit`, `offset`,
-`annotate`, `values`, `Q` objects, `select_related`, `prefetch_related` — all of
-it works as their documentation describes.
+The querying surface itself — `filter`, `order_by`, `limit`, `annotate`,
+`values`, `Q`, `select_related` — is documented across
+[The QuerySet API](/orm/queryset/), [Lookups](/orm/lookups/),
+[Filtering](/orm/filtering/), [Aggregation](/orm/aggregation/),
+[Eager loading](/orm/eager-loading/) and [Values](/orm/values/).
 
 ```python
 posts = await Post.filter(status="published").order_by("-created_at").limit(10)
@@ -22,8 +24,8 @@ count = await Post.filter(author_id=7).count()
 exists = await Post.filter(slug="hello").exists()
 ```
 
-`sillo.record.queries` adds five helpers for the things that come up repeatedly
-and are awkward to write each time.
+This page covers the five helpers `sillo.record.queries` adds on top, for the
+things that come up repeatedly and are awkward to write each time.
 
 ```python
 from sillo.record.queries import (
@@ -131,9 +133,9 @@ A `GROUP BY` with counts, as a dict. For a dashboard tile or a facet list.
 One query, whatever the number of groups — which is the difference from a
 `count()` per value in a loop.
 
-## What to use from Tortoise directly
+## The rest of the query surface
 
-Everything else, and without apology:
+Covered in full elsewhere in this section — the highlights:
 
 ```python
 from tortoise.expressions import Q, F
@@ -155,9 +157,12 @@ await Post.all().prefetch_related("comments").select_related("author")
 
 `select_related` (a join, for forward foreign keys) and `prefetch_related` (a
 second query, for reverse and many-to-many) are the two to reach for the moment
-a template or serialiser touches a relation inside a loop.
+a template or serialiser touches a relation inside a loop — see
+[Eager loading](/orm/eager-loading/).
 
 ## Raw SQL
+
+When none of the above can express it, [drop to SQL](/orm/raw-sql/):
 
 ```python
 from tortoise import connections
@@ -168,15 +173,8 @@ rows = await conn.execute_query_dict(
 )
 ```
 
-Always parameterise. Never interpolate a value into the string:
-
-```python
-# wrong
-await conn.execute_query(f"SELECT * FROM posts WHERE slug = '{slug}'")
-
-# right
-await conn.execute_query("SELECT * FROM posts WHERE slug = ?", [slug])
-```
+Always parameterise, and note that the placeholder style is the driver's —
+`$1` on PostgreSQL, `%s` on MySQL, `?` on SQLite.
 
 Raw SQL bypasses [global scopes](/orm/scopes/), [casts](/orm/casting/) and
 [events](/orm/events/). That is the whole point of it, and the reason to keep

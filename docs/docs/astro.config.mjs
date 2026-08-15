@@ -187,7 +187,10 @@ export default defineConfig({
                     label: 'Models',
                     items: [
                         { label: 'Models', link: '/orm/models/' },
-                        { label: 'Fields', link: '/orm/fields/' },
+                        { label: 'Field Reference', link: '/orm/field-reference/' },
+                        { label: "Record's Own Fields", link: '/orm/fields/' },
+                        { label: 'Relationships', link: '/orm/relationships/' },
+                        { label: 'Meta, Indexes & Constraints', link: '/orm/meta/' },
                         { label: 'Mass Assignment', link: '/orm/mass-assignment/' },
                         { label: 'Mixins', link: '/orm/mixins/' },
                         { label: 'Attribute Casting', link: '/orm/casting/' },
@@ -196,13 +199,26 @@ export default defineConfig({
                     ],
                 },
                 {
+                    label: 'Querying',
+                    items: [
+                        { label: 'The QuerySet API', link: '/orm/queryset/' },
+                        { label: 'Field Lookups', link: '/orm/lookups/' },
+                        { label: 'Filtering with Q and F', link: '/orm/filtering/' },
+                        { label: 'Aggregation', link: '/orm/aggregation/' },
+                        { label: 'Eager Loading', link: '/orm/eager-loading/' },
+                        { label: 'Values & Projections', link: '/orm/values/' },
+                        { label: 'Raw SQL', link: '/orm/raw-sql/' },
+                    ],
+                },
+                {
                     label: 'Reading & Writing',
                     items: [
-                        { label: 'Queries', link: '/orm/queries/' },
+                        { label: 'Query Helpers', link: '/orm/queries/' },
                         { label: 'Collections', link: '/orm/collections/' },
                         { label: 'Pagination', link: '/orm/pagination/' },
                         { label: 'Bulk Operations', link: '/orm/bulk/' },
                         { label: 'Transactions', link: '/orm/transactions/' },
+                        { label: 'Connections', link: '/orm/connections/' },
                     ],
                 },
                 {
@@ -229,6 +245,36 @@ export default defineConfig({
                         { label: 'Registering Models', link: '/orm/admin-registering/' },
                         { label: 'Customising', link: '/orm/admin-customising/' },
                         { label: 'Permissions & Auth', link: '/orm/admin-permissions/' },
+                    ],
+                },
+
+                // -- Pydantic ----------------------------------------------
+                {
+                    label: 'Pydantic',
+                    items: [{ label: 'Overview', link: '/pydantic/' }],
+                },
+                {
+                    label: 'The Library',
+                    items: [
+                        { label: 'Models', link: '/pydantic/models/' },
+                        { label: 'Types', link: '/pydantic/types/' },
+                        { label: 'Fields', link: '/pydantic/fields/' },
+                        { label: 'Validators', link: '/pydantic/validators/' },
+                        { label: 'Nested Models', link: '/pydantic/nested/' },
+                        { label: 'Serialisation', link: '/pydantic/serialization/' },
+                        { label: 'Configuration', link: '/pydantic/config/' },
+                        { label: 'Validation Errors', link: '/pydantic/errors/' },
+                    ],
+                },
+                {
+                    label: 'In a Sillo App',
+                    items: [
+                        { label: 'Request Models', link: '/pydantic/request-models/' },
+                        { label: 'Parameters', link: '/pydantic/parameters/' },
+                        { label: 'Response Models', link: '/pydantic/response-models/' },
+                        { label: 'OpenAPI', link: '/pydantic/openapi/' },
+                        { label: 'The ORM Bridge', link: '/pydantic/orm-bridge/' },
+                        { label: 'Patterns', link: '/pydantic/patterns/' },
                     ],
                 },
 
