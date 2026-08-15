@@ -1,6 +1,6 @@
 ---
 title: Database Configuration
-description: "DatabaseConfig in full — every field, the environment variables behind it, the URL builders for SQLite, PostgreSQL and MySQL, pooling and TLS."
+description: "DatabaseConfig in full: every field, the environment variables behind it, the URL builders for SQLite, PostgreSQL and MySQL, pooling and TLS."
 head:
   - tag: meta
     attrs:
@@ -32,11 +32,11 @@ config = DatabaseConfig.from_env()
 | `pool_recycle` | `DB_POOL_RECYCLE` | `3600` |
 | `echo` | `DB_ECHO` | `false` |
 | `ssl` | `DB_SSL` | `false` |
-| `ssl_ca` | `DB_SSL_CA` | — |
-| `ssl_cert` | `DB_SSL_CERT` | — |
-| `ssl_key` | `DB_SSL_KEY` | — |
+| `ssl_ca` | `DB_SSL_CA` |  |
+| `ssl_cert` | `DB_SSL_CERT` |  |
+| `ssl_key` | `DB_SSL_KEY` |  |
 | `timezone` | `DB_TIMEZONE` | `UTC` |
-| `charset` | — | `utf8mb4` |
+| `charset` |  | `utf8mb4` |
 | `generate_schemas` | `DB_GENERATE_SCHEMAS` | `true` |
 
 ```python
@@ -44,8 +44,8 @@ DatabaseConfig.from_env()                 # DATABASE_URL, DB_POOL_SIZE, …
 DatabaseConfig.from_env(prefix="READ_")   # READ_DATABASE_URL, READ_DB_POOL_SIZE, …
 ```
 
-The prefix is how you configure a second connection — a read replica, a
-reporting database — from the same environment without the two colliding.
+The prefix is how you configure a second connection (a read replica, a
+reporting database) from the same environment without the two colliding.
 
 ## URL forms
 
@@ -81,7 +81,7 @@ Each sets the backend as well as the URL, so nothing has to be inferred.
 
 The builders escape what needs escaping. A password with an `@` or a `/` in it
 breaks a hand-assembled URL in a way that produces a confusing connection error
-rather than an obvious one — which is the main reason to prefer them.
+rather than an obvious one, which is the main reason to prefer them.
 
 ## Backends
 
@@ -94,7 +94,8 @@ DatabaseBackend.MYSQL
 DatabaseBackend.MARIADB
 ```
 
-Each needs its driver installed — see [Setup](/orm/setup/#installing-the-driver).
+Each needs its driver installed. See
+[Setup](/orm/setup/#installing-the-driver).
 
 ### On SQLite
 
@@ -102,8 +103,8 @@ Right for tests, local development, and genuinely small single-process
 deployments. It is a file with a single writer: concurrent writes serialise,
 and a web application under load will meet `database is locked`.
 
-`:memory:` is per connection, which makes it ideal for tests — each test gets a
-clean database with no teardown — and useless for anything else, since a second
+`:memory:` is per connection, which makes it ideal for tests (each test gets a
+clean database with no teardown) and useless for anything else, since a second
 connection sees a different empty database.
 
 ## Pooling
@@ -113,7 +114,7 @@ them.
 
 Size the pool against your database's connection limit, not your traffic. Every
 application process holds up to `pool_size + max_overflow` connections, so four
-processes at the defaults is up to 60 connections — comfortably past the
+processes at the defaults is up to 60 connections, comfortably past the
 100-connection default of a small managed PostgreSQL once you add a worker and
 a scheduler.
 
@@ -164,6 +165,6 @@ config.to_dict()
 The configuration as a dict, for logging or a health endpoint.
 
 :::caution[It contains the password]
-`url` includes credentials. Do not log `to_dict()` as-is — mask it, or log only
+`url` includes credentials. Do not log `to_dict()` as-is, mask it, or log only
 the fields you need.
 :::

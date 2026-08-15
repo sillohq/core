@@ -1,6 +1,6 @@
 ---
 title: Nested Models
-description: "Composing models — nesting, lists of models, dicts of models, unions and discriminated unions, recursive models, and the depth limits worth setting."
+description: "Composing models: nesting, lists of models, dicts of models, unions and discriminated unions, recursive models, and the depth limits worth setting."
 head:
   - tag: meta
     attrs:
@@ -46,7 +46,7 @@ class Order(BaseModel):
 ```
 
 Each item is validated. Errors carry the index, so a bad third line reports
-`["body", "lines", 2, "quantity"]` rather than "something in lines is wrong" —
+`["body", "lines", 2, "quantity"]` rather than "something in lines is wrong",
 which is the difference between a client fixing it and a client guessing.
 
 Bound the length of anything a client controls:
@@ -79,7 +79,7 @@ Pydantic tries each member in **smart mode**: an exact type match wins,
 otherwise it tries each in order and keeps the first success.
 
 The problem shows up in the errors. When none matches, you get the failures for
-*every* member — three sets of field errors for one bad object — and the client
+*every* member (three sets of field errors for one bad object) and the client
 has to work out which one you meant.
 
 ## Discriminated unions
@@ -106,7 +106,7 @@ class Payment(BaseModel):
 
 Now one field decides which model applies. Three things get better:
 
-- **Validation is one attempt**, not *n* — faster, and O(1) in the number of
+- **Validation is one attempt**, not *n*: faster, and O(1) in the number of
   members.
 - **Errors are the right ones.** A `kind: "card"` with a bad expiry reports the
   expiry, not every field of every variant.
@@ -139,9 +139,9 @@ Same for two models that reference each other.
 A recursive model has no natural limit, and a hostile payload nested ten
 thousand deep will happily exhaust the stack during validation.
 
-Where the input comes from a client, cap it — either with a
-[model validator](/pydantic/validators/#model_validator) that walks and counts,
-or by rejecting oversized bodies before parsing.
+Where the input comes from a client, cap it. Either with a [model
+validator](/pydantic/validators/#model_validator) that walks and counts, or by
+rejecting oversized bodies before parsing.
 :::
 
 ## Building from ORM objects
@@ -165,8 +165,8 @@ of dict keys, so an ORM instance can be validated directly.
 
 :::caution[Fetch the relations first]
 `PostOut` naming `author` means `model_validate` reads `post.author`. If it was
-never fetched, that raises — inside the serialiser, where the traceback is
-least helpful.
+never fetched, that raises, inside the serialiser, where the traceback is least
+helpful.
 
 Ask for it in the query:
 
@@ -197,7 +197,7 @@ class Customer(BaseModel):
 ```
 
 Better still, keep the model matching the wire and do the flattening in your
-own code — a model whose shape does not match its JSON is a model every reader
+own code. A model whose shape does not match its JSON is a model every reader
 has to decode twice.
 
 ## Schema names
@@ -206,14 +206,14 @@ Nested models appear in your OpenAPI document under `components/schemas`, keyed
 by class name. Two classes with the same name in different modules collide, and
 the second wins.
 
-Give them distinct names — `PostOut`, `PostSummary`, `PostAdminOut` — rather
-than reusing `Post` across modules. See [OpenAPI](/pydantic/openapi/).
+Give them distinct names (`PostOut`, `PostSummary`, `PostAdminOut`) rather than
+reusing `Post` across modules. See [OpenAPI](/pydantic/openapi/).
 
 ## When not to nest
 
 Nesting is right when the inner object is a real thing with its own identity
-and rules. It is wrong as a way of grouping fields for tidiness — every level
-is another dict a client has to construct and another level of error paths to
+and rules. It is wrong as a way of grouping fields for tidiness. Every level is
+another dict a client has to construct and another level of error paths to
 read.
 
 For a response, prefer a flat model close to what the consumer actually wants.

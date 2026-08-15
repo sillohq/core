@@ -202,11 +202,10 @@ else:
     not_found_config = None
 ```
 
-The `if settings:` branch is unreachable, so every option below —
-`return_json`, `custom_message`, `show_traceback`, `use_html` — has no
-effect. The handler always uses its fallback: JSON output, and
-`debug = True`, which means the raw `exception.detail` is returned rather
-than your custom message.
+The `if settings:` branch is unreachable, so every option below (`return_json`,
+`custom_message`, `show_traceback`, `use_html`) has no effect. The handler
+always uses its fallback: JSON output, and `debug = True`, which means the raw
+`exception.detail` is returned rather than your custom message.
 
 That last part matters for more than cosmetics: a 404 detail can carry
 the resource identifier or path that was not found, and it is emitted
@@ -319,9 +318,9 @@ branching on a specific failure, needs something that will not change.
 ```
 
 **Enough detail to act, and no more.** A validation error should name the
-field. An internal error should name nothing — a stack trace, a SQL
-fragment, or a file path in a production response is reconnaissance you
-handed over for free.
+field. An internal error should name nothing: a stack trace, a SQL fragment, or
+a file path in a production response is reconnaissance you handed over for
+free.
 
 ##  Never leak internals in production
 
@@ -342,9 +341,9 @@ async def unhandled(request, response, exc):
     )
 ```
 
-The `request_id` is the important half. It gives a user something to
-quote to support, and it gives you a key to find the full traceback in
-your logs — all the debuggability, none of the disclosure.
+The `request_id` is the important half. It gives a user something to quote to
+support, and it gives you a key to find the full traceback in your logs, all
+the debuggability, none of the disclosure.
 
 ##  Log once, at the boundary
 

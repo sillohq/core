@@ -34,7 +34,7 @@ under `sillo.helpers`.
 These helpers are the smallest, most internal utilities in sillo. They solve two
 problems that appear everywhere in an ASGI framework:
 
-1. **Detecting** whether something is an async callable — not just a plain
+1. **Detecting** whether something is an async callable: not just a plain
    function, but also objects whose `__call__` is a coroutine function, and
    `functools.partial` wrappers around either.
 2. **Adapting** a coroutine that produces a closeable resource into something
@@ -47,8 +47,8 @@ Nothing here depends on third-party packages. It is pure standard library
 
 ## `is_async_callable`
 
-The most-used helper. It returns `True` when `obj` can be awaited as a call —
-either because it is a coroutine function, or because calling it produces a
+The most-used helper. It returns `True` when `obj` can be awaited as a call.
+Either because it is a coroutine function, or because calling it produces a
 coroutine.
 
 ```python
@@ -127,12 +127,12 @@ def is_async_callable(obj):
 
 ### Where sillo uses it
 
-- `sillo.application` — deciding whether a user-supplied handler runs in the
+- `sillo.application`: deciding whether a user-supplied handler runs in the
   async event loop or can be wrapped.
-- `sillo.routing.router` — distinguishing async route endpoints from sync ones.
-- `sillo.http.request` — checking whether request-dependent callables are
+- `sillo.routing.router`: distinguishing async route endpoints from sync ones.
+- `sillo.http.request`: checking whether request-dependent callables are
   awaitable before scheduling them.
-- `sillo.testclient._internal.utils` — the test client reuses the exact same
+- `sillo.testclient._internal.utils`: the test client reuses the exact same
   helper so test behavior matches production.
 
 ### A practical pattern
@@ -223,7 +223,7 @@ accepts awaitables that resolve to something with an async `close()`.
 
 - Uses `__slots__ = ("aw", "entered")` to keep wrapper instances light.
 - `__aexit__` always calls `self.entered.close()` and returns `None`, meaning
-  it does **not** suppress exceptions — any error raised inside the `async with`
+  it does **not** suppress exceptions, any error raised inside the `async with`
   block propagates after the resource is closed.
 - If you `await` the wrapper and then also want the context-manager form, you
   must wrap a *fresh* coroutine; the same wrapper instance tracks its entered
@@ -304,7 +304,11 @@ await work()    # TypeError: object str can't be used in 'await' expression
 
 So dispatching code that accepts arbitrary callables must branch, and the branch has to be right for every shape a callable can take. That is three shapes, not one: a plain `async def`, an instance whose `__call__` is `async def`, and a `functools.partial` wrapping either. `is_async_callable` collapses all three into one boolean.
 
-The consequence of getting it wrong is worth stating plainly. If you call an async function without awaiting, nothing runs and nothing raises — you get a `RuntimeWarning` on stderr and silently missing behaviour. That is a bug that reaches production, because the code path "works" in the sense that it returns without error.
+The consequence of getting it wrong is worth stating plainly. If you call an
+async function without awaiting, nothing runs and nothing raises. You get a
+`RuntimeWarning` on stderr and silently missing behaviour. That is a bug that
+reaches production, because the code path "works" in the sense that it returns
+without error.
 
 ## When you actually need these
 
@@ -344,7 +348,11 @@ result = await fn(*args) if is_async_callable(fn) else fn(*args)
 
 `callable(obj)` is true for both sync and async, so it tells you nothing about dispatch.
 
-`asyncio.iscoroutinefunction(obj)` is closer but returns `False` for two shapes sillo supports: a class instance whose `__call__` is async, and a `functools.partial` wrapping an async function. Both appear constantly in framework code — class-based views are the first, and binding default arguments to a handler is the second.
+`asyncio.iscoroutinefunction(obj)` is closer but returns `False` for two shapes
+sillo supports: a class instance whose `__call__` is async, and a
+`functools.partial` wrapping an async function. Both appear constantly in
+framework code. Class-based views are the first, and binding default arguments
+to a handler is the second.
 
 `is_async_callable` handles all three. Use it rather than reimplementing the check.
 
@@ -373,7 +381,10 @@ async with AwaitableOrContextManagerWrapper(open_connection()) as conn2:
 
 <Aside type="caution" title="__aexit__ does not suppress exceptions">
 
-The wrapper closes the resource and then lets the exception propagate. That is the correct default — silently swallowing errors inside an `async with` block hides bugs — but it means you still need your own `try`/`except` if a failure is expected.
+The wrapper closes the resource and then lets the exception propagate. That is
+the correct default (silently swallowing errors inside an `async with` block
+hides bugs) but it means you still need your own `try`/`except` if a failure is
+expected.
 
 Cleanup is guaranteed either way: the resource is closed whether the block exits normally or by exception.
 
@@ -415,7 +426,9 @@ class Dispatcher:
 
 Checking inside the hot path instead means paying for introspection on every request to compute an answer that was decided when the route was registered.
 
-`AwaitableOrContextManagerWrapper` uses `__slots__`, so instances are small and allocation is cheap. `collapse_excgroups` costs nothing on the success path — the `try` block is free in CPython until an exception is actually raised.
+`AwaitableOrContextManagerWrapper` uses `__slots__`, so instances are small and
+allocation is cheap. `collapse_excgroups` costs nothing on the success path.
+The `try` block is free in CPython until an exception is actually raised.
 
 ## Summary
 
@@ -429,8 +442,12 @@ Checking inside the hot path instead means paying for introspection on every req
 
 ## Related
 
-- [Handlers](/guides/handlers/) — how sillo dispatches sync and async route handlers
-- [Middleware](/guides/middleware/) — the main place these helpers appear in user code
-- [Concurrency](/guides/concurrency/) — running blocking work without stalling the loop
-- [Retry](/guides/helpers/retry/) — uses `is_async_callable` to pick a wrapper
-- [Request Lifecycle](/guides/request-lifecycle/) — where dispatch decisions are made
+- [Handlers](/guides/handlers/): how sillo dispatches sync and async route
+  handlers
+- [Middleware](/guides/middleware/): the main place these helpers appear in
+  user code
+- [Concurrency](/guides/concurrency/): running blocking work without stalling
+  the loop
+- [Retry](/guides/helpers/retry/): uses `is_async_callable` to pick a wrapper
+- [Request Lifecycle](/guides/request-lifecycle/): where dispatch decisions are
+  made

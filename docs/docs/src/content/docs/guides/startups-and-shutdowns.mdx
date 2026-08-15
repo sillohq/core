@@ -115,18 +115,18 @@ and one after the last: `lifespan.startup`, then requests, then
 Two guarantees follow, and both matter.
 
 **Startup completes before the first request is accepted.** A handler can
-assume every startup hook has finished. That is why connecting a database
-in a startup hook is safe and connecting it lazily on first use is not
-— the lazy version races with concurrent first requests.
+assume every startup hook has finished. That is why connecting a database in a
+startup hook is safe and connecting it lazily on first use is not. The lazy
+version races with concurrent first requests.
 
 **Shutdown runs after the last response.** In-flight requests are allowed
 to finish first, so a shutdown hook that closes a connection pool does
 not pull it out from under a request still using it.
 
-Neither guarantee survives a hard kill. `SIGKILL`, an OOM kill, or a
-crashed process runs nothing — shutdown hooks are a graceful path, not a
-durability mechanism. Anything that must survive belongs in a database or
-a [queue](/guides/work/queue/), not in a shutdown handler.
+Neither guarantee survives a hard kill. `SIGKILL`, an OOM kill, or a crashed
+process runs nothing. Shutdown hooks are a graceful path, not a durability
+mechanism. Anything that must survive belongs in a database or a
+[queue](/guides/work/queue/), not in a shutdown handler.
 
 ##  Ordering
 
@@ -177,9 +177,9 @@ app = SilloApp(lifespan=lifespan)
 ```
 
 Two advantages over paired hooks. The teardown sits next to the setup, so
-neither can be edited without seeing the other. And the `finally`
-guarantees cleanup runs even if something between raised — a pair of
-independent hooks has no such link.
+neither can be edited without seeing the other. And the `finally` guarantees
+cleanup runs even if something between raised. A pair of independent hooks has
+no such link.
 
 Nest context managers with `AsyncExitStack` when there are several
 resources, and they unwind in reverse automatically:
@@ -208,12 +208,12 @@ An exception in a startup hook is reported to the ASGI server as
 `lifespan.startup.failed`, and the server exits. The application never
 serves a request.
 
-This is correct behaviour and it has a deployment consequence: a startup
-hook that reaches out to a dependency makes your service unable to start
-whenever that dependency is down. A cache warm-up that queries an API,
-a migration check that needs the database, a config fetch from a remote
-store — each converts a partial outage into a total one, and worse, into
-one where your replicas cannot come back.
+This is correct behaviour and it has a deployment consequence: a startup hook
+that reaches out to a dependency makes your service unable to start whenever
+that dependency is down. A cache warm-up that queries an API, a migration check
+that needs the database, a config fetch from a remote store: each converts a
+partial outage into a total one, and worse, into one where your replicas cannot
+come back.
 
 Decide per hook whether the dependency is genuinely required:
 
@@ -245,13 +245,13 @@ belongs in a background task started by the hook, not in the hook.
 
 A clean shutdown has three parts, in order.
 
-**Stop accepting new work.** Your orchestrator removes the instance from
-the load balancer, usually a few seconds before `SIGTERM`. Nothing to do
-in code, but it is why a short delay at the start of shutdown can help —
-it lets in-flight connections drain before you tear anything down.
+**Stop accepting new work.** Your orchestrator removes the instance from the
+load balancer, usually a few seconds before `SIGTERM`. Nothing to do in code,
+but it is why a short delay at the start of shutdown can help. It lets
+in-flight connections drain before you tear anything down.
 
-**Finish what is in flight.** The server waits for open requests. Your
-own background work does not get this for free — drain it explicitly:
+**Finish what is in flight.** The server waits for open requests. Your own
+background work does not get this for free, drain it explicitly:
 
 ```python title="a shutdown that does not lose work"
 @app.on_shutdown
@@ -264,10 +264,10 @@ async def drain():
 **Release resources.** Close pools, flush buffers, deregister from
 service discovery.
 
-The total must fit inside your orchestrator's grace period — Kubernetes
-defaults to 30 seconds between `SIGTERM` and `SIGKILL`. A drain longer
-than that is worse than none: you get killed mid-drain and lose the work
-anyway, having also delayed the rollout.
+The total must fit inside your orchestrator's grace period. Kubernetes defaults
+to 30 seconds between `SIGTERM` and `SIGKILL`. A drain longer than that is
+worse than none: you get killed mid-drain and lose the work anyway, having also
+delayed the rollout.
 
 ##  What belongs in a lifespan hook
 
@@ -275,10 +275,9 @@ anyway, having also delayed the rollout.
 background schedulers, warm caches, metrics exporters, feature-flag
 clients.
 
-**No:** database migrations — run them as a separate deploy step so
-replicas do not race. Long-running loops — start them as tasks and keep
-the reference. Anything per-request — that is
-[middleware](/guides/middleware/) or a
+**No:** database migrations (run them as a separate deploy step so replicas do
+not race. Long-running loops) start them as tasks and keep the reference.
+Anything per-request. That is [middleware](/guides/middleware/) or a
 [dependency](/guides/dependency-injection/).
 
 The test for a startup hook: does every request need this, and does it
@@ -305,16 +304,16 @@ async def list_users(request, response):
     ...
 ```
 
-That is exactly what `setup_record`, `setup_work`, and `setup_mail` do —
-each stores its object under a known key so handlers and other
-subsystems can find it without importing a module-level singleton.
+That is exactly what `setup_record`, `setup_work`, and `setup_mail` do. Each
+stores its object under a known key so handlers and other subsystems can find
+it without importing a module-level singleton.
 
-Two rules keep this from turning into a global-variable pile. Namespace
-your keys — `"pool"` collides, `"myapp.pool"` does not, and a library
-storing under a generic name will eventually overwrite yours. And treat
-the contents as read-mostly: mutating shared state from a handler is a
-data race across concurrent requests, and the failure is intermittent and
-extremely hard to reproduce.
+Two rules keep this from turning into a global-variable pile. Namespace your
+keys. `"pool"` collides, `"myapp.pool"` does not, and a library storing under a
+generic name will eventually overwrite yours. And treat the contents as
+read-mostly: mutating shared state from a handler is a data race across
+concurrent requests, and the failure is intermittent and extremely hard to
+reproduce.
 
 For per-request state, use `request.state` instead. It is created fresh
 per request and discarded after, which is what request-scoped data
@@ -336,17 +335,16 @@ client.get("/users")                 # fails if the handler needs a pool
 Almost every "works in production, fails in tests" report about missing
 `app.state` entries is this. Use the context-manager form.
 
-That also makes the lifespan itself testable — assert on `app.state`
-inside the block, and assert that resources were released after it.
+That also makes the lifespan itself testable, assert on `app.state` inside the
+block, and assert that resources were released after it.
 
 ##  Multiple workers
 
 Every lifespan hook runs once **per process**. With four uvicorn workers,
 your startup hook runs four times, in four separate memory spaces.
 
-That is fine for anything per-process — a connection pool, an HTTP
-client, a metrics exporter. It is wrong for anything that should happen
-once globally:
+That is fine for anything per-process: a connection pool, an HTTP client, a
+metrics exporter. It is wrong for anything that should happen once globally:
 
 **Schedulers.** Four processes means a nightly job runs four times. See
 [Scheduler](/guides/work/scheduler/) for leader election and locking.
@@ -361,9 +359,9 @@ not.
 same configuration on boot is a four-times spike at exactly the moment
 your service is least healthy.
 
-The general fix is to move genuinely-once work out of the application
-process — a job, an init container, a deploy step — and keep the lifespan
-for things each process needs its own copy of.
+The general fix is to move genuinely-once work out of the application process
+(a job, an init container, a deploy step) and keep the lifespan for things each
+process needs its own copy of.
 
 ##  What not to do
 
@@ -387,12 +385,14 @@ needs startup state.
 
 ##  Related
 
-- [Middleware](/guides/middleware/) — per-request work, as opposed to per-process
-- [Dependency Injection](/guides/dependency-injection/) — per-request resources
-- [Record Overview](/guides/record/) — `setup_record` and the hooks it registers
-- [Background Tasks](/guides/work/background/) — draining before exit
-- [Work Overview](/guides/work/) — the scheduler's start and stop hooks
-- [The Console](/guides/start/console/) — the commands a project ships with, and which of them open the database
+- [Middleware](/guides/middleware/): per-request work, as opposed to
+  per-process
+- [Dependency Injection](/guides/dependency-injection/): per-request resources
+- [Record Overview](/guides/record/): `setup_record` and the hooks it registers
+- [Background Tasks](/guides/work/background/): draining before exit
+- [Work Overview](/guides/work/): the scheduler's start and stop hooks
+- [The Console](/guides/start/console/): the commands a project ships with, and
+  which of them open the database
 
 
 ##  Health checks and readiness
@@ -400,15 +400,14 @@ needs startup state.
 An orchestrator asks two different questions and they need two different
 answers.
 
-**Liveness** — "is this process alive?" — should be cheap and check
-nothing external. A liveness probe that queries the database restarts
-your pods during a database outage, turning a degraded service into no
-service at all.
+**Liveness** ("is this process alive?") should be cheap and check nothing
+external. A liveness probe that queries the database restarts your pods during
+a database outage, turning a degraded service into no service at all.
 
-**Readiness** — "should this receive traffic?" — should check the
-dependencies a request actually needs. Failing readiness during startup
-keeps traffic away until the lifespan has finished; failing it later
-takes the instance out of rotation without killing it.
+**Readiness** ("should this receive traffic?") should check the dependencies a
+request actually needs. Failing readiness during startup keeps traffic away
+until the lifespan has finished; failing it later takes the instance out of
+rotation without killing it.
 
 ```python title="two probes, two behaviours"
 @app.get("/healthz")
@@ -425,5 +424,5 @@ async def readiness(request, response):
 ```
 
 Because startup completes before the first request is served, a readiness
-endpoint that responds at all already proves the lifespan finished — the
+endpoint that responds at all already proves the lifespan finished. The
 dependency check is about staying healthy, not about starting.

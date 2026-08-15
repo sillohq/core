@@ -35,7 +35,7 @@ twice. `sillo` imports it and reads it:
 | `AuthenticationMiddleware(user_model=…)` | which model accounts are created in |
 | `app.add_command(…)` | the project's own commands |
 
-A project with no database gets no `db:*` — there is nothing to migrate. The
+A project with no database gets no `db:*`. There is nothing to migrate. The
 queue commands are always offered, because a queue needs no setup to inspect.
 
 The starter wires the first three in `app/bootstrap.py`, so all of it is
@@ -98,8 +98,8 @@ Nothing pending.
 ```
 
 `--fake` records migrations as applied without running their SQL. That is for
-adopting a schema that already exists — tables created before the project had
-migrations — not for skipping one that fails.
+adopting a schema that already exists (tables created before the project had
+migrations) not for skipping one that fails.
 
 ###  `db:make`
 
@@ -155,9 +155,10 @@ $ uv run sillo db:status
 ```
 
 There is no implicit "one step back": name the migration to stop at. `zero`
-unapplies everything, which drops the tables those migrations made — so it asks
+unapplies everything, which drops the tables those migrations made, so it asks
 you to type `zero` back before it does. Without a terminal it refuses rather
-than assuming yes, which is what stops an unattended run from dropping a schema.
+than assuming yes, which is what stops an unattended run from dropping a
+schema.
 
 ##  Users
 
@@ -171,9 +172,9 @@ uv run sillo user:active <identifier> [--off]
 uv run sillo user:staff <identifier> [--revoke]
 ```
 
-The account is created in the model the application authenticates against —
-the starter's `database/models/user.py`, because `app/bootstrap.py` passes it
-to `AuthenticationMiddleware`.
+The account is created in the model the application authenticates against. The
+starter's `database/models/user.py`, because `app/bootstrap.py` passes it to
+`AuthenticationMiddleware`.
 
 ###  `user:admin` and `user:create`
 
@@ -185,8 +186,8 @@ Confirm:  ••••••••
   Sign in at /admin/
 ```
 
-The password is read from a hidden prompt. With no terminal — CI, a container
-build — it comes from `SILLO_PASSWORD` instead, and with neither the command
+The password is read from a hidden prompt. With no terminal (CI, a container
+build) it comes from `SILLO_PASSWORD` instead, and with neither the command
 fails and says so rather than blocking on a prompt nobody can answer.
 
 ```bash
@@ -222,7 +223,7 @@ uv run sillo user:staff ada@example.com --revoke
 ```
 
 The identifier is an email address or a username, and matches deactivated
-accounts too — an account you cannot find is one you could never turn back on.
+accounts too. An account you cannot find is one you could never turn back on.
 
 ##  Processes
 
@@ -303,8 +304,8 @@ sillo db:make initial  # write the first migration from the models
 sillo db:migrate       # apply it
 ```
 
-After that, `sillo db:migrate` on its own is all you need — and
-`sillo-start` runs the first two for you when it creates the project.
+After that, `sillo db:migrate` on its own is all you need, and `sillo-start`
+runs the first two for you when it creates the project.
 
 ##  Adding your own
 
@@ -362,7 +363,7 @@ async def clear(command):
 
 Commands registered on the application are added last, so a name you choose
 overrides a built-in one of the same name. `sillo.console` documents the
-parameter types, the output helpers and the interactive prompts in full — see
+parameter types, the output helpers and the interactive prompts in full. See
 [Console Commands](/guides/console/).
 
 ##  Errors and output
@@ -382,7 +383,7 @@ a pipe.
 
 ##  Related
 
-- [Console Commands](/guides/console/) — the toolkit underneath, in full
-- [Database](/guides/start/database/) — what the migration commands act on
-- [Background Work](/guides/start/background-work/) — the queue and scheduler
-- [Deployment](/guides/start/deployment/) — running these in production
+- [Console Commands](/guides/console/): the toolkit underneath, in full
+- [Database](/guides/start/database/): what the migration commands act on
+- [Background Work](/guides/start/background-work/): the queue and scheduler
+- [Deployment](/guides/start/deployment/): running these in production

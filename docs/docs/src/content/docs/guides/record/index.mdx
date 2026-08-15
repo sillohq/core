@@ -16,12 +16,12 @@ import { Aside } from '@astrojs/starlight/components';
 
 #  Record (`sillo.record`)
 
-`sillo.record` is a convenience layer on top of [Tortoise ORM](https://tortoise.github.io/).
-It does not fork Tortoise, wrap its query compiler, or replace its
-connection handling. Every Tortoise feature — fields, querysets, `Q`
-objects, relations, prefetching, aggregation, raw SQL, schema
-generation — behaves exactly as the Tortoise documentation describes,
-because it *is* Tortoise underneath.
+`sillo.record` is a convenience layer on top of [Tortoise
+ORM](https://tortoise.github.io/). It does not fork Tortoise, wrap its query
+compiler, or replace its connection handling. Every Tortoise feature (fields,
+querysets, `Q` objects, relations, prefetching, aggregation, raw SQL, schema
+generation) behaves exactly as the Tortoise documentation describes, because it
+*is* Tortoise underneath.
 
 What `sillo.record` adds is the layer Django and Laravel developers miss
 when they first meet Tortoise: a base model with timestamps and
@@ -30,11 +30,10 @@ chainable result collections, model factories for tests, a transaction
 context manager, and glue between Tortoise and the rest of sillo
 (pagination strategies, exception handlers, Pydantic schemas).
 
-This page covers what the package contains, how to wire it into an
-application, and — importantly — which parts are production-ready and
-which are not. Several components in this package are thinner than their
-docstrings suggest, and you are better served knowing that up front than
-discovering it during an incident.
+This page covers what the package contains, how to wire it into an application,
+and (importantly) which parts are production-ready and which are not. Several
+components in this package are thinner than their docstrings suggest, and you
+are better served knowing that up front than discovering it during an incident.
 
 ##  When to reach for this
 
@@ -43,11 +42,11 @@ ergonomics. `Model.active()`, `user.to_dict(exclude=["password"])`, and
 `Collection(rows).group_by("plan")` are genuinely nicer than writing the
 same three lines by hand for the fortieth time.
 
-Do **not** use `sillo.record` as a reason to choose Tortoise. If you have
-not picked an ORM yet, evaluate Tortoise on its own merits — async-native
-querysets, Django-like syntax, a small dependency footprint, and a
-migration engine that is functional but noticeably less mature than
-Alembic. `sillo.record` does not change that calculus.
+Do **not** use `sillo.record` as a reason to choose Tortoise. If you have not
+picked an ORM yet, evaluate Tortoise on its own merits: async-native querysets,
+Django-like syntax, a small dependency footprint, and a migration engine that
+is functional but noticeably less mature than Alembic. `sillo.record` does not
+change that calculus.
 
 Do not use it if you need a synchronous ORM, multi-database routing with
 per-model connection selection, or a mature migration story with
@@ -69,10 +68,10 @@ no convenience layer fixes them.
 | Transactions & testing | `transaction`, `TransactionContext`, `begin`, `commit`, `rollback`, `Factory`, `FactoryBuilder` | [Transactions & Factories](/guides/record/transactions-factories/) |
 | Integration | `DatabaseConfig`, `DatabaseBackend`, `DatabaseManager`, `setup_record`, `register_db_exception_handlers`, `pydantic_model_from_tortoise`, `QueryLogger`, `QueryLogEntry`, `Seeder`, `FixtureLoader`, `MigrationHelper` | [Exceptions & Pydantic](/guides/record/exceptions-pydantic/), [Migrations & Seeding](/guides/record/migrations/) |
 
-Migration operations are functions in `sillo.record.commands`, driven from
-the `DatabaseManager` your application runs on. They stay plain functions, so the
-`sillo` command, your own console and a test all reach the same code; no command-line
-interface — see [Migrations & Seeding](/guides/record/migrations/).
+Migration operations are functions in `sillo.record.commands`, driven from the
+`DatabaseManager` your application runs on. They stay plain functions, so the
+`sillo` command, your own console and a test all reach the same code; no
+command-line interface. See [Migrations & Seeding](/guides/record/migrations/).
 
 ##  The minimum viable setup
 
@@ -95,11 +94,11 @@ db = setup_record(
 )
 ```
 
-`setup_record` is idempotent. Calling it twice on the same app returns
-the manager already stored in `app.state["record"]` and ignores the
-second config — useful when a library and your own startup code both try
-to configure the database, and a silent trap if you expected the second
-call to reconfigure anything.
+`setup_record` is idempotent. Calling it twice on the same app returns the
+manager already stored in `app.state["record"]` and ignores the second config,
+useful when a library and your own startup code both try to configure the
+database, and a silent trap if you expected the second call to reconfigure
+anything.
 
 Under the hood it does four things:
 
@@ -163,12 +162,11 @@ without being told.
 
 <Aside type="caution" title="from_env(prefix=...) only prefixes the URL">
 
-`DatabaseConfig.from_env(prefix="APP")` reads `APP_DATABASE_URL` — but
-every other field still reads its unprefixed variable, because those
-defaults are evaluated by `default_factory` at construction time.
-Setting `DB_POOL_SIZE=25` affects the "APP" config too. If you are
-running two configs side by side, set the non-URL fields explicitly
-rather than relying on the prefix.
+`DatabaseConfig.from_env(prefix="APP")` reads `APP_DATABASE_URL`, but every
+other field still reads its unprefixed variable, because those defaults are
+evaluated by `default_factory` at construction time. Setting `DB_POOL_SIZE=25`
+affects the "APP" config too. If you are running two configs side by side, set
+the non-URL fields explicitly rather than relying on the prefix.
 
 </Aside>
 
@@ -202,11 +200,11 @@ config = DatabaseConfig(url=f"postgres://app:{password}@db:5432/appdb")
 <Aside type="danger" title="DatabaseManager cannot connect to PostgreSQL, MySQL, or MariaDB as written">
 
 `DatabaseManager._build_tortoise_config()` builds the engine path as
-`f"tortoise.backends.{backend.value}"`, producing
-`tortoise.backends.postgres` and `tortoise.backends.mariadb`. Neither
-module exists — Tortoise ships `tortoise.backends.asyncpg`,
-`tortoise.backends.psycopg`, `tortoise.backends.mysql`, `sqlite`,
-`mssql`, `odbc`, and `oracle`. Initialisation raises `ModuleNotFoundError`.
+`f"tortoise.backends.{backend.value}"`, producing `tortoise.backends.postgres`
+and `tortoise.backends.mariadb`. Neither module exists: Tortoise ships
+`tortoise.backends.asyncpg`, `tortoise.backends.psycopg`,
+`tortoise.backends.mysql`, `sqlite`, `mssql`, `odbc`, and `oracle`.
+Initialisation raises `ModuleNotFoundError`.
 
 Separately, for non-SQLite backends it assigns the entire connection URL
 to `credentials["database"]` and never sets `host`, `port`, `user`, or
@@ -248,22 +246,21 @@ and see connection-not-found errors inside handlers, add the middleware
 back by constructing a `DatabaseManager` purely for that purpose or by
 re-entering the context yourself.
 
-Everything else in `sillo.record` — models, scopes, casting, collections,
-transactions, factories — is backend-agnostic and works fine on Postgres
-once the connection is established by any means.
+Everything else in `sillo.record` (models, scopes, casting, collections,
+transactions, factories) is backend-agnostic and works fine on Postgres once
+the connection is established by any means.
 
 ##  `generate_schemas` is not a migration system
 
-`DatabaseManager.init()` calls `Tortoise.generate_schemas(safe=True)` on
-every startup. `safe=True` means "create tables that do not exist" — it
-never issues `ALTER TABLE`. Adding a column to a model and restarting
-gets you a running app with a stale table and confusing errors at query
-time.
+`DatabaseManager.init()` calls `Tortoise.generate_schemas(safe=True)` on every
+startup. `safe=True` means "create tables that do not exist". It never issues
+`ALTER TABLE`. Adding a column to a model and restarting gets you a running app
+with a stale table and confusing errors at query time.
 
-That behaviour is fine for tests, prototypes, and throwaway SQLite files.
-For anything with real data, use migrations, and read
-[Migrations & Seeding](/guides/record/migrations/) first — including its
-warnings about the built-in `MigrationHelper`.
+That behaviour is fine for tests, prototypes, and throwaway SQLite files. For
+anything with real data, use migrations, and read [Migrations &
+Seeding](/guides/record/migrations/) first, including its warnings about the
+built-in `MigrationHelper`.
 
 ##  Checking connectivity
 
@@ -286,10 +283,9 @@ tell you why.
 
 ##  A worked example
 
-A small application that puts the pieces together — configuration from
-the environment, models in a dedicated module, exception handlers mapping
-database errors to HTTP status codes, and a soft-delete-aware listing
-endpoint.
+A small application that puts the pieces together: configuration from the
+environment, models in a dedicated module, exception handlers mapping database
+errors to HTTP status codes, and a soft-delete-aware listing endpoint.
 
 ```python title="myapp/models.py"
 from tortoise import fields
@@ -376,13 +372,13 @@ its own guide with the verified failure mode.
 The convenience layer costs almost nothing at query time, with two
 exceptions worth knowing.
 
-`Model.__getattribute__` is overridden to support casts and accessors. It
-runs on *every* attribute read on a model instance, checking
-`_meta.fields` membership and then performing two `getattr` lookups on the
-class. For ordinary request handling this is invisible. In a tight loop
-over a hundred thousand rows reading five attributes each, it is
-measurable — use `.values()` or `.values_list()` for bulk numeric work,
-which bypasses model instantiation entirely.
+`Model.__getattribute__` is overridden to support casts and accessors. It runs
+on *every* attribute read on a model instance, checking `_meta.fields`
+membership and then performing two `getattr` lookups on the class. For ordinary
+request handling this is invisible. In a tight loop over a hundred thousand
+rows reading five attributes each, it is measurable. Use `.values()` or
+`.values_list()` for bulk numeric work, which bypasses model instantiation
+entirely.
 
 `Model.save()` wraps every save in `_encoded_cast_values()`, a context
 manager that only does work when the model declares `_casts`. Models
@@ -405,12 +401,21 @@ driver if you supply a correctly shaped config.
 
 ##  Related
 
-- [Models & Mixins](/guides/record/models/) — the base model, serialization, and composable behaviours
-- [Scopes & Events](/guides/record/scopes-events/) — reusable query constraints and lifecycle hooks
-- [Casting & Collections](/guides/record/casting-collections/) — attribute transformation and result manipulation
-- [Pagination](/guides/record/pagination/) — connecting querysets to sillo's pagination strategies
-- [Transactions & Factories](/guides/record/transactions-factories/) — atomicity and test data
-- [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/) — mapping database errors to HTTP, and schema generation
-- [Migrations & Seeding](/guides/record/migrations/) — schema changes, seeders, and fixtures
-- [Startup & Shutdown](/guides/startups-and-shutdowns/) — the lifecycle hooks `setup_record` registers
-- [Serialization](/guides/serialization/) — how sillo encodes what your handlers return
+- [Models & Mixins](/guides/record/models/): the base model, serialization, and
+  composable behaviours
+- [Scopes & Events](/guides/record/scopes-events/): reusable query constraints
+  and lifecycle hooks
+- [Casting & Collections](/guides/record/casting-collections/): attribute
+  transformation and result manipulation
+- [Pagination](/guides/record/pagination/): connecting querysets to sillo's
+  pagination strategies
+- [Transactions & Factories](/guides/record/transactions-factories/): atomicity
+  and test data
+- [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/): mapping
+  database errors to HTTP, and schema generation
+- [Migrations & Seeding](/guides/record/migrations/): schema changes, seeders,
+  and fixtures
+- [Startup & Shutdown](/guides/startups-and-shutdowns/): the lifecycle hooks
+  `setup_record` registers
+- [Serialization](/guides/serialization/): how sillo encodes what your handlers
+  return

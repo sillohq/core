@@ -11,7 +11,10 @@ description: "UserProtocol, UserBaseModel, UserManager, SimpleUser, mixins"
 
 ## Overview
 
-Sillo's user system is built on a protocol-first design: a pure Python protocol (`UserProtocol`) defines the authentication contract, and concrete implementations — both in-memory and database-backed — satisfy it. This lets the authentication layer work without requiring the ORM.
+Sillo's user system is built on a protocol-first design: a pure Python protocol
+(`UserProtocol`) defines the authentication contract, and concrete
+implementations (both in-memory and database-backed) satisfy it. This lets the
+authentication layer work without requiring the ORM.
 
 ```mermaid
 classDiagram
@@ -81,7 +84,7 @@ The hierarchy serves different runtime contexts:
 
 | Type | DB Required | Purpose |
 |------|-------------|---------|
-| `UserProtocol` | No | Pure interface — defines the contract |
+| `UserProtocol` | No | Pure interface: defines the contract |
 | `BaseUser` | No | Alias for `UserProtocol` |
 | `AnonymousUser` | No | Sentinel for unauthenticated requests (all permissions return `False`) |
 | `SimpleUser` | No | Lightweight in-memory user for testing and simple cases |
@@ -103,9 +106,9 @@ The split exists because `sillo.users.protocol` defines types that need no datab
 
 ---
 
-## UserProtocol — The Authentication Contract
+## UserProtocol: The Authentication Contract
 
-**File:** `core/sillo/users/protocol.py` (lines 107–190)
+**File:** `core/sillo/users/protocol.py` (lines 107 to 190)
 
 ```python
 class UserProtocol:
@@ -141,10 +144,14 @@ class UserProtocol:
 ```
 
 **Key design points:**
-- `is_authenticated` defaults to `True` — concrete classes override for anonymous/unauthenticated
-- `has_perm` defaults to `False` — subclasses override with actual permission logic
-- `has_permission` raises `NotImplementedError` — it's the method callers should use, but the base has no implementation
-- `load_user` is a classmethod that loads a user by identity string — the auth middleware calls this
+- `is_authenticated` defaults to `True`: concrete classes override for
+  anonymous/unauthenticated
+- `has_perm` defaults to `False`: subclasses override with actual permission
+  logic
+- `has_permission` raises `NotImplementedError`: it's the method callers should
+  use, but the base has no implementation
+- `load_user` is a classmethod that loads a user by identity string: the auth
+  middleware calls this
 - `__eq__` and `__hash__` are based on `get_id()`, so users with the same identity are equal
 
 ### BaseUser Alias
@@ -157,9 +164,9 @@ Used throughout the auth layer as `type[BaseUser]`. It is the pure contract, so 
 
 ---
 
-## AnonymousUser — The Unauthenticated Sentinel
+## AnonymousUser: The Unauthenticated Sentinel
 
-**File:** `core/sillo/users/protocol.py` (lines 197–240)
+**File:** `core/sillo/users/protocol.py` (lines 197 to 240)
 
 ```python
 class AnonymousUser:
@@ -172,15 +179,17 @@ class AnonymousUser:
     identity: str = ""
 ```
 
-All permission methods return `False`. All identity methods return empty strings. This is a sentinel — not a real user. It is used in contexts where a user object is required but no authentication has occurred.
+All permission methods return `False`. All identity methods return empty
+strings. This is a sentinel, not a real user. It is used in contexts where a
+user object is required but no authentication has occurred.
 
 **Note:** `AnonymousUser` is distinct from `UnauthenticatedUser`. `AnonymousUser` is a general-purpose sentinel; `UnauthenticatedUser` is specifically placed on the request scope by the authentication middleware.
 
 ---
 
-## SimpleUser — The Lightweight Stand-In
+## SimpleUser: The Lightweight Stand-In
 
-**File:** `core/sillo/users/simple.py` (lines 4–34)
+**File:** `core/sillo/users/simple.py` (lines 4 to 34)
 
 ```python
 class SimpleUser(UserProtocol):
@@ -205,13 +214,17 @@ class SimpleUser(UserProtocol):
         return cls(identity, [identity])
 ```
 
-Used as the default `user_model` in `AuthenticationMiddleware` and `useAuth`. The `load_user` classmethod creates a `SimpleUser` from the identity string, giving it a permission matching its own identity. This is useful for testing but not for production — production apps should use `User` or a custom `UserBaseModel` subclass.
+Used as the default `user_model` in `AuthenticationMiddleware` and `useAuth`.
+The `load_user` classmethod creates a `SimpleUser` from the identity string,
+giving it a permission matching its own identity. This is useful for testing
+but not for production. Production apps should use `User` or a custom
+`UserBaseModel` subclass.
 
 ---
 
-## UnauthenticatedUser — The Middleware Fallback
+## UnauthenticatedUser: The Middleware Fallback
 
-**File:** `core/sillo/users/simple.py` (lines 37–62)
+**File:** `core/sillo/users/simple.py` (lines 37 to 62)
 
 ```python
 class UnauthenticatedUser(UserProtocol):
@@ -235,18 +248,18 @@ Placed on `request.scope["user"]` by `AuthenticationMiddleware` when no backend 
 
 ---
 
-## UserBaseModel — The Database-Backed Base
+## UserBaseModel: The Database-Backed Base
 
-**File:** `core/sillo/users/base.py` (lines 42–178)
+**File:** `core/sillo/users/base.py` (lines 42 to 178)
 
 ### Fields
 
 | Field | Type | Default | Purpose |
 |-------|------|---------|---------|
-| `id` | `IntField(pk=True)` | — | Primary key |
-| `email` | `CharField(255, unique=True, index=True)` | — | Email address |
-| `username` | `CharField(150, unique=True, index=True)` | — | Username |
-| `password` | `CharField(128)` | — | Hashed password |
+| `id` | `IntField(pk=True)` |  | Primary key |
+| `email` | `CharField(255, unique=True, index=True)` |  | Email address |
+| `username` | `CharField(150, unique=True, index=True)` |  | Username |
+| `password` | `CharField(128)` |  | Hashed password |
 | `is_active` | `BooleanField(default=True)` | `True` | Account active flag |
 | `is_staff` | `BooleanField(default=False)` | `False` | Admin access flag |
 | `is_superuser` | `BooleanField(default=False)` | `False` | Superuser flag |
@@ -269,7 +282,7 @@ def identity(self) -> str:
     return str(self.id)
 ```
 
-### Permission Checking — Superuser Bypass
+### Permission Checking: Superuser Bypass
 
 ```python
 def has_perm(self, perm: str) -> bool:
@@ -340,9 +353,9 @@ Authenticates by email or username + password. On success, stamps `last_login` a
 
 ---
 
-## User — The Concrete Model
+## User: The Concrete Model
 
-**File:** `core/sillo/users/base.py` (lines 180–193)
+**File:** `core/sillo/users/base.py` (lines 180 to 193)
 
 ```python
 class User(UserBaseModel):
@@ -352,11 +365,13 @@ class User(UserBaseModel):
         table = "users"
 ```
 
-The minimal concrete user model. Attaches `UserManager` as `objects` and sets the table name. Deliberately minimal — subclass to add profile fields, relationships, or override behavior.
+The minimal concrete user model. Attaches `UserManager` as `objects` and sets
+the table name. Deliberately minimal: subclass to add profile fields,
+relationships, or override behavior.
 
 ---
 
-## UserManager — The Query Interface
+## UserManager: The Query Interface
 
 **File:** `core/sillo/users/managers.py`
 
@@ -471,7 +486,7 @@ user_commands(context=database, only=["user:admin", "user:list"])
 
 ## Password Handling
 
-**File:** `core/sillo/users/protocol.py` (lines 33–104)
+**File:** `core/sillo/users/protocol.py` (lines 33 to 104)
 
 ### make_password
 
@@ -538,37 +553,37 @@ Email is the more unique identifier (unique constraint + index). Username is tri
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `UserProtocol` | `core/sillo/users/protocol.py` | 107–190 |
+| `UserProtocol` | `core/sillo/users/protocol.py` | 107-190 |
 | `BaseUser` alias | `core/sillo/users/protocol.py` | 194 |
-| `AnonymousUser` | `core/sillo/users/protocol.py` | 197–240 |
-| `make_password` | `core/sillo/users/protocol.py` | 33–63 |
-| `check_password` | `core/sillo/users/protocol.py` | 66–104 |
-| `SimpleUser` | `core/sillo/users/simple.py` | 4–34 |
-| `UnauthenticatedUser` | `core/sillo/users/simple.py` | 37–62 |
-| `UserBaseModel` | `core/sillo/users/base.py` | 42–178 |
-| `User` | `core/sillo/users/base.py` | 180–193 |
-| `UserManager` | `core/sillo/users/managers.py` | 6–97 |
-| `create_user` | `core/sillo/users/commands.py` | 40–62 |
-| `create_admin` | `core/sillo/users/commands.py` | 65–88 |
-| `find_user` | `core/sillo/users/commands.py` | 106–136 |
-| `set_password` | `core/sillo/users/commands.py` | 139–157 |
-| `set_active` | `core/sillo/users/commands.py` | 160–180 |
-| `set_staff` | `core/sillo/users/commands.py` | 183–200 |
-| `list_users` | `core/sillo/users/commands.py` | 203–217 |
-| `Create` command | `core/sillo/users/console.py` | 144–177 |
-| `CreateAdmin` command | `core/sillo/users/console.py` | 179–207 |
-| `ListUsers` command | `core/sillo/users/console.py` | 210–234 |
-| `Show` command | `core/sillo/users/console.py` | 237–262 |
-| `SetPassword` command | `core/sillo/users/console.py` | 265–285 |
-| `SetActive` command | `core/sillo/users/console.py` | 288–314 |
-| `SetStaff` command | `core/sillo/users/console.py` | 317–337 |
-| `user_commands` | `core/sillo/users/console.py` | 352–389 |
+| `AnonymousUser` | `core/sillo/users/protocol.py` | 197-240 |
+| `make_password` | `core/sillo/users/protocol.py` | 33-63 |
+| `check_password` | `core/sillo/users/protocol.py` | 66-104 |
+| `SimpleUser` | `core/sillo/users/simple.py` | 4-34 |
+| `UnauthenticatedUser` | `core/sillo/users/simple.py` | 37-62 |
+| `UserBaseModel` | `core/sillo/users/base.py` | 42-178 |
+| `User` | `core/sillo/users/base.py` | 180-193 |
+| `UserManager` | `core/sillo/users/managers.py` | 6-97 |
+| `create_user` | `core/sillo/users/commands.py` | 40-62 |
+| `create_admin` | `core/sillo/users/commands.py` | 65-88 |
+| `find_user` | `core/sillo/users/commands.py` | 106-136 |
+| `set_password` | `core/sillo/users/commands.py` | 139-157 |
+| `set_active` | `core/sillo/users/commands.py` | 160-180 |
+| `set_staff` | `core/sillo/users/commands.py` | 183-200 |
+| `list_users` | `core/sillo/users/commands.py` | 203-217 |
+| `Create` command | `core/sillo/users/console.py` | 144-177 |
+| `CreateAdmin` command | `core/sillo/users/console.py` | 179-207 |
+| `ListUsers` command | `core/sillo/users/console.py` | 210-234 |
+| `Show` command | `core/sillo/users/console.py` | 237-262 |
+| `SetPassword` command | `core/sillo/users/console.py` | 265-285 |
+| `SetActive` command | `core/sillo/users/console.py` | 288-314 |
+| `SetStaff` command | `core/sillo/users/console.py` | 317-337 |
+| `user_commands` | `core/sillo/users/console.py` | 352-389 |
 
 ---
 
 ## Implementation Deep Dive
 
-### UserProtocol — Complete Interface Contract
+### UserProtocol: Complete Interface Contract
 
 The `UserProtocol` at `core/sillo/users/protocol.py` defines every method and property that the authentication system depends on. Here is the complete interface with implementation notes:
 
@@ -650,7 +665,7 @@ class UserProtocol:
         return hash(self.get_id())
 ```
 
-### AnonymousUser — Complete Implementation
+### AnonymousUser: Complete Implementation
 
 ```python
 class AnonymousUser:
@@ -685,7 +700,7 @@ class AnonymousUser:
         return 0  # Constant hash — all instances hash the same
 ```
 
-### SimpleUser — Complete Implementation
+### SimpleUser: Complete Implementation
 
 ```python
 class SimpleUser(UserProtocol):
@@ -718,7 +733,7 @@ class SimpleUser(UserProtocol):
         return cls(identity, [identity])
 ```
 
-### UnauthenticatedUser — Complete Implementation
+### UnauthenticatedUser: Complete Implementation
 
 ```python
 class UnauthenticatedUser(UserProtocol):
@@ -744,21 +759,21 @@ class UnauthenticatedUser(UserProtocol):
         return cls()
 ```
 
-### UserBaseModel — Complete Field Reference
+### UserBaseModel: Complete Field Reference
 
 | Field | Type | Constraints | Default | Purpose |
 |-------|------|-------------|---------|---------|
 | `id` | `IntField` | Primary key | Auto | User ID |
-| `email` | `CharField(255)` | Unique, indexed | — | Email address |
-| `username` | `CharField(150)` | Unique, indexed | — | Username |
-| `password` | `CharField(128)` | — | — | Hashed password |
-| `is_active` | `BooleanField` | — | `True` | Account active |
-| `is_staff` | `BooleanField` | — | `False` | Admin access |
-| `is_superuser` | `BooleanField` | — | `False` | Superuser |
+| `email` | `CharField(255)` | Unique, indexed |  | Email address |
+| `username` | `CharField(150)` | Unique, indexed |  | Username |
+| `password` | `CharField(128)` |  |  | Hashed password |
+| `is_active` | `BooleanField` |  | `True` | Account active |
+| `is_staff` | `BooleanField` |  | `False` | Admin access |
+| `is_superuser` | `BooleanField` |  | `False` | Superuser |
 | `last_login` | `DatetimeField` | Nullable | `None` | Last login |
 | `email_verified_at` | `DatetimeField` | Nullable | `None` | Email verification |
 
-### UserBaseModel — Method Reference
+### UserBaseModel: Method Reference
 
 #### `set_password(raw_password)`
 
@@ -859,7 +874,7 @@ async def verify_credentials(cls, identifier: str, password: str) -> UserBaseMod
 - Loads permissions
 - Returns `None` on any failure
 
-### UserManager — Complete Method Reference
+### UserManager: Complete Method Reference
 
 #### `create_user(email, username, password, **extra_fields)`
 
@@ -913,7 +928,7 @@ async def get_by_natural_key(self, identifier: str):
 
 Tries email first, then username. Used by `verify_credentials` and auth backends.
 
-### Management Commands — Complete Reference
+### Management Commands: Complete Reference
 
 #### `create_user`
 
@@ -993,7 +1008,7 @@ async def list_users(*, model=None, limit=50, offset=0, staff_only=False) -> lis
     return await query.order_by("-id").offset(offset).limit(limit)
 ```
 
-### Console Commands — Complete Reference
+### Console Commands: Complete Reference
 
 #### `user:create`
 

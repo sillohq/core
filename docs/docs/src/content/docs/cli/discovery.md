@@ -1,6 +1,6 @@
 ---
 title: Finding Your Application
-description: "How the sillo command locates your SilloApp — SILLO_APP, [tool.sillo] app, and the conventional paths — and how to diagnose it when the wrong one is found."
+description: "How the sillo command locates your SilloApp: SILLO_APP, [tool.sillo] app, and the conventional paths, and how to diagnose it when the wrong one is found."
 head:
   - tag: meta
     attrs:
@@ -23,7 +23,7 @@ and looked at it. That import is the one thing that has to work.
    `app:app`.
 
 The first that resolves wins. The working directory is put on `sys.path` before
-any of them is tried — a console script starts with its own `bin` directory on
+any of them is tried. A console script starts with its own `bin` directory on
 the path, so without that step none of a project's own packages would import.
 
 ## Pointing at it explicitly
@@ -49,7 +49,7 @@ with the spelling it should have had, rather than being guessed at.
 
 Running `sillo` outside a project is not an error. None of the three resolve,
 the framework commands are all that is offered, and nothing is printed about
-it — being in an ordinary directory is not a problem to report.
+it, being in an ordinary directory is not a problem to report.
 
 Being *pointed at* an application that then fails is different. That is a
 configuration you wrote and that did not work, so it is reported:
@@ -64,7 +64,7 @@ unhelpful for a broken import to take it down too.
 
 The same applies one step later. If the application imports but building its
 commands raises, you get the framework commands and a warning naming the
-failure — not a traceback in place of a CLI.
+failure, not a traceback in place of a CLI.
 
 ## Diagnosing it
 
@@ -76,8 +76,8 @@ sillo routes
 ```
 
 If that lists routes you do not recognise, one of the conventional paths
-matched something you did not intend — a stray `main.py` at the repository
-root, most often. Set `[tool.sillo] app` and the guessing stops.
+matched something you did not intend, a stray `main.py` at the repository root,
+most often. Set `[tool.sillo] app` and the guessing stops.
 
 To bypass discovery entirely for one command, `serve` and `routes` both take
 the import string as their first argument:
@@ -91,8 +91,8 @@ sillo routes app.worker:app
 What a project gets is decided by what it set up, not by configuration
 repeating it somewhere else. A database manager on `app.state` means migrations
 and accounts are available; a scheduler means the schedule commands are. You
-wire the application once — for the application's sake — and the console
-follows from it.
+wire the application once (for the application's sake) and the console follows
+from it.
 
 The cost is that the console is only as reachable as the import. That is the
 trade, and it is why the failure paths above take pains to stay useful.

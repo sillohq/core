@@ -16,9 +16,9 @@ description: "Queue backends, job dispatch, workers, middleware, batches, failed
 - `/Users/admin/sillo.build/core/sillo/work/queue/failed.py` (117 lines)
 - `/Users/admin/sillo.build/core/sillo/work/backends.py` (379 lines)
 
-**Version:** 2026-08-11
-**Audience:** Core maintainers, framework architects
-**Purpose:** Deep documentation of the queue subsystem — backends, connections, jobs, workers, middleware, batches, events, and failed job handling
+**Version:** 2026-08-11 **Audience:** Core maintainers, framework architects
+**Purpose:** Deep documentation of the queue subsystem: backends, connections,
+jobs, workers, middleware, batches, events, and failed job handling
 
 ---
 
@@ -63,8 +63,8 @@ class MemoryBackend:
 
 **Implementation details:**
 - Each named queue is a Python `list` managed as a min-heap via `heapq`
-- `enqueue()` uses `heapq.heappush` — O(log n)
-- `dequeue()` uses `heapq.heappop` — O(log n)
+- `enqueue()` uses `heapq.heappush`: O(log n)
+- `dequeue()` uses `heapq.heappop`: O(log n)
 - Task ordering follows `Task.__lt__`: higher priority first, then FIFO by creation time
 - Results stored in a flat dict keyed by `task_id`
 - Deduplication tracked per queue via a set of dedup keys
@@ -78,7 +78,8 @@ class RedisBackend:
 
 **Implementation details:**
 - Uses Redis sorted sets (ZSET) for priority ordering
-- Score = `-(priority * 1_000_000) + timestamp` — higher priority gets lower score (dequeued first)
+- Score = `-(priority * 1_000_000) + timestamp`: higher priority gets lower
+  score (dequeued first)
 - Results stored with TTL of 86400 seconds (24 hours)
 - Deduplication uses `SET NX` for atomic check-and-claim
 - Lazy connection: `self._redis` is created on first use
@@ -213,9 +214,10 @@ def _keys(self, queue_name: str) -> tuple[str, str, str, str]:
 
 ### 5.2 Four Lua Scripts
 
-**File:** `/Users/admin/sillo.build/core/sillo/work/queue/connection.py`, lines 162–223
+**File:** `/Users/admin/sillo.build/core/sillo/work/queue/connection.py`, lines
+162 to 223
 
-#### `_MIGRATE_LUA` — Move Due Delayed Jobs
+#### `_MIGRATE_LUA`: Move Due Delayed Jobs
 
 ```lua
 local due = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[1])
@@ -228,7 +230,7 @@ return #due
 
 Atomically moves every delayed job whose score ≤ now onto the ready list. The read-then-write this replaces could not be made safe from the client: two workers seeing the same due set and pushing it twice.
 
-#### `_CLAIM_LUA` — Take and Claim Atomically
+#### `_CLAIM_LUA`: Take and Claim Atomically
 
 ```lua
 local raw = redis.call('RPOP', KEYS[1])
@@ -238,9 +240,11 @@ redis.call('ZADD', KEYS[3], ARGV[1], raw)
 return raw
 ```
 
-Takes one job from the ready list and claims it in a single atomic operation. The move and claim must happen together — a crash between them leaves an entry in `processing` that no deadline covers.
+Takes one job from the ready list and claims it in a single atomic operation.
+The move and claim must happen together. A crash between them leaves an entry
+in `processing` that no deadline covers.
 
-#### `_REAP_LUA` — Return Expired Claims
+#### `_REAP_LUA`: Return Expired Claims
 
 ```lua
 local expired = redis.call('ZRANGEBYSCORE', KEYS[2], '-inf', ARGV[1])
@@ -263,7 +267,7 @@ Two jobs in one script:
 1. Any claim past its deadline goes back to the ready list (recovery for crashed workers)
 2. Anything in `processing` with no claim at all gets one (entry from crash between BLMOVE and claim)
 
-#### `_ACK_LUA` — Drop Finished Claim
+#### `_ACK_LUA`: Drop Finished Claim
 
 ```lua
 local held = redis.call('LRANGE', KEYS[1], 0, -1)
@@ -294,9 +298,10 @@ async def push(self, queue_name: str, payload: str, *, delay: int = 0) -> str:
     return job_id
 ```
 
-The payload is stored as `{job_id}:{payload}` — the ID prefix enables the ACK Lua script to find and remove the right entry.
+The payload is stored as `{job_id}:{payload}`. The ID prefix enables the ACK
+Lua script to find and remove the right entry.
 
-### 5.4 Pop — BLMOVE + Claim
+### 5.4 Pop: BLMOVE + Claim
 
 ```python
 async def pop(self, queue_name: str, *, timeout: float = 0) -> tuple[str, str] | None:
@@ -392,9 +397,9 @@ Adds class methods to any job class:
 | `dispatch_blocking(*args, **kwargs)` | No | Push from sync code (creates event loop) |
 | `dispatch_sync(*args, **kwargs)` | No | Run inline from sync code |
 | `perform_now(*args, **kwargs)` | Yes | Run inline from async code |
-| `on_queue(queue)` | — | Set target queue name |
-| `on_connection(conn)` | — | Set queue connection |
-| `job_reference()` | — | Returns `"module.ClassName"` |
+| `on_queue(queue)` |  | Set target queue name |
+| `on_connection(conn)` |  | Set queue connection |
+| `job_reference()` |  | Returns `"module.ClassName"` |
 
 ### 7.2 Job Base Class
 
@@ -850,20 +855,20 @@ def setup_work(app, *, queue_backend=None, queue_name="default") -> dict:
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `QueueConnection` ABC | `core/sillo/work/queue/connection.py` | 29–78 |
-| `SyncConnection` | `core/sillo/work/queue/connection.py` | 80–153 |
-| `RedisConnection` | `core/sillo/work/queue/connection.py` | 226–418 |
-| `ConnectionManager` | `core/sillo/work/queue/connection.py` | 420–453 |
-| Lua scripts | `core/sillo/work/queue/connection.py` | 155–223 |
-| `Dispatchable` mixin | `core/sillo/work/queue/job.py` | 63–196 |
-| `Job` base class | `core/sillo/work/queue/job.py` | 198–283 |
-| `PayloadSerializer` | `core/sillo/work/queue/payloads.py` | 1–77 |
-| Queue middleware | `core/sillo/work/queue/middleware.py` | 1–145 |
-| `QueueWorker` | `core/sillo/work/queue/workers.py` | 64–272 |
-| `WorkerPool` | `core/sillo/work/queue/workers.py` | 275–304 |
-| `Event` (queue-level) | `core/sillo/work/queue/events.py` | 44–54 |
-| `EventDispatcher` | `core/sillo/work/queue/events.py` | 87–201 |
-| `Batch` | `core/sillo/work/queue/batches.py` | 1–158 |
-| `FailedJobRepository` | `core/sillo/work/queue/failed.py` | 1–117 |
-| `MemoryBackend` | `core/sillo/work/backends.py` | 1–180 |
-| `RedisBackend` | `core/sillo/work/backends.py` | 180–379 |
+| `QueueConnection` ABC | `core/sillo/work/queue/connection.py` | 29-78 |
+| `SyncConnection` | `core/sillo/work/queue/connection.py` | 80-153 |
+| `RedisConnection` | `core/sillo/work/queue/connection.py` | 226-418 |
+| `ConnectionManager` | `core/sillo/work/queue/connection.py` | 420-453 |
+| Lua scripts | `core/sillo/work/queue/connection.py` | 155-223 |
+| `Dispatchable` mixin | `core/sillo/work/queue/job.py` | 63-196 |
+| `Job` base class | `core/sillo/work/queue/job.py` | 198-283 |
+| `PayloadSerializer` | `core/sillo/work/queue/payloads.py` | 1-77 |
+| Queue middleware | `core/sillo/work/queue/middleware.py` | 1-145 |
+| `QueueWorker` | `core/sillo/work/queue/workers.py` | 64-272 |
+| `WorkerPool` | `core/sillo/work/queue/workers.py` | 275-304 |
+| `Event` (queue-level) | `core/sillo/work/queue/events.py` | 44-54 |
+| `EventDispatcher` | `core/sillo/work/queue/events.py` | 87-201 |
+| `Batch` | `core/sillo/work/queue/batches.py` | 1-158 |
+| `FailedJobRepository` | `core/sillo/work/queue/failed.py` | 1-117 |
+| `MemoryBackend` | `core/sillo/work/backends.py` | 1-180 |
+| `RedisBackend` | `core/sillo/work/backends.py` | 180-379 |

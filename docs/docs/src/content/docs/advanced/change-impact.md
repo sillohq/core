@@ -77,9 +77,9 @@ graph TD
 ```
 
 Legend:
-- 🔴 **Red** — Critical: changes cascade to nearly everything
-- 🟡 **Yellow** — High: changes cascade to auth, ORM, or all routes
-- 🟢 **Green** — Medium: changes are more contained
+- 🔴 **Red**: Critical: changes cascade to nearly everything
+- 🟡 **Yellow**: High: changes cascade to auth, ORM, or all routes
+- 🟢 **Green**: Medium: changes are more contained
 
 ---
 
@@ -201,7 +201,7 @@ both old and new signatures for at least one release cycle.
 - `Router.url_for(_name, **path_params)`
 - `Route.match(scope)`
 - `Route.handle(scope, receive, send)`
-- `compile_path(path)` — internal but critical
+- `compile_path(path)`: internal but critical
 
 ### Migration guidance
 
@@ -650,8 +650,8 @@ Model changes require **coordinated database migrations**.  Always:
 
 ### Migration guidance
 
-Changes to scope application are **silent breaking changes** — queries may
-return different results without any visible error.  Always add tests that
+Changes to scope application are **silent breaking changes**. Queries may
+return different results without any visible error. Always add tests that
 verify expected record counts.
 
 ---
@@ -840,9 +840,8 @@ while always writing new format.
 ### Migration guidance
 
 Cache changes are **least dangerous** because cache is a transparent
-optimisation — a cache miss just means a slower response.  However,
-serialization changes will cause **brief spikes** of cache misses after
-deployment.
+optimisation. A cache miss just means a slower response. However, serialization
+changes will cause **brief spikes** of cache misses after deployment.
 
 ---
 
@@ -895,8 +894,8 @@ quadrantChart
 ### Silent breakage warning
 
 The most dangerous changes are those marked **"Yes" for silent breakage**.
-These changes don't cause immediate errors — they cause wrong data, wrong
-access, or missed operations.  For these modules:
+These changes don't cause immediate errors: they cause wrong data, wrong
+access, or missed operations. For these modules:
 
 1. **Always add regression tests** before changing.
 2. **Add runtime assertions** (e.g. `assert isinstance(result, expected_type)`).

@@ -22,9 +22,9 @@ factories generate the writes your tests need.
 
 ##  Transactions
 
-A transaction makes several statements atomic — either every write lands
-or none does. Any operation that touches more than one row and would
-leave the database inconsistent if interrupted halfway belongs in one.
+A transaction makes several statements atomic. Either every write lands or none
+does. Any operation that touches more than one row and would leave the database
+inconsistent if interrupted halfway belongs in one.
 
 ```python title="the basic form"
 from sillo.record import transaction
@@ -81,28 +81,28 @@ async with transaction(connection_name="analytics"):
     await Event.create(name="signup")
 ```
 
-A transaction covers one connection. Writes to two different databases
-inside one `async with` are not atomic across both — that requires
-two-phase commit, which neither Tortoise nor sillo implements. If you
-need cross-database consistency, use an outbox table in the primary
-database and a worker that replays it.
+A transaction covers one connection. Writes to two different databases inside
+one `async with` are not atomic across both. That requires two-phase commit,
+which neither Tortoise nor sillo implements. If you need cross-database
+consistency, use an outbox table in the primary database and a worker that
+replays it.
 
 ###  Nesting
 
-`transaction()` blocks nest as far as Tortoise supports them, and
-Tortoise's `_in_transaction()` reuses the existing transaction when one is
-already open on that connection rather than starting a second. The
-practical implication is that an inner block committing does **not** make
-its writes durable — the outer block still decides. Do not write code that
-depends on an inner transaction being independently committed.
+`transaction()` blocks nest as far as Tortoise supports them, and Tortoise's
+`_in_transaction()` reuses the existing transaction when one is already open on
+that connection rather than starting a second. The practical implication is
+that an inner block committing does **not** make its writes durable. The outer
+block still decides. Do not write code that depends on an inner transaction
+being independently committed.
 
 ###  Savepoints are broken
 
 <Aside type="danger" title="TransactionContext.savepoint() raises TypeError on every backend">
 
 The implementation calls `self._conn.execute_insert("SAVEPOINT sp")`.
-`execute_insert` requires two arguments — a query and its values — so the
-call fails immediately:
+`execute_insert` requires two arguments (a query and its values) so the call
+fails immediately:
 
 ```
 TypeError: SqliteClient.execute_insert() missing 1 required positional
@@ -118,11 +118,11 @@ literal string `sp` for every savepoint, so even with the call fixed,
 nesting two savepoints would make the inner `RELEASE` and `ROLLBACK TO`
 ambiguous.
 
-And the intended semantics do not hold either: `savepoint()` re-raises
-after rolling back, so the exception propagates to the enclosing
-`transaction()` and rolls everything back — unless the caller catches it.
-The docstring's promise that a failed inner block leaves the outer
-transaction intact requires a `try`/`except` the examples do not show.
+And the intended semantics do not hold either: `savepoint()` re-raises after
+rolling back, so the exception propagates to the enclosing `transaction()` and
+rolls everything back, unless the caller catches it. The docstring's promise
+that a failed inner block leaves the outer transaction intact requires a
+`try`/`except` the examples do not show.
 
 If you need partial rollback, issue the SQL yourself with unique names:
 
@@ -143,9 +143,8 @@ async with transaction():
     await Order.create(...)
 ```
 
-Savepoints are supported by PostgreSQL, MySQL 5.0+, MariaDB, and — contrary
-to what is sometimes assumed — SQLite, which has had `SAVEPOINT` since
-3.6.8.
+Savepoints are supported by PostgreSQL, MySQL 5.0+, MariaDB, and (contrary to
+what is sometimes assumed) SQLite, which has had `SAVEPOINT` since 3.6.8.
 
 </Aside>
 
@@ -185,13 +184,13 @@ async with AsyncExitStack() as stack:
 
 ###  Logging
 
-`transaction()` catches, logs with `logger.exception("Transaction rolled back")`,
-and re-raises. Every rolled-back transaction therefore produces a full
+`transaction()` catches, logs with `logger.exception("Transaction rolled
+back")`, and re-raises. Every rolled-back transaction therefore produces a full
 traceback in the `sillo.record.transactions` logger *and* whatever your
-application logs when it handles the exception. Expect duplicate
-tracebacks; if rollbacks are an expected part of your flow — optimistic
-concurrency retries, for instance — raise the level of that logger to
-avoid drowning your log aggregator.
+application logs when it handles the exception. Expect duplicate tracebacks; if
+rollbacks are an expected part of your flow (optimistic concurrency retries,
+for instance) raise the level of that logger to avoid drowning your log
+aggregator.
 
 ###  A worked example
 
@@ -220,10 +219,10 @@ async def place_order(request, response):
     return response.json(order.to_dict(), status_code=201)
 ```
 
-If the database write fails after a successful charge, the transaction
-rolls back and you are left with a charge and no order — which is why
-`charge_id` is stored and why a reconciliation job matching charges
-against orders is not optional in this design.
+If the database write fails after a successful charge, the transaction rolls
+back and you are left with a charge and no order, which is why `charge_id` is
+stored and why a reconciliation job matching charges against orders is not
+optional in this design.
 
 ##  Factories
 
@@ -251,10 +250,10 @@ users = await UserFactory.create_many(5)             # five saved rows
 draft = UserFactory.make()                           # not saved; draft.id is None
 ```
 
-`make()` builds the instance without touching the database, which is what
-you want for a unit test of serialization or validation logic. `create()`
-calls `instance.save()`, so it goes through the normal write path —
-including `ValidatesBeforeSaveMixin` and any casts.
+`make()` builds the instance without touching the database, which is what you
+want for a unit test of serialization or validation logic. `create()` calls
+`instance.save()`, so it goes through the normal write path, including
+`ValidatesBeforeSaveMixin` and any casts.
 
 ###  `definition` must not be a normal method
 
@@ -284,8 +283,8 @@ class GoodFactory(Factory):
         return {"email": f"user-{uuid4().hex[:8]}@test.com"}
 ```
 
-The `staticmethod` form is the one to prefer — it works, it reads
-normally, and it lets the body span more than one expression.
+The `staticmethod` form is the one to prefer. It works, it reads normally, and
+it lets the body span more than one expression.
 
 </Aside>
 
@@ -300,9 +299,9 @@ await UserFactory.create_many(5, {"email": "same@test.com"})
 # IntegrityError on the second row
 ```
 
-Generate unique values inside `definition` — a `uuid4()` fragment or a
-counter — so that every call produces a distinct row. If you need
-per-instance overrides, loop:
+Generate unique values inside `definition` (a `uuid4()` fragment or a counter)
+so that every call produces a distinct row. If you need per-instance overrides,
+loop:
 
 ```python
 users = [await UserFactory.create({"email": f"u{i}@test.com"}) for i in range(5)]
@@ -315,8 +314,8 @@ of test rows and slow for thousands. For bulk fixtures use
 ###  `state()` returns a function, not a chainable factory
 
 `Factory.state(**kwargs)` returns a plain callable that produces
-`{**cls.definition(), **kwargs}`. There is no `.state(...).create()`
-chain — the returned function has to be installed as a `definition`:
+`{**cls.definition(), **kwargs}`. There is no `.state(...).create()` chain. The
+returned function has to be installed as a `definition`:
 
 ```python title="what state() actually does"
 modifier = UserFactory.state(plan="enterprise")
@@ -352,9 +351,8 @@ builder.register("post", PostFactory)
 user = await builder.get("user").create()
 ```
 
-It is worth using when fixtures are looked up by string — a
-seed-from-YAML script, say. For ordinary tests, importing the factory
-class is simpler.
+It is worth using when fixtures are looked up by string: a seed-from-YAML
+script, say. For ordinary tests, importing the factory class is simpler.
 
 ###  Factories in tests
 
@@ -381,9 +379,9 @@ async def user():
 ```
 
 An in-memory SQLite database gives every session a clean schema in
-milliseconds. If your application depends on Postgres-specific behaviour
-— `ON CONFLICT` targets, array columns, `ILIKE` — test against Postgres
-instead; SQLite will pass tests that production fails.
+milliseconds. If your application depends on Postgres-specific behaviour (`ON
+CONFLICT` targets, array columns, `ILIKE`) test against Postgres instead;
+SQLite will pass tests that production fails.
 
 ##  What not to do
 
@@ -417,10 +415,10 @@ A transaction holds a connection for its entire lifetime. With a pool of
 five, six concurrent long transactions starve every other request. Keep
 them short and measure the slowest statement inside them.
 
-Row locks taken inside a transaction are held until commit. Two
-transactions updating the same rows in different orders deadlock; the
-database picks a victim and raises. Always touch rows in a consistent
-order — sorting ids before a bulk update is the usual fix.
+Row locks taken inside a transaction are held until commit. Two transactions
+updating the same rows in different orders deadlock; the database picks a
+victim and raises. Always touch rows in a consistent order, sorting ids before
+a bulk update is the usual fix.
 
 `create_many(1000)` issues a thousand `INSERT` statements plus whatever
 each `save()` triggers. `Model.bulk_create([...])` issues roughly
@@ -442,9 +440,14 @@ minutes.
 
 ##  Related
 
-- [Record Overview](/guides/record/) — setup and connection lifecycle
-- [Models & Mixins](/guides/record/models/) — `bulk_create`, `upsert`, and validation hooks
-- [Scopes & Events](/guides/record/scopes-events/) — why lifecycle events do not fire inside `create()`
-- [Migrations & Seeding](/guides/record/migrations/) — seeders and fixtures for non-test data
-- [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/) — turning `IntegrityError` into a 409
-- [Concurrency](/guides/concurrency/) — how sillo schedules the tasks these run in
+- [Record Overview](/guides/record/): setup and connection lifecycle
+- [Models & Mixins](/guides/record/models/): `bulk_create`, `upsert`, and
+  validation hooks
+- [Scopes & Events](/guides/record/scopes-events/): why lifecycle events do not
+  fire inside `create()`
+- [Migrations & Seeding](/guides/record/migrations/): seeders and fixtures for
+  non-test data
+- [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/): turning
+  `IntegrityError` into a 409
+- [Concurrency](/guides/concurrency/): how sillo schedules the tasks these run
+  in

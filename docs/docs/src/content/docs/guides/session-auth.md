@@ -131,8 +131,10 @@ These mixin methods use `int(str(self.identity))` as the `user_id`, matching how
 
 <aside type="note" title="Two session concepts">
 There are two distinct "session" things in sillo:
-- **`request.session`** — the cookie-backed key/value store from `SessionMiddleware` (config in `SessionConfig`).
-- **`Session` model** — the DB row created by `SessionUserMixin.create_session` for device tracking.
+- **`request.session`**: the cookie-backed key/value store from
+  `SessionMiddleware` (config in `SessionConfig`).
+- **`Session` model**: the DB row created by `SessionUserMixin.create_session`
+  for device tracking.
 
 `SessionAuthBackend` uses only the cookie. The `Session` model is optional bookkeeping for "show my devices / log out everywhere".
 </aside>
@@ -143,7 +145,7 @@ There are two distinct "session" things in sillo:
 
 | Option | Default | Purpose |
 | --- | --- | --- |
-| `secret_key` | — | Signs the cookie (passed to `SessionMiddleware`). |
+| `secret_key` |  | Signs the cookie (passed to `SessionMiddleware`). |
 | `session_cookie_name` | `"session_id"` | Cookie name. |
 | `session_expiration_time` | `86400` | Lifetime in seconds. |
 | `session_cookie_secure` | `True` | Only send over HTTPS. |
@@ -165,9 +167,10 @@ For server-side session storage (instead of signed cookies), pass a `manager` to
 
 ##  Related
 
-- [Authentication](/guides/authentication/) — middleware + backend model
-- [Protecting Routes](/guides/protecting-routes/) — `useAuth(schemes=["sessionCookie"])`
-- [Users & User Models](/guides/users/) — `SessionUserMixin` wiring
+- [Authentication](/guides/authentication/): middleware + backend model
+- [Protecting Routes](/guides/protecting-routes/):
+  `useAuth(schemes=["sessionCookie"])`
+- [Users & User Models](/guides/users/): `SessionUserMixin` wiring
 - [JWT](/guides/jwt-auth/) · [API Keys](/guides/api-keys/)
 
 
@@ -177,24 +180,23 @@ The flow is four steps, and each has a security decision attached.
 
 **Login.** Credentials are verified against a stored password hash. A new
 session is created server-side and its identifier is set as a cookie. The
-identifier must be from a cryptographically secure source and long enough
-that guessing is infeasible — 128 bits of randomness is the usual bar.
+identifier must be from a cryptographically secure source and long enough that
+guessing is infeasible. 128 Bits of randomness is the usual bar.
 
 **Subsequent requests.** The browser sends the cookie automatically.
 Middleware looks the session up and attaches the user to the request. The
 lookup happens on every request, which is why the session store's latency
 is your application's latency.
 
-**Privilege change.** On login, and on anything that elevates
-permissions, a server-backed session identifier must be regenerated.
-Reusing it allows session fixation: an attacker who could set the cookie
-before login shares the session after it. sillo's default cookie-backed
-sessions are not exposed to this — see
+**Privilege change.** On login, and on anything that elevates permissions, a
+server-backed session identifier must be regenerated. Reusing it allows session
+fixation: an attacker who could set the cookie before login shares the session
+after it. sillo's default cookie-backed sessions are not exposed to this. See
 [Session fixation](#session-fixation).
 
-**Logout.** The session is deleted server-side and the cookie cleared.
-Deleting only the cookie is not logout — the session remains valid for
-anyone who captured the identifier.
+**Logout.** The session is deleted server-side and the cookie cleared. Deleting
+only the cookie is not logout. The session remains valid for anyone who
+captured the identifier.
 
 ##  Cookie attributes are the security model
 
@@ -213,9 +215,9 @@ removes the classic [CSRF](/guides/csrf/) attack. `Strict` is stronger
 and breaks inbound links from other sites, which is usually unacceptable
 for a consumer application and fine for an admin panel.
 
-Set `Path=/` and an explicit `Domain` only when you need subdomain
-sharing — a cookie scoped to a parent domain is readable by every
-subdomain, including one an attacker might control.
+Set `Path=/` and an explicit `Domain` only when you need subdomain sharing, a
+cookie scoped to a parent domain is readable by every subdomain, including one
+an attacker might control.
 
 ##  Expiry on two clocks
 
@@ -235,16 +237,15 @@ abandoned session on a library computer stays open for its full duration.
 
 Where the session lives determines what you can do with it.
 
-**Server-side** — Redis or a database — allows immediate revocation,
-unbounded size, and listing a user's active sessions so they can sign out
-elsewhere. It costs a lookup per request and requires the store to be
-shared across processes; an in-memory store with four workers logs users
-out three times in four.
+**Server-side** (Redis or a database) allows immediate revocation, unbounded
+size, and listing a user's active sessions so they can sign out elsewhere. It
+costs a lookup per request and requires the store to be shared across
+processes; an in-memory store with four workers logs users out three times in
+four.
 
-**Cookie-backed** — signed data in the cookie itself — needs no storage
-and no lookup, caps you at roughly 4 KB, and cannot be revoked before
-expiry. It also travels on every request to the domain, including static
-assets.
+**Cookie-backed** (signed data in the cookie itself) needs no storage and no
+lookup, caps you at roughly 4 KB, and cannot be revoked before expiry. It also
+travels on every request to the domain, including static assets.
 
 If you need "sign out everywhere" or immediate revocation on account
 compromise, the decision is made for you.
@@ -270,12 +271,12 @@ encrypted; the contents are readable.
 
 ##  Related
 
-- [Sessions](/guides/sessions/) — the session store and its configuration
-- [Authentication](/guides/authentication/) — choosing between strategies
-- [CSRF](/guides/csrf/) — the exposure cookie sessions bring with them
-- [Cookies](/guides/cookies/) — attributes in detail
-- [Hashing helpers](/guides/helpers/hashing/) — verifying passwords
-- [Protecting Routes](/guides/protecting-routes/) — enforcing the session
+- [Sessions](/guides/sessions/): the session store and its configuration
+- [Authentication](/guides/authentication/): choosing between strategies
+- [CSRF](/guides/csrf/): the exposure cookie sessions bring with them
+- [Cookies](/guides/cookies/): attributes in detail
+- [Hashing helpers](/guides/helpers/hashing/): verifying passwords
+- [Protecting Routes](/guides/protecting-routes/): enforcing the session
 
 
 ##  A complete login flow
@@ -309,11 +310,10 @@ async def logout(request, response):
     return response.json(None, status_code=204)
 ```
 
-`clear()` is the whole logout. It marks the session emptied *and* deleted,
-and `SessionMiddleware.process_response` hands the emptied session to the
-backend before dropping the cookie — so a server-backed store purges its
-record rather than leaving a key that anyone holding the old cookie could
-still present.
+`clear()` is the whole logout. It marks the session emptied *and* deleted, and
+`SessionMiddleware.process_response` hands the emptied session to the backend
+before dropping the cookie, so a server-backed store purges its record rather
+than leaving a key that anyone holding the old cookie could still present.
 
 <aside type="caution" title="clear() ends a session; it does not recycle one">
 `deleted` is not reset by writing new keys, so `clear()` followed by
@@ -367,11 +367,10 @@ credential that can mint a new session, with the second stored more
 carefully and revocable independently.
 
 The complement is **re-authentication for sensitive actions**. Changing a
-password, adding a payment method, or deleting an account should require
-the password again even inside a valid session — it converts a stolen
-session from total compromise into limited access. Record when the user
-last authenticated and check the age of that timestamp, not just the
-session's validity.
+password, adding a payment method, or deleting an account should require the
+password again even inside a valid session. It converts a stolen session from
+total compromise into limited access. Record when the user last authenticated
+and check the age of that timestamp, not just the session's validity.
 
 ##  Testing session flows
 
@@ -399,21 +398,20 @@ do.
 
 ##  Related reading
 
-The mechanics of the session store itself — backends, serialization,
-configuration — are in [Sessions](/guides/sessions/). This page covers
-the authentication flow built on top of it. The two most common mistakes
-live in different places: an in-memory store with multiple workers is a
-storage problem, and a missing session regeneration is a flow problem.
-Both only arise once you leave the default signed cookie.
+The mechanics of the session store itself (backends, serialization,
+configuration) are in [Sessions](/guides/sessions/). This page covers the
+authentication flow built on top of it. The two most common mistakes live in
+different places: an in-memory store with multiple workers is a storage
+problem, and a missing session regeneration is a flow problem. Both only arise
+once you leave the default signed cookie.
 
 
 ##  Multi-factor authentication
 
 Where a second factor is required, the session must record that it was
-satisfied — not merely that a password was accepted. A session flagged
-`mfa_pending` should reach only the verification endpoint and nothing
-else, and the flag must be cleared server-side after the second factor
-succeeds.
+satisfied, not merely that a password was accepted. A session flagged
+`mfa_pending` should reach only the verification endpoint and nothing else, and
+the flag must be cleared server-side after the second factor succeeds.
 
 The failure to avoid is treating the first factor as a login. A session
 created before the second factor, without a gate on every other route,

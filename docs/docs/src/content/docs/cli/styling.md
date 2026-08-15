@@ -46,7 +46,7 @@ from sillo.console import (
 
 These are what the framework's own commands use, and what `self.success()`,
 `self.warn()` and the rest resolve to. Using them keeps a project's commands
-looking like the bundled ones — worth more than a bespoke palette, since they
+looking like the bundled ones, worth more than a bespoke palette, since they
 appear in the same help listing.
 
 ## `Palette`
@@ -81,9 +81,9 @@ from sillo.console import supports_color, supports_unicode, is_interactive, term
 In order: `NO_COLOR` (presence, not value) disables; `FORCE_COLOR` (presence)
 enables; `TERM=dumb` disables; otherwise, whether the stream is a TTY.
 
-A stream is allowed to raise from `isatty` — `io.IOBase` only promises the
-method exists — so that call is guarded and a raising stream is treated as not
-a terminal.
+A stream is allowed to raise from `isatty` (`io.IOBase` only promises the
+method exists) so that call is guarded and a raising stream is treated as not a
+terminal.
 
 ### `supports_unicode(stream=None)`
 
@@ -102,8 +102,8 @@ terminal.
 
 ### `terminal_width(default=80)`
 
-The usable width, falling back to 80 when it cannot be determined — a pipe, a
-CI log.
+The usable width, falling back to 80 when it cannot be determined, a pipe, a CI
+log.
 
 ## Reading keys
 
@@ -129,9 +129,8 @@ raised. Leaving a terminal in raw mode is the failure that makes a user's shell
 stop echoing and requires a `reset`, so it is worth never reaching for the
 underlying `termios` calls directly.
 
-You will not normally need any of this — [the prompts](/cli/prompts/) are
-built on it. It is here for a project drawing something the prompts do not
-cover.
+You will not normally need any of this. [The prompts](/cli/prompts/) are built
+on it. It is here for a project drawing something the prompts do not cover.
 
 ## Testing coloured output
 

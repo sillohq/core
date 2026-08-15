@@ -20,11 +20,11 @@ invalidation, and a decorator for transparent function-level caching.
 ```mermaid
 graph TD
     subgraph "core/sillo/cache/"
-        A["__init__.py<br/>53 lines — public API"]
-        B["base.py<br/>647 lines — ABC, keys, serialization, stats"]
-        C["backends.py<br/>842 lines — MemoryCache, RedisCache"]
-        D["config.py<br/>161 lines — configure_cache, get_default_backend"]
-        E["decorator.py<br/>355 lines — @cache decorator"]
+        A["__init__.py<br/>53 lines: public API"]
+        B["base.py<br/>647 lines: ABC, keys, serialization, stats"]
+        C["backends.py<br/>842 lines: MemoryCache, RedisCache"]
+        D["config.py<br/>161 lines: configure_cache, get_default_backend"]
+        E["decorator.py<br/>355 lines: @cache decorator"]
     end
 
     A --> B
@@ -730,8 +730,8 @@ wrapper.invalidate = _invalidate # Async invalidation method
   `OrderedDict` adds ~80 bytes per entry beyond the data itself.
 - **Eviction cost**: `_enforce_size()` pops from the front of an `OrderedDict`,
   which is O(1) per pop.
-- **Expiration check**: Lazy — expired entries are evicted on access, not by a
-  background sweeper.  This means memory usage can grow between accesses.
+- **Expiration check**: Lazy: expired entries are evicted on access, not by a
+  background sweeper. This means memory usage can grow between accesses.
 
 ### RedisCache
 

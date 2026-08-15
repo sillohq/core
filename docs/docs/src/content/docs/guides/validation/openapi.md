@@ -3,7 +3,10 @@ title: Generated documentation
 description: Your OpenAPI schema is generated from the same models that validate the request, so what you publish is exactly what you enforce. Includes how Pydantic maps types and constraints to JSON Schema.
 ---
 
-Parameter schemas, request bodies, and response schemas in `/openapi.json` are produced from the very models that perform validation. A constraint you declare is a constraint that appears in your docs **and** is enforced at runtime — there is no synchronization step to forget, and no way for the two to disagree.
+Parameter schemas, request bodies, and response schemas in `/openapi.json` are
+produced from the very models that perform validation. A constraint you declare
+is a constraint that appears in your docs **and** is enforced at runtime. There
+is no synchronization step to forget, and no way for the two to disagree.
 
 ##  Parameters
 
@@ -28,7 +31,9 @@ page = Query(1, type=int, ge=1, le=99, description="Page number")
 
 ##  How constraints map to JSON Schema
 
-Pydantic translates each constraint to its JSON Schema equivalent, so tooling that reads your spec — client generators, mock servers, contract tests — sees the real rules:
+Pydantic translates each constraint to its JSON Schema equivalent, so tooling
+that reads your spec (client generators, mock servers, contract tests) sees the
+real rules:
 
 | Constraint | JSON Schema |
 | --- | --- |
@@ -47,11 +52,11 @@ Pydantic translates each constraint to its JSON Schema equivalent, so tooling th
 
 | Python type | `type` | `format` |
 | --- | --- | --- |
-| `int` | `integer` | — |
+| `int` | `integer` |  |
 | `float` | `number` | `double` |
-| `str` | `string` | — |
-| `bool` | `boolean` | — |
-| `Decimal` | `string` | — |
+| `str` | `string` |  |
+| `bool` | `boolean` |  |
+| `Decimal` | `string` |  |
 | `datetime` | `string` | `date-time` |
 | `date` | `string` | `date` |
 | `time` | `string` | `time` |
@@ -61,10 +66,10 @@ Pydantic translates each constraint to its JSON Schema equivalent, so tooling th
 | `HttpUrl` / `AnyUrl` | `string` | `uri` |
 | `IPvAnyAddress` | `string` | `ipvanyaddress` |
 | `bytes` | `string` | `binary` |
-| `Enum` | `string` + `enum` | — |
-| `Literal[...]` | `enum` | — |
-| `list[T]` | `array` with `items` | — |
-| `dict[str, T]` | `object` with `additionalProperties` | — |
+| `Enum` | `string` + `enum` |  |
+| `Literal[...]` | `enum` |  |
+| `list[T]` | `array` with `items` |  |
+| `dict[str, T]` | `object` with `additionalProperties` |  |
 
 An enum publishes its permitted values, so consumers see them without reading your source:
 
@@ -296,7 +301,10 @@ async def items(request, response):
     flag = request.query_params.get("legacy_flag")     # you extract it yourself
 ```
 
-Nothing validates these — they are claims, not contracts, and the only entries in your document that can drift from reality. They are appended without deduplication, so declaring the same name via both a marker and `parameters=` produces two entries.
+Nothing validates these. They are claims, not contracts, and the only entries
+in your document that can drift from reality. They are appended without
+deduplication, so declaring the same name via both a marker and `parameters=`
+produces two entries.
 
 The same caveat applies to `responses=`: those schemas are decoration. Only `response_model` is enforced.
 
@@ -310,11 +318,15 @@ async def metrics(request, response):
 
 ##  When the document is built
 
-The OpenAPI document is generated **once**, at application startup, after all routes are registered, and the serialized result is stored. Serving `/openapi.json` writes that stored string — no generation and no encoding happens per request.
+The OpenAPI document is generated **once**, at application startup, after all
+routes are registered, and the serialized result is stored. Serving
+`/openapi.json` writes that stored string, no generation and no encoding
+happens per request.
 
 Because routes are registered before the application starts serving, there is nothing to invalidate.
 
-If you need the document outside a request — to write it to a file in CI, or to generate a client:
+If you need the document outside a request, to write it to a file in CI, or to
+generate a client:
 
 ```python
 doc = app.build_openapi()      # the serialized JSON string
@@ -331,8 +343,8 @@ Three routes are mounted by default, all configurable on `SilloApp`:
 
 | Path | What it serves |
 | --- | --- |
-| `/docs` | [Atlas](/guides/openapi/documentation-ui/#atlas) — sillo's own reference, with a request builder |
-| `/redoc` | ReDoc — a cleaner read, no runner |
+| `/docs` | [Atlas](/guides/openapi/documentation-ui/#atlas): sillo's own reference, with a request builder |
+| `/redoc` | ReDoc. A cleaner read, no runner |
 | `/openapi.json` | The raw document |
 
 Swagger UI and Scalar ship too; which viewers are mounted is the `docs`
@@ -357,10 +369,10 @@ sources of truth drift. Someone adds a constraint and forgets the docs;
 someone renames a field in the docs to be clearer and the code disagrees;
 a parameter is removed and its documentation outlives it by two years.
 
-Generation removes the possibility. The schema published at `/openapi.json`
-is built from the same models that reject requests, so a documented
-constraint is an enforced constraint by construction. When they would
-disagree, there is nothing to disagree — the constraint exists once.
+Generation removes the possibility. The schema published at `/openapi.json` is
+built from the same models that reject requests, so a documented constraint is
+an enforced constraint by construction. When they would disagree, there is
+nothing to disagree. The constraint exists once.
 
 The practical consequence is that improving your documentation means
 improving your models. A `description=` on a marker, a `Field(examples=...)`
@@ -411,9 +423,9 @@ python -c "import json; from myapp.app import app; print(json.dumps(app.openapi(
 diff -u openapi.json /tmp/openapi.json
 ```
 
-The same document drives client generation, contract testing, mock
-servers, and the interactive UIs — so keeping it accurate pays off in
-more places than documentation alone.
+The same document drives client generation, contract testing, mock servers, and
+the interactive UIs, so keeping it accurate pays off in more places than
+documentation alone.
 
 
 ##  Documenting authentication so clients can actually call you
@@ -428,10 +440,10 @@ it. That makes the "Authorize" button in the interactive UI work, which
 turns the published document into something someone can succeed with in
 their first five minutes rather than their first afternoon.
 
-Document the token lifecycle in the scheme description — where to get
-one, how long it lasts, how to refresh it, and what happens when it
-expires. None of that is inferable from the endpoints, and all of it is
-needed before the first successful request.
+Document the token lifecycle in the scheme description: where to get one, how
+long it lasts, how to refresh it, and what happens when it expires. None of
+that is inferable from the endpoints, and all of it is needed before the first
+successful request.
 
 If different endpoints need different scopes, say so per endpoint. A
 client that discovers scope requirements by trial and error will
@@ -459,10 +471,10 @@ class OrderCreate(BaseModel):
     }
 ```
 
-A whole-model example is worth more than field examples when fields
-interact — when `type: "card"` implies `card_token` is required and
-`type: "invoice"` implies it is not, one realistic example of each
-communicates more than any prose.
+A whole-model example is worth more than field examples when fields interact.
+When `type: "card"` implies `card_token` is required and `type: "invoice"`
+implies it is not, one realistic example of each communicates more than any
+prose.
 
 Keep examples valid. An example that fails your own validation is worse
 than none, because someone will copy it, and the interactive UI will send

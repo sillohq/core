@@ -13,9 +13,11 @@ description: "useAuth, AuthenticationBackend, AuthenticationMiddleware, scheme h
 
 Sillo's authentication system is split into three layers that compose cleanly:
 
-1. **Backends** — read a credential from the request and return an `AuthResult`.
-2. **Middleware** — iterates backends on every request, sets `request.scope["user"]`.
-3. **Route gate (`useAuth`)** — per-route enforcement of scheme restrictions, permissions, and optional authentication.
+1. **Backends.** Read a credential from the request and return an `AuthResult`.
+2. **Middleware**: iterates backends on every request, sets
+   `request.scope["user"]`.
+3. **Route gate (`useAuth`)**: per-route enforcement of scheme restrictions,
+   permissions, and optional authentication.
 
 The design principle: **the middleware never rejects a request**. It always calls `call_next()`. Rejection is the route gate's job. This lets some routes be public while others require authentication, without the middleware needing to know which is which.
 
@@ -103,7 +105,7 @@ classDiagram
 
 ---
 
-## AuthResult — The Backend Return Type
+## AuthResult: The Backend Return Type
 
 **File:** `core/sillo/auth/model.py`
 
@@ -127,7 +129,7 @@ class AuthResult:
 
 ---
 
-## AuthenticationBackend — The Backend Contract
+## AuthenticationBackend: The Backend Contract
 
 **File:** `core/sillo/auth/backend.py`
 
@@ -147,9 +149,13 @@ class AuthResult:
 
 This is a critical distinction:
 
-- **`name`** (class attribute) — the OpenAPI security scheme name. A route gate matches on this. It is set once on the backend class and never changes per request. Example: `"bearerAuth"`, `"sessionCookie"`, `"apiKeyHeader"`.
+- **`name`** (class attribute): the OpenAPI security scheme name. A route gate
+  matches on this. It is set once on the backend class and never changes per
+  request. Example: `"bearerAuth"`, `"sessionCookie"`, `"apiKeyHeader"`.
 
-- **`scope`** (in `AuthResult`) — the authentication method label returned per request. For shipped backends, this equals `self.name`. For custom backends, it can be any string.
+- **`scope`** (in `AuthResult`): the authentication method label returned per
+  request. For shipped backends, this equals `self.name`. For custom backends,
+  it can be any string.
 
 The middleware sets both `request.scope["auth_scheme"]` (= `backend.name`) and `request.scope["auth"]` (= `auth_result.scope`). The gate checks both.
 
@@ -171,7 +177,7 @@ Called by the middleware when `authenticate()` raises. The default implementatio
 
 ---
 
-## AuthenticationMiddleware — The ASGI Pipeline
+## AuthenticationMiddleware: The ASGI Pipeline
 
 **File:** `core/sillo/auth/middleware.py`
 
@@ -218,7 +224,8 @@ sequenceDiagram
 1. **Iterates backends in order.** Processing stops at the first successful `AuthResult`.
 2. **Sets three scope keys on success:** `"user"`, `"auth"`, `"auth_scheme"`.
 3. **Falls back to `UnauthenticatedUser`** when no backend succeeds. The scope keys `"auth"` and `"auth_scheme"` are set to `None`.
-4. **Always calls `call_next()`** — the middleware never rejects a request. Rejection is the route gate's responsibility.
+4. **Always calls `call_next()`**: the middleware never rejects a request.
+   Rejection is the route gate's responsibility.
 5. **Catches backend exceptions** and passes them to `handle_exception()`. The middleware continues to the next backend.
 
 ### The `for...else` Pattern
@@ -247,7 +254,7 @@ return await call_next()
 
 ---
 
-## useAuth — The Route-Level Gate
+## useAuth: The Route-Level Gate
 
 **File:** `core/sillo/auth/use_auth.py`
 
@@ -300,7 +307,7 @@ flowchart TD
     D --> E{user authenticated?}
     E -->|no| F{required?}
     F -->|yes| G[raise AuthenticationFailed]
-    F -->|no| H[return True — anonymous pass-through]
+    F -->|no| H[return True: anonymous pass-through]
     E -->|yes| I{schemes configured?}
     I -->|yes| J[_check_schemes]
     I -->|no| K{permissions configured?}
@@ -384,7 +391,8 @@ Base class for all auth-related exceptions. Inherits from `HTTPException` so ins
 
 ### AuthenticationFailed (401)
 
-Raised when authentication fails — no valid credentials, scheme mismatch, or all backends failed. Default detail: `"Authentication failed"`.
+Raised when authentication fails: no valid credentials, scheme mismatch, or all
+backends failed. Default detail: `"Authentication failed"`.
 
 ### PermissionDenied (403)
 
@@ -416,7 +424,10 @@ flowchart LR
     GATE[useAuth.security_requirements] --> DOC
 ```
 
-The route gate's `security_requirements()` method generates the per-route `security` field. This ensures the gate and the document cannot disagree — a route gated on `schemes=["bearerAuth"]` will always document `bearerAuth` as its security requirement.
+The route gate's `security_requirements()` method generates the per-route
+`security` field. This ensures the gate and the document cannot disagree. A
+route gated on `schemes=["bearerAuth"]` will always document `bearerAuth` as
+its security requirement.
 
 ### Scheme-to-Documentation Mapping
 
@@ -430,7 +441,7 @@ The route gate's `security_requirements()` method generates the per-route `secur
 
 ## Scope Aliases and Legacy Compatibility
 
-**File:** `core/sillo/auth/use_auth.py` (lines 58–87)
+**File:** `core/sillo/auth/use_auth.py` (lines 58 to 87)
 
 ### LEGACY_SCOPE_ALIASES
 
@@ -458,7 +469,8 @@ accepted_identifiers(["jwt"])
 
 ### `request_identifiers(request)`
 
-Returns the identifiers the request authenticated under — both `auth_scheme` and `auth` from the request scope:
+Returns the identifiers the request authenticated under. Both `auth_scheme` and
+`auth` from the request scope:
 
 ```python
 def request_identifiers(request):
@@ -509,24 +521,24 @@ The middleware's `for...else` is Python's less-known control flow: the `else` ru
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `AuthResult` | `core/sillo/auth/model.py` | 1–35 |
-| `AuthenticationBackend` | `core/sillo/auth/backend.py` | 1–144 |
-| `AuthenticationMiddleware` | `core/sillo/auth/middleware.py` | 1–168 |
-| `useAuth` | `core/sillo/auth/use_auth.py` | 1–390 |
-| `LEGACY_SCOPE_ALIASES` | `core/sillo/auth/use_auth.py` | 62–66 |
-| `accepted_identifiers` | `core/sillo/auth/use_auth.py` | 69–87 |
-| `request_identifiers` | `core/sillo/auth/use_auth.py` | 90–97 |
-| `AuthException` | `core/sillo/auth/exceptions.py` | 16–68 |
-| `AuthenticationFailed` | `core/sillo/auth/exceptions.py` | 71–114 |
-| `PermissionDenied` | `core/sillo/auth/exceptions.py` | 117–161 |
-| `AuthErrorHandler` | `core/sillo/auth/exceptions.py` | 164–197 |
-| Package exports | `core/sillo/auth/__init__.py` | 1–69 |
+| `AuthResult` | `core/sillo/auth/model.py` | 1-35 |
+| `AuthenticationBackend` | `core/sillo/auth/backend.py` | 1-144 |
+| `AuthenticationMiddleware` | `core/sillo/auth/middleware.py` | 1-168 |
+| `useAuth` | `core/sillo/auth/use_auth.py` | 1-390 |
+| `LEGACY_SCOPE_ALIASES` | `core/sillo/auth/use_auth.py` | 62-66 |
+| `accepted_identifiers` | `core/sillo/auth/use_auth.py` | 69-87 |
+| `request_identifiers` | `core/sillo/auth/use_auth.py` | 90-97 |
+| `AuthException` | `core/sillo/auth/exceptions.py` | 16-68 |
+| `AuthenticationFailed` | `core/sillo/auth/exceptions.py` | 71-114 |
+| `PermissionDenied` | `core/sillo/auth/exceptions.py` | 117-161 |
+| `AuthErrorHandler` | `core/sillo/auth/exceptions.py` | 164-197 |
+| Package exports | `core/sillo/auth/__init__.py` | 1-69 |
 
 ---
 
 ## Implementation Deep Dive
 
-### AuthenticationBackend — Full Source Walkthrough
+### AuthenticationBackend: Full Source Walkthrough
 
 The `AuthenticationBackend` class at `core/sillo/auth/backend.py` is intentionally minimal. Here is every line of the class with annotations:
 
@@ -608,7 +620,7 @@ class SignedTimestampBackend(AuthenticationBackend):
         return AuthResult(success=True, identity=str(timestamp), scope=self.name)
 ```
 
-### AuthenticationMiddleware — Complete Internal Flow
+### AuthenticationMiddleware: Complete Internal Flow
 
 Here is the full `process_request` method with every branch annotated:
 
@@ -650,7 +662,7 @@ async def process_request(self, request, response, call_next):
     return await call_next()
 ```
 
-### useAuth — Complete Internal Flow
+### useAuth: Complete Internal Flow
 
 #### The `authenticate` method in detail:
 
@@ -908,9 +920,12 @@ These are loaded on first access. The import paths and `__all__` are unchanged.
 
 The authentication system is fully async and safe for concurrent requests:
 
-- `AuthenticationBackend.authenticate()` is async — it can await database queries, HTTP calls, etc.
-- `AuthenticationMiddleware` creates no shared mutable state — each request gets its own scope
-- `useAuth` instances are created once at route registration time and reused — they are read-only after construction
+- `AuthenticationBackend.authenticate()` is async: it can await database
+  queries, HTTP calls, etc.
+- `AuthenticationMiddleware` creates no shared mutable state: each request gets
+  its own scope
+- `useAuth` instances are created once at route registration time and reused:
+  they are read-only after construction
 - The `for...else` pattern in the middleware is safe because each request runs in its own coroutine
 
 ### Testing the Authentication System
@@ -964,4 +979,5 @@ async def test_useAuth_optional():
 
 4. **`security_requirements` is called during OpenAPI generation**, not per request. It can be slower without impacting runtime performance.
 
-5. **The `for...else` pattern** has zero overhead compared to a `found` flag — Python optimizes the loop exit path.
+5. **The `for...else` pattern** has zero overhead compared to a `found` flag:
+   Python optimizes the loop exit path.

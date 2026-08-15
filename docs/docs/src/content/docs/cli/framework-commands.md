@@ -1,6 +1,6 @@
 ---
 title: Framework Commands
-description: "sillo version, sillo serve and sillo routes — the three commands that need no project, with every argument and what each one is for."
+description: "sillo version, sillo serve and sillo routes, the three commands that need no project, with every argument and what each one is for."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: version, serve and routes — the commands available with or without a project.
+      content: version, serve and routes, the commands available with or without a project.
 ---
 
 Three commands need no project. They are registered before discovery runs, so
@@ -66,7 +66,7 @@ Runs the application with [uvicorn](https://www.uvicorn.org/).
 | `-p`, `--port` | option | `8000` | Port to bind |
 | `-r`, `--reload` | flag | off | Restart when the source changes |
 
-The import string is resolved by uvicorn, not by `sillo` — which is what makes
+The import string is resolved by uvicorn, not by `sillo`, which is what makes
 `--reload` work. Reloading requires re-importing the application in a fresh
 process, so uvicorn needs the string rather than the object.
 
@@ -83,9 +83,9 @@ command says so and tells you what to install rather than raising an
 
 :::note[Development only]
 `--reload` watches the filesystem and restarts the process. Do not use it in
-production — run uvicorn or [granian](https://github.com/emmett-framework/granian)
-directly with a process manager, as described in
-[Deployment](/guides/start/deployment/).
+production. Run uvicorn or
+[granian](https://github.com/emmett-framework/granian) directly with a process
+manager, as described in [Deployment](/guides/start/deployment/).
 :::
 
 ### Why this one is synchronous
@@ -93,7 +93,7 @@ directly with a process manager, as described in
 Every other command in `sillo` is an `async def handle`. `serve` is a plain
 `def`, because uvicorn owns the event loop and starting it from inside one
 would nest two. The console notices the difference and does not create a loop
-for it — see [Building a console](/cli/standalone-consoles/#loops).
+for it. See [Building a console](/cli/standalone-consoles/#loops).
 
 ## `sillo routes`
 
@@ -127,15 +127,15 @@ Lists every route the application registers, sorted by path.
 
 A mounted router is one entry in `router.routes` holding routes of its own, and
 its children carry paths relative to the mount. `routes` descends into them and
-prints the full path — listing only the top level would show `/api` and hide
+prints the full path, listing only the top level would show `/api` and hide
 every route under it, which is the opposite of what anyone runs this to find
 out.
 
 ### The three method labels
 
-- A **verb list** — the route's own `methods`, sorted.
-- **`WEBSOCKET`** — no methods, and a WebSocket route type.
-- **`MOUNT`** — no methods and not a WebSocket. A static file directory is the
+- A **verb list**: the route's own `methods`, sorted.
+- **`WEBSOCKET`**: no methods, and a WebSocket route type.
+- **`MOUNT`**: no methods and not a WebSocket. A static file directory is the
   usual one. It is labelled honestly rather than guessed at.
 
 Paths are printed as declared, converters included, so

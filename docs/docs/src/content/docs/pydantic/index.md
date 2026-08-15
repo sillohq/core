@@ -1,6 +1,6 @@
 ---
 title: Pydantic in Sillo
-description: "Pydantic is the validation engine underneath every Sillo route — what it does, where it appears, and a map of this section."
+description: "Pydantic is the validation engine underneath every Sillo route. What it does, where it appears, and a map of this section."
 head:
   - tag: meta
     attrs:
@@ -40,12 +40,12 @@ from the runtime behaviour because they are generated from the same object.
 ## Why it is worth learning properly
 
 Most Sillo applications spend more time in Pydantic than they expect. The
-validation layer is where a surprising amount of correctness lives — a
+validation layer is where a surprising amount of correctness lives: a
 `min_length` on a slug, a `Decimal` instead of a `float` on money, a validator
 that normalises an email before it reaches the database.
 
 This section covers Pydantic itself in enough depth that you should not need to
-leave for its own documentation, and covers it **as Sillo uses it** — so the
+leave for its own documentation, and covers it **as Sillo uses it**, so the
 examples are handlers and models rather than standalone scripts.
 
 Sillo uses **Pydantic v2**. The v1 API (`@validator`, `.dict()`,
@@ -68,23 +68,23 @@ changed.
 
 ### Pydantic itself
 
-- [Models](/pydantic/models/) — `BaseModel`, construction, the v1 to v2 changes
-- [Types](/pydantic/types/) — what Pydantic understands, and coercion rules
-- [Fields](/pydantic/fields/) — `Field()`, defaults, constraints, aliases
-- [Validators](/pydantic/validators/) — field and model validators, modes
-- [Nested models](/pydantic/nested/) — composition, unions, recursion
-- [Serialisation](/pydantic/serialization/) — `model_dump`, computed fields
-- [Configuration](/pydantic/config/) — `model_config` and what each option does
-- [Validation errors](/pydantic/errors/) — the error structure, and messages
+- [Models](/pydantic/models/): `BaseModel`, construction, the v1 to v2 changes
+- [Types](/pydantic/types/): what Pydantic understands, and coercion rules
+- [Fields](/pydantic/fields/): `Field()`, defaults, constraints, aliases
+- [Validators](/pydantic/validators/): field and model validators, modes
+- [Nested models](/pydantic/nested/): composition, unions, recursion
+- [Serialisation](/pydantic/serialization/): `model_dump`, computed fields
+- [Configuration](/pydantic/config/): `model_config` and what each option does
+- [Validation errors](/pydantic/errors/): the error structure, and messages
 
 ### In a Sillo application
 
-- [Request models](/pydantic/request-models/) — validating a body
-- [Parameters](/pydantic/parameters/) — the markers, and their constraints
-- [Response models](/pydantic/response-models/) — shaping what goes out
-- [OpenAPI](/pydantic/openapi/) — how schemas become documentation
-- [The ORM bridge](/pydantic/orm-bridge/) — models from models
-- [Patterns](/pydantic/patterns/) — the shapes that come up repeatedly
+- [Request models](/pydantic/request-models/): validating a body
+- [Parameters](/pydantic/parameters/): the markers, and their constraints
+- [Response models](/pydantic/response-models/): shaping what goes out
+- [OpenAPI](/pydantic/openapi/): how schemas become documentation
+- [The ORM bridge](/pydantic/orm-bridge/): models from models
+- [Patterns](/pydantic/patterns/): the shapes that come up repeatedly
 
 ## A note on where validation belongs
 
@@ -98,8 +98,8 @@ interchangeable:
 | **[Database constraints](/orm/meta/#constraints)** | What must be true for every writer | An `IntegrityError` |
 
 Pydantic is the outermost and the only one that can produce a decent error
-message for a client — it knows which field, in which location, and why. Use it
+message for a client: it knows which field, in which location, and why. Use it
 for everything about the *request*.
 
-Use the layers underneath for what must hold regardless of who wrote the
-row — including a console command, a migration, or another service.
+Use the layers underneath for what must hold regardless of who wrote the row:
+including a console command, a migration, or another service.

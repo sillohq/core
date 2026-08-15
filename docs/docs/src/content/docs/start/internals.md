@@ -38,7 +38,7 @@ The request has a **60 second** timeout and sends no credentials, which is why
 ## Unpacking
 
 GitHub wraps the archive in a single top-level directory named after the
-repository and the commit — `starter-8f3a91c/`. That prefix is stripped so the
+repository and the commit. `starter-8f3a91c/`. That prefix is stripped so the
 project's files land at the destination root rather than one level down.
 
 ### The path-traversal guard
@@ -108,7 +108,7 @@ Applies the [substitutions](/start/personalisation/#the-substitutions), updates
 the paths it changed, relative to the root.
 
 `template_name` is what the starter calls itself, defaulting to `starter`. This
-is the parameter the CLI does not expose — a custom starter that wants the
+is the parameter the CLI does not expose. A custom starter that wants the
 renaming either names itself `starter` internally, or calls this directly.
 
 Existing files are respected: `.env` is never replaced.
@@ -160,9 +160,9 @@ sillo_start/
     subprocess.py        run(), tool_exists()
 ```
 
-Errors are handled in exactly one place — a decorator applied to every command
-body — so the message rendering and the exit codes are decided once. See
-[Errors and exit codes](/start/errors/#the-exception-hierarchy).
+Errors are handled in exactly one place (a decorator applied to every command
+body) so the message rendering and the exit codes are decided once. See [Errors
+and exit codes](/start/errors/#the-exception-hierarchy).
 
 ## Running it from source
 

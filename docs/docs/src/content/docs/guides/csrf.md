@@ -320,13 +320,17 @@ async function submitForm() {
 
 1. Generate a fresh signed token and stash it on `request.state.csrf_token`.
 2. If the method is in `safe_methods` (`GET`, `HEAD`, `OPTIONS` by default), allow the request through.
-3. Otherwise, if the path matches `required_urls` — or matches `exempt_urls` **and** carries a sensitive cookie — validation runs:
+3. Otherwise, if the path matches `required_urls`, or matches `exempt_urls`
+   **and** carries a sensitive cookie, validation runs:
    - The token cookie (`cookie_name`) must be present.
    - A submitted token must be present, read from the `X-CSRFToken` header, or (for form-urlencoded bodies) the `csrftoken` form field.
    - The submitted token must match the cookie token.
 4. Any failure (missing cookie, missing token, mismatch) returns **`403`** and clears the CSRF cookie.
 
-On the way out, `process_response` sets the `csrftoken` cookie so the next request can present a matching header. The cookie is `HttpOnly` by default, so JavaScript cannot read it — the token must travel in the header (or form field), which is what makes the pattern resistant to cross-site forgery.
+On the way out, `process_response` sets the `csrftoken` cookie so the next
+request can present a matching header. The cookie is `HttpOnly` by default, so
+JavaScript cannot read it. The token must travel in the header (or form field),
+which is what makes the pattern resistant to cross-site forgery.
 
 ##  Testing
 
@@ -371,14 +375,17 @@ def test_missing_token_rejected():
 ```
 
 <aside type="caution" title="secret_key is mandatory">
-`CSRFConfig(enabled=True)` without `secret_key` leaves `self.secret` as `None`, so token signing has no key and protection is broken. Set `secret_key` to a stable secret (env var, not a literal in source) and keep it identical across restarts — rotating it invalidates every outstanding token at once.
+`CSRFConfig(enabled=True)` without `secret_key` leaves `self.secret` as `None`,
+so token signing has no key and protection is broken. Set `secret_key` to a
+stable secret (env var, not a literal in source) and keep it identical across
+restarts, rotating it invalidates every outstanding token at once.
 </aside>
 
 ##  Related topics
 
-- [Security Headers (Shield)](/guides/security/) — defensive response headers
-- [CORS](/guides/cors/) — cross-origin access control
-- [Authentication](/guides/authentication/) — who the caller is
+- [Security Headers (Shield)](/guides/security/): defensive response headers
+- [CORS](/guides/cors/): cross-origin access control
+- [Authentication](/guides/authentication/): who the caller is
 
 
 ##  Why CSRF exists, precisely
@@ -395,11 +402,11 @@ Two properties make CSRF specifically a *cookie* problem. A form POST
 needs no JavaScript, so no CORS preflight blocks it. And cookies are sent
 automatically, so the attacker never needs to steal one.
 
-An API authenticating with an `Authorization` header is not vulnerable in
-the same way — the attacker's page cannot set that header cross-origin,
-and attempting to triggers a preflight that CORS refuses. **If your
-session lives in a cookie, you need CSRF protection. If it lives in a
-header, you largely do not.**
+An API authenticating with an `Authorization` header is not vulnerable in the
+same way. The attacker's page cannot set that header cross-origin, and
+attempting to triggers a preflight that CORS refuses. **If your session lives
+in a cookie, you need CSRF protection. If it lives in a header, you largely do
+not.**
 
 ##  `SameSite` is a strong defence, not a complete one
 
@@ -407,11 +414,11 @@ header, you largely do not.**
 removes the classic attack. It is a genuine improvement and worth setting
 on every session cookie.
 
-It is not a replacement for tokens. `Lax` still sends cookies on
-top-level `GET` navigations, so any state-changing `GET` remains
-exposed — which is one more reason `GET` must never change state.
-Browser support is universal now but the enforcement details vary, and a
-subdomain you do not control is same-site for cookie purposes.
+It is not a replacement for tokens. `Lax` still sends cookies on top-level
+`GET` navigations, so any state-changing `GET` remains exposed, which is one
+more reason `GET` must never change state. Browser support is universal now but
+the enforcement details vary, and a subdomain you do not control is same-site
+for cookie purposes.
 
 Defence in depth: set `SameSite=Lax` (or `Strict` where the UX allows),
 **and** validate a token on every state-changing request.
@@ -422,11 +429,11 @@ The token must be somewhere the attacker cannot read: a form field, or a
 request header. It must **not** be in a cookie alone, because the
 attacker's page causes that cookie to be sent without ever seeing it.
 
-The double-submit pattern — token in a cookie *and* in a header, compared
-server-side — works because reading the cookie to copy it into the header
-requires same-origin JavaScript. It is weaker than a server-side session
-token when subdomains are involved, since a compromised subdomain can
-write cookies for the parent domain.
+The double-submit pattern (token in a cookie *and* in a header, compared
+server-side) works because reading the cookie to copy it into the header
+requires same-origin JavaScript. It is weaker than a server-side session token
+when subdomains are involved, since a compromised subdomain can write cookies
+for the parent domain.
 
 Three things that must be exempt or handled specially: webhook endpoints,
 which have no browser and no token; login itself, where no session exists
@@ -438,10 +445,10 @@ yet; and anything authenticating by header rather than cookie.
 Two things go wrong with CSRF protection, in opposite directions.
 
 **Too strict** breaks legitimate flows: a token that expires with a short
-session means a user who leaves a form open gets an error on submit. Give
-the token the session's lifetime, and return a clear, specific message —
-"your session expired, reload and try again" — rather than a bare 403,
-which users read as "you are not allowed".
+session means a user who leaves a form open gets an error on submit. Give the
+token the session's lifetime, and return a clear, specific message ("your
+session expired, reload and try again") rather than a bare 403, which users
+read as "you are not allowed".
 
 **Too permissive** is the exemption list. Every exempt endpoint is an
 endpoint without protection, and exemptions accumulate: one for a

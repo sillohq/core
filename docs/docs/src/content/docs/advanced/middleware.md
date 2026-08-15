@@ -9,13 +9,13 @@ description: "BaseMiddleware, ASGI bridge, middleware chain, execution order"
 >
 > | File | Primary responsibility |
 > |------|----------------------|
-> | `core/sillo/middleware/base.py` | `BaseMiddleware` — dispatch-style two-hook base class |
-> | `core/sillo/middleware/gzip.py` | `GZipMiddleware` / `GZipResponder` — ASGI-native compression |
+> | `core/sillo/middleware/base.py` | `BaseMiddleware`, dispatch-style two-hook base class |
+> | `core/sillo/middleware/gzip.py` | `GZipMiddleware` / `GZipResponder`, ASGI-native compression |
 > | `core/sillo/_internals/_middleware.py` | `ASGIRequestResponseBridge`, `_CachedRequest`, `DefineMiddleware`, `_StreamingResponse`, `wrap_middleware()` |
 > | `core/sillo/middleware/__init__.py` | Re-exports `BaseMiddleware`, `CORSMiddleware`, `CSRFMiddleware` |
-> | `core/sillo/middleware/utils.py` | `use_for_route()` — conditional-route decorator |
-> | `core/sillo/application.py` | `SilloApp.use()` — application-level middleware registration |
-> | `core/sillo/core/routing/router.py` | `Router.use()`, `Router.build_middleware_stack()` — router-level middleware |
+> | `core/sillo/middleware/utils.py` | `use_for_route()`, conditional-route decorator |
+> | `core/sillo/application.py` | `SilloApp.use()`, application-level middleware registration |
+> | `core/sillo/core/routing/router.py` | `Router.use()`, `Router.build_middleware_stack()`, router-level middleware |
 > | `core/sillo/types.py` | `ASGIApp`, `MiddlewareType`, `Scope`, `Receive`, `Send` type aliases |
 
 ---
@@ -97,17 +97,17 @@ async def logging_middleware(request: Request, response: Response, call_next):
 
 The bridge exists because:
 
-1. **Developer ergonomics** — dispatch-style is far easier to write and debug for the
-   90% case (read a header, call next, modify a response header).
-2. **Protocol power** — ASGI-native middleware can intercept WebSocket handshakes,
-   manipulate streaming bodies chunk-by-chunk, and inspect the raw scope dict. GZip
-   compression requires this level of access.
-3. **Composability** — `ASGIRequestResponseBridge` lets both styles mix in a single
-   chain without either side knowing about the other.
+1. **Developer ergonomics.** Dispatch-style is far easier to write and debug
+   for the 90% case (read a header, call next, modify a response header).
+2. **Protocol power.** ASGI-native middleware can intercept WebSocket
+   handshakes, manipulate streaming bodies chunk-by-chunk, and inspect the raw
+   scope dict. GZip compression requires this level of access.
+3. **Composability.** `ASGIRequestResponseBridge` lets both styles mix in a
+   single chain without either side knowing about the other.
 
 ---
 
-## 3. Onion Model — How the Chain Works
+## 3. Onion Model: How the Chain Works
 
 The middleware stack is an onion. Each layer wraps the next. The outermost middleware
 sees the request first and the response last.
@@ -136,18 +136,20 @@ graph TB
     end
 ```
 
-**Key insight:** middleware added *first* via `app.use()` runs *outermost* (sees
-request first, response last). This is because `app.use()` inserts at position 0
-of the middleware list, and chain construction iterates in reverse — see §5.
+**Key insight:** middleware added *first* via `app.use()` runs *outermost*
+(sees request first, response last). This is because `app.use()` inserts at
+position 0 of the middleware list, and chain construction iterates in reverse.
+See §5.
 
 ---
 
-## 4. DefineMiddleware — The Deferred Descriptor
+## 4. DefineMiddleware: The Deferred Descriptor
 
-**File:** `core/sillo/_internals/_middleware.py` (lines 27–93)
+**File:** `core/sillo/_internals/_middleware.py` (lines 27 to 93)
 
-`DefineMiddleware` is a container that pairs a middleware factory with its constructor
-arguments. It does **not** instantiate the middleware — it just stores the recipe.
+`DefineMiddleware` is a container that pairs a middleware factory with its
+constructor arguments. It does **not** instantiate the middleware. It just
+stores the recipe.
 
 ```python
 class DefineMiddleware:
@@ -169,10 +171,12 @@ class DefineMiddleware:
 Middleware is registered at definition time but instantiated at request time (or more
 precisely, when `build_middleware_stack` runs). `DefineMiddleware` enables:
 
-- **Deferred construction** — the middleware class isn't called until the stack is built.
-- **Uniform interface** — both ASGI-native middleware and dispatch-style middleware
-  (wrapped via `wrap_middleware`) produce a `DefineMiddleware` with the same shape.
-- **Unpacking** — `for cls, args, kwargs in reversed(middleware)` works because
+- **Deferred construction.** The middleware class isn't called until the stack
+  is built.
+- **Uniform interface.** Both ASGI-native middleware and dispatch-style
+  middleware (wrapped via `wrap_middleware`) produce a `DefineMiddleware` with
+  the same shape.
+- **Unpacking.** `for cls, args, kwargs in reversed(middleware)` works because
   `__iter__` yields a 3-tuple.
 
 ```python
@@ -186,7 +190,7 @@ cls, args, kwargs = dm
 
 ---
 
-## 5. Chain Construction — Reversed Wrapping
+## 5. Chain Construction: Reversed Wrapping
 
 The middleware chain is built by iterating the middleware list **in reverse** and
 wrapping each layer around the previous result.
@@ -249,11 +253,11 @@ The first middleware registered is the first to see every request.
 graph TB
     subgraph "SilloApp middleware assembly"
         direction TB
-        SE["ServerErrorMiddleware\n(via Bridge) — outermost"]
+        SE["ServerErrorMiddleware\n(via Bridge): outermost"]
         MW1["User Middleware 1\n(first registered)"]
         MW2["User Middleware 2"]
         MWn["User Middleware N\n(last registered)"]
-        EX["ExceptionsHandler\n(via Bridge) — innermost"]
+        EX["ExceptionsHandler\n(via Bridge): innermost"]
         ROUTER["Router → Route Handler"]
 
         SE --> MW1 --> MW2 --> MWn --> EX --> ROUTER
@@ -266,9 +270,9 @@ mappings). User middleware sits between them.
 
 ---
 
-## 6. BaseMiddleware — The Two-Hook Pattern
+## 6. BaseMiddleware: The Two-Hook Pattern
 
-**File:** `core/sillo/middleware/base.py` (lines 9–168)
+**File:** `core/sillo/middleware/base.py` (lines 9 to 168)
 
 `BaseMiddleware` is the recommended base class for dispatch-style middleware. It splits
 the middleware lifecycle into two hooks:
@@ -306,7 +310,7 @@ flowchart TD
     RESET["self._call_next = False"]
     PR["process_request(request, response, wrapped_call_next)"]
     CHECK{"self._call_next\nis True?"}
-    SHORT["Return cnext\n(short-circuit — call_next\nwas never called)"]
+    SHORT["Return cnext\n(short-circuit, call_next\nwas never called)"]
     PRESP["process_response(request, response)"]
     RET_CHECK{"returned_response\nis truthy?"}
     RET_MOD["Return returned_response\n(response was replaced)"]
@@ -353,9 +357,10 @@ class AuthGuard(BaseMiddleware):
         pass
 ```
 
-When `process_request` returns without calling `call_next`, the flag `_call_next`
-remains `False`. The `__call__` method skips `process_response` entirely and returns
-whatever `process_request` returned — typically an error response.
+When `process_request` returns without calling `call_next`, the flag
+`_call_next` remains `False`. The `__call__` method skips `process_response`
+entirely and returns whatever `process_request` returned, typically an error
+response.
 
 ---
 
@@ -399,8 +404,9 @@ step-by-step trace of both paths:
 
 The flag pattern exists because `process_request` has **two possible return semantics**:
 
-1. It can return the result of `await call_next()` (the downstream response) — proceed.
-2. It can return a completely different response — short-circuit.
+1. It can return the result of `await call_next()` (the downstream response):
+   proceed.
+2. It can return a completely different response: short-circuit.
 
 Without the flag, the framework couldn't distinguish between "process_request returned
 a response that happened to come from call_next" and "process_request returned its
@@ -416,9 +422,9 @@ shouldn't), be aware that the flag is overwritten on each invocation.
 
 ---
 
-## 8. ASGIRequestResponseBridge — Bridging the Gap
+## 8. ASGIRequestResponseBridge: Bridging the Gap
 
-**File:** `core/sillo/_internals/_middleware.py` (lines 220–430)
+**File:** `core/sillo/_internals/_middleware.py` (lines 220 to 430)
 
 `ASGIRequestResponseBridge` is the critical adapter that converts dispatch-style
 middleware into an ASGI application. It is the single point where the high-level
@@ -433,7 +439,7 @@ graph TB
         CREQ["_CachedRequest(scope, receive)\nwraps ASGI receive into Request"]
         RESP["Response(request)"]
         DISPATCH["dispatch_func(request, response, call_next)"]
-        INNER["self.app(scope, receive_or_disconnect, send_no_error)\n(inner ASGI app — runs in background)"]
+        INNER["self.app(scope, receive_or_disconnect, send_no_error)\n(inner ASGI app, runs in background)"]
         MEMSTREAM["anyio MemoryObjectStream\n(send_stream ↔ recv_stream)"]
         STREAMRESP["_StreamingResponse(body_stream())"]
         FINAL["returned_response(scope, wrapped_receive, send)\nsends to real client"]
@@ -451,7 +457,7 @@ graph TB
     end
 ```
 
-### 8.1 The `__call__` Method — Step by Step
+### 8.1 The `__call__` Method: Step by Step
 
 ```python
 async def __call__(self, scope, receive, send):
@@ -497,12 +503,13 @@ async def __call__(self, scope, receive, send):
 The `call_next` function is the heart of the bridge. When the dispatch middleware calls
 it, the following happens:
 
-1. **Background task starts** — `self.app(scope, receive_or_disconnect, send_no_error)`
-   runs in a child task of the `anyio.TaskGroup`.
+1. **Background task starts.** `self.app(scope, receive_or_disconnect,
+   send_no_error)` runs in a child task of the `anyio.TaskGroup`.
 
 2. **`receive_or_disconnect`** wraps the original receive to race against
-   `response_sent` — once the middleware finishes sending the response, the inner app
-   gets a synthetic `http.disconnect` to stop it from reading more body.
+   `response_sent`: once the middleware finishes sending the response, the
+   inner app gets a synthetic `http.disconnect` to stop it from reading more
+   body.
 
 3. **`send_no_error`** writes ASGI messages into the `send_stream` end of an
    `anyio.MemoryObjectStream`.
@@ -566,9 +573,9 @@ must be written as ASGI-native middleware.
 
 ---
 
-## 9. _CachedRequest — Three-State Receive
+## 9. _CachedRequest: Three-State Receive
 
-**File:** `core/sillo/_internals/_middleware.py` (lines 96–218)
+**File:** `core/sillo/_internals/_middleware.py` (lines 96 to 218)
 
 `_CachedRequest` is a `Request` subclass that solves a fundamental problem: the dispatch
 middleware may read the request body (via `request.body()` or `request.stream()`), but
@@ -675,13 +682,13 @@ ensures:
 
 ---
 
-## 10. _StreamingResponse — Async Body Relay
+## 10. _StreamingResponse: Async Body Relay
 
-**File:** `core/sillo/_internals/_middleware.py` (lines 432–520)
+**File:** `core/sillo/_internals/_middleware.py` (lines 432 to 520)
 
-`_StreamingResponse` is a `BaseResponse` subclass that streams its body from an async
-iterator. It's the return type of `call_next()` — the bridge constructs it from the
-messages received through the memory channel.
+`_StreamingResponse` is a `BaseResponse` subclass that streams its body from an
+async iterator. It's the return type of `call_next()`. The bridge constructs it
+from the messages received through the memory channel.
 
 ```python
 class _StreamingResponse(BaseResponse):
@@ -743,9 +750,9 @@ propagates through the middleware chain's error handling rather than being silen
 
 ---
 
-## 11. GZipMiddleware — ASGI-Native Compression
+## 11. GZipMiddleware: ASGI-Native Compression
 
-**File:** `core/sillo/middleware/gzip.py` (lines 13–297)
+**File:** `core/sillo/middleware/gzip.py` (lines 13 to 297)
 
 Unlike `BaseMiddleware`, `GZipMiddleware` is an **ASGI-native** middleware. It operates
 directly on the `scope`/`receive`/`send` protocol to intercept and compress response
@@ -815,9 +822,9 @@ app = SilloApp(middleware=[
 
 ---
 
-## 12. GZipResponder — The Four Cases
+## 12. GZipResponder: The Four Cases
 
-**File:** `core/sillo/middleware/gzip.py` (lines 79–276)
+**File:** `core/sillo/middleware/gzip.py` (lines 79 to 276)
 
 `GZipResponder` is where the actual compression logic lives. It wraps the inner app's
 `send` callable with `send_with_gzip`, which intercepts each ASGI message and applies
@@ -1035,9 +1042,9 @@ silently dropping the message.
 
 ---
 
-## 13. app.use() — Application-Level Registration
+## 13. app.use(): Application-Level Registration
 
-**File:** `core/sillo/application.py` (lines 889–933)
+**File:** `core/sillo/application.py` (lines 889 to 933)
 
 `SilloApp.use()` registers a dispatch-style middleware at the application level. It
 wraps the middleware in an `ASGIRequestResponseBridge` and inserts it at **position 0**
@@ -1074,8 +1081,9 @@ app.use(C)  # http_middleware = [Bridge(C), Bridge(B), Bridge(A)]
 # C was added last but runs first (outermost)
 ```
 
-Wait — this seems backwards. Let me re-read the code. The list after three inserts is
-`[C, B, A]`. Reversed iteration produces `A, B, C`. So the wrapping is:
+Wait. This seems backwards. Let me re-read the code. The list after three
+inserts is `[C, B, A]`. Reversed iteration produces `A, B, C`. So the wrapping
+is:
 
 ```
 app = A(inner)
@@ -1101,9 +1109,9 @@ end
 graph TB
     subgraph "Resulting call chain"
         direction TB
-        C["C (outermost — added last)"]
+        C["C (outermost, added last)"]
         B["B"]
-        A["A (innermost — added first)"]
+        A["A (innermost, added first)"]
         H["Route Handler"]
         C --> B --> A --> H
     end
@@ -1138,9 +1146,9 @@ This means:
 
 ---
 
-## 14. Router.use() — Router-Level Registration
+## 14. Router.use(): Router-Level Registration
 
-**File:** `core/sillo/core/routing/router.py` (lines 1160–1186)
+**File:** `core/sillo/core/routing/router.py` (lines 1160 to 1186)
 
 `Router.use()` works identically to `SilloApp.use()` but applies to a specific router:
 
@@ -1179,9 +1187,9 @@ self.app = apply_middleware(route_handler_as_asgi_app)
 
 ---
 
-## 15. use_for_route() — Conditional Route Middleware
+## 15. use_for_route(): Conditional Route Middleware
 
-**File:** `core/sillo/middleware/utils.py` (lines 10–113)
+**File:** `core/sillo/middleware/utils.py` (lines 10 to 113)
 
 `use_for_route()` is a decorator factory that makes a middleware execute only for
 requests matching a specific URL pattern.
@@ -1239,8 +1247,8 @@ class AuthMiddleware:
 
 ### 15.4 Passthrough Behavior
 
-When the URL doesn't match, the middleware calls `call_next()` immediately — it acts
-as a no-op pass-through:
+When the URL doesn't match, the middleware calls `call_next()` immediately. It
+acts as a no-op pass-through:
 
 ```python
 async def wrapper_func(request, response, call_next):
@@ -1252,9 +1260,9 @@ async def wrapper_func(request, response, call_next):
 
 ---
 
-## 16. wrap_middleware() — The Normalization Glue
+## 16. wrap_middleware(): The Normalization Glue
 
-**File:** `core/sillo/_internals/_middleware.py` (lines 528–546)
+**File:** `core/sillo/_internals/_middleware.py` (lines 528 to 546)
 
 `wrap_middleware()` converts a dispatch-style middleware function into a
 `DefineMiddleware` instance that wraps it in an `ASGIRequestResponseBridge`:
@@ -1335,7 +1343,7 @@ sequenceDiagram
 
 ---
 
-## 18. Writing Custom Middleware — Patterns & Anti-Patterns
+## 18. Writing Custom Middleware: Patterns & Anti-Patterns
 
 ### 18.1 Recommended: Subclass BaseMiddleware
 
@@ -1586,9 +1594,10 @@ where GZip framing overhead negates the compression benefit.
 
 ### 21.3 Memory Impact
 
-`_CachedRequest` caches the request body in memory when `body()` is called. For large
-file uploads, this can be significant. If your middleware only needs headers, avoid
-calling `body()` — use `request.headers` or `request.stream()` instead.
+`_CachedRequest` caches the request body in memory when `body()` is called. For
+large file uploads, this can be significant. If your middleware only needs
+headers, avoid calling `body()`. Use `request.headers` or `request.stream()`
+instead.
 
 ### 21.4 Streaming vs Single-Shot
 
@@ -1744,20 +1753,20 @@ classDiagram
 
 | File | Line Range | Key Symbols |
 |------|-----------|-------------|
-| `core/sillo/middleware/base.py` | 9–168 | `BaseMiddleware`, `__call__`, `process_request`, `process_response` |
-| `core/sillo/middleware/gzip.py` | 13–297 | `GZipMiddleware`, `GZipResponder`, `send_with_gzip`, `unattached_send` |
-| `core/sillo/_internals/_middleware.py` | 27–93 | `DefineMiddleware` |
-| `core/sillo/_internals/_middleware.py` | 96–218 | `_CachedRequest`, `wrapped_receive` |
-| `core/sillo/_internals/_middleware.py` | 220–430 | `ASGIRequestResponseBridge`, `call_next` |
-| `core/sillo/_internals/_middleware.py` | 432–520 | `_StreamingResponse` |
-| `core/sillo/_internals/_middleware.py` | 528–546 | `wrap_middleware()` |
-| `core/sillo/middleware/utils.py` | 10–113 | `use_for_route()` |
-| `core/sillo/middleware/__init__.py` | 1–16 | Re-exports: `BaseMiddleware`, `CORSMiddleware`, `CSRFMiddleware` |
-| `core/sillo/application.py` | 889–933 | `SilloApp.use()` |
-| `core/sillo/core/routing/router.py` | 909–932 | `Router.build_middleware_stack()` |
-| `core/sillo/core/routing/router.py` | 1160–1186 | `Router.use()` |
-| `core/sillo/core/routing/router.py` | 418–443 | `Route.apply_middleware()` |
-| `core/sillo/types.py` | 1–41 | `ASGIApp`, `MiddlewareType`, `Scope`, `Receive`, `Send` |
+| `core/sillo/middleware/base.py` | 9-168 | `BaseMiddleware`, `__call__`, `process_request`, `process_response` |
+| `core/sillo/middleware/gzip.py` | 13-297 | `GZipMiddleware`, `GZipResponder`, `send_with_gzip`, `unattached_send` |
+| `core/sillo/_internals/_middleware.py` | 27-93 | `DefineMiddleware` |
+| `core/sillo/_internals/_middleware.py` | 96-218 | `_CachedRequest`, `wrapped_receive` |
+| `core/sillo/_internals/_middleware.py` | 220-430 | `ASGIRequestResponseBridge`, `call_next` |
+| `core/sillo/_internals/_middleware.py` | 432-520 | `_StreamingResponse` |
+| `core/sillo/_internals/_middleware.py` | 528-546 | `wrap_middleware()` |
+| `core/sillo/middleware/utils.py` | 10-113 | `use_for_route()` |
+| `core/sillo/middleware/__init__.py` | 1-16 | Re-exports: `BaseMiddleware`, `CORSMiddleware`, `CSRFMiddleware` |
+| `core/sillo/application.py` | 889-933 | `SilloApp.use()` |
+| `core/sillo/core/routing/router.py` | 909-932 | `Router.build_middleware_stack()` |
+| `core/sillo/core/routing/router.py` | 1160-1186 | `Router.use()` |
+| `core/sillo/core/routing/router.py` | 418-443 | `Route.apply_middleware()` |
+| `core/sillo/types.py` | 1-41 | `ASGIApp`, `MiddlewareType`, `Scope`, `Receive`, `Send` |
 
 ---
 

@@ -442,9 +442,9 @@ class MemcachedCache(BaseCache):
 
 ### Key design rules
 
-- **All 8 abstract methods are async** — even if the underlying library is
-  sync (wrap with `asyncio.to_thread` or call directly in a threadpool).
-- **`make_key`** handles namespacing — always use it instead of raw keys.
+- **All 8 abstract methods are async**: even if the underlying library is sync
+  (wrap with `asyncio.to_thread` or call directly in a threadpool).
+- **`make_key`** handles namespacing: always use it instead of raw keys.
 - **`_resolve_ttl`** merges the per-call TTL with `self.default_ttl`.
 - **`CacheStats`** tracking is optional but recommended (hits, misses, sets,
   deletes, evictions).
@@ -465,8 +465,8 @@ class RateLimitBackend:
     async def clear(self) -> None: ...
 ```
 
-The backend is a **state store** — it doesn't decide whether to allow or deny
-requests.  That's the strategy's job.
+The backend is a **state store**. It doesn't decide whether to allow or deny
+requests. That's the strategy's job.
 
 ### Concrete backends
 
@@ -545,7 +545,7 @@ class RateLimitResult:
 
 | Strategy | Algorithm | Burst handling |
 |----------|-----------|---------------|
-| `FixedWindowStrategy` | Counter per aligned window | No — hard reset at boundary |
+| `FixedWindowStrategy` | Counter per aligned window | No: hard reset at boundary |
 | `SlidingWindowStrategy` | Timestamp log, count within trailing window | Smooth |
 | `TokenBucketStrategy` | Refill `limit/window` tokens/sec | Smooth bursts |
 
@@ -779,10 +779,10 @@ def work_commands(*, url=None, queues=None, prefix="sillo:queue:",
 ```
 
 `WorkCommand` provides helper methods:
-- `self.settings` — access the `_Config`
-- `self.connection()` — get a queue connection
-- `self.repository()` — get the failed-job repository
-- `self.manager()` — get the scheduler manager
+- `self.settings`: access the `_Config`
+- `self.connection()`: get a queue connection
+- `self.repository()`: get the failed-job repository
+- `self.manager()`: get the scheduler manager
 
 ### Creating a custom work command
 
@@ -828,7 +828,7 @@ class DocsUI:
 ```
 
 **`DocsContext`** (frozen dataclass):
-- `openapi_url: str` — URL to the OpenAPI JSON spec
+- `openapi_url: str`: URL to the OpenAPI JSON spec
 - `title: str`
 - `version: str`
 - `description: str`
@@ -883,8 +883,8 @@ app = SilloApp(
 )
 ```
 
-No registration hook needed — just pass instances to the `docs` parameter.
-Each UI gets its own route at its configured `path`.
+No registration hook needed, just pass instances to the `docs` parameter. Each
+UI gets its own route at its configured `path`.
 
 ---
 
@@ -903,13 +903,13 @@ def register_encoder(type_: type[Any], encoder: Callable[[Any], Any]) -> None:
 
 ### Priority order (in `jsonable_encoder`)
 
-1. **Custom encoders** — exact type match, then `isinstance` check
-2. **Built-in `ENCODERS_BY_TYPE`** — handles `datetime`, `Decimal`, `Enum`,
+1. **Custom encoders**: exact type match, then `isinstance` check
+2. **Built-in `ENCODERS_BY_TYPE`**: handles `datetime`, `Decimal`, `Enum`,
    `UUID`, `IPv4Address`, `Path`, `SecretStr`, `set`, `frozenset`, etc.
-3. **Pydantic `model_dump`** — if value is a Pydantic model
-4. **Dataclass `asdict`** — if value is a dataclass
-5. **Enum `.value`** — if value is an Enum
-6. **`dict()`/`vars()`** — fallback for arbitrary objects
+3. **Pydantic `model_dump`**: if value is a Pydantic model
+4. **Dataclass `asdict`**: if value is a dataclass
+5. **Enum `.value`**: if value is an Enum
+6. **`dict()`/`vars()`**: fallback for arbitrary objects
 
 ### Registration
 
@@ -1063,10 +1063,10 @@ _casts = {
 **Important:** Sillo does **not** have an `OAuthProvider` class.  OAuth is
 handled at two levels:
 
-1. **OpenAPI model level** — `OAuth2`, `OAuthFlows`, `OAuthFlow*` classes
+1. **OpenAPI model level**: `OAuth2`, `OAuthFlows`, `OAuthFlow*` classes
    describe OAuth2 schemes in the OpenAPI spec.
-2. **Authentication backend level** — create an `AuthenticationBackend`
-   subclass that validates OAuth2 tokens.
+2. **Authentication backend level**: create an `AuthenticationBackend` subclass
+   that validates OAuth2 tokens.
 
 ### OpenAPI models
 
@@ -1175,9 +1175,9 @@ async def authenticate(self, request: Request) -> AuthResult:
     ...
 ```
 
-Never return `None` or raise for normal auth failures — always return
-`AuthResult(success=False)`.  Exceptions are for infrastructure failures
-(e.g. DB down), not for "user not authenticated".
+Never return `None` or raise for normal auth failures. Always return
+`AuthResult(success=False)`. Exceptions are for infrastructure failures (e.g.
+DB down), not for "user not authenticated".
 
 ### 3. `BaseMiddleware` process signatures
 
@@ -1254,16 +1254,16 @@ sillo/my_feature/
 
 | Need | Reuse |
 |------|-------|
-| Signing cookies/tokens | `helpers/crypto.py` — `sign_value`/`unsign_value` |
-| Password hashing | `sillo.hashing` — `hash_password`/`verify_password` |
-| JWT operations | `helpers/jwt.py` — `create_access_token`/`decode` |
-| IP detection | `helpers/network.py` — `get_client_ip`/`is_trusted_proxy` |
-| HTML sanitisation | `helpers/html.py` — `sanitize_html` |
-| Retry logic | `helpers/retry.py` — `@retry` decorator |
-| String transforms | `helpers/strings.py` — `slugify`/`camel_to_snake` |
-| File operations | `helpers/files.py` — `safe_filename`/`guess_mime_type` |
-| Async detection | `core/helpers/async_helpers.py` — `is_async_callable` |
-| Deprecation warnings | `core/helpers/deprecation.py` — `@deprecated` decorator |
+| Signing cookies/tokens | `helpers/crypto.py`: `sign_value`/`unsign_value` |
+| Password hashing | `sillo.hashing`: `hash_password`/`verify_password` |
+| JWT operations | `helpers/jwt.py`: `create_access_token`/`decode` |
+| IP detection | `helpers/network.py`. `get_client_ip`/`is_trusted_proxy` |
+| HTML sanitisation | `helpers/html.py`: `sanitize_html` |
+| Retry logic | `helpers/retry.py`: `@retry` decorator |
+| String transforms | `helpers/strings.py`: `slugify`/`camel_to_snake` |
+| File operations | `helpers/files.py`: `safe_filename`/`guess_mime_type` |
+| Async detection | `core/helpers/async_helpers.py`: `is_async_callable` |
+| Deprecation warnings | `core/helpers/deprecation.py`: `@deprecated` decorator |
 
 ### Composition over inheritance
 

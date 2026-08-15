@@ -12,10 +12,10 @@ description: "Adapter, HTML/JSON decision, props, Vite integration, version mism
 
 ## 1. Overview
 
-`sillo-inertia` is an Inertia.js adapter for Sillo.  It bridges Sillo's
-server-rendered response model with Inertia's SPA protocol -- the server
-decides whether to return full HTML (initial visit) or a JSON page object
-(Inertia visit) based on the `X-Inertia` header.
+`sillo-inertia` is an Inertia.js adapter for Sillo. It bridges Sillo's
+server-rendered response model with Inertia's SPA protocol. The server decides
+whether to return full HTML (initial visit) or a JSON page object (Inertia
+visit) based on the `X-Inertia` header.
 
 ```
 "Turn a Sillo handler that returns a dict into a full Inertia page."
@@ -157,9 +157,9 @@ A minimal, immutable configuration holder created from `Inertia`'s fields.
 def share(self, **props: Any) -> None
 ```
 
-Adds props that every page receives.  Merged under each page's own props
-(page props win on clash).  Can be called at any time -- before or after
-the app starts serving.
+Adds props that every page receives. Merged under each page's own props (page
+props win on clash). Can be called at any time, before or after the app starts
+serving.
 
 ---
 
@@ -230,7 +230,7 @@ the return value is a complete response -- so neither one is passed in.
 
 ### 4.3 HTML vs JSON Branch
 
-**JSON branch** (Inertia SPA visit -- `X-Inertia: true`):
+**JSON branch** (Inertia SPA visit, `X-Inertia: true`):
 
 ```python
 return JSONResponse(
@@ -240,7 +240,7 @@ return JSONResponse(
 )
 ```
 
-**HTML branch** (initial browser visit -- no `X-Inertia`):
+**HTML branch** (initial browser visit, no `X-Inertia`):
 
 ```python
 markup = self._render_root_view(page.to_dict(), view_data)
@@ -354,18 +354,19 @@ async def handle_request(
 ) -> Any
 ```
 
-Registered via `app.use(self.handle_request)` -- either automatically in
-`__post_init__` (when `app` is provided) or manually via `inertia.middleware(app)`.
+Registered via `app.use(self.handle_request)`. Either automatically in
+`__post_init__` (when `app` is provided) or manually via
+`inertia.middleware(app)`.
 
 ### Middleware Flow
 
 ```mermaid
 graph TD
-    A[Request arrives] --> B["bind(self, request) — store in ContextVar"]
+    A[Request arrives] --> B["bind(self, request): store in ContextVar"]
     B --> C{GET + Inertia request + version mismatch?}
-    C -->|Yes| D["Return location(request.url) — 409 + X-Inertia-Location"]
-    C -->|No| E["await call_next() — proceed to handler"]
-    E --> F["unbind(token) — restore previous ContextVar"]
+    C -->|Yes| D["Return location(request.url): 409 + X-Inertia-Location"]
+    C -->|No| E["await call_next(): proceed to handler"]
+    E --> F["unbind(token): restore previous ContextVar"]
     D --> F
 ```
 
@@ -465,8 +466,8 @@ PropCallback = (
 )
 ```
 
-A props callback may take the request or take nothing -- both shapes are
-supported.  The `_wants_request` helper inspects the callback to decide.
+A props callback may take the request or take nothing. Both shapes are
+supported. The `_wants_request` helper inspects the callback to decide.
 
 ### 8.2 LazyProp
 

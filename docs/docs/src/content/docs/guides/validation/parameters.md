@@ -39,7 +39,9 @@ role = Query(None, type=UserRole)      # an enum
 when = Query(None, type=datetime)      # anything Pydantic understands
 ```
 
-If you omit `type=`, sillo infers it from the default value — `Query(1)` is an integer, `Query("")` a string. See [Both declaration styles](#both-declaration-styles) at the end of this page.
+If you omit `type=`, sillo infers it from the default value. `Query(1)` is an
+integer, `Query("")` a string. See [Both declaration
+styles](#both-declaration-styles) at the end of this page.
 
 ##  Why coercion matters here
 
@@ -54,7 +56,11 @@ Pydantic's *lax mode* (the default) does this conversion where intent is unambig
 (absent)     type=int    ->  the default, or 422 if there is none
 ```
 
-Set `strict=True` to switch a parameter to strict mode, where no conversion happens at all. For query parameters this is rarely what you want — the incoming value is always a string, so `Query(type=int, strict=True)` rejects every request. It is useful mainly for JSON body fields, where the client can send a real number.
+Set `strict=True` to switch a parameter to strict mode, where no conversion
+happens at all. For query parameters this is rarely what you want. The incoming
+value is always a string, so `Query(type=int, strict=True)` rejects every
+request. It is useful mainly for JSON body fields, where the client can send a
+real number.
 
 ##  The type catalog
 
@@ -69,7 +75,9 @@ name   = Query("", type=str)
 active = Query(False, type=bool)
 ```
 
-Booleans accept `true`, `1`, `yes`, `on`, `t`, `y` (and their false counterparts), case-insensitively. Anything else is a `bool_parsing` error — so `?active=maybe` is rejected rather than silently treated as false.
+Booleans accept `true`, `1`, `yes`, `on`, `t`, `y` (and their false
+counterparts), case-insensitively. Anything else is a `bool_parsing` error, so
+`?active=maybe` is rejected rather than silently treated as false.
 
 ###  Dates and times
 
@@ -181,7 +189,9 @@ name = Query(type=str, min_length=2, max_length=50)
 slug = Query(type=str, pattern=r"^[a-z0-9-]+$")
 ```
 
-`pattern` is a regular expression, searched from the start of the string. Anchor it with `$` if you mean the whole string, as above — without the `$`, `pattern=r"^[a-z]+"` would accept `"abc123"`.
+`pattern` is a regular expression, searched from the start of the string.
+Anchor it with `$` if you mean the whole string, as above, without the `$`,
+`pattern=r"^[a-z]+"` would accept `"abc123"`.
 
 ###  Collections
 
@@ -320,7 +330,8 @@ async def get_item(request, response, item_id=Path(type=int, ge=1)):
 
 This is independent of the `{item_id:int}` convertor syntax in the route pattern. The convertor decides whether a URL *matches* the route at all; `Path` validates the value once matched and publishes its schema. Using `Path` lets a plain `/items/{item_id}` route validate without embedding the type in the URL, and lets you attach constraints a convertor cannot express.
 
-A path parameter is always required — a request lacking it could not have matched the route — so any default is ignored.
+A path parameter is always required (a request lacking it could not have
+matched the route) so any default is ignored.
 
 ##  Parameters in dependencies
 
@@ -419,16 +430,16 @@ A `pattern=` constraint that permits `[a-z_]+` still permits `password`,
 `is_admin`, and any other column name. The allowlist is the control; the
 pattern is a convenience.
 
-**Redirect targets.** A `next` or `return_to` parameter that you redirect
-to is an open redirect — an attacker sends a link to your domain that
-lands on theirs, which is the front half of most phishing. Accept only
-relative paths, and reject anything containing `//` or a scheme.
+**Redirect targets.** A `next` or `return_to` parameter that you redirect to is
+an open redirect. An attacker sends a link to your domain that lands on theirs,
+which is the front half of most phishing. Accept only relative paths, and
+reject anything containing `//` or a scheme.
 
 **Identifiers you look up.** `Path(type=int)` guarantees `user_id` is an
-integer. It does not guarantee the caller may see that user. An
-`IDOR` — reading someone else's record by changing a number — passes
-every validator you can write. Scope the query by the authenticated user
-rather than checking after the fetch.
+integer. It does not guarantee the caller may see that user. An `IDOR` (reading
+someone else's record by changing a number) passes every validator you can
+write. Scope the query by the authenticated user rather than checking after the
+fetch.
 
 **Anything reaching a filesystem path.** A `Query(type=str)` for a
 filename validates fine and still contains `../`. Resolve and confirm
@@ -457,16 +468,16 @@ combinatorial surface.
 
 ##  Naming that survives a version bump
 
-Parameter names are permanent in a way handler code is not — clients
-hard-code them, and changing one breaks every caller silently, because a
-query parameter nobody sends is just a default.
+Parameter names are permanent in a way handler code is not: clients hard-code
+them, and changing one breaks every caller silently, because a query parameter
+nobody sends is just a default.
 
 Use lowercase with underscores or hyphens, consistently. Pick one and
 never mix, because `page_size` and `page-size` are different parameters
 and supporting both accidentally is worse than supporting either.
 
-Use `alias=` when the public name should differ from the Python
-identifier — a parameter named `from` cannot be a Python variable:
+Use `alias=` when the public name should differ from the Python identifier. A
+parameter named `from` cannot be a Python variable:
 
 ```python
 start: str = Query(None, type=str, alias="from")

@@ -1,6 +1,6 @@
 ---
 title: Field Reference
-description: "Every field type available on a Sillo model — numbers, text, dates, binary, JSON, UUID and enums — with the arguments each accepts and what they map to per backend."
+description: "Every field type available on a Sillo model (numbers, text, dates, binary, JSON, UUID and enums) with the arguments each accepts and what they map to per backend."
 head:
   - tag: meta
     attrs:
@@ -25,7 +25,7 @@ class Post(Model):
     published_at = fields.DatetimeField(null=True)
 ```
 
-Plus the [six Record adds](/orm/fields/) — `PasswordField`, `SlugField`,
+Plus the [six Record adds](/orm/fields/): `PasswordField`, `SlugField`,
 `ULIDField` and the three timestamp fields.
 
 ## Arguments every field takes
@@ -34,11 +34,11 @@ Plus the [six Record adds](/orm/fields/) — `PasswordField`, `SlugField`,
 | --- | --- | --- |
 | `primary_key` | `False` | This is the primary key |
 | `null` | `False` | The column accepts `NULL` |
-| `default` | — | Value when none is given. A callable is called per row. |
+| `default` |  | Value when none is given. A callable is called per row. |
 | `unique` | `False` | Adds a unique constraint |
 | `db_index` | `False` | Adds an index |
-| `description` | — | Becomes the column comment |
-| `source_field` | — | The column name, when it differs from the attribute |
+| `description` |  | Becomes the column comment |
+| `source_field` |  | The column name, when it differs from the attribute |
 | `validators` | `[]` | Validators run before write |
 | `generated` | `False` | The database supplies it |
 
@@ -64,7 +64,7 @@ They answer different questions. `null=True` says the column may hold `NULL`;
 both, either, or neither.
 
 For text, prefer an empty string over `NULL` unless "unset" and "empty" are
-genuinely different states — otherwise every query needs to handle both.
+genuinely different states. Otherwise every query needs to handle both.
 
 ## Numbers
 
@@ -95,7 +95,7 @@ does on PostgreSQL. Something to know when your development database is SQLite
 and production is not.
 :::
 
-An auto-incrementing primary key is `IntField(primary_key=True)` — the
+An auto-incrementing primary key is `IntField(primary_key=True)`. The
 `generated` flag follows from being an integer primary key.
 
 ## Text
@@ -110,7 +110,7 @@ title = fields.CharField(max_length=200)
 body = fields.TextField()
 ```
 
-Pick `CharField` when there is a real bound — an email, a slug, a status. The
+Pick `CharField` when there is a real bound: an email, a slug, a status. The
 length is a constraint the database enforces, and it is what lets the column be
 indexed everywhere.
 
@@ -153,14 +153,14 @@ updated = fields.DatetimeField(auto_now=True)       # set on every save
 
 Which is exactly what [`CreatedAtField` and
 `UpdatedAtField`](/orm/fields/#the-timestamp-fields) wrap, and why you rarely
-write these yourself — the [base model](/orm/models/) already has both.
+write these yourself. The [base model](/orm/models/) already has both.
 
 :::caution[Store UTC]
 `DB_TIMEZONE` defaults to `UTC` and should stay there. A database in local time
 either loses an hour or repeats one every year, and the bug arrives at 2am on a
 Sunday in October.
 
-Convert at the edges — when rendering, not when storing.
+Convert at the edges. When rendering, not when storing.
 :::
 
 ## UUID
@@ -174,9 +174,10 @@ id = fields.UUIDField(primary_key=True, default=uuid4)
 Native `uuid` on PostgreSQL, `CHAR(36)` elsewhere.
 
 A UUID primary key does not leak a row count and can be generated before the
-insert — useful when a client needs the id up front. The cost is index locality:
-random UUIDs scatter writes across the index. [`ULIDField`](/orm/fields/#ulidfield)
-is the middle ground, sorting by creation time while staying opaque.
+insert, useful when a client needs the id up front. The cost is index locality:
+random UUIDs scatter writes across the index.
+[`ULIDField`](/orm/fields/#ulidfield) is the middle ground, sorting by creation
+time while staying opaque.
 
 ## Binary
 
@@ -184,7 +185,7 @@ is the middle ground, sorting by creation time while staying opaque.
 thumbnail = fields.BinaryField()
 ```
 
-`BYTEA` on PostgreSQL, `BLOB` elsewhere. For small binary values — a hash, a
+`BYTEA` on PostgreSQL, `BLOB` elsewhere. For small binary values: a hash, a
 signature, an icon.
 
 Not for uploads. Files belong on disk or in object storage, with the path in a
@@ -199,7 +200,7 @@ metadata = fields.JSONField(default=dict)
 
 Native `JSONB` on PostgreSQL, `JSON` on MySQL, `TEXT` on SQLite.
 
-It has its own lookups — `contains`, `contained_by`, `filter` — rather than the
+It has its own lookups (`contains`, `contained_by`, `filter`) rather than the
 usual set. See [Lookups](/orm/lookups/#json-fields).
 
 ```python
@@ -207,7 +208,7 @@ await Post.filter(metadata__filter={"theme": "dark"})
 ```
 
 JSON is right for genuinely open-ended data: a webhook payload, per-tenant
-settings, an audit snapshot. It is wrong as a way to avoid deciding on columns —
+settings, an audit snapshot. It is wrong as a way to avoid deciding on columns:
 you lose type checking, defaults, constraints and most index options, and every
 consumer has to handle a shape that is not enforced anywhere.
 
@@ -246,7 +247,7 @@ class Post(Model):
 return real enum members, so `post.status is Status.DRAFT` works.
 
 `CharEnumField` sizes the column from the longest member unless you pass
-`max_length`. Adding a longer member later is therefore a migration — worth
+`max_length`. Adding a longer member later is therefore a migration, worth
 setting `max_length` up front with room to spare.
 
 **Prefer `CharEnumField`.** A `status` column reading `published` is
@@ -254,9 +255,9 @@ self-describing in a database console, a CSV export and a log line;
 `priority = 2` is not. Take `IntEnumField` when the values are genuinely
 ordinal and you want to compare them with `<`.
 
-Adding a member is not a schema change for either — the constraint is in Python,
-not the database. Which is also the caveat: nothing stops another writer putting
-an unknown value in the column.
+Adding a member is not a schema change for either. The constraint is in Python,
+not the database. Which is also the caveat: nothing stops another writer
+putting an unknown value in the column.
 
 ## Server-side defaults
 
@@ -267,8 +268,8 @@ created_at = fields.DatetimeField(db_default=Now())
 count = fields.IntField(db_default=SqlDefault("0"))
 ```
 
-A `default=` is applied by Python, so a row inserted by anything else — a
-migration, another service, a `psql` session — does not get it. `db_default`
+A `default=` is applied by Python, so a row inserted by anything else (a
+migration, another service, a `psql` session) does not get it. `db_default`
 puts it in the schema, where it applies to every writer.
 
 ## Choosing between the two column-level options
@@ -294,10 +295,11 @@ class UpperCharField(fields.CharField):
 ```
 
 For a conversion that needs no new column type, [casting](/orm/casting/) is
-lighter — it is configured per model rather than declared as a type.
+lighter. It is configured per model rather than declared as a type.
 
 ## See also
 
-- [Record's own fields](/orm/fields/) — `PasswordField`, `SlugField`, `ULIDField`
-- [Relationships](/orm/relationships/) — the relational field types
-- [Meta and indexes](/orm/meta/) — constraints, indexes, table options
+- [Record's own fields](/orm/fields/): `PasswordField`, `SlugField`,
+  `ULIDField`
+- [Relationships](/orm/relationships/): the relational field types
+- [Meta and indexes](/orm/meta/): constraints, indexes, table options

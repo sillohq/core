@@ -247,18 +247,27 @@ app.use(CORSMiddleware(config=cors_config))
 
 `CORSMiddleware` runs in `process_request` for every request:
 
-1. If there is no `Origin` header, the request is same-origin — the middleware does nothing and the request proceeds.
+1. If there is no `Origin` header, the request is same-origin: the middleware
+   does nothing and the request proceeds.
 2. The `Origin` is checked against `allow_origins`, `allow_origin_regex`, and `blacklist_origins`. Unmatched origins are silently dropped (simple requests complete normally, just without `Access-Control-*` headers), so the browser blocks the cross-origin read.
-3. **Preflight (`OPTIONS`)** — browsers send this before a non-simple request (custom headers, `PUT`/`DELETE`, `application/json` bodies). The middleware answers the preflight directly:
+3. **Preflight (`OPTIONS`)**: browsers send this before a non-simple request
+   (custom headers, `PUT`/`DELETE`, `application/json` bodies). The middleware
+   answers the preflight directly:
    - Reflects `Access-Control-Allow-Origin`
    - Echoes `Access-Control-Allow-Methods` (the method from `Access-Control-Request-Method`)
    - Echoes `Access-Control-Allow-Headers` (from `Access-Control-Request-Headers`)
    - Sets `Access-Control-Max-Age` from `max_age`
    - A disallowed origin, method, or header fails the preflight with a `400`/custom status and the actual handler never runs.
-4. **Actual request** — after a passing preflight, the real request carries the same `Access-Control-Allow-Origin` (and, when `allow_credentials=True`, `Access-Control-Allow-Credentials: true`) so the browser permits the response.
+4. **Actual request.** After a passing preflight, the real request carries the
+   same `Access-Control-Allow-Origin` (and, when `allow_credentials=True`,
+   `Access-Control-Allow-Credentials: true`) so the browser permits the
+   response.
 
 <aside type="caution" title="Wildcard + credentials don't mix">
-When `allow_credentials=True`, `allow_origins` cannot be `["*"]` — the spec forbids `Access-Control-Allow-Origin: *` together with `Access-Control-Allow-Credentials: true`. List explicit origins, or use `allow_origin_regex` to match a trusted set dynamically.
+When `allow_credentials=True`, `allow_origins` cannot be `["*"]`. The spec
+forbids `Access-Control-Allow-Origin: *` together with
+`Access-Control-Allow-Credentials: true`. List explicit origins, or use
+`allow_origin_regex` to match a trusted set dynamically.
 </aside>
 
 ##  Testing
@@ -334,17 +343,26 @@ def test_disallowed_origin_gets_no_header():
 
 ##  Production considerations
 
-- **List explicit origins** — `allow_origins=["*"]` cannot be combined with `allow_credentials=True`; the middleware raises at construction. Browsers reject a literal `*` on a credentialed request, so honouring both would mean reflecting whatever `Origin` the caller sent, and every site on the internet becomes an allowed one. Use `allow_origin_regex` for subdomain sets.
+- **List explicit origins.** `allow_origins=["*"]` cannot be combined with
+  `allow_credentials=True`; the middleware raises at construction. Browsers
+  reject a literal `*` on a credentialed request, so honouring both would mean
+  reflecting whatever `Origin` the caller sent, and every site on the internet
+  becomes an allowed one. Use `allow_origin_regex` for subdomain sets.
 - **`allow_credentials` is off by default.** Turn it on only alongside named origins. A wildcard configuration answers with the literal `*`, so the response does not vary by caller.
 - **Keep `max_age` high** in production (e.g. `600`+) to cut preflight chatter, but lower it while the policy is still changing.
-- **Preflight is not auth** — CORS governs which origins may *read* responses in a browser. It does not authenticate the caller or stop non-browser clients. Pair it with CSRF for cookie-auth flows and with real auth for data.
-- **`custom_error_status`** — returning a non-default status on preflight failure is cosmetic (the browser blocks the read regardless). Don't rely on it for security.
+- **Preflight is not auth.** CORS governs which origins may *read* responses in
+  a browser. It does not authenticate the caller or stop non-browser clients.
+  Pair it with CSRF for cookie-auth flows and with real auth for data.
+- **`custom_error_status`**: returning a non-default status on preflight
+  failure is cosmetic (the browser blocks the read regardless). Don't rely on
+  it for security.
 
 ##  Related topics
 
-- [Security Headers (Shield)](/guides/security/) — defensive response headers
-- [CSRF](/guides/csrf/) — protect cookie-auth state-changing requests from cross-site forgery
-- [Authentication](/guides/authentication/) — verifying who the caller is
+- [Security Headers (Shield)](/guides/security/): defensive response headers
+- [CSRF](/guides/csrf/): protect cookie-auth state-changing requests from
+  cross-site forgery
+- [Authentication](/guides/authentication/): verifying who the caller is
 
 
 ##  What CORS actually protects
@@ -352,28 +370,27 @@ def test_disallowed_origin_gets_no_header():
 CORS is a browser mechanism, and understanding what it does and does not
 do prevents both over- and under-configuration.
 
-It stops **a page on one origin from reading a response from another
-origin**. It does not stop the request being sent, and it does not
-protect your server from anything. A non-browser client — curl, a script,
-a mobile app — ignores CORS entirely, because the enforcement lives in
-the browser, not in your response.
+It stops **a page on one origin from reading a response from another origin**.
+It does not stop the request being sent, and it does not protect your server
+from anything. A non-browser client (curl, a script, a mobile app) ignores CORS
+entirely, because the enforcement lives in the browser, not in your response.
 
-That single fact resolves the two most common misunderstandings. CORS is
-not a security control for your API; authentication and authorization
-are. And a "CORS error" in a console is usually the browser refusing to
-show the response to a request your server already processed — including
-one that already had side effects.
+That single fact resolves the two most common misunderstandings. CORS is not a
+security control for your API; authentication and authorization are. And a
+"CORS error" in a console is usually the browser refusing to show the response
+to a request your server already processed, including one that already had side
+effects.
 
 ##  Simple requests and preflights
 
-A request qualifies as *simple* — sent directly, no preflight — when the
-method is `GET`, `HEAD`, or `POST`, the content type is one of
-`text/plain`, `application/x-www-form-urlencoded`, or
-`multipart/form-data`, and no custom headers are set.
+A request qualifies as *simple* (sent directly, no preflight) when the method
+is `GET`, `HEAD`, or `POST`, the content type is one of `text/plain`,
+`application/x-www-form-urlencoded`, or `multipart/form-data`, and no custom
+headers are set.
 
-Anything else triggers an `OPTIONS` preflight first. Sending
-`Content-Type: application/json`, or an `Authorization` header, is enough
-to require one — which is why almost every real API call is preflighted.
+Anything else triggers an `OPTIONS` preflight first. Sending `Content-Type:
+application/json`, or an `Authorization` header, is enough to require one,
+which is why almost every real API call is preflighted.
 
 This is why a form POST is a [CSRF](/guides/csrf/) concern while a JSON
 POST largely is not: the form request is simple, so it is sent without
@@ -397,11 +414,10 @@ so is `:3000`.
 every request, doubling the round trips on your entire API. A few hours
 is a reasonable value.
 
-Remember that error responses need CORS headers too. A 401 without them
-appears to the browser as a CORS failure, and the developer debugging it
-sees the wrong problem entirely — which is why CORS middleware belongs
-near the outside of the stack, where it wraps the error handler rather
-than sitting inside it.
+Remember that error responses need CORS headers too. A 401 without them appears
+to the browser as a CORS failure, and the developer debugging it sees the wrong
+problem entirely, which is why CORS middleware belongs near the outside of the
+stack, where it wraps the error handler rather than sitting inside it.
 
 
 ##  Debugging a CORS failure
@@ -410,9 +426,8 @@ The browser console message names the missing header, and reading it
 literally saves most of the time.
 
 "No `Access-Control-Allow-Origin` header" usually means the request never
-reached your CORS middleware — an exception in an outer layer, or a route
-that 404'd before it. Check whether the request appears in your access
-log at all.
+reached your CORS middleware, an exception in an outer layer, or a route that
+404'd before it. Check whether the request appears in your access log at all.
 
 "Origin not allowed" means it reached the middleware and your allowlist
 does not include that origin. Compare scheme, host, and port exactly.
@@ -424,35 +439,33 @@ method and headers the real request will use.
 "Credentials flag is true but `Access-Control-Allow-Origin` is `*`" is
 the specification refusing the unsafe combination. Name the origin.
 
-The one that misleads people: a CORS error on a request that *worked*.
-The server processed it and the browser refused to hand you the response
-— so any side effect already happened. That distinction matters when the
-request was a `POST`.
+The one that misleads people: a CORS error on a request that *worked*. The
+server processed it and the browser refused to hand you the response, so any
+side effect already happened. That distinction matters when the request was a
+`POST`.
 
 ##  Related
 
-- [Middleware](/guides/middleware/) — where CORS belongs in the stack
-- [CSRF](/guides/csrf/) — the other cross-origin concern, and a different one
-- [Headers](/guides/headers/) — the response headers involved
-- [Security](/guides/security/) — the wider checklist
+- [Middleware](/guides/middleware/): where CORS belongs in the stack
+- [CSRF](/guides/csrf/): the other cross-origin concern, and a different one
+- [Headers](/guides/headers/): the response headers involved
+- [Security](/guides/security/): the wider checklist
 
 
 ##  Summary
 
-CORS is a browser policy about reading responses, not a server-side
-security control. Preflights happen for anything that is not a simple
-request, which is nearly every real API call. Never combine wildcard
-origins with credentials, never reflect an unvalidated origin, set a
-`Max-Age` so preflights are not paid on every request, and make sure
-error responses carry the headers too — otherwise the browser reports a
-CORS failure where the real answer was a 401.
+CORS is a browser policy about reading responses, not a server-side security
+control. Preflights happen for anything that is not a simple request, which is
+nearly every real API call. Never combine wildcard origins with credentials,
+never reflect an unvalidated origin, set a `Max-Age` so preflights are not paid
+on every request, and make sure error responses carry the headers too.
+Otherwise the browser reports a CORS failure where the real answer was a 401.
 
 
 ##  Configuring it in sillo
 
-CORS is middleware, and it belongs near the outside of the stack so that
-error responses — including the 401 from an auth layer inside it — carry
-the headers.
+CORS is middleware, and it belongs near the outside of the stack so that error
+responses (including the 401 from an auth layer inside it) carry the headers.
 
 ```python title="a configuration that is not too permissive"
 app.use(
@@ -466,12 +479,11 @@ app.use(
 )
 ```
 
-Four things to note. Origins are listed exactly, with scheme and without
-a trailing slash. Methods list what you actually accept rather than `*`,
-so an unexpected `PUT` is refused at the preflight. Headers list what
-clients genuinely send — `Authorization` and `Content-Type` cover most
-APIs. And `allow_credentials=True` requires named origins, never a
-wildcard.
+Four things to note. Origins are listed exactly, with scheme and without a
+trailing slash. Methods list what you actually accept rather than `*`, so an
+unexpected `PUT` is refused at the preflight. Headers list what clients
+genuinely send. `Authorization` and `Content-Type` cover most APIs. And
+`allow_credentials=True` requires named origins, never a wildcard.
 
 For a public, unauthenticated API the calculus changes: `allow_origins=["*"]`
 with `allow_credentials=False` is correct and simple, because there is no

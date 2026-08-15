@@ -366,7 +366,7 @@ async def get_messages(request, response):
 
 `negotiate_content_type(header, available)` walks the client's `Accept` items in order and returns the first `available` type that matches:
 
-1. Items with `q=0` are skipped — the client is explicitly rejecting that type.
+1. Items with `q=0` are skipped: the client is explicitly rejecting that type.
 2. An **exact** match (`application/json` == `application/json`) wins immediately.
 3. A **range** match: `text/*` matches `text/html`; `*/*` matches anything.
 4. If nothing matches, the function returns `None` and the middleware falls back to `default_content_type`.
@@ -375,11 +375,24 @@ Quality values (`q`) do **not** override specificity: `text/html, application/js
 
 ##  Errors and edge cases
 
-- **No `Accept` header** — `negotiate_content_type` returns the first available type (or `default_content_type` in the middleware). Clients that omit `Accept` get your default format.
-- **No acceptable match** — with `Accepts`/`ContentNegotiationMiddleware` the response uses `default_content_type`; with `StrictContentNegotiationMiddleware` the request is short-circuited with **`406 Not Acceptable`** and a JSON body listing `available_types`. The 406 is returned before your handler runs.
-- **`q=0` rejection** — `text/html;q=0` is never selected even if `text/html` is available. Use this to test negotiation without sending an unmatched header.
-- **`*/*` wildcard** — matches any available type, so an API client sending `Accept: */*` receives your default format, not necessarily the most specific one.
-- **`Vary` header** — `Accepts` appends `Accept`, `Accept-Language`, `Accept-Charset`, `Accept-Encoding` (only those present on the request) to `Vary`. Reverse proxies and CDNs use this to cache per-negotiated variant; disabling it (`set_vary_header=False`) means negotiated responses can be served to the wrong client.
+- **No `Accept` header**: `negotiate_content_type` returns the first available
+  type (or `default_content_type` in the middleware). Clients that omit
+  `Accept` get your default format.
+- **No acceptable match**: with `Accepts`/`ContentNegotiationMiddleware` the
+  response uses `default_content_type`; with
+  `StrictContentNegotiationMiddleware` the request is short-circuited with
+  **`406 Not Acceptable`** and a JSON body listing `available_types`. The 406
+  is returned before your handler runs.
+- **`q=0` rejection**: `text/html;q=0` is never selected even if `text/html` is
+  available. Use this to test negotiation without sending an unmatched header.
+- **`*/*` wildcard**: matches any available type, so an API client sending
+  `Accept: */*` receives your default format, not necessarily the most specific
+  one.
+- **`Vary` header**: `Accepts` appends `Accept`, `Accept-Language`,
+  `Accept-Charset`, `Accept-Encoding` (only those present on the request) to
+  `Vary`. Reverse proxies and CDNs use this to cache per-negotiated variant;
+  disabling it (`set_vary_header=False`) means negotiated responses can be
+  served to the wrong client.
 
 ##  Testing
 
@@ -441,19 +454,30 @@ def test_stores_accepts_info():
 
 ##  Production considerations
 
-- **Caching** — keep `set_vary_header=True` so CDNs and browser caches key on the negotiated headers. Returning JSON to a client that asked for HTML (or vice versa) is a classic misconfiguration caused by a missing `Vary`.
-- **Public API boundaries** — use `StrictContentNegotiationMiddleware` when your API only serves a fixed set of types; the `406` makes unsupported `Accept` values explicit instead of silently downgrading.
-- **Defaults are responses too** — when a client sends no `Accept`, the `default_content_type` is what they get. Make it the format most clients expect.
-- **Ordering of middleware** — `Accepts` sets `Content-Type` only when the response has none, during `process_response`. Place it where downstream middleware won't overwrite `Content-Type` afterward.
-- **Language vs content type** — `negotiate_language` only *computes* a language; you must set `Content-Language` and select localized content yourself, as shown in the i18n example above.
+- **Caching.** Keep `set_vary_header=True` so CDNs and browser caches key on
+  the negotiated headers. Returning JSON to a client that asked for HTML (or
+  vice versa) is a classic misconfiguration caused by a missing `Vary`.
+- **Public API boundaries.** Use `StrictContentNegotiationMiddleware` when your
+  API only serves a fixed set of types; the `406` makes unsupported `Accept`
+  values explicit instead of silently downgrading.
+- **Defaults are responses too.** When a client sends no `Accept`, the
+  `default_content_type` is what they get. Make it the format most clients
+  expect.
+- **Ordering of middleware.** `Accepts` sets `Content-Type` only when the
+  response has none, during `process_response`. Place it where downstream
+  middleware won't overwrite `Content-Type` afterward.
+- **Language vs content type.** `negotiate_language` only *computes* a
+  language; you must set `Content-Language` and select localized content
+  yourself, as shown in the i18n example above.
 
 ##  Best Practices
 
 1. **Always set Vary headers** when using content negotiation for proper caching
 2. **Provide sensible defaults** for content type and language
-3. **Test with real browsers** — different browsers send different Accept headers
+3. **Test with real browsers**: different browsers send different Accept
+   headers
 4. **Use strict negotiation** for APIs that only support specific content types
-5. **Cache negotiated responses** — use Vary headers to ensure proper cache keys
+5. **Cache negotiated responses.** Use Vary headers to ensure proper cache keys
 6. **Support multiple formats** for better API compatibility
 
 ###  Example Production Configuration
@@ -540,10 +564,10 @@ defensive everywhere.
 fallback. Silence here means the client ships a bug you could have
 surfaced.
 
-**Vary on what you negotiate.** Any response whose body depends on a
-request header must carry `Vary` naming that header. Without it, a shared
-cache stores the first representation and serves it to everyone —
-including the client that asked for the other one.
+**Vary on what you negotiate.** Any response whose body depends on a request
+header must carry `Vary` naming that header. Without it, a shared cache stores
+the first representation and serves it to everyone, including the client that
+asked for the other one.
 
 ```python title="the header that prevents cache poisoning"
 response.headers["Vary"] = "Accept, Accept-Encoding"

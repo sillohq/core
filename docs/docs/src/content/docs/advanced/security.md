@@ -3,9 +3,9 @@ title: "Security Middleware"
 description: "Shield (headers), CORS, CSRF, rate limiting strategies and backends"
 ---
 
-**Version:** 2026-08-11
-**Audience:** Core maintainers, security engineers, application developers
-**Purpose:** Document Shield (security headers), CORS, CSRF protection, and rate limiting — the four security middleware components
+**Version:** 2026-08-11 **Audience:** Core maintainers, security engineers,
+application developers **Purpose:** Document Shield (security headers), CORS,
+CSRF protection, and rate limiting. The four security middleware components
 
 ---
 
@@ -59,7 +59,7 @@ Each middleware overrides `process_request` (pre-handler) and/or `process_respon
 
 ---
 
-## Shield — HTTP Security Headers
+## Shield: HTTP Security Headers
 
 **File:** `core/sillo/security/shield.py`
 
@@ -169,8 +169,8 @@ if self.ssl_redirect and request.url.scheme != "https":
     return response.redirect(url=redirect_url, status_code=301 if self.ssl_permanent else 302)
 ```
 
-- `ssl_host` — override the hostname (e.g. for load balancers)
-- `ssl_permanent` — `True` for 301, `False` for 302
+- `ssl_host`: override the hostname (e.g. for load balancers)
+- `ssl_permanent`: `True` for 301, `False` for 302
 
 ### CSP Header Building
 
@@ -193,16 +193,16 @@ require-trusted-types-for 'script'; trusted-types <policies>
 
 ### Server Header
 
-- `hide_server=True` (default) — removes the `Server` header
-- `hide_server=False, server_header="MyApp/1.0"` — sets a custom server header
+- `hide_server=True` (default): removes the `Server` header
+- `hide_server=False, server_header="MyApp/1.0"`: sets a custom server header
 
 ---
 
-## CORSMiddleware — Cross-Origin Resource Sharing
+## CORSMiddleware: Cross-Origin Resource Sharing
 
 **Files:**
-- `core/sillo/security/cors/config.py` — `CorsConfig`
-- `core/sillo/security/cors/_middleware.py` — `CORSMiddleware`
+- `core/sillo/security/cors/config.py`: `CorsConfig`
+- `core/sillo/security/cors/_middleware.py`: `CORSMiddleware`
 
 ### CorsConfig
 
@@ -307,11 +307,11 @@ SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-
 
 ---
 
-## CSRFMiddleware — Cross-Site Request Forgery Protection
+## CSRFMiddleware: Cross-Site Request Forgery Protection
 
 **Files:**
-- `core/sillo/security/csrf/config.py` — `CSRFConfig`
-- `core/sillo/security/csrf/_middleware.py` — `CSRFMiddleware`
+- `core/sillo/security/csrf/config.py`: `CSRFConfig`
+- `core/sillo/security/csrf/_middleware.py`: `CSRFMiddleware`
 
 ### CSRFConfig
 
@@ -437,18 +437,23 @@ flowchart TD
 ## Rate Limiting
 
 **Files:**
-- `core/sillo/security/ratelimit/config.py` — `RateLimitConfig`
-- `core/sillo/security/ratelimit/_middleware.py` — `RateLimitMiddleware`
-- `core/sillo/security/ratelimit/__init__.py` — `RateLimit` convenience class
-- `core/sillo/security/ratelimit/strategies/base.py` — `RateLimitStrategy` (abstract)
-- `core/sillo/security/ratelimit/strategies/token_bucket.py` — `TokenBucketStrategy`
-- `core/sillo/security/ratelimit/strategies/fixed_window.py` — `FixedWindowStrategy`
-- `core/sillo/security/ratelimit/strategies/sliding_window.py` — `SlidingWindowStrategy`
-- `core/sillo/security/ratelimit/backends/base.py` — `RateLimitBackend` (abstract), `RateLimitResult`
-- `core/sillo/security/ratelimit/backends/memory.py` — `InMemoryBackend`
-- `core/sillo/security/ratelimit/backends/redis.py` — `RedisBackend`
-- `core/sillo/security/ratelimit/backends/record.py` — `RecordBackend`
-- `core/sillo/security/ratelimit/models.py` — `RateLimitCounter`
+- `core/sillo/security/ratelimit/config.py`: `RateLimitConfig`
+- `core/sillo/security/ratelimit/_middleware.py`: `RateLimitMiddleware`
+- `core/sillo/security/ratelimit/__init__.py`: `RateLimit` convenience class
+- `core/sillo/security/ratelimit/strategies/base.py`: `RateLimitStrategy`
+  (abstract)
+- `core/sillo/security/ratelimit/strategies/token_bucket.py`:
+  `TokenBucketStrategy`
+- `core/sillo/security/ratelimit/strategies/fixed_window.py`:
+  `FixedWindowStrategy`
+- `core/sillo/security/ratelimit/strategies/sliding_window.py`:
+  `SlidingWindowStrategy`
+- `core/sillo/security/ratelimit/backends/base.py`: `RateLimitBackend`
+  (abstract), `RateLimitResult`
+- `core/sillo/security/ratelimit/backends/memory.py`: `InMemoryBackend`
+- `core/sillo/security/ratelimit/backends/redis.py`: `RedisBackend`
+- `core/sillo/security/ratelimit/backends/record.py`: `RecordBackend`
+- `core/sillo/security/ratelimit/models.py`: `RateLimitCounter`
 
 ### RateLimitConfig
 
@@ -545,7 +550,7 @@ if len(hits) + cost > limit:
 ```
 
 **Characteristics:**
-- Most accurate — no boundary issues
+- Most accurate: no boundary issues
 - State grows with request volume (pruned each hit)
 - State: `{"hits": list[float]}`
 
@@ -785,22 +790,22 @@ app.use(RateLimit(limit=100, window=60))
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `Shield` | `core/sillo/security/shield.py` | 18–245 |
+| `Shield` | `core/sillo/security/shield.py` | 18-245 |
 | `SecurityMiddleware` alias | `core/sillo/middleware/security.py` | 5 |
-| `CorsConfig` | `core/sillo/security/cors/config.py` | 5–125 |
-| `CORSMiddleware` | `core/sillo/security/cors/_middleware.py` | 20–249 |
-| `CSRFConfig` | `core/sillo/security/csrf/config.py` | 5–117 |
-| `CSRFMiddleware` | `core/sillo/security/csrf/_middleware.py` | 14–162 |
-| `RateLimitConfig` | `core/sillo/security/ratelimit/config.py` | 13–71 |
-| `RateLimitMiddleware` | `core/sillo/security/ratelimit/_middleware.py` | 26–100 |
-| `RateLimit` | `core/sillo/security/ratelimit/__init__.py` | 51–87 |
-| `RateLimitStrategy` | `core/sillo/security/ratelimit/strategies/base.py` | 19–64 |
-| `TokenBucketStrategy` | `core/sillo/security/ratelimit/strategies/token_bucket.py` | 19–57 |
-| `FixedWindowStrategy` | `core/sillo/security/ratelimit/strategies/fixed_window.py` | 18–56 |
-| `SlidingWindowStrategy` | `core/sillo/security/ratelimit/strategies/sliding_window.py` | 19–55 |
-| `RateLimitResult` | `core/sillo/security/ratelimit/backends/base.py` | 16–33 |
-| `RateLimitBackend` | `core/sillo/security/ratelimit/backends/base.py` | 36–49 |
-| `InMemoryBackend` | `core/sillo/security/ratelimit/backends/memory.py` | 17–45 |
-| `RedisBackend` | `core/sillo/security/ratelimit/backends/redis.py` | 27–71 |
-| `RecordBackend` | `core/sillo/security/ratelimit/backends/record.py` | 16–29 |
+| `CorsConfig` | `core/sillo/security/cors/config.py` | 5-125 |
+| `CORSMiddleware` | `core/sillo/security/cors/_middleware.py` | 20-249 |
+| `CSRFConfig` | `core/sillo/security/csrf/config.py` | 5-117 |
+| `CSRFMiddleware` | `core/sillo/security/csrf/_middleware.py` | 14-162 |
+| `RateLimitConfig` | `core/sillo/security/ratelimit/config.py` | 13-71 |
+| `RateLimitMiddleware` | `core/sillo/security/ratelimit/_middleware.py` | 26-100 |
+| `RateLimit` | `core/sillo/security/ratelimit/__init__.py` | 51-87 |
+| `RateLimitStrategy` | `core/sillo/security/ratelimit/strategies/base.py` | 19-64 |
+| `TokenBucketStrategy` | `core/sillo/security/ratelimit/strategies/token_bucket.py` | 19-57 |
+| `FixedWindowStrategy` | `core/sillo/security/ratelimit/strategies/fixed_window.py` | 18-56 |
+| `SlidingWindowStrategy` | `core/sillo/security/ratelimit/strategies/sliding_window.py` | 19-55 |
+| `RateLimitResult` | `core/sillo/security/ratelimit/backends/base.py` | 16-33 |
+| `RateLimitBackend` | `core/sillo/security/ratelimit/backends/base.py` | 36-49 |
+| `InMemoryBackend` | `core/sillo/security/ratelimit/backends/memory.py` | 17-45 |
+| `RedisBackend` | `core/sillo/security/ratelimit/backends/redis.py` | 27-71 |
+| `RecordBackend` | `core/sillo/security/ratelimit/backends/record.py` | 16-29 |
 | `RateLimitCounter` model | `core/sillo/security/ratelimit/models.py` | 19 |

@@ -1,6 +1,6 @@
 ---
 title: Connections
-description: "Working with more than one database — registering connections, routing a query with using_db, read replicas, connection pooling and the per-request connection context."
+description: "Working with more than one database: registering connections, routing a query with using_db, read replicas, connection pooling and the per-request connection context."
 head:
   - tag: meta
     attrs:
@@ -74,7 +74,7 @@ sets of environment variables apart.
 await Post.all().using_db(replica_connection)
 ```
 
-Per query, explicitly. There is no automatic read/write router — which is a
+Per query, explicitly. There is no automatic read/write router, which is a
 deliberate omission rather than a gap: an implicit router sends a read to a
 replica moments after the write it depends on, and returns stale data with no
 indication that it did.
@@ -92,7 +92,7 @@ fresh = await Post.get(id=post.id)
 
 ### Replication lag
 
-A replica is behind the primary — usually milliseconds, occasionally much more.
+A replica is behind the primary: usually milliseconds, occasionally much more.
 The failure mode is a user saving a form, being redirected, and seeing their
 old data.
 
@@ -110,16 +110,16 @@ DB_MAX_OVERFLOW=10
 ```
 
 Size against the database's connection limit, not against traffic. Four
-application processes at the defaults is up to 60 connections — and a worker
-and a scheduler are more processes with their own pools. A small managed
-PostgreSQL defaults to 100 total.
+application processes at the defaults is up to 60 connections, and a worker and
+a scheduler are more processes with their own pools. A small managed PostgreSQL
+defaults to 100 total.
 
 ```
 processes × (pool_size + max_overflow) ≤ the server's limit, with room spare
 ```
 
-When that does not fit, a connection pooler — PgBouncer in transaction mode —
-is the answer rather than a bigger number.
+When that does not fit, a connection pooler (PgBouncer in transaction mode) is
+the answer rather than a bigger number.
 
 `DB_POOL_RECYCLE` (default 3600s) reopens connections older than that.
 Proxies and managed databases drop idle connections without telling the client,
@@ -159,7 +159,7 @@ See [Transactions](/orm/transactions/#multiple-connections).
 await database.health()
 ```
 
-A trivial query, returning a boolean rather than raising — which is what a
+A trivial query, returning a boolean rather than raising, which is what a
 health endpoint wants:
 
 ```python
@@ -192,7 +192,7 @@ finally:
     await manager.shutdown()
 ```
 
-Skipping it leaves connections open until the process exits — invisible in a
+Skipping it leaves connections open until the process exits, invisible in a
 script that runs for a second, and a leak in one that loops.
 
 ## Different databases, different models

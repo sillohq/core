@@ -1,6 +1,6 @@
 ---
 title: The QuerySet API
-description: "Every method on a Sillo queryset — building, narrowing, ordering, slicing, fetching one, counting, updating and deleting — and when each one hits the database."
+description: "Every method on a Sillo queryset (building, narrowing, ordering, slicing, fetching one, counting, updating and deleting) and when each one hits the database."
 head:
   - tag: meta
     attrs:
@@ -41,7 +41,7 @@ await Post.filter(status="published").exclude(author_id=7)
 ```
 
 Several keywords in one `filter` are AND-ed. Chained `filter` calls are also
-AND-ed — so `filter(a=1).filter(b=2)` and `filter(a=1, b=2)` are the same query.
+AND-ed, so `filter(a=1).filter(b=2)` and `filter(a=1, b=2)` are the same query.
 
 For OR, negation, or anything more structured, use
 [`Q` objects](/orm/filtering/).
@@ -91,7 +91,7 @@ await Post.all()[20:30]
 return different rows, and a row can appear on two consecutive pages while
 nothing changes.
 
-Order by something unique, or unique enough — `["-created_at", "id"]`.
+Order by something unique, or unique enough, `["-created_at", "id"]`.
 :::
 
 ## Fetching one
@@ -103,9 +103,9 @@ post = await Post.filter(...).first()   # None if empty
 post = await Post.filter(...).last()    # None if empty
 ```
 
-`get()` raising is useful in a handler — with the
-[exception handlers](/orm/exceptions/) registered, `DoesNotExist` becomes a
-404 and you write no branch at all.
+`get()` raising is useful in a handler, with the [exception
+handlers](/orm/exceptions/) registered, `DoesNotExist` becomes a 404 and you
+write no branch at all.
 
 `get_or_none()` is right when absence is an expected answer rather than an
 error.
@@ -125,8 +125,8 @@ Use `exists()` when you only want to know. `count() > 0` counts every matching
 row to answer a yes/no question, and on a large table that difference is
 substantial.
 
-`COUNT(*)` is not free either — PostgreSQL cannot answer it from an index
-alone. See [Pagination](/orm/pagination/#counting-is-the-expensive-half).
+`COUNT(*)` is not free either. PostgreSQL cannot answer it from an index alone.
+See [Pagination](/orm/pagination/#counting-is-the-expensive-half).
 
 ## Writing
 
@@ -157,9 +157,9 @@ One statement, any number of rows. They return the number affected.
 
 - no [model events](/orm/events/);
 - no [validation](/orm/mixins/#validatesbeforesavemixin);
-- no [casts](/orm/casting/) — a cast field gets the raw Python value;
+- no [casts](/orm/casting/): a cast field gets the raw Python value;
 - `updated_at` does not move unless you set it;
-- [`SoftDeletesMixin`](/orm/mixins/) does not apply — `delete()` here is a real
+- [`SoftDeletesMixin`](/orm/mixins/) does not apply: `delete()` here is a real
   delete.
 
 That is exactly what you want for a million rows and exactly what you do not
@@ -233,7 +233,7 @@ async with transaction():
     await post.save()
 ```
 
-`SELECT … FOR UPDATE` — takes a row lock until the transaction ends, so a
+`SELECT … FOR UPDATE`, takes a row lock until the transaction ends, so a
 concurrent transaction reading the same row waits.
 
 ```python
@@ -254,7 +254,7 @@ await Post.all().use_index("idx_posts_status")
 await Post.all().force_index("idx_posts_status")
 ```
 
-MySQL only. A last resort for when the planner picks badly — and worth
+MySQL only. A last resort for when the planner picks badly, and worth
 revisiting after any schema change, since a hint that was right once becomes a
 hint that is wrong later.
 
@@ -270,7 +270,7 @@ for its plan. Both are how you find out what a chain of scopes actually
 compiled to.
 
 `sql(params_inline=True)` inlines the parameters, which makes it copy-pasteable
-into a console — and unsafe to log, since it contains the values.
+into a console, and unsafe to log, since it contains the values.
 
 ## Connections
 
@@ -293,7 +293,7 @@ popular = base.order_by("-views").limit(10)
 `base` is unchanged, so both branches are safe. This is what makes
 [scopes](/orm/scopes/) composable.
 
-Awaiting the same queryset twice runs the query twice — there is no result
+Awaiting the same queryset twice runs the query twice. There is no result
 cache. Await once and keep the list:
 
 ```python

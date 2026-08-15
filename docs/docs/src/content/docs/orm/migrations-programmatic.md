@@ -1,6 +1,6 @@
 ---
 title: Migrations Programmatically
-description: "Running migrations without the CLI — the command functions, MigrationHelper, what a Database argument accepts, and running them from tests or a deployment script."
+description: "Running migrations without the CLI: the command functions, MigrationHelper, what a Database argument accepts, and running them from tests or a deployment script."
 head:
   - tag: meta
     attrs:
@@ -38,8 +38,8 @@ the output.
 
 Three forms:
 
-- a **`DatabaseManager`** — the usual one;
-- a **config mapping** — the dict Tortoise wants;
+- a **`DatabaseManager`**: the usual one;
+- a **config mapping**: the dict Tortoise wants;
 - a **dotted path** to either.
 
 ```python
@@ -53,7 +53,7 @@ per command.
 
 ### Return values
 
-`plan()` returns display lines — and includes a connection header alongside the
+`plan()` returns display lines, and includes a connection header alongside the
 migrations, so counting the raw list reports one migration too many. Filter it:
 
 ```python
@@ -127,8 +127,8 @@ async def database(tmp_path):
     await manager.shutdown()
 ```
 
-This tests the migrations as well as the code — the schema under test is the
-one your deployments will produce, not one generated from the models.
+This tests the migrations as well as the code. The schema under test is the one
+your deployments will produce, not one generated from the models.
 
 The faster alternative is `DB_GENERATE_SCHEMAS=true` against `:memory:`, which
 builds the schema from the models directly. It is quicker and it does not
@@ -170,14 +170,14 @@ async def main() -> int:
 raise SystemExit(asyncio.run(main()))
 ```
 
-Worth writing only when you need something around the migration — a lock, a
+Worth writing only when you need something around the migration: a lock, a
 snapshot, a notification. Otherwise `sillo db:migrate` is the same thing and
 already handles the output and the exit code.
 
 ## Why a bridge module exists
 
-Two operations — creating the migration package, and writing a migration —
-exist only behind the migration engine's own command line, which reads its
+Two operations (creating the migration package, and writing a migration) exist
+only behind the migration engine's own command line, which reads its
 configuration by **importing a dotted path** rather than by taking a value.
 
 Left exposed, that would become a rule every project has to follow: export a
@@ -185,7 +185,7 @@ module-level config mapping, under a particular name, at an import path you
 then repeat in your tooling.
 
 So `sillo.record._bridge` supplies the module. It publishes the configuration,
-yields the path to it, and restores the previous value on the way out — so a
+yields the path to it, and restores the previous value on the way out, so a
 migration command running inside another one leaves the outer configuration in
 place.
 
@@ -197,5 +197,5 @@ not.
 ## See also
 
 - [How migrations work](/orm/migrations/)
-- [Building a console](/cli/standalone-consoles/#record_commands) — binding
+- [Building a console](/cli/standalone-consoles/#record_commands): binding
   these as commands

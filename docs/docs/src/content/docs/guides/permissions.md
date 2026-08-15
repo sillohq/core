@@ -16,11 +16,15 @@ head:
 
 `sillo.permissions` is a DB-backed permission system that ships as an optional but fully integrated module. It gives you:
 
-- **Named permissions** — any string like `"posts:create"` or `"view_dashboard"`.
-- **Direct user assignment** — grant and revoke individual permissions to users.
-- **Group inheritance** — assign permissions to a group, and every member gets them automatically.
-- **One-call cache** — `load_permissions()` loads direct + inherited permissions into a `set`, then `has_permission(…)` is a pure Python lookup.
-- **Auto-wired login** — `UserBaseModel.load_user` and `verify_credentials` already call `load_permissions()` when the mixin is present.
+- **Named permissions**: any string like `"posts:create"` or
+  `"view_dashboard"`.
+- **Direct user assignment**: grant and revoke individual permissions to users.
+- **Group inheritance**: assign permissions to a group, and every member gets
+  them automatically.
+- **One-call cache**: `load_permissions()` loads direct + inherited permissions
+  into a `set`, then `has_permission(…)` is a pure Python lookup.
+- **Auto-wired login**: `UserBaseModel.load_user` and `verify_credentials`
+  already call `load_permissions()` when the mixin is present.
 
 ---
 
@@ -54,7 +58,8 @@ user.has_permission("posts:delete")   # False
 
 ##  Permission model
 
-A `Permission` is just a named row in the `permissions` table. There is no dotted-convention requirement — any string is valid.
+A `Permission` is just a named row in the `permissions` table. There is no
+dotted-convention requirement, any string is valid.
 
 ###  Define
 
@@ -139,7 +144,8 @@ admins = await Group.get_or_create("admins", "System administrators")
 editors = await Group.get_or_create("editors")
 ```
 
-`Group.get_or_create` is idempotent — it returns the existing group if one with that name already exists.
+`Group.get_or_create` is idempotent. It returns the existing group if one with
+that name already exists.
 
 ###  Membership
 
@@ -151,7 +157,8 @@ await admins.get_members()             # ["1", "2"] identity strings
 await admins.get_member_count()        # 2
 ```
 
-The `user` argument accepts a model instance or a raw identity string — same as `Permission.assign`.
+The `user` argument accepts a model instance or a raw identity string, same as
+`Permission.assign`.
 
 ###  Group permissions
 
@@ -185,8 +192,9 @@ perms  = await Permission.of_group(editors)  # ["posts:create", "posts:edit"]
 
 `PermissionMixin` is the bridge between the DB permission tables and the user model. It resolves **two sources** into a single cache:
 
-1. **Direct** — from `UserPermission` rows (set via `Permission.assign`).
-2. **Inherited** — from `GroupPermission` rows for every group the user belongs to.
+1. **Direct**: from `UserPermission` rows (set via `Permission.assign`).
+2. **Inherited**: from `GroupPermission` rows for every group the user belongs
+   to.
 
 ###  Usage
 
@@ -211,7 +219,7 @@ class Account(PermissionMixin, UserBaseModel):
 |---|---|---|
 | `load_permissions()` | `set[str]` | Fetches direct + group-inherited permissions from DB, caches internally |
 | `has_permission(perm)` | `bool` | Cache check. `False` if inactive, `True` if superuser |
-| `has_perm(perm)` | `bool` | Alias — delegates to `has_permission` |
+| `has_perm(perm)` | `bool` | Alias. Delegates to `has_permission` |
 | `get_groups()` | `list[str]` | Names of all groups this user belongs to |
 | `is_in_group(name)` | `bool` | Check group membership by name |
 | `get_group_permissions()` | `set[str]` | Permission names inherited through groups (excludes direct) |
@@ -387,9 +395,10 @@ from sillo.permissions import (
 
 ###  Related
 
-- [Protecting Routes](/guides/protecting-routes/) — route-level gating with `useAuth`
-- [Users & User Models](/guides/users/) — user base model, custom user classes
-- [Authentication](/guides/authentication/) — middleware + backend model
+- [Protecting Routes](/guides/protecting-routes/): route-level gating with
+  `useAuth`
+- [Users & User Models](/guides/users/): user base model, custom user classes
+- [Authentication](/guides/authentication/): middleware + backend model
 
 
 ##  Authentication is not authorization
@@ -414,29 +423,27 @@ if order is None:
     raise HTTPException(status_code=404)
 ```
 
-Returning 404 rather than 403 also avoids confirming that an order with
-that id exists — a small disclosure that adds up across an enumerable
-identifier space.
+Returning 404 rather than 403 also avoids confirming that an order with that id
+exists. A small disclosure that adds up across an enumerable identifier space.
 
 ##  Where to enforce
 
 Every layer that can check should, and each catches a different mistake.
 
-**Route level** — a declarative requirement on the decorator — is
-visible in code review and in the generated documentation, and it cannot
-be forgotten inside a long handler.
+**Route level** (a declarative requirement on the decorator) is visible in code
+review and in the generated documentation, and it cannot be forgotten inside a
+long handler.
 
-**Object level** — the ownership check above — is the only layer that can
-see the specific record, which is where most real authorization lives.
+**Object level** (the ownership check above) is the only layer that can see the
+specific record, which is where most real authorization lives.
 
-**Query level** — a global scope that filters by tenant or owner — is the
-strongest, because it applies to code that forgot to check. See
-[Scopes & Events](/guides/record/scopes-events/), including its warning
-that scopes do not cover raw SQL or relation traversal.
+**Query level** (a global scope that filters by tenant or owner) is the
+strongest, because it applies to code that forgot to check. See [Scopes &
+Events](/guides/record/scopes-events/), including its warning that scopes do
+not cover raw SQL or relation traversal.
 
-**Database level** — foreign keys, row-level security — survives every
-application bug, and is the only layer an attacker with SQL access still
-faces.
+**Database level** (foreign keys, row-level security) survives every
+application bug, and is the only layer an attacker with SQL access still faces.
 
 Defence in depth means all four, not choosing between them.
 
@@ -444,10 +451,9 @@ Defence in depth means all four, not choosing between them.
 
 Two shapes cover most applications.
 
-**Role-based** assigns users to roles and roles to permissions.
-Simple, cacheable, and easy to reason about — right until "editors can
-edit their own team's posts", which roles cannot express without a role
-per team.
+**Role-based** assigns users to roles and roles to permissions. Simple,
+cacheable, and easy to reason about. Right until "editors can edit their own
+team's posts", which roles cannot express without a role per team.
 
 **Attribute-based** evaluates a rule against the user, the object, and
 the context. Handles ownership, team membership, and time-based rules
@@ -458,9 +464,9 @@ Most systems end up with roles for coarse capability and ownership checks
 for the fine-grained part. That combination is worth reaching for
 deliberately rather than arriving at.
 
-Fail closed everywhere. An unknown permission, a missing role, an
-unhandled resource type — each must deny. A permission system whose
-default is allow will eventually allow something you did not consider.
+Fail closed everywhere. An unknown permission, a missing role, an unhandled
+resource type. Each must deny. A permission system whose default is allow will
+eventually allow something you did not consider.
 
 
 ##  Testing authorization
@@ -492,17 +498,17 @@ outcome turns "someone says they cannot access X" into a two-minute
 lookup, and repeated denials are one of the better signals that something
 is being probed.
 
-Record the denials at minimum. Recording every grant as well gives you an
-audit trail, at the cost of volume — worth it for administrative actions
-and rarely worth it for reads.
+Record the denials at minimum. Recording every grant as well gives you an audit
+trail, at the cost of volume, worth it for administrative actions and rarely
+worth it for reads.
 
 
 ##  Performance
 
-A permission check that queries the database on every request adds a
-query to every request. Cache the coarse part — a user's roles change
-rarely — and keep the fine-grained ownership check uncached, since that
-is the part that must be current.
+A permission check that queries the database on every request adds a query to
+every request. Cache the coarse part (a user's roles change rarely) and keep
+the fine-grained ownership check uncached, since that is the part that must be
+current.
 
 Never cache a decision keyed only by user. `can(user, "edit")` is
 meaningless without the object; caching it produces a value that is right

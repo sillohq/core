@@ -123,16 +123,16 @@ auth configuration, and CLI commands.
 `auth_backends`, `commands`, `title`.
 
 **Key methods:**
-- `__call__(scope, receive, send)` — ASGI protocol entry point
-- `use(middleware)` — Register HTTP middleware
-- `get/post/put/patch/delete(path, handler, ...)` — Route decorators
-- `mount_router(router, name)` — Mount sub-router
-- `frontend(path, directory, fallback, ...)` — Mount SPA
-- `add_command(command)` / `command(name, ...)` — Register CLI command
-- `url_for(_name, **path_params)` — Reverse URL generation
-- `build_openapi()` — Generate OpenAPI JSON document
-- `on_startup(handler)` / `on_shutdown(handler)` — Lifecycle hooks
-- `register(app, prefix)` — Mount external ASGI app
+- `__call__(scope, receive, send)`: ASGI protocol entry point
+- `use(middleware)`: Register HTTP middleware
+- `get/post/put/patch/delete(path, handler, ...)`: Route decorators
+- `mount_router(router, name)`: Mount sub-router
+- `frontend(path, directory, fallback, ...)`: Mount SPA
+- `add_command(command)` / `command(name, ...)`: Register CLI command
+- `url_for(_name, **path_params)`: Reverse URL generation
+- `build_openapi()`: Generate OpenAPI JSON document
+- `on_startup(handler)` / `on_shutdown(handler)`: Lifecycle hooks
+- `register(app, prefix)`: Mount external ASGI app
 
 **Differs from Django:** Django's `WSGIHandler` is separate from URL config and
 settings.  SilloApp combines application, routing, and configuration into one
@@ -149,17 +149,17 @@ SilloApp is a standalone ASGI callable with its own middleware chain.
 
 **Module:** `sillo.auth.use_auth`
 
-Route-level authentication/authorization gate.  NOT a middleware — it's a
+Route-level authentication/authorization gate. NOT a middleware, it's a
 declarative per-route object that controls who can access a route.
 
 **Attributes:** `permissions` (list of required permission strings), `backends`
 (optional per-route auth backends), `user_model` (user class for loading),
-`required` (bool — whether auth is mandatory), `schemes` (OpenAPI security
-scheme requirements), `all_of` (bool — require all permissions vs any).
+`required` (bool, whether auth is mandatory), `schemes` (OpenAPI security
+scheme requirements), `all_of` (bool, require all permissions vs any).
 
 **Methods:**
-- `authenticate(request) -> bool` — Check if the request passes auth
-- `security_requirements(available) -> list[dict]` — Generate OpenAPI security
+- `authenticate(request) -> bool`: Check if the request passes auth
+- `security_requirements(available) -> list[dict]`: Generate OpenAPI security
 
 **Differs from Django's `@login_required`:** `useAuth` is declarative and
 integrates with OpenAPI security schemes.  It supports per-route backend
@@ -189,9 +189,9 @@ for DI resolution), `middleware` (per-route middleware list), `summary`,
 `auth` (`useAuth` gate), `param_names`, `route_type` (REGEX/PATH/WILDCARD).
 
 **Methods:**
-- `match(scope) -> bool` — Check if this route matches an ASGI scope
-- `handle(scope, receive, send)` — Execute the handler
-- `url_path_for(name, **path_params) -> URL` — Reverse URL generation
+- `match(scope) -> bool`: Check if this route matches an ASGI scope
+- `handle(scope, receive, send)`: Execute the handler
+- `url_path_for(name, **path_params) -> URL`: Reverse URL generation
 
 **Differs from Django's `URLPattern`:** Sillo `Route` carries DI metadata
 (`dependant`) and auth gates (`auth`) directly.  Django separates these into
@@ -212,14 +212,14 @@ A collection of routes with shared configuration.
 (`EventEmitter`), `dependencies`, `_inherited_dependencies`, `root_path`.
 
 **Methods:**
-- `add_route(route)` — Register a route
-- `use(middleware)` — Add middleware to this router
-- `get/post/put/patch/delete/options/head(path, handler, ...)` — Verb decorators
-- `mount_router(app)` — Mount a sub-router
-- `ws_route(path, handler)` — Register WebSocket route
-- `frontend(path, directory, ...)` — Mount SPA
-- `url_for(_name, **path_params)` — Reverse URL generation (walks tree)
-- `get_all_routes()` — Flatten all routes
+- `add_route(route)`: Register a route
+- `use(middleware)`: Add middleware to this router
+- `get/post/put/patch/delete/options/head(path, handler, ...)`: Verb decorators
+- `mount_router(app)`: Mount a sub-router
+- `ws_route(path, handler)`: Register WebSocket route
+- `frontend(path, directory, ...)`: Mount SPA
+- `url_for(_name, **path_params)`: Reverse URL generation (walks tree)
+- `get_all_routes()`: Flatten all routes
 
 **Related:** `Route`, `BaseRouter`, `SilloApp`
 
@@ -230,9 +230,9 @@ A collection of routes with shared configuration.
 **Module:** `sillo.core.routing.base`
 
 Abstract base class for all route types.  Defines the interface:
-- `match(scope)` — Does this route handle the request?
-- `handle(scope, receive, send)` — Process the request
-- `url_path_for(name, **path_params)` — Reverse URL
+- `match(scope)`: Does this route handle the request?
+- `handle(scope, receive, send)`: Process the request
+- `url_path_for(name, **path_params)`: Reverse URL
 
 **Subclasses:** `Route`, `WebsocketRoute`, `Group`
 
@@ -295,12 +295,12 @@ sync with lazy attribute access.
 **Module:** `sillo.core.http.response`
 
 Base class: `BaseResponse`.  Subclasses:
-- `PlainTextResponse` — `text/plain`
-- `JSONResponse` — `application/json` with `jsonable_encoder`
-- `HTMLResponse` — `text/html`
-- `FileResponse` — File streaming with range request support
-- `StreamingResponse` — AsyncIterator streaming
-- `RedirectResponse` — HTTP redirects
+- `PlainTextResponse`: `text/plain`
+- `JSONResponse`: `application/json` with `jsonable_encoder`
+- `HTMLResponse`: `text/html`
+- `FileResponse`: File streaming with range request support
+- `StreamingResponse`: AsyncIterator streaming
+- `RedirectResponse`: HTTP redirects
 
 **`BaseResponse` attributes:** `STATUS_CODES`, `charset`, `status_code`,
 `raw_headers`, `content_type`, `_body`.
@@ -336,13 +336,13 @@ a response class.  It returns the appropriate `Response` subclass.
 
 **Module:** `sillo.middleware.base`
 
-Base class for HTTP middleware.  Not an ASGI middleware — wraps ASGI via
-the middleware chain.
+Base class for HTTP middleware. Not an ASGI middleware, wraps ASGI via the
+middleware chain.
 
 **Methods:**
-- `__call__(request, response, call_next)` — ASGI bridge entry
-- `process_request(request, response, call_next)` — Pre-processing
-- `process_response(request, response)` — Post-processing
+- `__call__(request, response, call_next)`: ASGI bridge entry
+- `process_request(request, response, call_next)`: Pre-processing
+- `process_response(request, response)`: Post-processing
 
 **Key mechanism:** `__call__` wraps `call_next` with a `_call_next` flag.
 `process_response` only runs if `call_next` was called in `process_request`.
@@ -366,7 +366,7 @@ ASGI-level.  Sillo's is request/response-level with explicit pre/post phases.
 
 User-facing DI marker.  Declares a dependency on another callable.
 
-**Attributes:** `dependency` (the callable), `get_request` (bool — inject raw
+**Attributes:** `dependency` (the callable), `get_request` (bool, inject raw
 `Request` instead of resolving).
 
 **Usage:**
@@ -415,12 +415,12 @@ validators.
 Base class for authentication backends.  Each backend implements a specific
 authentication mechanism (JWT, session, API key, etc.).
 
-**Attributes:** `name` (str — OpenAPI scheme name), `description` (str | None).
+**Attributes:** `name` (str, OpenAPI scheme name), `description` (str | None).
 
 **Methods:**
-- `describe() -> SecurityScheme | None` — OpenAPI schema description
-- `authenticate(request) -> AuthResult` — Verify credentials
-- `handle_exception(response, exc)` — Error handling
+- `describe() -> SecurityScheme | None`: OpenAPI schema description
+- `authenticate(request) -> AuthResult`: Verify credentials
+- `handle_exception(response, exc)`: Error handling
 
 **Concrete implementations:** `JWTAuthBackend`, `SessionAuthBackend`,
 `APIKeyAuthBackend`.
@@ -440,9 +440,9 @@ backends return `AuthResult` (a dataclass with `identity`, `scope`, `success`).
 Dataclass returned by `AuthenticationBackend.authenticate()`.
 
 **Fields:**
-- `identity: str` — User identifier (user ID, email, API key name)
-- `scope: str` — Auth scope string ("user", "admin", "api")
-- `success: bool` — Whether authentication succeeded
+- `identity: str`: User identifier (user ID, email, API key name)
+- `scope: str`: Auth scope string ("user", "admin", "api")
+- `success: bool`: Whether authentication succeeded
 
 **Differs from Django:** Django's `authenticate()` returns a `User` object or
 `None`.  Sillo returns a structured `AuthResult` that separates identity from
@@ -482,7 +482,7 @@ Sillo separates JWT tokens (stateless) from API keys (stateful, database-backed)
 
 **Module:** `sillo.users.protocol`
 
-Pure authentication contract — the interface that all user types must satisfy.
+Pure authentication contract, the interface that all user types must satisfy.
 
 **Properties:** `is_authenticated`, `is_anonymous`, `display_name`, `identity`.
 
@@ -492,7 +492,7 @@ Pure authentication contract — the interface that all user types must satisfy.
 `get_email_field_name()` (classmethod).
 
 **Differs from Django's `AbstractBaseUser`:** Django's user is an ORM model.
-Sillo's `UserProtocol` is a structural protocol — any object satisfying the
+Sillo's `UserProtocol` is a structural protocol, any object satisfying the
 interface can be a "user", including non-database objects like `SimpleUser`.
 
 **Related:** `UserBaseModel`, `AnonymousUser`, `SimpleUser`, `UnauthenticatedUser`
@@ -515,7 +515,7 @@ for database-backed user models.
 (classmethod), `has_perm(perm)`, `has_perms(perm_list)`,
 `has_permission(permission)`, `has_module_perms(app_label)`.
 
-**Concrete:** `User(UserBaseModel)` — table `"users"`, managed by `UserManager`.
+**Concrete:** `User(UserBaseModel)`, table `"users"`, managed by `UserManager`.
 
 **Differs from Django:** Combines `AbstractBaseUser` and `PermissionsMixin`
 into a single base class.  Uses Tortoise ORM instead of Django ORM.
@@ -605,15 +605,15 @@ Enhanced Tortoise ORM base model.  Inherits `_TortoiseModel`, `HasCasts`,
 `HasScopes`.
 
 **Auto fields:** `created_at` (CreatedAtField), `updated_at` (UpdatedAtField),
-`deleted_at` (SoftDeleteField — nullable datetime).
+`deleted_at` (SoftDeleteField, nullable datetime).
 
 **Methods:** `to_dict(exclude, include)`, `to_json(indent, ...)`,
 `update_from_dict(data)`, `save(*args, **kwargs)`, `soft_delete()`,
-`restore()`, `active()` (classmethod — filters out soft-deleted),
-`deleted()` (classmethod — filters to soft-deleted only),
-`get_or_none(**kwargs)`, `get_or_create(defaults, **kwargs)`,
-`bulk_create(items, batch_size, ...)`, `bulk_upsert(items, conflict_fields, ...)`,
-`upsert(values, conflict_fields, ...)`, `count_active()`.
+`restore()`, `active()` (classmethod, filters out soft-deleted), `deleted()`
+(classmethod, filters to soft-deleted only), `get_or_none(**kwargs)`,
+`get_or_create(defaults, **kwargs)`, `bulk_create(items, batch_size, ...)`,
+`bulk_upsert(items, conflict_fields, ...)`, `upsert(values, conflict_fields,
+...)`, `count_active()`.
 
 **Differs from Django's `Model`:** Sillo's Model has built-in soft delete,
 casts (auto encoding/decoding), and scopes (query filters) as first-class
@@ -631,7 +631,7 @@ features.  Django requires third-party packages for these.
 
 A query filter applied at the model level.  Two types:
 
-1. **Instance scopes** — `scope_*` classmethods on Model subclasses, chainable
+1. **Instance scopes.** `scope_*` classmethods on Model subclasses, chainable
    via `RecordQuerySet.__getattr__`:
    ```python
    @classmethod
@@ -640,8 +640,8 @@ A query filter applied at the model level.  Two types:
    # Usage: await User.active().all()
    ```
 
-2. **Global scopes** — Applied to every query via `ScopeRegistry`.  Managed
-   by `HasScopes.add_global_scope()` / `without_global_scopes()`.
+2. **Global scopes**: Applied to every query via `ScopeRegistry`. Managed by
+   `HasScopes.add_global_scope()` / `without_global_scopes()`.
 
 **Differs from Django's managers:** Django managers are separate objects.
 Sillo scopes are methods on the model class itself, chainable directly:
@@ -664,8 +664,8 @@ parameterised casts.
 
 **Model usage:** `_casts = {"field": "typename"}` on the model class.
 
-**Differs from Django:** Django has no built-in cast system.  Sillo casts are
-transparent — applied via `__setattr__`/`__getattribute__` hooks.
+**Differs from Django:** Django has no built-in cast system. Sillo casts are
+transparent, applied via `__setattr__`/`__getattribute__` hooks.
 
 **Related:** `CastRegistry`, `HasCasts`, `Model`
 
@@ -750,11 +750,11 @@ Manages Tortoise ORM lifecycle.
 
 Run migrations programmatically (outside of CLI).
 
-**Constructor:** `__init__(config, app=None)` — Takes `DatabaseManager`,
-config dict, or dotted path.
+**Constructor:** `__init__(config, app=None)`, Takes `DatabaseManager`, config
+dict, or dotted path.
 
-**Methods:** `make(name)`, `upgrade()`, etc.  Each method opens connection,
-does work, closes — safe for scripts.
+**Methods:** `make(name)`, `upgrade()`, etc. Each method opens connection, does
+work, closes, safe for scripts.
 
 **Related:** `DatabaseManager`, `record_commands`
 
@@ -808,7 +808,7 @@ Single async unit of work.
 `after(cb)`, `on_success(cb)`, `on_failure(cb)`, `then(next_task)`,
 `catch(fallback)`, `serialize()`, `to_dict()`.
 
-**Decorator:** `@task(name, priority, max_attempts, queue, timeout)` — tags an
+**Decorator:** `@task(name, priority, max_attempts, queue, timeout)`, tags an
 async function as a task.
 
 **Differs from Celery's `Task`:** Sillo tasks are async-first with built-in
@@ -840,12 +840,12 @@ serialized, queued representation.
 
 Abstract interface for queue storage.  Two concrete implementations:
 
-- **`MemoryBackend`** — In-process queue, lock-protected min-heap.  Methods:
+- **`MemoryBackend`**: In-process queue, lock-protected min-heap. Methods:
   `enqueue(task)`, `dequeue(queue_name, timeout)`, `store_result(result)`,
-  `get_result(task_id)`, `is_duplicate(queue_name, dedup_key)`, `queue_size(name)`,
-  `queue_stats(name)`.
+  `get_result(task_id)`, `is_duplicate(queue_name, dedup_key)`,
+  `queue_size(name)`, `queue_stats(name)`.
 
-- **`RedisBackend`** — Redis sorted set persistent queue.  Same interface plus
+- **`RedisBackend`**: Redis sorted set persistent queue. Same interface plus
   `register(name, func)`, `flush(queue_name)`, `ping()`.
 
 **Related:** `Task`, `QueueWorker`
@@ -1163,13 +1163,13 @@ CLI command base class.
 `Parameter`), `aliases`, `hidden`.
 
 **Methods:**
-- `handle() -> int | None | Awaitable[int | None]` — Execute (sync or async)
-- `context() -> AsyncContextManager | None` — Wraps `handle()`
-- `argument(name)`, `option(name)`, `flag(name)`, `extra` — Parameter access
-- `line()`, `info()`, `success()`, `warn()`, `error()`, `muted()` — Output
-- `table()`, `panel()`, `rule()`, `progress()`, `spinner()` — Rich output
-- `ask()`, `secret()`, `confirm()`, `choice()`, `multichoice()` — Interactive
-- `fail(message, exit_code) -> NoReturn` — Abort
+- `handle() -> int | None | Awaitable[int | None]`: Execute (sync or async)
+- `context() -> AsyncContextManager | None`: Wraps `handle()`
+- `argument(name)`, `option(name)`, `flag(name)`, `extra`: Parameter access
+- `line()`, `info()`, `success()`, `warn()`, `error()`, `muted()`: Output
+- `table()`, `panel()`, `rule()`, `progress()`, `spinner()`: Rich output
+- `ask()`, `secret()`, `confirm()`, `choice()`, `multichoice()`: Interactive
+- `fail(message, exit_code) -> NoReturn`: Abort
 
 **Specialized subclasses:** `RecordCommand` (with `config` ClassVar for DB
 binding), `WorkCommand` (with `config` ClassVar for queue binding).
@@ -1193,7 +1193,7 @@ Uses `type()` for dynamic subclass creation:
 type(command.__name__, (command,), {"config": config})
 ```
 
-**Returns:** `list[type[Command]]` — list of `Init`, `Make`, `Migrate`, `Plan`,
+**Returns:** `list[type[Command]]`: list of `Init`, `Make`, `Migrate`, `Plan`,
 `Rollback`, `Sql`, `Status` commands.
 
 **Related:** `RecordCommand`, `DatabaseManager`
@@ -1207,7 +1207,7 @@ type(command.__name__, (command,), {"config": config})
 Factory function that creates command subclasses bound to a specific queue
 configuration.  Same `type()` pattern as `record_commands()`.
 
-**Returns:** `list[type[Command]]` — list of `Work`, `QueueList`, `QueueFailed`,
+**Returns:** `list[type[Command]]`: list of `Work`, `QueueList`, `QueueFailed`,
 `QueueForget`, `QueueFlush`, etc.
 
 **Related:** `WorkCommand`

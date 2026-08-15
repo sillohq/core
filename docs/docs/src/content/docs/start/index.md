@@ -1,6 +1,6 @@
 ---
 title: Sillo Start
-description: "The tool that creates a Sillo application from a starter repository — what it does, why it fetches a real application rather than rendering templates, and what it deliberately leaves alone."
+description: "The tool that creates a Sillo application from a starter repository. What it does, why it fetches a real application rather than rendering templates, and what it deliberately leaves alone."
 head:
   - tag: meta
     attrs:
@@ -26,7 +26,7 @@ yours, gives it its own secrets, and gets out of the way.
 ## A starter repository, not a generator
 
 A generator renders templates. Templates are checked for *rendering*, which is
-not the same as working — a project can produce valid Python, import cleanly,
+not the same as working. A project can produce valid Python, import cleanly,
 render every page, and still fail on its first real request. Middleware
 registered in the wrong order, an auth backend reading the wrong claim, a
 missing static mount: all of them render perfectly.
@@ -46,14 +46,14 @@ Three things follow from that choice:
 
 ## What it does not do
 
-Migrations, creating users, running a worker, starting a server — none of it.
+Migrations, creating users, running a worker, starting a server, none of it.
 
 Those are the [`sillo` command](/cli/), which the project has as soon as its
 dependencies are installed. The split is deliberate: a scaffolding tool that
 also runs your application becomes something you can never remove.
 
 Creating a project is the one thing `sillo` does not do, for the same reason in
-reverse — the framework would have to carry a copy of a starter it would then
+reverse. The framework would have to carry a copy of a starter it would then
 have to keep in step with.
 
 ## The manual
@@ -73,8 +73,8 @@ have to keep in step with.
 | [Internals](/start/internals/) | Fetching, unpacking, and using it as a library |
 
 :::tip[New to Sillo?]
-The starter is a complete application — auth, an admin panel, migrations, a
-queue — and it is a lot to meet at once. If you have not written a Sillo route
+The starter is a complete application (auth, an admin panel, migrations, a
+queue) and it is a lot to meet at once. If you have not written a Sillo route
 yet, [Installation](/guides/installation/) builds a single-file application
 from nothing in about a minute.
 
@@ -86,6 +86,6 @@ Come back here when you want the wiring rather than the framework.
 Python 3.11 or newer, and network access to GitHub. The tool itself depends on
 `typer` and `rich` and nothing else.
 
-`git` is optional — the starter is fetched as a tarball, not cloned. It is used
+`git` is optional. The starter is fetched as a tarball, not cloned. It is used
 only to run `git init` in the new project, and skipped when it is not
 installed.

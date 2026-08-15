@@ -5,7 +5,12 @@ description: How sillo serializes handler return values to JSON, the built-in ty
 
 #  JSON Serialization & Custom Encoders
 
-Every value a handler returns is turned into JSON before it leaves sillo. That conversion is handled by `sillo.encoding.jsonable_encoder`, which runs automatically inside `JSONResponse` and `response.json(...)`. For the common Python types you already use — datetimes, `Decimal`, enums, UUIDs, pydantic models — it works without any configuration. For your own types, sillo gives you a registry you can extend in three scopes.
+Every value a handler returns is turned into JSON before it leaves sillo. That
+conversion is handled by `sillo.encoding.jsonable_encoder`, which runs
+automatically inside `JSONResponse` and `response.json(...)`. For the common
+Python types you already use (datetimes, `Decimal`, enums, UUIDs, pydantic
+models) it works without any configuration. For your own types, sillo gives you
+a registry you can extend in three scopes.
 
 This page explains what gets serialized, how to teach sillo about a new type, what happens internally when an encoder runs, and how the scopes interact when more than one applies.
 
@@ -51,7 +56,9 @@ Sillo encodes `datetime.now()` to an ISO string through the built-in `datetime.d
 
 ##  Teaching sillo a new type
 
-When you return a type sillo does not recognize — a `Money` value object, a `Vector`, an ORM entity — the default encoder raises `TypeError` during serialization. Register an encoder so sillo knows how to flatten it.
+When you return a type sillo does not recognize (a `Money` value object, a
+`Vector`, an ORM entity) the default encoder raises `TypeError` during
+serialization. Register an encoder so sillo knows how to flatten it.
 
 ###  App-wide (recommended)
 
@@ -80,7 +87,12 @@ async def price(request, response):
     return {"total": Money(Decimal("19.99"), "USD")}
 ```
 
-The response body is `{"total": {"amount": "19.99", "currency": "USD"}}`. Internally, `add_encoder` stores the callable on `app.custom_encoders` **and** writes it into the module-level `CUSTOM_ENCODERS` registry (via `register_encoder`), so the encoder works no matter how the response is produced — handler return, `response.json(...)`, or a manually built `JSONResponse`.
+The response body is `{"total": {"amount": "19.99", "currency": "USD"}}`.
+Internally, `add_encoder` stores the callable on `app.custom_encoders` **and**
+writes it into the module-level `CUSTOM_ENCODERS` registry (via
+`register_encoder`), so the encoder works no matter how the response is
+produced: handler return, `response.json(...)`, or a manually built
+`JSONResponse`.
 
 <aside type="tip" title="Register at startup">
 Register app-wide encoders before the app starts serving traffic, alongside other startup configuration. Encoders are consulted at serialization time, so registering them late still works, but doing it up front keeps behavior predictable.
@@ -88,7 +100,8 @@ Register app-wide encoders before the app starts serving traffic, alongside othe
 
 ###  Global registry
 
-For code that is not tied to a specific app instance — a shared library, a plugin, a base model used across projects — register at the module level:
+For code that is not tied to a specific app instance (a shared library, a
+plugin, a base model used across projects) register at the module level:
 
 ```python
 from sillo.encoding import register_encoder
@@ -116,9 +129,11 @@ async def raw(request, response):
 
 When `jsonable_encoder` meets a value, it picks an encoder in this order:
 
-1. **Per-call `custom_encoder`** — merged on top of everything else, so it wins.
-2. **App/global registry match** — first an *exact* `type(obj)` lookup, then an `isinstance` walk over registered base classes (so registering `Base` also encodes `Derived`).
-3. **Built-in `ENCODERS_BY_TYPE`** — the table shown above.
+1. **Per-call `custom_encoder`**: merged on top of everything else, so it wins.
+2. **App/global registry match**: first an *exact* `type(obj)` lookup, then an
+   `isinstance` walk over registered base classes (so registering `Base` also
+   encodes `Derived`).
+3. **Built-in `ENCODERS_BY_TYPE`**: the table shown above.
 
 The merge is concrete: `custom_encoder = {**CUSTOM_ENCODERS, **(custom_encoder or {})}`. Because the per-call dict is spread last, a per-call entry for the same type shadows a globally registered one. The exact-type branch is checked before the `isinstance` branch, so a specific encoder for `Derived` beats a general one for `Base`.
 
@@ -154,17 +169,32 @@ The encoder runs once per `Money` value during serialization, so handlers stay f
 
 ##  Works with
 
-- **Handlers** — encoder return values automatically. No import or call needed in the handler body beyond `app.add_encoder` at setup.
-- **Dependency injection** — a dependency that returns a custom type benefits from the same registry; register the encoder once and inject the value anywhere.
-- **Tests** — `TestClient` serializes responses through the same path, so an encoder registered on the app under test is exercised end-to-end (see below).
-- **Security / sessions** — JSON error and auth responses flow through `jsonable_encoder` too, so custom types inside those payloads are encoded consistently.
+- **Handlers**: encoder return values automatically. No import or call needed
+  in the handler body beyond `app.add_encoder` at setup.
+- **Dependency injection.** A dependency that returns a custom type benefits
+  from the same registry; register the encoder once and inject the value
+  anywhere.
+- **Tests.** `TestClient` serializes responses through the same path, so an
+  encoder registered on the app under test is exercised end-to-end (see below).
+- **Security / sessions**: JSON error and auth responses flow through
+  `jsonable_encoder` too, so custom types inside those payloads are encoded
+  consistently.
 
 ##  Errors and edge cases
 
-- **Unregistered type** — if a returned value is not JSON-native and no encoder matches, `jsonable_encoder` raises `TypeError` while building the response. The error surfaces as a `500` from sillo's error handling. Register the type (or convert it in the handler) to fix it.
-- **Encoder raises** — an encoder that throws becomes a `500` at serialization time. Keep encoders pure and defensive; never do I/O or network calls inside one.
-- **Mutating global state** — `register_encoder` writes to a process-wide dict. In tests or multi-app processes, clear it afterward (see Testing) to avoid leaking encoders between cases.
-- **Subclass ambiguity** — if both `Base` and `Derived` are registered, the *exact* `Derived` match wins. If only `Base` is registered, `Derived` instances use the `Base` encoder via `isinstance`.
+- **Unregistered type.** If a returned value is not JSON-native and no encoder
+  matches, `jsonable_encoder` raises `TypeError` while building the response.
+  The error surfaces as a `500` from sillo's error handling. Register the type
+  (or convert it in the handler) to fix it.
+- **Encoder raises.** An encoder that throws becomes a `500` at serialization
+  time. Keep encoders pure and defensive; never do I/O or network calls inside
+  one.
+- **Mutating global state.** `register_encoder` writes to a process-wide dict.
+  In tests or multi-app processes, clear it afterward (see Testing) to avoid
+  leaking encoders between cases.
+- **Subclass ambiguity.** If both `Base` and `Derived` are registered, the
+  *exact* `Derived` match wins. If only `Base` is registered, `Derived`
+  instances use the `Base` encoder via `isinstance`.
 
 ##  Testing
 
@@ -230,16 +260,20 @@ def teardown_module(module):
 ##  Production considerations
 
 - **Keep encoders cheap.** They run on every matching value, recursively, during response serialization. A slow encoder adds latency to every request that returns the type.
-- **Prefer app-wide or global registration** over per-call `custom_encoder` for types that recur — per-call dicts allocate a new map on every response.
+- **Prefer app-wide or global registration** over per-call `custom_encoder` for
+  types that recur, per-call dicts allocate a new map on every response.
 - **Isolation in multi-app processes.** The global `CUSTOM_ENCODERS` is shared across every app in the process. If two apps register different encoders for the same type, the last write wins process-wide. Use `app.custom_encoders` + per-call overrides, or namespaced types, to avoid cross-app leakage.
 - **Large payloads.** Encoding walks the whole object graph. For very large responses, consider streaming or returning a pre-built `dict` instead of relying on a deep custom encoder.
 - **Determinism.** Encoders should be pure functions of their input. Non-deterministic output (timestamps, randomness) makes responses and tests harder to reason about.
 
 ##  Related topics
 
-- [Sending Responses](/guides/sending-responses/) — `response.json(...)` and other response builders
-- [Dependency Injection](/guides/dependency-injection/) — injecting custom-typed values
-- [Request Inputs](/guides/request-inputs/) — parsing incoming data before you serialize the outgoing response
+- [Sending Responses](/guides/sending-responses/): `response.json(...)` and
+  other response builders
+- [Dependency Injection](/guides/dependency-injection/): injecting custom-typed
+  values
+- [Request Inputs](/guides/request-inputs/): parsing incoming data before you
+  serialize the outgoing response
 
 
 ##  What the encoder handles
@@ -251,9 +285,9 @@ module refuses: `datetime`, `date`, `time`, `Decimal`, `UUID`, `Enum`,
 
 Knowing what it does with each prevents surprises in your API contract.
 
-`datetime` becomes an ISO 8601 string. Always include the timezone —
-a naive datetime serializes without an offset, and every client will
-guess differently about what it means.
+`datetime` becomes an ISO 8601 string. Always include the timezone. A naive
+datetime serializes without an offset, and every client will guess differently
+about what it means.
 
 `Decimal` becomes a float by default, which loses precision. For money,
 serialize integer cents or an explicit string; a float cannot represent
@@ -261,7 +295,7 @@ serialize integer cents or an explicit string; a float cannot represent
 `19.989999999999998`.
 
 `Enum` becomes its value, not its name. That makes the value part of your
-public contract — renaming the member is safe, changing the value is not.
+public contract. Renaming the member is safe, changing the value is not.
 
 `set` becomes a list in unspecified order. If the order matters to a
 client, sort it before returning.
@@ -277,10 +311,9 @@ app.add_encoder(Decimal, str)               # money as an exact string
 app.add_encoder(MyDomainType, lambda v: v.to_public_dict())
 ```
 
-Registering one is a contract decision, not a formatting one — every
-endpoint returning that type changes shape at once. Do it early, and
-prefer an explicit conversion in the response model when only one
-endpoint needs it.
+Registering one is a contract decision, not a formatting one, every endpoint
+returning that type changes shape at once. Do it early, and prefer an explicit
+conversion in the response model when only one endpoint needs it.
 
 ##  Serialization is where data leaks
 
@@ -305,11 +338,10 @@ Serializing a large response is CPU work on the event loop, and it is
 frequently the slowest part of an endpoint that looks fast in the
 database.
 
-Three things reduce it. Return fewer fields — the response model that
-protects you from leaks also halves the encoding cost. Return fewer rows
-— pagination is a performance feature before it is a UX one. And avoid
-re-encoding: a response cached as a serialized string skips both the
-query and the encode.
+Three things reduce it. Return fewer fields (the response model that protects
+you from leaks also halves the encoding cost. Return fewer rows) pagination is
+a performance feature before it is a UX one. And avoid re-encoding: a response
+cached as a serialized string skips both the query and the encode.
 
 For genuinely large payloads, streaming a generated body avoids holding
 the whole serialized result in memory at once. See
@@ -334,6 +366,6 @@ The choices on this page are per-application, not per-endpoint. A
 another forces every client to special-case, and the inconsistency
 usually arrives one endpoint at a time.
 
-Decide once for the common types — timestamps, money, identifiers,
-nullable fields — write it down, and enforce it through shared base
-models rather than convention.
+Decide once for the common types (timestamps, money, identifiers, nullable
+fields) write it down, and enforce it through shared base models rather than
+convention.

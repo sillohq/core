@@ -11,8 +11,8 @@ description: "Files, retry, crypto, JWT, network, HTML, strings, text utilities"
 ## Architecture Overview
 
 The helpers package is a collection of **stateless utility modules** with no
-framework coupling — none of them import `sillo.application`, `Request`, or any
-ORM model.  This makes them safe to use from CLI commands, background workers,
+framework coupling: none of them import `sillo.application`, `Request`, or any
+ORM model. This makes them safe to use from CLI commands, background workers,
 tests, and other non-request contexts.
 
 ```mermaid
@@ -65,7 +65,7 @@ descriptive message at call time rather than at import time.
 
 ---
 
-## files.py — File Utilities
+## files.py: File Utilities
 
 **File:** `core/sillo/helpers/files.py`
 **Lines:** ~410
@@ -76,7 +76,7 @@ descriptive message at call time rather than at import time.
 | Name | Type | Value |
 |------|------|-------|
 | `_SIZE_UNITS` | `list[str]` | `["B", "KB", "MB", "GB", "TB", "PB"]` |
-| `_DANGEROUS_EXTENSIONS` | `frozenset[str]` | 17 entries — see below |
+| `_DANGEROUS_EXTENSIONS` | `frozenset[str]` | 17 entries. See below |
 | `_SAFE_NAME_RE` | `re.Pattern` | `r"[^\w.\-]"` |
 | `_EXT_RE` | `re.Pattern` | `r"\.([a-zA-Z0-9]+)$"` |
 
@@ -111,7 +111,7 @@ format_size(1048576)  → "1.0 MB"
 #### `format_size_binary(bytes_value: float) -> str`
 
 Same algorithm as `format_size` but uses IEC binary unit names: B, KiB, MiB,
-GiB, TiB, PiB.  Arithmetic is still base-1024 — only the labels differ.
+GiB, TiB, PiB. Arithmetic is still base-1024, only the labels differ.
 
 #### `parse_size(size_str: str) -> int`
 
@@ -235,8 +235,8 @@ Human-readable relative age string:
 
 #### `ensure_directory(path: str | Path) -> Path`
 
-`Path(path).mkdir(parents=True, exist_ok=True)` — creates the directory and
-all parents.  Returns the `Path` object for chaining.
+`Path(path).mkdir(parents=True, exist_ok=True)`, creates the directory and all
+parents. Returns the `Path` object for chaining.
 
 #### `list_files(directory, pattern="*", recursive=False) -> list[Path]`
 
@@ -245,7 +245,7 @@ otherwise `Path.glob`.  Returns a `list[Path]`.
 
 ---
 
-## retry.py — Retry with Exponential Backoff
+## retry.py: Retry with Exponential Backoff
 
 **File:** `core/sillo/helpers/retry.py`
 **Lines:** ~284
@@ -356,7 +356,7 @@ Same as `async_retry` but synchronous, using `time.sleep`.
 
 ---
 
-## crypto.py — Symmetric Encryption & Signing
+## crypto.py: Symmetric Encryption & Signing
 
 **File:** `core/sillo/helpers/crypto.py`
 **Lines:** ~255
@@ -417,13 +417,13 @@ Derives a key from a password using **PBKDF2-HMAC-SHA256**.
 
 | Parameter | Default | Notes |
 |-----------|---------|-------|
-| `password` | — | UTF-8 encoded before derivation |
+| `password` |  | UTF-8 encoded before derivation |
 | `salt` | `None` | Auto-generated 16-byte random salt if `None` |
 | `length` | 32 | Derived key length in bytes |
 | `iterations` | 600 000 | OWASP-recommended minimum for SHA-256 |
 
-Returns `(derived_key, salt)` — the caller must **store the salt** alongside
-the ciphertext.
+Returns `(derived_key, salt)`. The caller must **store the salt** alongside the
+ciphertext.
 
 #### `sign_value`
 
@@ -457,7 +457,7 @@ Verifies an HMAC signature using **`hmac.compare_digest`** (constant-time
 comparison to prevent timing attacks).
 
 **Algorithm:**
-1. Split on `.` — expect exactly 2 parts.
+1. Split on `.`: expect exactly 2 parts.
 2. Recompute the expected signature.
 3. Compare with `hmac.compare_digest(actual, expected)`.
 4. On mismatch, raise `BadSignature`.
@@ -468,7 +468,7 @@ future timestamp-based expiry.
 
 ---
 
-## jwt.py — JSON Web Tokens
+## jwt.py: JSON Web Tokens
 
 **File:** `core/sillo/helpers/jwt.py`
 **Lines:** ~424
@@ -557,9 +557,9 @@ def create_access_token(
 ```
 
 Adds claims:
-- `exp` — `datetime.utcnow() + expires_delta` (default 15 min)
-- `iat` — `datetime.utcnow()`
-- `iss` — only if `issuer` is provided
+- `exp`: `datetime.utcnow() + expires_delta` (default 15 min)
+- `iat`: `datetime.utcnow()`
+- `iss`: only if `issuer` is provided
 
 #### `create_refresh_token`
 
@@ -594,14 +594,14 @@ def validate_claims(
 ```
 
 Manually validates standard claims against current UTC time:
-- `exp` — must not be in the past (with leeway)
-- `nbf` — must not be in the future (with leeway)
-- `aud` — must match if `audience` is provided
-- `iss` — must match if `issuer` is provided
+- `exp`: must not be in the past (with leeway)
+- `nbf`: must not be in the future (with leeway)
+- `aud`: must match if `audience` is provided
+- `iss`: must match if `issuer` is provided
 
 ---
 
-## network.py — IP Address Utilities
+## network.py: IP Address Utilities
 
 **File:** `core/sillo/helpers/network.py`
 **Lines:** ~292
@@ -693,7 +693,7 @@ Returns `False` on `ValueError` (invalid input) instead of raising.
 
 ---
 
-## html.py — HTML Sanitisation & Escape
+## html.py: HTML Sanitisation & Escape
 
 **File:** `core/sillo/helpers/html.py`
 **Lines:** ~251
@@ -712,11 +712,11 @@ Returns `False` on `ValueError` (invalid input) instead of raising.
 
 #### `escape_html(text: str) -> str`
 
-`html.escape(text, quote=True)` — escapes `&`, `<`, `>`, `"`, `'`.
+`html.escape(text, quote=True)`: escapes `&`, `<`, `>`, `"`, `'`.
 
 #### `unescape_html(text: str) -> str`
 
-`html.unescape(text)` — reverses HTML entity encoding.
+`html.unescape(text)`, reverses HTML entity encoding.
 
 #### `strip_tags(html: str) -> str`
 
@@ -768,7 +768,7 @@ The `rel="noopener noreferrer"` prevents tab-napping attacks.
 
 ---
 
-## strings.py — String Transformations
+## strings.py: String Transformations
 
 **File:** `core/sillo/helpers/strings.py`
 **Lines:** ~319
@@ -863,7 +863,7 @@ mask_email("ab@c.com")            → "a*@c.com"
 
 #### `random_token(length=64) -> str`
 
-`secrets.token_urlsafe(length)` — returns a URL-safe base64-encoded token.
+`secrets.token_urlsafe(length)`, returns a URL-safe base64-encoded token.
 
 #### `strip_accents(text: str) -> str`
 
@@ -883,7 +883,7 @@ strip_accents("café résumé") → "cafe resume"
 
 ---
 
-## text.py — Text Processing
+## text.py: Text Processing
 
 **File:** `core/sillo/helpers/text.py`
 **Lines:** ~260
@@ -934,24 +934,24 @@ Extracts a contextual window around a query match.
 
 #### `strip_html(text: str) -> str`
 
-Regex-based: `_HTML_TAG_RE.sub(" ", text)` then
-`_MULTI_SPACE_RE.sub(" ", ...).strip()`.  Lighter than `html.strip_tags` —
-doesn't need `HTMLParser`.
+Regex-based: `_HTML_TAG_RE.sub(" ", text)` then `_MULTI_SPACE_RE.sub(" ",
+...).strip()`. Lighter than `html.strip_tags`, doesn't need `HTMLParser`.
 
 #### `pluralize(word: str, count: int) -> str`
 
 If `count == 1`, return the word.  Otherwise, apply English pluralisation rules
 in order:
 
-1. **Irregular lookup** — check `_PLURAL_IRREGULARS` dict.
-2. **Sibilant endings** — words ending in `s`, `x`, `z`, `ch`, `sh` → add `"es"`.
-3. **Consonant + y** — replace `y` with `"ies"` (e.g. `city` → `cities`).
-4. **f/fe endings** — replace `f`/`fe` with `"ves"` (e.g. `knife` → `knives`).
-5. **Default** — add `"s"`.
+1. **Irregular lookup.** Check `_PLURAL_IRREGULARS` dict.
+2. **Sibilant endings**: words ending in `s`, `x`, `z`, `ch`, `sh` → add
+   `"es"`.
+3. **Consonant + y**: replace `y` with `"ies"` (e.g. `city` → `cities`).
+4. **f/fe endings**: replace `f`/`fe` with `"ves"` (e.g. `knife` → `knives`).
+5. **Default.** Add `"s"`.
 
 #### `word_count(text: str) -> int`
 
-`len(_WORD_RE.findall(text))` — counts sequences of word characters.
+`len(_WORD_RE.findall(text))`, counts sequences of word characters.
 
 #### `ellipsis(text: str, max_lines: int) -> str`
 
@@ -973,7 +973,7 @@ Regex: `[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}`
 
 ---
 
-## hashing.py — Hashing (Compat Wrapper)
+## hashing.py: Hashing (Compat Wrapper)
 
 **File:** `core/sillo/helpers/hashing.py`
 **Lines:** ~194
@@ -1012,7 +1012,7 @@ data through `hashlib.new(algorithm)`.  Memory-efficient for large files.
 
 #### `random_salt(length: int = 16) -> str`
 
-`secrets.token_hex(length)` — returns `length * 2` hex characters.
+`secrets.token_hex(length)`, returns `length * 2` hex characters.
 
 #### `sha1(data: str | bytes) -> str`
 
@@ -1031,12 +1031,12 @@ hmac.new(
 
 ---
 
-## sillo.hashing — Top-Level Hashing Package
+## sillo.hashing: Top-Level Hashing Package
 
 **File:** `core/sillo/hashing/`
 **Submodules:** `__init__.py`, `config.py`, `core.py`, `exceptions.py`, `utils.py`
 
-### `config.py` — Scheme Configuration
+### `config.py`: Scheme Configuration
 
 ```python
 @dataclass
@@ -1065,7 +1065,7 @@ HashingError(Exception)
 └── VerificationError
 ```
 
-### `core.py` — Password Hashing Engine
+### `core.py`: Password Hashing Engine
 
 Uses `passlib.context.CryptContext` as a lazy singleton.
 
@@ -1078,21 +1078,21 @@ Uses `passlib.context.CryptContext` as a lazy singleton.
 | `set_default_scheme` | `(scheme) -> None` | |
 | `get_available_schemes_list` | `() -> list[str]` | |
 
-### `utils.py` — Utility Functions
+### `utils.py`: Utility Functions
 
 | Function | Signature |
 |----------|-----------|
-| `make_unusable_password` | `() -> str` — `"!" + secrets.token_hex(40)` |
-| `is_password_usable` | `(encoded) -> bool` — not starting with `"!"` |
-| `validate_password` | `(password, user=None, min_length=8) -> list[str]` — checks length, upper, lower, digit, special |
-| `password_strength` | `(password) -> dict` — score 0-6 with "weak"/"medium"/"strong" |
-| `constant_time_compare` | `(val1, val2) -> bool` — `secrets.compare_digest` |
+| `make_unusable_password` | `() -> str`: `"!" + secrets.token_hex(40)` |
+| `is_password_usable` | `(encoded) -> bool`: not starting with `"!"` |
+| `validate_password` | `(password, user=None, min_length=8) -> list[str]`: checks length, upper, lower, digit, special |
+| `password_strength` | `(password) -> dict`: score 0-6 with "weak"/"medium"/"strong" |
+| `constant_time_compare` | `(val1, val2) -> bool`: `secrets.compare_digest` |
 | `md5` | `(value) -> str` |
 | `sha256` | `(value) -> str` |
 
 ---
 
-## async_helpers.py — Async Utilities
+## async_helpers.py: Async Utilities
 
 **File:** `core/sillo/core/helpers/async_helpers.py`
 **Lines:** ~256
@@ -1137,9 +1137,9 @@ class AwaitableOrContextManagerWrapper[SupportsAsyncCloseType]:
 Wraps an `Awaitable[T]` where `T` has `.close()` into a value that satisfies
 `AwaitableOrContextManager[T]`.
 
-- `__await__` — delegates to `self.aw.__await__()`.
-- `__aenter__` — `self.entered = await self.aw; return self.entered`.
-- `__aexit__` — `await self.entered.close(); return None`.
+- `__await__`: delegates to `self.aw.__await__()`.
+- `__aenter__`: `self.entered = await self.aw; return self.entered`.
+- `__aexit__`: `await self.entered.close(); return None`.
 
 ### Function: `is_async_callable`
 
@@ -1158,8 +1158,8 @@ def is_async_callable(obj: Any) -> Any:
 2. Check `asyncio.iscoroutinefunction(obj)`.
 3. If not, check `callable(obj)` and `asyncio.iscoroutinefunction(obj.__call__)`.
 
-This is critical for the DI system — it determines whether a dependency
-should be `await`ed or called synchronously.
+This is critical for the DI system. It determines whether a dependency should
+be `await`ed or called synchronously.
 
 ### Context Manager: `collapse_excgroups`
 

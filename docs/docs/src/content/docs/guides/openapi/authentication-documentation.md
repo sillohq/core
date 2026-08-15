@@ -11,7 +11,7 @@ Securing your API is crucial for protecting user data and enabling safe integrat
 ##  Declare it once
 
 An authentication backend already knows which credential it reads.
-`JWTAuthBackend` reads `Authorization: Bearer <token>` — which *is*
+`JWTAuthBackend` reads `Authorization: Bearer <token>`, which *is*
 `HTTPBearer(scheme="bearer", bearerFormat="JWT")`. So pass your backends to
 `SilloApp(auth=...)` and the document follows from them:
 
@@ -52,35 +52,32 @@ async def me(request, response): ...
 | `schemes=["a", "b"], all_of=True` | `[{"a": [], "b": []}]` | both |
 | `schemes=["a"], required=False` | `[{"a": []}, {}]` | optional |
 | `schemes={"oauth2": ["read:widgets"]}` | `[{"oauth2": ["read:widgets"]}]` | with OAuth2 scopes |
-| `useAuth()` — no `schemes` | every registered scheme, as alternatives | any credential |
+| `useAuth()`: no `schemes` | every registered scheme, as alternatives | any credential |
 | no gate at all | absent | public |
 
-The `{}` in that fourth row is how OpenAPI spells "authentication is
-optional" — an empty requirement object alongside the real ones. Almost
-nobody writes it by hand, which is why optional-auth routes are so often
-documented as mandatory.
+The `{}` in that fourth row is how OpenAPI spells "authentication is optional",
+an empty requirement object alongside the real ones. Almost nobody writes it by
+hand, which is why optional-auth routes are so often documented as mandatory.
 
-The second-to-last row is the one that catches people out. A bare
-`useAuth()` names no scheme but still rejects anonymous callers, and any
-registered backend satisfies it — so the document lists them all as
-alternatives rather than leaving the route looking public. The same applies
-to `useAuth(permissions=[...])`: needing a permission implies needing an
-identity.
+The second-to-last row is the one that catches people out. A bare `useAuth()`
+names no scheme but still rejects anonymous callers, and any registered backend
+satisfies it, so the document lists them all as alternatives rather than
+leaving the route looking public. The same applies to
+`useAuth(permissions=[...])`: needing a permission implies needing an identity.
 
 :::note
-A route documented as public that answers **401** is worse than one
-documented as protected that answers 200 — the reader has no reason to
-suspect their client, and nothing in the reference suggests a credential is
-wanted. That is why the fallback exists rather than leaving `security`
-absent.
+A route documented as public that answers **401** is worse than one documented
+as protected that answers 200. The reader has no reason to suspect their
+client, and nothing in the reference suggests a credential is wanted. That is
+why the fallback exists rather than leaving `security` absent.
 :::
 
 ###  Why this matters more than the shorter syntax
 
-Before this, a route said its auth twice — once as a gate that enforced it,
-once as a `security=` list that documented it — and nothing checked the two
-against each other. A document could advertise bearer auth while the gate
-accepted an API key, forever, with no test failing.
+Before this, a route said its auth twice (once as a gate that enforced it, once
+as a `security=` list that documented it) and nothing checked the two against
+each other. A document could advertise bearer auth while the gate accepted an
+API key, forever, with no test failing.
 
 Turn that into an error:
 
@@ -103,16 +100,16 @@ document says is impossible.
 
 `strict_security` is off by default so existing applications keep building.
 
-###  `scopes=` is gone — `schemes=` is the only spelling
+###  `scopes=` is gone: `schemes=` is the only spelling
 
 There used to be two identifiers for one fact: a backend reported a *method
 label* on `AuthResult.scope` (`"jwt"`), while the document named a *scheme*
-(`"bearerAuth"`), and a route had to know both. They are now one — a backend
-reports its own scheme name, and `request.scope["auth"]` and
-`["auth_scheme"]` carry the same value.
+(`"bearerAuth"`), and a route had to know both. They are now one. A backend
+reports its own scheme name, and `request.scope["auth"]` and `["auth_scheme"]`
+carry the same value.
 
-The old `scopes=` parameter, which matched the method label, has been
-removed — passing it raises `TypeError`. Gates name schemes:
+The old `scopes=` parameter, which matched the method label, has been removed.
+Passing it raises `TypeError`. Gates name schemes:
 
 | Old | New |
 | --- | --- |
@@ -125,14 +122,14 @@ gate written as `schemes=["jwt"]` keeps matching a backend that reports
 either label.
 
 :::note
-OpenAPI also says "scopes", meaning OAuth2 permission strings — a third
-thing again. Those live inside `schemes` as the mapping form:
-`schemes={"oauth2": ["read:widgets"]}`.
+OpenAPI also says "scopes", meaning OAuth2 permission strings, a third thing
+again. Those live inside `schemes` as the mapping form: `schemes={"oauth2":
+["read:widgets"]}`.
 :::
 
 ###  Naming two backends of the same kind
 
-Two JWT secrets — a user token and an admin token — are two schemes:
+Two JWT secrets (a user token and an admin token) are two schemes:
 
 ```python
 auth=[
@@ -143,8 +140,8 @@ auth=[
 ```
 
 Leave the second unnamed and sillo raises rather than letting one silently
-overwrite the other — which would document a credential the losing backend
-never reads.
+overwrite the other, which would document a credential the losing backend never
+reads.
 
 ###  Opting out
 
@@ -168,10 +165,10 @@ document has to describe something this process does not enforce.
 
 ###  When you still register schemes by hand
 
-`config.add_security_scheme` remains the way to document a scheme sillo has
-no backend for — `openIdConnect`, an OAuth2 flow handled by an identity
-provider, or mutual TLS terminated at a load balancer. The rest of this page
-covers that path.
+`config.add_security_scheme` remains the way to document a scheme sillo has no
+backend for: `openIdConnect`, an OAuth2 flow handled by an identity provider,
+or mutual TLS terminated at a load balancer. The rest of this page covers that
+path.
 
 :::caution
 **An application that declares no backends still advertises `bearerAuth`.**
@@ -754,10 +751,10 @@ Authentication documentation is crucial for API adoption and security. Clear, co
 
 ##  What the schema can and cannot enforce
 
-A security scheme in the OpenAPI document is a **description**, not a
-control. Declaring `bearerAuth` on a route does not make sillo check for
-a token — that is what dependencies and middleware are for. The schema
-tells clients what to send; your code decides what to accept.
+A security scheme in the OpenAPI document is a **description**, not a control.
+Declaring `bearerAuth` on a route does not make sillo check for a token. That
+is what dependencies and middleware are for. The schema tells clients what to
+send; your code decides what to accept.
 
 The gap matters in both directions. A route documented as requiring auth
 but not actually protected is a vulnerability that reads as secure. A
@@ -788,11 +785,10 @@ permitted to call.
 
 ##  Scopes, and why they belong per endpoint
 
-If your tokens carry scopes, the schema is where a client learns which
-ones a given call needs. Declaring the scheme globally without per-route
-scopes tells integrators nothing, and the rational response is to request
-every scope available — which is precisely the outcome scopes exist to
-prevent.
+If your tokens carry scopes, the schema is where a client learns which ones a
+given call needs. Declaring the scheme globally without per-route scopes tells
+integrators nothing, and the rational response is to request every scope
+available, which is precisely the outcome scopes exist to prevent.
 
 Attach the minimum scope per route. It costs one line and it means a
 generated client, a security review, and an integrator all see the same
@@ -810,11 +806,10 @@ recognisable prefix.
 handlers, and internal health checks in a public schema are a map for
 someone enumerating your surface. Exclude them from the document.
 
-**Do not describe your rate limits so precisely that they become a
-targeting guide** — but do describe them well enough that a legitimate
-client can respect them. The shape that works: state the limit and the
-window, document the `429` response and `Retry-After`, and leave the
-enforcement details out.
+**Do not describe your rate limits so precisely that they become a targeting
+guide**, but do describe them well enough that a legitimate client can respect
+them. The shape that works: state the limit and the window, document the `429`
+response and `Retry-After`, and leave the enforcement details out.
 
 
 ##  Testing that documented auth matches enforced auth

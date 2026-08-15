@@ -110,11 +110,11 @@ class UserFactory(Factory):
 
 **Requirements:**
 
-- `model` — the Tortoise model class.
-- `definition` — a callable returning a dict of default attributes. Each call
-  should produce unique values (e.g., UUIDs) to avoid constraint violations.
+- `model`: the Tortoise model class.
+- `definition`: a callable returning a dict of default attributes. Each call
+  should produce unique values (e.g. UUIDs) to avoid constraint violations.
 
-### 2.3 `make` — Unsaved Instance
+### 2.3 `make`: Unsaved Instance
 
 ```python
 @classmethod
@@ -133,7 +133,7 @@ assert user.email.endswith("@test.com")
 assert not user._saved_in_db
 ```
 
-### 2.4 `create` — Saved Instance
+### 2.4 `create`: Saved Instance
 
 ```python
 @classmethod
@@ -152,7 +152,7 @@ assert user.id is not None
 assert user._saved_in_db
 ```
 
-### 2.5 `create_many` — Batch Creation
+### 2.5 `create_many`: Batch Creation
 
 ```python
 @classmethod
@@ -174,7 +174,7 @@ assert len(users) == 10
 assert len(set(u.email for u in users)) == 10  # all unique
 ```
 
-### 2.6 `state` — Modifier Function
+### 2.6 `state`: Modifier Function
 
 ```python
 @classmethod
@@ -207,13 +207,13 @@ sequenceDiagram
     participant Model as User Model
     participant DB as Database
 
-    Note over Dev,DB: make() — no DB
+    Note over Dev,DB: make(): no DB
     Dev->>Factory: UserFactory.make()
     Factory->>Factory: definition() → {email, name}
     Factory->>Model: User(**data)
     Factory-->>Dev: unsaved instance
 
-    Note over Dev,DB: create() — with DB
+    Note over Dev,DB: create(): with DB
     Dev->>Factory: UserFactory.create()
     Factory->>Factory: make() → instance
     Factory->>Model: instance.save()
@@ -319,11 +319,11 @@ print(f"Seeded {count} records")
 - **Deferred execution:** `seed()` only registers records; `run()` executes
   them. This allows chaining multiple `seed()` calls before running.
 - **Sequential insertion:** Each record is created individually with
-  `model.create()`. This is deliberate — it triggers model lifecycle events
-  (e.g., `before_create`, `after_create`) and validation.
+  `model.create()`. This is deliberate: it triggers model lifecycle events
+  (e.g. `before_create`, `after_create`) and validation.
 - **Return type:** `run()` returns the total count of records created.
 - **`batch_size` parameter:** Present in the signature but not currently used
-  for batching — each record is created individually. Reserved for future
+  for batching: each record is created individually. Reserved for future
   optimization.
 
 ### 4.4 Seeder Flow
@@ -397,7 +397,7 @@ async def load_all(self) -> int:
 - Skips non-matching suffixes and directories.
 - Returns total rows inserted.
 
-### 5.4 `load` — Single Fixture
+### 5.4 `load`: Single Fixture
 
 ```python
 async def load(self, name: str) -> int:
@@ -412,7 +412,7 @@ async def load(self, name: str) -> int:
 - Tries each suffix in order (`.json` first, then `.jsonl`).
 - Raises `FileNotFoundError` if no matching file exists.
 
-### 5.5 `_parse` — File Parsing
+### 5.5 `_parse`: File Parsing
 
 ```python
 def _parse(self, path: Path) -> list[dict[str, Any]]:
@@ -435,7 +435,7 @@ def _parse(self, path: Path) -> list[dict[str, Any]]:
 - Blank lines are skipped.
 - Always produces a list.
 
-### 5.6 `_resolve_model` — Model Resolution
+### 5.6 `_resolve_model`: Model Resolution
 
 ```python
 def _resolve_model(self, name: str) -> Any:
@@ -472,8 +472,8 @@ def _resolve_model(self, name: str) -> Any:
 
 **Resolution order:**
 
-1. **Explicit mapping** — if `models` dict was provided and contains the name.
-2. **Exact match** — `users` → `user` (lowercase).
+1. **Explicit mapping**: if `models` dict was provided and contains the name.
+2. **Exact match**: `users` → `user` (lowercase).
 3. **Pluralization heuristics:**
 
 | Fixture name | Candidates generated       | Matches model |
@@ -484,9 +484,9 @@ def _resolve_model(self, name: str) -> Any:
 | `aliases`    | `aliases`, `aliase`, `alias` | `Alias`      |
 | `taxes`      | `taxes`, `taxe`, `tax`    | `Tax`         |
 
-4. **Failure** — raises `LookupError` with the list of known models.
+4. **Failure**: raises `LookupError` with the list of known models.
 
-### 5.7 `_load_file` — Transactional Loading
+### 5.7 `_load_file`: Transactional Loading
 
 ```python
 async def _load_file(self, path: Path) -> int:
@@ -501,8 +501,8 @@ async def _load_file(self, path: Path) -> int:
     return len(records)
 ```
 
-**Key detail:** The entire file is loaded inside a transaction. If any row fails
-validation or violates a constraint, the entire file is rolled back — no
+**Key detail:** The entire file is loaded inside a transaction. If any row
+fails validation or violates a constraint, the entire file is rolled back, no
 half-populated tables.
 
 ### 5.8 FixtureLoader Flow Diagram
@@ -584,7 +584,7 @@ def _tortoise_to_python_type(field_obj) -> type:
 ```
 
 **Note:** `DatetimeField` maps to `str` (ISO 8601), not `datetime`. This is
-intentional — Pydantic models are used for request validation where datetimes
+intentional. Pydantic models are used for request validation where datetimes
 arrive as strings from JSON payloads.
 
 ### 6.3 Field Processing
@@ -1065,42 +1065,42 @@ def test_user_validation():
 
 ## 12. Gotchas and Known Issues
 
-1. **`create_many` is N individual INSERTs** — For large batches, use
+1. **`create_many` is N individual INSERTs**: For large batches, use
    `Model.bulk_create()` directly for better performance.
 
-2. **`definition` must produce unique values** — If the definition returns
+2. **`definition` must produce unique values**: If the definition returns
    static values, `create_many` will fail on unique constraints.
 
-3. **`FixtureLoader._resolve_model` pluralization** — The heuristic handles
+3. **`FixtureLoader._resolve_model` pluralization**: The heuristic handles
    common English plurals (`ies→y`, `es`, `s`) but not irregular plurals
-   (`people→person`, `children→child`). Use the explicit `models` mapping
-   for those.
+   (`people→person`, `children→child`). Use the explicit `models` mapping for
+   those.
 
-4. **Fixture transaction scope** — Each fixture file is loaded in its own
-   transaction. If `02_posts.json` references users from `01_users.json`,
-   both must succeed — a failure in posts does not roll back users.
+4. **Fixture transaction scope.** Each fixture file is loaded in its own
+   transaction. If `02_posts.json` references users from `01_users.json`, both
+   must succeed. A failure in posts does not roll back users.
 
-5. **`Seeder.run()` is sequential** — Each record is created individually.
-   For large seed datasets, consider `Model.bulk_create()` with pre-built
+5. **`Seeder.run()` is sequential**: Each record is created individually. For
+   large seed datasets, consider `Model.bulk_create()` with pre-built
    instances.
 
-6. **Pydantic `DatetimeField` → `str`** — This is intentional for request
+6. **Pydantic `DatetimeField` → `str`**: This is intentional for request
    validation, but means the generated schema does not validate ISO 8601
    format. Add a custom validator if needed.
 
-7. **Exception handler `OperationalError` hides details** — The response says
-   "Database unavailable" without specifics. This is correct for production
-   but makes debugging harder. Check server logs for the actual error.
+7. **Exception handler `OperationalError` hides details**: The response says
+   "Database unavailable" without specifics. This is correct for production but
+   makes debugging harder. Check server logs for the actual error.
 
-8. **`Factory.state` returns a callable** — It does not return a modified
-   factory class. Assign the result to a variable or use it as the
-   `definition` of a new factory.
+8. **`Factory.state` returns a callable**: It does not return a modified
+   factory class. Assign the result to a variable or use it as the `definition`
+   of a new factory.
 
-9. **Fixture model resolution requires Tortoise init** — `_resolve_model`
-   queries `Tortoise.apps` to find registered models. If Tortoise has not
-   been initialized, the registry is empty and all lookups fail.
+9. **Fixture model resolution requires Tortoise init.** `_resolve_model`
+   queries `Tortoise.apps` to find registered models. If Tortoise has not been
+   initialized, the registry is empty and all lookups fail.
 
-10. **`register_db_exception_handlers` is idempotent** — Calling it multiple
+10. **`register_db_exception_handlers` is idempotent**: Calling it multiple
     times adds duplicate handlers. The last handler registered wins for each
     exception type, but the others still run (and produce no output since the
     response is already sent).

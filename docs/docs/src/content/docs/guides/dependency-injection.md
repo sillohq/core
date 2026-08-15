@@ -14,7 +14,11 @@ head:
 
 #  Dependency Injection
 
-Dependency injection (DI) is how sillo lets a handler declare *what it needs* — a database session, the current user, a parsed query, a config object — without wiring it up by hand inside the function body. The framework inspects the handler's signature, builds an execution plan, runs each dependency in order, and passes the results in as arguments.
+Dependency injection (DI) is how sillo lets a handler declare *what it needs*
+(a database session, the current user, a parsed query, a config object) without
+wiring it up by hand inside the function body. The framework inspects the
+handler's signature, builds an execution plan, runs each dependency in order,
+and passes the results in as arguments.
 
 The payoff is the same as anywhere else DI is used: handlers stay small and focused, cross-cutting logic lives in one place, and everything is easy to test because a dependency is just a callable you can call directly or swap out.
 
@@ -45,12 +49,17 @@ async def greet(request, response, greeting: str = Depend(get_greeting)):
 `Depend(get_greeting)` tells sillo: *before calling `greet`, call `get_greeting()`, and bind its return value to the `greeting` parameter.* The dependency takes no arguments here, so it's just a zero-arg factory.
 
 <aside type="tip" title="Dependencies are plain callables">
-`get_greeting` is an ordinary function. That's the whole point — you can unit-test it without a server, and you can reuse it across many routes. sillo only cares that it's callable and that its return type matches the annotated parameter.
+`get_greeting` is an ordinary function. That's the whole point. You can
+unit-test it without a server, and you can reuse it across many routes. sillo
+only cares that it's callable and that its return type matches the annotated
+parameter.
 </aside>
 
 ##  Dependencies that take arguments
 
-Most dependencies need something from the request — the path, a header, the database. A dependency is just a function, so it can declare the same parameter extractors a handler uses:
+Most dependencies need something from the request: the path, a header, the
+database. A dependency is just a function, so it can declare the same parameter
+extractors a handler uses:
 
 ```python
 from sillo import Query, Depend
@@ -68,11 +77,16 @@ async def items(request, response, p: dict = Depend(paginate)):
 
 Here `paginate` declares `page` and `size` as `Query` extractors. When sillo solves the `p` dependency, it first solves those two extractors from the incoming request, then calls `paginate(offset=..., limit=..., page=...)`, then binds the result to `p`.
 
-This is the key mental model: **a dependency's own parameters are solved recursively before the dependency itself runs.** There is no special "dependency API" — dependencies are solved by the exact same engine as the route.
+This is the key mental model: **a dependency's own parameters are solved
+recursively before the dependency itself runs.** There is no special
+"dependency API". Dependencies are solved by the exact same engine as the
+route.
 
 ##  Injecting the raw request
 
-Sometimes a dependency needs the whole request object — to read a header that has no extractor, to touch `request.state`, or to read the client IP. Use `Depend(get_request=True)`:
+Sometimes a dependency needs the whole request object, to read a header that
+has no extractor, to touch `request.state`, or to read the client IP. Use
+`Depend(get_request=True)`:
 
 ```python
 from sillo import Depend
@@ -161,11 +175,14 @@ async def x(request, response, a=Depend(needs_db_a), b=Depend(needs_db_b)):
     return response.json({"same": a is b})
 ```
 
-If you need to disable caching for a specific dependency, set `use_cache=False` on the `Depend` — though for most apps the default is what you want.
+If you need to disable caching for a specific dependency, set `use_cache=False`
+on the `Depend`, though for most apps the default is what you want.
 
 ##  Dependencies that clean up after themselves
 
-Some dependencies own a resource that must be released when the response is finished — an open file, a spawned task, a transaction. Declare the dependency as an **async generator** and `yield` the value instead of `return`ing it:
+Some dependencies own a resource that must be released when the response is
+finished: an open file, a spawned task, a transaction. Declare the dependency
+as an **async generator** and `yield` the value instead of `return`ing it:
 
 ```python
 from contextlib import asynccontextmanager
@@ -238,7 +255,9 @@ async def create_order(
 
 ##  Using dependencies at the router and app level
 
-DI isn't limited to one route. You can attach `Dependencies` to a `Router` or `SilloApp` so every route under it gets them — useful for "require auth on everything under `/admin`" style wiring:
+DI isn't limited to one route. You can attach `Dependencies` to a `Router` or
+`SilloApp` so every route under it gets them, useful for "require auth on
+everything under `/admin`" style wiring:
 
 ```python
 from sillo import SilloApp, Depend
@@ -251,7 +270,9 @@ admin = Router(prefix="/admin")
 admin.add_route(...)  # dependencies can be passed per route via the route's `dependencies=`
 ```
 
-Per-route dependencies are passed through the `Route(..., dependencies=[Depend(...)])` list, or — more commonly — you simply declare `Depend(...)` on the specific handler parameter you want.
+Per-route dependencies are passed through the `Route(...,
+dependencies=[Depend(...)])` list, or (more commonly) you simply declare
+`Depend(...)` on the specific handler parameter you want.
 
 ##  A full worked example: per-request DB session + auth
 
@@ -347,7 +368,9 @@ def test_build_user():
         raise AssertionError("expected ValueError")
 ```
 
-For end-to-end checks, drive the route through `TestClient` (see [Installation](/guides/installation/) for setup) — the whole DI tree resolves exactly as it would in production:
+For end-to-end checks, drive the route through `TestClient` (see
+[Installation](/guides/installation/) for setup). The whole DI tree resolves
+exactly as it would in production:
 
 ```python
 from sillo.testclient import TestClient
@@ -362,23 +385,35 @@ assert resp.status_code == 200
 
 ##  Common pitfalls
 
-- **Forgetting `Depend`** — writing `user: User = get_user` binds the *function object*, not its result. Always wrap with `Depend(get_user)`.
-- **Mutating shared state in a singleton dependency** — dependencies are re-solved per request (and cached within it), but a module-level object they return is shared across requests. Keep per-request state in the request, not in globals.
-- **Over-nesting** — three or four levels of dependencies is fine; a dozen is a smell. Flatten when a dependency only exists to pass values through.
-- **Doing I/O in a non-generator dependency** — if you open a connection and `return` it, nothing closes it. Use `yield` so the teardown runs.
+- **Forgetting `Depend`**: writing `user: User = get_user` binds the *function
+  object*, not its result. Always wrap with `Depend(get_user)`.
+- **Mutating shared state in a singleton dependency.** Dependencies are
+  re-solved per request (and cached within it), but a module-level object they
+  return is shared across requests. Keep per-request state in the request, not
+  in globals.
+- **Over-nesting**: three or four levels of dependencies is fine; a dozen is a
+  smell. Flatten when a dependency only exists to pass values through.
+- **Doing I/O in a non-generator dependency**: if you open a connection and
+  `return` it, nothing closes it. Use `yield` so the teardown runs.
 
 ##  Works with
 
-- [Request Parameters](/guides/request-parameters/) — `Query`, `Header`, `Cookie` extractors in handlers and dependencies
-- [Handlers](/guides/handlers/) — the handler contract and return values
-- [Routers & Sub-Apps](/guides/routers-and-subapps/) — organize dependency-protected function handlers behind a prefix
-- [Middleware](/guides/middleware/) — request-scoped logic that runs for every request, not just injected ones
+- [Request Parameters](/guides/request-parameters/): `Query`, `Header`,
+  `Cookie` extractors in handlers and dependencies
+- [Handlers](/guides/handlers/): the handler contract and return values
+- [Routers & Sub-Apps](/guides/routers-and-subapps/): organize
+  dependency-protected function handlers behind a prefix
+- [Middleware](/guides/middleware/): request-scoped logic that runs for every
+  request, not just injected ones
 
 ##  Related topics
 
-- [Routing](/guides/routing/) — path syntax, `name=`, and route options like `request_model`
-- [Error Handling](/guides/error-handling/) — turning validation failures into clean responses
-- [Authentication](/guides/authentication/) — `useAuth` and the auth dependency used by protected routes
+- [Routing](/guides/routing/): path syntax, `name=`, and route options like
+  `request_model`
+- [Error Handling](/guides/error-handling/): turning validation failures into
+  clean responses
+- [Authentication](/guides/authentication/): `useAuth` and the auth dependency
+  used by protected routes
 
 
 ##  When a dependency is the wrong tool
@@ -387,17 +422,16 @@ Dependencies resolve per request, before the handler. That makes them
 right for anything scoped to a request and wrong for two neighbouring
 cases.
 
-**Per-process resources belong in the lifespan.** A connection pool, an
-HTTP client, a template environment — creating one per request is
-expensive and pointless. Build it once in a
-[startup hook](/guides/startups-and-shutdowns/) and read it from
-`app.state` inside a dependency if you want it injected.
+**Per-process resources belong in the lifespan.** A connection pool, an HTTP
+client, a template environment, creating one per request is expensive and
+pointless. Build it once in a [startup hook](/guides/startups-and-shutdowns/)
+and read it from `app.state` inside a dependency if you want it injected.
 
 **Cross-cutting behaviour belongs in middleware.** Logging every request,
-adding a header to every response, enforcing a rate limit — a dependency
-would have to be declared on every route, and the one you forget is the
-one that matters. [Middleware](/guides/middleware/) applies by position
-in the stack rather than by remembering.
+adding a header to every response, enforcing a rate limit. A dependency would
+have to be declared on every route, and the one you forget is the one that
+matters. [Middleware](/guides/middleware/) applies by position in the stack
+rather than by remembering.
 
 The dividing question: does this produce a *value the handler uses*, or
 does it *do something regardless of the handler*? Values are
@@ -405,15 +439,14 @@ dependencies; behaviour is middleware.
 
 ##  Keeping the dependency graph shallow
 
-A dependency that depends on three others, each depending on two more,
-resolves correctly and becomes very hard to reason about — a handler
-signature with one parameter can trigger a dozen database queries you
-cannot see from the route.
+A dependency that depends on three others, each depending on two more, resolves
+correctly and becomes very hard to reason about, a handler signature with one
+parameter can trigger a dozen database queries you cannot see from the route.
 
-Two habits prevent that. Keep the graph at most two levels deep, so a
-reader can hold it in their head. And make expensive dependencies
-obvious at the call site by naming them for what they cost —
-`current_user_with_permissions` says more than `user`.
+Two habits prevent that. Keep the graph at most two levels deep, so a reader
+can hold it in their head. And make expensive dependencies obvious at the call
+site by naming them for what they cost. `current_user_with_permissions` says
+more than `user`.
 
 When a handler needs five injected values, that is usually a sign the
 handler is doing five things.

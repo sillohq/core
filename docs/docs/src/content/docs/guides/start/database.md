@@ -51,9 +51,9 @@ def database() -> DatabaseManager:
     return manager
 ```
 
-There is **no separate migration configuration** — no second file
-declaring the same connection in a different shape. Change the URL here
-and migrations follow.
+There is **no separate migration configuration**, no second file declaring the
+same connection in a different shape. Change the URL here and migrations
+follow.
 
 It sits in `database/` rather than `app/` because it belongs with the
 models it registers and the migrations it points at. The whole data layer
@@ -68,10 +68,10 @@ async with database():
     await User.all()
 ```
 
-The manager is an async context manager: it opens the connection and
-closes it again. Closing matters — an open connection keeps the event loop
-alive, and a script that finishes its work and then hangs at exit is
-usually this rather than a deadlock.
+The manager is an async context manager: it opens the connection and closes it
+again. Closing matters. An open connection keeps the event loop alive, and a
+script that finishes its work and then hangs at exit is usually this rather
+than a deadlock.
 
 The application does not call `database()`; `setup_record` in
 `app/bootstrap.py` builds its own manager from the same
@@ -110,11 +110,11 @@ __all__ = ["Post", "User"]
 ```
 
 :::caution
-**A model not imported there is invisible.** The ORM discovers by module
-scan, so a model in a file nobody imports never gets a table — and the
-first query against it fails with `default_connection cannot be None`,
-which points at the database rather than at the missing import. It is the
-most confusing error a new project can produce, and it always means this.
+**A model not imported there is invisible.** The ORM discovers by module scan,
+so a model in a file nobody imports never gets a table, and the first query
+against it fails with `default_connection cannot be None`, which points at the
+database rather than at the missing import. It is the most confusing error a
+new project can produce, and it always means this.
 :::
 
 ###  A model's docstring is not just documentation
@@ -163,9 +163,8 @@ data-destroying operation dressed as a rename. Edit it into an
 **A changed column type is emitted with no `USING` clause**, which fails
 on PostgreSQL whenever the conversion is not implicit.
 
-**A new non-null column without a default fails on any table with rows.**
-Add it nullable, backfill, then add the constraint — three migrations, not
-one.
+**A new non-null column without a default fails on any table with rows.** Add
+it nullable, backfill, then add the constraint, three migrations, not one.
 
 To see the SQL without running it:
 
@@ -184,9 +183,9 @@ sillo db:rollback 0002_add_tags   # back to this migration
 sillo db:rollback zero            # unapply everything
 ```
 
-There is no "one step back" — you name where to stop. That is deliberate:
-"one step" is ambiguous the moment two people have merged migrations, and
-naming the target is unambiguous always.
+There is no "one step back". You name where to stop. That is deliberate: "one
+step" is ambiguous the moment two people have merged migrations, and naming the
+target is unambiguous always.
 
 ##  Schema generation is off, on purpose
 
@@ -206,8 +205,8 @@ to apply against tables that already exist.
 scheduler sharing one SQLite file will race to issue DDL on boot and raise
 `database is locked`.
 
-Set `DB_GENERATE_SCHEMAS=true` if you want it for a throwaway database —
-tests do exactly that — but leave it off in anything that keeps data.
+Set `DB_GENERATE_SCHEMAS=true` if you want it for a throwaway database (tests
+do exactly that) but leave it off in anything that keeps data.
 
 ##  Another database
 
@@ -255,7 +254,7 @@ A new project has three tables:
 
 | Table | |
 | --- | --- |
-| `users` | Your user model. Everyone — including administrators |
+| `users` | Your user model. Everyone: including administrators |
 | `admin_activity` | The admin's audit log: who changed what, and when |
 | `tortoise_migrations` | Which migrations have been applied |
 
@@ -266,10 +265,10 @@ MODEL_MODULES = ["database.models", "sillo.admin.models"]
 ```
 
 `sillo.admin.models` is the activity log alone. The admin's *default* user
-model lives in `sillo.admin.default_user` and is deliberately not
-registered — registering it would add `admin_users` and `admin_roles`
-beside your `users`, a second set of accounts to keep in step or forget
-about. See [The Admin Panel](/guides/start/admin/).
+model lives in `sillo.admin.default_user` and is deliberately not registered.
+Registering it would add `admin_users` and `admin_roles` beside your `users`, a
+second set of accounts to keep in step or forget about. See [The Admin
+Panel](/guides/start/admin/).
 
 To drop the audit log, remove that entry and run
 `sillo db:make drop activity log --apply`. The admin works either way: without
@@ -286,16 +285,15 @@ three concurrent schema changes and, on a good day, two failures.
 uv run sillo db:migrate && exec uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-That is fine for a single instance. For rolling deployments, make it a job
-that runs once and gates the rollout, and keep each migration compatible
-with both the old and the new application version — add columns before the
-code that writes them, drop them a release after the code that read them
-is gone.
+That is fine for a single instance. For rolling deployments, make it a job that
+runs once and gates the rollout, and keep each migration compatible with both
+the old and the new application version. Add columns before the code that
+writes them, drop them a release after the code that read them is gone.
 
 ##  Seeding
 
-For reference data — roles, plans, countries — make it idempotent, because
-it will run more than once:
+For reference data (roles, plans, countries) make it idempotent, because it
+will run more than once:
 
 ```python
 async def seed_defaults():
@@ -338,10 +336,10 @@ await plan(database())              # list without running
 await rollback(database(), "0003_add_slug")
 ```
 
-Two of them — `init` and `make` — exist only behind the engine's own
-command line, which reads its configuration by *importing a dotted path*
-rather than taking a value. Sillo handles that internally, publishing the
-configuration on a module it owns and handing over the path to that.
+Two of them (`init` and `make`) exist only behind the engine's own command
+line, which reads its configuration by *importing a dotted path* rather than
+taking a value. Sillo handles that internally, publishing the configuration on
+a module it owns and handing over the path to that.
 
 The result is that a project needs no module written for the migration
 engine's benefit: no `TORTOISE_ORM` at module level, no dotted path
@@ -363,14 +361,14 @@ an ordinary Python module shaped the way your project wants.
 4. **`sillo db:make` with no `m=` writes a migration called `update`.**
    Harmless, uninformative, and permanent.
 
-5. **Two people adding migrations in parallel** produce two `0002_`
-   files. Rename one and reorder before merging — the engine orders by
-   name.
+5. **Two people adding migrations in parallel** produce two `0002_` files.
+   Rename one and reorder before merging. The engine orders by name.
 
 ##  Related
 
-- [Project Structure](/guides/start/structure/) — where the data layer sits
-- [The Console](/guides/start/console/) — the `db` commands in detail
-- [Models & Mixins](/guides/record/models/) — what you can put in a model
-- [Migrations & Seeding](/guides/record/migrations/) — the framework-level reference
-- [Deployment](/guides/start/deployment/) — migrating on deploy
+- [Project Structure](/guides/start/structure/): where the data layer sits
+- [The Console](/guides/start/console/): the `db` commands in detail
+- [Models & Mixins](/guides/record/models/): what you can put in a model
+- [Migrations & Seeding](/guides/record/migrations/): the framework-level
+  reference
+- [Deployment](/guides/start/deployment/): migrating on deploy

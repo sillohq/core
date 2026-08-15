@@ -51,9 +51,9 @@ types, group membership, per-connection state, or cleanup that has to run
 on disconnect. The class gives that a shape, and the receive loop is
 written once rather than in every handler.
 
-Use a plain `ws_route` function for endpoints that do one thing — an echo
-service, a log tail, a single-purpose notification stream. A class with
-one overridden method is not an improvement over a function.
+Use a plain `ws_route` function for endpoints that do one thing: an echo
+service, a log tail, a single-purpose notification stream. A class with one
+overridden method is not an improvement over a function.
 
 ##  The lifecycle
 
@@ -80,9 +80,9 @@ Every subsequent `receive_*` raises
 `RuntimeError: WebSocket is not connected. Need to call "accept" first.`
 Call `accept()` first, or call `await super().on_connect(websocket)`.
 
-Conversely, calling `accept()` twice — once in `super()` and once in your
-override — raises on the second call, because the state machine has
-already left `CONNECTING`.
+Conversely, calling `accept()` twice (once in `super()` and once in your
+override) raises on the second call, because the state machine has already left
+`CONNECTING`.
 
 ###  `on_disconnect` always runs
 
@@ -90,10 +90,9 @@ It is in a `finally`, so it runs after a clean disconnect, after an
 exception in `on_receive`, and after an exception in `on_connect`. That
 makes it the right place to leave groups and release resources.
 
-It also means `on_disconnect` can run when `on_connect` never finished.
-If `on_connect` raised before joining a group, the matching
-`leave_group` runs anyway — which, as it happens, is a path into a
-crash. See the next section.
+It also means `on_disconnect` can run when `on_connect` never finished. If
+`on_connect` raised before joining a group, the matching `leave_group` runs
+anyway, which, as it happens, is a path into a crash. See the next section.
 
 ###  Exceptions are re-raised, not swallowed
 
@@ -108,10 +107,10 @@ finally:
 ```
 
 An unhandled exception in `on_receive` sets the close code to 1011, runs
-`on_disconnect`, and then propagates. `close_code` is assigned but the
-socket is not explicitly closed here — the surrounding error middleware
-handles that. The practical consequence is that one malformed message can
-terminate a connection. Catch what you can handle:
+`on_disconnect`, and then propagates. `close_code` is assigned but the socket
+is not explicitly closed here. The surrounding error middleware handles that.
+The practical consequence is that one malformed message can terminate a
+connection. Catch what you can handle:
 
 ```python title="keeping the connection alive through bad input"
 async def on_receive(self, websocket, data):
@@ -136,9 +135,9 @@ sees it.
 | `"bytes"` | `bytes` | closes with 1003 if a text frame arrives |
 | `None` (default) | text if present, else bytes | `KeyError` if the frame has neither |
 
-The JSON branch accepts either frame type — it decodes a binary frame as
-UTF-8 before parsing — so a client that sends JSON over binary frames
-works without configuration.
+The JSON branch accepts either frame type (it decodes a binary frame as UTF-8
+before parsing) so a client that sends JSON over binary frames works without
+configuration.
 
 <Aside type="caution" title="Malformed JSON kills the connection">
 
@@ -146,10 +145,9 @@ With `encoding = "json"`, a single unparseable message closes the socket
 with 1003 and raises. There is no hook to handle it, because the failure
 happens in `decode()` before `on_receive` is called.
 
-If clients might send garbage — anything driven by a browser
-extension, a flaky mobile client, or a hand-written reconnect loop —
-leave `encoding` unset and parse in your handler, where you can reply
-with an error instead of hanging up:
+If clients might send garbage (anything driven by a browser extension, a flaky
+mobile client, or a hand-written reconnect loop) leave `encoding` unset and
+parse in your handler, where you can reply with an error instead of hanging up:
 
 ```python
 class Tolerant(WebSocketConsumer):
@@ -166,9 +164,8 @@ class Tolerant(WebSocketConsumer):
 
 ##  Channels and groups
 
-Every consumer instance gets `self.channel` — a `Channel` wrapping the
-socket, with a JSON payload type when `encoding == "json"` and text
-otherwise.
+Every consumer instance gets `self.channel`, a `Channel` wrapping the socket,
+with a JSON payload type when `encoding == "json"` and text otherwise.
 
 ```python title="the group helpers"
 await self.join_group("room:42")
@@ -203,10 +200,10 @@ UnboundLocalError: cannot access local variable 'channel_remove_status'
 where it is not associated with a value
 ```
 
-This is reachable from ordinary code. A consumer whose `on_connect`
-failed before joining, or one that leaves a group twice, will hit it —
-and because `leave_group` is normally called from `on_disconnect`, the
-error surfaces during cleanup where it is least expected.
+This is reachable from ordinary code. A consumer whose `on_connect` failed
+before joining, or one that leaves a group twice, will hit it, and because
+`leave_group` is normally called from `on_disconnect`, the error surfaces
+during cleanup where it is least expected.
 
 Guard the call until this is fixed upstream:
 
@@ -224,7 +221,7 @@ Or track membership yourself and only leave groups you know you joined.
 
 ##  The 3600-second channel expiry
 
-`__call__` constructs the channel with `expires=3600` — hard-coded, not
+`__call__` constructs the channel with `expires=3600`, hard-coded, not
 configurable through the class.
 
 ```python
@@ -242,11 +239,10 @@ notification socket that receives nothing for an hour gets silently
 removed from its groups while the underlying socket stays open. The
 client believes it is subscribed; the server has forgotten it.
 
-Two mitigations. Send a heartbeat from the server at an interval well
-under an hour — which also keeps intermediary proxies from closing idle
-connections. Or construct the channel yourself in `on_connect` with
-`expires=None` and manage group membership directly, bypassing the
-consumer's channel entirely.
+Two mitigations. Send a heartbeat from the server at an interval well under an
+hour, which also keeps intermediary proxies from closing idle connections. Or
+construct the channel yourself in `on_connect` with `expires=None` and manage
+group membership directly, bypassing the consumer's channel entirely.
 
 ##  Registering a consumer
 
@@ -255,11 +251,10 @@ app.add_ws_route(ChatConsumer.as_route("/ws/chat"))
 app.add_ws_route(RoomConsumer.as_route("/ws/room/{room_id}"))
 ```
 
-`as_route` returns a `WebsocketRoute` whose handler instantiates the
-class per connection. That per-connection instance is why `self.channel`
-and any instance attributes you set are safe — they are not shared
-between clients. Class attributes are shared; do not accumulate state on
-the class.
+`as_route` returns a `WebsocketRoute` whose handler instantiates the class per
+connection. That per-connection instance is why `self.channel` and any instance
+attributes you set are safe. They are not shared between clients. Class
+attributes are shared; do not accumulate state on the class.
 
 Path parameters come off the socket, not the constructor:
 
@@ -280,8 +275,8 @@ class RoomConsumer(WebSocketConsumer):
 ```
 
 Storing the group name on `self` in `on_connect` and reading it in
-`on_disconnect` is the pattern worth copying — it keeps the join and the
-leave in sync when the name is computed.
+`on_disconnect` is the pattern worth copying. It keeps the join and the leave
+in sync when the name is computed.
 
 The `middleware` class attribute exists on `WebSocketConsumer` and is
 never read by any code path. Do not populate it expecting anything to
@@ -308,8 +303,8 @@ class ChatConsumer(WebSocketConsumer):
 ```
 
 Note that `as_route` calls `cls()` with no arguments, so the constructor
-override above is how you configure it — there is no way to pass
-arguments through `as_route`.
+override above is how you configure it. There is no way to pass arguments
+through `as_route`.
 
 ##  A complete example
 
@@ -420,23 +415,23 @@ def test_broadcast_reaches_both_clients():
 ```
 
 Asserting on the *sender's* stream is how you catch the
-broadcast-includes-sender behaviour early — if you expect `a` not to
-receive its own message, that test will tell you otherwise.
+broadcast-includes-sender behaviour early. If you expect `a` not to receive its
+own message, that test will tell you otherwise.
 
 ##  Performance notes
 
-One consumer instance and one asyncio task per connection. The instance
-is cheap; what it holds is not — a loaded user object per connection, at
-ten thousand connections, is ten thousand user objects.
+One consumer instance and one asyncio task per connection. The instance is
+cheap; what it holds is not: a loaded user object per connection, at ten
+thousand connections, is ten thousand user objects.
 
 `broadcast` iterates the group and awaits each send sequentially. A slow
 client delays every client behind it in the iteration. For large groups,
 dispatch the sends concurrently with `asyncio.gather` over a snapshot of
 the channel list, and put a timeout on each.
 
-`send_to` scans **every group and every channel** looking for a UUID
-match — O(total connections) per call. For direct messaging, keep your
-own `{user_id: channel}` dictionary instead.
+`send_to` scans **every group and every channel** looking for a UUID match.
+O(total connections) per call. For direct messaging, keep your own `{user_id:
+channel}` dictionary instead.
 
 ##  API reference
 
@@ -455,8 +450,8 @@ own `{user_id: channel}` dictionary instead.
 
 ##  Related
 
-- [WebSockets](/guides/websockets/) — the raw connection and routing
-- [Channels](/guides/websockets/channels/) — what `self.channel` actually is
-- [Groups](/guides/websockets/groups/) — `ChannelBox` and broadcast semantics
-- [Events](/guides/websockets/events/) — dispatching by message type
-- [Middleware](/guides/middleware/) — where cross-cutting concerns actually go
+- [WebSockets](/guides/websockets/): the raw connection and routing
+- [Channels](/guides/websockets/channels/): what `self.channel` actually is
+- [Groups](/guides/websockets/groups/): `ChannelBox` and broadcast semantics
+- [Events](/guides/websockets/events/): dispatching by message type
+- [Middleware](/guides/middleware/): where cross-cutting concerns actually go

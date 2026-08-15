@@ -1,6 +1,6 @@
 ---
 title: create-app
-description: "The sillo-start create-app command in full — argument forms, every flag, what it prints, and the order in which it fetches, renames, initialises git and installs."
+description: "The sillo-start create-app command in full: argument forms, every flag, what it prints, and the order in which it fetches, renames, initialises git and installs."
 head:
   - tag: meta
     attrs:
@@ -75,7 +75,7 @@ sillo-start create-app myapp --directory ~/code/myapp
 sillo-start create-app myapp -d .
 ```
 
-Where to put the files. The project is still *called* `myapp` — the directory
+Where to put the files. The project is still *called* `myapp`. The directory
 and the name are separate, which is what lets you create a project into a
 repository you have already cloned.
 
@@ -90,16 +90,16 @@ With it, dependencies are installed straight away using whichever
 sillo-start create-app myapp --install
 ```
 
-A failing install is reported with the manager's own output and exits `1` —
-the project is still on disk, and you can fix the cause and install by hand.
-The output is never swallowed.
+A failing install is reported with the manager's own output and exits `1`. The
+project is still on disk, and you can fix the cause and install by hand. The
+output is never swallowed.
 
 ### `--no-git`
 
 A git repository is initialised by default. `--no-git` skips it.
 
 It is also skipped automatically when `git` is not installed, or when the
-directory is already a repository — creating a project inside an existing
+directory is already a repository, creating a project inside an existing
 checkout does not reinitialise it.
 
 Note what this does *not* do: no commit is made. The files are there for you to
@@ -145,9 +145,9 @@ already happened.
 
 ## The order of operations
 
-1. **Validate the name.** Before anything is fetched — it becomes both a
-   directory and a Python package, so an unusable name is worth refusing
-   early. See [Project names](/start/naming/).
+1. **Validate the name.** Before anything is fetched: it becomes both a
+   directory and a Python package, so an unusable name is worth refusing early.
+   See [Project names](/start/naming/).
 2. **Parse the starter.** `owner/repo`, `owner/repo@ref` or a URL.
 3. **Check the destination.** Non-empty is refused without `--force`.
 4. **Fetch and unpack** the tarball.
@@ -164,8 +164,8 @@ fail on your input fails immediately rather than after a download.
 | Code | Meaning |
 | --- | --- |
 | `0` | Created |
-| `1` | Something failed — a fetch, an install |
-| `2` | A usage error — a bad name, a non-empty directory, an unparseable starter |
+| `1` | Something failed: a fetch, an install |
+| `2` | A usage error: a bad name, a non-empty directory, an unparseable starter |
 | `130` | Ctrl-C |
 
 See [Errors and exit codes](/start/errors/).

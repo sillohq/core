@@ -1,6 +1,6 @@
 ---
 title: Secrets and .env
-description: "How a new Sillo project gets its own signing keys — which variables are regenerated, how the keys are produced, and why an existing .env is never replaced."
+description: "How a new Sillo project gets its own signing keys, which variables are regenerated, how the keys are produced, and why an existing.env is never replaced."
 head:
   - tag: meta
     attrs:
@@ -36,7 +36,7 @@ SECRET_KEY=xQ8mF2vK9pR4tW7nL3jH6bY1cZ5dA0sE8gU2iO4wT6rN9kM3
 
 ## Why this is not optional
 
-A secret committed to a starter repository is a placeholder by definition — it
+A secret committed to a starter repository is a placeholder by definition. It
 is on GitHub, in every clone, and in every fork. A project that shipped with it
 would be signing its sessions with a published key, and anyone could mint a
 valid session cookie for it.
@@ -55,7 +55,7 @@ generate_secret_key()        # 50 characters
 generate_secret_key(64)      # 64
 ```
 
-`secrets` is the standard library's cryptographically secure generator — not
+`secrets` is the standard library's cryptographically secure generator, not
 `random`, which is seeded predictably and is the classic way a "random" token
 turns out to be guessable.
 
@@ -67,7 +67,7 @@ header without escaping.
 If `.env` already exists, nothing is written and nothing is reported as
 changed.
 
-That file may hold real credentials — a database password, an API key from a
+That file may hold real credentials, a database password, an API key from a
 service you already configured. Overwriting it because a scaffolding tool ran
 in the wrong directory would be an unrecoverable loss, and no amount of "are
 you sure?" makes that a good default.
@@ -95,7 +95,7 @@ shipping a file. `.env` is gitignored in the starter, and should stay that way.
 
 :::caution[Rotating a key signs everyone out]
 `SECRET_KEY` signs session cookies. Changing it in a running environment
-invalidates every existing session at once — which is exactly what you want
+invalidates every existing session at once, which is exactly what you want
 after a leak, and exactly what you do not want by accident during a routine
 deploy.
 
@@ -105,7 +105,7 @@ Rotate it deliberately, and tell people it is going to happen.
 ## Adding your own
 
 To have another variable generated for a custom starter, name it one of the
-three above — the list is fixed. Anything else is copied from `.env.example` as
+three above. The list is fixed. Anything else is copied from `.env.example` as
 written, which is the right behaviour for a value that is configuration rather
 than a secret.
 
@@ -115,6 +115,6 @@ project can decide what a good value looks like.
 
 ## See also
 
-- [Configuration](/guides/configuration/) — how the application reads these.
-- [Personalisation](/start/personalisation/) — the other half of what happens
+- [Configuration](/guides/configuration/): how the application reads these.
+- [Personalisation](/start/personalisation/): the other half of what happens
   after a fetch.

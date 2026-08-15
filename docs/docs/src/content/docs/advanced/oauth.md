@@ -12,10 +12,10 @@ description: "Provider abstraction, OAuth flow, state management, PKCE, testing"
 
 ## 1. Overview
 
-`sillo-oauth` is a router-free, middleware-free OAuth 2.0 / OpenID Connect login
-library for Sillo.  It exposes **two public functions** -- `authorize_url` and
-`exchange` -- and a handful of frozen dataclasses.  There is no router, no
-middleware, and no storage layer.  The caller decides how to redirect the user,
+`sillo-oauth` is a router-free, middleware-free OAuth 2.0 / OpenID Connect
+login library for Sillo. It exposes **two public functions** (`authorize_url`
+and `exchange`) and a handful of frozen dataclasses. There is no router, no
+middleware, and no storage layer. The caller decides how to redirect the user,
 where to store the session cookie, and what to do with the profile.
 
 ```
@@ -90,8 +90,8 @@ __all__ = [
 
 ## 3. Data Models
 
-All three data models are **frozen dataclasses** -- once constructed, they are
-immutable.  This is a deliberate contract: the library never mutates a returned
+All three data models are **frozen dataclasses**. Once constructed, they are
+immutable. This is a deliberate contract: the library never mutates a returned
 model, and consumers can rely on the same object being safe to store, pass
 across tasks, or compare.
 
@@ -220,8 +220,8 @@ renamed; provider+subject do not.
 
 **Source**: `/Users/admin/sillo.build/oauth/sillo_oauth/errors.py` (130 lines)
 
-All errors are direct children of `OAuthError`.  Each has a class-level `code`
-attribute -- a stable, URL-safe, underscore-delimited string that callers can
+All errors are direct children of `OAuthError`. Each has a class-level `code`
+attribute: a stable, URL-safe, underscore-delimited string that callers can
 match on without touching the exception class:
 
 ```mermaid
@@ -244,7 +244,7 @@ graph TD
 | `StateExpired` | `"state_expired"` | State cookie is genuine but past its TTL |
 | `TokenExchangeFailed` | `"exchange_failed"` | Provider refused to exchange code for token |
 | `ProfileFetchFailed` | `"profile_failed"` | Token obtained but no usable profile came back |
-| `ProviderMisconfigured` | `"provider_misconfigured"` | Programming error -- missing secret, redirect URI, or endpoint |
+| `ProviderMisconfigured` | `"provider_misconfigured"` | Programming error: missing secret, redirect URI, or endpoint |
 
 **Constructor signature**:
 
@@ -391,7 +391,7 @@ Custom `map_profile`: maps `sub`, `email`, `email_verified`, `name`,
   `email`, `email_verified`, `avatar_url`.
 
 **Enterprise GitHub**: Set `userinfo_endpoint` to
-`https://github.example.com/api/user` -- the `emails_endpoint` is derived
+`https://github.example.com/api/user`. The `emails_endpoint` is derived
 automatically.
 
 #### DiscordOAuthProvider
@@ -448,8 +448,8 @@ def authorize_url(
 ) -> AuthorizeURL
 ```
 
-This is a **pure function** -- no I/O, no request object, no response object.
-It does one thing: builds the URL the browser should redirect to.
+This is a **pure function**: no I/O, no request object, no response object. It
+does one thing: builds the URL the browser should redirect to.
 
 ### Step-by-step
 

@@ -83,7 +83,10 @@ html.unescape_html(html.escape_html('<a href="x">&</a>'))  # round-trips exactly
 
 `unescape_html` turns inert text back into live markup. Running it on anything a user supplied undoes your protection completely.
 
-Use it for reading data that was escaped by a system you control — importing an old export, parsing a feed that double-encoded — and never as a step on the way to rendering. If you find yourself escaping and then unescaping in the same code path, one of the two is a bug.
+Use it for reading data that was escaped by a system you control (importing an
+old export, parsing a feed that double-encoded) and never as a step on the way
+to rendering. If you find yourself escaping and then unescaping in the same
+code path, one of the two is a bug.
 
 </Aside>
 
@@ -166,7 +169,9 @@ html.sanitize_html('<a href="jav&#x61;script:alert(1)">x</a>')
 # '<a href="jav&#x61;script:alert(1)">x'
 ```
 
-The sanitizer looks for the literal text `javascript:`. It does not decode `&#x61;` to `a` first. The browser does — it decodes entities in attribute values before resolving the URL scheme. The link executes when clicked.
+The sanitizer looks for the literal text `javascript:`. It does not decode
+`&#x61;` to `a` first. The browser does. It decodes entities in attribute
+values before resolving the URL scheme. The link executes when clicked.
 
 **Whitespace inside the scheme survives.**
 
@@ -383,8 +388,12 @@ All seven functions are single-pass string operations, O(n) in input length, wit
 
 ##  Related
 
-- [Templating](/guides/templating/) — Jinja2 auto-escaping, the default protection for rendered pages
-- [Text](/guides/helpers/text/) — truncation and excerpts for the stripped output
-- [Strings](/guides/helpers/strings/) — slugs, which overlap with `generate_safe_id`
-- [Security](/guides/security/) — CSP and the other headers that limit XSS impact
-- [CSRF](/guides/csrf/) — the other half of the request-forgery story
+- [Templating](/guides/templating/): Jinja2 auto-escaping, the default
+  protection for rendered pages
+- [Text](/guides/helpers/text/): truncation and excerpts for the stripped
+  output
+- [Strings](/guides/helpers/strings/): slugs, which overlap with
+  `generate_safe_id`
+- [Security](/guides/security/): CSP and the other headers that limit XSS
+  impact
+- [CSRF](/guides/csrf/): the other half of the request-forgery story

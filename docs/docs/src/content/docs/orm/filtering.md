@@ -1,6 +1,6 @@
 ---
 title: Filtering with Q and F
-description: "Queries beyond keyword arguments — Q objects for OR and negation, F for column references, Case/When for conditionals, Subquery, and raw SQL fragments."
+description: "Queries beyond keyword arguments: Q objects for OR and negation, F for column references, Case/When for conditionals, Subquery, and raw SQL fragments."
 head:
   - tag: meta
     attrs:
@@ -18,7 +18,7 @@ from tortoise.expressions import Q, F, Case, When, Subquery, RawSQL
 
 Keyword arguments to `filter()` are AND-ed. Everything else needs these.
 
-## `Q` — OR, AND and negation
+## `Q`: OR, AND and negation
 
 ```python
 await Post.filter(Q(status="published") | Q(status="featured"))
@@ -42,7 +42,7 @@ Q(author__name="Ada")
 
 ### Mixing with keywords
 
-Positional `Q` arguments come first, keywords after — and the two are AND-ed:
+Positional `Q` arguments come first, keywords after, and the two are AND-ed:
 
 ```python
 await Post.filter(
@@ -83,7 +83,7 @@ posts = await Post.filter(query).order_by("-created_at")
 ```
 
 An empty `Q()` matches everything, which is what makes it a safe starting
-point. This is the shape for a search endpoint with optional parameters — much
+point. This is the shape for a search endpoint with optional parameters. Much
 easier to read than branching over queryset variables.
 
 ### A search helper
@@ -99,7 +99,7 @@ def search(term: str, *fields: str) -> Q:
 await Post.filter(search("async", "title", "body", "author__name"))
 ```
 
-## `F` — referring to a column
+## `F`: referring to a column
 
 ```python
 from tortoise.expressions import F
@@ -126,8 +126,8 @@ await Invoice.filter(paid_amount__lt=F("total_amount"))
 await Post.filter(updated_at__gt=F("created_at"))
 ```
 
-Which cannot be expressed with keyword arguments at all — the right-hand side
-of a lookup is always a value.
+Which cannot be expressed with keyword arguments at all, the right-hand side of
+a lookup is always a value.
 
 Arithmetic across columns:
 
@@ -135,7 +135,7 @@ Arithmetic across columns:
 await Product.annotate(margin=F("price") - F("cost")).filter(margin__lt=0)
 ```
 
-## `Case` / `When` — conditionals in SQL
+## `Case` / `When`: conditionals in SQL
 
 ```python
 from tortoise.expressions import Case, When
@@ -151,9 +151,9 @@ await Post.annotate(
 
 `When` conditions are evaluated in order; `default` applies when none matches.
 
-This is how you sort by something that is not a column — a priority order over
-a status, a bucket over a numeric range — without loading every row and sorting
-in Python.
+This is how you sort by something that is not a column (a priority order over a
+status, a bucket over a numeric range) without loading every row and sorting in
+Python.
 
 Also useful for conditional aggregation:
 
@@ -178,7 +178,7 @@ await Author.filter(id__in=Subquery(recent_authors))
 ```
 
 The subquery is evaluated by the database, so the ids never travel to Python.
-The alternative — awaiting the inner query and passing a list — round-trips
+The alternative (awaiting the inner query and passing a list) round-trips
 potentially thousands of ids and then sends them all back in an `IN` clause.
 
 A correlated subquery in an annotation:
@@ -206,7 +206,7 @@ await Post.annotate(
 ).order_by("-rank")
 ```
 
-For expressions the ORM cannot build — a full-text rank, a PostGIS distance, a
+For expressions the ORM cannot build: a full-text rank, a PostGIS distance, a
 window function.
 
 :::danger[Never interpolate user input]
@@ -243,6 +243,6 @@ safety of parameterisation.
 
 ## See also
 
-- [Lookups](/orm/lookups/) — everything after `__`
-- [Aggregation](/orm/aggregation/) — `annotate`, `Count`, `Sum`
+- [Lookups](/orm/lookups/): everything after `__`
+- [Aggregation](/orm/aggregation/): `annotate`, `Count`, `Sum`
 - [Raw SQL](/orm/raw-sql/)

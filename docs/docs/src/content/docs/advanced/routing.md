@@ -43,7 +43,8 @@ The routing subsystem is split into two logical layers:
 
 **Key design decisions**:
 
-- Path compilation is **pure** — no ASGI types leak into `route_builder.py`. This makes it independently testable.
+- Path compilation is **pure**: no ASGI types leak into `route_builder.py`.
+  This makes it independently testable.
 - `MatchStatus` is a tri-state enum (`NONE=0`, `PARTIAL=1`, `FULL=2`) that enables 405 Method Not Allowed without a second pass.
 - `Group` is a `BaseRoute`, not a `Router`. This lets it participate in the same linear scan as individual routes.
 - Dependency injection propagates **downward** through `mount_router` / `Group` hierarchies via `_set_inherited_dependencies`.
@@ -111,7 +112,7 @@ classDiagram
 
 ---
 
-## 2. MatchStatus — the tri-state match result
+## 2. MatchStatus: the tri-state match result
 
 **File**: `core/sillo/core/routing/_utils.py`
 
@@ -155,7 +156,7 @@ This strips the `root_path` prefix so that routers mounted under sub-paths match
 
 ---
 
-## 3. Convertors — typed path parameters
+## 3. Convertors: typed path parameters
 
 **File**: `core/sillo/core/converters.py`
 
@@ -186,7 +187,7 @@ CONVERTOR_TYPES: dict[str, Convertor] = {
 | Name | Type | Regex | Notes |
 |------|------|-------|-------|
 | `str` | `str` | `[^/]+` | Default if no type specified. Single segment only. |
-| `path` | `str` | `.*` | Greedy — matches across `/`. Use last in a pattern. |
+| `path` | `str` | `.*` | Greedy: matches across `/`. Use last in a pattern. |
 | `int` | `int` | `[0-9]+` | Non-negative only. `to_string` rejects negatives. |
 | `float` | `float` | `[0-9]+(\.[0-9]+)?` | Non-negative. `to_string` strips trailing zeros. |
 | `uuid` | `uuid.UUID` | 8-4-4-4-12 hex | Hyphens optional in matching. |
@@ -318,7 +319,9 @@ class RoutePattern:
     convertor: dict[str, Convertor]  # {"user_id": IntegerConvertor(), ...}
 ```
 
-The `route_type` field stores the **normalized path format** (e.g., `/users/{user_id}/posts/{post_slug}`), not a `RouteType` enum value. This is a naming legacy — it is the string format with type annotations stripped.
+The `route_type` field stores the **normalized path format** (e.g.
+`/users/{user_id}/posts/{post_slug}`), not a `RouteType` enum value. This is a
+naming legacy. It is the string format with type annotations stripped.
 
 ### RouteBuilder factory
 
@@ -391,7 +394,7 @@ class BaseRoute(ABC):
 | Method | Responsibility |
 |--------|---------------|
 | `match()` | Return `(MatchStatus, params)` for a given request |
-| `handle()` | Execute the request — called only after a `FULL` match |
+| `handle()` | Execute the request: called only after a `FULL` match |
 | `url_path_for()` | Reverse URL generation for this route |
 | `__call__()` | Makes the route callable as an ASGI app; delegates to `handle` |
 
@@ -419,7 +422,7 @@ class BaseRouter(ABC):
 
 ---
 
-## 9. Route — the concrete HTTP route
+## 9. Route: the concrete HTTP route
 
 **File**: `core/sillo/core/routing/router.py`, line 123
 
@@ -483,7 +486,8 @@ def match(self, scope: Scope) -> tuple[MatchStatus, Any]:
 2. `get_route_path` strips `root_path` before matching.
 3. Matched string groups are **converted** via their convertor (e.g., `"42"` → `42`).
 4. Path matches but wrong method → `PARTIAL` (enables 405).
-5. `HEAD` is automatically added when `GET` is in `self.methods` (line 366–367).
+5. `HEAD` is automatically added when `GET` is in `self.methods` (line 366 to
+   367).
 
 ### Handle method
 
@@ -502,7 +506,7 @@ async def handle(self, scope, receive, send):
 
 The 405 response includes an `Allow` header listing the permitted methods, as required by RFC 7231.
 
-### `get_route_handler` — the DI and auth pipeline
+### `get_route_handler`: the DI and auth pipeline
 
 ```python
 async def get_route_handler(self, request, response, **kwargs):
@@ -556,7 +560,7 @@ async def get_route_handler(self, request, response, **kwargs):
 4. Auth gate (`auth.authenticate`)
 5. Handler invocation
 
-### `_find_body_param` — binding `request_model` to a handler parameter
+### `_find_body_param`: binding `request_model` to a handler parameter
 
 When `request_model` is set, the framework needs to know which handler parameter receives the validated body. The algorithm:
 
@@ -589,7 +593,7 @@ The regex `\{param_name(:[^}]+)?}` matches both `{name}` and `{name:type}` place
 
 ---
 
-## 10. Router — the central dispatcher
+## 10. Router: the central dispatcher
 
 **File**: `core/sillo/core/routing/router.py`, line 768
 
@@ -667,7 +671,7 @@ async def app(self, scope, receive, send):
 
 > **Important**: Route registration order matters. More specific routes should be registered before catch-all routes.
 
-### `add_route` — the route registration gateway
+### `add_route`: the route registration gateway
 
 ```python
 def add_route(self, route=None, path=None, methods=..., handler=None, ...):
@@ -699,7 +703,7 @@ def add_route(self, route=None, path=None, methods=..., handler=None, ...):
 
 ---
 
-## 11. Group — prefix grouping and stripping
+## 11. Group: prefix grouping and stripping
 
 **File**: `core/sillo/core/routing/grouping.py`
 
@@ -771,11 +775,12 @@ def match(self, scope) -> tuple[MatchStatus, dict[str, Any]]:
     return MatchStatus.NONE, {}
 ```
 
-**Important**: `Group.match` only returns `FULL` or `NONE` — never `PARTIAL`. Groups always match the prefix, and the inner app handles method matching.
+**Important**: `Group.match` only returns `FULL` or `NONE`. Never `PARTIAL`.
+Groups always match the prefix, and the inner app handles method matching.
 
 The `path` key is **popped** from `matched_params` before returning, so it doesn't leak into `scope["route_params"]`.
 
-### Handle — prefix stripping
+### Handle: prefix stripping
 
 ```python
 async def handle(self, scope, receive, send):
@@ -1052,7 +1057,7 @@ else:
 
 ---
 
-## 16. Reverse URL Generation — `url_for`
+## 16. Reverse URL Generation: `url_for`
 
 ### Simple name lookup
 
@@ -1111,7 +1116,7 @@ url = router.url_for("v1.get_user", user_id=42)
 
 ---
 
-## 17. Composing Routers — `mount_router` and Groups
+## 17. Composing Routers: `mount_router` and Groups
 
 ### `mount_router`
 
@@ -1214,7 +1219,7 @@ async def get_user(request, response, id: int):
 router.get("/users/{id:int}", handler=get_user, name="get_user")
 ```
 
-### `route()` — the generic decorator
+### `route()`: the generic decorator
 
 `router.route()` is the most flexible; all verb decorators delegate to it internally (except `get` which constructs the Route directly). It allows specifying `methods=["GET", "POST"]` for multi-method routes.
 
@@ -1288,7 +1293,9 @@ When a Group's inner app raises `NotFoundException`, the Group restores `scope["
 
 ### Pitfall 7: Non-HTTP scopes
 
-`Route.match` returns `NONE` for non-HTTP scopes. `Group.match` does not check scope type — it matches on path alone. WebSocket routes (`WebsocketRoute`) are a separate class not covered in this document.
+`Route.match` returns `NONE` for non-HTTP scopes. `Group.match` does not check
+scope type. It matches on path alone. WebSocket routes (`WebsocketRoute`) are a
+separate class not covered in this document.
 
 ### Pitfall 8: `_reject_unknown_route_kwargs`
 

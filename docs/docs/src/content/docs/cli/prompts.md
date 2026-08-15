@@ -1,6 +1,6 @@
 ---
 title: Prompts
-description: "Asking questions from a command — text, hidden secrets, confirmation, single and multiple choice, destructive confirmation — and how each behaves without a terminal."
+description: "Asking questions from a command (text, hidden secrets, confirmation, single and multiple choice, destructive confirmation) and how each behaves without a terminal."
 head:
   - tag: meta
     attrs:
@@ -23,7 +23,7 @@ if self.confirm("Continue?", default=True):
 
 ## The rule that matters most
 
-A prompt that cannot be shown — no terminal, a pipe, CI — **falls back to its
+A prompt that cannot be shown: no terminal, a pipe, CI, **falls back to its
 default**. A prompt that cannot be shown *and has no default* **raises**.
 
 That is deliberate, and it is the difference between a scripted invocation that
@@ -41,7 +41,7 @@ self.ask("Project name", default="myapp")
 self.ask("Port", validate=positive_int)
 ```
 
-Free text. `validate` is any callable — return the converted value, or raise
+Free text. `validate` is any callable. Return the converted value, or raise
 `ValueError` with a message the user should see:
 
 ```python
@@ -68,7 +68,7 @@ re-asking on a mismatch.
 A password in `argv` is in your shell history, in `ps` output, and in any log
 that records command lines. None of the framework's own commands accept one.
 
-For non-interactive use, read it from the environment — which is what the
+For non-interactive use, read it from the environment, which is what the
 bundled `user:*` commands do with `SILLO_PASSWORD`:
 
 ```python
@@ -89,7 +89,7 @@ if not self.confirm("Drop every recorded failure?", default=False):
 ```
 
 Yes or no. The default is what a bare Enter means, and what a non-interactive
-run gets — so `default=False` on anything destructive.
+run gets, so `default=False` on anything destructive.
 
 ## `choice`
 
@@ -140,7 +140,7 @@ agreed = self.prompt.confirm_destructive(
 ```
 
 Requires the user to type a phrase back. For operations where a mistyped `y` is
-expensive — dropping a database, rolling back to zero — so that muscle memory
+expensive (dropping a database, rolling back to zero) so that muscle memory
 cannot approve them.
 
 It is on `self.prompt` rather than the command, because it is rare enough that

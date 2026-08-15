@@ -1,6 +1,6 @@
 ---
 title: Factories
-description: "Building model instances for tests — the Factory class, make and create, states, relationships, and the FactoryBuilder registry."
+description: "Building model instances for tests: the Factory class, make and create, states, relationships, and the FactoryBuilder registry."
 head:
   - tag: meta
     attrs:
@@ -74,8 +74,8 @@ definition = staticmethod(lambda: {"email": f"user{uuid4().hex[:8]}@example.test
 binds it as a method and passes `cls`, and the lambda above raises
 `TypeError`.
 
-`staticmethod(...)` — or a plain `def` decorated with `@staticmethod` — keeps
-it a function.
+`staticmethod(...)` (or a plain `def` decorated with `@staticmethod`) keeps it
+a function.
 :::
 
 Use a real generator for unique fields. A hardcoded email means the second
@@ -94,7 +94,7 @@ await UserFactory.create_many(5)
 await UserFactory.create_many(5, {"is_active": False})
 ```
 
-`make` is for testing something that operates on an unsaved instance — a
+`make` is for testing something that operates on an unsaved instance: a
 serialiser, a validator, a form. It touches no database, so it is fast enough
 to use freely.
 
@@ -123,7 +123,7 @@ class AdminFactory(UserFactory):
 admin = await AdminFactory.create()
 ```
 
-`state()` returns a new definition callable — the parent's, with those keys
+`state()` returns a new definition callable. The parent's, with those keys
 overridden. Subclassing is what gives it a name.
 
 For a one-off, an override at the call site is simpler. Reach for a state when
@@ -160,7 +160,7 @@ class PostFactory(Factory):
 ```
 
 Only when the parent is genuinely incidental. A test that creates a user it
-never mentions is harder to read, not easier — and it hides how many rows the
+never mentions is harder to read, not easier, and it hides how many rows the
 test is writing.
 
 ## `FactoryBuilder`
@@ -179,7 +179,7 @@ user = await factories.get("user").create()
 
 An unregistered name raises `KeyError` naming it.
 
-This is for the case where the factory is chosen at runtime — a seeding command
+This is for the case where the factory is chosen at runtime, a seeding command
 driven by configuration, or a fixture format that names models as strings.
 Importing the class directly is clearer everywhere else.
 
@@ -206,10 +206,10 @@ async def test_admin_can_sign_in(database):
     ...
 ```
 
-`:memory:` is per connection, so each test's database starts empty and vanishes
-— no truncation, no ordering dependencies between tests.
+`:memory:` is per connection, so each test's database starts empty and
+vanishes, no truncation, no ordering dependencies between tests.
 
 ## See also
 
-- [Seeding and fixtures](/orm/seeding/) — for populating a real database.
-- [Test client](/guides/start/testing/) — the HTTP side of a test.
+- [Seeding and fixtures](/orm/seeding/): for populating a real database.
+- [Test client](/guides/start/testing/): the HTTP side of a test.

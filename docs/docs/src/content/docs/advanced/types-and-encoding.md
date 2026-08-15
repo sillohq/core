@@ -341,9 +341,9 @@ from sillo.core.encoding import register_encoder
 
 Custom encoders take precedence over everything else:
 
-1. `CUSTOM_ENCODERS` (global + per-call) — checked first
-2. `ENCODERS_BY_TYPE` — checked second
-3. `encoders_by_class_tuples` — checked third
+1. `CUSTOM_ENCODERS` (global + per-call): checked first
+2. `ENCODERS_BY_TYPE`: checked second
+3. `encoders_by_class_tuples`: checked third
 
 ### Inheritance Handling
 

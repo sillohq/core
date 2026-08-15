@@ -26,7 +26,7 @@ nothing needs a session store, a database row, or sticky routing between
 instances.
 
 The cookie carries a random value, an expiry, the provider name, and whatever
-`return_to` you passed. It is **signed, not encrypted** — readable by whoever
+`return_to` you passed. It is **signed, not encrypted**. Readable by whoever
 holds it, unforgeable without your `state_secret`. Nothing secret is put in it.
 
 `verify_state` refuses a callback that fails any of:
@@ -42,8 +42,8 @@ holds it, unforgeable without your `state_secret`. Nothing secret is put in it.
 
 The first five collapse to one code deliberately. Each is either a forgery or
 an unusable callback, and telling an attacker which half of the check they
-cleared helps only them. Expiry is separate because it has a blameless cause —
-someone left the consent screen open — and deserves "try again" rather than a
+cleared helps only them. Expiry is separate because it has a blameless cause
+(someone left the consent screen open) and deserves "try again" rather than a
 security-flavoured message.
 
 :::note
@@ -57,7 +57,7 @@ state, so a GitHub cookie cannot satisfy a Google callback.
 
 Nothing is sent to the token endpoint until the callback has been proven to be
 yours. If state were checked afterwards, a forged callback could make your
-server spend an authorization code — or redeem one an attacker planted.
+server spend an authorization code, or redeem one an attacker planted.
 
 Provider-reported errors (`?error=access_denied`) are handled first, before
 even that, since there is no code to exchange in the first place.
@@ -79,7 +79,7 @@ Unguessable, because `state` is 32 random bytes and `state_secret` never leaves
 your server. The provider only ever sees the SHA-256 challenge; an attacker who
 intercepts the authorization code still cannot redeem it.
 
-Knowing the state is not enough — the verifier depends on the secret too. That
+Knowing the state is not enough. The verifier depends on the secret too. That
 is what makes derivation safe rather than theatre.
 
 ##  `state_secret` is not `client_secret`
@@ -114,7 +114,7 @@ the error.
 ##  Credentials stay out of logs
 
 `OAuthTokens` has a redacted `repr`. Every field on it is a live credential,
-and `logger.info("signed in %s", profile)` is an ordinary line to write — as is
+and `logger.info("signed in %s", profile)` is an ordinary line to write, as is
 shipping tracebacks to an error tracker, where a profile sits in a frame.
 
 ```python
@@ -124,7 +124,7 @@ repr(profile.tokens)
 ```
 
 Which tokens exist, and their scope and lifetime, is what anyone debugging
-wants. Attribute access is unaffected — `tokens.access_token` still returns it.
+wants. Attribute access is unaffected. `tokens.access_token` still returns it.
 
 Providers redact too: a provider's `repr` shows its name and client id, never
 `client_secret` or `state_secret`.
@@ -137,13 +137,13 @@ framework default:
 | Attribute | Value | Why |
 | --- | --- | --- |
 | `httponly` | `True` | Nothing in the browser needs to read it. |
-| `samesite` | `"lax"` | `"strict"` would stop the browser sending the cookie on the provider's cross-site redirect back — the one request that needs it. |
+| `samesite` | `"lax"` | `"strict"` would stop the browser sending the cookie on the provider's cross-site redirect back: the one request that needs it. |
 | `secure` | `True` | A live redirect URI is HTTPS. Local `http://` development needs `cookie_kwargs(secure=False)`, or the browser accepts the cookie and never returns it. |
 | `max_age` | the state TTL | Expires with the value it carries. |
 | `path` | `"/"` | |
 
 Nothing is left unstated because sillo's `Responder.set_cookie` defaults
-`secure` on while `BaseResponse.set_cookie` defaults it off — an unstated
+`secure` on while `BaseResponse.set_cookie` defaults it off. An unstated
 attribute would make this cookie's security depend on which object the caller
 happened to hold.
 
@@ -152,11 +152,12 @@ happened to hold.
 Worth being explicit about the edges:
 
 - **`return_to` is signed, not validated.** It cannot be tampered with in
-  transit, but you chose its value — if you build it from user input, check it
+  transit, but you chose its value: if you build it from user input, check it
   is a local path before redirecting, or you have an open redirect.
 - **`id_token` is not verified.** It is captured and handed to you as opaque.
   The identity in `OAuthProfile` comes from the userinfo endpoint, reached with
   the access token, not from an unverified JWT.
 - **Nothing here authenticates later requests.** Once you have persisted the
   login, the credential is an ordinary session cookie or JWT, and its security
-  is that mechanism's — see [Persisting the login](/guides/oauth/persisting-logins/).
+  is that mechanism's. See [Persisting the
+  login](/guides/oauth/persisting-logins/).

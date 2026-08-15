@@ -381,11 +381,11 @@ app = SilloApp(docs=[])            # no documentation UI at all
 
 <aside type="caution">
 
-**Assigning to `app.openapi.swagger_url` after construction does nothing.**
-The routes are registered during `__init__`, so a later assignment changes
-an attribute nobody reads again — `/docs` keeps serving and the new path
-404s. Setting `app.openapi.redoc_url = None` likewise does not disable
-ReDoc. Pass `docs=` instead.
+**Assigning to `app.openapi.swagger_url` after construction does nothing.** The
+routes are registered during `__init__`, so a later assignment changes an
+attribute nobody reads again. `/docs` keeps serving and the new path 404s.
+Setting `app.openapi.redoc_url = None` likewise does not disable ReDoc. Pass
+`docs=` instead.
 
 </aside>
 
@@ -693,11 +693,11 @@ The `version` field is the version of your **API**, not of your
 application. Bumping it because you deployed is noise; bumping it because
 the contract changed is signal.
 
-Two workable conventions. Semantic versioning of the contract, where the
-major version increments only on a breaking change, gives clients a
-single number that answers "will my code still work". Date-based
-versioning — `2026-03-01` — suits APIs that ship changes continuously and
-lets clients pin to a date they tested against.
+Two workable conventions. Semantic versioning of the contract, where the major
+version increments only on a breaking change, gives clients a single number
+that answers "will my code still work". Date-based versioning (`2026-03-01`)
+suits APIs that ship changes continuously and lets clients pin to a date they
+tested against.
 
 Whichever you choose, the important part is that it changes when the
 contract changes and not otherwise. A version that increments on every
@@ -708,8 +708,8 @@ deploy carries no information, and clients learn to ignore it.
 Beyond about twenty endpoints, the tag list is how anyone finds anything.
 Two rules make it work.
 
-**Tag by resource, not by layer.** `Orders`, `Customers`, `Invoices` —
-not `GET endpoints`, `Admin`, `V2`. A reader arrives looking for a noun.
+**Tag by resource, not by layer.** `Orders`, `Customers`, `Invoices`: not `GET
+endpoints`, `Admin`, `V2`. A reader arrives looking for a noun.
 
 **Order tags deliberately.** Declaring tag metadata at the application
 level fixes the order in the UI and lets each tag carry a description.
@@ -740,9 +740,9 @@ Three fields nobody fills in and every integrator eventually needs.
 their question. An address that reaches a human beats a perfect schema
 with no escape hatch.
 
-`license` matters for public APIs, because it tells consumers what they
-may do with responses — an API returning data under an open licence and
-one returning proprietary data look identical without it.
+`license` matters for public APIs, because it tells consumers what they may do
+with responses, an API returning data under an open licence and one returning
+proprietary data look identical without it.
 
 `termsOfService` is a link, and having one saves the conversation about
 rate limits, acceptable use, and what happens when you deprecate

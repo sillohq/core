@@ -21,10 +21,10 @@ lets you attach behaviour to a model without repeating yourself: scopes
 put reusable constraints on queries, and events put callbacks on the
 model lifecycle.
 
-They are at very different levels of maturity. Scopes work well and are
-worth using, provided you understand one naming rule. Events, as shipped,
-are a registration API with nothing calling it — you have to fire them
-yourself. Both are covered honestly below.
+They are at very different levels of maturity. Scopes work well and are worth
+using, provided you understand one naming rule. Events, as shipped, are a
+registration API with nothing calling it. You have to fire them yourself. Both
+are covered honestly below.
 
 ##  Query scopes
 
@@ -108,11 +108,11 @@ if hasattr(cls, public_name):
     continue          # shortcut NOT installed
 ```
 
-`Model` already defines `active`, `deleted`, `filter`, `all`, `get`,
-`create`, `save`, `delete`, and `count`. Declaring `scope_active` does
-**not** give you `Article.active()` — that name still resolves to the
-base model's soft-delete filter. But `RecordQuerySet.__getattr__` has no
-such guard, so `Article.all().active()` *does* reach your scope.
+`Model` already defines `active`, `deleted`, `filter`, `all`, `get`, `create`,
+`save`, `delete`, and `count`. Declaring `scope_active` does **not** give you
+`Article.active()`. That name still resolves to the base model's soft-delete
+filter. But `RecordQuerySet.__getattr__` has no such guard, so
+`Article.all().active()` *does* reach your scope.
 
 Same name, two filters, chosen by how you started the chain:
 
@@ -128,10 +128,10 @@ await User.active()          # WHERE deleted_at IS NULL   ← base model
 await User.all().active()    # WHERE is_active = true     ← your scope
 ```
 
-Those return genuinely different rows. Never name a scope `active`,
-`deleted`, `filter`, `all`, `get`, `create`, `save`, `delete`, or
-`count`. Pick a name that reads well and does not collide —
-`scope_enabled`, `scope_live`, `scope_visible`.
+Those return genuinely different rows. Never name a scope `active`, `deleted`,
+`filter`, `all`, `get`, `create`, `save`, `delete`, or `count`. Pick a name
+that reads well and does not collide: `scope_enabled`, `scope_live`,
+`scope_visible`.
 
 </Aside>
 
@@ -156,9 +156,9 @@ await Article.filter(plan="pro")       # WHERE plan = 'pro' AND deleted_at IS NU
 await Article.without_global_scopes()  # no filter
 ```
 
-`RecordManager.get_queryset()` calls `apply_scopes()` on the fresh
-queryset, so the filter lands on everything the manager creates —
-verified for `.all()` and `.filter()` above.
+`RecordManager.get_queryset()` calls `apply_scopes()` on the fresh queryset, so
+the filter lands on everything the manager creates, verified for `.all()` and
+`.filter()` above.
 
 `without_global_scopes()` returns a plain `RecordQuerySet` with no scopes
 applied, and it still chains:
@@ -167,13 +167,12 @@ applied, and it still chains:
 await Article.without_global_scopes().filter(deleted_at__isnull=False)
 ```
 
-Registration is per class and the registry is created lazily on the class
-that calls `add_global_scope`. A subclass that has not registered
-anything of its own inherits the parent's registry object — so adding a
-scope from the subclass mutates the shared list and affects the parent
-too. If a model hierarchy needs different global scopes per level,
-register on each concrete class explicitly rather than relying on
-inheritance.
+Registration is per class and the registry is created lazily on the class that
+calls `add_global_scope`. A subclass that has not registered anything of its
+own inherits the parent's registry object, so adding a scope from the subclass
+mutates the shared list and affects the parent too. If a model hierarchy needs
+different global scopes per level, register on each concrete class explicitly
+rather than relying on inheritance.
 
 ###  Multi-tenancy with a global scope
 
@@ -226,13 +225,13 @@ deliberate admin paths.
 
 ###  What global scopes do not cover
 
-They apply to querysets built through the model manager. They do not
-apply to raw SQL, to `connections.get(...).execute_query(...)`, to
-`Model.raw()`, or to relation traversal from an already-loaded parent
-object. A global tenant filter on `Invoice` does not filter
-`await customer.invoices` — that traversal builds its queryset through
-the relation, not the manager. For anything security-critical, the filter
-must also exist in the schema or in an explicit `WHERE`.
+They apply to querysets built through the model manager. They do not apply to
+raw SQL, to `connections.get(...).execute_query(...)`, to `Model.raw()`, or to
+relation traversal from an already-loaded parent object. A global tenant filter
+on `Invoice` does not filter `await customer.invoices`: that traversal builds
+its queryset through the relation, not the manager. For anything
+security-critical, the filter must also exist in the schema or in an explicit
+`WHERE`.
 
 ##  Model lifecycle events
 
@@ -251,9 +250,8 @@ path in `Model.save()`, `create()`, `delete()`, `soft_delete()`, or
 This is verifiable in one line: register an `after_create` callback,
 create a row, and the callback's side effect never happens.
 
-`HasEvents` is also not part of `Model` — the base class inherits
-`HasCasts` and `HasScopes` only. Mixing it in is necessary but not
-sufficient.
+`HasEvents` is also not part of `Model`. The base class inherits `HasCasts` and
+`HasScopes` only. Mixing it in is necessary but not sufficient.
 
 Treat this as a registration API you must wire up yourself. The pattern
 below does that.
@@ -299,8 +297,8 @@ class EventedModel(HasEvents, Model):
         return result
 ```
 
-Note the mixin order — `HasEvents` before `Model` — for the same MRO
-reason described in [Models & Mixins](/guides/record/models/). Then:
+Note the mixin order (`HasEvents` before `Model`) for the same MRO reason
+described in [Models & Mixins](/guides/record/models/). Then:
 
 ```python title="myapp/models.py"
 class User(EventedModel):
@@ -373,11 +371,10 @@ callbacks and alert on `sillo.record.events` error records.
 
 ###  Unknown event names are ignored
 
-`EventDispatcher.on` checks `if event in self._listeners` before
-appending. Registering `@User.on("after_creation")` — a typo — silently
-does nothing. There is no error, no warning, and no way to notice except
-that the callback never runs. Copy names from the table rather than
-typing them.
+`EventDispatcher.on` checks `if event in self._listeners` before appending.
+Registering `@User.on("after_creation")` (a typo) silently does nothing. There
+is no error, no warning, and no way to notice except that the callback never
+runs. Copy names from the table rather than typing them.
 
 ###  Dispatchers are shared down an inheritance chain
 
@@ -397,7 +394,7 @@ produces two different filters depending on how the chain starts.
 produce zero rows, not all rows.
 
 **Do not rely on global scopes for authorisation.** They cover manager
-querysets only — not raw SQL, not relation traversal.
+querysets only, not raw SQL, not relation traversal.
 
 **Do not assume lifecycle events fire.** They do not, until you wire them
 up.
@@ -414,9 +411,9 @@ and `queryset.update()` bypass instance methods entirely.
 
 ##  Performance notes
 
-Scopes cost nothing at runtime — a scope call is a Python function
-returning a queryset, and the SQL is compiled once when the queryset is
-awaited. Chaining ten scopes produces one query.
+Scopes cost nothing at runtime. A scope call is a Python function returning a
+queryset, and the SQL is compiled once when the queryset is awaited. Chaining
+ten scopes produces one query.
 
 Global scopes run on every `get_queryset()`. Keep the callable cheap: a
 contextvar read and a `filter()` is fine, a database lookup inside a
@@ -443,9 +440,13 @@ background queue rather than doing it in an `after_save`.
 
 ##  Related
 
-- [Models & Mixins](/guides/record/models/) — mixin ordering, and `ValidatesBeforeSaveMixin` for hooks that can veto
-- [Record Overview](/guides/record/) — setup and connection lifecycle
-- [Casting & Collections](/guides/record/casting-collections/) — transforming values on read and write
-- [Transactions & Factories](/guides/record/transactions-factories/) — wrapping multi-model writes
-- [Events](/guides/events/) — sillo's application-level event emitter, which does fire on its own
-- [Middleware](/guides/middleware/) — where tenant context gets established
+- [Models & Mixins](/guides/record/models/): mixin ordering, and
+  `ValidatesBeforeSaveMixin` for hooks that can veto
+- [Record Overview](/guides/record/): setup and connection lifecycle
+- [Casting & Collections](/guides/record/casting-collections/): transforming
+  values on read and write
+- [Transactions & Factories](/guides/record/transactions-factories/): wrapping
+  multi-model writes
+- [Events](/guides/events/): sillo's application-level event emitter, which
+  does fire on its own
+- [Middleware](/guides/middleware/): where tenant context gets established

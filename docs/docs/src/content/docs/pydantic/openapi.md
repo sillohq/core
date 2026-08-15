@@ -1,6 +1,6 @@
 ---
 title: OpenAPI
-description: "How Pydantic models become your API documentation — where each schema comes from, what each Field argument produces, naming collisions, and customising the output."
+description: "How Pydantic models become your API documentation. Where each schema comes from, what each Field argument produces, naming collisions, and customising the output."
 head:
   - tag: meta
     attrs:
@@ -96,7 +96,7 @@ documented as `minimum: 1`.
 | An `Enum` class | `enum`, as a named component |
 | A nested model | `$ref` to a component |
 | `T \| None` | `anyOf` with `null` |
-| `Any` | `{}` — anything |
+| `Any` | `{}`: anything |
 
 `Any` is the one to avoid. It becomes an empty schema, and a generated client
 produces `unknown` or `object`. If the shape is known, declare it.
@@ -120,8 +120,8 @@ Name them for what they are: `PostOut`, `PostSummary`, `PostAdminOut`,
 `PostCreate`. Reusing `Post` across modules is the reliable way to publish a
 schema that describes the wrong thing.
 
-[Generic models](/pydantic/models/#generic-models) get generated names —
-`Page[PostOut]` becomes `PagePostOut` — which are unique by construction.
+[Generic models](/pydantic/models/#generic-models) get generated names
+(`Page[PostOut]` becomes `PagePostOut`) which are unique by construction.
 
 ## Discriminated unions
 
@@ -157,9 +157,9 @@ class PostCreate(BaseModel):
     )
 ```
 
-A whole valid request beats a set of per-field placeholders — it is what
-someone will copy into a terminal, and it demonstrates the fields' relationship
-to each other.
+A whole valid request beats a set of per-field placeholders. It is what someone
+will copy into a terminal, and it demonstrates the fields' relationship to each
+other.
 
 Per response:
 
@@ -197,9 +197,9 @@ Per field:
 value: str = Field(json_schema_extra={"x-internal": True})
 ```
 
-`x-` extensions are how you carry information for your own tooling — a
-code generator, a documentation theme — without inventing keywords the spec
-does not have.
+`x-` extensions are how you carry information for your own tooling (a code
+generator, a documentation theme) without inventing keywords the spec does not
+have.
 
 ## Generating it yourself
 
@@ -215,7 +215,7 @@ def test_title_is_documented_as_bounded():
     assert schema["properties"]["title"]["maxLength"] == 200
 ```
 
-Which is a reasonable thing to assert for a published contract — it fails if
+Which is a reasonable thing to assert for a published contract. It fails if
 someone removes the constraint, and the constraint *is* the contract.
 
 ## Excluding a route
@@ -228,7 +228,7 @@ Keeps an operation out of the document entirely. For health checks, internal
 tooling, anything that is not part of the public surface.
 
 It does not make the route private. Use [auth](/guides/protecting-routes/) for
-that — an undocumented endpoint is still an endpoint.
+that. An undocumented endpoint is still an endpoint.
 
 ## Viewing it
 
@@ -240,7 +240,7 @@ servers and security schemes.
 ## Keeping it honest
 
 The document is generated, so it cannot describe a shape your code does not
-enforce — with two exceptions worth knowing:
+enforce, with two exceptions worth knowing:
 
 - **A [custom serialiser](/pydantic/serialization/#custom-serialisers)** can
   make the output diverge from the declared schema.

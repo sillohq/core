@@ -38,7 +38,7 @@ and its profile mapping. Every one of those is overridable per instance.
 
 | Provider | Default scopes | Notes |
 | --- | --- | --- |
-| `GoogleOAuthProvider` | `openid email profile` | `email_verified` is meaningful — Google states it. |
+| `GoogleOAuthProvider` | `openid email profile` | `email_verified` is meaningful: Google states it. |
 | `GithubOAuthProvider` | `read:user user:email` | PKCE off; makes a second call for a private email. |
 | `DiscordOAuthProvider` | `identify email` | Builds the avatar CDN URL from the hash. |
 | `MicrosoftOAuthProvider` | `openid email profile` | Tenant-scoped endpoints. |
@@ -52,9 +52,9 @@ Both are GitHub's, not the package's, and both are handled for you:
 - **A profile can come back with `email: null`**, because GitHub honours the
   "keep my address private" setting on `/user`. When that happens and the
   `user:email` scope was granted, a second call finds the primary verified
-  address. If that call fails — the scope was refused, the endpoint is down —
-  the login still succeeds with `email` left as `None`, because a missing
-  address is not a reason to refuse someone entry.
+  address. If that call fails (the scope was refused, the endpoint is down) the
+  login still succeeds with `email` left as `None`, because a missing address
+  is not a reason to refuse someone entry.
 
 ###  Microsoft tenants
 
@@ -67,7 +67,7 @@ microsoft = MicrosoftOAuthProvider(
 
 The tenant is substituted into both the authorize and token endpoints.
 Microsoft's userinfo endpoint states no `email_verified` claim, so
-`profile.email_verified` is always `False` there — meaning "not stated", which
+`profile.email_verified` is always `False` there, meaning "not stated", which
 is the safe reading.
 
 ##  Self-hosted and Enterprise installations
@@ -104,7 +104,7 @@ gitlab = OAuthProvider(
 ```
 
 `name` is not decoration. It appears in profiles and errors, it names the
-default state cookie (`oauth_state_gitlab`), and it is signed into the state —
+default state cookie (`oauth_state_gitlab`), and it is signed into the state,
 so a cookie minted for one provider cannot complete another's callback.
 
 ###  Mapping the profile
@@ -139,7 +139,7 @@ class AcmeProvider(OAuthProvider):
         return {"subject": raw["uuid"], "name": raw["display"]}
 ```
 
-A mapping cannot set `provider` — that is the package's to state, so a mapper
+A mapping cannot set `provider`. That is the package's to state, so a mapper
 cannot claim an identity came from somewhere it did not. A response with no
 determinable subject raises `profile_failed` rather than producing a profile
 with a blank id, because there would be nothing stable to key an account on.
@@ -149,7 +149,7 @@ with a blank id, because there would be nothing stable to key an account on.
 | Argument | Effect |
 | --- | --- |
 | `client_id` | Public client identifier from the provider. |
-| `client_secret` | Client secret. Defaults to empty, for public clients relying on PKCE alone — an empty value is omitted from the token request rather than sent blank. |
+| `client_secret` | Client secret. Defaults to empty, for public clients relying on PKCE alone: an empty value is omitted from the token request rather than sent blank. |
 | `state_secret` | Signs state cookies and derives PKCE verifiers. Unrelated to `client_secret`; see [the security model](/guides/oauth/security/). |
 | `redirect_uri` | Callback URL. Can also be given per call. |
 | `scopes` | Replaces the provider's defaults. |
@@ -193,6 +193,6 @@ def handler(request):
 google = GoogleOAuthProvider(..., transport=httpx.MockTransport(handler))
 ```
 
-The package's own suite runs entirely this way — no network, no credentials —
-and breaks httpx's real transport during tests so a missing stub fails loudly
+The package's own suite runs entirely this way (no network, no credentials) and
+breaks httpx's real transport during tests so a missing stub fails loudly
 rather than reaching out to Google.

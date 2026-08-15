@@ -1,6 +1,6 @@
 ---
 title: Attribute Casting
-description: "Converting model attributes on the way in and out with _casts — the built-in casters, custom ones, how encoding happens at save time, and the encrypted cast's real security."
+description: "Converting model attributes on the way in and out with _casts: the built-in casters, custom ones, how encoding happens at save time, and the encrypted cast's real security."
 head:
   - tag: meta
     attrs:
@@ -47,7 +47,7 @@ The base `Model` already includes `HasCasts`, so `_casts` is all you declare.
 | `"float"` | `float(value)` | `float(value)`, `None` passes through |
 | `"encrypted"` | see [below](#the-encrypted-cast-is-not-encryption) | |
 
-`None` is never passed to a caster — a null column stays null.
+`None` is never passed to a caster. A null column stays null.
 
 ## When encoding happens
 
@@ -69,9 +69,9 @@ save in a request would encode the already-encoded value.
 
 ## Casting versus a JSON column
 
-If your database has a JSON column type, use it — `fields.JSONField()` — and
-skip the cast. The database can then index and query inside the document, which
-a `TextField` full of JSON cannot.
+If your database has a JSON column type, use it (`fields.JSONField()`) and skip
+the cast. The database can then index and query inside the document, which a
+`TextField` full of JSON cannot.
 
 The `"json"` cast is for the cases where you have a text column: SQLite in an
 older schema, a column you cannot migrate yet, or a value that is JSON by
@@ -126,10 +126,10 @@ The `encrypted` caster is **XOR against a repeating key, base64-encoded**. The
 source says so: *"Simple XOR + base64 for demo. Use cryptography.fernet in
 production."*
 
-A repeating-key XOR is broken by anyone who can guess a plaintext fragment —
-and for structured values like a key prefix or a JSON brace, that is most of
-them. It provides no integrity protection at all: an attacker with database
-access can flip bits in the ciphertext and change the decrypted value.
+A repeating-key XOR is broken by anyone who can guess a plaintext fragment, and
+for structured values like a key prefix or a JSON brace, that is most of them.
+It provides no integrity protection at all: an attacker with database access
+can flip bits in the ciphertext and change the decrypted value.
 
 It is obfuscation. Treat a column using it as **plaintext** in every threat
 model.
@@ -158,7 +158,7 @@ Fernet is authenticated: a tampered ciphertext fails to decrypt rather than
 decrypting to something else. Keep the key out of the database, and remember
 that a rotated key needs every row re-encrypted.
 
-Often the better answer is not to store the secret at all — store a hash if you
+Often the better answer is not to store the secret at all. Store a hash if you
 only need to verify it, or a reference to a secrets manager if you need to use
 it.
 
@@ -176,7 +176,7 @@ model would.
 ## Limits
 
 - **Casts are not queryable.** `User.filter(metadata__theme="dark")` does not
-  work on a cast text column — the database sees a string. Use a real JSON
+  work on a cast text column. The database sees a string. Use a real JSON
   column for that.
 - **A field not in `_meta.fields` is skipped** at save time, so a cast naming a
   property rather than a column silently does nothing.
@@ -185,5 +185,5 @@ model would.
   dict to the driver rather than the encoded string. Load and `save()` when a
   cast field is involved.
 
-[Bulk operations](/orm/bulk/) *are* covered — `bulk_create`, `bulk_upsert` and
+[Bulk operations](/orm/bulk/) *are* covered, `bulk_create`, `bulk_upsert` and
 `upsert` all encode each instance before inserting.

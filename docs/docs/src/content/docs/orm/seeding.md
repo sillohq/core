@@ -1,6 +1,6 @@
 ---
 title: Seeding & Fixtures
-description: "Populating a database with known rows — the Seeder for code-defined data, the FixtureLoader for JSON and JSONL files, ordering, and making seeds re-runnable."
+description: "Populating a database with known rows: the Seeder for code-defined data, the FixtureLoader for JSON and JSONL files, ordering, and making seeds re-runnable."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: Seeder and FixtureLoader — code-defined seeds and JSON/JSONL fixtures.
+      content: Seeder and FixtureLoader, code-defined seeds and JSON/JSONL fixtures.
 ---
 
 Two ways to put known rows into a database: in code, or in files.
@@ -36,14 +36,14 @@ created = await seeder.run()
 `seed()` registers rows and returns the seeder, so calls chain. Nothing is
 written until `run()`, which returns the number of rows created.
 
-Order is registration order — `User` rows before `Post` rows above, which is
+Order is registration order, `User` rows before `Post` rows above, which is
 what lets the post reference an author.
 
 :::note[`batch_size` is accepted and not used]
 `run()` takes a `batch_size` parameter, but the implementation creates rows one
 at a time regardless.
 
-That is fine for what seeding is for — tens of rows, once. For thousands, use
+That is fine for what seeding is for: tens of rows, once. For thousands, use
 [`bulk_create`](/orm/bulk/) directly.
 :::
 
@@ -54,7 +54,7 @@ write it.
 
 ## `FixtureLoader`
 
-For data that belongs in files rather than in Python — reference data, a demo
+For data that belongs in files rather than in Python: reference data, a demo
 dataset, something a non-developer maintains.
 
 ```
@@ -81,7 +81,7 @@ count = await loader.load_all()
 ```
 
 `.json` holds an array of objects; `.jsonl` holds one object per line. Use
-JSONL for anything large — it streams, and a diff shows one changed row rather
+JSONL for anything large. It streams, and a diff shows one changed row rather
 than a reindented file.
 
 ### Ordering
@@ -159,8 +159,8 @@ deterministic. Demo data is none of those things: you want to re-run it, you
 want it in development and not in production, and you want to change it without
 writing a new migration.
 
-Reference data that the application genuinely requires — currencies, country
-codes, a default role — is the exception, and belongs in a migration precisely
+Reference data that the application genuinely requires (currencies, country
+codes, a default role) is the exception, and belongs in a migration precisely
 because it must exist everywhere the schema does.
 
 ## Making seeds re-runnable
@@ -180,11 +180,11 @@ await Post.all().delete()
 await User.all().delete()
 ```
 
-An idempotent seed is worth the effort — a development database gets reset far
+An idempotent seed is worth the effort. A development database gets reset far
 more often than you expect.
 
 ## See also
 
-- [Factories](/orm/factories/) — for test data, generated per test.
-- [Bulk operations](/orm/bulk/) — for large volumes.
-- [Migrations](/orm/migrations/) — for data that must exist everywhere.
+- [Factories](/orm/factories/): for test data, generated per test.
+- [Bulk operations](/orm/bulk/): for large volumes.
+- [Migrations](/orm/migrations/): for data that must exist everywhere.

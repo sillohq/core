@@ -57,7 +57,8 @@ class WebSocketState(enum.Enum):
     RESPONSE = 3
 ```
 
-The `RESPONSE` state is used for HTTP upgrade denial — when a WebSocket connection is rejected, the response is sent as an HTTP response.
+The `RESPONSE` state is used for HTTP upgrade denial. When a WebSocket
+connection is rejected, the response is sent as an HTTP response.
 
 ---
 
@@ -103,7 +104,7 @@ stateDiagram-v2
     }
 ```
 
-### 3.2 `receive()` — State-Validated Input
+### 3.2 `receive()`: State-Validated Input
 
 ```python
 async def receive(self) -> Message:
@@ -126,7 +127,7 @@ async def receive(self) -> Message:
         raise RuntimeError('Cannot call "receive" once a disconnect message has been received.')
 ```
 
-### 3.3 `send()` — State-Validated Output
+### 3.3 `send()`: State-Validated Output
 
 ```python
 async def send(self, message: Message) -> None:
@@ -289,7 +290,7 @@ class WebSocketConsumer:
         self.logger = logger or logging.getLogger("sillo")
 ```
 
-### 4.2 `as_route()` — Class Method
+### 4.2 `as_route()`: Class Method
 
 ```python
 @classmethod
@@ -305,7 +306,7 @@ def as_route(cls, path: str):
 
 Creates a new consumer instance per connection. The consumer class is converted to a route that can be registered with the app.
 
-### 4.3 `__call__()` — Connection Loop
+### 4.3 `__call__()`: Connection Loop
 
 ```python
 async def __call__(self, ws: WebSocket) -> None:
@@ -364,7 +365,7 @@ sequenceDiagram
     Cons->>Cons: on_disconnect(ws, code)
 ```
 
-### 4.4 `decode()` — Message Decoding
+### 4.4 `decode()`: Message Decoding
 
 ```python
 async def decode(self, websocket: WebSocket, message: Message) -> Any:
@@ -517,7 +518,8 @@ async def add_channel_to_group(cls, channel: Channel, group_name: str = "default
         return ChannelAddStatusEnum.CHANNEL_EXIST
 ```
 
-Groups are stored as `dict[Channel, ...]` — the channel is the key, `...` (Ellipsis) is the value. This provides O(1) lookup and deduplication.
+Groups are stored as `dict[Channel, ...]`. The channel is the key, `...`
+(Ellipsis) is the value. This provides O(1) lookup and deduplication.
 
 ### 6.2 `remove_channel_from_group()`
 
@@ -839,7 +841,10 @@ class PayloadTypeEnum(Enum):
 The client/application state split mirrors the ASGI spec's design. The client state tracks what the client has sent; the application state tracks what the server has sent. Both must be `CONNECTED` for `is_connected()` to return `True`.
 
 ### D-2: Class-Level ChannelBox
-`ChannelBox` uses only class-level state (no instances). This makes it a process-wide singleton that all consumers share. The trade-off is that it cannot be used across processes — for multi-process deployments, use the events system with Redis transport.
+`ChannelBox` uses only class-level state (no instances). This makes it a
+process-wide singleton that all consumers share. The trade-off is that it
+cannot be used across processes, for multi-process deployments, use the events
+system with Redis transport.
 
 ### D-3: Channel as Dict Key
 Channels are stored as dict keys in `CHANNEL_GROUPS`. This provides O(1) lookup and automatic deduplication (a channel can only be in a group once).
@@ -848,7 +853,9 @@ Channels are stored as dict keys in `CHANNEL_GROUPS`. This provides O(1) lookup 
 `_MISSING = object()` is used as a sentinel in `group.pop(channel, _MISSING)` to distinguish "channel not found" from "channel stored None".
 
 ### D-5: Expired Channel Cleanup
-`_clean_expired()` is called on every `remove_channel_from_group()` call. This is a lazy cleanup strategy — expired channels are only removed when the groups are actively being modified.
+`_clean_expired()` is called on every `remove_channel_from_group()` call. This
+is a lazy cleanup strategy. Expired channels are only removed when the groups
+are actively being modified.
 
 ---
 
@@ -856,16 +863,16 @@ Channels are stored as dict keys in `CHANNEL_GROUPS`. This provides O(1) lookup 
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `WebSocketState` enum | `core/sillo/websockets/base.py` | 15–21 |
-| `WebSocketDisconnect` | `core/sillo/websockets/base.py` | 24–30 |
-| `WebSocket` class | `core/sillo/websockets/base.py` | 33–231 |
-| `WebSocketConsumer` | `core/sillo/websockets/consumers.py` | 19–213 |
-| `Channel` | `core/sillo/websockets/channels.py` | 25–82 |
-| `ChannelBox` | `core/sillo/websockets/channels.py` | 85–277 |
-| `BaseHistoryManager` | `core/sillo/websockets/history.py` | 7–49 |
-| `InMemoryHistoryManager` | `core/sillo/websockets/history.py` | 52–98 |
-| `NoOpHistoryManager` | `core/sillo/websockets/history.py` | 100–124 |
-| `WebSocketErrorMiddleware` | `core/sillo/websockets/errors.py` | 20–40 |
-| Status codes | `core/sillo/websockets/status.py` | 1–66 |
-| Enums | `core/sillo/websockets/utils.py` | 1–48 |
-| `WebsocketRoute` | `core/sillo/core/routing/websocket.py` | 21–308 |
+| `WebSocketState` enum | `core/sillo/websockets/base.py` | 15-21 |
+| `WebSocketDisconnect` | `core/sillo/websockets/base.py` | 24-30 |
+| `WebSocket` class | `core/sillo/websockets/base.py` | 33-231 |
+| `WebSocketConsumer` | `core/sillo/websockets/consumers.py` | 19-213 |
+| `Channel` | `core/sillo/websockets/channels.py` | 25-82 |
+| `ChannelBox` | `core/sillo/websockets/channels.py` | 85-277 |
+| `BaseHistoryManager` | `core/sillo/websockets/history.py` | 7-49 |
+| `InMemoryHistoryManager` | `core/sillo/websockets/history.py` | 52-98 |
+| `NoOpHistoryManager` | `core/sillo/websockets/history.py` | 100-124 |
+| `WebSocketErrorMiddleware` | `core/sillo/websockets/errors.py` | 20-40 |
+| Status codes | `core/sillo/websockets/status.py` | 1-66 |
+| Enums | `core/sillo/websockets/utils.py` | 1-48 |
+| `WebsocketRoute` | `core/sillo/core/routing/websocket.py` | 21-308 |

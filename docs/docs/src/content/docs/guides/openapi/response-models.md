@@ -513,10 +513,9 @@ Every endpoint documents its 200 because the response model does it
 automatically. Few document the failures, and failures are what an
 integrator has to write code for.
 
-The 200 shape is usually inferable from the endpoint's name. The 404 is
-not — a client cannot guess whether a missing order returns a 404 with a
-body, a 404 with nothing, or a 200 with `null`. Each requires different
-client code.
+The 200 shape is usually inferable from the endpoint's name. The 404 is not. A
+client cannot guess whether a missing order returns a 404 with a body, a 404
+with nothing, or a 200 with `null`. Each requires different client code.
 
 Declare a shared set of error responses and spread it into every route,
 so consistency is structural rather than remembered:
@@ -563,9 +562,9 @@ behaviour:
 | 429 | Too many requests | Back off per `Retry-After` |
 | 503 | Temporarily unavailable | Retry with backoff |
 
-The distinction that saves the most client code is 403 versus 401 — one
-is retryable after refreshing credentials and the other never is. Getting
-it wrong produces infinite refresh loops.
+The distinction that saves the most client code is 403 versus 401, one is
+retryable after refreshing credentials and the other never is. Getting it wrong
+produces infinite refresh loops.
 
 ##  Documenting asynchronous results
 
@@ -581,16 +580,16 @@ class AcceptedOut(BaseModel):
     poll_url: str
 ```
 
-Returning the `poll_url` in the body rather than making clients construct
-it means you can change the polling route without breaking anyone — the
-kind of small decision that determines whether an API is pleasant to
-integrate against three versions later.
+Returning the `poll_url` in the body rather than making clients construct it
+means you can change the polling route without breaking anyone, the kind of
+small decision that determines whether an API is pleasant to integrate against
+three versions later.
 
 ##  Headers are part of the response contract
 
-`Location` on a 201, `Retry-After` on a 429 and 503, `ETag` and
-`Cache-Control` on cacheable reads, pagination links on collections —
-each is something a client must read, and none appear in a response model.
+`Location` on a 201, `Retry-After` on a 429 and 503, `ETag` and `Cache-Control`
+on cacheable reads, pagination links on collections. Each is something a client
+must read, and none appear in a response model.
 
 Document them explicitly in the route's `responses`. A client that does
 not know an `ETag` is available will not send `If-None-Match`, and the
@@ -609,7 +608,7 @@ usage if you can; remove it a release after the date. The deprecation
 appears in generated clients as a compile-time or lint warning, which is
 the only notice most consumers will actually see.
 
-Adding a replacement alongside the deprecated field, rather than changing
-the old one's meaning, is what makes the transition safe. A field that
-keeps its name and changes its type or units is worse than a removal —
-clients keep parsing it and get wrong answers.
+Adding a replacement alongside the deprecated field, rather than changing the
+old one's meaning, is what makes the transition safe. A field that keeps its
+name and changes its type or units is worse than a removal, clients keep
+parsing it and get wrong answers.

@@ -265,20 +265,20 @@ Every read method sets `accessed = True`.  Every write method sets
 | Method | Line | Flags Set | Raises on Missing |
 |--------|------|-----------|-------------------|
 | `__getitem__(key)` | 50 | `accessed` | `KeyError` |
-| `__setitem__(key, value)` | 66 | `modified`, `accessed` | — |
+| `__setitem__(key, value)` | 66 | `modified`, `accessed` |  |
 | `__delitem__(key)` | 79 | `modified`, `deleted` | `KeyError` |
-| `__contains__(key)` | 93 | `accessed` | — |
-| `__len__()` | 105 | `accessed` | — |
-| `__iter__()` | 309 | `accessed` | — |
-| `get(key, default)` | 110 | `accessed` | — |
-| `set(key, value)` | 123 | `modified`, `accessed` | — |
+| `__contains__(key)` | 93 | `accessed` |  |
+| `__len__()` | 105 | `accessed` |  |
+| `__iter__()` | 309 | `accessed` |  |
+| `get(key, default)` | 110 | `accessed` |  |
+| `set(key, value)` | 123 | `modified`, `accessed` |  |
 | `delete(key)` | 134 | `modified`, `deleted` | Never raises |
-| `clear()` | 145 | `accessed`, `modified`, `deleted` | — |
-| `keys()` | 157 | `accessed` | — |
-| `values()` | 162 | `accessed` | — |
-| `items()` | 167 | `accessed` | — |
-| `update(other)` | 180 | `modified` | — |
-| `is_empty()` | 172 | *(none)* | — |
+| `clear()` | 145 | `accessed`, `modified`, `deleted` |  |
+| `keys()` | 157 | `accessed` |  |
+| `values()` | 162 | `accessed` |  |
+| `items()` | 167 | `accessed` |  |
+| `update(other)` | 180 | `modified` |  |
+| `is_empty()` | 172 | *(none)* |  |
 
 **Design note:** `is_empty()` intentionally does *not* set `accessed` so that
 middleware can check emptiness without triggering a cookie refresh.
@@ -295,19 +295,20 @@ def get_session_key(self) -> str:
 ```
 
 For new visitors (no cookie), the key is lazily generated on first access via
-`secrets.token_hex(32)` — a 64-character hex string with 256 bits of entropy.
+`secrets.token_hex(32)`. A 64-character hex string with 256 bits of entropy.
 
 ### Expiration
 
 Three methods control when a session expires:
 
-- **`set_expiration_time(expiration: datetime)`** (line 200) — Explicit override.
-- **`get_expiration_time()`** (line 209) — Resolution order:
+- **`set_expiration_time(expiration: datetime)`** (line 200): Explicit
+  override.
+- **`get_expiration_time()`** (line 209): Resolution order:
   1. Explicit override from `set_expiration_time`
   2. If `session_permanent` is `False`: `now(utc) + session_expiration_time`
   3. If `session_permanent` is `True`: `datetime.max` (effectively never)
   4. Fallback: 7 days if config is unreachable
-- **`has_expired()`** (line 251) — `now(utc) > get_expiration_time()`
+- **`has_expired()`** (line 251): `now(utc) > get_expiration_time()`
 
 ### should_set_cookie
 
@@ -460,9 +461,9 @@ async def process_response(self, request, response):
 Three cases:
 
 1. **No session in scope** (line 103): Returns early.
-2. **Empty session that was accessed and modified** (lines 107-115):
-   Calls `await session.save()` to let the backend purge its record, then
-   `response.delete_cookie(cookie_name)`.  This handles logout — the server-side
+2. **Empty session that was accessed and modified** (lines 107-115): Calls
+   `await session.save()` to let the backend purge its record, then
+   `response.delete_cookie(cookie_name)`. This handles logout. The server-side
    store is cleaned up and the cookie is removed.
 3. **should_set_cookie is true** (lines 117-129):
    Calls `await session.save()` to get the cookie value, then sets the cookie
@@ -540,10 +541,10 @@ async def save(self, session) -> str:
 
 **Key insight:** The cookie value *is* the entire session payload, not a
 reference to server-side storage.  This means:
-- **No disk I/O, no database queries** — the fastest possible session backend.
-- **Size limit** — browsers limit cookies to ~4 KB; large session data will
+- **No disk I/O, no database queries**: the fastest possible session backend.
+- **Size limit**: browsers limit cookies to ~4 KB; large session data will
   exceed this.
-- **No server-side revocation** — you cannot invalidate a session without
+- **No server-side revocation**: you cannot invalidate a session without
   waiting for the cookie to expire (or using a separate revocation list).
 
 ### When to Use
@@ -627,11 +628,11 @@ Each file contains the raw `_session_cache` dict serialised via `json.dumps`.
 
 ### Limitations
 
-- **No concurrency control** — concurrent requests for the same session can
-  race.  A production deployment should use a proper database or Redis.
-- **No automatic cleanup** — expired session files accumulate.  A cron job or
+- **No concurrency control**: concurrent requests for the same session can
+  race. A production deployment should use a proper database or Redis.
+- **No automatic cleanup**: expired session files accumulate. A cron job or
   periodic cleanup is needed.
-- **Filesystem coupling** — not suitable for multi-server deployments without
+- **Filesystem coupling**: not suitable for multi-server deployments without
   shared storage.
 
 ---

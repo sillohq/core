@@ -1,6 +1,6 @@
 ---
 title: Raw SQL
-description: "Dropping to SQL when the ORM cannot express a query — Model.raw, the connection API, parameterisation, and the placeholder style each backend expects."
+description: "Dropping to SQL when the ORM cannot express a query: Model.raw, the connection API, parameterisation, and the placeholder style each backend expects."
 head:
   - tag: meta
     attrs:
@@ -15,7 +15,7 @@ head:
 Some queries the ORM cannot build: window functions, recursive CTEs, `LATERAL`
 joins, a full-text rank. Write those in SQL.
 
-## `Model.raw` — rows as instances
+## `Model.raw`: rows as instances
 
 ```python
 posts = await Post.raw(
@@ -23,13 +23,13 @@ posts = await Post.raw(
 )
 ```
 
-Returns model instances. The query must select enough columns to build one —
-the primary key at minimum, and any field you intend to touch.
+Returns model instances. The query must select enough columns to build one, the
+primary key at minimum, and any field you intend to touch.
 
 Use it when the *filtering* is the hard part but you still want model objects
 back.
 
-## The connection API — rows as data
+## The connection API: rows as data
 
 ```python
 from tortoise import connections
@@ -85,7 +85,7 @@ segment.
 
 This is the driver's syntax, not Tortoise's, so a raw query is tied to the
 database you wrote it for. It is the main reason a project that develops on
-SQLite and deploys on PostgreSQL should keep raw SQL to a minimum — or run its
+SQLite and deploys on PostgreSQL should keep raw SQL to a minimum, or run its
 tests against the real backend.
 :::
 
@@ -104,8 +104,8 @@ rows = await conn.execute_query_dict(f"SELECT * FROM posts ORDER BY {column} DES
 
 Everything the model layer does:
 
-- [global scopes](/orm/scopes/#global-scopes) — including a soft-delete filter;
-- [casts](/orm/casting/) — you get the raw column value;
+- [global scopes](/orm/scopes/#global-scopes): including a soft-delete filter;
+- [casts](/orm/casting/): you get the raw column value;
 - [model events](/orm/events/) and
   [validation](/orm/mixins/#validatesbeforesavemixin);
 - `updated_at`.
@@ -115,7 +115,7 @@ A raw `DELETE` on a soft-deleted model really deletes.
 
 ## Where it is worth it
 
-**Window functions** — "the newest post per author", which the ORM cannot
+**Window functions**, "the newest post per author", which the ORM cannot
 express:
 
 ```sql
@@ -126,7 +126,7 @@ SELECT * FROM (
 WHERE rn = 1
 ```
 
-**Recursive CTEs** — a category tree in one query rather than one per level:
+**Recursive CTEs**, a category tree in one query rather than one per level:
 
 ```sql
 WITH RECURSIVE tree AS (
@@ -138,8 +138,8 @@ WITH RECURSIVE tree AS (
 SELECT * FROM tree
 ```
 
-**Bulk operations with SQL-side logic** — an `UPDATE … FROM`, an
-`INSERT … SELECT`.
+**Bulk operations with SQL-side logic**, an `UPDATE … FROM`, an `INSERT …
+SELECT`.
 
 **Reports** that join five tables and group three ways. A dashboard query is
 often clearer as SQL than as a chain of `annotate` calls, and it is the form
@@ -154,9 +154,9 @@ Before dropping down, check whether one of these covers it:
 
 | Need | Tool |
 | --- | --- |
-| OR, negation | [`Q`](/orm/filtering/#q--or-and-and-negation) |
-| Column arithmetic | [`F`](/orm/filtering/#f--referring-to-a-column) |
-| A conditional value | [`Case`/`When`](/orm/filtering/#case--when--conditionals-in-sql) |
+| OR, negation | [`Q`](/orm/filtering/#q-or-and-and-negation) |
+| Column arithmetic | [`F`](/orm/filtering/#f-referring-to-a-column) |
+| A conditional value | [`Case`/`When`](/orm/filtering/#case--when-conditionals-in-sql) |
 | A set from another query | [`Subquery`](/orm/filtering/#subquery) |
 | One expression the ORM lacks | [`RawSQL`](/orm/filtering/#rawsql) in an annotation |
 
@@ -177,7 +177,7 @@ async with transaction():
 
 Both roll back together, because both use the same connection.
 
-Take the connection **inside** the block, not before it — see
+Take the connection **inside** the block, not before it. See
 [Connections](/orm/connections/).
 
 ## Migrations

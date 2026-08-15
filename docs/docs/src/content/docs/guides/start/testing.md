@@ -58,9 +58,9 @@ application factory imports config at call time, so the test database is
 picked up rather than the development one. Set it later and you will be
 testing against `storage/myapp.db`.
 
-**`create_app()` is called per test**, so no state leaks between them.
-That is why `app/main.py` is a one-liner — a module that builds the app
-*and* does other work at import cannot be constructed twice.
+**`create_app()` is called per test**, so no state leaks between them. That is
+why `app/main.py` is a one-liner. A module that builds the app *and* does other
+work at import cannot be constructed twice.
 
 **`TestClient` is used as a context manager.** Entering it runs the ASGI
 lifespan, which is what opens the database connection and starts anything
@@ -89,10 +89,10 @@ def test_registration_rejects_a_duplicate_email(client):
 
 ###  Tests that need rows
 
-The test database starts empty, and `db_generate_schemas` is off in
-development but **on** for tests — the fixture points at a fresh file and
-lets the ORM create the tables, because running migrations per test would
-dominate the runtime.
+The test database starts empty, and `db_generate_schemas` is off in development
+but **on** for tests. The fixture points at a fresh file and lets the ORM
+create the tables, because running migrations per test would dominate the
+runtime.
 
 Creating a row from outside the application needs its own connection,
 because the application's belongs to the startup task:
@@ -120,9 +120,9 @@ def test_something(client):
     client.portal.call(seed)
 ```
 
-For a row that must exist *before* the first request — an administrator
-the test then signs in as — a startup hook is simplest, since connections
-are held in a task-scoped context:
+For a row that must exist *before* the first request (an administrator the test
+then signs in as) a startup hook is simplest, since connections are held in a
+task-scoped context:
 
 ```python
 async def seed():
@@ -167,12 +167,12 @@ A project can import cleanly, render every template, pass its unit tests
 and still fail on the first real request. These are the failures it was
 written for, each of them real:
 
-- **middleware ordering** — authentication registered outside the session
-  it reads from, so every admin page 500s
-- **a missing static mount** — every stylesheet 404s in production and
-  nowhere else
-- **an auth backend reading the wrong claim** — every authenticated
-  request silently loads no user
+- **middleware ordering**: authentication registered outside the session it
+  reads from, so every admin page 500s
+- **a missing static mount**: every stylesheet 404s in production and nowhere
+  else
+- **an auth backend reading the wrong claim**: every authenticated request
+  silently loads no user
 - **a queue that accepts jobs and never runs them**
 
 None of those is visible in a template, and a unit test of a handler does
@@ -200,9 +200,9 @@ worth reading before extending.
 The sharpest lesson in this project's history: **assert on what happened,
 not on what was invoked.**
 
-Reaching `/admin/login/` proves a form renders. It says nothing about
-whether anyone can sign in — for a long time nobody could, and the check
-was green. Now it signs in:
+Reaching `/admin/login/` proves a form renders. It says nothing about whether
+anyone can sign in, for a long time nobody could, and the check was green. Now
+it signs in:
 
 ```python
 signed_in = await client.post("/admin/login/", data={"email": ..., "password": ...})
@@ -267,9 +267,9 @@ schedule.
 
 :::caution
 **The weekly run is not busywork.** The failure it catches is a new sillo
-release breaking the project — which happens on the framework's calendar,
-not on yours. A scheduled run turns "someone discovers this in three
-months" into "we knew on Monday".
+release breaking the project, which happens on the framework's calendar, not on
+yours. A scheduled run turns "someone discovers this in three months" into "we
+knew on Monday".
 :::
 
 `sillo db:migrate` in CI is also a real check: it runs the committed migration
@@ -287,7 +287,7 @@ Run those three before pushing and CI holds no surprises.
 
 ##  Testing background jobs
 
-Call `handle()` directly — it is an ordinary coroutine, and this needs no
+Call `handle()` directly. It is an ordinary coroutine, and this needs no
 worker:
 
 ```python
@@ -306,9 +306,9 @@ return value and any exception, which is usually what a test wants:
 result = await Resize.perform_now("avatar.png", width=256)
 ```
 
-Reserve full worker round-trips for testing the queue wiring, not your
-job's logic. They need a running worker and a real wait, and an idle
-worker sleeps between polls — a test that waits 100ms will flake.
+Reserve full worker round-trips for testing the queue wiring, not your job's
+logic. They need a running worker and a real wait, and an idle worker sleeps
+between polls. A test that waits 100ms will flake.
 
 ##  Things that will bite you
 
@@ -330,7 +330,7 @@ worker sleeps between polls — a test that waits 100ms will flake.
 
 ##  Related
 
-- [Creating a Project](/guides/start/) — what CI does on the starter itself
-- [The Console](/guides/start/console/) — the commands CI drives
-- [Background Work](/guides/start/background-work/) — testing jobs
-- [Deployment](/guides/start/deployment/) — what to check before shipping
+- [Creating a Project](/guides/start/): what CI does on the starter itself
+- [The Console](/guides/start/console/): the commands CI drives
+- [Background Work](/guides/start/background-work/): testing jobs
+- [Deployment](/guides/start/deployment/): what to check before shipping

@@ -1,6 +1,6 @@
 ---
 title: Model Events
-description: "Lifecycle hooks on a model — the eight events, registering callbacks with @Model.on, grouping them into an observer, and where events are the wrong tool."
+description: "Lifecycle hooks on a model: the eight events, registering callbacks with @Model.on, grouping them into an observer, and where events are the wrong tool."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: before/after create, save, update and delete — callbacks and observers.
+      content: before/after create, save, update and delete, callbacks and observers.
 ---
 
 ```python
@@ -44,8 +44,8 @@ async def fill_slug(post):
 Every callback is `async` and receives the instance.
 
 A `before_*` callback can mutate the instance, and the change is part of the
-write — which is what makes `before_create` the right place to fill in a
-derived field.
+write, which is what makes `before_create` the right place to fill in a derived
+field.
 
 ## Registering
 
@@ -91,8 +91,8 @@ An observer is the better shape once you have more than two hooks: the
 lifecycle reads top to bottom in one class, and a change to the search index
 integration is one file rather than four decorators scattered around.
 
-Register observers where the models are imported —
-`database/models/__init__.py` — so importing a model is enough to have its
+Register observers where the models are imported
+(`database/models/__init__.py`) so importing a model is enough to have its
 behaviour.
 
 ## Firing manually
@@ -102,20 +102,20 @@ await Post.fire_event("after_create", post)
 ```
 
 Rarely needed. Useful when a bulk path has done work the events should still
-know about — see [what does not fire events](#what-does-not-fire-events).
+know about. See [what does not fire events](#what-does-not-fire-events).
 
 ## What does not fire events
 
 Events are dispatched from the instance methods. These paths do not go through
 them:
 
-- `QuerySet.update()` and `QuerySet.delete()` — set-based SQL, no instances;
+- `QuerySet.update()` and `QuerySet.delete()`: set-based SQL, no instances;
 - `bulk_create`, `bulk_upsert` and `upsert`;
 - raw SQL;
 - anything another process does.
 
-That is not an oversight — loading a million rows to fire a callback would
-defeat the point of a bulk statement — but it is the reason model events cannot
+That is not an oversight (loading a million rows to fire a callback would
+defeat the point of a bulk statement) but it is the reason model events cannot
 be an audit log or a security control. Both need to be true for *every* writer.
 
 Put those in the database (a trigger, a constraint) or in the layer above (a
@@ -136,8 +136,8 @@ async def index(post):
 ```
 
 Wrap the write in a [transaction](/orm/transactions/) if the two must be
-atomic, or — usually better — dispatch a
-[queued job](/guides/work/queue/) so a flaky third party cannot fail a request:
+atomic, or (usually better) dispatch a [queued job](/guides/work/queue/) so a
+flaky third party cannot fail a request:
 
 ```python
 @Post.on("after_create")
@@ -149,7 +149,7 @@ async def index(post):
 
 | Instead of | Use |
 | --- | --- |
-| Validating in `before_save` | [`ValidatesBeforeSaveMixin`](/orm/mixins/#validatesbeforesavemixin) — same timing, clearer name |
+| Validating in `before_save` | [`ValidatesBeforeSaveMixin`](/orm/mixins/#validatesbeforesavemixin): same timing, clearer name |
 | Cascading deletes in `before_delete` | A database `on_delete=CASCADE` |
 | Cross-aggregate work in `after_save` | An [application event](/guides/events/) or a [job](/guides/work/jobs/) |
 

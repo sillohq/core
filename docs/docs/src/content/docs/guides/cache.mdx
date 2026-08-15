@@ -8,7 +8,7 @@ import { Aside } from '@astrojs/starlight/components';
 #  Cache (`sillo.cache`)
 
 sillo ships an advanced, backend-agnostic caching subsystem. It is deliberately
-**decoupled from the application object** — you configure a backend at the
+**decoupled from the application object**: you configure a backend at the
 *domain* level and use it from anywhere (handlers, services, plain functions),
 not just inside a request.
 
@@ -35,7 +35,7 @@ Two backends ship today:
 uv add "sillo-framework[cache]"   # installs the optional redis driver
 ```
 
-If `redis` is not installed, `RedisCache` still imports — the `redis.asyncio`
+If `redis` is not installed, `RedisCache` still imports. The `redis.asyncio`
 dependency is loaded lazily and only errors when you actually construct a
 `RedisCache`.
 
@@ -78,7 +78,7 @@ outside the web layer (CLI commands, workers, background tasks).
 
 ##  The `@cache` decorator
 
-Decorate any callable — sync or async, function or bound method.
+Decorate any callable, sync or async, function or bound method.
 
 ###  Async function
 
@@ -151,7 +151,7 @@ returned **without** being stored.
 
 ##  Using a backend directly (on the fly)
 
-You don't need the decorator — the `BaseCache` API works as a key-value store:
+You don't need the decorator. The `BaseCache` API works as a key-value store:
 
 ```python
 from sillo.cache import MemoryCache
@@ -171,7 +171,7 @@ await cache.clear()                        # drop keys in this namespace
 
 ##  Advanced features
 
-###  TTL — absolute vs sliding
+###  TTL: absolute vs sliding
 
 * **Absolute** (default): the entry expires `ttl` seconds after it was written.
 * **Sliding**: each read resets the expiry window to `ttl` seconds, so an
@@ -325,11 +325,11 @@ A cache key is an interface between the code that writes and the code
 that reads, and unstructured keys become unmanageable at about the tenth
 one.
 
-A workable convention has four parts: a namespace, an entity, an
-identifier, and a version — `myapp:user:42:v2`. The namespace prevents
-collisions with anything else sharing the store. The version lets you
-invalidate an entire class of entries by bumping it, which is far easier
-than finding and deleting them.
+A workable convention has four parts: a namespace, an entity, an identifier,
+and a version. `myapp:user:42:v2`. The namespace prevents collisions with
+anything else sharing the store. The version lets you invalidate an entire
+class of entries by bumping it, which is far easier than finding and deleting
+them.
 
 Include everything that changes the value. A key that omits the locale
 serves French content to English users; one that omits the user id on
@@ -344,13 +344,13 @@ and cap what you cache.
 ##  Invalidation, ranked by reliability
 
 **Expiry** is the only strategy that cannot leave you permanently wrong.
-Everything else should be layered on top of a TTL, never instead of one —
-a cache entry with no TTL and a missed invalidation is stale forever.
+Everything else should be layered on top of a TTL, never instead of one, a
+cache entry with no TTL and a missed invalidation is stale forever.
 
-**Write-through invalidation** — deleting the key when the underlying
-data changes — is the common approach and its failure mode is a write
-path you forgot. Every place that mutates the entity must invalidate, and
-the one in a migration script will not.
+**Write-through invalidation** (deleting the key when the underlying data
+changes) is the common approach and its failure mode is a write path you
+forgot. Every place that mutates the entity must invalidate, and the one in a
+migration script will not.
 
 **Versioned keys** avoid deletion entirely: bump a version and old
 entries age out naturally. This survives missed invalidations and is much
@@ -366,10 +366,10 @@ while the others wait or serve stale.
 every time and hit the database every time. Cache the negative result,
 briefly.
 
-**Cache as a dependency.** A cache outage should degrade you, not break
-you. Treat a cache error as a miss — read through to the source and log
-it — rather than letting it raise. An application that 500s when Redis
-restarts has made a cache into a hard dependency by accident.
+**Cache as a dependency.** A cache outage should degrade you, not break you.
+Treat a cache error as a miss (read through to the source and log it) rather
+than letting it raise. An application that 500s when Redis restarts has made a
+cache into a hard dependency by accident.
 
 
 ##  What to cache, and what not to
@@ -379,12 +379,12 @@ change, and identical for many callers. Reference data, rendered
 fragments shared across users, the result of an aggregate query, an
 upstream API response with a slow provider.
 
-Do not cache things that are cheap to produce — a cache lookup is not
-free, and for a primary-key fetch it is often slower than the query. Do
-not cache per-user data with low reuse: one entry per user with a hit
-rate near zero is memory spent for nothing. And do not cache anything
-where serving a stale value is a correctness problem — permissions,
-balances, inventory at the point of sale.
+Do not cache things that are cheap to produce. A cache lookup is not free, and
+for a primary-key fetch it is often slower than the query. Do not cache
+per-user data with low reuse: one entry per user with a hit rate near zero is
+memory spent for nothing. And do not cache anything where serving a stale value
+is a correctness problem, permissions, balances, inventory at the point of
+sale.
 
 The question that settles most cases: **how wrong is a value that is
 sixty seconds old?** If the answer is "not at all", cache it. If the
@@ -392,10 +392,9 @@ answer is "it could authorise something it should not", do not.
 
 ##  Measuring whether it works
 
-A cache with no hit-rate metric is a guess. Track hits, misses, and
-evictions, and read them together — a low hit rate with high eviction
-means the cache is too small; a low hit rate with no eviction means the
-keys are too specific.
+A cache with no hit-rate metric is a guess. Track hits, misses, and evictions,
+and read them together, a low hit rate with high eviction means the cache is
+too small; a low hit rate with no eviction means the keys are too specific.
 
 Track the latency of the cached path against the uncached one too. A
 cache that saves two milliseconds on a query that takes three is
@@ -422,10 +421,9 @@ for anything that changes.
 
 ##  HTTP caching is a different tool
 
-Everything above is server-side. `Cache-Control`, `ETag`, and
-`Last-Modified` push caching out to the browser and any CDN in between,
-where a hit costs you nothing at all — no request, no process, no
-database.
+Everything above is server-side. `Cache-Control`, `ETag`, and `Last-Modified`
+push caching out to the browser and any CDN in between, where a hit costs you
+nothing at all: no request, no process, no database.
 
 They solve different problems and compose well. A response cached at the
 CDN for sixty seconds removes most of your traffic; a server-side cache
@@ -433,8 +431,7 @@ makes the requests that do arrive cheap. Use `ETag` with conditional
 requests for large responses that change rarely, so an unchanged resource
 costs a 304 rather than a body.
 
-The two rules that prevent incidents: never set a public
-`Cache-Control` on an authenticated response, and always set `Vary` on
-anything that differs by header. Both mistakes have the same
-consequence — one user's data served to another from a cache you do not
-control.
+The two rules that prevent incidents: never set a public `Cache-Control` on an
+authenticated response, and always set `Vary` on anything that differs by
+header. Both mistakes have the same consequence, one user's data served to
+another from a cache you do not control.

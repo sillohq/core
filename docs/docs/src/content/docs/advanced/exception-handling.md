@@ -9,12 +9,12 @@ Sillo's exception handling subsystem converts Python exceptions raised during
 request processing into well-formed HTTP responses (or WebSocket close frames).
 The design achieves three things:
 
-1. **Uniform error contract** — Every error response from the framework follows a
-   predictable JSON shape so API clients never need to guess.
-2. **Two-tier dispatch** — Status-code-based handlers (fast, integer-key lookup)
+1. **Uniform error contract**: Every error response from the framework follows
+   a predictable JSON shape so API clients never need to guess.
+2. **Two-tier dispatch**: Status-code-based handlers (fast, integer-key lookup)
    are tried first for `HTTPException` instances; class-based handlers (MRO
    walk) handle everything else.
-3. **Polymorphic fallback** — The MRO walk means registering a handler for a
+3. **Polymorphic fallback.** The MRO walk means registering a handler for a
    base class automatically covers all subclasses unless a more specific
    handler is registered.
 
@@ -111,7 +111,7 @@ classDiagram
 
 ### 2.1 HTTPException
 
-**File:** `core/sillo/exceptions.py` (lines 15–115)
+**File:** `core/sillo/exceptions.py` (lines 15 to 115)
 
 The root of all HTTP error exceptions. Every handler that wants to produce a
 non-2xx response raises this (or a subclass).
@@ -136,8 +136,8 @@ class HTTPException(Exception):
   `http.HTTPStatus` is used (e.g., 404 → `"Not Found"`).
 - The `detail` is stored both in `self.args[0]` (via `super().__init__`) and in
   `self.detail`. This makes it work with `str(exc)` and `exc.detail` alike.
-- The `headers` dict defaults to `{}` (mutable default — intentional, only
-  read, never mutated by the framework).
+- The `headers` dict defaults to `{}` (mutable default: intentional, only read,
+  never mutated by the framework).
 - `__str__` returns `"HTTP {status_code}: {detail}"`.
 - `__repr__` returns `"HTTPException(404, 'Not Found')"` (uses the actual class
   name, so subclasses get the right name).
@@ -161,7 +161,7 @@ raise HTTPException(
 
 ### 2.2 NotFoundException
 
-**File:** `core/sillo/exceptions.py` (lines 118–159)
+**File:** `core/sillo/exceptions.py` (lines 118 to 159)
 
 A convenience subclass that hardcodes `status_code=404`:
 
@@ -190,7 +190,7 @@ class NotFoundException(HTTPException):
 
 ### 2.3 WebSocketException
 
-**File:** `core/sillo/exceptions.py` (lines 162–242)
+**File:** `core/sillo/exceptions.py` (lines 162 to 242)
 
 A completely separate exception hierarchy (does NOT inherit from
 `HTTPException`) because WebSocket connections use close codes, not HTTP status
@@ -217,7 +217,7 @@ WebSocket exceptions are caught by a completely separate middleware
 
 ### 2.4 AuthException / AuthenticationFailed / PermissionDenied
 
-**File:** `core/sillo/auth/exceptions.py` (lines 16–161)
+**File:** `core/sillo/auth/exceptions.py` (lines 16 to 161)
 
 ```python
 class AuthException(HTTPException):
@@ -256,7 +256,7 @@ This means:
 
 ### 2.5 RequestValidationError / ResponseValidationError
 
-**File:** `core/sillo/validation/errors.py` (lines 68–126)
+**File:** `core/sillo/validation/errors.py` (lines 68 to 126)
 
 These inherit directly from `Exception` (NOT from `HTTPException`). They carry
 structured error lists rather than a single status code:
@@ -284,12 +284,12 @@ lookup.
 
 ---
 
-## 3. ExceptionMiddleware — The Core Pipeline
+## 3. ExceptionMiddleware: The Core Pipeline
 
-**File:** `core/sillo/exception_handler.py` (lines 129–261)
+**File:** `core/sillo/exception_handler.py` (lines 129 to 261)
 
 `ExceptionMiddleware` is a standard sillo middleware that wraps request
-processing in a try/except. It is **not** an ASGI middleware directly — it
+processing in a try/except. It is **not** an ASGI middleware directly. It
 conforms to the sillo middleware signature:
 
 ```python
@@ -408,7 +408,7 @@ This two-tier design means:
 
 ## 5. Handler Lookup: MRO-Based Resolution
 
-**File:** `core/sillo/exception_handler.py` (lines 28–60)
+**File:** `core/sillo/exception_handler.py` (lines 28 to 60)
 
 ```python
 def _lookup_exception_handler(
@@ -449,10 +449,10 @@ And an `AuthenticationFailed` is raised. The MRO walk is:
 | Step | Class in MRO | In registry? | Action |
 |------|-------------|-------------|--------|
 | 1 | `AuthenticationFailed` | ✅ Yes | Return `auth_handler` ← **match** |
-| 2 | `AuthException` | (not reached) | — |
-| 3 | `HTTPException` | (not reached) | — |
-| 4 | `Exception` | (not reached) | — |
-| 5 | `object` | (not reached) | — |
+| 2 | `AuthException` | (not reached) |  |
+| 3 | `HTTPException` | (not reached) |  |
+| 4 | `Exception` | (not reached) |  |
+| 5 | `object` | (not reached) |  |
 
 If the exception were a bare `HTTPException(403)` (not an `AuthException`
 subclass):
@@ -467,7 +467,7 @@ If the exception were a `ValueError` (nothing in the registry matches):
 |------|-------------|-------------|--------|
 | 1 | `ValueError` | ❌ No | Continue |
 | 2 | `Exception` | ✅ Yes | Return `fallback_handler` ← **match** |
-| 3 | `object` | (not reached) | — |
+| 3 | `object` | (not reached) |  |
 
 If even `Exception` is not in the registry, the walk reaches `object`, finds
 nothing, and returns `None`. The caller logs the traceback and re-raises.
@@ -494,7 +494,7 @@ flowchart TD
 
 ## 6. The `wrap_http_exceptions` Dispatch Function
 
-**File:** `core/sillo/exception_handler.py` (lines 63–126)
+**File:** `core/sillo/exception_handler.py` (lines 63 to 126)
 
 This is the heart of the exception pipeline. It is called by
 `ExceptionMiddleware.__call__` and contains the full try/except dispatch logic:
@@ -533,7 +533,7 @@ async def wrap_http_exceptions(
 
 ### Step-by-step logic:
 
-1. **Execute `call_next()`** — runs the next middleware or route handler.
+1. **Execute `call_next()`**: runs the next middleware or route handler.
 2. **If an exception is raised:**
    a. **If it's an `HTTPException`**, look up `exc.status_code` in
       `status_handlers`. If found, call that handler immediately. Return.
@@ -567,7 +567,7 @@ In both cases, the class-based lookup runs. This means:
 
 ### 7.1 HTTPException → `http_exception` (JSON or empty)
 
-**File:** `core/sillo/exception_handler.py` (lines 263–296)
+**File:** `core/sillo/exception_handler.py` (lines 263 to 296)
 
 ```python
 async def http_exception(
@@ -600,11 +600,11 @@ produces a response with no body.
 
 Note: the response body is `exc.detail` directly (a string or any
 JSON-serializable value), not wrapped in a `{"detail": ...}` envelope. This
-differs from the 404 handler (§7.3) and the validation handlers (§7.4–7.6).
+differs from the 404 handler (§7.3) and the validation handlers (§7.4 to 7.6).
 
 ### 7.2 AuthenticationFailed → AuthErrorHandler
 
-**File:** `core/sillo/auth/exceptions.py` (lines 164–197)
+**File:** `core/sillo/auth/exceptions.py` (lines 164 to 197)
 
 ```python
 async def AuthErrorHandler(
@@ -623,13 +623,13 @@ are none currently).
 "Authentication failed"
 ```
 
-Same as the generic `http_exception` handler — the body is `exc.detail`
+Same as the generic `http_exception` handler. The body is `exc.detail`
 directly. The handler exists as a separate entry point so applications can
 override it independently of the generic HTTPException handler.
 
 ### 7.3 NotFoundException → handle_404_error (Content-Negotiated 404)
 
-**File:** `core/sillo/handlers/not_found.py` (lines 62–118)
+**File:** `core/sillo/handlers/not_found.py` (lines 62 to 118)
 
 This is the most sophisticated built-in handler. It performs content negotiation
 based on the client's `Accept` header:
@@ -688,7 +688,7 @@ flowchart TD
     JSON -- No --> TEXTR["response.text('404 - Not Found\\n...', 404)"]
 ```
 
-**Debug flag resolution** (`_debug_enabled`, line 121–144):
+**Debug flag resolution** (`_debug_enabled`, line 121 to 144):
 
 ```python
 def _debug_enabled(request: Request) -> bool:
@@ -705,7 +705,7 @@ because `app` holds the router (which has no debug flag), while `base_app`
 holds the `SilloApp` instance. If neither has a debug attribute, the default is
 `False` (production-safe).
 
-**HTML preference check** (`_prefers_html`, line 147–162):
+**HTML preference check** (`_prefers_html`, line 147 to 162):
 
 ```python
 def _prefers_html(request: Request) -> bool:
@@ -713,12 +713,12 @@ def _prefers_html(request: Request) -> bool:
     return "text/html" in accept or "application/xhtml+xml" in accept
 ```
 
-A wildcard `*/*` is NOT treated as a preference for HTML — only explicit
+A wildcard `*/*` is NOT treated as a preference for HTML, only explicit
 `text/html` or `application/xhtml+xml` triggers the HTML page.
 
 ### 7.4 ValidationError → pydantic_validation_error_handler (422)
 
-**File:** `core/sillo/exception_handler.py` (lines 359–407)
+**File:** `core/sillo/exception_handler.py` (lines 359 to 407)
 
 Handles raw Pydantic `ValidationError` instances (from model construction,
 not from request validation):
@@ -769,7 +769,7 @@ The nesting strategy:
 
 ### 7.5 RequestValidationError → request_validation_error_handler (422)
 
-**File:** `core/sillo/exception_handler.py` (lines 299–323)
+**File:** `core/sillo/exception_handler.py` (lines 299 to 323)
 
 ```python
 async def request_validation_error_handler(
@@ -804,7 +804,7 @@ serializes them directly.
 
 ### 7.6 ResponseValidationError → response_validation_error_handler (500)
 
-**File:** `core/sillo/exception_handler.py` (lines 326–356)
+**File:** `core/sillo/exception_handler.py` (lines 326 to 356)
 
 ```python
 async def response_validation_error_handler(
@@ -832,7 +832,7 @@ async def response_validation_error_handler(
 ```
 
 **Critical design decision:** The response does NOT include `exc.errors` or
-`exc.body`. This is intentional — the handler's return value violated the
+`exc.body`. This is intentional. The handler's return value violated the
 response model, which means it may contain data that the response model was
 supposed to filter out. Echoing it back could leak internal state.
 
@@ -854,10 +854,11 @@ The error details ARE logged server-side for debugging.
 
 ## 8. Database Exception Handlers
 
-**File:** `core/sillo/record/exceptions.py` (lines 1–110)
+**File:** `core/sillo/record/exceptions.py` (lines 1 to 110)
 
 Sillo provides built-in handlers for Tortoise ORM exceptions. These are NOT
-registered by default — applications must call `register_db_exception_handlers(app)`:
+registered by default. Applications must call
+`register_db_exception_handlers(app)`:
 
 ```python
 def register_db_exception_handlers(app) -> None:
@@ -939,11 +940,11 @@ sequenceDiagram
 
 ### Collision Warning: Tortoise ValidationError vs Pydantic ValidationError
 
-The default `ExceptionMiddleware` registers a handler for `pydantic.ValidationError`.
-When `register_db_exception_handlers` is called, it adds a handler for
-`tortoise.exceptions.ValidationError`. These are **different classes** — there
-is no collision. The MRO lookup correctly resolves to the right handler based
-on the exception's actual type.
+The default `ExceptionMiddleware` registers a handler for
+`pydantic.ValidationError`. When `register_db_exception_handlers` is called, it
+adds a handler for `tortoise.exceptions.ValidationError`. These are **different
+classes**. There is no collision. The MRO lookup correctly resolves to the
+right handler based on the exception's actual type.
 
 However, if you register a handler for the base `Exception` class, it will
 catch BOTH validation error types (and everything else). Be specific.
@@ -952,10 +953,10 @@ catch BOTH validation error types (and everything else). Be specific.
 
 ## 9. WebSocket Exception Handling
 
-**File:** `core/sillo/websockets/errors.py` (lines 1–40)
+**File:** `core/sillo/websockets/errors.py` (lines 1 to 40)
 
 WebSocket connections have a completely separate exception pipeline.
-`ExceptionMiddleware` does NOT handle WebSocket exceptions — they are caught by
+`ExceptionMiddleware` does NOT handle WebSocket exceptions. They are caught by
 `WebSocketErrorMiddleware`:
 
 ```python
@@ -1044,7 +1045,7 @@ content negotiation. All other handlers return JSON unconditionally.
 
 ### HTML Error Page Generation
 
-**File:** `core/sillo/handlers/not_found.py` (lines 12–59)
+**File:** `core/sillo/handlers/not_found.py` (lines 12 to 59)
 
 ```python
 def generate_html_page(title: str, message: str) -> str:
@@ -1088,7 +1089,7 @@ minimal, centered layout.
 
 ### 11.1 Location-Prefixing: `prefix_errors`
 
-**File:** `core/sillo/validation/errors.py` (lines 15–65)
+**File:** `core/sillo/validation/errors.py` (lines 15 to 65)
 
 The `prefix_errors` function converts Pydantic `ValidationError` instances into
 location-prefixed error dictionaries:
@@ -1401,8 +1402,10 @@ mode, the 500 page includes the full traceback.
 ### 15.4 Pydantic ValidationError vs Tortoise ValidationError
 
 These are different classes from different packages:
-- `pydantic.ValidationError` — handled by `pydantic_validation_error_handler` (422)
-- `tortoise.exceptions.ValidationError` — handled by `handle_validation_error` (422)
+- `pydantic.ValidationError`: handled by `pydantic_validation_error_handler`
+  (422)
+- `tortoise.exceptions.ValidationError`: handled by `handle_validation_error`
+  (422)
 
 Both produce 422 responses but with different JSON shapes. The MRO lookup
 correctly distinguishes them because they share no common base class (other
@@ -1429,8 +1432,8 @@ was supposed to filter out.
 ### 15.7 The `handler is None` Sentinel
 
 In `wrap_http_exceptions`, the variable `handler` is initialized to `None` and
-checked with `if handler is None`. This is NOT the same as `if not handler` —
-the latter would also be True for falsy handler objects. The explicit `is None`
+checked with `if handler is None`. This is NOT the same as `if not handler`.
+The latter would also be True for falsy handler objects. The explicit `is None`
 check is intentional.
 
 ---

@@ -17,12 +17,12 @@ description: "RecordQuerySet, scopes, RecordManager, query helpers, pagination"
 The query layer sits between the developer's fluent API and Tortoise ORM's
 query builder. It adds three capabilities that Tortoise does not provide:
 
-1. **Scopes** — reusable query fragments that can be chained (local) or
-   applied automatically (global).
-2. **Casts** — transparent encode/decode of field values at the attribute
+1. **Scopes**: reusable query fragments that can be chained (local) or applied
+   automatically (global).
+2. **Casts**: transparent encode/decode of field values at the attribute
    boundary, so the database always sees the serialized form and the developer
    always sees the Python-native form.
-3. **Query helpers** — pagination, async iteration, explain plans, bulk lookups,
+3. **Query helpers**: pagination, async iteration, explain plans, bulk lookups,
    and in-memory aggregation.
 
 ```mermaid
@@ -102,7 +102,7 @@ class ScopeRegistry:
 - `apply()` chains them: each scope receives the queryset returned by the
   previous one.
 - `remove()` returns `True` if found, `False` otherwise. It uses `list.remove`
-  which matches by identity (`is`), not equality — the exact same callable
+  which matches by identity (`is`), not equality. The exact same callable
   object must be passed.
 - `without_global_scopes()` is a pass-through that returns the queryset
   unchanged. It exists as a named method so that `HasScopes.without_global_scopes()`
@@ -193,7 +193,7 @@ users = await User.without_global_scopes().all()  # unfiltered
 
 ### 3.3 Scope Interception via RecordQuerySet
 
-Local scopes are not methods on the queryset — they are methods on the **model**
+Local scopes are not methods on the queryset. They are methods on the **model**
 that receive the queryset. The `RecordQuerySet.__getattr__` bridge makes them
 chainable:
 
@@ -306,7 +306,7 @@ graph LR
 
 ---
 
-## 5. HasCasts — Attribute Casting
+## 5. HasCasts: Attribute Casting
 
 **File:** `core/sillo/record/casting.py`
 
@@ -326,9 +326,9 @@ class CastRegistry:
 ```
 
 Each cast is a pair of `(encoder, decoder)`:
-- **Encoder** — called on `cast_set` (before save). Transforms Python values
-  to database-safe representations.
-- **Decoder** — called on `cast_get` (after read). Transforms database values
+- **Encoder**: called on `cast_set` (before save). Transforms Python values to
+  database-safe representations.
+- **Decoder**: called on `cast_get` (after read). Transforms database values
   back to Python-native types.
 
 ### 5.2 Built-in Casts
@@ -353,7 +353,7 @@ CastRegistry.register("float", lambda v: float(v), lambda v: float(v) if v is no
 
 ### 5.3 Encrypted Cast
 
-The `"encrypted"` cast is special — it requires a key and is created via a
+The `"encrypted"` cast is special. It requires a key and is created via a
 factory:
 
 ```python
@@ -519,9 +519,9 @@ class PaginatedResult:
 
 **Properties:**
 
-- `pages` — total number of pages (ceiling division, minimum 1).
-- `has_next` / `has_prev` — boolean navigation hints.
-- `to_dict()` — serializes the entire result for JSON responses.
+- `pages`: total number of pages (ceiling division, minimum 1).
+- `has_next` / `has_prev`: boolean navigation hints.
+- `to_dict()`: serializes the entire result for JSON responses.
 
 ### 6.3 `iter_all`
 
@@ -539,7 +539,7 @@ async def iter_all(queryset, batch_size=500) -> AsyncIterator[Any]:
 
 - Memory-efficient async generator for large datasets.
 - Fetches `batch_size` rows at a time using `OFFSET/LIMIT`.
-- Yields individual items, not batches — the caller sees a flat stream.
+- Yields individual items, not batches: the caller sees a flat stream.
 - **Caveat:** `OFFSET`-based pagination is inefficient for very large datasets
   (the DB must scan and skip rows). For millions of rows, consider cursor-based
   pagination.
@@ -560,7 +560,7 @@ async def explain(queryset) -> str:
 - Extracts the SQL from a queryset via `.sql()`.
 - Prepends `EXPLAIN` and executes against the default connection.
 - Returns the execution plan as a string.
-- Catches all exceptions — `EXPLAIN` support varies by backend.
+- Catches all exceptions: `EXPLAIN` support varies by backend.
 
 ### 6.5 `find_by_ids`
 
@@ -636,7 +636,7 @@ class SyncTortoiseDataHandler(SyncDataHandler):
         return self._data[offset : offset + limit]
 ```
 
-For pre-fetched data that needs synchronous pagination (rare — mostly for
+For pre-fetched data that needs synchronous pagination (rare, mostly for
 compatibility with `SyncPaginator`).
 
 ### 7.3 Usage with Pagination Strategies
@@ -688,11 +688,11 @@ class QueryLogger:
 
 **Lifecycle:**
 
-1. `start()` — clears entries, sets `_started = True`, records start time.
-2. `log(sql, params, duration_ms, source)` — appends an entry. If
-   `duration_ms > slow_threshold`, logs a warning.
-3. `stop()` — sets `_started = False`.
-4. `report()` — returns a summary dict.
+1. `start()`: clears entries, sets `_started = True`, records start time.
+2. `log(sql, params, duration_ms, source)`: appends an entry. If `duration_ms >
+   slow_threshold`, logs a warning.
+3. `stop()`: sets `_started = False`.
+4. `report()`: returns a summary dict.
 
 ### 8.3 Slow Query Detection
 
@@ -733,8 +733,8 @@ def detect_n_plus_one(self) -> list[str]:
 
 - Parameterized queries with different params are counted separately (correct).
 - But `SELECT * FROM posts WHERE user_id = ?` with different `?` values will
-  have the same SQL string, so they *are* flagged as N+1 — which is the
-  intended behavior.
+  have the same SQL string, so they *are* flagged as N+1, which is the intended
+  behavior.
 - The threshold of 5 is hardcoded. A configurable threshold would be better.
 
 ### 8.5 Report
@@ -872,8 +872,8 @@ Offset-based pagination:
 Cursor-based pagination (for infinite scroll):
 - Input: `cursor` (opaque), `page_size`
 - SQL: `SELECT ... WHERE id > cursor_id LIMIT page_size`
-- No `COUNT(*)` query needed — `has_next` is determined by fetching
-  `page_size + 1` items.
+- No `COUNT(*)` query needed: `has_next` is determined by fetching `page_size +
+  1` items.
 
 ---
 
@@ -921,7 +921,7 @@ class TenantModel(Model):
 
 ### 11.3 Combining Casts with Scopes
 
-Casts and scopes are independent — a field can have both:
+Casts and scopes are independent. A field can have both:
 
 ```python
 class Event(Model):
@@ -1013,31 +1013,31 @@ retroactively. For prevention:
 
 ## 14. Gotchas and Known Issues
 
-1. **`count_by` is in-memory** — It loads every row and counts in Python. For
+1. **`count_by` is in-memory**: It loads every row and counts in Python. For
    large tables, use raw SQL `GROUP BY` or Tortoise's `.annotate()`.
 
-2. **`iter_all` uses OFFSET** — For tables with millions of rows, OFFSET-based
+2. **`iter_all` uses OFFSET**: For tables with millions of rows, OFFSET-based
    pagination becomes slow. Consider keyset pagination (WHERE id > last_id).
 
-3. **N+1 detection threshold** — The hardcoded threshold of 5 may be too low
-   for some legitimate patterns (e.g., fetching related data for 10 items).
-   Consider making it configurable.
+3. **N+1 detection threshold**: The hardcoded threshold of 5 may be too low for
+   some legitimate patterns (e.g. fetching related data for 10 items). Consider
+   making it configurable.
 
-4. **Cast registry is global** — `CastRegistry._builtins` is a class variable,
+4. **Cast registry is global.** `CastRegistry._builtins` is a class variable,
    shared across all models. Registering a cast with the same name as an
    existing one overwrites it silently.
 
-5. **Scope identity matching** — `ScopeRegistry.remove()` uses `list.remove`,
-   which matches by identity (`is`), not equality. A lambda or function
-   defined inline cannot be removed by defining an identical one.
+5. **Scope identity matching.** `ScopeRegistry.remove()` uses `list.remove`,
+   which matches by identity (`is`), not equality. A lambda or function defined
+   inline cannot be removed by defining an identical one.
 
-6. **`without_global_scopes` creates a new queryset** — The returned queryset
+6. **`without_global_scopes` creates a new queryset**: The returned queryset
    has no filters, ordering, or limits from the original. Chain it carefully:
    ```python
    User.filter(is_active=True).without_global_scopes()  # loses is_active filter!
    User.without_global_scopes().filter(is_active=True)  # correct
    ```
 
-7. **`explain` varies by backend** — SQLite's `EXPLAIN` output is very
-   different from Postgres's. The function returns whatever the backend
-   produces as a string.
+7. **`explain` varies by backend**: SQLite's `EXPLAIN` output is very different
+   from Postgres's. The function returns whatever the backend produces as a
+   string.

@@ -14,7 +14,11 @@ head:
 
 #  Frontend (SPA)
 
-sillo provides built-in support for serving single-page applications (SPAs) like React, Vue, Svelte, or any other frontend framework. The `FrontendApp` class serves your built static files and automatically falls back to a configurable HTML file for unknown paths — so client-side routing works seamlessly.
+sillo provides built-in support for serving single-page applications (SPAs)
+like React, Vue, Svelte, or any other frontend framework. The `FrontendApp`
+class serves your built static files and automatically falls back to a
+configurable HTML file for unknown paths, so client-side routing works
+seamlessly.
 
 ##  How It Works
 
@@ -75,7 +79,7 @@ The `fallback` parameter controls what happens when a requested file is not foun
 |---|---|
 | `"auto"` (default) | Tries `404.html` first, then `index.html` |
 | `"app.html"` | Falls back to the specified file (e.g. `app.html`) |
-| `None` or `False` | No fallback — returns a 404 JSON response |
+| `None` or `False` | No fallback: returns a 404 JSON response |
 
 ###  `"auto"` Mode
 
@@ -84,8 +88,8 @@ spa = FrontendApp(directory="./dist", fallback="auto")
 ```
 
 sillo looks for a fallback file in this order:
-1. `404.html` — if present, serves this for unknown routes
-2. `index.html` — otherwise, serves this as the SPA entry point
+1. `404.html`: if present, serves this for unknown routes
+2. `index.html`: otherwise, serves this as the SPA entry point
 
 This is useful if you want a distinct error page for invalid routes without overriding the main app shell.
 
@@ -107,7 +111,9 @@ Unknown paths return a 404 JSON response instead.
 
 ##  Route Precedence
 
-**API routes registered before `frontend()` take precedence.** This is critical — it ensures your backend endpoints are always reachable and not intercepted by the SPA fallback:
+**API routes registered before `frontend()` take precedence.** This is
+critical. It ensures your backend endpoints are always reachable and not
+intercepted by the SPA fallback:
 
 ```python
 from sillo import SilloApp
@@ -163,7 +169,8 @@ app.add_route(Group(path="/app", app=spa))
 
 `FrontendApp` includes a path traversal protection that resolves all requested paths and ensures they stay within the configured directory. Requests attempting to use `../` or symlinks to escape the directory will receive a 404 response.
 
-Only `GET` requests are allowed — `POST`, `PUT`, `DELETE`, and other methods return `405 Method Not Allowed`.
+Only `GET` requests are allowed: `POST`, `PUT`, `DELETE`, and other methods
+return `405 Method Not Allowed`.
 
 ##  Reference
 

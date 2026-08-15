@@ -16,8 +16,8 @@ head:
 
 `exchange` returns a verified external identity and stops there. Turning that
 into a logged-in user is your application's decision, so there is no
-`on_success` hook and no user model to configure — only the few lines you
-write after the call.
+`on_success` hook and no user model to configure, only the few lines you write
+after the call.
 
 Every recipe below is the same flow with a different ending.
 
@@ -44,8 +44,8 @@ async def dashboard(request, response):
     return response.json({"user": request.user.display_name})
 ```
 
-This needs `SessionMiddleware` installed and `SessionAuthBackend` declared —
-see [wiring](#wiring) below.
+This needs `SessionMiddleware` installed and `SessionAuthBackend` declared. See
+[wiring](#wiring) below.
 
 ##  JWT, for an SPA or mobile client
 
@@ -80,8 +80,8 @@ async def me(request, response):
 ##  Account linking
 
 Connecting a second provider to someone who is already signed in. The
-difference is that you do *not* look up a user by the profile — you attach it
-to the one already on the request. (`OAuthIdentity` here is a model you define;
+difference is that you do *not* look up a user by the profile. You attach it to
+the one already on the request. (`OAuthIdentity` here is a model you define;
 see [resolving a profile](#resolving-a-profile-onto-a-user).)
 
 ```python
@@ -122,9 +122,9 @@ No session middleware, no user model, no auth backend required.
 
 ##  Resolving a profile onto a user
 
-`sillo-oauth` ships no user model and no link table — `User` and
-`OAuthIdentity` below are **your** models, and this is a sketch to adapt, not
-an API to call. It is the one piece worth thinking about rather than copying.
+`sillo-oauth` ships no user model and no link table. `User` and `OAuthIdentity`
+below are **your** models, and this is a sketch to adapt, not an API to call.
+It is the one piece worth thinking about rather than copying.
 
 ```python
 async def get_or_create_from_oauth(provider: str, profile: OAuthProfile) -> User:
@@ -165,7 +165,7 @@ password nobody set.
 
 Declare your backends on the application rather than installing the middleware
 by hand. This is what makes the OpenAPI document describe the credential you
-actually check — see [OAuth in OpenAPI](/guides/oauth/openapi/).
+actually check. See [OAuth in OpenAPI](/guides/oauth/openapi/).
 
 ```python
 from sillo import SilloApp
@@ -190,7 +190,7 @@ app.use(SessionMiddleware(secret_key=settings.secret_key))
 
 `SilloApp(auth=[...])` installs `AuthenticationMiddleware` for you, in the
 right place. If you install it yourself instead, register it *before*
-`SessionMiddleware` — `app.use` builds the chain inside-out, so the last
+`SessionMiddleware`: `app.use` builds the chain inside-out, so the last
 registered runs first, and a session backend that runs before the session
 middleware finds no session and reports every request as anonymous.
 

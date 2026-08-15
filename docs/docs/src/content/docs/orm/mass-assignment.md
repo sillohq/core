@@ -1,6 +1,6 @@
 ---
 title: Mass Assignment
-description: "Applying a dict of updates to a model safely — update_from_dict, fillable and guarded, the resolution order, and why the default is not safe for a request body."
+description: "Applying a dict of updates to a model safely: update_from_dict, fillable and guarded, the resolution order, and why the default is not safe for a request body."
 head:
   - tag: meta
     attrs:
@@ -41,7 +41,7 @@ Looks fine. Now someone posts:
 [admin access](/orm/admin-permissions/).
 
 The same shape reaches `is_superuser`, `email_verified_at`, `balance`,
-`organisation_id` — anything the model happens to have.
+`organisation_id`. Anything the model happens to have.
 
 ## The fix
 
@@ -98,7 +98,7 @@ class User(Model):
     fillable = ()      # nothing is mass-assignable
 ```
 
-An empty tuple is meaningful and different from `None` — `None` means "not
+An empty tuple is meaningful and different from `None`. `None` means "not
 stated", which is what makes everything writable.
 
 ## Better still: validate first
@@ -123,7 +123,7 @@ async def update_me(request, response, payload: ProfileUpdate):
 
 Now the shape is declared once, enforced before the handler runs, and
 [documented in OpenAPI](/guides/validation/openapi/) for free. `fillable`
-becomes a second line of defence rather than the only one — which is where you
+becomes a second line of defence rather than the only one, which is where you
 want it, because the schema lives next to the endpoint and the model does not.
 
 `exclude_unset=True` is what makes this a genuine PATCH: fields the caller did
@@ -140,5 +140,5 @@ not send are not written, rather than being written as their defaults.
 
 ## See also
 
-- [Models](/orm/models/) — the base class.
-- [Validation](/guides/validation/) — the layer this should sit behind.
+- [Models](/orm/models/): the base class.
+- [Validation](/guides/validation/): the layer this should sit behind.

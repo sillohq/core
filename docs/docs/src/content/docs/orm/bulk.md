@@ -1,6 +1,6 @@
 ---
 title: Bulk Operations
-description: "Inserting and updating many rows at once — bulk_create, upsert and bulk_upsert, their batching, conflict handling, and what they skip."
+description: "Inserting and updating many rows at once: bulk_create, upsert and bulk_upsert, their batching, conflict handling, and what they skip."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: bulk_create, upsert and bulk_upsert — batching, conflict handling and the trade-offs.
+      content: bulk_create, upsert and bulk_upsert, batching, conflict handling and the trade-offs.
 ---
 
 A loop of `create()` calls is one round trip per row. These are one per batch.
@@ -33,7 +33,7 @@ await Post.bulk_create(
 )
 ```
 
-`items` may be dicts or model instances, mixed freely — dicts are turned into
+`items` may be dicts or model instances, mixed freely. Dicts are turned into
 instances first.
 
 | Parameter | Meaning |
@@ -43,7 +43,7 @@ instances first.
 | `on_conflict` | The fields whose conflict triggers an update |
 | `update_fields` | What to update when one does |
 
-Returns the instances. [Casts](/orm/casting/) are applied — each instance is
+Returns the instances. [Casts](/orm/casting/) are applied. Each instance is
 encoded before its batch is written.
 
 ### Batching
@@ -64,7 +64,7 @@ await Tag.bulk_create(rows, ignore_conflicts=True)
 Rows that would violate a unique constraint are skipped. The others are
 written.
 
-You do not find out which were skipped — the return value is the instances you
+You do not find out which were skipped. The return value is the instances you
 passed, not what landed. When you need to know, query afterwards, or use
 `upsert` so every row ends up in a known state.
 
@@ -86,7 +86,7 @@ setting = await Setting.upsert(
 | `conflict_fields` | The unique key that decides insert vs update. Required. |
 | `update_fields` | What to write on a conflict. Defaults to every field except the conflict fields and the primary key. |
 
-Returns the row, re-fetched — and fetched through
+Returns the row, re-fetched, and fetched through
 [`without_global_scopes()`](/orm/scopes/#escaping-them), so upserting a
 soft-deleted row still returns it rather than raising `DoesNotExist`.
 
@@ -107,7 +107,7 @@ class Setting(Model):
 and two concurrent callers can both find nothing and both insert.
 
 `upsert` is one statement, so the database resolves the race. Prefer it
-whenever the row might be written concurrently — a webhook handler, a job that
+whenever the row might be written concurrently: a webhook handler, a job that
 can be retried, anything idempotent by design.
 
 ## `bulk_upsert`
@@ -139,8 +139,8 @@ upsert the lot, and let the database decide row by row what was new.
 | Auto `updated_at` on a conflict update | Depends on `update_fields` |
 
 Events and validation are skipped because they are per-instance hooks and these
-paths do not call `save()`. That is the deliberate trade — loading and hooking
-every row would defeat the point — but it means:
+paths do not call `save()`. That is the deliberate trade (loading and hooking
+every row would defeat the point) but it means:
 
 - validate the input yourself before a bulk write;
 - fire any follow-on work explicitly afterwards;

@@ -18,7 +18,7 @@ The first thing to settle is *what* you are documenting, because it is easy to
 document the wrong thing.
 
 An OAuth login is how somebody **obtains** a credential. It is not the
-credential your API checks on every subsequent request — that is the session
+credential your API checks on every subsequent request. That is the session
 cookie or the JWT your callback issued. Those two are different, and your
 reference should describe the second.
 
@@ -29,7 +29,7 @@ So in almost every application:
 - The protected routes are documented as `sessionCookie` or `bearerAuth`,
   whichever your callback issues.
 - An `oauth2` security scheme is only needed if you want Swagger UI's
-  **Authorize** button to run the flow — and that takes extra wiring, covered
+  **Authorize** button to run the flow, and that takes extra wiring, covered
   [at the end](#publishing-the-oauth2-flow-itself).
 
 ##  Declare backends on the application
@@ -78,8 +78,8 @@ so.
 
 :::caution
 **Installing the middleware by hand documents the wrong credential.** It
-authenticates requests perfectly well, but registers no scheme — so the
-document falls back to a legacy default that advertises `bearerAuth`.
+authenticates requests perfectly well, but registers no scheme, so the document
+falls back to a legacy default that advertises `bearerAuth`.
 
 A session-only application wired with `app.use(AuthenticationMiddleware(...))`
 therefore publishes a bearer token it never reads, and stays silent about the
@@ -109,7 +109,7 @@ that into the document's `security`, so the two cannot drift:
 | Gate | Documented `security` | Meaning |
 | --- | --- | --- |
 | no gate | *absent* | Public. |
-| `useAuth()` | `[{"bearerAuth": []}, {"sessionCookie": []}]` | Every registered scheme — it rejects anonymous callers but names none, and documenting it as public is the more dangerous lie. |
+| `useAuth()` | `[{"bearerAuth": []}, {"sessionCookie": []}]` | Every registered scheme. It rejects anonymous callers but names none, and documenting it as public is the more dangerous lie. |
 | `useAuth(schemes=["bearerAuth"])` | `[{"bearerAuth": []}]` | That one credential. |
 | `useAuth(schemes=["bearerAuth", "sessionCookie"])` | `[{"bearerAuth": []}, {"sessionCookie": []}]` | Separate objects mean **either**. |
 | `useAuth(schemes=[...], all_of=True)` | `[{"bearerAuth": [], "sessionCookie": []}]` | One object with several keys means **both**. |
@@ -127,7 +127,7 @@ reintroduces exactly the drift this is designed to prevent.
 ```
 
 They are browser redirects, not API operations. A callback documented as
-callable is misleading — it only works with a live `code` and a matching state
+callable is misleading. It only works with a live `code` and a matching state
 cookie, so a reader trying it from Swagger UI gets `state_mismatch` and no
 explanation.
 
@@ -166,9 +166,9 @@ the recommendation for exactly this reason: the whole point of deriving
 
 ##  Two backends of the same kind
 
-Two JWT backends — a user token and an admin token on a different secret —
-both call themselves `bearerAuth` by default. Rather than let one silently
-overwrite the other's definition, sillo refuses:
+Two JWT backends (a user token and an admin token on a different secret) both
+call themselves `bearerAuth` by default. Rather than let one silently overwrite
+the other's definition, sillo refuses:
 
 ```
 ValueError: Two auth backends both claim the scheme 'bearerAuth' but describe
@@ -218,7 +218,7 @@ The mapping form of `schemes` carries OAuth2 scopes onto a route:
 :::caution
 **Registering the scheme does not make the gate accept it.** A scheme in the
 document is prose. The gate matches on the name a backend *reports*, and no
-shipped backend calls itself `googleOAuth` — so the route above refuses every
+shipped backend calls itself `googleOAuth`, so the route above refuses every
 caller, including one holding a perfectly valid JWT.
 :::
 
@@ -242,8 +242,8 @@ app = SilloApp(
 Now `useAuth(schemes=["googleOAuth"])` both gates and documents correctly.
 
 Unless you specifically want that authorize button, skip all of this. An
-`oauth2` scheme claims your API accepts a Google token directly; it does not —
-it accepts *your* token, and `bearerAuth` says so honestly.
+`oauth2` scheme claims your API accepts a Google token directly; it does not.
+It accepts *your* token, and `bearerAuth` says so honestly.
 
 ##  Verifying your own document
 

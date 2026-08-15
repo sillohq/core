@@ -12,9 +12,9 @@ description: "Strategies (PageNumber/LimitOffset/Cursor), data handlers, paginat
 
 ## 1. Overview and Architecture
 
-The pagination module implements the **Strategy pattern** — three interchangeable
-pagination strategies share a common interface, paired with pluggable data
-handlers and paginator orchestrators.
+The pagination module implements the **Strategy pattern**, three
+interchangeable pagination strategies share a common interface, paired with
+pluggable data handlers and paginator orchestrators.
 
 ### Class Diagram
 
@@ -425,8 +425,8 @@ class TortoiseDataHandler(AsyncDataHandler):
         return await self._qs.offset(offset).limit(limit).all()
 ```
 
-Bridges `sillo.pagination` strategies to Tortoise querysets.  No duplicate
-pagination logic — just the data-handler layer.
+Bridges `sillo.pagination` strategies to Tortoise querysets. No duplicate
+pagination logic, just the data-handler layer.
 
 ---
 
@@ -490,7 +490,7 @@ class PaginatedResponse:
         return {"data": self.items, "pagination": self.metadata}
 ```
 
-`AsyncPaginatedResponse` (line 525) is identical — separate class for async
+`AsyncPaginatedResponse` (line 525) is identical, separate class for async
 context.
 
 ### Output Format

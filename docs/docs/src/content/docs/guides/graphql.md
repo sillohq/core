@@ -137,8 +137,12 @@ class Query:
 
 `GraphQL(app, schema)` registers a single `Route` at `path` (default `/graphql`) accepting `GET` and `POST`:
 
-- **`GET`** — when `graphiql=True` (default) returns the GraphiQL IDE HTML; when disabled returns `404`.
-- **`POST`** — reads the JSON body, expects an object with `query`, optional `variables`, and optional `operationName`, then runs `schema.execute` with a context of `{"request", "response"}`. Invalid JSON or a non-object body returns `400` with an `errors` payload.
+- **`GET`**: when `graphiql=True` (default) returns the GraphiQL IDE HTML; when
+  disabled returns `404`.
+- **`POST`**: reads the JSON body, expects an object with `query`, optional
+  `variables`, and optional `operationName`, then runs `schema.execute` with a
+  context of `{"request", "response"}`. Invalid JSON or a non-object body
+  returns `400` with an `errors` payload.
 
 The schema is executed asynchronously, so resolver `await`s run on the event loop like any other sillo handler.
 
@@ -177,17 +181,25 @@ def test_invalid_json_body():
     assert resp.status_code == 400
 ```
 
-For resolvers that hit the database, use your normal async fixtures in the test app — the `request`/`response` context flows through `schema.execute` unchanged.
+For resolvers that hit the database, use your normal async fixtures in the test
+app. The `request`/`response` context flows through `schema.execute` unchanged.
 
 ##  Errors and edge cases
 
-- **Malformed body** — a non-JSON or non-object `POST` yields `400` with `{"errors": [...]}`. GraphiQL itself is unaffected (it uses `GET`).
-- **GraphiQL in production** — leaving `graphiql=True` exposes an in-browser IDE. Set `graphiql=False` for production endpoints you don't want browsable.
-- **Auth** — `GraphQL` does not enforce authentication. Protect the route by registering auth middleware or checking `info.context["request"]` inside resolvers.
-- **Extra dependency** — `strawberry-graphql` is required. Install with `uv add "sillo-framework[graphql]"` (or your lockfile equivalent); importing `sillo.graphql` without it raises at runtime.
+- **Malformed body**: a non-JSON or non-object `POST` yields `400` with
+  `{"errors": [...]}`. GraphiQL itself is unaffected (it uses `GET`).
+- **GraphiQL in production**: leaving `graphiql=True` exposes an in-browser
+  IDE. Set `graphiql=False` for production endpoints you don't want browsable.
+- **Auth.** `GraphQL` does not enforce authentication. Protect the route by
+  registering auth middleware or checking `info.context["request"]` inside
+  resolvers.
+- **Extra dependency.** `strawberry-graphql` is required. Install with `uv add
+  "sillo-framework[graphql]"` (or your lockfile equivalent); importing
+  `sillo.graphql` without it raises at runtime.
 
 ##  Related topics
 
-- [Request Inputs](/guides/request-inputs/) — JSON body parsing used by the `POST` handler
-- [Authentication](/guides/authentication/) — protecting the `/graphql` route
-- [Middleware](/guides/middleware/) — ordering auth before the GraphQL route
+- [Request Inputs](/guides/request-inputs/): JSON body parsing used by the
+  `POST` handler
+- [Authentication](/guides/authentication/): protecting the `/graphql` route
+- [Middleware](/guides/middleware/): ordering auth before the GraphQL route

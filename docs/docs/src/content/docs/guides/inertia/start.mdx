@@ -1,6 +1,6 @@
 ---
 title: Creating a Project
-description: Start an Inertia application from sillohq/starter-inertia — the two development processes, and every task the project ships with.
+description: Start an Inertia application from sillohq/starter-inertia. The two development processes, and every task the project ships with.
 head:
   - tag: meta
     attrs:
@@ -26,8 +26,9 @@ sillo-start create-app sillohq/starter-inertia myapp
 cd myapp
 ```
 
-Install it once if you have not already — `uv tool install sillo-start`, or
-`pip install sillo-start`. See [Creating a Project](/guides/start/#install-sillo-start).
+Install it once if you have not already, `uv tool install sillo-start`, or `pip
+install sillo-start`. See [Creating a
+Project](/guides/start/#install-sillo-start).
 
 Then install dependencies and set the database up:
 
@@ -55,14 +56,14 @@ Then install dependencies and set the database up:
   </TabItem>
 </Tabs>
 
-`sillo-start` takes the repository as an argument — there is no `--inertia`
+`sillo-start` takes the repository as an argument. There is no `--inertia`
 flag, because it fetches a real starter rather than rendering a template. It
 renames the project to yours and writes a `.env` with fresh secrets.
 
 Node is required here as well as Python, because the front end is compiled.
 `npm install` is the one step the standard starter does not have.
 
-Everything on [Creating a Project](/guides/start/) applies here too — the
+Everything on [Creating a Project](/guides/start/) applies here too. The
 requirements, what `sillo-start` does to the files, using your own starter.
 This page covers what is different.
 
@@ -79,15 +80,15 @@ Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 Both are required. The page is served by Sillo, but it loads its JavaScript
 from Vite, so with only `sillo serve` running you get a blank page and a
-console full of failed module requests. With only `npm run dev` you get
-nothing at all — Vite serves modules, not your application.
+console full of failed module requests. With only `npm run dev` you get nothing
+at all. Vite serves modules, not your application.
 
 They are kept as two commands rather than one wrapper on purpose: running both
 under a single process hides which one printed an error, and the HMR output is
 worth having where you can see it.
 
 :::note
-Open the application's origin, `127.0.0.1:8000` — not Vite's `:5173`. Vite
+Open the application's origin, `127.0.0.1:8000`, not Vite's `:5173`. Vite
 serves modules to the page; it does not serve the page.
 :::
 
@@ -142,8 +143,8 @@ most fragile assertions is not a check.
 
 **Every module blocked by CORS.** The browser is on the Sillo origin and pulls
 modules from Vite's, which is cross-origin. `server.cors` in `vite.config.ts`
-is set for this reason — removing it renders the page blank with only a
-console error to say so.
+is set for this reason. Removing it renders the page blank with only a console
+error to say so.
 
 **A full page refresh on every save instead of HMR.** Vite guesses the HMR
 host from the page, which is the Sillo origin rather than its own.
@@ -151,6 +152,6 @@ host from the page, which is the Sillo origin rather than its own.
 
 ##  Next
 
-- [Project Structure](/guides/inertia/structure/) — what is in the box and
-  where it lives
-- [Pages and Props](/guides/inertia/pages/) — adding a page of your own
+- [Project Structure](/guides/inertia/structure/): what is in the box and where
+  it lives
+- [Pages and Props](/guides/inertia/pages/): adding a page of your own

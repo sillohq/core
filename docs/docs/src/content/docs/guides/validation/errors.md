@@ -26,7 +26,8 @@ Every entry has the same four keys:
 | `type` | Machine-readable identifier, stable across Pydantic releases |
 | `input` | The value that was rejected, when available |
 
-Build client-side handling on `type`, never on `msg` — messages are wording and may be improved; types are a contract.
+Build client-side handling on `type`, never on `msg`. Messages are wording and
+may be improved; types are a contract.
 
 ##  Reading `loc`
 
@@ -50,7 +51,9 @@ Remaining elements are the field path, which nests for nested models and indexes
 {"loc": ["query", "ids", 2]}
 ```
 
-The name reported is the **wire** name. If a parameter called `page_num` has `alias="page"`, errors say `page` — what the client actually sent, not your internal identifier.
+The name reported is the **wire** name. If a parameter called `page_num` has
+`alias="page"`, errors say `page`, what the client actually sent, not your
+internal identifier.
 
 ##  Nothing short-circuits
 
@@ -89,7 +92,7 @@ These are the `type` values you will actually encounter. Knowing them makes clie
 | `int_from_float` | A float with a fractional part given to an `int` |
 | `float_parsing` | A string that is not a number |
 | `bool_parsing` | Not one of the accepted boolean spellings |
-| `string_type` | A non-string given to `str` — note that numbers are **not** stringified |
+| `string_type` | A non-string given to `str`: note that numbers are **not** stringified |
 | `bytes_type` | Wrong type for `bytes` |
 | `decimal_parsing` | Not a valid decimal |
 | `uuid_parsing` | Malformed UUID |
@@ -185,8 +188,8 @@ app.add_exception_handler(RequestValidationError, my_validation_handler)
 
 The exception carries:
 
-- `exc.errors` — the list of error dicts, already location-prefixed
-- `exc.body` — the raw payload that failed, when available
+- `exc.errors`: the list of error dicts, already location-prefixed
+- `exc.body`: the raw payload that failed, when available
 
 ###  Field-keyed errors
 
@@ -227,7 +230,10 @@ Declaring such fields as `SecretStr` is the more thorough fix, since it protects
 
 ##  Response validation errors
 
-When a handler's return value violates its `response_model`, sillo raises `ResponseValidationError` and returns **500** — the caller did nothing wrong. The offending value is logged and never echoed to the client. Customize it the same way:
+When a handler's return value violates its `response_model`, sillo raises
+`ResponseValidationError` and returns **500**. The caller did nothing wrong.
+The offending value is logged and never echoed to the client. Customize it the
+same way:
 
 ```python
 from sillo import ResponseValidationError
@@ -243,7 +249,8 @@ These are worth alerting on rather than merely logging. Each one means your API 
 
 ##  Raising validation errors yourself
 
-For a rule that cannot live in a model — a uniqueness check against the database, say — raise the same error so the client sees one consistent shape:
+For a rule that cannot live in a model (a uniqueness check against the
+database, say) raise the same error so the client sees one consistent shape:
 
 ```python
 from sillo import RequestValidationError
@@ -287,19 +294,21 @@ app = SilloApp(strict_validation=True)
 | --- | --- | --- |
 | Bad parameter, body, or form | 422 | The client sent something the schema rejects |
 | Malformed JSON | 422 | Still a client mistake |
-| Missing required input | 422 | — |
+| Missing required input | 422 |  |
 | Handler violates its `response_model` | 500 | A server-side contract breach |
 | Route not matched | 404 | Resolved before validation runs |
 | Authentication failed | 401 | Resolved before validation runs |
 
-Validation runs after routing and authentication, so a 404 or 401 is never masked by a 422 — and an unauthenticated caller never learns which of your fields are required.
+Validation runs after routing and authentication, so a 404 or 401 is never
+masked by a 422, and an unauthenticated caller never learns which of your
+fields are required.
 
 
 ##  Designing error responses clients can use
 
-A 422 body is an API surface. Clients parse it, display it, and depend on
-its shape — which means changing it later is a breaking change, and
-getting it right early is worth the ten minutes.
+A 422 body is an API surface. Clients parse it, display it, and depend on its
+shape, which means changing it later is a breaking change, and getting it right
+early is worth the ten minutes.
 
 Three properties make a validation error usable.
 
@@ -329,9 +338,9 @@ def to_field_errors(detail: list[dict]) -> dict[str, str]:
     return errors
 ```
 
-Taking `loc[1:]` drops the location prefix, and `setdefault` keeps the
-first error per field — showing four messages under one input is worse
-than showing one.
+Taking `loc[1:]` drops the location prefix, and `setdefault` keeps the first
+error per field, showing four messages under one input is worse than showing
+one.
 
 ##  What to log, and what not to
 
@@ -358,30 +367,28 @@ async def on_validation_error(request, response, exc):
 ```
 
 The same rule applies to the response body. Pydantic's default messages
-sometimes embed the input — `Input should be a valid integer, unable to
-parse string as an integer` is safe, but a custom message that
-interpolates the value is not. Check any message you write yourself.
+sometimes embed the input. `Input should be a valid integer, unable to parse
+string as an integer` is safe, but a custom message that interpolates the value
+is not. Check any message you write yourself.
 
 ##  422 versus 400 versus 409
 
 The status code tells a client what kind of fix is needed, and three
 codes get confused.
 
-**422** — the request was well-formed and understood, but a value is
-unacceptable. A string where an integer belongs, a missing required
-field, a number out of range. The client should fix the value and retry.
+**422**. The request was well-formed and understood, but a value is
+unacceptable. A string where an integer belongs, a missing required field, a
+number out of range. The client should fix the value and retry.
 
-**400** — the request itself is malformed: unparseable JSON, a broken
-multipart boundary, a header that cannot be decoded. The client should
-fix how it constructs the request.
+**400**. The request itself is malformed: unparseable JSON, a broken multipart
+boundary, a header that cannot be decoded. The client should fix how it
+constructs the request.
 
-**409** — the request is entirely valid and conflicts with current state.
-An email that is already registered, a version that has moved on. Nothing
-about the request is wrong; the world changed. Retrying unchanged will
-fail again.
+**409**. The request is entirely valid and conflicts with current state. An
+email that is already registered, a version that has moved on. Nothing about
+the request is wrong; the world changed. Retrying unchanged will fail again.
 
-The one people reach for wrongly is 422 for uniqueness. "Email already
-taken" is not a validation error — the value is a perfectly good email —
-and returning 422 tells a client to fix the format of something that is
-correctly formatted. Use 409, and let the database constraint be what
-detects it.
+The one people reach for wrongly is 422 for uniqueness. "Email already taken"
+is not a validation error (the value is a perfectly good email) and returning
+422 tells a client to fix the format of something that is correctly formatted.
+Use 409, and let the database constraint be what detects it.

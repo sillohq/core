@@ -21,7 +21,8 @@ core/sillo/core/http/        ← Low-level ASGI primitives (Request, Response, F
 core/sillo/http/              ← Higher-level protocol logic (accepts, etag, client, lifecycle)
 ```
 
-The low-level layer owns the wire format — how bytes become an ASGI `http.response.start`
+The low-level layer owns the wire format, how bytes become an ASGI
+`http.response.start`
 + `http.response.body` pair. The higher layer owns **protocol correctness**: content
 negotiation per RFC 7231, conditional responses per RFC 7232, range requests per RFC 9110,
 and the outbound HTTP client with caching and retry.
@@ -76,7 +77,7 @@ full Accept-family per RFC 7231 §5.3.
 
 ### 2.1 AcceptItem & AcceptsInfo
 
-`AcceptItem` is the atomic unit — one entry from a parsed Accept-family header:
+`AcceptItem` is the atomic unit, one entry from a parsed Accept-family header:
 
 ```python
 # core/sillo/http/accepts.py:9
@@ -124,7 +125,7 @@ once, downstream code gets pre-parsed results without re-parsing.
 Accept: text/html, application/xhtml+xml, application/xml;q=0.9, */*;q=0.8
 ```
 
-**Algorithm** (line 290–343):
+**Algorithm** (line 290 to 343):
 
 1. Split on `,`
 2. For each part, extract `media_range` and parameters
@@ -350,7 +351,7 @@ async def get_data(request: Request, response: Response):
 
 ### 2.7 StrictContentNegotiationMiddleware (406)
 
-The strictest variant — **rejects** requests when the client cannot accept any
+The strictest variant, **rejects** requests when the client cannot accept any
 available content type.
 
 **Source**: [`core/sillo/http/accepts.py:1213`](../core/sillo/http/accepts.py)
@@ -365,7 +366,7 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
     ): ...
 ```
 
-**406 rejection flow** (line 1259–1313):
+**406 rejection flow** (line 1259 to 1313):
 
 ```mermaid
 flowchart TD
@@ -380,7 +381,7 @@ flowchart TD
     style D fill:#f96,stroke:#c00
 ```
 
-**Critical implementation detail** (line 1292–1304):
+**Critical implementation detail** (line 1292 to 1304):
 
 ```python
 # The status must be passed TO json() rather than set beforehand:
@@ -415,7 +416,7 @@ request.negotiated_language = best_language
 
 **Source**: [`core/sillo/http/etag.py`](../core/sillo/http/etag.py)
 
-ETags enable **conditional requests** — a client can say "only send me the
+ETags enable **conditional requests**. A client can say "only send me the
 resource if it changed since I last fetched it." If nothing changed, the server
 responds with **304 Not Modified** and no body, saving bandwidth.
 
@@ -436,14 +437,14 @@ def generate_etag_from_bytes(data: bytes, weak: bool = True) -> str:
 
 - Uses **SHA-1** for speed (not cryptographic security)
 - **Base64 encodes** the digest (not hex) for compactness
-- **Weak ETags** (`W/"..."`) by default — semantically equivalent, but
-  allow the server to use cached representations that are byte-for-byte
-  different (e.g., different compression)
+- **Weak ETags** (`W/"..."`) by default: semantically equivalent, but allow the
+  server to use cached representations that are byte-for-byte different (e.g.
+  different compression)
 
 | Parameter | Weak ETag | Strong ETag |
 |-----------|-----------|-------------|
-| `weak=True` (default) | `W/"abc123..."` | — |
-| `weak=False` | — | `"abc123..."` |
+| `weak=True` (default) | `W/"abc123..."` |  |
+| `weak=False` |  | `"abc123..."` |
 
 ### 3.2 normalize_etag / parse_if_none_match / parse_if_match
 
@@ -570,7 +571,7 @@ flowchart TD
     style H fill:#ffa,stroke:#aa0
 ```
 
-**Key implementation detail** (line 136–139):
+**Key implementation detail** (line 136 to 139):
 
 ```python
 if is_fresh(request, response, weak_compare=True):
@@ -625,7 +626,9 @@ def enable_caching(self, max_age: int = 3600, private: bool = True) -> None:
 
 ## 4. Range Requests
 
-**Source**: [`core/sillo/core/http/response.py`](../core/sillo/core/http/response.py) — `FileResponse` class
+**Source**:
+[`core/sillo/core/http/response.py`](../core/sillo/core/http/response.py),
+`FileResponse` class
 
 Range requests let clients fetch **parts** of a file (useful for resuming
 downloads, streaming video, etc.) per RFC 9110 §14.
@@ -671,7 +674,7 @@ flowchart TD
     style D fill:#f96,stroke:#c00
 ```
 
-**Single range response** (line 763–769):
+**Single range response** (line 763 to 769):
 
 ```python
 if len(self._ranges) == 1:
@@ -721,9 +724,9 @@ Content-Range: bytes 200-299/1000
 --boundary_abc123--
 ```
 
-**Content-Length correctness** is critical for multipart responses — the declared
-length must include boundaries, headers, and CRLF delimiters. The `_multipart_length`
-method (line 732) counts everything precisely:
+**Content-Length correctness** is critical for multipart responses. The
+declared length must include boundaries, headers, and CRLF delimiters. The
+`_multipart_length` method (line 732) counts everything precisely:
 
 ```python
 def _multipart_length(self, file_size: int) -> int:
@@ -913,7 +916,7 @@ class HTTPClient:
         await self.stop()
 ```
 
-**`start()` initialization** (line 132–186):
+**`start()` initialization** (line 132 to 186):
 
 ```mermaid
 flowchart TD
@@ -928,7 +931,7 @@ flowchart TD
     H --> I
 ```
 
-**`_send()` — the low-level send** (line 206–326):
+**`_send()`, the low-level send** (line 206 to 326):
 
 This is the core method. Every public method (`get`, `post`, etc.) eventually
 calls `_send()`:
@@ -1076,7 +1079,7 @@ def compute_delay(self, attempt: int) -> float:
 With `jitter=True`, each delay is randomized to `[0, computed_delay]` to prevent
 thundering herd effects.
 
-**Integration in `request()`** (line 330–419):
+**Integration in `request()`** (line 330 to 419):
 
 ```python
 if retry_strategy is not None:
@@ -1215,7 +1218,7 @@ with RequestContext() as ctx:
 
 **ContextVar semantics**:
 - Each async task gets its own copy (no cross-task leakage)
-- Nested contexts are supported — `__exit__` restores the previous token
+- Nested contexts are supported: `__exit__` restores the previous token
 - `None` when no request is active (outside a request lifecycle)
 
 ```mermaid

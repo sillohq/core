@@ -1,6 +1,6 @@
 ---
 title: After Creating
-description: "The first ten minutes of a new Sillo project — installing dependencies, running migrations, creating an administrator, starting the server and running the tests."
+description: "The first ten minutes of a new Sillo project: installing dependencies, running migrations, creating an administrator, starting the server and running the tests."
 head:
   - tag: meta
     attrs:
@@ -29,8 +29,8 @@ are installed.
     ```
 
     Reads `pyproject.toml` and `uv.lock`, creates `.venv`, and installs exactly
-    the locked versions. Add `--all-extras` to include the dev tools — pytest,
-    ruff, httpx — which is what you want in a project you are working on:
+    the locked versions. Add `--all-extras` to include the dev tools (pytest,
+    ruff, httpx) which is what you want in a project you are working on:
 
     ```bash
     uv sync --all-extras
@@ -54,7 +54,7 @@ are installed.
 </Tabs>
 
 Everything below assumes the environment is active. With `uv`, prefix each
-command with `uv run` instead — `uv run sillo db:migrate`.
+command with `uv run` instead, `uv run sillo db:migrate`.
 
 ## Set the database up
 
@@ -89,7 +89,7 @@ sillo serve --reload
 Then open [http://localhost:8000](http://localhost:8000), and the admin panel
 at [http://localhost:8000/admin/](http://localhost:8000/admin/).
 
-`--reload` restarts on source changes. It is for development only — see
+`--reload` restarts on source changes. It is for development only. See
 [Deployment](/guides/start/deployment/) for the production shape.
 
 ## Run the tests
@@ -109,7 +109,7 @@ sillo
 ```
 
 Lists every command, including the ones your application's own setup brought
-in. That listing is derived from the application — a project with a scheduler
+in. That listing is derived from the application. A project with a scheduler
 shows the `schedule:*` commands, one without does not.
 
 ```bash
@@ -131,15 +131,15 @@ way to get oriented in a codebase you have just met.
 
 ## Common first problems
 
-**`sillo: command not found`** — the environment is not active, or dependencies
+**`sillo: command not found`**. The environment is not active, or dependencies
 are not installed. With `uv`, use `uv run sillo` or activate `.venv`.
 
-**`No application found`** — you are not in the project directory. `sillo` looks
-for the application relative to the working directory. See
-[Finding your application](/cli/discovery/).
+**`No application found`**. You are not in the project directory. `sillo` looks
+for the application relative to the working directory. See [Finding your
+application](/cli/discovery/).
 
-**Migrations do nothing** — check `DATABASE_URL` in `.env` points where you
+**Migrations do nothing**. Check `DATABASE_URL` in `.env` points where you
 think. `sillo db:status` prints what it is working against.
 
-**The admin panel 404s** — `ADMIN_ENABLED` in `.env`, and the account needs
+**The admin panel 404s**, `ADMIN_ENABLED` in `.env`, and the account needs
 admin access. `sillo user:staff you@example.com` grants it.

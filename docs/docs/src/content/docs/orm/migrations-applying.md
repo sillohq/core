@@ -1,6 +1,6 @@
 ---
 title: Applying Migrations
-description: "Running migrations safely — the local loop, the deployment shape, rolling back, adopting an existing schema with --fake, and the expand/contract pattern for zero downtime."
+description: "Running migrations safely: the local loop, the deployment shape, rolling back, adopting an existing schema with --fake, and the expand/contract pattern for zero downtime."
 head:
   - tag: meta
     attrs:
@@ -29,7 +29,7 @@ sillo db:migrate
 
 Three things make this reliable:
 
-**Run it once.** Not from every application process on boot — that is *n*
+**Run it once.** Not from every application process on boot. That is *n*
 processes racing to apply the same migration. A release step, a job, or a
 single-instance init container.
 
@@ -53,8 +53,8 @@ sillo db:rollback 0003_add_posts
 ```
 
 Everything after `0003_add_posts` is unapplied. There is deliberately no
-implicit "one step back" — you name where you want to end up, because a
-rollback that guesses is one you cannot review.
+implicit "one step back". You name where you want to end up, because a rollback
+that guesses is one you cannot review.
 
 ```bash
 sillo db:rollback zero        # unapply everything, drop the tables
@@ -68,7 +68,7 @@ for scripts.
 Reversing `ADD COLUMN` is `DROP COLUMN`, and the data in it is gone. Reversing
 a type change reverses the type and not the truncation.
 
-Read `sillo db:sql <migration> --backward` **before** you need it — ideally
+Read `sillo db:sql <migration> --backward` **before** you need it: ideally
 before applying the forward migration at all. If the answer is "this loses
 data", the plan is a restore from backup, not a rollback.
 :::
@@ -83,15 +83,15 @@ sillo db:migrate --fake
 ```
 
 Records migrations as applied without running their SQL. For a database whose
-tables already exist — created by hand, or before the project had migrations.
+tables already exist, created by hand, or before the project had migrations.
 
 The workflow:
 
 1. Write models matching the tables you have.
-2. `sillo db:make initial` and read the generated file carefully — it must
+2. `sillo db:make initial` and read the generated file carefully: it must
    describe the schema **as it is**, not as you wish it were.
 3. `sillo db:migrate --fake`.
-4. `sillo db:status` — up to date, with no SQL run.
+4. `sillo db:status`: up to date, with no SQL run.
 
 From there everything is normal.
 
@@ -103,7 +103,7 @@ the next real migration fails against a table it expected to have been altered.
 During a rolling deploy, old and new code run at once. A migration that breaks
 the old code takes the site down for the length of the rollout.
 
-The pattern is **expand, migrate, contract** — three deploys:
+The pattern is **expand, migrate, contract**, three deploys:
 
 **1. Expand.** Add the new thing, keep the old.
 
@@ -138,9 +138,9 @@ column that might already have duplicates.
 On a large table, some operations rewrite it and hold a lock for the duration.
 
 - **PostgreSQL:** `ADD COLUMN` with no default is instant. `ADD COLUMN` with a
-  volatile default rewrites. `CREATE INDEX` locks writes — use
-  `CREATE INDEX CONCURRENTLY`, which cannot run inside a transaction and so
-  needs a hand-written migration.
+  volatile default rewrites. `CREATE INDEX` locks writes. Use `CREATE INDEX
+  CONCURRENTLY`, which cannot run inside a transaction and so needs a
+  hand-written migration.
 - **MySQL:** varies by version and engine; check `ALGORITHM=INPLACE` support
   for the operation.
 - **SQLite:** rewrites the table for most `ALTER`s, and locks the whole
@@ -173,5 +173,5 @@ sillo db:migrate
 ## See also
 
 - [How migrations work](/orm/migrations/)
-- [Database commands](/cli/database/) — every flag
+- [Database commands](/cli/database/): every flag
 - [Deployment](/guides/start/deployment/)

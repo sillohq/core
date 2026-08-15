@@ -12,10 +12,10 @@ description: "BaseResponse, JSON/File/Streaming/Redirect responses, Responder pa
 
 ## 1. Overview
 
-The sillo HTTP response system is a layered architecture built on top of the ASGI
-(`Asynchronous Server Gateway Interface`) protocol. Every response in sillo is an
-**ASGI application** — it implements the `__call__(scope, receive, send)` triple
-that ASGI servers (Uvicorn, Hypercorn, Daphne) expect.
+The sillo HTTP response system is a layered architecture built on top of the
+ASGI (`Asynchronous Server Gateway Interface`) protocol. Every response in
+sillo is an **ASGI application**: it implements the `__call__(scope, receive,
+send)` triple that ASGI servers (Uvicorn, Hypercorn, Daphne) expect.
 
 The hierarchy is intentionally shallow:
 
@@ -39,7 +39,7 @@ chainable methods (`json()`, `text()`, `html()`, `file()`, `stream()`,
 
 - **ASGI-native**: Every response is a callable `(scope, receive, send)` coroutine.
 - **Headers as byte tuples**: `raw_headers: list[tuple[bytes, bytes]]` is the
-  canonical storage — matches the ASGI spec's header format directly.
+  canonical storage: matches the ASGI spec's header format directly.
 - **Lazy MutableHeaders**: The `headers` property wraps `raw_headers` in a
   `MutableHeaders` view (from `core/sillo/objects/http.py`) for dict-style access.
 - **Content-Length discipline**: `set_body()` always re-syncs `Content-Length`.
@@ -100,9 +100,9 @@ graph TB
 
 ---
 
-## 3. BaseResponse — The Foundation
+## 3. BaseResponse: The Foundation
 
-> **Source**: `core/sillo/core/http/response.py`, lines 119–533
+> **Source**: `core/sillo/core/http/response.py`, lines 119 to 533
 
 `BaseResponse` is the root of the response hierarchy. It handles:
 
@@ -134,8 +134,9 @@ class BaseResponse:
 
 **Initialization order matters:**
 
-1. `self._body = self.render(body)` — converts the body to bytes first.
-2. `self._init_headers(headers)` — reads `self._body` to compute `Content-Length`.
+1. `self._body = self.render(body)`: converts the body to bytes first.
+2. `self._init_headers(headers)`: reads `self._body` to compute
+   `Content-Length`.
 
 This order means `_init_headers` can always access a valid `_body` to compute
 the length. Reversing it would produce a `Content-Length` of 0 for non-empty bodies.
@@ -170,10 +171,10 @@ STATUS_CODES: ClassVar[dict] = {
 ```
 
 > **Note**: This is a convenience map, not authoritative. Sillo does **not** look
-> up status phrases during response construction — the ASGI server (Uvicorn, etc.)
+> up status phrases during response construction, the ASGI server (Uvicorn, etc.)
 > adds the reason phrase from its own table if it sends HTTP/1.1 status lines.
 
-### 3.3 `render()` — Body Serialization
+### 3.3 `render()`: Body Serialization
 
 ```python
 # core/sillo/core/http/response.py:190-214
@@ -197,7 +198,7 @@ def render(self, content: typing.Any) -> bytes | memoryview:
 The `memoryview` pass-through is important for `FileResponse` when serving chunks
 that may come from `mmap`-backed buffers.
 
-### 3.4 `_init_headers()` — Header Bootstrap
+### 3.4 `_init_headers()`: Header Bootstrap
 
 ```python
 # core/sillo/core/http/response.py:216-269
@@ -212,7 +213,7 @@ def _init_headers(self, headers: dict[str, str] | None = None):
 4. If `content-type` is missing and `self.content_type` is set: append charset for `text/*` types.
 5. Append all user headers.
 
-**Critical detail — charset injection:**
+**Critical detail, charset injection:**
 
 ```python
 if content_type.startswith("text/") and "charset=" not in content_type.lower():
@@ -300,7 +301,7 @@ def remove_header(self, key: str):
     del self.headers[key]
 ```
 
-### 3.7 `set_body()` — Late Body Replacement
+### 3.7 `set_body()`: Late Body Replacement
 
 ```python
 # core/sillo/core/http/response.py:460-475
@@ -310,11 +311,11 @@ def set_body(self, content: typing.Any) -> BaseResponse:
     return self
 ```
 
-Use this when you need to replace the body **after** construction (e.g., in
+Use this when you need to replace the body **after** construction (e.g. in
 middleware). It keeps `Content-Length` in sync. Without `set_body()`, a direct
 `self._body = ...` assignment would leave the stale `Content-Length` from the
-original body — the ASGI server would then send fewer or more bytes than declared,
-causing connection resets.
+original body. The ASGI server would then send fewer or more bytes than
+declared, causing connection resets.
 
 **Returns `self`** for chaining: `response.set_body(new_body).set_header(...)`.
 
@@ -341,7 +342,8 @@ def set_cookie(
 - `max_age` takes precedence over `expires` when both are set (browsers honor `Max-Age` first).
 - `expires` accepts `datetime`, `int` (Unix timestamp), or `str` (HTTP date).
 - `datetime` objects are formatted via `email.utils.format_datetime(usegmt=True)`.
-- `samesite` is validated with an assertion — raises `AssertionError` for invalid values.
+- `samesite` is validated with an assertion: raises `AssertionError` for
+  invalid values.
 
 **Implementation detail**: Uses `http.cookies.SimpleCookie` to build the header value, then calls
 `cookie.output(header="").strip()` to get the raw `key=value; attr=val; ...` string.
@@ -398,9 +400,9 @@ def enable_caching(self, max_age: int = 3600, private: bool = True) -> None:
 | `ETag` | `W/"<sha1-base64>"` | Weak ETag for conditional requests |
 | `Expires` | RFC 2822 date | Legacy HTTP/1.0 cache expiry |
 
-The ETag is a **weak** ETag (`W/"..."`) because it is based on the response body
-bytes — semantically equivalent but byte-identical responses from different servers
-might have different ETags.
+The ETag is a **weak** ETag (`W/"..."`) because it is based on the response
+body bytes, semantically equivalent but byte-identical responses from different
+servers might have different ETags.
 
 ```python
 # core/sillo/core/http/response.py:477-481
@@ -460,7 +462,7 @@ Send = typing.Callable[[Message], typing.Awaitable[None]]
 
 ## 4. PlainTextResponse
 
-> **Source**: `core/sillo/core/http/response.py`, lines 535–543
+> **Source**: `core/sillo/core/http/response.py`, lines 535 to 543
 
 ```python
 class PlainTextResponse(BaseResponse):
@@ -491,7 +493,7 @@ return response.text("Hello, World!")
 
 ## 5. JSONResponse
 
-> **Source**: `core/sillo/core/http/response.py`, lines 546–584
+> **Source**: `core/sillo/core/http/response.py`, lines 546 to 584
 
 ```python
 class JSONResponse(BaseResponse):
@@ -543,7 +545,7 @@ response.json(
 ```
 
 Custom encoders are merged on top of the global encoder registry. They are
-applied **only** to the current response — they do not modify the global state.
+applied **only** to the current response. They do not modify the global state.
 
 ### 5.3 Error Handling
 
@@ -558,13 +560,14 @@ except (TypeError, ValueError) as e:
 - `allow_nan=False`: Prevents `NaN`/`Infinity` in JSON (invalid per RFC 7159).
 - `default=str`: Last-resort fallback for non-serializable types.
 
-**Output Content-Type**: `application/json` (no charset — JSON is defined as UTF-8 by RFC 8259).
+**Output Content-Type**: `application/json` (no charset. JSON is defined as
+UTF-8 by RFC 8259).
 
 ---
 
 ## 6. HTMLResponse
 
-> **Source**: `core/sillo/core/http/response.py`, lines 587–603
+> **Source**: `core/sillo/core/http/response.py`, lines 587 to 603
 
 ```python
 class HTMLResponse(BaseResponse):
@@ -587,14 +590,14 @@ automatic charset injection in `_init_headers()`.
 
 ---
 
-## 7. FileResponse — Async Streaming & Range Requests
+## 7. FileResponse: Async Streaming & Range Requests
 
-> **Source**: `core/sillo/core/http/response.py`, lines 606–922
+> **Source**: `core/sillo/core/http/response.py`, lines 606 to 922
 
 `FileResponse` is the most complex response type. It supports:
 
 - **Async file I/O** via `anyio.open_file()` (works with both `asyncio` and `trio`)
-- **Range requests** (RFC 9110 §14.4) — single range, multi-range, suffix range
+- **Range requests** (RFC 9110 §14.4): single range, multi-range, suffix range
 - **Multipart byte ranges** for multi-range responses
 - **Stat-based headers** (ETag, Last-Modified, Content-Length)
 
@@ -799,7 +802,7 @@ Content-Range: bytes 200-299/50000
 --boundary_abc123--
 ```
 
-**Content-Length calculation** is precise — it counts the exact bytes that will
+**Content-Length calculation** is precise. It counts the exact bytes that will
 be sent, including boundaries, headers, and CRLF separators:
 
 ```python
@@ -859,7 +862,7 @@ async def _send_full_file(self, file: AsyncFile[bytes], send: Send) -> None:
     })
 ```
 
-**AnyIO** is the key abstraction — it allows the same code to run under both
+**AnyIO** is the key abstraction. It allows the same code to run under both
 `asyncio` and `trio` event loops. `anyio.open_file()` returns an `AsyncFile`
 that yields to the event loop on each `read()`.
 
@@ -872,7 +875,7 @@ that yields to the event loop on each `read()`.
 
 ## 8. StreamingResponse
 
-> **Source**: `core/sillo/core/http/response.py`, lines 924–988
+> **Source**: `core/sillo/core/http/response.py`, lines 924 to 988
 
 ```python
 class StreamingResponse(BaseResponse):
@@ -954,7 +957,7 @@ on `OSError` during `send()` for spec >= 2.4.
 
 ## 9. RedirectResponse
 
-> **Source**: `core/sillo/core/http/response.py`, lines 991–1008
+> **Source**: `core/sillo/core/http/response.py`, lines 991 to 1008
 
 ```python
 class RedirectResponse(BaseResponse):
@@ -974,10 +977,10 @@ class RedirectResponse(BaseResponse):
 
 **Key behaviors:**
 
-- Status code must be 300–399. Raises `ValueError` otherwise.
+- Status code must be 300 to 399. Raises `ValueError` otherwise.
 - The `Location` header is URL-encoded via `urllib.parse.quote()` with a safe
   set that preserves common URL characters.
-- Body is always empty — browsers follow the redirect without rendering it.
+- Body is always empty: browsers follow the redirect without rendering it.
 
 **Common status codes:**
 
@@ -991,9 +994,9 @@ class RedirectResponse(BaseResponse):
 
 ---
 
-## 10. Responder — Fluent Builder
+## 10. Responder: Fluent Builder
 
-> **Source**: `core/sillo/core/http/response.py`, lines 1010–1828
+> **Source**: `core/sillo/core/http/response.py`, lines 1010 to 1828
 
 The `Responder` class is the primary API for building responses in handler
 functions. It wraps a `BaseResponse` internally and exposes a fluent,
@@ -1075,7 +1078,7 @@ def download(self, path, filename=None):
 
 **`download()`** is a thin wrapper over `file()` that sets `content_disposition_type="attachment"`.
 
-### 10.4 `stream()` — Async Iterator Streaming
+### 10.4 `stream()`: Async Iterator Streaming
 
 ```python
 def stream(self, iterator, content_type="text/plain", status_code=200, headers={}):
@@ -1100,7 +1103,7 @@ async def sse_handler(request: Request, response: Responder):
     return response.stream(event_stream(), content_type="text/event-stream")
 ```
 
-### 10.5 `redirect()` — URL & Named Route Redirects
+### 10.5 `redirect()`: URL & Named Route Redirects
 
 ```python
 def redirect(self, url=None, name=None, status_code=302, headers={}, **path_params):
@@ -1265,14 +1268,14 @@ async def __call__(self, *args, **kwargs):
     return await self._response(*args, **kwargs)
 ```
 
-The `Responder` is itself an ASGI application — calling `await response(scope, receive, send)`
-delegates to the inner `BaseResponse.__call__()`.
+The `Responder` is itself an ASGI application, calling `await response(scope,
+receive, send)` delegates to the inner `BaseResponse.__call__()`.
 
 ---
 
 ## 11. Exception Types
 
-> **Source**: `core/sillo/core/http/response.py`, lines 53–117
+> **Source**: `core/sillo/core/http/response.py`, lines 53 to 117
 
 ### MalformedRangeHeader
 
@@ -1688,8 +1691,8 @@ async def test_base_response_asgi_call():
 ### 18.1 Header Storage
 
 Headers are stored as `list[tuple[bytes, bytes]]` (the ASGI native format).
-This avoids conversion during `send()` — the ASGI server receives headers
-in exactly the format it expects.
+This avoids conversion during `send()`. The ASGI server receives headers in
+exactly the format it expects.
 
 ### 18.2 FileResponse Chunking
 
@@ -1756,9 +1759,10 @@ response.headers["content-length"] = "1000"  # Will be wrong if stream is shorte
 
 ### 19.4 FileResponse Path Validation
 
-FileResponse does **not** validate the path exists in `__init__()` — it defers
-to `__call__()`. This means you can construct a `FileResponse` for a nonexistent
-file; the `RuntimeError` is only raised when the ASGI server calls it.
+FileResponse does **not** validate the path exists in `__init__()`. It defers
+to `__call__()`. This means you can construct a `FileResponse` for a
+nonexistent file; the `RuntimeError` is only raised when the ASGI server calls
+it.
 
 ### 19.5 Redirect Status Codes
 

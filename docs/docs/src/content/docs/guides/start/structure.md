@@ -50,8 +50,8 @@ page.
 **`app/` is the application.** How it is assembled, how it is configured,
 what runs in the background. Nothing in `app/` is about a URL or a table.
 
-**`database/` is the data layer.** The connection, the models, the
-migrations — one directory holding everything that describes persistence.
+**`database/` is the data layer.** The connection, the models, the migrations,
+one directory holding everything that describes persistence.
 
 **`routes/` is the HTTP surface.** What paths exist and what they return.
 
@@ -117,13 +117,12 @@ order is not cosmetic, and one part of it is genuinely surprising:
 registration *outermost*, so whatever registers **last runs first** at
 request time.
 
-`AdminSite.mount()` attaches its own auth middleware through
-`app.use()`, and that middleware reads `request.session`. So the admin
-has to be registered **before** the middleware block — which is what
-leaves the session middleware outside, and therefore ahead of it.
-Register the admin after, and every admin page 500s with "No Session
-Middleware Installed" while the session middleware is demonstrably
-installed.
+`AdminSite.mount()` attaches its own auth middleware through `app.use()`, and
+that middleware reads `request.session`. So the admin has to be registered
+**before** the middleware block, which is what leaves the session middleware
+outside, and therefore ahead of it. Register the admin after, and every admin
+page 500s with "No Session Middleware Installed" while the session middleware
+is demonstrably installed.
 :::
 
 The same ordering has a second consequence, and it catches people writing
@@ -173,12 +172,12 @@ instead of becoming `None` at request time and failing three layers down
 in something that looks unrelated.
 
 :::caution
-**`db_generate_schemas` is `False` on purpose.** Schema generation issues
-DDL on every startup, which creates tables outside the migration history —
-so a later `sillo db:make` sees them as new and writes a migration that
-then fails to apply against tables that already exist. It also has every
-process do it at once: an app, a worker and a scheduler sharing one SQLite
-file will raise "database is locked" on boot.
+**`db_generate_schemas` is `False` on purpose.** Schema generation issues DDL
+on every startup, which creates tables outside the migration history, so a
+later `sillo db:make` sees them as new and writes a migration that then fails
+to apply against tables that already exist. It also has every process do it at
+once: an app, a worker and a scheduler sharing one SQLite file will raise
+"database is locked" on boot.
 
 Migrations own the schema. See
 [Database & Migrations](/guides/start/database/).
@@ -211,18 +210,18 @@ See [The Admin Panel](/guides/start/admin/).
 ###  `app/templating.py`
 
 Configures the Jinja environment. `create_app` calls it before any page
-renders — without that, `sillo.templating.render` raises
-`NotImplementedError`. Not optional for a project serving HTML.
+renders, without that, `sillo.templating.render` raises `NotImplementedError`.
+Not optional for a project serving HTML.
 
 ###  `app/jobs/`
 
 Queue jobs. An empty package in a new project.
 
-Import each job class in `__init__.py`. The worker resolves a queued
-payload by importing the module the payload names, so a job in a module
-nobody imports would still be found — but one place to look is how you
-find them later, and it is what lets payloads queued by older releases,
-which recorded only a class name, still resolve.
+Import each job class in `__init__.py`. The worker resolves a queued payload by
+importing the module the payload names, so a job in a module nobody imports
+would still be found, but one place to look is how you find them later, and it
+is what lets payloads queued by older releases, which recorded only a class
+name, still resolve.
 
 A job must be a **module-level class**. One defined inside a function, or
 in a script run as `__main__`, cannot be imported by a separate worker
@@ -291,16 +290,16 @@ async with database():
 :::note
 **`MODEL_MODULES` is a short list on purpose.**
 
-`sillo.admin.models` is the admin's activity log — who changed what, and
-when. It is the one table the admin brings, and it is worth having from
-the first day rather than after the first incident.
+`sillo.admin.models` is the admin's activity log: who changed what, and when.
+It is the one table the admin brings, and it is worth having from the first day
+rather than after the first incident.
 
 What is deliberately absent is `sillo.admin.default_user`, which holds the
 admin's fallback `AdminUser` and its roles. Registering it would put a
 second set of accounts beside `users` to keep in step, or to forget about.
 The admin signs people in with *your* `User`.
 
-Do not add `sillo.users` either — models are keyed by class name, so the
+Do not add `sillo.users` either. Models are keyed by class name, so the
 framework's built-in `User` would displace your own and your extra columns
 would silently stop being created.
 :::
@@ -316,10 +315,10 @@ from database.models.user import User
 __all__ = ["User"]
 ```
 
-The ORM only sees what is imported there. A model it cannot see fails on
-first query with `default_connection cannot be None` — which points at the
-database rather than at the missing import, and is the single most
-confusing error in a new project.
+The ORM only sees what is imported there. A model it cannot see fails on first
+query with `default_connection cannot be None`, which points at the database
+rather than at the missing import, and is the single most confusing error in a
+new project.
 
 ###  `database/migrations/`
 
@@ -334,9 +333,9 @@ generated code makes `ruff check .` fail the first time you add a model.
 
 ##  `routes/`
 
-Three modules, split by what they return rather than by feature — a
-project small enough to have one `routes/` directory is better served by
-"HTML here, JSON there" than by a package per noun.
+Three modules, split by what they return rather than by feature. A project
+small enough to have one `routes/` directory is better served by "HTML here,
+JSON there" than by a package per noun.
 
 | Module | |
 | --- | --- |
@@ -346,8 +345,8 @@ project small enough to have one `routes/` directory is better served by
 
 :::caution
 **A prefix-less router swallows everything.** Mounting a `Router` with no
-prefix claims `""` and every path beneath it — including routes registered
-later during startup, like the admin's.
+prefix claims `""` and every path beneath it, including routes registered later
+during startup, like the admin's.
 
 Root-level pages are therefore registered individually:
 
@@ -366,8 +365,8 @@ before `/api/auth` leaves every auth route unreachable.
 
 Jinja templates and files served as-is.
 
-`/static` is mounted in `bootstrap.py` for development and small
-deployments. With a proxy in front it never sees traffic — see
+`/static` is mounted in `bootstrap.py` for development and small deployments.
+With a proxy in front it never sees traffic. See
 [Deployment](/guides/start/deployment/#static-files).
 
 :::note
@@ -403,16 +402,16 @@ storage/*.db-wal
 
 :::caution
 **The `-shm` and `-wal` entries are not decoration.** Committing SQLite's
-write-ahead log leaves a fresh clone with a WAL referring to a database
-that is not there, which SQLite reports as `disk I/O error` — an alarming
-message for what is actually a stale file.
+write-ahead log leaves a fresh clone with a WAL referring to a database that is
+not there, which SQLite reports as `disk I/O error`. An alarming message for
+what is actually a stale file.
 :::
 
 ---
 
 ##  Management commands
 
-There is no console file. `sillo` finds the application — `app/main.py` here —
+There is no console file. `sillo` finds the application (`app/main.py` here)
 and offers what it set up: `setup_record` brings the migration and account
 commands, `setup_scheduler` brings the schedule commands.
 
@@ -431,10 +430,9 @@ See [The Console](/guides/start/console/).
 
 ##  `scripts/` and `tests/`
 
-`scripts/smoke.py` boots the application and calls every route. It is not
-a unit test and it is not a replacement for one — it exists because a
-project can import cleanly, render every template and still fail on the
-first real request.
+`scripts/smoke.py` boots the application and calls every route. It is not a
+unit test and it is not a replacement for one. It exists because a project can
+import cleanly, render every template and still fail on the first real request.
 
 `tests/` holds the pytest suite. `conftest.py` gives every test its own
 temporary database.
@@ -456,15 +454,15 @@ layer to import cleanly. Push shared logic down, not up.
 `_register_*` function; do not inline it. The value of that file is that
 you can read the whole application's shape in twenty lines.
 
-For anything larger — a package per domain, with its own models, routes
-and services — move `routes/` and `database/models/` into those packages
-and keep `bootstrap.py` and `database/config.py` where they are. Those two
-are the project's spine.
+For anything larger (a package per domain, with its own models, routes and
+services) move `routes/` and `database/models/` into those packages and keep
+`bootstrap.py` and `database/config.py` where they are. Those two are the
+project's spine.
 
 ##  Related
 
-- [Creating a Project](/guides/start/) — how the files got here
-- [The Console](/guides/start/console/) — every command in full
-- [Database & Migrations](/guides/start/database/) — models and schema changes
-- [Middleware](/guides/middleware/) — the ordering rules in general
-- [Routers & Sub-Apps](/guides/routers-and-subapps/) — mounting and prefixes
+- [Creating a Project](/guides/start/): how the files got here
+- [The Console](/guides/start/console/): every command in full
+- [Database & Migrations](/guides/start/database/): models and schema changes
+- [Middleware](/guides/middleware/): the ordering rules in general
+- [Routers & Sub-Apps](/guides/routers-and-subapps/): mounting and prefixes

@@ -1,6 +1,6 @@
 ---
 title: Query Scopes
-description: "Reusable query fragments — local scope_ methods that become chainable, global scopes applied to every query, and how to escape them when you need everything."
+description: "Reusable query fragments: local scope_ methods that become chainable, global scopes applied to every query, and how to escape them when you need everything."
 head:
   - tag: meta
     attrs:
@@ -37,8 +37,8 @@ await Post.published().by_author(7).order_by("-published_at").limit(10)
 
 Any classmethod named `scope_<name>` becomes available two ways:
 
-- **On the model**, as `Model.<name>(...)` — starting a new query.
-- **On a queryset**, as `.<name>(...)` — continuing one.
+- **On the model**, as `Model.<name>(...)`: starting a new query.
+- **On a queryset**, as `.<name>(...)`: continuing one.
 
 The chaining is what makes them worth having. A scope returns a queryset, so it
 composes with `filter`, `order_by`, `limit`, other scopes, and everything else
@@ -61,7 +61,7 @@ yours.
 
 :::note[An existing attribute wins]
 The model-level shortcut is only created when the name is free. A scope called
-`scope_filter` would not overwrite `filter` — the queryset method still works,
+`scope_filter` would not overwrite `filter`. The queryset method still works,
 but `Post.filter()` remains Tortoise's.
 
 Name scopes after the intent (`published`, `overdue`, `for_tenant`) rather than
@@ -83,8 +83,8 @@ await Post.without_global_scopes().all()  # everything
 ```
 
 This is the idiomatic way to make [soft deletes](/orm/mixins/#softdeletesmixin)
-the default, which the base model deliberately does not do on its own — see
-the caution in [Models](/orm/models/#soft-deletes).
+the default, which the base model deliberately does not do on its own. See the
+caution in [Models](/orm/models/#soft-deletes).
 
 ### Multi-tenancy
 
@@ -139,8 +139,8 @@ Post.without_global_scopes()          # a queryset with none applied
 ```
 
 Necessary for an admin view that has to show trashed rows, a repair script, or
-a report over everything. The framework uses it itself — [`upsert`](/orm/bulk/)
-re-fetches the row through `without_global_scopes()` so that upserting a
+a report over everything. The framework uses it itself. [`upsert`](/orm/bulk/)
+Re-fetches the row through `without_global_scopes()` so that upserting a
 soft-deleted row still returns it.
 
 ## How it fits together
@@ -170,5 +170,5 @@ class Meta:
 - **A property** when it is about one loaded instance and needs no query:
   `post.is_published`.
 
-The mistake to avoid is a "scope" that awaits internally and returns a list —
-it looks like a scope at the call site and then refuses to chain.
+The mistake to avoid is a "scope" that awaits internally and returns a list. It
+looks like a scope at the call site and then refuses to chain.

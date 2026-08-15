@@ -111,11 +111,11 @@ carry a copy of a starter it would then have to keep in step with.
 
 ## Where to go next
 
-- [Finding your application](/cli/discovery/) — the three places `sillo` looks,
+- [Finding your application](/cli/discovery/): the three places `sillo` looks,
   and what to do when it looks in the wrong one.
-- [Framework commands](/cli/framework-commands/) — `version`, `serve`, `routes`.
-- [Database commands](/cli/database/) — the migration workflow end to end.
-- [User commands](/cli/users/) — creating and managing accounts.
+- [Framework commands](/cli/framework-commands/): `version`, `serve`, `routes`.
+- [Database commands](/cli/database/): the migration workflow end to end.
+- [User commands](/cli/users/): creating and managing accounts.
 - [Queue](/cli/queues/) and [scheduler](/cli/scheduler/) commands.
-- [Writing your own commands](/cli/custom-commands/) — the part most projects
+- [Writing your own commands](/cli/custom-commands/): the part most projects
   reach within a week.

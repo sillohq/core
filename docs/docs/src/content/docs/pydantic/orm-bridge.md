@@ -1,6 +1,6 @@
 ---
 title: The ORM Bridge
-description: "Pydantic models and Record models together — generating schemas from models, from_attributes, the relation trap, and where a hand-written schema is the right call."
+description: "Pydantic models and Record models together: generating schemas from models, from_attributes, the relation trap, and where a hand-written schema is the right call."
 head:
   - tag: meta
     attrs:
@@ -46,7 +46,7 @@ PostOut.model_validate(post)
 an ORM instance validates directly. This is v1's `orm_mode`.
 
 With [`response_model=`](/pydantic/response-models/) declared, Sillo does the
-validation for you — you return the ORM object and the model shapes it.
+validation for you. You return the ORM object and the model shapes it.
 
 ## Relations
 
@@ -67,7 +67,7 @@ class PostOut(BaseModel):
 
 :::caution[Fetch them first, or this raises]
 Naming `author` means validation reads `post.author`. An unfetched relation
-raises — inside the serialiser, producing a 500 for what is really a missing
+raises, inside the serialiser, producing a 500 for what is really a missing
 `select_related`.
 
 ```python
@@ -111,7 +111,7 @@ changes, which is precisely what a published API must not do.
 Three specific limitations, all documented on
 [that page](/orm/pydantic/#the-type-mapping):
 
-- `DatetimeField` and `DateField` become **`str`** — no parsing, no format
+- `DatetimeField` and `DateField` become **`str`**: no parsing, no format
   validation, any string accepted.
 - `DecimalField` becomes **`float`**, which reintroduces binary rounding into a
   value you chose `Decimal` to keep exact.
@@ -166,10 +166,10 @@ class PostOut(BaseModel):
 Four models because they answer four different questions, and each can change
 without the others:
 
-- `PostCreate` — what a client may send to create one.
-- `PostUpdate` — what may be changed, all optional for a real PATCH.
-- `PostOut` — what is published.
-- `PostBase` — the shared rules, declared once.
+- `PostCreate`: what a client may send to create one.
+- `PostUpdate`: what may be changed, all optional for a real PATCH.
+- `PostOut`: what is published.
+- `PostBase`: the shared rules, declared once.
 
 It looks like duplication. It is the boundary, and it is where an API stops
 being a projection of your database schema.
@@ -235,7 +235,7 @@ class OrderOut(BaseModel):
     total: Decimal
 ```
 
-`Decimal` on both sides, and it serialises to a JSON **string** by default —
+`Decimal` on both sides, and it serialises to a JSON **string** by default,
 which is correct. A monetary value in a JSON number is a value the client's
 JSON parser may round.
 

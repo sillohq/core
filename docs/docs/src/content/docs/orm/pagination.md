@@ -1,6 +1,6 @@
 ---
 title: Pagination
-description: "Paginating model queries — the Record helper, the framework's pagination strategies over a Tortoise queryset, and choosing between page numbers, limit/offset and cursors."
+description: "Paginating model queries: the Record helper, the framework's pagination strategies over a Tortoise queryset, and choosing between page numbers, limit/offset and cursors."
 head:
   - tag: meta
     attrs:
@@ -48,8 +48,8 @@ Two queries: a `COUNT`, and the page itself.
 ## The framework system
 
 For an endpoint, the [pagination system](/guides/pagination/) handles the parts
-`paginate()` does not — reading and validating the query parameters, capping
-the page size, and building a consistent response envelope.
+`paginate()` does not: reading and validating the query parameters, capping the
+page size, and building a consistent response envelope.
 
 Record supplies the adapter that lets it read a Tortoise queryset:
 
@@ -66,8 +66,8 @@ async def list_posts(request, response):
     return response.json(page)
 ```
 
-`TortoiseDataHandler` implements two methods — `get_total_items()` and
-`get_items(offset, limit)` — which is the whole contract. The strategy above it
+`TortoiseDataHandler` implements two methods (`get_total_items()` and
+`get_items(offset, limit)`) which is the whole contract. The strategy above it
 decides what the parameters mean.
 
 `SyncTortoiseDataHandler` exists for the synchronous paginator and takes a list
@@ -101,7 +101,7 @@ rows.
 ```
 
 Carries the position of the last row rather than a count of rows to skip, so
-the query becomes `WHERE id < :last` — an index seek, at the same cost on page
+the query becomes `WHERE id < :last`, an index seek, at the same cost on page
 one and page ten thousand. No `COUNT` at all.
 
 The trade is that you cannot jump to page 47, and there is no total. For an
@@ -122,7 +122,7 @@ that means a row can appear on two consecutive pages while nothing changes, and
 another can be skipped entirely.
 
 Order by something that breaks ties. `-created_at` alone does not if two rows
-can share a timestamp — append the primary key.
+can share a timestamp, append the primary key.
 
 For cursor pagination this is stronger still: the ordering **is** the cursor.
 It must be stable and unique, or the cursor cannot express a position.
@@ -130,7 +130,7 @@ It must be stable and unique, or the cursor cannot express a position.
 ## Counting is the expensive half
 
 `total` costs a `COUNT(*)` over the filtered set. PostgreSQL cannot answer that
-from an index alone, so on a large table it is a scan — often more expensive
+from an index alone, so on a large table it is a scan, often more expensive
 than fetching the page.
 
 Options, in order of preference:
@@ -147,7 +147,7 @@ The [admin panel](/orm/admin-customising/) paginates its own lists;
 
 ## See also
 
-- [Pagination](/guides/pagination/) — the strategies, parameters and envelope
-  in full.
-- [Queries](/orm/queries/#iter_all) — `iter_all`, for walking everything rather
+- [Pagination](/guides/pagination/): the strategies, parameters and envelope in
+  full.
+- [Queries](/orm/queries/#iter_all): `iter_all`, for walking everything rather
   than showing a page.

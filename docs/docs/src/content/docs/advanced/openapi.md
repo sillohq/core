@@ -4,12 +4,12 @@ description: "Schema building, security schemes, documentation UIs, route iterat
 ---
 
 > **Source files:**
-> - `core/sillo/openapi/config.py` — `OpenAPIConfig`
-> - `core/sillo/openapi/models.py` — Pydantic OpenAPI 3.0 models (`OpenAPI`, `Info`, `PathItem`, `Operation`, `Schema`, `Components`, etc.)
-> - `core/sillo/openapi/_builder.py` — `APIDocumentation`
-> - `core/sillo/openapi/ui.py` — `DocsUI`, `Atlas`, `Swagger`, `ReDoc`, `Scalar`, `default_docs`
-> - `core/sillo/openapi/utils.py` — `get_openapi` (route flattening utility)
-> - `core/sillo/openapi/__init__.py` — Public re-exports
+> - `core/sillo/openapi/config.py`, `OpenAPIConfig`
+> - `core/sillo/openapi/models.py`: Pydantic OpenAPI 3.0 models (`OpenAPI`, `Info`, `PathItem`, `Operation`, `Schema`, `Components`, etc.)
+> - `core/sillo/openapi/_builder.py`, `APIDocumentation`
+> - `core/sillo/openapi/ui.py`: `DocsUI`, `Atlas`, `Swagger`, `ReDoc`, `Scalar`, `default_docs`
+> - `core/sillo/openapi/utils.py`, `get_openapi` (route flattening utility)
+> - `core/sillo/openapi/__init__.py`. Public re-exports
 
 ---
 
@@ -308,7 +308,7 @@ class Schema(BaseModel):
     # ...
 ```
 
-The `validate_type` field validator handles composition keywords — when
+The `validate_type` field validator handles composition keywords. When
 `anyOf`/`oneOf`/`allOf` are present, `type` defaults to `None` instead of
 `"object"`:
 
@@ -464,9 +464,9 @@ flowchart TD
     I --> J["Return spec dict"]
 ```
 
-The `mode="json"` parameter is critical — without it, Pydantic's rich types
-(`AnyUrl`, `datetime`) would appear as Python objects that `json.dumps`
-refuses to serialize.
+The `mode="json"` parameter is critical: without it, Pydantic's rich types
+(`AnyUrl`, `datetime`) would appear as Python objects that `json.dumps` refuses
+to serialize.
 
 ### 14.4.2  `_collect_routes_with_paths()`
 
@@ -532,10 +532,10 @@ def _add_route_to_openapi_spec(self, full_path: str, route: Route) -> None:
 ```
 
 For each HTTP method on the route, it builds:
-1. **Parameters** — path, query, header, cookie
-2. **Request body** — JSON or form
-3. **Responses** — success model + error responses
-4. **Security** — from route declaration or auth gate
+1. **Parameters**: path, query, header, cookie
+2. **Request body**: JSON or form
+3. **Responses**: success model + error responses
+4. **Security**: from route declaration or auth gate
 
 ### 14.4.4  `_build_request_body_spec()`
 
@@ -685,9 +685,10 @@ def _build_parameters_spec(self, route: Route) -> list[Parameter]:
 
 Parameters come from **three sources**, merged with deduplication:
 
-1. **Compiled validators** — Pydantic models with real schemas (constraints, types)
-2. **Legacy extractors** — schema inferred from default values
-3. **Route pattern** — path parameters from the URL pattern itself
+1. **Compiled validators.** Pydantic models with real schemas (constraints,
+   types)
+2. **Legacy extractors**: schema inferred from default values
+3. **Route pattern**: path parameters from the URL pattern itself
 
 ### 14.4.8  `_route_security()`
 
@@ -707,7 +708,7 @@ def _route_security(self, route: Any) -> Any:
 
 Security requirements come from:
 1. **Explicit `security=`** on the route
-2. **Auth gate's `security_requirements()`** — gates like `useAuth()` that
+2. **Auth gate's `security_requirements()`**: gates like `useAuth()` that
    reject anonymous callers without naming a scheme get filled in with all
    registered schemes
 
@@ -735,8 +736,8 @@ def _collect_validators(self, route: Route) -> list[Any]:
     return validators
 ```
 
-Collects every `CompiledValidator` reachable from a route — including those
-on nested dependencies. Results are memoized per build since the parameter,
+Collects every `CompiledValidator` reachable from a route: including those on
+nested dependencies. Results are memoized per build since the parameter,
 request-body, and response sections all need the same list.
 
 ### 14.4.10  Response Building: `_build_responses_spec()`
@@ -748,9 +749,10 @@ def _build_responses_spec(self, route: Route) -> dict[str, OpenAPIResponse | Ref
 
 Response specs are built from (in priority order):
 
-1. **`response_model`** — takes the 200 slot; `response_model_many` wraps it in `list[]`
-2. **`responses` dict** — explicit status-code-to-model mapping
-3. **Default** — generic 200 with example object
+1. **`response_model`**: takes the 200 slot; `response_model_many` wraps it in
+   `list[]`
+2. **`responses` dict**: explicit status-code-to-model mapping
+3. **Default**: generic 200 with example object
 
 ```python
 # For BaseModel response models
@@ -863,11 +865,11 @@ class Atlas(DocsUI):
     ) -> None:
 ```
 
-Atlas is sillo's own OpenAPI reference viewer — a three-pane reference with
-a request builder, ranked search, and snippets in nine languages.
+Atlas is sillo's own OpenAPI reference viewer: a three-pane reference with a
+request builder, ranked search, and snippets in nine languages.
 
 **Key features:**
-- Zero dependencies — one script tag
+- Zero dependencies: one script tag
 - Carries its own styles
 - Pinned CDN version (`v0.8.0`) for reproducibility
 - `ui_config` merged into `createApiReference()` call
@@ -988,7 +990,7 @@ Three flags matter:
 | Flag             | Purpose |
 |------------------|---------|
 | `by_alias=True`  | Serialize `$ref` as `$ref` (not `ref`), `in` as `in` (not `in_`). |
-| `exclude_none=True` | Omit optional fields not set — keeps the spec clean. |
+| `exclude_none=True` | Omit optional fields not set: keeps the spec clean. |
 | `mode="json"`    | Convert rich types (`AnyUrl`, `datetime`) to JSON-native values. Without this, `json.dumps` fails on `AnyUrl` objects. |
 
 ---
@@ -1123,7 +1125,7 @@ validator because they come from the same `FieldInfo` objects.
 | `_add_route_to_openapi_spec`| Once per route| O(validators)           |
 | `_extract_and_add_nested_schemas` | Once per model | O($defs depth)   |
 | `model_dump()`              | Once          | O(total spec size)      |
-| Serving `/openapi.json`     | Per request   | O(1) — static dict      |
+| Serving `/openapi.json`     | Per request   | O(1): static dict |
 
 The document is built once and served as a pre-serialized dict. No per-request
 computation is needed.

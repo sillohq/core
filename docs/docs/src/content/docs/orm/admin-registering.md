@@ -1,6 +1,6 @@
 ---
 title: Registering Models
-description: "Putting a model in the admin — the register decorator, the ModelAdmin class, its full attribute set, and where registration should live."
+description: "Putting a model in the admin: the register decorator, the ModelAdmin class, its full attribute set, and where registration should live."
 head:
   - tag: meta
     attrs:
@@ -107,8 +107,8 @@ def get_readonly_fields(cls, add=False): ...
 def get_queryset(cls, queryset): ...
 ```
 
-`get_fields` and `get_readonly_fields` take `add` — `True` on the create form,
-`False` on edit — which is how a field is settable once and read-only
+`get_fields` and `get_readonly_fields` take `add` (`True` on the create form,
+`False` on edit) which is how a field is settable once and read-only
 afterwards:
 
 ```python
@@ -134,14 +134,14 @@ def get_queryset(cls, queryset):
 ```
 
 That second form is worth doing whenever `list_display` names a relation.
-Without it the list issues one query per row to render the author column —
-the classic N+1, and very visible at 50 rows a page.
+Without it the list issues one query per row to render the author column, the
+classic N+1, and very visible at 50 rows a page.
 
 :::caution[`get_queryset` takes no request]
 It is a classmethod over the queryset alone, so it cannot filter by the signed-
 in user. Per-user scoping is not something this hook can express.
 
-The permission methods *do* receive the request — see
+The permission methods *do* receive the request. See
 [Permissions](/orm/admin-permissions/). Use those to decide whether someone may
 see a model at all, and keep genuinely per-user data out of the admin.
 :::
@@ -178,15 +178,15 @@ the model is in the registry, and no routes exist for it.
 
 ## What is registered for you
 
-- **The user model**, always — the site cannot authenticate without one, and
+- **The user model**, always: the site cannot authenticate without one, and
   browsing who can sign in is something every admin needs.
 - **`AdminActivity`**, the log.
 
 `AdminRole` is not, since it only applies if you use the admin's own user
 model. Register it yourself if you do.
 
-To replace the auto-registered user admin, register your own — yours is what
-the registry ends up holding:
+To replace the auto-registered user admin, register your own. Yours is what the
+registry ends up holding:
 
 ```python
 @admin.register(User)

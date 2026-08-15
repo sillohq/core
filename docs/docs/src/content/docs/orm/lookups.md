@@ -1,6 +1,6 @@
 ---
 title: Field Lookups
-description: "Every lookup you can put after __ in a Sillo filter — comparison, membership, text matching, null checks, date parts and the JSON-specific set — with the SQL each produces."
+description: "Every lookup you can put after __ in a Sillo filter (comparison, membership, text matching, null checks, date parts and the JSON-specific set) with the SQL each produces."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: The complete lookup reference — comparison, text, null, ranges, date parts and JSON.
+      content: "The complete lookup reference: comparison, text, null, ranges, date parts and JSON."
 ---
 
 ```python
@@ -40,7 +40,7 @@ await Post.filter(status__not="archived")
 ```
 
 `status__not="archived"` and `.exclude(status="archived")` differ on `NULL`:
-`<> 'archived'` is `NULL` — and therefore not true — for a row whose status is
+`<> 'archived'` is `NULL` (and therefore not true) for a row whose status is
 `NULL`, so neither returns it, but only `exclude` reads as intent. Prefer
 `exclude` for negation and keep `not` for a single inline condition.
 
@@ -56,7 +56,7 @@ await Post.filter(id__in=[1, 2, 3])
 await Post.filter(status__not_in=["archived", "deleted"])
 ```
 
-An empty list is `IN ()` — always false — which is usually right but worth
+An empty list is `IN ()` (always false) which is usually right but worth
 knowing when the list comes from user input.
 
 Large `IN` lists get slow; past a few thousand ids, a join against a temporary
@@ -69,7 +69,7 @@ await Post.filter(created_at__range=(start, end))
 ```
 
 `BETWEEN`, and **inclusive at both ends**. For dates that is often not what you
-want — `range=(jan_1, feb_1)` includes February the 1st at midnight. Use two
+want. `range=(jan_1, feb_1)` includes February the 1st at midnight. Use two
 bounds when the upper one should be exclusive:
 
 ```python
@@ -115,8 +115,8 @@ await Post.filter(email__iexact="ADA@example.com")
 `icontains` compiles to `LIKE '%term%'`. A leading wildcard means a B-tree
 index is unusable, so this is a full scan on every query.
 
-`startswith` **can** use an index — no leading wildcard — which is why a
-prefix search is cheap and a substring search is not.
+`startswith` **can** use an index (no leading wildcard) which is why a prefix
+search is cheap and a substring search is not.
 
 For real search on a large table: a trigram index (`pg_trgm`) on PostgreSQL, a
 full-text index, or a search service. The admin's
@@ -186,7 +186,7 @@ await Post.filter(metadata__filter={"theme": "dark"})
 await Post.filter(metadata__contains={"tags": ["python"]})
 ```
 
-Support varies sharply by backend — `JSONB` on PostgreSQL is fully queryable,
+Support varies sharply by backend. `JSONB` on PostgreSQL is fully queryable,
 SQLite stores JSON as text and can do much less. Test against the database you
 deploy on.
 
@@ -237,7 +237,7 @@ database's collation:
 - **PostgreSQL** is case-sensitive by default. `iexact` and friends use
   `LOWER()` or `ILIKE`.
 - **MySQL** is usually case-**in**sensitive by default (`utf8mb4_general_ci`),
-  so `exact` and `iexact` behave identically — and the same code behaves
+  so `exact` and `iexact` behave identically, and the same code behaves
   differently on PostgreSQL.
 - **SQLite** is case-sensitive except for ASCII with `NOCASE`.
 
@@ -247,6 +247,6 @@ until deployment.
 
 ## See also
 
-- [Filtering with Q and F](/orm/filtering/) — OR, negation, column references
+- [Filtering with Q and F](/orm/filtering/): OR, negation, column references
 - [The QuerySet API](/orm/queryset/)
 - [Relationships](/orm/relationships/)

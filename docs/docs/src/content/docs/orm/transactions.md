@@ -1,6 +1,6 @@
 ---
 title: Transactions
-description: "Running work atomically — the transaction context manager, nested savepoints, manual begin/commit/rollback, and the concurrency rules that decide where a transaction belongs."
+description: "Running work atomically: the transaction context manager, nested savepoints, manual begin/commit/rollback, and the concurrency rules that decide where a transaction belongs."
 head:
   - tag: meta
     attrs:
@@ -20,8 +20,8 @@ async with transaction():
     await ledger_entry.save()
 ```
 
-Commits on a clean exit, rolls back on any exception. The exception propagates
-— rolling back is not the same as swallowing.
+Commits on a clean exit, rolls back on any exception. The exception propagates.
+Rolling back is not the same as swallowing.
 
 ## Savepoints
 
@@ -38,7 +38,7 @@ async with transaction() as tx:
     await receipt.save()
 ```
 
-If `charge_card` raises, only its work is undone — but the exception still
+If `charge_card` raises, only its work is undone, but the exception still
 propagates, so the enclosing `async with` rolls back too unless you catch it:
 
 ```python
@@ -79,8 +79,8 @@ The name is a Tortoise connection name, defaulting to `"default"`.
 
 A transaction covers **one** connection. Two `async with transaction(...)`
 blocks on different connections are two transactions, and one can commit while
-the other rolls back. Distributed atomicity is not something this — or any
-single-database transaction — provides.
+the other rolls back. Distributed atomicity is not something this (or any
+single-database transaction) provides.
 
 ## Manual control
 
@@ -96,13 +96,13 @@ except Exception:
     raise
 ```
 
-For a transaction whose boundaries are not a block — spanning a callback, or
+For a transaction whose boundaries are not a block, spanning a callback, or
 driven by a state machine.
 
 :::caution[The context manager is safer]
 These three issue raw `BEGIN`, `COMMIT` and `ROLLBACK` on the connection. They
 do not participate in the driver's transaction tracking, so mixing them with
-`transaction()` — or forgetting the `rollback()` on one path — leaves the
+`transaction()` (or forgetting the `rollback()` on one path) leaves the
 connection in a state later queries inherit.
 
 Use the context manager unless you genuinely cannot.
@@ -159,7 +159,7 @@ Two transactions touching the same rows will conflict. What happens depends on
 the database:
 
 - **PostgreSQL** raises a serialisation failure at `REPEATABLE READ` and above.
-  Retry the whole transaction — not part of it.
+  Retry the whole transaction, not part of it.
 - **MySQL** may deadlock; it picks a victim and raises.
 - **SQLite** locks the whole database for a write. Concurrent writers get
   `database is locked`.
@@ -182,12 +182,12 @@ recomputes it from the same stale read.
 
 ## In tests
 
-Wrapping each test in a transaction and rolling back is a fast reset — no
+Wrapping each test in a transaction and rolling back is a fast reset, no
 truncation, no fixtures reloaded.
 
 It has one catch: code under test that opens its own transaction, or that
 depends on a commit having happened, behaves differently inside one. Where that
-bites, use a fresh in-memory SQLite database per test instead — see
+bites, use a fresh in-memory SQLite database per test instead. See
 [Factories](/orm/factories/).
 
 ## Interaction with the rest

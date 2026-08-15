@@ -22,13 +22,13 @@ looks for a matching file, and it streams the file back with a content
 type, an `ETag`, a `Last-Modified` date, and whatever `Cache-Control` you
 configured.
 
-It is deliberately narrow. It resolves a path, checks that the resolved
-path is still inside the directory you gave it, checks the extension
-against an optional allow-list, and serves. Everything a CDN or a reverse
-proxy does better — conditional revalidation, compression, directory
-indexes — it does not do. That boundary is worth understanding before you
-put it in front of production traffic, and the whole of this page is
-really about where that boundary sits.
+It is deliberately narrow. It resolves a path, checks that the resolved path is
+still inside the directory you gave it, checks the extension against an
+optional allow-list, and serves. Everything a CDN or a reverse proxy does
+better (conditional revalidation, compression, directory indexes) it does not
+do. That boundary is worth understanding before you put it in front of
+production traffic, and the whole of this page is really about where that
+boundary sits.
 
 ```python title="the whole API"
 from sillo import SilloApp
@@ -46,11 +46,11 @@ A file at `public/css/style.css` is now served at `/static/css/style.css`.
 
 ##  Mounting
 
-`StaticFiles` has no notion of a URL prefix. It reads `scope["path"]`,
-strips the leading slash, and joins the result onto each configured
-directory. The prefix comes entirely from the `Group` you mount it in —
-`Group.handle` rewrites `scope["path"]` to the portion after the prefix
-before delegating, so the static app only ever sees the relative part.
+`StaticFiles` has no notion of a URL prefix. It reads `scope["path"]`, strips
+the leading slash, and joins the result onto each configured directory. The
+prefix comes entirely from the `Group` you mount it in. `Group.handle` rewrites
+`scope["path"]` to the portion after the prefix before delegating, so the
+static app only ever sees the relative part.
 
 <Aside type="danger" title="StaticFiles(prefix=...) is not a thing">
 
@@ -61,9 +61,9 @@ parameter, and passing one fails immediately:
 TypeError: StaticFiles.__init__() got an unexpected keyword argument 'prefix'
 ```
 
-The prefix belongs on `Group(path="/static", ...)`. Similarly,
-`from sillo.routing import Group` raises `ModuleNotFoundError` — the
-module is `sillo.core.routing`.
+The prefix belongs on `Group(path="/static", ...)`. Similarly, `from
+sillo.routing import Group` raises `ModuleNotFoundError`. The module is
+`sillo.core.routing`.
 
 </Aside>
 
@@ -78,24 +78,23 @@ directly. Use `Group`.
 | `directory` | `str \| Path` | A single root to serve from |
 | `directories` | `list[str \| Path]` | Several roots, searched in order |
 | `allowed_extensions` | `list[str]` | Allow-list; empty or `None` means everything |
-| `custom_404_handler` | `callable` | Called when nothing matched — **must be sync** |
+| `custom_404_handler` | `callable` | Called when nothing matched: **must be sync** |
 | `cache_control` | `str` | Verbatim `Cache-Control` value on every hit |
 
 If both `directory` and `directories` are given, `directories` wins and
-`directory` is silently ignored. If neither is given, the app serves
-nothing and every request 404s — which is a confusing failure mode, so
-double-check the argument name if a freshly mounted static app returns
-nothing but 404s.
+`directory` is silently ignored. If neither is given, the app serves nothing
+and every request 404s, which is a confusing failure mode, so double-check the
+argument name if a freshly mounted static app returns nothing but 404s.
 
 <Aside type="caution" title="Missing directories are created, not rejected">
 
-`_ensure_directory` calls `os.makedirs(directory, exist_ok=True)` when the
-path does not exist. A typo in the path does not raise — it creates an
-empty directory and then 404s every request, which looks like a routing
-problem and is not one.
+`_ensure_directory` calls `os.makedirs(directory, exist_ok=True)` when the path
+does not exist. A typo in the path does not raise. It creates an empty
+directory and then 404s every request, which looks like a routing problem and
+is not one.
 
-If you want a missing asset directory to be a startup failure — and in a
-container build you usually do — assert it yourself:
+If you want a missing asset directory to be a startup failure (and in a
+container build you usually do) assert it yourself:
 
 ```python title="fail loudly instead"
 from pathlib import Path
@@ -141,10 +140,9 @@ GET /static/%2e%2e/secret.txt    -> 404
 ```
 
 The check happens after `resolve()`, so it also covers symlinks that point
-outside the root — a symlinked file inside `public` that targets
-`/etc/passwd` resolves outside the root and is refused. Percent-encoded
-traversal is decoded by the server before sillo sees it, so it is caught
-by the same check.
+outside the root, a symlinked file inside `public` that targets `/etc/passwd`
+resolves outside the root and is refused. Percent-encoded traversal is decoded
+by the server before sillo sees it, so it is caught by the same check.
 
 This is the one piece of security the class implements properly, and it is
 worth knowing that it is the *only* piece. It does not hide dotfiles.
@@ -215,17 +213,17 @@ GET /static/css/style.css   If-None-Match: "48c914..."     -> 200, 15 bytes
 GET /static/css/style.css   If-Modified-Since: <future>    -> 200, 15 bytes
 ```
 
-There is no 304 path in `_handle`. For a small stylesheet this is
-invisible; for a 4 MB image bundle on a mobile connection it means every
-revalidation re-downloads the whole file. If revalidation traffic matters
-to you, put a reverse proxy or CDN in front — they implement the 304
-correctly and will use the `ETag` sillo emits.
+There is no 304 path in `_handle`. For a small stylesheet this is invisible;
+for a 4 MB image bundle on a mobile connection it means every revalidation
+re-downloads the whole file. If revalidation traffic matters to you, put a
+reverse proxy or CDN in front. They implement the 304 correctly and will use
+the `ETag` sillo emits.
 
 </Aside>
 
-Range requests, by contrast, do work — `accept-ranges: bytes` is honest,
-and `Range: bytes=0-3` returns a `206` with four bytes. Video and audio
-seeking behaves correctly.
+Range requests, by contrast, do work. `accept-ranges: bytes` is honest, and
+`Range: bytes=0-3` returns a `206` with four bytes. Video and audio seeking
+behaves correctly.
 
 ##  Methods
 
@@ -251,9 +249,9 @@ async def static_head(request, response):
     return response.text("", status_code=200)
 ```
 
-That is a blunt fix — it does not confirm the file exists — so prefer
-pointing the checker at a real route, or serving assets from a proxy that
-implements `HEAD` properly.
+That is a blunt fix (it does not confirm the file exists) so prefer pointing
+the checker at a real route, or serving assets from a proxy that implements
+`HEAD` properly.
 
 ##  The 404 path
 
@@ -293,9 +291,9 @@ RuntimeWarning: coroutine 'missing_asset' was never awaited
 ```
 
 The request fails with a 500. Write the handler as a plain `def`. If it
-genuinely needs to await something — a lookup, a log write — schedule that
-work instead of awaiting it, or handle the 404 in a middleware where async
-is supported.
+genuinely needs to await something (a lookup, a log write) schedule that work
+instead of awaiting it, or handle the 404 in a middleware where async is
+supported.
 
 </Aside>
 
@@ -325,9 +323,8 @@ exist; use `sillo.core.routing`.
 
 **Do not write `custom_404_handler` as `async def`.** It produces a 500.
 
-**Do not serve your source tree.** The directory is served as-is —
-dotfiles, `.env`, `.git` and all — filtered only by extension if you set
-a filter.
+**Do not serve your source tree.** The directory is served as-is (dotfiles,
+`.env`, `.git` and all) filtered only by extension if you set a filter.
 
 **Do not rely on `HEAD` working.** It returns 405.
 
@@ -342,8 +339,11 @@ you; assert it exists if that matters.
 
 ##  Related
 
-- [Frontend (SPA)](/guides/frontend/) — the SPA fallback `StaticFiles` lacks
-- [Routers & Sub-Apps](/guides/routers-and-subapps/) — how `Group` rewrites the path
-- [Sending Responses](/guides/sending-responses/) — `response.file` and its headers
-- [Caching](/guides/cache/) — application-level caching, a different concern
-- [Security Headers](/guides/security/) — headers worth adding around asset delivery
+- [Frontend (SPA)](/guides/frontend/): the SPA fallback `StaticFiles` lacks
+- [Routers & Sub-Apps](/guides/routers-and-subapps/): how `Group` rewrites the
+  path
+- [Sending Responses](/guides/sending-responses/): `response.file` and its
+  headers
+- [Caching](/guides/cache/): application-level caching, a different concern
+- [Security Headers](/guides/security/): headers worth adding around asset
+  delivery

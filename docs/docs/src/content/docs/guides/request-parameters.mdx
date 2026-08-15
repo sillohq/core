@@ -28,7 +28,11 @@ async def search(
 
 <Aside title="Looking for validation?">
 
-This page covers extraction and the type coercion sillo infers from a default value. For real validation — constraints, proper 422 responses, `Path`/`Form`/`File` parameters, and response models — add a `type=` or a constraint to any marker on this page and see the [Validation](/guides/validation/) section.
+This page covers extraction and the type coercion sillo infers from a default
+value. For real validation (constraints, proper 422 responses,
+`Path`/`Form`/`File` parameters, and response models) add a `type=` or a
+constraint to any marker on this page and see the
+[Validation](/guides/validation/) section.
 
 ```python
 page = Query(1, type=int, ge=1, le=100)   # validated, 422 on bad input
@@ -198,7 +202,8 @@ async def session(request, response, session_id: str = Cookie()):
 
 ##  Using in Nested Dependencies
 
-Parameter extractors work seamlessly in nested dependencies—no need for `Context`:
+Parameter extractors work seamlessly in nested dependencies, no need for
+`Context`:
 
 ###  Query in Dependency
 
@@ -298,9 +303,9 @@ def get_user_data(request = Depend(get_request=True)):
     return {"page": page, "token": authorization}
 ```
 
-A plain `request` parameter is **not** injected into a dependency — only
-handlers get that. Without `Depend(get_request=True)` it is just an
-unfilled argument.
+A plain `request` parameter is **not** injected into a dependency, only
+handlers get that. Without `Depend(get_request=True)` it is just an unfilled
+argument.
 
 **Disadvantages:**
 - Manual type conversion required

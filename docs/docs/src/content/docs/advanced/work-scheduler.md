@@ -268,7 +268,7 @@ def compute_next(self, now: float | None = None) -> None:
 
 Delegates to the trigger's `next_fire()` method. If the job is not active, sets `next_run_time` to `None`.
 
-### 4.4 `run()` — Execute with Middleware
+### 4.4 `run()`: Execute with Middleware
 
 ```python
 async def run(self) -> Any:
@@ -347,7 +347,7 @@ class SchedulerManager:
 
 ### 5.2 Registration API
 
-#### `schedule()` — Direct Registration
+#### `schedule()`: Direct Registration
 
 ```python
 def schedule(self, func, trigger, *, name=None, **kwargs) -> ScheduledJob:
@@ -358,7 +358,7 @@ def schedule(self, func, trigger, *, name=None, **kwargs) -> ScheduledJob:
     return job
 ```
 
-#### `every()` — Interval Decorator
+#### `every()`: Interval Decorator
 
 ```python
 def every(self, seconds, *, name=None) -> Callable:
@@ -367,7 +367,7 @@ def every(self, seconds, *, name=None) -> Callable:
     return decorator
 ```
 
-#### `cron()` — Cron Decorator
+#### `cron()`: Cron Decorator
 
 ```python
 def cron(self, expression, *, name=None) -> Callable:
@@ -404,7 +404,7 @@ def stats(self) -> SchedulerStats:
     return s
 ```
 
-### 5.5 The `_loop()` — Ticker (Every 1 Second)
+### 5.5 The `_loop()`: Ticker (Every 1 Second)
 
 ```python
 async def _loop(self) -> None:
@@ -630,19 +630,19 @@ Limits concurrent executions of the same job. Combined with `coalesce`, this pro
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `CronParser` | `core/sillo/work/scheduler/cron.py` | 24–102 |
-| `IntervalTrigger` | `core/sillo/work/scheduler/triggers.py` | 41–61 |
-| `CronTrigger` | `core/sillo/work/scheduler/triggers.py` | 64–93 |
-| `DateTrigger` | `core/sillo/work/scheduler/triggers.py` | 96–112 |
-| `CompoundTrigger` | `core/sillo/work/scheduler/triggers.py` | 115–149 |
-| `TriggerType` enum | `core/sillo/work/scheduler/triggers.py` | 25–32 |
-| `CompoundLogic` enum | `core/sillo/work/scheduler/triggers.py` | 34–38 |
-| `JobStatus` enum | `core/sillo/work/scheduler/jobs.py` | 24–29 |
-| `ScheduledJob` | `core/sillo/work/scheduler/jobs.py` | 32–149 |
-| `SchedulerStats` | `core/sillo/work/scheduler/manager.py` | 26–47 |
-| `SchedulerManager` | `core/sillo/work/scheduler/manager.py` | 50–230 |
-| `setup_scheduler()` | `core/sillo/work/scheduler/manager.py` | 232–250 |
-| Scheduler middleware | `core/sillo/work/scheduler/middleware.py` | 1–97 |
+| `CronParser` | `core/sillo/work/scheduler/cron.py` | 24-102 |
+| `IntervalTrigger` | `core/sillo/work/scheduler/triggers.py` | 41-61 |
+| `CronTrigger` | `core/sillo/work/scheduler/triggers.py` | 64-93 |
+| `DateTrigger` | `core/sillo/work/scheduler/triggers.py` | 96-112 |
+| `CompoundTrigger` | `core/sillo/work/scheduler/triggers.py` | 115-149 |
+| `TriggerType` enum | `core/sillo/work/scheduler/triggers.py` | 25-32 |
+| `CompoundLogic` enum | `core/sillo/work/scheduler/triggers.py` | 34-38 |
+| `JobStatus` enum | `core/sillo/work/scheduler/jobs.py` | 24-29 |
+| `ScheduledJob` | `core/sillo/work/scheduler/jobs.py` | 32-149 |
+| `SchedulerStats` | `core/sillo/work/scheduler/manager.py` | 26-47 |
+| `SchedulerManager` | `core/sillo/work/scheduler/manager.py` | 50-230 |
+| `setup_scheduler()` | `core/sillo/work/scheduler/manager.py` | 232-250 |
+| Scheduler middleware | `core/sillo/work/scheduler/middleware.py` | 1-97 |
 
 ---
 
@@ -652,11 +652,11 @@ Limits concurrent executions of the same job. Combined with `coalesce`, this pro
 
 | Position | Field | Range | Special |
 |----------|-------|-------|---------|
-| 1 | Minute | 0–59 | `*`, `*/N`, `N-M`, `N-M/S` |
-| 2 | Hour | 0–23 | `*`, `*/N`, `N-M`, `N-M/S` |
-| 3 | Day of Month | 1–31 | `*`, `L`, `NW` |
-| 4 | Month | 1–12 | `*`, `N-M` |
-| 5 | Day of Week | 0–6 (Sun=0) | `*`, `N#M` |
+| 1 | Minute | 0-59 | `*`, `*/N`, `N-M`, `N-M/S` |
+| 2 | Hour | 0-23 | `*`, `*/N`, `N-M`, `N-M/S` |
+| 3 | Day of Month | 1-31 | `*`, `L`, `NW` |
+| 4 | Month | 1-12 | `*`, `N-M` |
+| 5 | Day of Week | 0 to 6 (Sun=0) | `*`, `N#M` |
 
 ### 11.2 Common Expressions
 
@@ -709,10 +709,10 @@ Fallback: time.time() + 366 * 86400
 ```
 
 **Performance characteristics:**
-- Best case: O(1) — next minute matches
-- Average case: O(60) — within the same hour
-- Worst case: O(527,040) — scanning a full year (fallback)
-- Memory: O(1) — only stores 5 sets of valid values
+- Best case: O(1): next minute matches
+- Average case: O(60): within the same hour
+- Worst case: O(527,040): scanning a full year (fallback)
+- Memory: O(1): only stores 5 sets of valid values
 
 ---
 
@@ -740,7 +740,7 @@ trigger = CronTrigger("0 9 * * *", timezone="America/New_York")
 trigger = DateTrigger(at=time.time() + 300)
 ```
 
-### 12.4 Compound OR — Any Trigger Fires
+### 12.4 Compound OR: Any Trigger Fires
 
 ```python
 # Fire at the top of every hour OR every 15 minutes
@@ -754,7 +754,7 @@ trigger = CompoundTrigger(
 # Result: fires at whichever comes first
 ```
 
-### 12.5 Compound AND — All Triggers Must Align
+### 12.5 Compound AND: All Triggers Must Align
 
 ```python
 # Fire only when it's both the top of the hour AND a weekday
@@ -885,13 +885,13 @@ sequenceDiagram
 
 The `_loop()` method runs every 1 second and performs:
 
-1. **Iteration** — Walk all registered jobs
-2. **Filter** — Skip non-ACTIVE jobs
-3. **Time check** — Is `next_run_time <= now`?
-4. **Concurrency guard** — Is `current_instances >= max_instances`?
-5. **Coalesce guard** — Is `coalesce` and `current_instances > 0`?
-6. **Schedule next** — `compute_next(now)` to advance the trigger
-7. **Dispatch** — `asyncio.create_task(_execute(job))`
+1. **Iteration**: Walk all registered jobs
+2. **Filter**: Skip non-ACTIVE jobs
+3. **Time check**: Is `next_run_time <= now`?
+4. **Concurrency guard**: Is `current_instances >= max_instances`?
+5. **Coalesce guard**: Is `coalesce` and `current_instances > 0`?
+6. **Schedule next**: `compute_next(now)` to advance the trigger
+7. **Dispatch**: `asyncio.create_task(_execute(job))`
 
 ```python
 async def _loop(self) -> None:
@@ -973,7 +973,7 @@ async def some_middleware(
     return wrapper
 ```
 
-### 15.2 `timeout_middleware` — Hard Deadline
+### 15.2 `timeout_middleware`: Hard Deadline
 
 ```python
 async def timeout_middleware(handler, job, *, seconds=30.0):
@@ -984,7 +984,7 @@ async def timeout_middleware(handler, job, *, seconds=30.0):
 
 Wraps the handler in `asyncio.wait_for()`. If the handler exceeds `seconds`, it raises `asyncio.TimeoutError`.
 
-### 15.3 `rate_limit_middleware` — Token Bucket
+### 15.3 `rate_limit_middleware`: Token Bucket
 
 ```python
 async def rate_limit_middleware(handler, job, *, max_per_second=10):
@@ -1015,7 +1015,7 @@ async def rate_limit_middleware(handler, job, *, max_per_second=10):
 - If tokens < 1, sleep until a token is available
 - Shared across all instances of the same job (closure state)
 
-### 15.4 `retry_middleware` — Exponential Backoff
+### 15.4 `retry_middleware`: Exponential Backoff
 
 ```python
 async def retry_middleware(handler, job, *, max_attempts=3, base_delay=1.0):

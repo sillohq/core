@@ -8,7 +8,7 @@ description: "HTTPConnection, Request, body parsing, form data, file uploads"
 > **Last updated**: 2026-08-11
 
 This document covers the complete lifecycle of an incoming HTTP request in the
-Sillo framework — from the raw ASGI scope dictionary through to fully parsed
+Sillo framework: from the raw ASGI scope dictionary through to fully parsed
 form data, uploaded files, and authenticated user context.
 
 ---
@@ -164,7 +164,7 @@ content-type detection, session/user access, and all boolean detectors.
 
 ---
 
-## 3. HTTPConnection — The Base Layer
+## 3. HTTPConnection: The Base Layer
 
 **Source**: `core/sillo/core/http/request.py`, line 121
 
@@ -239,7 +239,7 @@ def url(self) -> URL:
 #### 3.3.3 `headers` → `Headers`
 
 **Line 317**. Constructs `Headers(scope=self.scope)`, which reads
-`scope["headers"]` — a list of `(bytes, bytes)` tuples. The `Headers` class
+`scope["headers"]`, a list of `(bytes, bytes)` tuples. The `Headers` class
 provides case-insensitive string-based access.
 
 #### 3.3.4 `query_params` → `QueryParams`
@@ -250,7 +250,7 @@ using `urllib.parse.parse_qsl`.
 
 #### 3.3.5 `path_params` → `dict`
 
-**Line 372**. Returns `self.scope.get("route_params", {})`. Not cached — the
+**Line 372**. Returns `self.scope.get("route_params", {})`. Not cached. The
 router may populate `route_params` after construction.
 
 #### 3.3.6 `cookies` → `dict[str, str]`
@@ -273,8 +273,8 @@ from `scope["global_state"]`. Uses `setdefault` to ensure a `"state"` dict exist
 
 | Property | Line | Description |
 |----------|------|-------------|
-| `app` | 230 | Returns `self.scope["app"]` — the innermost ASGI app. |
-| `base_app` | 248 | Returns `self.scope["base_app"]` — the root `SilloApp`. |
+| `app` | 230 | Returns `self.scope["app"]`: the innermost ASGI app. |
+| `base_app` | 248 | Returns `self.scope["base_app"]`: the root `SilloApp`. |
 | `path` | 337 | Returns `self.url.path`. |
 | `origin` | 465 | Returns `self.headers.get("Origin")`. |
 | `user_agent` | 483 | Returns `self.headers.get("user-agent", "")`. |
@@ -291,7 +291,7 @@ uri = request.build_absolute_uri("profile", {"tab": "settings"})
 
 ---
 
-## 4. Request — Full HTTP Request Object
+## 4. Request: Full HTTP Request Object
 
 **Source**: `core/sillo/core/http/request.py`, line 583
 
@@ -321,7 +321,7 @@ Key defaults:
 
 ### 4.2 `method` Property
 
-**Line 694**. Returns `self.scope["method"]` — always uppercase per HTTP/1.1.
+**Line 694**. Returns `self.scope["method"]`. Always uppercase per HTTP/1.1.
 
 ### 4.3 `content_type` Property
 
@@ -597,7 +597,7 @@ sequenceDiagram
 | Flag | Default | Purpose |
 |------|---------|---------|
 | `_stream_consumed` | `False` | Set to `True` after the last `http.request` message with `more_body=False`. Prevents double-reading. |
-| `_is_disconnected` | `False` | Set to `True` when `http.disconnect` is received. Sticky — once set, never unset. |
+| `_is_disconnected` | `False` | Set to `True` when `http.disconnect` is received. Sticky: once set, never unset. |
 | `_body` (attribute) | absent | Cached full body bytes. Presence indicates body was already read. |
 
 ### Stream Guarantees
@@ -953,7 +953,7 @@ delegation.
 
 ### 10.4 Async I/O Methods
 
-All four methods follow the same pattern — synchronous for in-memory,
+All four methods follow the same pattern, synchronous for in-memory,
 threadpool-delegated for disk-backed:
 
 | Method | Line | Description |
@@ -1050,10 +1050,10 @@ per key with `getlist(key)` and `multi_items()`. `MultiDict` adds mutations:
 
 **Source**: `core/sillo/objects/routing.py`, line 13
 
-An immutable URL wrapper with lazy-parsed components (`scheme`, `netloc`, `path`,
-`query`, `fragment`, `hostname`, `port`, `username`, `password`). Supports
-`replace()`, `include_query_params()`, `replace_query_params()`,
-`remove_query_params()` — all returning new instances.
+An immutable URL wrapper with lazy-parsed components (`scheme`, `netloc`,
+`path`, `query`, `fragment`, `hostname`, `port`, `username`, `password`).
+Supports `replace()`, `include_query_params()`, `replace_query_params()`,
+`remove_query_params()`, all returning new instances.
 
 ### 11.7 Address
 
@@ -1105,14 +1105,15 @@ def some_property(self) -> SomeType:
 `None` or empty, so a `None` check would re-trigger computation. `hasattr`
 is unambiguous.
 
-**Note**: `path_params` is **not** cached — it's a direct `scope.get()` call
+**Note**: `path_params` is **not** cached, it's a direct `scope.get()` call
 because the router may populate `route_params` after the connection is created.
 
 ---
 
 ## 13. Boolean Detectors
 
-**Source**: `core/sillo/core/http/request.py`, lines 1190–1343 and 1377–1456
+**Source**: `core/sillo/core/http/request.py`, lines 1190 to 1343 and 1377 to
+1456
 
 ### Content-Type Detectors
 
@@ -1410,7 +1411,7 @@ async def content_negotiation(request: Request):
 ### 17.4 Cookie Parsing
 
 - `cookie_parser` is called once per request (cached in `_cookies`).
-- Uses `str.split(";")` and `str.split("=", 1)` — no regex overhead.
+- Uses `str.split(";")` and `str.split("=", 1)`: no regex overhead.
 
 ### 17.5 Disconnection Check
 
@@ -1551,9 +1552,9 @@ except ModuleNotFoundError:
     parse_options_header = None
 ```
 
-If the library is missing, assertions fire at parse time — not at import time.
-This allows the framework to be imported without the dependency as long as
-form parsing is not used.
+If the library is missing, assertions fire at parse time, not at import time.
+This allows the framework to be imported without the dependency as long as form
+parsing is not used.
 
 ## Appendix C: ASGI Message Types
 
@@ -1582,13 +1583,13 @@ Sent by the ASGI server when the client closes the connection. Triggers
 
 ## Appendix D: Thread Safety Notes
 
-- `Request` objects are designed for single-request lifecycle — one `Request`
+- `Request` objects are designed for single-request lifecycle: one `Request`
   per ASGI connection, processed by a single coroutine.
 - The lazy-caching pattern (`hasattr` + `setattr`) is safe because Python's
   GIL ensures atomic attribute operations.
 - `SpooledTemporaryFile` is not thread-safe, but the async I/O methods in
   `UploadedFile` ensure sequential access via the event loop.
-- `FormData` and `MultiDict` are not thread-safe by design — they are
+- `FormData` and `MultiDict` are not thread-safe by design: they are
   request-scoped and accessed from a single async context.
 
 ---

@@ -1,6 +1,6 @@
 ---
 title: Relationships
-description: "Foreign keys, one-to-one and many-to-many on a Sillo model — declaring them, related names, delete behaviour, through tables, and how to traverse them without an N+1."
+description: "Foreign keys, one-to-one and many-to-many on a Sillo model: declaring them, related names, delete behaviour, through tables, and how to traverse them without an N+1."
 head:
   - tag: meta
     attrs:
@@ -29,7 +29,7 @@ class Post(Model):
     tags = fields.ManyToManyField("models.Tag", related_name="posts")
 ```
 
-The target is `"<app>.<Model>"` — `models` is the default app label, the same
+The target is `"<app>.<Model>"`. `models` is the default app label, the same
 one [migrations](/orm/migrations/#the-app-label) use. A string rather than the
 class lets two models reference each other without an import cycle.
 
@@ -79,8 +79,8 @@ posts = await Post.all().select_related("author")
 ```
 
 Touching an unfetched relation raises rather than silently querying. That is
-deliberate — an implicit query inside a loop is how an N+1 hides. See
-[Eager loading](/orm/eager-loading/).
+deliberate, an implicit query inside a loop is how an N+1 hides. See [Eager
+loading](/orm/eager-loading/).
 
 ### The reverse side
 
@@ -100,7 +100,7 @@ recent = await author.posts.filter(status="published").order_by("-created_at").l
 ```
 
 Omit `related_name` and it defaults to `<model>s` lowercased. Pass
-`related_name=False` to create no reverse accessor at all — useful when a model
+`related_name=False` to create no reverse accessor at all, useful when a model
 is referenced from many places and none of the reverse sides are meaningful.
 
 Two foreign keys to the same model **need** distinct related names, or the
@@ -132,14 +132,14 @@ author = fields.ForeignKeyField("models.Author", on_delete=fields.RESTRICT)
 
 :::caution[The default is CASCADE]
 Deleting an author deletes their posts, and the posts' comments, and so on
-through the graph — in one statement, with no confirmation and no way back.
+through the graph, in one statement, with no confirmation and no way back.
 
 That is right for genuinely owned data (an order's line items) and wrong for
 anything with independent value. Pick deliberately: `RESTRICT` makes the
 deletion fail loudly, which is usually what you want for a record someone might
 delete by accident.
 
-Better still, do not delete — [soft delete](/orm/mixins/#softdeletesmixin), and
+Better still, do not delete, [soft delete](/orm/mixins/#softdeletesmixin), and
 the question does not arise.
 :::
 
@@ -154,8 +154,8 @@ Declares the relationship to the ORM without creating a foreign key constraint
 in the schema. For a legacy database, a cross-database reference, or a
 partitioned table where the constraint is not supportable.
 
-You lose referential integrity — nothing stops a row pointing at an id that
-does not exist. Only reach for it when the constraint genuinely cannot exist.
+You lose referential integrity. Nothing stops a row pointing at an id that does
+not exist. Only reach for it when the constraint genuinely cannot exist.
 
 ### Nullable foreign keys
 
@@ -183,8 +183,8 @@ await user.fetch_related("profile")
 user.profile.bio
 ```
 
-Use it to split a table that has two distinct lifetimes — a rarely-read profile
-beside a hot user row — or to attach optional data without widening the main
+Use it to split a table that has two distinct lifetimes (a rarely-read profile
+beside a hot user row) or to attach optional data without widening the main
 table. If every user always has one and you always load both, they are one
 table.
 
@@ -215,7 +215,7 @@ for tag in post.tags:
 await post.tags.add(python, async_tag, tutorial)
 ```
 
-Both sides work the same way — `tag.posts.add(post)` is the same row.
+Both sides work the same way. `tag.posts.add(post)` is the same row.
 
 ### Filtering across it
 
@@ -231,8 +231,7 @@ what collapses them.
 ### A custom through table
 
 The generated join table holds only the two keys. When the relationship itself
-has attributes — when it was added, by whom, in what order — model it
-explicitly:
+has attributes (when it was added, by whom, in what order) model it explicitly:
 
 ```python
 class PostTag(Model):
@@ -249,9 +248,9 @@ Now you create rows in `PostTag` directly rather than calling `.add()`. That is
 the trade: you get the extra columns, and you lose the convenience methods.
 
 `ManyToManyField(through="post_tag")` points the field at an existing table by
-name — for adopting a schema you already have. For a *new* relationship with
-attributes, two explicit foreign keys as above is clearer than a
-half-managed one.
+name, for adopting a schema you already have. For a *new* relationship with
+attributes, two explicit foreign keys as above is clearer than a half-managed
+one.
 
 ## Self-references
 
@@ -263,9 +262,9 @@ class Category(Model):
     )
 ```
 
-Traversing a tree is one query per level. For anything deeper than two or three,
-a recursive CTE in [raw SQL](/orm/raw-sql/) is the right tool — or store a
-materialised path (`"1/4/9/"`) and query it with a prefix match.
+Traversing a tree is one query per level. For anything deeper than two or
+three, a recursive CTE in [raw SQL](/orm/raw-sql/) is the right tool, or store
+a materialised path (`"1/4/9/"`) and query it with a prefix match.
 
 ## Spanning relations in queries
 
@@ -278,7 +277,7 @@ await Comment.filter(post__author__is_staff=True)
 ```
 
 Each level is a join. They are cheap on indexed foreign keys and not cheap
-across a many-to-many — check with [`explain()`](/orm/queries/#explain) when a
+across a many-to-many. Check with [`explain()`](/orm/queries/#explain) when a
 query gets deep.
 
 ## Ordering by a related field
@@ -289,7 +288,7 @@ await Post.all().order_by("author__name")
 
 ## See also
 
-- [Eager loading](/orm/eager-loading/) — `select_related`, `prefetch_related`
+- [Eager loading](/orm/eager-loading/): `select_related`, `prefetch_related`
   and the N+1
-- [Lookups](/orm/lookups/) — everything you can put after `__`
-- [Field reference](/orm/field-reference/) — the non-relational types
+- [Lookups](/orm/lookups/): everything you can put after `__`
+- [Field reference](/orm/field-reference/): the non-relational types

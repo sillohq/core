@@ -1,6 +1,6 @@
 ---
 title: Models
-description: "BaseModel in Pydantic v2 — declaring, constructing, validating, mutating and comparing models, plus what changed from v1 and why it matters."
+description: "BaseModel in Pydantic v2: declaring, constructing, validating, mutating and comparing models, plus what changed from v1 and why it matters."
 head:
   - tag: meta
     attrs:
@@ -33,7 +33,7 @@ post = PostCreate(title="Hello", body="…", published=True)
 ```
 
 Validation happens in the constructor. There is no separate `.validate()` call
-and no way to hold an invalid model — if the object exists, it passed.
+and no way to hold an invalid model. If the object exists, it passed.
 
 ```python
 PostCreate(title="Hello")
@@ -60,7 +60,7 @@ This is what Sillo calls for a [request body](/pydantic/request-models/).
 post = PostCreate.model_construct(title="Hello", body="…")
 ```
 
-Builds the object without validating. Fast, and unsafe — it will happily hold
+Builds the object without validating. Fast, and unsafe. It will happily hold
 data that does not match its own annotations.
 
 Only for data you have *already* validated, in a hot path where the second pass
@@ -75,8 +75,8 @@ post.model_fields_set        # which fields were explicitly provided
 ```
 
 `model_fields_set` is the one worth remembering. It distinguishes "the client
-sent `published=False`" from "the client did not mention `published`" — which
-is exactly what a PATCH endpoint needs:
+sent `published=False`" from "the client did not mention `published`", which is
+exactly what a PATCH endpoint needs:
 
 ```python
 await post.update_from_dict(payload.model_dump(exclude_unset=True))
@@ -107,7 +107,7 @@ class PostCreate(BaseModel):
 post.title = 123      # now raises
 ```
 
-Or make them immutable, which is usually better for a request model — nothing
+Or make them immutable, which is usually better for a request model. Nothing
 downstream should be editing what the client sent:
 
 ```python
@@ -138,7 +138,7 @@ PostCreate(title="a", body="b") == PostCreate(title="a", body="b")   # True
 ```
 
 Field-by-field equality, and models of different classes are never equal even
-with identical fields. Useful in tests — assert on a whole model rather than
+with identical fields. Useful in tests, assert on a whole model rather than
 field by field.
 
 ## Inheritance
@@ -187,7 +187,7 @@ Page[PostOut](items=[...], total=130, page=1)
 ```
 
 Each parameterisation validates its own item type, and each gets its own
-OpenAPI schema — `PagePostOut`, `PageUserOut` — so a paginated envelope is
+OpenAPI schema (`PagePostOut`, `PageUserOut`) so a paginated envelope is
 declared once and documented correctly everywhere.
 
 ## Field order
@@ -246,4 +246,4 @@ PostCreate.model_json_schema()        # JSON Schema
 ```
 
 `model_json_schema()` is what [OpenAPI generation](/pydantic/openapi/) is built
-on — the schema in your API documentation is this dict, embedded.
+on, the schema in your API documentation is this dict, embedded.

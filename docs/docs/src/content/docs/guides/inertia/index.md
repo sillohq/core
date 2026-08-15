@@ -1,6 +1,6 @@
 ---
 title: Inertia
-description: Build a React or Vue front end against Sillo routes with sillo-inertia — server-side routing, no API layer, and no client-side router to keep in sync.
+description: "Build a React or Vue front end against Sillo routes with sillo-inertia: server-side routing, no API layer, and no client-side router to keep in sync."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: A React or Vue front end with no API between it and the server — the page's props are delivered with the page rather than fetched after it.
+      content: A React or Vue front end with no API between it and the server. The page's props are delivered with the page rather than fetched after it.
 ---
 
 #  Inertia
@@ -52,7 +52,7 @@ your application already is.
 | SPA | Client | `fetch` from an API | Components, a router, an API |
 
 Choose Templating when the page is mostly content. Choose a SPA when something
-other than your own front end consumes the API — a mobile client, a partner
+other than your own front end consumes the API, a mobile client, a partner
 integration. Choose Inertia when you want components and there is exactly one
 consumer.
 
@@ -61,16 +61,16 @@ consumer.
 Your handler is the same either way. What the response *is* gets decided by
 the request:
 
-- **First visit** — a browser navigation. The response is the full HTML shell
-  with the page object embedded, so the document has a title and content
-  before any JavaScript runs.
-- **Every navigation after** — an XHR carrying `X-Inertia`. The response is the
+- **First visit.** A browser navigation. The response is the full HTML shell
+  with the page object embedded, so the document has a title and content before
+  any JavaScript runs.
+- **Every navigation after**: an XHR carrying `X-Inertia`. The response is the
   page object as JSON, and the client swaps it into the page already open.
 
-This is why Inertia pages are excluded from the OpenAPI document. A
-`GET /login` that returns an HTML document to a browser and a JSON page object
-to Inertia is not an API endpoint, and describing it as one — "Successful
-Response", `application/json` — is worse than not describing it at all.
+This is why Inertia pages are excluded from the OpenAPI document. A `GET
+/login` that returns an HTML document to a browser and a JSON page object to
+Inertia is not an API endpoint, and describing it as one ("Successful
+Response", `application/json`) is worse than not describing it at all.
 
 ##  Installing
 
@@ -87,20 +87,22 @@ to a running page.
 
 ##  This section
 
-- **[Creating a Project](/guides/inertia/start/)** — the starter, the two
+- **[Creating a Project](/guides/inertia/start/)**: the starter, the two
   development processes, and the task reference
-- **[Project Structure](/guides/inertia/structure/)** — `views/`, `js/`,
+- **[Project Structure](/guides/inertia/structure/)**: `views/`, `js/`,
   `root.html`, and the paths that have to agree
-- **[Pages and Props](/guides/inertia/pages/)** — `render`, shared props,
+- **[Pages and Props](/guides/inertia/pages/)**: `render`, shared props,
   redirects, and handlers that only gather data
-- **[Forms and Validation](/guides/inertia/forms/)** — returning errors across
+- **[Forms and Validation](/guides/inertia/forms/)**: returning errors across
   the redirect a failed submission makes
-- **[Assets and Deployment](/guides/inertia/assets/)** — Vite in development
-  and production, asset versions, and shipping it
+- **[Assets and Deployment](/guides/inertia/assets/)**: Vite in development and
+  production, asset versions, and shipping it
 
 ##  Related
 
-- [Frontend (SPA)](/guides/frontend/) — serving a built SPA with client-side routing
-- [Templating](/guides/templating/) — server-rendered Jinja pages
-- [Static Files](/guides/static-files/) — serving assets
-- [`sillo-inertia` on GitHub](https://github.com/sillohq/inertia) — full reference
+- [Frontend (SPA)](/guides/frontend/): serving a built SPA with client-side
+  routing
+- [Templating](/guides/templating/): server-rendered Jinja pages
+- [Static Files](/guides/static-files/): serving assets
+- [`sillo-inertia` on GitHub](https://github.com/sillohq/inertia): full
+  reference

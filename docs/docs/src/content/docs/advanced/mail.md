@@ -129,12 +129,12 @@ A `@dataclass` with 16 fields, all with defaults read from environment variables
 | `use_ssl` | `bool` | `SMTP_USE_SSL` | `False` |
 | `default_from` | `str \| None` | `MAIL_DEFAULT_FROM` | `None` |
 | `default_reply_to` | `str \| None` | `MAIL_DEFAULT_REPLY_TO` | `None` |
-| `default_cc` | `list[str] \| None` | — | `None` |
-| `default_bcc` | `list[str] \| None` | — | `None` |
+| `default_cc` | `list[str] \| None` |  | `None` |
+| `default_bcc` | `list[str] \| None` |  | `None` |
 | `smtp_timeout` | `float` | `SMTP_TIMEOUT` | `30.0` |
 | `max_connections` | `int` | `SMTP_MAX_CONNECTIONS` | `10` |
 | `template_directory` | `str \| None` | `MAIL_TEMPLATE_DIR` | `None` |
-| `template_auto_escape` | `bool` | — | `True` |
+| `template_auto_escape` | `bool` |  | `True` |
 | `debug` | `bool` | `MAIL_DEBUG` | `False` |
 | `suppress_send` | `bool` | `MAIL_SUPPRESS_SEND` | `False` |
 
@@ -392,8 +392,8 @@ def _setup_templates(self):
 ```
 
 Templates are loaded from `config.template_directory`.  Two files per email:
-- `{template_name}.html` — HTML body
-- `{template_name}.txt` — Plain text body (optional)
+- `{template_name}.html`: HTML body
+- `{template_name}.txt`: Plain text body (optional)
 
 ### SMTP Lifecycle
 
@@ -488,7 +488,7 @@ Health check via SMTP `NOOP` command.  Reconnects automatically on failure.
 
 ### Sending Methods
 
-#### `send_email(...)` — Convenience Method
+#### `send_email(...)`: Convenience Method
 
 ```python
 # core/sillo/mail/client.py, line 110
@@ -513,7 +513,7 @@ Builds an `EmailMessage` from the parameters, adds attachments (supporting both
 `EmailAttachment` objects and plain dicts with `**att` unpacking), and delegates
 to `send_message()`.
 
-#### `send_message(message)` — Core Send Logic
+#### `send_message(message)`: Core Send Logic
 
 ```python
 # core/sillo/mail/client.py, line 166
@@ -531,7 +531,7 @@ async def send_message(self, message: EmailMessage) -> EmailResult:
 7. **Return** `EmailResult(success=True)` on success.
 8. **On exception**: Return `EmailResult(success=False, error=str(e))`.
 
-#### `_render_template(message)` — Template Rendering
+#### `_render_template(message)`: Template Rendering
 
 ```python
 # core/sillo/mail/client.py, line 221
@@ -552,7 +552,7 @@ def _render_template(self, message: EmailMessage):
         pass  # Plain text is optional
 ```
 
-### send_template_email — Wrapper
+### send_template_email: Wrapper
 
 ```python
 # core/sillo/mail/client.py, line 147
@@ -601,8 +601,8 @@ def setup_mail(app, config: MailConfig | None = None) -> MailClient:
 
 | Event | Action |
 |-------|--------|
-| `app.on_startup` | Calls `client.start()` — establishes SMTP connection |
-| `app.on_shutdown` | Calls `client.stop()` — closes SMTP connection |
+| `app.on_startup` | Calls `client.start()`: establishes SMTP connection |
+| `app.on_shutdown` | Calls `client.stop()`: closes SMTP connection |
 
 ### `get_mail_client(request)`
 

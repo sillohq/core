@@ -16,11 +16,10 @@ import { Aside } from '@astrojs/starlight/components';
 
 #  Scheduler (`sillo.work.scheduler`)
 
-The scheduler runs callables on time-based triggers inside your
-application process.  Unlike the queue system which dispatches work to
-separate worker processes, the scheduler runs jobs in-process using
-asyncio — ideal for periodic maintenance, cache warming, data
-sync, and health checks.
+The scheduler runs callables on time-based triggers inside your application
+process. Unlike the queue system which dispatches work to separate worker
+processes, the scheduler runs jobs in-process using asyncio: ideal for periodic
+maintenance, cache warming, data sync, and health checks.
 
 ---
 
@@ -28,13 +27,13 @@ sync, and health checks.
 
 The scheduler has three layers:
 
-1. **Triggers** — pure functions that answer "when should this fire next?"
-2. **ScheduledJob** — binds a callable to a trigger with execution tracking
-3. **SchedulerManager** — owns all jobs, runs the ticker loop, integrates
-   with the app lifecycle via `app.state["scheduler"]`
+1. **Triggers**: pure functions that answer "when should this fire next?"
+2. **ScheduledJob**: binds a callable to a trigger with execution tracking
+3. **SchedulerManager.** Owns all jobs, runs the ticker loop, integrates with
+   the app lifecycle via `app.state["scheduler"]`
 
-The ticker never blocks — `create_task` spawns execution and returns
-immediately.  Resolution is 1 second.
+The ticker never blocks. `create_task` spawns execution and returns
+immediately. Resolution is 1 second.
 
 ---
 
@@ -62,9 +61,8 @@ Four triggers ship in the box.
 
 ###  IntervalTrigger
 
-Fires every `seconds` with optional `jitter` (random offset).  Jitter
-spreads load when many jobs share the same interval — preventing
-thundering herds.
+Fires every `seconds` with optional `jitter` (random offset). Jitter spreads
+load when many jobs share the same interval, preventing thundering herds.
 
 ```python
 from sillo.work.scheduler import IntervalTrigger
@@ -117,9 +115,9 @@ CronTrigger("0 8-18/2 * * 1-5")
 
 ###  DateTrigger
 
-One-shot — fires once at the given epoch timestamp, then never again.
-`next_fire()` returns `None` after the first fire, which causes the job
-to transition to `JobStatus.COMPLETED`.
+One-shot, fires once at the given epoch timestamp, then never again.
+`next_fire()` returns `None` after the first fire, which causes the job to
+transition to `JobStatus.COMPLETED`.
 
 ```python
 from sillo.work.scheduler import DateTrigger
@@ -138,11 +136,11 @@ DateTrigger(at=target)
 
 Combine multiple triggers with AND or OR logic:
 
-- **OR** — fire whenever ANY child trigger is due.  Equivalent to a union
-  of schedules.  Example: "weekday mornings OR weekend afternoons."
-- **AND** — fire only when ALL child triggers are simultaneously due.
-  Rarely used but useful for precise alignment (e.g. "the 1st of the
-  month AND a weekday").
+- **OR**: fire whenever ANY child trigger is due. Equivalent to a union of
+  schedules. Example: "weekday mornings OR weekend afternoons."
+- **AND**: fire only when ALL child triggers are simultaneously due. Rarely
+  used but useful for precise alignment (e.g. "the 1st of the month AND a
+  weekday").
 
 ```python
 from sillo.work.scheduler import CompoundTrigger, CompoundLogic, CronTrigger
@@ -376,8 +374,8 @@ while self._running:
 ###  Resolution is one second, and firing is "at or after"
 
 A job due at 09:00:00.100 fires on the next tick, up to a second late. An
-interval of less than a second is not achievable — `every(0.1)` fires
-once per second, not ten times.
+interval of less than a second is not achievable. `every(0.1)` fires once per
+second, not ten times.
 
 The tick also drifts. `asyncio.sleep(1)` plus the loop body is slightly
 more than a second, so over a day the ticker accumulates lag. For
@@ -390,8 +388,8 @@ the expression is absolute. It matters only if you were counting ticks.
 `_jobs` is a dictionary on the manager instance. Nothing is persisted.
 Two consequences:
 
-Restarting the process reloads the schedule from your source code, which
-is usually what you want — your code is the source of truth.
+Restarting the process reloads the schedule from your source code, which is
+usually what you want. Your code is the source of truth.
 
 A job due while the process was down is **not caught up**. Missing a
 nightly run because a deploy took four minutes at 02:00 is silent. If
@@ -406,10 +404,9 @@ async def catch_up_billing():
         await run_billing()
 ```
 
-Jobs added at runtime through `schedule()` are also lost on restart —
-they exist only in that process's memory. Anything a user can create from
-a UI needs its definition in the database and a startup hook that
-re-registers it.
+Jobs added at runtime through `schedule()` are also lost on restart. They exist
+only in that process's memory. Anything a user can create from a UI needs its
+definition in the database and a startup hook that re-registers it.
 
 <Aside type="danger" title="Every process runs its own scheduler">
 
@@ -453,8 +450,8 @@ rather than relying on "we only run one worker" staying true.
 Two settings decide what happens when a run is still going at the next
 scheduled time.
 
-`max_instances` caps concurrent runs of the same job. At the cap, the
-tick skips — it does not queue.
+`max_instances` caps concurrent runs of the same job. At the cap, the tick
+skips. It does not queue.
 
 `coalesce=True` skips the run entirely if any instance is still going,
 collapsing a backlog into one run rather than a burst.
@@ -469,10 +466,9 @@ job = scheduler.schedule(
 )
 ```
 
-Without these, a sync job that starts taking ninety seconds on a
-sixty-second interval accumulates overlapping runs until something breaks
-— usually the database connection pool. Set them on anything whose
-runtime is variable.
+Without these, a sync job that starts taking ninety seconds on a sixty-second
+interval accumulates overlapping runs until something breaks, usually the
+database connection pool. Set them on anything whose runtime is variable.
 
 ###  `every()` and `cron()` return a `ScheduledJob`
 
@@ -487,10 +483,9 @@ poll_upstream              # a ScheduledJob, not the function
 await poll_upstream()      # TypeError: 'ScheduledJob' object is not callable
 ```
 
-That is deliberate — it gives you `poll_upstream.id` for pausing and
-removing — but it means the decorated name can no longer be called
-directly, including from your tests. Keep the callable separate when you
-need both:
+That is deliberate (it gives you `poll_upstream.id` for pausing and removing)
+but it means the decorated name can no longer be called directly, including
+from your tests. Keep the callable separate when you need both:
 
 ```python title="testable scheduled work"
 async def poll_upstream():
@@ -516,10 +511,10 @@ async def poll_upstream(): ...
 async def rotate_logs(): ...
 ```
 
-For anything expressed naturally in wall-clock terms — "9am on
-weekdays", "midnight on the first" — use `cron()`. An interval of 86400
-seconds drifts relative to the clock, because it counts from the last
-run rather than from midnight.
+For anything expressed naturally in wall-clock terms ("9am on weekdays",
+"midnight on the first") use `cron()`. An interval of 86400 seconds drifts
+relative to the clock, because it counts from the last run rather than from
+midnight.
 
 ###  Exceptions do not stop the schedule
 

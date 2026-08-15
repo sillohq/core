@@ -96,7 +96,7 @@ app.use(
 )
 ```
 
-`manager` takes an instance, not the class — the backend needs the same
+`manager` takes an instance, not the class. The backend needs the same
 configuration to know where to write.
 
 `config` and individual settings cannot be combined. Passing both raises,
@@ -512,17 +512,16 @@ session is 3 KB of upload on every image request too.
 identifier in the cookie. Size is bounded by your storage, invalidation
 is immediate, and every request costs a lookup.
 
-The decision is usually made for you by one requirement: if you need to
-revoke a session immediately — a logout that must take effect everywhere,
-or an admin disabling an account — you need server-side storage. A signed
-cookie remains valid until it expires no matter what you do.
+The decision is usually made for you by one requirement: if you need to revoke
+a session immediately (a logout that must take effect everywhere, or an admin
+disabling an account) you need server-side storage. A signed cookie remains
+valid until it expires no matter what you do.
 
 ##  Session security essentials
 
-**Regenerate the session id on privilege change.** Logging in must issue
-a new id. Without it, an attacker who can set a victim's session cookie
-before login shares the session after it — session fixation, and it is
-still common.
+**Regenerate the session id on privilege change.** Logging in must issue a new
+id. Without it, an attacker who can set a victim's session cookie before login
+shares the session after it, session fixation, and it is still common.
 
 **Set the cookie flags.** `HttpOnly` keeps JavaScript out, which contains
 the damage from an XSS. `Secure` keeps it off plaintext connections.
@@ -558,10 +557,10 @@ manages it, it survives navigation, and revocation is immediate with a
 server-side store. It brings CSRF exposure with it, which is why the two
 guides sit next to each other.
 
-A bearer token suits API clients and mobile apps: nothing is automatic,
-which removes CSRF entirely, and the client controls storage. Revocation
-is the hard part — a stateless token stays valid until it expires unless
-you keep a denylist, which puts the state back.
+A bearer token suits API clients and mobile apps: nothing is automatic, which
+removes CSRF entirely, and the client controls storage. Revocation is the hard
+part. A stateless token stays valid until it expires unless you keep a
+denylist, which puts the state back.
 
 Most applications end up with both: sessions for the browser, tokens for
 the API. That is fine, provided each endpoint is clear about which it
@@ -571,7 +570,7 @@ depends on how the caller authenticated.
 
 ##  Rotating the signing key
 
-A cookie-backed session is only as good as the key that signs it, and a
-leaked key means forgeable sessions. Rotating requires accepting the old
-key for verification while signing with the new one, for at least one
-session lifetime — otherwise every logged-in user is logged out at once.
+A cookie-backed session is only as good as the key that signs it, and a leaked
+key means forgeable sessions. Rotating requires accepting the old key for
+verification while signing with the new one, for at least one session lifetime,
+otherwise every logged-in user is logged out at once.

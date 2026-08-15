@@ -17,13 +17,13 @@ The `Model` class is the foundation of every database-backed entity in Sillo. It
 extends Tortoise ORM's `Model` with three pillars that the rest of the record
 layer depends on:
 
-1. **Automatic timestamps and soft-delete** — `created_at`, `updated_at`,
+1. **Automatic timestamps and soft-delete**: `created_at`, `updated_at`,
    `deleted_at` are declared on the base class and require zero configuration
    from the developer.
-2. **Attribute casting** — inherited from `HasCasts`, every field can be
+2. **Attribute casting**: inherited from `HasCasts`, every field can be
    transparently encoded on write and decoded on read (JSON blobs, encrypted
    strings, datetime parsing, etc.).
-3. **Query scopes** — inherited from `HasScopes`, models expose both local
+3. **Query scopes**: inherited from `HasScopes`, models expose both local
    scopes (chainable queryset filters) and global scopes (applied to every
    query automatically).
 
@@ -108,7 +108,7 @@ class CreatedAtField(_fields.DatetimeField):
 - Wraps Tortoise's `DatetimeField` with `auto_now_add=True`.
 - The database driver sets the value once on INSERT; subsequent UPDATEs leave
   it untouched.
-- The column is **not nullable** and has **no Python-level default** — the
+- The column is **not nullable** and has **no Python-level default**: the
   driver supplies the timestamp.
 
 ### 2.2 UpdatedAtField
@@ -138,7 +138,7 @@ class SoftDeleteField(_fields.DatetimeField):
   soft-deleted.
 - The field is declared on the base `Model` so that `active()` and `deleted()`
   classmethods work universally, but developers who do not need soft-delete can
-  simply ignore it — the column is nullable with a `NULL` default, so existing
+  simply ignore it. The column is nullable with a `NULL` default, so existing
   rows are unaffected.
 
 ### 2.4 Field declaration on the base class
@@ -193,7 +193,7 @@ class PasswordField(_fields.CharField):
   confirmation field) without configuration.
 - `to_db_value` checks for bcrypt prefixes (`$2b$`, `$2a$`, `$2y$`) to avoid
   double-hashing when the value has already been processed.
-- `to_python_value` is a no-op — the hash is returned as-is so that a roundtrip
+- `to_python_value` is a no-op: the hash is returned as-is so that a roundtrip
   through the ORM does not corrupt it.
 - Plaintext passwords are hashed via `sillo.helpers.hashing.hash_password`,
   which uses bcrypt by default.
@@ -229,7 +229,7 @@ class ULIDField(_fields.CharField):
 
 ---
 
-## 4. `__init_subclass__` — Automatic Scope Method Generation
+## 4. `__init_subclass__`: Automatic Scope Method Generation
 
 When a subclass of `Model` is defined, Python calls `__init_subclass__`. The
 override in `Model` does two things:
@@ -259,13 +259,13 @@ def __init_subclass__(cls, **kwargs):
         setattr(cls, public_name, scope_method(public_name))
 ```
 
-**Step 1 — Manager re-assignment:** Tortoise's metaclass attaches a default
+**Step 1. Manager re-assignment:** Tortoise's metaclass attaches a default
 `Manager` to `_meta.manager` during class creation. Sillo replaces it with a
 `RecordManager(cls)` that applies global scopes. This happens in
 `__init_subclass__` rather than in `Meta` because the `Meta` class attribute is
 shared across the MRO and would point at the wrong model for subclasses.
 
-**Step 2 — Scope shortcut generation:** If a model defines `scope_active`, the
+**Step 2, Scope shortcut generation:** If a model defines `scope_active`, the
 loop creates a classmethod `Model.active()` that delegates to
 `Model.all().active()`. This enables the Laravel-style fluent API:
 
@@ -284,12 +284,12 @@ active_vips = await User.active().vip().all()
 ```
 
 The guard `if hasattr(cls, public_name): continue` prevents overwriting
-explicitly defined classmethods — if the developer already defines `active()`,
+explicitly defined classmethods. If the developer already defines `active()`,
 the auto-generated version is skipped.
 
 ---
 
-## 5. `_set_kwargs` — Constructor Hydration
+## 5. `_set_kwargs`: Constructor Hydration
 
 `_set_kwargs` is called by Tortoise's `__init__` to apply keyword arguments to
 the model instance. Sillo's override adds cast awareness:
@@ -343,7 +343,7 @@ double-decode (e.g., JSON string → dict → error).
 
 ---
 
-## 6. `_init_from_db` — Fast Hydration
+## 6. `_init_from_db`: Fast Hydration
 
 When Tortoise fetches rows from the database, it calls `_init_from_db` instead
 of `__init__`. This bypasses validation and `__setattr__` hooks for maximum
@@ -393,20 +393,20 @@ def _init_from_db(cls, **kwargs: Any) -> Self:
 
 **Key design decisions:**
 
-1. **`object.__setattr__` everywhere** — bypasses the custom `__setattr__` that
+1. **`object.__setattr__` everywhere**: bypasses the custom `__setattr__` that
    would invoke `set_{field}_attribute` mutators. During hydration, values come
    straight from the DB and need no transformation.
 
-2. **`_record_loading` flag** — checked by the custom `__setattr__` (see §7) so
+2. **`_record_loading` flag**: checked by the custom `__setattr__` (see §7) so
    that if any code path *does* go through the normal setter during init, it
    still skips mutators.
 
-3. **Three-phase hydration** — native → default → complex. Each phase handles a
+3. **Three-phase hydration**: native → default → complex. Each phase handles a
    different class of Tortoise field with progressively more conversion work.
    The `try/except KeyError` catches partial results from `.only()` or
    `.values()` queries and falls back to a slower per-field loop.
 
-4. **`_partial` flag** — set to `True` when the row did not supply every column.
+4. **`_partial` flag**: set to `True` when the row did not supply every column.
    Tortoise uses this to prevent saving a partial instance back to the database
    (which would NULL out missing columns).
 
@@ -414,7 +414,7 @@ def _init_from_db(cls, **kwargs: Any) -> Self:
 
 ## 7. Custom `__setattr__` / `__getattribute__`
 
-### 7.1 `__setattr__` — Attribute Mutators
+### 7.1 `__setattr__`: Attribute Mutators
 
 ```python
 def __setattr__(self, key, value) -> None:
@@ -425,15 +425,16 @@ def __setattr__(self, key, value) -> None:
     super().__setattr__(key, value)
 ```
 
-- **Private attributes** (starting with `_`) pass through untouched — internal
+- **Private attributes** (starting with `_`) pass through untouched: internal
   bookkeeping like `_saved_in_db` must never trigger mutators.
-- **During loading** (`_record_loading is True`) — mutators are skipped to
-  avoid re-processing DB values.
-- **Mutator lookup** — if the model defines `set_password_attribute(self, value)`,
-  it is called before the value is stored. This is the hook `PasswordField`
-  uses (though it operates at the Tortoise field level instead).
+- **During loading** (`_record_loading is True`): mutators are skipped to avoid
+  re-processing DB values.
+- **Mutator lookup.** If the model defines `set_password_attribute(self,
+  value)`, it is called before the value is stored. This is the hook
+  `PasswordField` uses (though it operates at the Tortoise field level
+  instead).
 
-### 7.2 `__getattribute__` — Cast Decoding and Accessors
+### 7.2 `__getattribute__`: Cast Decoding and Accessors
 
 ```python
 def __getattribute__(self, key: str):
@@ -459,13 +460,13 @@ def __getattribute__(self, key: str):
 
 The read path has three stages:
 
-1. **Private attributes** and **encoding context** — returned as-is to prevent
+1. **Private attributes** and **encoding context**: returned as-is to prevent
    infinite recursion and to allow `_encoded_cast_values` to read raw values.
-2. **Cast decoding** — if the field is in `_casts`, `HasCasts.cast_get` applies
-   the registered decoder (e.g., `json.loads` for `"json"` casts).
-3. **Accessor** — if the model defines `get_{field}_attribute(self, value)`, it
-   is called with the (possibly decoded) value. This runs *after* cast decoding,
-   so accessors receive Python-native types.
+2. **Cast decoding.** If the field is in `_casts`, `HasCasts.cast_get` applies
+   the registered decoder (e.g. `json.loads` for `"json"` casts).
+3. **Accessor.** If the model defines `get_{field}_attribute(self, value)`, it
+   is called with the (possibly decoded) value. This runs *after* cast
+   decoding, so accessors receive Python-native types.
 
 **The `_record_encoding` guard** is critical: during `_encoded_cast_values`,
 the context manager writes *encoded* values back onto the instance (e.g., a
@@ -474,7 +475,7 @@ immediately decode them again, defeating the purpose.
 
 ---
 
-## 8. `_encoded_cast_values` — Save-Time Encoding
+## 8. `_encoded_cast_values`: Save-Time Encoding
 
 ```python
 @contextmanager
@@ -512,7 +513,7 @@ context manager:
    getter).
 3. Encodes via `HasCasts.cast_set`.
 4. Stores the encoded value with `object.__setattr__`.
-5. Yields — Tortoise's `save()` reads the attributes and builds SQL.
+5. Yields: Tortoise's `save()` reads the attributes and builds SQL.
 6. In the `finally` block, restores the original Python-native values.
 
 The save override ties it together:
@@ -574,7 +575,7 @@ async def update_from_dict(self, data: dict[str, Any]) -> None:
 
 - Applies a dict of field updates (typically from a Pydantic `model_dump()`)
   and saves.
-- Only fields that exist on the model are applied — extra keys are silently
+- Only fields that exist on the model are applied: extra keys are silently
   ignored, which makes it safe to pass request payloads directly.
 
 ---
@@ -752,9 +753,9 @@ class TimestampsMixin:
             self.created_at = datetime.now(timezone.utc)
 ```
 
-- `touch()` — manually refresh `updated_at` without changing other fields.
-- `set_created_at()` — set `created_at` if not already set. Useful for
-  pre-save hooks where the field does not use `auto_now_add`.
+- `touch()`: manually refresh `updated_at` without changing other fields.
+- `set_created_at()`: set `created_at` if not already set. Useful for pre-save
+  hooks where the field does not use `auto_now_add`.
 
 ### 12.3 HasUlidMixin
 
@@ -855,7 +856,7 @@ classDiagram
 
 **Design principles:**
 
-1. **Every method returns a new Collection** — the original is never mutated.
+1. **Every method returns a new Collection.** The original is never mutated.
    This makes chains safe to fork:
    ```python
    base = Collection(users)
@@ -863,13 +864,13 @@ classDiagram
    vips = base.filter(lambda u: u.plan == "vip")
    ```
 
-2. **`pluck` extracts a single field** — `collection.pluck("email")` returns
+2. **`pluck` extracts a single field**: `collection.pluck("email")` returns
    `Collection(["a@b.com", "c@d.com", ...])`.
 
-3. **`group_by` returns `dict[Any, Collection]`** — each group is itself a
+3. **`group_by` returns `dict[Any, Collection]`**: each group is itself a
    Collection, so further chaining is possible.
 
-4. **`chunk` yields sub-collections** — useful for batch processing:
+4. **`chunk` yields sub-collections**: useful for batch processing:
    ```python
    for batch in collection.chunk(100):
        await process_batch(batch)
@@ -902,7 +903,8 @@ def pydantic_model_from_tortoise(
 
 **How it works:**
 
-1. Iterates `model_class._meta.fields_map` — the Tortoise model's field registry.
+1. Iterates `model_class._meta.fields_map`: the Tortoise model's field
+   registry.
 2. For each field, calls `_tortoise_to_python_type(field_obj)` to get the Python
    type (`int`, `str`, `bool`, `float`, `dict`).
 3. Determines optionality: fields in `optional_fields` or with `field_obj.null`
@@ -929,8 +931,8 @@ def pydantic_model_from_tortoise(
 | Anything else       | `str`       |
 
 **Note:** `DatetimeField` maps to `str` (ISO 8601 format) rather than
-`datetime`. This is intentional — Pydantic models are typically used for
-request validation where datetimes arrive as strings.
+`datetime`. This is intentional. Pydantic models are typically used for request
+validation where datetimes arrive as strings.
 
 ### 14.3 Usage Pattern
 
@@ -1055,27 +1057,26 @@ listeners. When `fire(event, instance)` is called:
 
 ## 18. Gotchas and Known Issues
 
-1. **Double-decode prevention** — The `if key not in casts` guard in
+1. **Double-decode prevention**: The `if key not in casts` guard in
    `_set_kwargs` is essential. Without it, a JSON field would be decoded by
    `field.to_python_value` (which returns `str` → `str`) and then again by
    `cast_get` (which calls `json.loads`), potentially crashing on a dict.
 
-2. **`_record_loading` flag** — Must be set to `False` at the end of
+2. **`_record_loading` flag**: Must be set to `False` at the end of
    `_init_from_db`, even in the `except` branch. The current code does this
    correctly, but a refactor that adds early returns could break it.
 
-3. **`_record_encoding` guard in `__getattribute__`** — Without it,
-   `_encoded_cast_values` would write an encoded value, then immediately
-   decode it when Tortoise reads the attribute to build SQL, defeating the
-   purpose.
+3. **`_record_encoding` guard in `__getattribute__`**: Without it,
+   `_encoded_cast_values` would write an encoded value, then immediately decode
+   it when Tortoise reads the attribute to build SQL, defeating the purpose.
 
-4. **`bulk_create` batch size** — The default of 100 is conservative. For
-   Postgres with large payloads, consider 500–1000. For SQLite, keep it small
-   to avoid hitting the variable limit.
+4. **`bulk_create` batch size**: The default of 100 is conservative. For
+   Postgres with large payloads, consider 500 to 1000. For SQLite, keep it
+   small to avoid hitting the variable limit.
 
-5. **`get_or_create` race condition** — Two concurrent calls can both create.
+5. **`get_or_create` race condition**: Two concurrent calls can both create.
    Use `upsert()` with `conflict_fields` for atomic upserts.
 
-6. **`_cascade_deletes` requires pre-fetching** — The mixin iterates
+6. **`_cascade_deletes` requires pre-fetching**: The mixin iterates
    `getattr(self, relation)`, which triggers a lazy query if the relation is
    not loaded. For N models with M relations each, this is N×M queries.

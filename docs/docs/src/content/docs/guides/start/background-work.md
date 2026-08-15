@@ -40,8 +40,8 @@ _register_work(application)
 sillo queue:work
 ```
 
-Which of those you want is the substance of this page — see
-[Where to run the worker](#where-to-run-the-worker).
+Which of those you want is the substance of this page. See [Where to run the
+worker](#where-to-run-the-worker).
 
 ##  Writing a job
 
@@ -102,9 +102,9 @@ they must be plain data: ids, addresses, strings, numbers. Not a model
 instance, not an open connection, not a request.
 
 Beyond serialisation, there is a correctness reason. A user serialised at
-dispatch is that user *as they were then*. By the time the job runs the
-row may have changed, or been deleted — which is why the example loads it
-inside `handle()` and tolerates it being gone.
+dispatch is that user *as they were then*. By the time the job runs the row may
+have changed, or been deleted, which is why the example loads it inside
+`handle()` and tolerates it being gone.
 
 ###  Queue it, do not await it
 
@@ -135,9 +135,9 @@ seconds later; the application stayed responsive throughout.
 
 ###  Errors
 
-Raising from `handle()` marks the job failed and records the traceback.
-That is what you want — a job that swallows its own errors is a job that
-silently does nothing.
+Raising from `handle()` marks the job failed and records the traceback. That is
+what you want. A job that swallows its own errors is a job that silently does
+nothing.
 
 Conditions that are not errors, like the deleted user above, should return
 rather than raise. Retrying will not conjure the row back.
@@ -184,17 +184,16 @@ workers can share the load, and slow jobs cannot touch request latency.
 result = await Resize.perform_now("avatar.png", width=256)
 ```
 
-`perform_now` calls `handle()` directly — no connection, no worker, no
-serialisation. The request waits for the work, and you get the return
-value *and* the exception.
+`perform_now` calls `handle()` directly: no connection, no worker, no
+serialisation. The request waits for the work, and you get the return value
+*and* the exception.
 
 **Good for** work that is fast, work whose failure should fail the
 request, and tests where a background worker only adds timing to reason
 about.
 
-From synchronous code — a management script, a migration — use
-`dispatch_sync`, which runs its own event loop. Inside async code it
-refuses, by name:
+From synchronous code (a management script, a migration) use `dispatch_sync`,
+which runs its own event loop. Inside async code it refuses, by name:
 
 ```text
 Resize.dispatch_sync() cannot be called while an event loop is running.
@@ -213,7 +212,7 @@ errors; nothing happens.
 | Setup | |
 | --- | --- |
 | `in_process=True`, default queue | jobs run |
-| `sillo queue:work`, default queue | separate queue — nothing to do |
+| `sillo queue:work`, default queue | separate queue. Nothing to do |
 | `sillo queue:work` + `QUEUE_URL=redis://…` | jobs run |
 :::
 
@@ -254,7 +253,7 @@ Job.on_connection(work["connection"])
 ```
 
 Without it the first dispatch raises `No queue connection configured for
-SendWelcomeEmail` — which names the job rather than the wiring.
+SendWelcomeEmail`, which names the job rather than the wiring.
 
 ##  Where jobs must live
 
@@ -291,9 +290,9 @@ job, or leave an import behind at the old location.
 :::
 
 `app/jobs/__init__.py` importing everything is a convention rather than a
-requirement — the worker imports the module itself from the reference. It
-matters for one case: payloads written by older releases recorded only a
-class name, and those resolve by searching **imported** job classes.
+requirement. The worker imports the module itself from the reference. It
+matters for one case: payloads written by older releases recorded only a class
+name, and those resolve by searching **imported** job classes.
 
 ##  Scheduled tasks
 
@@ -355,8 +354,8 @@ async def test_welcome_email_skips_a_deleted_user(caplog):
 ```
 
 For a route that dispatches, assert on the *effect* rather than on the
-dispatch — a job queued and never delivered looks exactly like one that
-worked. The starter's smoke test does this by capturing what the job logs:
+dispatch, a job queued and never delivered looks exactly like one that worked.
+The starter's smoke test does this by capturing what the job logs:
 
 ```python
 check("welcome email job ran", await _job_ran(jobs_log), True)
@@ -386,7 +385,7 @@ removing the dispatch and watching it go red.
 
 ##  Related
 
-- [The Console](/guides/start/console/) — `worker` and `scheduler`
-- [Project Structure](/guides/start/structure/) — `app/jobs/` and `app/tasks/`
-- [Deployment](/guides/start/deployment/) — running workers alongside the app
-- [Concurrency](/guides/concurrency/) — the framework-level model
+- [The Console](/guides/start/console/): `worker` and `scheduler`
+- [Project Structure](/guides/start/structure/): `app/jobs/` and `app/tasks/`
+- [Deployment](/guides/start/deployment/): running workers alongside the app
+- [Concurrency](/guides/concurrency/): the framework-level model

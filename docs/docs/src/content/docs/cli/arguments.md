@@ -1,6 +1,6 @@
 ---
 title: Arguments, Options and Flags
-description: "Declaring what a command accepts — positional arguments, value options and boolean flags — plus type conversion, choices, repetition, variadics and the parsing rules."
+description: "Declaring what a command accepts (positional arguments, value options and boolean flags) plus type conversion, choices, repetition, variadics and the parsing rules."
 head:
   - tag: meta
     attrs:
@@ -47,8 +47,8 @@ Argument("email", default=None)    # optional
 ```
 
 That distinction is why the absence of a default is its own sentinel rather
-than `None` — `None` is a perfectly good default for an optional argument, so
-it cannot also mean "no default was given".
+than `None`. `None` is a perfectly good default for an optional argument, so it
+cannot also mean "no default was given".
 
 ### Variadic
 
@@ -57,7 +57,7 @@ Argument("paths", variadic=True, help="Files to process")
 ```
 
 Collects every remaining positional token into a list. A variadic argument is
-never required — absent, it is an empty list — and must be declared last.
+never required (absent, it is an empty list) and must be declared last.
 Declaring one before another argument raises at registration, naming both.
 
 ```bash
@@ -210,7 +210,7 @@ Argument("identifier", metavar="EMAIL_OR_USERNAME")
 
 Two reasons, both about control. The console renders its own help and phrases
 its own errors, which argparse would have to be fought for. And argparse calls
-`sys.exit` on a bad argument — a test cannot catch that cleanly, and an
+`sys.exit` on a bad argument. A test cannot catch that cleanly, and an
 embedding application should not have it happen underneath it. Here a parse
 failure is a `UsageError`, which the console turns into an exit code it
 *returns*.

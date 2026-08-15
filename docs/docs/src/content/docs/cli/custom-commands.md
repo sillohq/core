@@ -74,7 +74,7 @@ sillo posts:backfill 500
 Project commands are registered **last**, with override enabled. If you name a
 command `db:migrate`, yours replaces the bundled one. That is intentional: a
 project that needs its migration command to also rebuild a search index should
-be able to say so, and the alternative — a name collision that is an error —
+be able to say so, and the alternative (a name collision that is an error)
 would mean the framework's names were reserved forever.
 
 ## The four attributes
@@ -90,7 +90,7 @@ would mean the framework's names were reserved forever.
 Grouping is by name, not configuration. `posts:backfill` appears under a
 `POSTS` heading because of the colon.
 
-`hidden` is for the commands that exist but should not be advertised — a
+`hidden` is for the commands that exist but should not be advertised, a
 destructive repair tool, or something only CI calls.
 
 ## Reading parameters
@@ -112,7 +112,7 @@ KeyError: 'dry_run' is declared as flag, not option; read it with .flag('dry_run
 ```
 
 Dashes and underscores are interchangeable in lookups, so a parameter declared
-`Flag("dry-run")` reads as `self.flag("dry_run")` or `self.flag("dry-run")` —
+`Flag("dry-run")` reads as `self.flag("dry_run")` or `self.flag("dry-run")`,
 whichever fits the call site.
 
 Anything after `--` is available as `self.extra`, unparsed.
@@ -130,12 +130,12 @@ def handle(self):         # runs with no loop in this thread
 ```
 
 Use `async def` unless your command hands the loop to something else. The
-framework's own `serve` is the exception — uvicorn owns the loop, and starting
+framework's own `serve` is the exception. Uvicorn owns the loop, and starting
 it from inside one would nest two.
 
 ## The `context` hook
 
-Override `context()` to open something around every command in a family — a
+Override `context()` to open something around every command in a family, a
 database connection being the usual one:
 
 ```python
@@ -182,7 +182,7 @@ self.fail("Refusing to run against production.", exit_code=3)
 | Code | Meaning |
 | --- | --- |
 | `0` | Success. `handle` returned `None`, or `0`. |
-| `2` | A usage error — an unknown option, a missing argument, a bad value. |
+| `2` | A usage error: an unknown option, a missing argument, a bad value. |
 | `130` | Ctrl-C, at a prompt or during work. |
 | *n* | Whatever `self.fail(..., exit_code=n)` or `return n` asked for. |
 
@@ -197,12 +197,12 @@ if not self.confirm("Drop every recorded failure?"):
 
 ## One-liners
 
-For commands not worth a class, a project console can register a function —
-see [Building a console](/cli/standalone-consoles/#function-form). The class
-form is the primary one and is what anything with a real body should use.
+For commands not worth a class, a project console can register a function. See
+[Building a console](/cli/standalone-consoles/#function-form). The class form
+is the primary one and is what anything with a real body should use.
 
 ## See also
 
 - [Arguments, options and flags](/cli/arguments/)
-- [Output](/cli/output/) — tables, pairs, panels, progress bars.
-- [Prompts](/cli/prompts/) — asking questions safely.
+- [Output](/cli/output/): tables, pairs, panels, progress bars.
+- [Prompts](/cli/prompts/): asking questions safely.

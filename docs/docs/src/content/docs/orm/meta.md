@@ -1,6 +1,6 @@
 ---
 title: Meta, Indexes & Constraints
-description: "The model Meta class in full — table naming, default ordering, unique_together, indexes, check constraints, schemas, abstract bases — and how each reaches the database."
+description: "The model Meta class in full (table naming, default ordering, unique_together, indexes, check constraints, schemas, abstract bases) and how each reaches the database."
 head:
   - tag: meta
     attrs:
@@ -38,10 +38,10 @@ class Post(Model):
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `table` | derived | The table name |
-| `schema` | — | The database schema (PostgreSQL) |
+| `schema` |  | The database schema (PostgreSQL) |
 | `app` | `models` | The app label |
 | `abstract` | `False` | A base class with no table of its own |
-| `ordering` | — | Default sort for every query |
+| `ordering` |  | Default sort for every query |
 | `unique_together` | `()` | Multi-column unique constraints |
 | `indexes` | `()` | Multi-column indexes |
 | `constraints` | `()` | Check constraints |
@@ -52,7 +52,7 @@ class Post(Model):
 ## `table`
 
 Without it, the table name is derived from the class name. Set it explicitly
-for anything long-lived — a renamed class then costs no migration, and the
+for anything long-lived. A renamed class then costs no migration, and the
 schema stops depending on a Python identifier.
 
 ```python
@@ -76,8 +76,8 @@ a paginated list or on none. See
 [Pagination](/orm/pagination/#ordering-is-not-optional).
 
 An ordering the database cannot satisfy from an index is a sort on every query.
-If the model is large and always read in one order, index that order —
-`Index(fields=("published_at",))` — and check it with
+If the model is large and always read in one order, index that order
+(`Index(fields=("published_at",))`) and check it with
 [`explain()`](/orm/queries/#explain).
 
 ## `unique_together`
@@ -92,7 +92,7 @@ comma is a tuple of strings and does not mean what it looks like.
 
 This is a real constraint, enforced by the database for every writer. It is
 what makes [`get_or_create`](/orm/models/#fetch-shortcuts) and
-[`upsert`](/orm/bulk/#upsert) safe under concurrency — without it, two
+[`upsert`](/orm/bulk/#upsert) safe under concurrency, without it, two
 simultaneous callers both insert.
 
 A unique constraint creates an index, so a separate `indexes` entry on the same
@@ -100,7 +100,7 @@ columns in the same order is redundant.
 
 :::note[NULL is not equal to NULL]
 A unique constraint over a nullable column does not stop two rows both having
-`NULL` there — that is standard SQL, and it surprises people every time.
+`NULL` there. That is standard SQL, and it surprises people every time.
 
 For "at most one active row per author", a partial unique index is the answer,
 and that needs a hand-written migration.
@@ -183,7 +183,7 @@ ops.RunSQL(
 )
 ```
 
-A check constraint holds for **every** writer — a migration, a console session,
+A check constraint holds for **every** writer: a migration, a console session,
 another service. That is the difference from
 [`ValidatesBeforeSaveMixin`](/orm/mixins/#validatesbeforesavemixin), which only
 applies to writes going through the model.
@@ -215,7 +215,7 @@ This is how [`sillo.record.Model`](/orm/models/) itself supplies `created_at`,
 `updated_at` and `deleted_at`.
 
 `Meta` is **not** inherited. A subclass that needs `ordering` or `indexes`
-declares its own — and to keep a parent's options, inherit its `Meta`
+declares its own, and to keep a parent's options, inherit its `Meta`
 explicitly:
 
 ```python
@@ -247,7 +247,7 @@ class Meta:
 Becomes the table comment.
 
 :::caution[The docstring is the default]
-A model's docstring becomes `table_description` when `Meta` does not set one —
+A model's docstring becomes `table_description` when `Meta` does not set one,
 so **editing a model's docstring produces a migration**.
 
 That is why [`sillo-start` does not rewrite model
@@ -262,10 +262,10 @@ class Meta:
     manager = RecordManager()
 ```
 
-The base model sets this, and it is what applies
-[global scopes](/orm/scopes/#global-scopes). Replacing it with a manager that
-does not subclass `RecordManager` silently switches global scopes off — a
-quiet failure, and worth knowing before you write a custom manager.
+The base model sets this, and it is what applies [global
+scopes](/orm/scopes/#global-scopes). Replacing it with a manager that does not
+subclass `RecordManager` silently switches global scopes off, a quiet failure,
+and worth knowing before you write a custom manager.
 
 ## `app`
 
@@ -289,7 +289,7 @@ Post._meta.m2m_fields
 Post._meta.backward_fk_fields
 ```
 
-Private, and stable enough that the framework itself uses it — the
+Private, and stable enough that the framework itself uses it. The
 [admin](/orm/admin/) builds its forms from `fields_map`, and
 [`mass_assignable_fields`](/orm/mass-assignment/) reads `fields`. Useful for
 your own generic tooling; treat it as an internal API when upgrading.

@@ -14,7 +14,10 @@ head:
 
 #  Handling Request Inputs
 
-sillo gives every handler a `Request` object (the first parameter) that lazily parses the incoming body the moment you ask for it. This guide covers the four input shapes you'll handle: JSON, form data, uploaded files, and raw/streaming bodies — plus how to validate them with Pydantic.
+sillo gives every handler a `Request` object (the first parameter) that lazily
+parses the incoming body the moment you ask for it. This guide covers the four
+input shapes you'll handle: JSON, form data, uploaded files, and raw/streaming
+bodies, plus how to validate them with Pydantic.
 
 ##  The smallest useful form
 
@@ -29,10 +32,16 @@ async def submit_data(request, response):
     return {"received": data}
 ```
 
-`request.json` is an **awaitable property** — `await` it once and the body is cached for the rest of the request. It runs `json.loads` on the raw bytes, so it works for any body that is valid JSON regardless of the `Content-Type` header.
+`request.json` is an **awaitable property**, `await` it once and the body is
+cached for the rest of the request. It runs `json.loads` on the raw bytes, so
+it works for any body that is valid JSON regardless of the `Content-Type`
+header.
 
 <aside type="tip" title="Content-Type is not enforced">
-Unlike some frameworks, `request.json` does not check the `Content-Type` header — it just parses the bytes as JSON. If the body isn't valid JSON you'll get a `json.JSONDecodeError`. For typed, validated input, prefer Pydantic (see below).
+Unlike some frameworks, `request.json` does not check the `Content-Type`
+header. It just parses the bytes as JSON. If the body isn't valid JSON you'll
+get a `json.JSONDecodeError`. For typed, validated input, prefer Pydantic (see
+below).
 </aside>
 
 ##  JSON data
@@ -47,9 +56,11 @@ async def submit_data(request, response):
 
 Common accessors:
 
-- `await request.json` — parsed JSON as a `dict`/`list` (raises on invalid JSON).
-- `await request.text` — the raw body decoded as text (UTF-8, falling back to latin-1).
-- `await request.body` — the raw body as `bytes`.
+- `await request.json`: parsed JSON as a `dict`/`list` (raises on invalid
+  JSON).
+- `await request.text`: the raw body decoded as text (UTF-8, falling back to
+  latin-1).
+- `await request.body`: the raw body as `bytes`.
 
 ##  Form data
 
@@ -82,7 +93,9 @@ async def upload_file(request, response):
     return response.json({"saved": filename, "bytes": len(content)})
 ```
 
-`UploadedFile` exposes `filename`, `content_type`, and an async `read()` coroutine. Always `await` `request.files` (and `document.read()`) — both are async.
+`UploadedFile` exposes `filename`, `content_type`, and an async `read()`
+coroutine. Always `await` `request.files` (and `document.read()`). Both are
+async.
 
 ##  Streaming request bodies
 
@@ -97,7 +110,9 @@ async def stream_data(request, response):
     return {"bytes_received": total}
 ```
 
-Because the body is consumed as you iterate, you cannot also call `await request.json` or `await request.form` on the same request afterward — pick one strategy per request.
+Because the body is consumed as you iterate, you cannot also call `await
+request.json` or `await request.form` on the same request afterward. Pick one
+strategy per request.
 
 ##  Validating inputs with Pydantic
 
@@ -121,16 +136,22 @@ async def create_user(request, response):
     return response.json({"user": user.model_dump()})
 ```
 
-sillo also ships the `request_model` hook on routes for automatic validation — see [Request Parameters](/guides/request-parameters/) and the dependency injection guides for that pattern.
+sillo also ships the `request_model` hook on routes for automatic validation.
+See [Request Parameters](/guides/request-parameters/) and the dependency
+injection guides for that pattern.
 
 ##  Works with
 
-- [Request Parameters](/guides/request-parameters/) — `Query`, `Header`, `Cookie` extractors
-- [Request Information](/guides/request-info/) — headers, cookies, client IP, type flags
-- [Sending Responses](/guides/sending-responses/) — returning data, errors, files
-- [File Uploads](/guides/file-upload/) — the dedicated file-upload guide
+- [Request Parameters](/guides/request-parameters/): `Query`, `Header`,
+  `Cookie` extractors
+- [Request Information](/guides/request-info/): headers, cookies, client IP,
+  type flags
+- [Sending Responses](/guides/sending-responses/): returning data, errors,
+  files
+- [File Uploads](/guides/file-upload/): the dedicated file-upload guide
 
 ##  Related topics
 
-- [Error Handling](/guides/error-handling/) — returning structured 4xx/5xx responses
-- [Middleware](/guides/middleware/) — reading the body inside middleware
+- [Error Handling](/guides/error-handling/): returning structured 4xx/5xx
+  responses
+- [Middleware](/guides/middleware/): reading the body inside middleware

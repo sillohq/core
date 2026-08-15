@@ -24,9 +24,8 @@ definitions so the shape is not written twice.
 ##  Database exception handlers
 
 Without handlers, a `DoesNotExist` raised by `await User.get(id=999)`
-propagates to the framework's catch-all and becomes a 500 — the wrong
-answer, since nothing is broken and the client asked for something that
-is not there.
+propagates to the framework's catch-all and becomes a 500. The wrong answer,
+since nothing is broken and the client asked for something that is not there.
 
 ```python title="one line of setup"
 from sillo import SilloApp
@@ -45,18 +44,18 @@ That registers four handlers:
 | `ValidationError` | 422 | `{"error": "Validation Error", "detail": "<exception message>"}` |
 | `OperationalError` | 503 | `{"error": "Service Unavailable", "detail": "Database unavailable"}` |
 
-`OperationalError` is the one that does not include the exception text —
-it returns a fixed string, because a connection error message can carry
-the host, port, and username of your database server.
+`OperationalError` is the one that does not include the exception text. It
+returns a fixed string, because a connection error message can carry the host,
+port, and username of your database server.
 
 The other three do include `str(exc)`, and that is the thing to think
 about before shipping.
 
 ###  When to reach for this
 
-Register the handlers in any application where handlers query the
-database directly. The alternative — a `try`/`except` around every
-`get()` — is more code and gets forgotten.
+Register the handlers in any application where handlers query the database
+directly. The alternative (a `try`/`except` around every `get()`) is more code
+and gets forgotten.
 
 Do not register them if your handlers already catch these exceptions and
 produce domain-specific responses; a handler that catches
@@ -72,10 +71,10 @@ A duplicate insert produces a message like
 verbatim in the 409 body. The same applies to foreign-key and
 not-null violations, which name tables and columns.
 
-For an internal API this is helpful. For a public one it hands an
-attacker your table and column names, and — with a unique constraint on
-email — a user-enumeration oracle: a signup that returns 409 confirms
-the address is registered.
+For an internal API this is helpful. For a public one it hands an attacker your
+table and column names, and (with a unique constraint on email) a
+user-enumeration oracle: a signup that returns 409 confirms the address is
+registered.
 
 Override the handler for anything public-facing:
 
@@ -160,11 +159,11 @@ each exception finds its own handler earlier in the MRO than the
 
 <Aside type="caution" title="A handler for OperationalError catches far more than connection failures">
 
-If you register your own `OperationalError` handler — reasonably assuming
-it means "the database is unreachable" — it will also receive every
-`DoesNotExist` and every `IntegrityError` for which no more specific
-handler is registered. A row that simply does not exist would be reported
-to the client as a database outage.
+If you register your own `OperationalError` handler (reasonably assuming it
+means "the database is unreachable") it will also receive every `DoesNotExist`
+and every `IntegrityError` for which no more specific handler is registered. A
+row that simply does not exist would be reported to the client as a database
+outage.
 
 Register the specific handlers alongside it, or narrow the check inside
 the handler:
@@ -185,19 +184,18 @@ shape you chose.
 
 </Aside>
 
-`get_or_none()` never raises `DoesNotExist` — it swallows every exception
-and returns `None`. If a handler seems not to fire, check whether the
-call site is using `get_or_none` and returning a `None` you then have to
-handle yourself.
+`get_or_none()` never raises `DoesNotExist`. It swallows every exception and
+returns `None`. If a handler seems not to fire, check whether the call site is
+using `get_or_none` and returning a `None` you then have to handle yourself.
 
 ###  What is not covered
 
-The four handlers cover the common cases, not every database error.
-Notably absent: `TransactionManagementError`, `FieldError` (a bad lookup
-name such as `filter(emial="x")`), `ParamsError` (a negative offset), and
-`ConfigurationError` (an unregistered model). Those still surface as
-500s, which is arguably correct — each is a bug in your code rather than
-a client mistake — but you will want them logged loudly.
+The four handlers cover the common cases, not every database error. Notably
+absent: `TransactionManagementError`, `FieldError` (a bad lookup name such as
+`filter(emial="x")`), `ParamsError` (a negative offset), and
+`ConfigurationError` (an unregistered model). Those still surface as 500s,
+which is arguably correct (each is a bug in your code rather than a client
+mistake) but you will want them logged loudly.
 
 ```python title="covering the rest"
 from tortoise.exceptions import BaseORMException
@@ -244,11 +242,11 @@ async def create_user(request, response):
 
 <Aside type="danger" title="Every field is required by default, including id and the timestamps">
 
-The generator decides required-ness with `is_required = not field.null and not field.pk`,
-then writes `Field(default=...)` for the non-required branch — and
-`Ellipsis` as a Pydantic default means *required*. So primary keys come
-out required after all, and so do `created_at` and `updated_at`, which
-are non-null and auto-populated.
+The generator decides required-ness with `is_required = not field.null and not
+field.pk`, then writes `Field(default=...)` for the non-required branch, and
+`Ellipsis` as a Pydantic default means *required*. So primary keys come out
+required after all, and so do `created_at` and `updated_at`, which are non-null
+and auto-populated.
 
 Generating a schema without `exclude` produces this:
 
@@ -306,10 +304,10 @@ TagCreate = pydantic_model_from_tortoise(
 |---|---|---|
 | `IntField`, `SmallIntField`, `BigIntField` | `int` | Fine |
 | `FloatField` | `float` | Fine |
-| `DecimalField` | `float` | **Precision loss** — money should not round-trip through a binary float |
+| `DecimalField` | `float` | **Precision loss**. Money should not round-trip through a binary float |
 | `BooleanField` | `bool` | Fine |
 | `CharField`, `TextField` | `str` | No `max_length` constraint carried over |
-| `DatetimeField`, `DateField` | `str` | **No parsing or validation** — any string passes |
+| `DatetimeField`, `DateField` | `str` | **No parsing or validation**: any string passes |
 | `TimeDeltaField` | `float` | |
 | `JSONField` | `dict` | A JSON array fails validation |
 | anything else (UUID, enum, relations, binary) | `str` | Silently wrong |
@@ -352,10 +350,9 @@ class ProductCreate(_Base):
     available_from: datetime
 ```
 
-Subclassed fields replace the generated ones by name, so you only restate
-what the generator got wrong. This is the pattern to reach for whenever a
-model has money, dates, emails, URLs, or enums in it — which is most
-models.
+Subclassed fields replace the generated ones by name, so you only restate what
+the generator got wrong. This is the pattern to reach for whenever a model has
+money, dates, emails, URLs, or enums in it, which is most models.
 
 ###  Partial updates
 
@@ -382,14 +379,13 @@ async def update_user(request, response, user_id: str):
     return response.json(user.to_dict())
 ```
 
-`optional_fields` has to list every field you want optional — there is no
-"all optional" switch. Miss one and a PATCH that omits it fails
-validation.
+`optional_fields` has to list every field you want optional. There is no "all
+optional" switch. Miss one and a PATCH that omits it fails validation.
 
 ###  When to hand-write the schema instead
 
 Generation earns its keep when a model is wide, flat, and made of plain
-scalars — an internal admin CRUD table, a settings row, a lookup table.
+scalars: an internal admin CRUD table, a settings row, a lookup table.
 
 Hand-write the schema when the model has relations, money, dates, enums,
 or any field where the API's shape differs from the table's. That is most
@@ -421,8 +417,8 @@ string.
 
 ##  Performance notes
 
-`register_db_exception_handlers` costs nothing at request time — handler
-lookup is a dict access, and only on the exception path.
+`register_db_exception_handlers` costs nothing at request time. Handler lookup
+is a dict access, and only on the exception path.
 
 `pydantic_model_from_tortoise` calls `pydantic.create_model`, which builds
 and compiles a validator. Do it once at import time, never inside a
@@ -445,9 +441,14 @@ expensive part of a request is the database round trip, not the schema.
 
 ##  Related
 
-- [Record Overview](/guides/record/) — setup and connection lifecycle
-- [Models & Mixins](/guides/record/models/) — `update_from_dict` and mass-assignment safety
-- [Transactions & Factories](/guides/record/transactions-factories/) — where `IntegrityError` usually comes from
-- [Pagination](/guides/record/pagination/) — the other place errors need mapping to 400
-- [Error Handling](/guides/error-handling/) — sillo's exception middleware in general
-- [Request Inputs](/guides/request-inputs/) — how `request_model` validation fits the request lifecycle
+- [Record Overview](/guides/record/): setup and connection lifecycle
+- [Models & Mixins](/guides/record/models/): `update_from_dict` and
+  mass-assignment safety
+- [Transactions & Factories](/guides/record/transactions-factories/): where
+  `IntegrityError` usually comes from
+- [Pagination](/guides/record/pagination/): the other place errors need mapping
+  to 400
+- [Error Handling](/guides/error-handling/): sillo's exception middleware in
+  general
+- [Request Inputs](/guides/request-inputs/): how `request_model` validation
+  fits the request lifecycle

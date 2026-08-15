@@ -14,8 +14,8 @@ head:
 
 #  OAuth2 Overview
 
-`sillo-oauth` adds "Sign in with Google" — and GitHub, Discord, Microsoft, or
-anything else speaking OAuth 2.0 — to a sillo application.
+`sillo-oauth` adds "Sign in with Google" (and GitHub, Discord, Microsoft, or
+anything else speaking OAuth 2.0) to a sillo application.
 
 It is a separate package, and a deliberately small one. There is no router to
 mount, no middleware to install, and no configuration object that owns your
@@ -23,14 +23,14 @@ login flow. There are two functions:
 
 | | |
 | --- | --- |
-| `authorize_url(provider)` | Returns the URL to send someone to, plus the state you need to store. Pure — no request, no I/O. |
+| `authorize_url(provider)` | Returns the URL to send someone to, plus the state you need to store. Pure: no request, no I/O. |
 | `await exchange(provider, request)` | Reads the callback request and returns a verified `OAuthProfile`. |
 
 Neither takes a response, builds one, or registers a route. That is the whole
 design: the package handles the parts of OAuth that are fiddly and
 security-sensitive, and hands you a verified identity. What that identity
-*means* — a new user, a session, a JWT, a linked account, or nothing — stays
-in your handler.
+*means* (a new user, a session, a JWT, a linked account, or nothing) stays in
+your handler.
 
 ##  Installation
 
@@ -87,7 +87,7 @@ a cookie to until `redirect()` or `json()` has been called.
 ##  What happens, in order
 
 1. Someone hits `/auth/google/redirect`. `authorize_url` mints a random state,
-   signs it, and builds the provider URL — including a PKCE challenge.
+   signs it, and builds the provider URL, including a PKCE challenge.
 2. You set the state cookie and redirect. The browser goes to Google.
 3. Google sends the browser back to `/auth/google/callback?code=...&state=...`.
 4. `exchange` verifies the returned `state` against the signed cookie, refuses
@@ -116,7 +116,7 @@ profile.return_to       # whatever you passed to authorize_url(return_to=...)
 
 Key local accounts on `subject`, never on `email`. Addresses get reassigned
 between people, and an address the provider has not verified is an
-account-takeover vector — `email_verified` is `False` both when the provider
+account-takeover vector. `email_verified` is `False` both when the provider
 says "no" and when it says nothing at all.
 
 ##  Errors
@@ -127,13 +127,13 @@ redirect.
 
 | `.code` | Raised when |
 | --- | --- |
-| `denied` | The person declined consent. Not a fault — send them back to the login page. |
+| `denied` | The person declined consent. Not a fault: send them back to the login page. |
 | `provider_error` | The provider reported some other `error` parameter. |
 | `state_mismatch` | The callback does not match a redirect this server issued: no cookie, no `state`, a forged or tampered cookie, or one minted for another provider. |
 | `state_expired` | Genuine state, but older than the TTL. Worth a "that took too long, try again". |
 | `exchange_failed` | The provider would not trade the code for a token. |
 | `profile_failed` | A token was issued but no usable profile came back. |
-| `provider_misconfigured` | A programming error — a missing secret, redirect URI, or endpoint. |
+| `provider_misconfigured` | A programming error: a missing secret, redirect URI, or endpoint. |
 
 ##  Local development
 
@@ -148,7 +148,11 @@ response.redirect(authorize.url).set_cookie(**authorize.cookie_kwargs(secure=Fal
 
 ##  Where next
 
-- [Providers](/guides/oauth/providers/) — the four shipped, and how to add any other.
-- [Persisting the login](/guides/oauth/persisting-logins/) — session, JWT, account linking, or nothing.
-- [OAuth in OpenAPI](/guides/oauth/openapi/) — what your API reference should say about all this.
-- [The security model](/guides/oauth/security/) — state, PKCE, and what is deliberately not stored.
+- [Providers](/guides/oauth/providers/): the four shipped, and how to add any
+  other.
+- [Persisting the login](/guides/oauth/persisting-logins/): session, JWT,
+  account linking, or nothing.
+- [OAuth in OpenAPI](/guides/oauth/openapi/): what your API reference should
+  say about all this.
+- [The security model](/guides/oauth/security/): state, PKCE, and what is
+  deliberately not stored.

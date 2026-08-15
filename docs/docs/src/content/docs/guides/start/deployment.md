@@ -37,8 +37,8 @@ CORS_ALLOW_ORIGINS=https://myapp.example.com
 LOG_LEVEL=info
 ```
 
-**`DEBUG=false`** matters. With it on, error responses carry tracebacks —
-your file paths, your local variables — to whoever provoked them.
+**`DEBUG=false`** matters. With it on, error responses carry tracebacks (your
+file paths, your local variables) to whoever provoked them.
 
 **`SECRET_KEY` signs sessions.** A shared or published one lets anyone
 forge a session cookie. Generate one per environment:
@@ -56,8 +56,8 @@ is a local Vite server, which is wrong everywhere else.
 :::note
 **Nothing is read from a file at runtime.** `app/config.py` declares the
 settings and their types; `.env` is loaded at import for convenience in
-development. In production, set real environment variables — a container
-image should not contain a `.env`.
+development. In production, set real environment variables. A container image
+should not contain a `.env`.
 :::
 
 ##  Migrations
@@ -95,8 +95,8 @@ QUEUE_URL=redis://redis:6379 uv run sillo queue:work --concurrency 8
 ```
 
 The in-memory queue does not survive a restart and is not shared between
-processes, so with more than one application replica it is not a queue —
-it is four separate queues that each lose their contents on deploy.
+processes, so with more than one application replica it is not a queue. It is
+four separate queues that each lose their contents on deploy.
 
 ```python
 # app/bootstrap.py — drop in_process for a real deployment
@@ -172,8 +172,8 @@ CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "800
 `--frozen` installs exactly what `uv.lock` records, so the image matches
 what you tested. `--no-dev` leaves pytest and ruff out.
 
-Migrations belong in the **deployment**, not in `CMD` — otherwise every
-replica migrates:
+Migrations belong in the **deployment**, not in `CMD`, otherwise every replica
+migrates:
 
 ```yaml
 # one job, before the rollout
@@ -222,8 +222,8 @@ ADMIN_ENABLED=false        # not in this deployment
 ADMIN_PREFIX=/staff-only   # or somewhere less obvious
 ```
 
-Access is `is_staff`, checked on **every request** — so revoking it takes
-effect immediately rather than at that person's next sign-in.
+Access is `is_staff`, checked on **every request**, so revoking it takes effect
+immediately rather than at that person's next sign-in.
 
 The query console at `/admin/query/` grants read and write on every table
 and is superuser-only. If that is more power than you want to exist in
@@ -258,8 +258,8 @@ livenessProbe:
   periodSeconds: 30
 ```
 
-For a readiness probe that means "can serve traffic", add one that touches
-the database — the manager exposes `health()`:
+For a readiness probe that means "can serve traffic", add one that touches the
+database. The manager exposes `health()`:
 
 ```python
 @router.get("/ready")
@@ -281,9 +281,9 @@ LOG_LEVEL=info
 `DB_ECHO=true` logs every query. Useful locally; in production it is a
 performance problem and a way to write credentials into logs.
 
-The application logs its own lifecycle at startup — "Database connected",
-and the reverse at shutdown. The console quiets those, because they are
-noise around a one-shot command and signal in a long-running process.
+The application logs its own lifecycle at startup: "Database connected", and
+the reverse at shutdown. The console quiets those, because they are noise
+around a one-shot command and signal in a long-running process.
 
 ##  Upgrading sillo
 
@@ -301,7 +301,7 @@ ruff check . && pytest && python scripts/smoke.py
 ```
 
 That last line is the point of the sequence. It lints, tests, and boots the
-application against the new version — which is what catches a release that
+application against the new version, which is what catches a release that
 changes something your project depends on.
 
 The starter's own CI runs weekly for the same reason.
@@ -325,8 +325,8 @@ The starter's own CI runs weekly for the same reason.
 
 ##  Related
 
-- [Creating a Project](/guides/start/) — what you are deploying
-- [Database & Migrations](/guides/start/database/) — migrating safely
-- [Background Work](/guides/start/background-work/) — workers in production
-- [Testing](/guides/start/testing/) — the suite and the smoke check
-- [The Console](/guides/start/console/) — the commands a deployment runs
+- [Creating a Project](/guides/start/): what you are deploying
+- [Database & Migrations](/guides/start/database/): migrating safely
+- [Background Work](/guides/start/background-work/): workers in production
+- [Testing](/guides/start/testing/): the suite and the smoke check
+- [The Console](/guides/start/console/): the commands a deployment runs

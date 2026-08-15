@@ -25,7 +25,11 @@ Declaring any `Form` or `File` parameter switches the route to parsing its body 
 
 ##  When to use a form instead of JSON
 
-Two situations call for it. The first is a browser `<form>` posting directly to your API without JavaScript — that always sends urlencoded or multipart, never JSON. The second is **any request carrying a file**, because JSON has no way to represent binary content; base64 in a JSON string works but inflates the payload by a third and buffers the whole thing in memory.
+Two situations call for it. The first is a browser `<form>` posting directly to
+your API without JavaScript. That always sends urlencoded or multipart, never
+JSON. The second is **any request carrying a file**, because JSON has no way to
+represent binary content; base64 in a JSON string works but inflates the
+payload by a third and buffers the whole thing in memory.
 
 Everything else is usually better served by a JSON body, where you get nested structures and a single model describing the whole payload.
 
@@ -102,20 +106,25 @@ A required `File(...)` with nothing attached returns 422:
 {"detail": [{"loc": ["form", "avatar"], "msg": "Field required", "type": "missing"}]}
 ```
 
-##  urlencoded or multipart — you do not choose
+##  urlencoded or multipart: you do not choose
 
 Two separate decisions, and the distinction matters:
 
 - **Your markers** decide *that* the body is parsed as a form.
-- **The client's `Content-Type`** decides *which parser* runs — `multipart/form-data` or `application/x-www-form-urlencoded`.
+- **The client's `Content-Type`** decides *which parser* runs:
+  `multipart/form-data` or `application/x-www-form-urlencoded`.
 
 So one set of `Form` declarations accepts both encodings. A route with only `Form` markers works whether the client posts a plain form or multipart.
 
-If a client sends something else entirely — `application/json`, say — form parsing yields nothing and you get a clean 422 listing every required field as missing, rather than a crash.
+If a client sends something else entirely (`application/json`, say) form
+parsing yields nothing and you get a clean 422 listing every required field as
+missing, rather than a crash.
 
 ##  Validating form fields
 
-`Form` fields are validated exactly like query parameters — same types, same constraints, same coercion rules. Everything on the wire is text, so `type=` is what turns it into a usable value:
+`Form` fields are validated exactly like query parameters: same types, same
+constraints, same coercion rules. Everything on the wire is text, so `type=` is
+what turns it into a usable value:
 
 ```python
 from datetime import date
@@ -174,7 +183,10 @@ This is how multi-select inputs and checkbox groups arrive from a browser.
 
 ##  Validating uploads yourself
 
-An `UploadFile` bypasses Pydantic — the object wraps a spooled file handle rather than data, so there is nothing meaningful for a validator to check. Constraints on a `File(...)` are silently inert. Enforce the rules that matter in your handler:
+An `UploadFile` bypasses Pydantic. The object wraps a spooled file handle
+rather than data, so there is nothing meaningful for a validator to check.
+Constraints on a `File(...)` are silently inert. Enforce the rules that matter
+in your handler:
 
 ```python
 from sillo.exceptions import HTTPException
@@ -197,7 +209,9 @@ async def upload(request, response, avatar=File(...)):
 
 Two cautions on trusting client-supplied metadata:
 
-**`content_type` is a claim, not a fact.** It comes from the client and can say anything. If the distinction matters — if you will serve the file back, or process it — verify the actual bytes:
+**`content_type` is a claim, not a fact.** It comes from the client and can say
+anything. If the distinction matters (if you will serve the file back, or
+process it) verify the actual bytes:
 
 ```python
 import imghdr
@@ -207,7 +221,9 @@ if imghdr.what(None, h=content) not in {"png", "jpeg", "webp"}:
     raise HTTPException(status_code=415, detail="Not a valid image")
 ```
 
-**`filename` is attacker-controlled.** Never join it onto a path directly — a filename of `../../etc/passwd` does exactly what it looks like. Generate your own name and keep the original only as a label:
+**`filename` is attacker-controlled.** Never join it onto a path directly. A
+filename of `../../etc/passwd` does exactly what it looks like. Generate your
+own name and keep the original only as a label:
 
 ```python
 import uuid, pathlib
@@ -233,7 +249,8 @@ async def gallery(request, response, album=Form(type=str)):
     return {"album": album, "count": len(files)}
 ```
 
-The `album` marker still validates normally — the parsed form is cached, so reading it again is free.
+The `album` marker still validates normally. The parsed form is cached, so
+reading it again is free.
 
 ##  Reading the form directly
 
@@ -285,15 +302,15 @@ stored_name = f"{uuid.uuid4().hex}{FSPath(upload.filename).suffix.lower()[:10]}"
 destination = FSPath("/var/uploads") / stored_name
 ```
 
-Even the extension needs bounding — a `.suffix` from a filename of a
-thousand dots is a thousand-character extension.
+Even the extension needs bounding, a `.suffix` from a filename of a thousand
+dots is a thousand-character extension.
 
 ###  Never trust the content type
 
-`Content-Type` on a multipart part is whatever the client wrote. A PHP
-script uploaded as `image/png` is still a PHP script. Detect the type
-from the bytes — a magic-number check on the first few bytes — and reject
-anything whose real type is not on your allowlist.
+`Content-Type` on a multipart part is whatever the client wrote. A PHP script
+uploaded as `image/png` is still a PHP script. Detect the type from the bytes
+(a magic-number check on the first few bytes) and reject anything whose real
+type is not on your allowlist.
 
 Use an allowlist, never a blocklist. A blocklist of dangerous extensions
 misses the one you did not think of; an allowlist of `png`, `jpeg`, `pdf`
@@ -301,11 +318,10 @@ is complete by construction.
 
 ###  Bound the size before reading
 
-An upload with no size limit is a memory exhaustion bug waiting for
-someone to notice. Check `upload.size` before reading the content, and
-enforce a limit at the proxy as well — nginx's `client_max_body_size`
-rejects the request before it reaches Python at all, which is the only
-place a limit costs you nothing.
+An upload with no size limit is a memory exhaustion bug waiting for someone to
+notice. Check `upload.size` before reading the content, and enforce a limit at
+the proxy as well. Nginx's `client_max_body_size` rejects the request before it
+reaches Python at all, which is the only place a limit costs you nothing.
 
 Bound the *count* too. Ten thousand small files in one multipart request
 is as effective a denial of service as one enormous file.
@@ -325,10 +341,10 @@ is the standard mitigation.
 
 ###  Scan what you keep
 
-If uploads are shared between users, they are a malware distribution
-channel. Scan asynchronously through the [queue](/guides/work/queue/) and
-keep files quarantined until the scan returns — a synchronous scan in the
-request handler adds seconds to an upload and blocks the event loop.
+If uploads are shared between users, they are a malware distribution channel.
+Scan asynchronously through the [queue](/guides/work/queue/) and keep files
+quarantined until the scan returns, a synchronous scan in the request handler
+adds seconds to an upload and blocks the event loop.
 
 ##  Streaming large uploads
 
@@ -373,9 +389,9 @@ A JSON endpoint has partial protection by accident: sending
 CORS will refuse. A form endpoint accepting
 `application/x-www-form-urlencoded` triggers no preflight at all.
 
-If your form endpoints authenticate with cookies, they need CSRF tokens.
-See [CSRF](/guides/csrf/) for the middleware and the template integration
-— the token is available as `csrf_token` in any template rendered with
+If your form endpoints authenticate with cookies, they need CSRF tokens. See
+[CSRF](/guides/csrf/) for the middleware and the template integration. The
+token is available as `csrf_token` in any template rendered with
 `request=request`.
 
 
@@ -444,6 +460,6 @@ than accepted, storage outside the web root, the original name kept only
 as a truncated label, and scanning deferred to a worker with the record
 marked `scanning` until it passes.
 
-The `413` and `415` status codes are worth using precisely — `413 Payload
-Too Large` and `415 Unsupported Media Type` tell a client exactly which
-rule it broke, where a generic 400 makes them guess.
+The `413` and `415` status codes are worth using precisely, `413 Payload Too
+Large` and `415 Unsupported Media Type` tell a client exactly which rule it
+broke, where a generic 400 makes them guess.

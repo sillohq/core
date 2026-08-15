@@ -22,10 +22,9 @@ strategies already in [`sillo.pagination`](/guides/pagination/), so that
 querysets, lists, and any other data source all paginate through one
 pipeline.
 
-There is also a second, unrelated helper — `sillo.record.queries.paginate`
-— which is simpler and has a different error contract. Both are covered
-here, because picking the wrong one is the most common mistake on this
-page.
+There is also a second, unrelated helper (`sillo.record.queries.paginate`)
+which is simpler and has a different error contract. Both are covered here,
+because picking the wrong one is the most common mistake on this page.
 
 ##  The three layers
 
@@ -60,9 +59,9 @@ consistent query parameters, HATEOAS links, and validation across every
 listing endpoint. It handles parameter parsing, clamping, and link
 construction so your handlers do not.
 
-Use `sillo.record.queries.paginate` for internal code — an admin script,
-a report, a background job — where you want a page of rows and a total
-and do not care about links or query-string conventions.
+Use `sillo.record.queries.paginate` for internal code (an admin script, a
+report, a background job) where you want a page of rows and a total and do not
+care about links or query-string conventions.
 
 Use neither for infinite-scroll feeds over large tables. Both are
 offset-based, and offset pagination degrades badly past a few thousand
@@ -93,7 +92,7 @@ async def list_users(request, response):
     return response.json(await paginator.paginate())
 ```
 
-`paginate()` returns a plain `dict` — not an object with attributes:
+`paginate()` returns a plain `dict`, not an object with attributes:
 
 ```text title="the response shape"
 {
@@ -113,9 +112,9 @@ async def list_users(request, response):
 }
 ```
 
-`result["items"]` holds model instances. `response.json` runs them
-through sillo's encoder, which serializes every column — including
-`password_hash` if you have one. Project explicitly for anything public:
+`result["items"]` holds model instances. `response.json` runs them through
+sillo's encoder, which serializes every column, including `password_hash` if
+you have one. Project explicitly for anything public:
 
 ```python title="controlling the payload"
 result = await paginator.paginate()
@@ -141,8 +140,8 @@ paginator = AsyncPaginator(
 )
 ```
 
-Prefer this when clients compose their own ranges — bulk exporters,
-sync clients, and admin tooling usually want offsets rather than pages.
+Prefer this when clients compose their own ranges: bulk exporters, sync
+clients, and admin tooling usually want offsets rather than pages.
 
 ##  Filters survive into the links
 
@@ -161,8 +160,8 @@ the full query dict rather than just the pagination keys.
 
 <Aside type="caution" title="Pass a base_url without a query string">
 
-`LinkBuilder` appends `?` unconditionally. If `base_url` already contains
-a query string — which `str(request.url)` does — you get two:
+`LinkBuilder` appends `?` unconditionally. If `base_url` already contains a
+query string (which `str(request.url)` does) you get two:
 
 ```
 https://api.example.com/posts?tag=news?page=2&page_size=5
@@ -190,7 +189,7 @@ failure modes behave differently.
 | `?page=0` | raises `InvalidPageError("Page number must be at least 1")` |
 | `?page_size=1000` with `max_page_size=20` | silently clamped to 20 |
 | `?page=abc` | raises a bare `ValueError` from `int()` |
-| any page on an empty table | returns `{"items": [], ...}` — no error |
+| any page on an empty table | returns `{"items": [], ...}`: no error |
 
 <Aside type="caution" title="?page=abc raises ValueError, not a pagination error">
 
@@ -221,9 +220,9 @@ async def handle_value_error(request, response, exc):
                          status_code=400)
 ```
 
-If you would rather have an out-of-range page return an empty list than
-an error — often the friendlier behaviour for a UI that remembers the
-last page a user visited — turn the check off:
+If you would rather have an out-of-range page return an empty list than an
+error (often the friendlier behaviour for a UI that remembers the last page a
+user visited) turn the check off:
 
 ```python
 paginator = AsyncPaginator(..., validate_total_items=False)
@@ -238,8 +237,8 @@ that claim untrue as written.
 <Aside type="danger" title="CursorPagination does not work with TortoiseDataHandler">
 
 `CursorPagination.generate_metadata` builds the next cursor with
-`items[-1][self.sort_field]` — subscript access, which assumes the items
-are dicts. `TortoiseDataHandler.get_items` returns model instances:
+`items[-1][self.sort_field]`, subscript access, which assumes the items are
+dicts. `TortoiseDataHandler.get_items` returns model instances:
 
 ```
 TypeError: 'Post' object is not subscriptable
@@ -271,9 +270,9 @@ page 2 issues:     OFFSET 1006 on a 10-row table
 InvalidPageError: Requested offset exceeds total items
 ```
 
-Any table with deleted rows, a non-1 sequence start, a UUID primary key,
-or a `sort_field` that is not the primary key will misbehave — sometimes
-by skipping rows silently, sometimes by raising.
+Any table with deleted rows, a non-1 sequence start, a UUID primary key, or a
+`sort_field` that is not the primary key will misbehave, sometimes by skipping
+rows silently, sometimes by raising.
 
 Do not use `CursorPagination` for keyset pagination. Write it directly
 against the queryset instead, which is both correct and faster:
@@ -319,9 +318,9 @@ result.to_dict()  # a JSON-ready dict, items serialized via to_dict()
 ```
 
 `PaginatedResult.to_dict()` calls `item.to_dict()` on each row, which for
-`sillo.record.Model` instances includes reverse relations — see
-[Models & Mixins](/guides/record/models/). Build the payload yourself if
-the model has any.
+`sillo.record.Model` instances includes reverse relations. See [Models &
+Mixins](/guides/record/models/). Build the payload yourself if the model has
+any.
 
 <Aside type="caution" title="This helper validates nothing">
 
@@ -353,9 +352,9 @@ mid-iteration can be skipped or repeated. Always pass a deterministically
 ordered queryset, and prefer a keyset loop for tables that change while
 you read them.
 
-`find_by_ids(queryset, ids)` is `filter(pk__in=ids)`. Watch the list
-length — most databases have a parameter limit around 32,000 and
-practical performance falls off well before that. Chunk large id lists.
+`find_by_ids(queryset, ids)` is `filter(pk__in=ids)`. Watch the list length.
+Most databases have a parameter limit around 32,000 and practical performance
+falls off well before that. Chunk large id lists.
 
 `count_by(queryset, field)` loads **every row** and counts in Python. On
 anything but a small table use SQL:
@@ -407,10 +406,10 @@ instant; page 5,000 at 20 per page reads 100,000 rows to return 20. This
 is inherent to offset pagination, not to sillo. If deep pages are a real
 access pattern, use keyset pagination.
 
-An unordered queryset has no defined row order. Two requests for the same
-page can return different rows, and a row can appear on two consecutive
-pages. Always `order_by` something unique — typically the primary key,
-or `("-created_at", "id")` when sorting by a non-unique column.
+An unordered queryset has no defined row order. Two requests for the same page
+can return different rows, and a row can appear on two consecutive pages.
+Always `order_by` something unique, typically the primary key, or
+`("-created_at", "id")` when sorting by a non-unique column.
 
 `prefetch_related` composes correctly with the handler and is the fix for
 N+1 queries in a paginated listing that touches relations.
@@ -458,9 +457,13 @@ string.
 
 ##  Related
 
-- [Pagination strategies](/guides/pagination/) — the strategy layer, link building, and error types
-- [Record Overview](/guides/record/) — setup and connection lifecycle
-- [Models & Mixins](/guides/record/models/) — `to_dict()` and what it includes
-- [Scopes & Events](/guides/record/scopes-events/) — scoping a queryset before paginating it
-- [Error Handling](/guides/error-handling/) — registering the exception handlers shown above
-- [Sending Responses](/guides/sending-responses/) — how `response.json` encodes what you hand it
+- [Pagination strategies](/guides/pagination/): the strategy layer, link
+  building, and error types
+- [Record Overview](/guides/record/): setup and connection lifecycle
+- [Models & Mixins](/guides/record/models/): `to_dict()` and what it includes
+- [Scopes & Events](/guides/record/scopes-events/): scoping a queryset before
+  paginating it
+- [Error Handling](/guides/error-handling/): registering the exception handlers
+  shown above
+- [Sending Responses](/guides/sending-responses/): how `response.json` encodes
+  what you hand it

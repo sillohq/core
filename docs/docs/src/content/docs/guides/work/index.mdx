@@ -16,9 +16,9 @@ import { Aside } from '@astrojs/starlight/components';
 
 #  Work (`sillo.work`)
 
-`sillo.work` is where everything that should not happen inside a request
-lives. Sending email, generating reports, calling slow third-party APIs,
-running nightly cleanups, reacting to domain events — all of it.
+`sillo.work` is where everything that should not happen inside a request lives.
+Sending email, generating reports, calling slow third-party APIs, running
+nightly cleanups, reacting to domain events, all of it.
 
 The package has three independent layers with genuinely different
 guarantees, and picking the wrong one is the most expensive mistake you
@@ -30,7 +30,7 @@ can make here. This page is mostly about that choice.
 |---|---|---|---|---|
 | `BackgroundTask` | Web process, same event loop | **No** | No | [Background Tasks](/guides/work/background/) |
 | Queue + `QueueWorker` | Separate worker process | Yes, with a durable connection | Yes | [Queue](/guides/work/queue/) |
-| `SchedulerManager` | Whichever process started it | No — schedules are in memory | Per job | [Scheduler](/guides/work/scheduler/) |
+| `SchedulerManager` | Whichever process started it | No. Schedules are in memory | Per job | [Scheduler](/guides/work/scheduler/) |
 
 Two supporting pieces sit alongside them: [Jobs](/guides/work/jobs/), the
 class-based unit the queue moves around, and
@@ -41,20 +41,19 @@ side effects from the code that triggers them.
 
 Ask one question: **what happens if this work silently never runs?**
 
-If the answer is "nothing much" — a cache stays cold, an analytics row is
-missing, a nice-to-have notification is skipped — a `BackgroundTask` is
-right. It is one line, it needs no infrastructure, and losing the
-occasional task on deploy is acceptable.
+If the answer is "nothing much" (a cache stays cold, an analytics row is
+missing, a nice-to-have notification is skipped) a `BackgroundTask` is right.
+It is one line, it needs no infrastructure, and losing the occasional task on
+deploy is acceptable.
 
-If the answer is "a customer is affected" — an order confirmation never
-sends, a webhook is never delivered, a payment is never captured — you
-need the queue. A background task will lose that work on every deploy,
-and deploys are routine.
+If the answer is "a customer is affected" (an order confirmation never sends, a
+webhook is never delivered, a payment is never captured) you need the queue. A
+background task will lose that work on every deploy, and deploys are routine.
 
-If the work is time-based rather than event-based — a nightly report, an
-hourly sync, a five-minute health check — that is the scheduler. Note
-that the scheduler decides *when*; for anything that must not be lost, it
-should enqueue a job rather than doing the work inline.
+If the work is time-based rather than event-based (a nightly report, an hourly
+sync, a five-minute health check) that is the scheduler. Note that the
+scheduler decides *when*; for anything that must not be lost, it should enqueue
+a job rather than doing the work inline.
 
 ```python title="the pattern that combines them"
 @scheduler.cron("0 2 * * *")
@@ -95,8 +94,8 @@ It also calls `app.on_startup(scheduler.start)` and
 `app.on_shutdown(scheduler.stop)`, so the scheduler loop follows the
 application lifecycle.
 
-Like `setup_record`, it is idempotent — a second call returns the
-existing dict and ignores its arguments.
+Like `setup_record`, it is idempotent. A second call returns the existing dict
+and ignores its arguments.
 
 <Aside type="caution" title="The default queue connection is in-memory">
 
@@ -106,9 +105,9 @@ and local development and it provides **none** of the durability that
 motivated using a queue in the first place.
 
 A job pushed to a `SyncConnection` disappears on restart exactly like a
-background task, and is invisible to a worker running in another
-process — which means the worker you deployed is idle while your web
-process quietly accumulates jobs it will lose.
+background task, and is invisible to a worker running in another process, which
+means the worker you deployed is idle while your web process quietly
+accumulates jobs it will lose.
 
 For anything real, use `RedisConnection`. See
 [Queue](/guides/work/queue/) for the configuration and for what changes
@@ -140,8 +139,8 @@ BackgroundTask.run(send_welcome_email, user.email)
 ```
 
 Read [Background Tasks](/guides/work/background/) before using this in
-production — in particular the section on the task registry, which
-retains every task object for the life of the process.
+production, in particular the section on the task registry, which retains every
+task object for the life of the process.
 
 ###  Tasks and the `@task` decorator
 
@@ -163,10 +162,10 @@ send_welcome._work_max_attempts # 3
 await send_welcome("a@b.com")   # still an ordinary async function
 ```
 
-The decorator returns the function unchanged apart from those
-attributes — calling it runs it immediately, in the caller's context.
-Decorating a function does not make it asynchronous, deferred, retried,
-or durable. Only enqueuing it does.
+The decorator returns the function unchanged apart from those attributes.
+Calling it runs it immediately, in the caller's context. Decorating a function
+does not make it asynchronous, deferred, retried, or durable. Only enqueuing it
+does.
 
 ###  Queue and workers
 
@@ -178,9 +177,9 @@ connection = app.state["queue_connection"]
 await connection.push("invoices", payload)
 ```
 
-Note that `Job.dispatch()` and the `dispatch()` helper cannot be called
-from an async context — see [Jobs](/guides/work/jobs/). Push through the
-connection instead.
+Note that `Job.dispatch()` and the `dispatch()` helper cannot be called from an
+async context. See [Jobs](/guides/work/jobs/). Push through the connection
+instead.
 
 ###  Scheduler
 
@@ -217,8 +216,7 @@ class OrderPlaced(Event):
 await events.dispatch(OrderPlaced(order_id=order.id))
 ```
 
-Events are dataclass instances, not string names — `dispatch` takes the
-object.
+Events are dataclass instances, not string names. `dispatch` takes the object.
 
 ##  Known rough edges
 
@@ -227,8 +225,8 @@ they belong on the overview rather than buried in a subpage.
 
 <Aside type="danger" title="Job.dispatch() cannot be called from an async context">
 
-`Dispatchable.dispatch_after` — which `dispatch()`, `dispatch_after()`,
-and the module-level `dispatch()` helper all route through — calls
+`Dispatchable.dispatch_after` (which `dispatch()`, `dispatch_after()`, and the
+module-level `dispatch()` helper all route through) calls
 `asyncio.get_event_loop().run_until_complete(...)`.
 
 Inside a running loop, that raises:
@@ -254,14 +252,14 @@ await connection.push(
 )
 ```
 
-`dispatch_sync()` has the same defect. The error message it raises when
-no connection is set also names a method that does not exist —
+`dispatch_sync()` has the same defect. The error message it raises when no
+connection is set also names a method that does not exist.
 `Job.set_connection()`; the real one is `Job.on_connection()`.
 
 </Aside>
 
-The `BackgroundTask` registry retains every task object for the life of
-the process — see [Background Tasks](/guides/work/background/).
+The `BackgroundTask` registry retains every task object for the life of the
+process. See [Background Tasks](/guides/work/background/).
 
 `Supervisor.start()` blocks rather than returning, so it must be wrapped
 in `asyncio.create_task`.
@@ -281,11 +279,11 @@ against `SyncConnection` and genuinely durable against
 `RedisConnection`. The call site cannot tell you which you have.
 
 **The scheduler's schedule is never durable.** Jobs registered with
-`@scheduler.every` and `@scheduler.cron` live in the manager's memory and
-are rebuilt from your code at every startup. That is fine — your code is
-the source of truth — but it means a job that was due while the process
-was down is simply missed, not caught up. If missed runs matter, record
-the last successful run and reconcile on startup.
+`@scheduler.every` and `@scheduler.cron` live in the manager's memory and are
+rebuilt from your code at every startup. That is fine (your code is the source
+of truth) but it means a job that was due while the process was down is simply
+missed, not caught up. If missed runs matter, record the last successful run
+and reconcile on startup.
 
 **Multi-process scheduling double-runs.** Every process that calls
 `setup_work` starts its own scheduler loop, so with four workers your
@@ -339,10 +337,9 @@ async def drain_background_work():
     await BackgroundTask.drain(timeout=10)
 ```
 
-The division is deliberate. Charging a card is durable. Cache warming is
-not. And the scheduled job exists precisely because neither layer is
-perfect — it is the reconciliation loop that catches whatever fell
-through.
+The division is deliberate. Charging a card is durable. Cache warming is not.
+And the scheduled job exists precisely because neither layer is perfect. It is
+the reconciliation loop that catches whatever fell through.
 
 ##  What not to do
 
@@ -389,8 +386,8 @@ await bt.wait(timeout=5)
 assert outbox.messages == [...]
 ```
 
-**Run jobs inline.** A job's `handle()` is just a method — construct the
-class and await it, skipping the queue entirely:
+**Run jobs inline.** A job's `handle()` is just a method, construct the class
+and await it, skipping the queue entirely:
 
 ```python
 await ChargeCard(order_id=order.id).handle()
@@ -406,9 +403,9 @@ framework's job; testing that your report is correct is yours.
 
 ##  Performance notes
 
-Background tasks and the scheduler share the web process's event loop.
-Anything slow or CPU-bound there costs you request throughput directly —
-measure p99 latency before and after adding one.
+Background tasks and the scheduler share the web process's event loop. Anything
+slow or CPU-bound there costs you request throughput directly, measure p99
+latency before and after adding one.
 
 Queue workers are separate processes and scale independently. That is the
 entire point: web processes stay small and responsive, workers absorb the
@@ -432,10 +429,13 @@ dispatched the event, unless you dispatch without awaiting.
 
 ##  Related
 
-- [Background Tasks](/guides/work/background/) — fire-and-forget, supervision, drain
-- [Queue System](/guides/work/queue/) — connections, workers, middleware, batches, failures
-- [Jobs](/guides/work/jobs/) — the dispatchable job class
-- [Scheduler](/guides/work/scheduler/) — interval and cron triggers
-- [Events](/guides/work/events/) — in-process pub/sub for side effects
-- [Concurrency](/guides/concurrency/) — the event loop these layers share
-- [Startup & Shutdown](/guides/startups-and-shutdowns/) — where the scheduler hooks attach
+- [Background Tasks](/guides/work/background/): fire-and-forget, supervision,
+  drain
+- [Queue System](/guides/work/queue/): connections, workers, middleware,
+  batches, failures
+- [Jobs](/guides/work/jobs/): the dispatchable job class
+- [Scheduler](/guides/work/scheduler/): interval and cron triggers
+- [Events](/guides/work/events/): in-process pub/sub for side effects
+- [Concurrency](/guides/concurrency/): the event loop these layers share
+- [Startup & Shutdown](/guides/startups-and-shutdowns/): where the scheduler
+  hooks attach

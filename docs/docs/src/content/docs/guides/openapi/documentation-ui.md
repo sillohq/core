@@ -51,10 +51,9 @@ app = SilloApp(docs=[], openapi_url="/internal/openapi.json")
 
 :::caution
 **A public API with the viewer disabled still publishes its schema.**
-`/openapi.json` describes every route, parameter and model. Moving it
-somewhere unguessable is not access control — if the schema should not be
-public, put the route behind authentication or generate it into a file at
-build time.
+`/openapi.json` describes every route, parameter and model. Moving it somewhere
+unguessable is not access control. If the schema should not be public, put the
+route behind authentication or generate it into a file at build time.
 :::
 
 ##  The viewers
@@ -65,46 +64,45 @@ build time.
 Atlas(path="/docs", theme="auto")
 ```
 
-[Atlas](https://github.com/sillohq/atlas) is sillo's own reference, and
-what `docs` defaults to — so this line is what you get for free.
+[Atlas](https://github.com/sillohq/atlas) is sillo's own reference, and what
+`docs` defaults to, so this line is what you get for free.
 
-Three panes: operations on the left, detail in the middle, a request
-builder on the right. It carries sillo's own palette, so your API's
-reference looks like the rest of sillo rather than like a viewer bolted
-on. Method badges are the exception and stay a functional set — telling
-`GET` from `DELETE` at a glance beats brand consistency.
+Three panes: operations on the left, detail in the middle, a request builder on
+the right. It carries sillo's own palette, so your API's reference looks like
+the rest of sillo rather than like a viewer bolted on. Method badges are the
+exception and stay a functional set, telling `GET` from `DELETE` at a glance
+beats brand consistency.
 
 - **`⌘K` search that ranks rather than filters.** Typing `user` puts
   `GET /users` above a passing mention of "user" twelve operations down.
 - **A request builder that sends.** The form is seeded from the schema, so
   an operation is runnable the moment you open it. Real timing, status,
   size, headers, and a response viewer. Credentials persist across reloads.
-- **Snippets in nine languages** — cURL, HTTPie, Python (httpx and
-  requests), JavaScript fetch, Node axios, Go, PHP, Ruby — generated from
-  *the same request the Send button makes*, so a copied snippet cannot
-  describe something else.
+- **Snippets in nine languages**: cURL, HTTPie, Python (httpx and requests),
+  JavaScript fetch, Node axios, Go, PHP, Ruby, generated from *the same request
+  the Send button makes*, so a copied snippet cannot describe something else.
 - **The whole `info` block.** Licence, terms, contact and external
   documentation as links, every base URL, and every security scheme with
   its OAuth scopes.
 - **Light and dark**, following the operating system.
 
-79 KB with no dependencies and its styles inlined, so the page is one
-script tag — against roughly 1.4 MB for Swagger UI.
+79 KB with no dependencies and its styles inlined, so the page is one script
+tag, against roughly 1.4 MB for Swagger UI.
 
 :::note
 **It sends requests to the origin you are on.** A document declaring
 `http://localhost:8000` is right on the author's machine and wrong on a
-colleague's port 8001, on a LAN address, or behind a proxy. When the
-document was fetched from the same origin as the page — that is, when your
-API is serving its own documentation — Atlas offers that origin as *This
-server* and selects it. The declared servers stay in the dropdown.
+colleague's port 8001, on a LAN address, or behind a proxy. When the document
+was fetched from the same origin as the page (that is, when your API is serving
+its own documentation) Atlas offers that origin as *This server* and selects
+it. The declared servers stay in the dropdown.
 :::
 
 ####  Pinning and self-hosting
 
 The bundle is served from a **pinned tag** on jsDelivr, never a branch. An
 unpinned URL would mean every sillo application's documentation changes the
-moment Atlas does — a bad surprise in production, and an unreproducible bug
+moment Atlas does, a bad surprise in production, and an unreproducible bug
 report.
 
 ```python
@@ -113,9 +111,9 @@ from sillo.openapi.ui import ATLAS_VERSION
 print(ATLAS_VERSION)     # the tag this sillo release points at
 ```
 
-To serve it yourself — which a deployment with no outbound network or a
-strict `Content-Security-Policy` needs — download
-`dist/atlas.standalone.js` from that tag and point at your own copy:
+To serve it yourself (which a deployment with no outbound network or a strict
+`Content-Security-Policy` needs) download `dist/atlas.standalone.js` from that
+tag and point at your own copy:
 
 ```python
 Atlas(js_url="/static/atlas.standalone.js")
@@ -130,8 +128,8 @@ script never loads.
 Swagger(path="/docs")
 ```
 
-Interactive, with a *Try it out* button per operation. The previous
-default — still shipped, and one line away if you prefer it.
+Interactive, with a *Try it out* button per operation. The previous default,
+still shipped, and one line away if you prefer it.
 
 ###  ReDoc
 
@@ -139,8 +137,8 @@ default — still shipped, and one line away if you prefer it.
 ReDoc(path="/redoc")
 ```
 
-Three-column reference layout. Read-only — no request execution — which
-makes it the better choice for a published reference.
+Three-column reference layout. Read-only (no request execution) which makes it
+the better choice for a published reference.
 
 ###  Scalar
 
@@ -172,9 +170,8 @@ ReDoc(ui_config={"hideDownloadButton": True, "expandResponses": "200,201"})
 Scalar(theme="moon", ui_config={"hideDownloadButton": True})
 ```
 
-`url` and `dom_id` are set by the presenter and cannot be overridden —
-replacing them only ever produces a page that loads the viewer and shows
-nothing.
+`url` and `dom_id` are set by the presenter and cannot be overridden, replacing
+them only ever produces a page that loads the viewer and shows nothing.
 
 ###  Title and favicon
 
@@ -183,10 +180,10 @@ Atlas(title="Myapp — Internal API", favicon_url="/static/favicon.svg")
 Atlas(favicon_url=None)                      # no icon at all
 ```
 
-`title` defaults to the API title, so `SilloApp(title="Myapp")` already
-names the tab correctly. The favicon defaults to sillo's own, and its
-media type follows the file extension — an `.svg` is labelled
-`image/svg+xml` rather than handed to the browser as a PNG.
+`title` defaults to the API title, so `SilloApp(title="Myapp")` already names
+the tab correctly. The favicon defaults to sillo's own, and its media type
+follows the file extension. An `.svg` is labelled `image/svg+xml` rather than
+handed to the browser as a PNG.
 
 ##  Self-hosting the assets
 
@@ -203,10 +200,10 @@ ReDoc(js_url="/static/redoc.standalone.js")
 Scalar(js_url="/static/scalar.js")
 ```
 
-This is what a deployment with no outbound network needs, and what a
-strict `Content-Security-Policy` needs — a policy without
-`script-src https://unpkg.com` blocks the default page, and the symptom is
-a blank viewer rather than an error.
+This is what a deployment with no outbound network needs, and what a strict
+`Content-Security-Policy` needs. A policy without `script-src
+https://unpkg.com` blocks the default page, and the symptom is a blank viewer
+rather than an error.
 
 It also pins the version. `redoc/latest` is whatever ReDoc shipped this
 morning.
@@ -229,8 +226,8 @@ rather than letting one silently shadow the other.
 
 ##  Writing your own
 
-A presenter is a class with a `path` and a `render(ctx)`. That is the
-entire contract — no registration call, no entry point:
+A presenter is a class with a `path` and a `render(ctx)`. That is the entire
+contract, no registration call, no entry point:
 
 ```python
 from sillo.openapi.ui import DocsUI, DocsContext
@@ -257,10 +254,9 @@ class RapiDoc(DocsUI):
 app = SilloApp(docs=[RapiDoc()])
 ```
 
-Subclassing `DocsUI` gets you the `path`/`title`/`favicon_url` handling
-for free, but it is not required — any object with those two attributes
-is accepted. Anything else raises `TypeError` at construction, naming
-what it got.
+Subclassing `DocsUI` gets you the `path`/`title`/`favicon_url` handling for
+free, but it is not required, any object with those two attributes is accepted.
+Anything else raises `TypeError` at construction, naming what it got.
 
 ###  What `render` receives
 
@@ -289,8 +285,8 @@ if swagger is not None:
     print(swagger.path)
 ```
 
-Returns `None` when that viewer is not mounted, which is the useful case
-— a health check or a startup log that reports where the docs are.
+Returns `None` when that viewer is not mounted, which is the useful case, a
+health check or a startup log that reports where the docs are.
 
 ##  Migrating from `swagger_docs` and `redoc_docs`
 
@@ -318,7 +314,7 @@ The translation is direct:
 | --- | --- |
 | `swagger_docs="/api-docs"` | `docs=[Atlas(path="/api-docs"), ReDoc()]` |
 | `redoc_docs="/api-redoc"` | `docs=[Swagger(), ReDoc(path="/api-redoc")]` |
-| — no equivalent — | `docs=[]` |
+| no equivalent | `docs=[]` |
 
 Note the last row: turning the viewers off is something the old arguments
 could not express at all.
@@ -343,7 +339,9 @@ could not express at all.
 
 ##  Related
 
-- [OpenAPI Overview](/guides/openapi/) — how the document is generated
-- [OpenAPI Customization](/guides/openapi/customizing-openapi-configuration/) — title, servers, security schemes
-- [Static Files](/guides/static-files/) — serving self-hosted viewer assets
-- [Protecting Routes](/guides/protecting-routes/) — putting the schema behind auth
+- [OpenAPI Overview](/guides/openapi/): how the document is generated
+- [OpenAPI Customization](/guides/openapi/customizing-openapi-configuration/):
+  title, servers, security schemes
+- [Static Files](/guides/static-files/): serving self-hosted viewer assets
+- [Protecting Routes](/guides/protecting-routes/): putting the schema behind
+  auth

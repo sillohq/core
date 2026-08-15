@@ -14,19 +14,29 @@ head:
 
 #  Middleware
 
-Middleware is code that runs around your handlers — before a request reaches them and after the response comes back. Use it for cross-cutting concerns that would otherwise repeat on every route: logging, timing, authentication, CORS, request-ID injection, rate limiting, response shaping.
+Middleware is code that runs around your handlers, before a request reaches
+them and after the response comes back. Use it for cross-cutting concerns that
+would otherwise repeat on every route: logging, timing, authentication, CORS,
+request-ID injection, rate limiting, response shaping.
 
 sillo gives you three layers, from highest-level to lowest:
 
-- **Function middleware** via `app.use(fn)` — operates on sillo's `Request`/`Response`, with an `await call_next()` continuation.
-- **Class-based middleware** via `BaseMiddleware` — the same idea, organized into `process_request` / `process_response` methods.
-- **Raw ASGI middleware** via `app.wrap_asgi(...)` — operates on the raw `scope`/`receive`/`send` triple, for third-party or framework-agnostic middleware.
+- **Function middleware** via `app.use(fn)`: operates on sillo's
+  `Request`/`Response`, with an `await call_next()` continuation.
+- **Class-based middleware** via `BaseMiddleware`: the same idea, organized
+  into `process_request` / `process_response` methods.
+- **Raw ASGI middleware** via `app.wrap_asgi(...)`: operates on the raw
+  `scope`/`receive`/`send` triple, for third-party or framework-agnostic
+  middleware.
 
 This page covers all three, how they nest, and how to scope them to a single route or an entire router.
 
 ##  The smallest useful form
 
-A middleware function takes three positional arguments — `request`, `response`, and a continuation (commonly named `next`, `call_next`, or `cnext`). Call and `await` the continuation to pass control downstream; whatever it returns is the response, which you then return:
+A middleware function takes three positional arguments: `request`, `response`,
+and a continuation (commonly named `next`, `call_next`, or `cnext`). Call and
+`await` the continuation to pass control downstream; whatever it returns is the
+response, which you then return:
 
 ```python
 from sillo import SilloApp
@@ -42,7 +52,9 @@ async def log_requests(request, response, call_next):
 app.use(log_requests)
 ```
 
-The continuation's name is yours to choose — sillo binds it by position, not by name. The rule that matters: **you must `await call_next()` and return its result**, or the client's request will hang.
+The continuation's name is yours to choose: sillo binds it by position, not by
+name. The rule that matters: **you must `await call_next()` and return its
+result**, or the client's request will hang.
 
 <aside type="tip" title="What the continuation returns">
 `await call_next()` returns the `Response` produced by the rest of the pipeline (the inner middleware plus your handler). You can modify that response before returning it, or return a different response entirely to short-circuit the request.
@@ -85,7 +97,9 @@ async def index(request, response):
 
 ###  Short-circuiting
 
-If a middleware returns a `Response` *without* calling `call_next()`, the pipeline stops — no further middleware or handler runs. This is how auth and validation gates work:
+If a middleware returns a `Response` *without* calling `call_next()`, the
+pipeline stops, no further middleware or handler runs. This is how auth and
+validation gates work:
 
 ```python
 from sillo.exceptions import HTTPException
@@ -135,10 +149,14 @@ app.use(TimingMiddleware())
 
 Two rules, verified against the base class:
 
-1. **`process_request` must `await call_next()` (no arguments) and return its result.** The continuation takes no arguments — `await call_next()`, not `await call_next(request, response)`.
+1. **`process_request` must `await call_next()` (no arguments) and return its
+   result.** The continuation takes no arguments, `await call_next()`, not
+   `await call_next(request, response)`.
 2. **`process_response` only runs if `process_request` actually called `call_next()`.** If you short-circuit by returning a response without calling `call_next()`, `process_response` is skipped. When it does run, return the (possibly modified) `response`.
 
-Both methods are optional — implement only what you need. If you only need pre-handler logic, a plain `process_request` that returns `await call_next()` is enough.
+Both methods are optional, implement only what you need. If you only need
+pre-handler logic, a plain `process_request` that returns `await call_next()`
+is enough.
 
 ###  Catching errors inside middleware
 
@@ -206,7 +224,10 @@ app.mount_router(api)
 
 ##  Raw ASGI middleware
 
-`app.wrap_asgi(...)` wraps the entire sillo app in a standard ASGI middleware that sees the raw `scope`, `receive`, and `send` callables — before sillo parses the request into a `Request`. Use this for third-party ASGI middleware (GZip, correlation IDs, Sentry) or when you need to touch the ASGI layer directly.
+`app.wrap_asgi(...)` wraps the entire sillo app in a standard ASGI middleware
+that sees the raw `scope`, `receive`, and `send` callables, before sillo parses
+the request into a `Request`. Use this for third-party ASGI middleware (GZip,
+correlation IDs, Sentry) or when you need to touch the ASGI layer directly.
 
 ```python
 def gzip_middleware(app):
@@ -218,7 +239,8 @@ def gzip_middleware(app):
 app.wrap_asgi(gzip_middleware)
 ```
 
-A class-based form is also supported — implement `__call__(self, scope, receive, send)` and store the wrapped `app`:
+A class-based form is also supported, implement `__call__(self, scope, receive,
+send)` and store the wrapped `app`:
 
 ```python
 class ScopeLogger:
@@ -232,13 +254,14 @@ class ScopeLogger:
 app.wrap_asgi(ScopeLogger)
 ```
 
-Raw ASGI middleware does **not** have access to sillo's `Request`/`Response` — only the ASGI primitives. If you need sillo objects, use `app.use` instead.
+Raw ASGI middleware does **not** have access to sillo's `Request`/`Response`,
+only the ASGI primitives. If you need sillo objects, use `app.use` instead.
 
 ##  `use` vs `wrap_asgi`
 
 | | `app.use(fn)` | `app.wrap_asgi(mw)` |
 | --- | --- | --- |
-| Abstraction | High — sillo `Request`/`Response` | Low — ASGI `scope`/`receive`/`send` |
+| Abstraction | High. Sillo `Request`/`Response` | Low. ASGI `scope`/`receive`/`send` |
 | Framework | sillo-specific | Framework-agnostic |
 | Best for | Auth, logging, request/response shaping | Third-party ASGI middleware, low-level tweaks |
 | Continuation | `await call_next()` | `await app(scope, receive, send)` |
@@ -276,12 +299,15 @@ See [Security](/guides/security/), [CSRF](/guides/csrf/), [CORS](/guides/cors/),
 - **Not returning `await call_next()`.** A middleware that calls `call_next()` but forgets `return` leaves the response unpropagated and the client hangs. Always `return await call_next()`.
 - **Calling the continuation with arguments.** The sillo continuation takes no arguments: `await call_next()`, not `await call_next(request, response)`.
 - **Mutating `response` but not returning it** (class-based `process_response`). Return the response you want sent.
-- **Wrong order for gates.** Put auth/validation middleware where it rejects *before* expensive downstream work — remember the last `app.use` written is outermost.
+- **Wrong order for gates.** Put auth/validation middleware where it rejects
+  *before* expensive downstream work. Remember the last `app.use` written is
+  outermost.
 - **Forgetting `process_response` is skipped on short-circuit.** If `process_request` returns a response without calling `call_next()`, your response-shaping code won't run.
 
 ##  Testing middleware
 
-Drive middleware through `TestClient` like any endpoint — assert headers, status codes, and short-circuit behavior:
+Drive middleware through `TestClient` like any endpoint: assert headers, status
+codes, and short-circuit behavior:
 
 ```python
 from sillo import SilloApp
@@ -317,11 +343,13 @@ def test_short_circuit():
 
 ##  Works with
 
-- [Handlers](/guides/handlers/) — what middleware wraps
-- [Routing](/guides/routing/) — `middleware=` on routes and routers
-- [Error Handling](/guides/error-handling/) — format errors raised in middleware
-- [Dependency Injection](/guides/dependency-injection/) — inject shared logic instead of middleware when it's per-handler
-- [Request Lifecycle](/guides/request-lifecycle/) — `RequestId` is middleware under the hood
+- [Handlers](/guides/handlers/): what middleware wraps
+- [Routing](/guides/routing/): `middleware=` on routes and routers
+- [Error Handling](/guides/error-handling/): format errors raised in middleware
+- [Dependency Injection](/guides/dependency-injection/): inject shared logic
+  instead of middleware when it's per-handler
+- [Request Lifecycle](/guides/request-lifecycle/): `RequestId` is middleware
+  under the hood
 
 
 ##  Order is the whole design
@@ -345,9 +373,9 @@ exception.
 headers, or the browser reports a CORS failure instead of the real 401
 and you debug the wrong thing.
 
-**Authentication goes before authorization**, and both go before anything
-that depends on knowing who the caller is — including per-user rate
-limits and audit logging.
+**Authentication goes before authorization**, and both go before anything that
+depends on knowing who the caller is, including per-user rate limits and audit
+logging.
 
 **Compression and response rewriting go last**, closest to the handler,
 so they operate on the final body rather than one an outer layer will
@@ -360,10 +388,10 @@ middleware each taking one millisecond is ten milliseconds added to your
 fastest endpoint, and it will not show up in handler timings.
 
 Two rules keep that bounded. Do no I/O in middleware unless every request
-genuinely needs it — a database lookup in middleware is a query on every
-static-file request too. And return early: a middleware that can decide
-without calling `call_next` should, because everything below it is then
-skipped entirely.
+genuinely needs it. A database lookup in middleware is a query on every
+static-file request too. And return early: a middleware that can decide without
+calling `call_next` should, because everything below it is then skipped
+entirely.
 
 ```python title="short-circuiting cheaply"
 async def block_bad_agents(request, response, call_next):
@@ -374,13 +402,12 @@ async def block_bad_agents(request, response, call_next):
 
 ##  Exceptions inside middleware
 
-A middleware that raises before `call_next` prevents the handler from
-running at all. One that raises after has already let the handler run —
-including its side effects — and then discards the response. That
-asymmetry is worth being deliberate about: validation-shaped work belongs
-before, response shaping belongs after, and anything that might fail
-after the handler has committed a database transaction needs to not
-throw.
+A middleware that raises before `call_next` prevents the handler from running
+at all. One that raises after has already let the handler run (including its
+side effects) and then discards the response. That asymmetry is worth being
+deliberate about: validation-shaped work belongs before, response shaping
+belongs after, and anything that might fail after the handler has committed a
+database transaction needs to not throw.
 
 Always call `call_next` exactly once. Calling it twice runs the handler
 twice; not calling it at all means returning a response yourself, which
@@ -393,10 +420,9 @@ A middleware is a function of `(request, response, call_next)`, so the
 cheapest test calls it directly with a stub `call_next`. That proves the
 logic without a server, a route, or a client.
 
-For the ordering — which is where the real bugs are — assert on
-behaviour through the full stack: send a request that should be rejected
-by an outer layer and check that the inner one never ran. A counter in
-the handler is enough:
+For the ordering (which is where the real bugs are) assert on behaviour through
+the full stack: send a request that should be rejected by an outer layer and
+check that the inner one never ran. A counter in the handler is enough:
 
 ```python
 def test_rate_limit_runs_before_handler():

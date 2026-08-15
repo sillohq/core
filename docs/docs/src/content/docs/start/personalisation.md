@@ -1,6 +1,6 @@
 ---
 title: Personalisation
-description: "What sillo-start rewrites when it renames a starter to your project — the exact substitutions, the lockfile, and the files it deliberately leaves alone."
+description: "What sillo-start rewrites when it renames a starter to your project: the exact substitutions, the lockfile, and the files it deliberately leaves alone."
 head:
   - tag: meta
     attrs:
@@ -45,7 +45,7 @@ For a project named `myapp`:
 | `.env.example` | `sqlite://storage/starter.db` | `sqlite://storage/myapp.db` |
 
 Two capitalisations are used. `myapp` is the name as you typed it; `Myapp` is
-its title-cased form with separators removed — `my-cool-app` becomes
+its title-cased form with separators removed. `my-cool-app` becomes
 `MyCoolApp`.
 
 A file that is not there, or a string that is not in it, is skipped rather than
@@ -76,7 +76,7 @@ Model modules are absent from the list, on purpose.
 
 A model's docstring becomes its `table_description` in the generated schema. So
 rewriting one puts your models out of step with the migration the starter
-committed — and the next `sillo db:make` notices the difference and writes a
+committed, and the next `sillo db:make` notices the difference and writes a
 spurious second migration describing a comment change.
 
 The cost of leaving them is a docstring that says "starter". The cost of
@@ -94,8 +94,8 @@ Never touched. It may hold real credentials. See
 
 ### Anything under `.git`
 
-Not applicable in the normal case — the starter arrives as a tarball with no
-history — but worth stating for `--force` into an existing checkout.
+Not applicable in the normal case (the starter arrives as a tarball with no
+history) but worth stating for `--force` into an existing checkout.
 
 ## Doing it yourself
 
@@ -114,8 +114,8 @@ It returns the list of paths it changed, relative to the root. See
 
 ## If you need more
 
-Personalisation is deliberately small. Anything beyond renaming — choosing a
-database driver, dropping the admin panel, adding a frontend — belongs in the
+Personalisation is deliberately small. Anything beyond renaming (choosing a
+database driver, dropping the admin panel, adding a frontend) belongs in the
 starter itself, as something the application already supports and you
 configure, rather than as a substitution the scaffolder performs.
 

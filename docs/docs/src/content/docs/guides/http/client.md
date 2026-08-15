@@ -44,7 +44,8 @@ async with HTTPClient("https://api.example.com") as client:
     await client.delete("/users/1")
 ```
 
-All standard HTTP methods are available as async shorthands — `get`, `post`, `put`, `patch`, `delete`, `head`, and `options`.
+All standard HTTP methods are available as async shorthands: `get`, `post`,
+`put`, `patch`, `delete`, `head`, and `options`.
 
 ##  Configuration
 
@@ -391,49 +392,48 @@ actually causes incidents: the other service.
 ###  Every outbound call needs a timeout
 
 An HTTP call without a timeout can hang forever. One hung call holds a
-connection, a task, and — if it happens inside a request handler — a
-client waiting on your endpoint. A dependency that stops responding
-without closing connections will exhaust your worker pool in minutes,
-and your service goes down without ever having an error.
+connection, a task, and (if it happens inside a request handler) a client
+waiting on your endpoint. A dependency that stops responding without closing
+connections will exhaust your worker pool in minutes, and your service goes
+down without ever having an error.
 
 `HTTPClientConfig` exposes granular timeouts because the phases fail
 differently:
 
 | Phase | Typical value | What a timeout here means |
 |---|---|---|
-| connect | 2–5s | The host is unreachable or overloaded |
-| read | 5–30s | Connected, but the response is slow |
-| write | 5–10s | Your request body is uploading slowly |
-| pool | 1–5s | You are out of connections locally |
+| connect | 2: 5s | The host is unreachable or overloaded |
+| read | 5: 30s | Connected, but the response is slow |
+| write | 5: 10s | Your request body is uploading slowly |
+| pool | 1: 5s | You are out of connections locally |
 
 A pool timeout is the one that surprises people: it means *your* client
 is saturated, not that the remote is slow. Seeing them is a signal to
 raise `max_connections` or reduce concurrency, not to raise the read
 timeout.
 
-Set the total budget below your own endpoint's budget. If your API
-promises a response in two seconds, an upstream call with a 30-second
-read timeout cannot honour that — the timeout is a promise you are making
-to your own callers.
+Set the total budget below your own endpoint's budget. If your API promises a
+response in two seconds, an upstream call with a 30-second read timeout cannot
+honour that. The timeout is a promise you are making to your own callers.
 
 ###  Retry only what is safe to repeat
 
-Retrying is the default reflex and it is wrong for anything
-non-idempotent. `GET`, `HEAD`, `PUT`, and `DELETE` are safe to repeat by
-definition. `POST` is not — a retried payment is a double charge.
+Retrying is the default reflex and it is wrong for anything non-idempotent.
+`GET`, `HEAD`, `PUT`, and `DELETE` are safe to repeat by definition. `POST` is
+not. A retried payment is a double charge.
 
 Retry these:
 
 - Connection errors and timeouts where no response was received
 - `429 Too Many Requests`, respecting `Retry-After`
-- `502`, `503`, `504` — the upstream is failing, not you
+- `502`, `503`, `504`: the upstream is failing, not you
 
 Do not retry these:
 
-- `400`, `422` — the request is wrong and will be wrong again
-- `401`, `403` — refresh credentials instead
-- `404` — it will still not exist
-- `409` — resolve the conflict
+- `400`, `422`: the request is wrong and will be wrong again
+- `401`, `403`: refresh credentials instead
+- `404`: it will still not exist
+- `409`: resolve the conflict
 
 For a `POST` you must retry, send an idempotency key the upstream
 honours, so a duplicate request is deduplicated on their side rather than
@@ -441,11 +441,10 @@ executed twice.
 
 ###  Backoff needs jitter
 
-Exponential backoff without jitter synchronises your clients. If fifty
-workers all fail at the same moment and all retry after exactly two
-seconds, the upstream receives fifty simultaneous requests at exactly the
-moment it is least able to serve them — and the cycle repeats, louder,
-at four seconds.
+Exponential backoff without jitter synchronises your clients. If fifty workers
+all fail at the same moment and all retry after exactly two seconds, the
+upstream receives fifty simultaneous requests at exactly the moment it is least
+able to serve them, and the cycle repeats, louder, at four seconds.
 
 Jitter breaks the synchronisation. The arithmetic and the tradeoffs
 between full, equal, and decorrelated jitter are covered in the
@@ -480,9 +479,9 @@ copied into places credentials should never reach.
 logger.info("calling %s", sanitize_url_for_log(url))
 ```
 
-`sanitize_url_for_log` is exported for exactly this. Apply the same care
-to headers — an `Authorization` header dumped into a debug log is a
-credential leak with a timestamp on it.
+`sanitize_url_for_log` is exported for exactly this. Apply the same care to
+headers, an `Authorization` header dumped into a debug log is a credential leak
+with a timestamp on it.
 
 ###  Validate the response, do not trust it
 
@@ -498,15 +497,15 @@ for you.
 
 ###  Cache reads, never writes
 
-`cache_ttl` caches successful `GET` responses. That is a large win for
-data that changes slowly — currency rates, feature flags, catalogue
-lookups — and turns a network call into a dictionary lookup.
+`cache_ttl` caches successful `GET` responses. That is a large win for data
+that changes slowly (currency rates, feature flags, catalogue lookups) and
+turns a network call into a dictionary lookup.
 
-Two rules. Cache only idempotent methods; caching a `POST` response
-means a later `POST` returns a stale result without doing anything. And
-key the cache on everything that changes the response, including the
-`Authorization` header — a cache keyed on URL alone will serve one user's
-data to another, which is the worst bug in this entire guide.
+Two rules. Cache only idempotent methods; caching a `POST` response means a
+later `POST` returns a stale result without doing anything. And key the cache
+on everything that changes the response, including the `Authorization` header,
+a cache keyed on URL alone will serve one user's data to another, which is the
+worst bug in this entire guide.
 
 ##  What not to do
 
@@ -554,10 +553,10 @@ idle ones. Setting keepalive too low means reconnecting constantly;
 setting total too high means you can overwhelm an upstream that has its
 own limits.
 
-Concurrent calls that do not depend on each other should be gathered
-rather than awaited in sequence — three 100 ms calls take 300 ms
-sequentially and 100 ms concurrently. Use `asyncio.gather` with
-`return_exceptions=True` so one failure does not cancel the others.
+Concurrent calls that do not depend on each other should be gathered rather
+than awaited in sequence, three 100 ms calls take 300 ms sequentially and 100
+ms concurrently. Use `asyncio.gather` with `return_exceptions=True` so one
+failure does not cancel the others.
 
 Statistics from `HTTPClientStats` are per-client and in memory. Export
 them to your metrics system rather than reading them from an endpoint;
@@ -565,9 +564,13 @@ per-process counters are not a monitoring strategy.
 
 ##  Related
 
-- [Retry helpers](/guides/helpers/retry/) — backoff, jitter, and retry policy in detail
-- [Cache](/guides/cache/) — the backends the response cache uses
-- [Network helpers](/guides/helpers/network/) — client IP handling and SSRF considerations
-- [Concurrency](/guides/concurrency/) — gathering independent calls
-- [Startup & Shutdown](/guides/startups-and-shutdowns/) — where to open and close the client
-- [Error Handling](/guides/error-handling/) — turning upstream failures into your own status codes
+- [Retry helpers](/guides/helpers/retry/): backoff, jitter, and retry policy in
+  detail
+- [Cache](/guides/cache/): the backends the response cache uses
+- [Network helpers](/guides/helpers/network/): client IP handling and SSRF
+  considerations
+- [Concurrency](/guides/concurrency/): gathering independent calls
+- [Startup & Shutdown](/guides/startups-and-shutdowns/): where to open and
+  close the client
+- [Error Handling](/guides/error-handling/): turning upstream failures into
+  your own status codes

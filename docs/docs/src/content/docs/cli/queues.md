@@ -1,6 +1,6 @@
 ---
 title: Queue Commands
-description: "Running the worker and managing failed jobs — queue:work, queue:list, queue:failed, queue:forget and queue:flush, and the in-process queue warning that matters most."
+description: "Running the worker and managing failed jobs, queue:work, queue:list, queue:failed, queue:forget and queue:flush, and the in-process queue warning that matters most."
 head:
   - tag: meta
     attrs:
@@ -12,7 +12,7 @@ head:
       content: queue:work, queue:list, queue:failed, queue:forget and queue:flush.
 ---
 
-The `queue:*` commands are registered inside any project — they do not need a
+The `queue:*` commands are registered inside any project. They do not need a
 database. What they connect to comes from `QUEUE_URL` in the environment.
 
 ## Read this first
@@ -74,8 +74,8 @@ will starve `default` entirely.
 ### `--max-jobs`
 
 Restarts the worker after that many jobs. This is a blunt but effective answer
-to a slow memory leak in a job — the process is replaced before it grows — and
-it is why the option exists rather than a memory limit, which would need
+to a slow memory leak in a job (the process is replaced before it grows) and it
+is why the option exists rather than a memory limit, which would need
 platform-specific measurement to enforce.
 
 Set it with a process manager that restarts the worker; on its own the process
@@ -111,7 +111,7 @@ A broker that cannot be reached is reported as itself:
 Could not reach the queue backend: Error 61 connecting to localhost:6379.
 ```
 
-— rather than as a traceback from inside the table builder, which is what you
+, rather than as a traceback from inside the table builder, which is what you
 would otherwise be reading at 3am.
 
 ## `queue:failed`
@@ -140,7 +140,7 @@ failure this is, not to be the whole traceback.
 ### An empty list is not always good news
 
 The failed-job repository defaults to an in-memory one, which is empty in every
-fresh process — including this one. So "no failures" from a console that was
+fresh process, including this one. So "no failures" from a console that was
 never given a durable repository means nothing at all, and the command says so:
 
 ```
@@ -151,8 +151,8 @@ No failed jobs recorded.
   work_commands(failed=...) to see the worker's.
 ```
 
-If you see that warning, the answer is a durable repository — see
-[Building a console](/cli/standalone-consoles/).
+If you see that warning, the answer is a durable repository. See [Building a
+console](/cli/standalone-consoles/).
 
 ## `queue:forget`
 
@@ -179,6 +179,6 @@ already did.
 
 ## See also
 
-- [Queues](/guides/work/queue/) — dispatching, retries and backoff.
-- [Jobs](/guides/work/jobs/) — writing one.
+- [Queues](/guides/work/queue/): dispatching, retries and backoff.
+- [Jobs](/guides/work/jobs/): writing one.
 - [Background work overview](/guides/work/).

@@ -31,10 +31,14 @@ graph TD
 ```
 
 The Task system sits at the intersection of several subsystems:
-- **Queue system** (`sillo.work.queue`) — Tasks are pushed onto queues and consumed by workers
-- **Background tasks** (`sillo.work.background`) — `BackgroundTask` wraps `Task` with fire-and-forget semantics
-- **Scheduler** (`sillo.work.scheduler`) — Scheduled jobs ultimately execute as tasks
-- **Middleware** (`sillo.work.middleware`) — Timeout, rate-limit, and logging middleware operate on tasks
+- **Queue system** (`sillo.work.queue`): Tasks are pushed onto queues and
+  consumed by workers
+- **Background tasks** (`sillo.work.background`): `BackgroundTask` wraps `Task`
+  with fire-and-forget semantics
+- **Scheduler** (`sillo.work.scheduler`): Scheduled jobs ultimately execute as
+  tasks
+- **Middleware** (`sillo.work.middleware`): Timeout, rate-limit, and logging
+  middleware operate on tasks
 
 ---
 
@@ -56,8 +60,10 @@ class TaskPriority(enum.IntEnum):
 
 `TaskPriority` is an `IntEnum` so that higher numerical values mean higher urgency. This ordering is critical for two reasons:
 
-1. **In-memory backend** — Uses `Task.__lt__` which compares `(-priority, created_at)`, so `CRITICAL` (3) sorts before `LOW` (0) in the min-heap.
-2. **Redis backend** — Multiplies by a large constant and negates to produce a ZSET score where lower scores are dequeued first.
+1. **In-memory backend**: Uses `Task.__lt__` which compares `(-priority,
+   created_at)`, so `CRITICAL` (3) sorts before `LOW` (0) in the min-heap.
+2. **Redis backend**: Multiplies by a large constant and negates to produce a
+   ZSET score where lower scores are dequeued first.
 
 | Priority | Value | ZSET Score Direction | Dequeue Order |
 |----------|-------|---------------------|---------------|
@@ -100,9 +106,12 @@ stateDiagram-v2
     CANCELLED --> [*]
 ```
 
-**Terminal states:** `COMPLETED`, `FAILED`, `CANCELLED` — a task in any of these states will never transition again. The `is_done` property checks for these three states.
+**Terminal states:** `COMPLETED`, `FAILED`, `CANCELLED`, a task in any of these
+states will never transition again. The `is_done` property checks for these
+three states.
 
-**Non-terminal states:** `PENDING`, `SCHEDULED`, `RUNNING`, `RETRYING` — the task is still in flight.
+**Non-terminal states:** `PENDING`, `SCHEDULED`, `RUNNING`, `RETRYING`. The
+task is still in flight.
 
 ### 2.3 TaskResult Dataclass
 
@@ -140,9 +149,10 @@ class TaskResult:
 
 **Serialization:**
 
-- `to_dict()` → `dict[str, Any]` — Full snapshot including derived properties
-- `to_json()` → `str` — JSON string with `default=str` fallback
-- `_serialise_result()` → `str | None` — Truncates result to 500 chars with `…` suffix
+- `to_dict()` → `dict[str, Any]`: Full snapshot including derived properties
+- `to_json()` → `str`: JSON string with `default=str` fallback
+- `_serialise_result()` → `str | None`: Truncates result to 500 chars with `…`
+  suffix
 
 ### 2.4 Other Health/Stats Dataclasses
 
@@ -231,7 +241,10 @@ def task(
 ) -> Callable:
 ```
 
-The `@task` decorator **tags** an async function with metadata attributes. It does **not** wrap the function or alter its behavior — the original function is returned unchanged. The metadata is stored as dunder-like attributes on the function object so that queue infrastructure can introspect them.
+The `@task` decorator **tags** an async function with metadata attributes. It
+does **not** wrap the function or alter its behavior. The original function is
+returned unchanged. The metadata is stored as dunder-like attributes on the
+function object so that queue infrastructure can introspect them.
 
 ### 3.1 Attributes Attached
 
@@ -318,9 +331,10 @@ class Task:
 
 **Key initialization details:**
 
-- `id` is always `str(uuid4())` — globally unique, never reused
+- `id` is always `str(uuid4())`: globally unique, never reused
 - `status` starts as `TaskStatus.PENDING`
-- `max_attempts` is clamped to `max(1, max_attempts)` — a task always runs at least once
+- `max_attempts` is clamped to `max(1, max_attempts)`: a task always runs at
+  least once
 - `_done` is an `asyncio.Event` used by `wait()` to block until completion
 - `_hooks` is a dict of four lists: `"before"`, `"after"`, `"success"`, `"failure"`
 - All timestamps use `time.time()` (epoch seconds)
@@ -422,7 +436,8 @@ else:
 
 ### 5.4 After Hooks
 
-After hooks fire in a `finally` block — even if an exception or cancellation occurred:
+After hooks fire in a `finally` block, even if an exception or cancellation
+occurred:
 
 ```python
 finally:
@@ -470,7 +485,8 @@ def _complete_failure(self, exc: Exception) -> None:
 
 **Critical behavior:**
 - If `attempt >= max_attempts`, the task is marked `FAILED` and failure callbacks fire
-- If attempts remain, the task is marked `RETRYING` — the caller can re-invoke `run()`
+- If attempts remain, the task is marked `RETRYING`: the caller can re-invoke
+  `run()`
 - The original exception is **always re-raised** after recording the failure
 - `TaskTimeout` exceptions are wrapped but still raised
 
@@ -508,7 +524,7 @@ sequenceDiagram
 
 ## 7. Hook System
 
-**File:** `/Users/admin/sillo.build/core/sillo/work/task.py`, lines 161–342
+**File:** `/Users/admin/sillo.build/core/sillo/work/task.py`, lines 161 to 342
 
 ### 7.1 Four Hook Groups
 
@@ -590,7 +606,7 @@ sequenceDiagram
 
 ## 8. Task Chaining
 
-### 8.1 `then()` — Successor on Success
+### 8.1 `then()`: Successor on Success
 
 ```python
 def then(self, next_task: Task) -> Task:
@@ -603,7 +619,7 @@ def then(self, next_task: Task) -> Task:
 
 The `then()` method stores the next task's serialized form in `metadata["_chain"]`. The worker inspects this metadata after success and enqueues the chained task.
 
-### 8.2 `catch()` — Fallback on Failure
+### 8.2 `catch()`: Fallback on Failure
 
 ```python
 def catch(self, fallback: Task) -> Task:
@@ -674,7 +690,7 @@ Cancels the underlying `asyncio.Task` if one exists. Returns `True` if cancellat
 
 ## 10. Serialization
 
-### 10.1 `serialize()` — For Queue Payloads
+### 10.1 `serialize()`: For Queue Payloads
 
 ```python
 def serialize(self) -> str:
@@ -691,9 +707,12 @@ def serialize(self) -> str:
     })
 ```
 
-**Note:** All args and kwargs are coerced to strings via `str()`. This is a lossy serialization — the original types are not preserved. The function reference itself is not serialized; only the metadata needed to reconstruct the task context is included.
+**Note:** All args and kwargs are coerced to strings via `str()`. This is a
+lossy serialization. The original types are not preserved. The function
+reference itself is not serialized; only the metadata needed to reconstruct the
+task context is included.
 
-### 10.2 `to_dict()` — For Monitoring/Logging
+### 10.2 `to_dict()`: For Monitoring/Logging
 
 ```python
 def to_dict(self) -> dict[str, Any]:
@@ -758,10 +777,10 @@ class LoggingMiddleware:
 ```
 
 All three middleware implement the same four-method interface:
-- `before_enqueue(task)` — Called before the task is pushed to a queue
-- `before_execute(task)` — Called before the task's function runs
-- `after_execute(result)` — Called after execution completes
-- `on_error(task, error)` — Called when execution raises
+- `before_enqueue(task)`: Called before the task is pushed to a queue
+- `before_execute(task)`: Called before the task's function runs
+- `after_execute(result)`: Called after execution completes
+- `on_error(task, error)`: Called when execution raises
 
 ---
 
@@ -804,16 +823,16 @@ The `SchedulerManager` executes scheduled jobs which may create `Task` instances
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `Task` class | `core/sillo/work/task.py` | 39–423 |
-| `@task` decorator | `core/sillo/work/task.py` | 429–461 |
-| `TaskPriority` enum | `core/sillo/work/types.py` | 27–43 |
-| `TaskStatus` enum | `core/sillo/work/types.py` | 46–55 |
-| `TaskResult` dataclass | `core/sillo/work/types.py` | 138–233 |
-| `QueueStats` dataclass | `core/sillo/work/types.py` | 236–256 |
-| `WorkerStats` dataclass | `core/sillo/work/types.py` | 259–279 |
-| `SchedulerStats` dataclass | `core/sillo/work/types.py` | 282–300 |
-| Exception hierarchy | `core/sillo/work/types.py` | 94–132 |
-| Task middleware | `core/sillo/work/middleware.py` | 1–109 |
+| `Task` class | `core/sillo/work/task.py` | 39-423 |
+| `@task` decorator | `core/sillo/work/task.py` | 429-461 |
+| `TaskPriority` enum | `core/sillo/work/types.py` | 27-43 |
+| `TaskStatus` enum | `core/sillo/work/types.py` | 46-55 |
+| `TaskResult` dataclass | `core/sillo/work/types.py` | 138-233 |
+| `QueueStats` dataclass | `core/sillo/work/types.py` | 236-256 |
+| `WorkerStats` dataclass | `core/sillo/work/types.py` | 259-279 |
+| `SchedulerStats` dataclass | `core/sillo/work/types.py` | 282-300 |
+| Exception hierarchy | `core/sillo/work/types.py` | 94-132 |
+| Task middleware | `core/sillo/work/middleware.py` | 1-109 |
 
 ---
 
@@ -829,7 +848,9 @@ UUID4 guarantees global uniqueness without coordination. This is essential for d
 A broken callback must not take down the worker. All hook execution is wrapped in `try/except` with logging only.
 
 ### D-4: Lossy Serialization
-`serialize()` coerces all args to strings. This is intentional — the function reference is not serializable, and the task is reconstructed by the worker using the function's metadata attributes.
+`serialize()` coerces all args to strings. This is intentional. The function
+reference is not serializable, and the task is reconstructed by the worker
+using the function's metadata attributes.
 
 ### D-5: `__lt__` for heapq Ordering
 The negated priority + creation time comparison ensures that `heapq` (a min-heap) dequeues highest-priority, oldest tasks first without custom comparators.

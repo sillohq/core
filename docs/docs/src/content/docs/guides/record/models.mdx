@@ -17,10 +17,10 @@ import { Aside } from '@astrojs/starlight/components';
 #  Models & Mixins
 
 `sillo.record.Model` is a Tortoise `Model` subclass that also inherits
-`HasCasts` and `HasScopes`. Everything Tortoise gives you — fields,
-querysets, `Q` objects, relations, `prefetch_related`, aggregation, raw
-SQL — is unchanged. What the subclass adds is a set of behaviours most
-applications end up writing by hand.
+`HasCasts` and `HasScopes`. Everything Tortoise gives you (fields, querysets,
+`Q` objects, relations, `prefetch_related`, aggregation, raw SQL) is unchanged.
+What the subclass adds is a set of behaviours most applications end up writing
+by hand.
 
 ```python title="a minimal model"
 from tortoise import fields
@@ -47,11 +47,11 @@ Subclass `sillo.record.Model` for models in an application that already
 uses sillo. The added surface is opt-in in practice: if you never call
 `to_dict()` or `soft_delete()`, they cost you three extra columns.
 
-Use plain `tortoise.Model` when those three columns are unwanted — a
-join table, a materialised view, an append-only event log where
-`updated_at` is meaningless, or a table whose schema is owned by another
-team. There is no way to disable the auto-fields on a per-model basis;
-the fields are declared on the abstract base.
+Use plain `tortoise.Model` when those three columns are unwanted, a join table,
+a materialised view, an append-only event log where `updated_at` is
+meaningless, or a table whose schema is owned by another team. There is no way
+to disable the auto-fields on a per-model basis; the fields are declared on the
+abstract base.
 
 ##  The three automatic fields
 
@@ -69,19 +69,19 @@ Tortoise's `auto_now` and `auto_now_add` are implemented inside
 `DatetimeField.to_db_value`, which calls `timezone.now()` in the
 application process. Two consequences follow.
 
-Rows written by raw SQL, by another service, or by a database trigger get
-no timestamps at all — `created_at` will be `NULL` unless you set it
-explicitly. And with several application servers running, `created_at`
-ordering reflects the clock of whichever machine handled the write. If
-you need a database-authoritative timestamp, add a column with a
-`DEFAULT CURRENT_TIMESTAMP` in a migration and read that instead.
+Rows written by raw SQL, by another service, or by a database trigger get no
+timestamps at all. `created_at` will be `NULL` unless you set it explicitly.
+And with several application servers running, `created_at` ordering reflects
+the clock of whichever machine handled the write. If you need a
+database-authoritative timestamp, add a column with a `DEFAULT
+CURRENT_TIMESTAMP` in a migration and read that instead.
 
 </Aside>
 
 `updated_at` is rewritten on *every* `save()`, including
-`save(update_fields=["deleted_at"])` — so soft-deleting a row also bumps
-its modification time. If `updated_at` drives cache invalidation or a
-sync cursor, be aware that soft deletes and restores both move it.
+`save(update_fields=["deleted_at"])`, so soft-deleting a row also bumps its
+modification time. If `updated_at` drives cache invalidation or a sync cursor,
+be aware that soft deletes and restores both move it.
 
 ##  Serialization
 
@@ -102,15 +102,15 @@ user.to_dict(exclude=["password_hash"])
 user.to_dict(include=["id", "email"])
 ```
 
-`include` is applied per field and wins over nothing — if you pass both,
-a field must be in `include` and absent from `exclude` to survive.
+`include` is applied per field and wins over nothing. If you pass both, a field
+must be in `include` and absent from `exclude` to survive.
 
 <Aside type="danger" title="to_dict() includes reverse relations, and they do not serialize">
 
 `self._meta.fields` contains reverse relation accessors. A model with
 `related_name="tags"` pointing at it gets a `tags` key whose value is a
 `ReverseRelation` object. `to_dict()` returns that object as-is, and
-`to_json()` — which passes `default=str` to `json.dumps` — renders it as:
+`to_json()` (which passes `default=str` to `json.dumps`) renders it as:
 
 ```json
 {"tags": "<tortoise.fields.relational.ReverseRelation object at 0x102c40440>"}
@@ -146,9 +146,9 @@ print(user.to_json(indent=2, exclude=["password_hash"]))
 
 ###  `update_from_dict()`
 
-Applies a dict of field values and saves. Keys not matching a model field
-are ignored silently, which makes it safe to feed a request body
-directly — but only for fields you are willing to let a client set.
+Applies a dict of field values and saves. Keys not matching a model field are
+ignored silently, which makes it safe to feed a request body directly, but only
+for fields you are willing to let a client set.
 
 ```python title="partial update from a Pydantic model"
 from pydantic import BaseModel
@@ -176,10 +176,9 @@ that set neither, and `update_from_dict` faithfully nulls both columns.
 
 <Aside type="caution" title="update_from_dict writes every field unless you narrow it">
 
-A model that declares neither `fillable` nor `guarded` accepts any key
-matching a field — including `id`, `created_at`, `deleted_at`, and
-`is_admin` — so passing an unvalidated request body straight in is a
-mass-assignment vulnerability.
+A model that declares neither `fillable` nor `guarded` accepts any key matching
+a field (including `id`, `created_at`, `deleted_at`, and `is_admin`) so passing
+an unvalidated request body straight in is a mass-assignment vulnerability.
 
 Narrow it on the model, so the answer is not restated at each call site:
 
@@ -223,9 +222,9 @@ class Product(Model):
 ```
 
 The mutator's return value is what gets stored, so it can normalise input
-before it ever reaches the database. The accessor's return value is what
-every read sees — including `to_dict()`, `to_json()`, and any code that
-does `product.name`.
+before it ever reaches the database. The accessor's return value is what every
+read sees: including `to_dict()`, `to_json()`, and any code that does
+`product.name`.
 
 Two rules keep this from becoming confusing:
 
@@ -260,16 +259,16 @@ except Exception:
 ```
 
 A malformed filter, a type error in a lookup, or a dropped connection all
-return `None` — indistinguishable from "no such row". If a `get_or_none`
-is returning `None` when you are certain the row exists, replace it with
-`get()` temporarily and read the real exception.
+return `None`, indistinguishable from "no such row". If a `get_or_none` is
+returning `None` when you are certain the row exists, replace it with `get()`
+temporarily and read the real exception.
 
-`get_or_create(defaults, **kwargs)` takes the lookup as keyword arguments
-and the creation-only values as the first positional argument or as
-`defaults=`. On create it merges `{**kwargs, **defaults}`, so a key in
-both wins from `defaults`. It is *not* atomic — it does a `get`, then a
-`create`. Two concurrent requests can both miss and both insert; rely on
-a unique constraint, and be ready to catch `IntegrityError`.
+`get_or_create(defaults, **kwargs)` takes the lookup as keyword arguments and
+the creation-only values as the first positional argument or as `defaults=`. On
+create it merges `{**kwargs, **defaults}`, so a key in both wins from
+`defaults`. It is *not* atomic. It does a `get`, then a `create`. Two
+concurrent requests can both miss and both insert; rely on a unique constraint,
+and be ready to catch `IntegrityError`.
 
 ##  Bulk writes
 
@@ -286,10 +285,10 @@ rows = await Article.bulk_create(
 
 <Aside type="caution" title="bulk_create does not populate primary keys">
 
-The returned instances have `id is None` even though the rows exist in
-the database. This is a Tortoise behaviour, not a sillo one — a
-multi-row `INSERT` does not read back generated keys. If you need the
-ids, re-query by a natural key after insert.
+The returned instances have `id is None` even though the rows exist in the
+database. This is a Tortoise behaviour, not a sillo one. A multi-row `INSERT`
+does not read back generated keys. If you need the ids, re-query by a natural
+key after insert.
 
 </Aside>
 
@@ -309,10 +308,10 @@ user = await User.upsert(
 <Aside type="danger" title="Always pass update_fields explicitly">
 
 When `update_fields` is omitted it defaults to every entry in
-`cls._meta.fields` that is not a conflict field or the primary key — and
-`_meta.fields` includes reverse relations. On a model with any
-`related_name` pointing at it, the generated statement references a
-column that does not exist:
+`cls._meta.fields` that is not a conflict field or the primary key, and
+`_meta.fields` includes reverse relations. On a model with any `related_name`
+pointing at it, the generated statement references a column that does not
+exist:
 
 ```
 OperationalError: no such column: EXCLUDED.tags
@@ -342,17 +341,16 @@ await User.count_active()
 `active()` and `deleted()` are ordinary classmethods returning querysets,
 so they chain: `await User.active().filter(plan="pro").order_by("-id")`.
 
-The base `Model` provides `soft_delete`, `restore`, `active`, `deleted`,
-and `count_active`. It does **not** provide `force_delete()` or
-`is_trashed` — those live on `SoftDeletesMixin`. Use `await user.delete()`
-for a hard delete on the base model.
+The base `Model` provides `soft_delete`, `restore`, `active`, `deleted`, and
+`count_active`. It does **not** provide `force_delete()` or `is_trashed`. Those
+live on `SoftDeletesMixin`. Use `await user.delete()` for a hard delete on the
+base model.
 
-The important limitation: **soft delete is not automatic**. Nothing
-filters `deleted_at` for you. `await User.all()` returns soft-deleted
-rows, `await User.get(id=...)` finds them, and a foreign key to a
-soft-deleted row still resolves. If you want soft-deleted rows excluded
-everywhere, register a global scope — see
-[Scopes & Events](/guides/record/scopes-events/).
+The important limitation: **soft delete is not automatic**. Nothing filters
+`deleted_at` for you. `await User.all()` returns soft-deleted rows, `await
+User.get(id=...)` finds them, and a foreign key to a soft-deleted row still
+resolves. If you want soft-deleted rows excluded everywhere, register a global
+scope. See [Scopes & Events](/guides/record/scopes-events/).
 
 ##  The six mixins
 
@@ -372,23 +370,21 @@ class Account(Model, ValidatesBeforeSaveMixin):   # validate() never runs
     ...
 ```
 
-In the first form `Account.save` resolves to
-`ValidatesBeforeSaveMixin.save`; in the second it resolves to
-`Model.save`, and the mixin is dead weight. There is no warning — writes
-simply skip validation. The same applies to `CascadesDeletesMixin`, which
-overrides `delete()`, and to `SerializesToDictMixin`, which overrides
-`to_dict()`.
+In the first form `Account.save` resolves to `ValidatesBeforeSaveMixin.save`;
+in the second it resolves to `Model.save`, and the mixin is dead weight. There
+is no warning, writes simply skip validation. The same applies to
+`CascadesDeletesMixin`, which overrides `delete()`, and to
+`SerializesToDictMixin`, which overrides `to_dict()`.
 
 </Aside>
 
 ###  `SoftDeletesMixin`
 
-Adds `force_delete()`, `only_trashed()`, `with_trashed()`, and the
-`is_trashed` property on top of what the base model already has. Worth
-adding when you want `is_trashed` in templates or `with_trashed()` for
-readability. Note that `with_trashed()` is simply `cls.all()` — it is
-meaningful only if you have registered a global scope that filters
-deleted rows.
+Adds `force_delete()`, `only_trashed()`, `with_trashed()`, and the `is_trashed`
+property on top of what the base model already has. Worth adding when you want
+`is_trashed` in templates or `with_trashed()` for readability. Note that
+`with_trashed()` is simply `cls.all()`. It is meaningful only if you have
+registered a global scope that filters deleted rows.
 
 ###  `TimestampsMixin`
 
@@ -420,10 +416,10 @@ class Order(Model):
 
 ###  `SerializesToDictMixin`
 
-An alternative `to_dict()` with a `max_depth` parameter (default 3) that
-bounds recursion into related models. The base `Model.to_dict()` has no
-`max_depth` and recurses one level into loaded relations. Use this mixin
-— listed before `Model` — if you serialize nested object graphs.
+An alternative `to_dict()` with a `max_depth` parameter (default 3) that bounds
+recursion into related models. The base `Model.to_dict()` has no `max_depth`
+and recurses one level into loaded relations. Use this mixin (listed before
+`Model`) if you serialize nested object graphs.
 
 ###  `ValidatesBeforeSaveMixin`
 
@@ -439,11 +435,11 @@ class Account(ValidatesBeforeSaveMixin, Model):
             raise ValueError("email must contain @")
 ```
 
-This fires for `Account.create(...)` as well as `instance.save()`,
-because `create()` calls `save()` internally. It does **not** fire for
-`bulk_create`, `upsert`, `queryset.update()`, or raw SQL — none of those
-go through `save()`. Treat it as a convenience, not as an integrity
-guarantee; the database constraint is the guarantee.
+This fires for `Account.create(...)` as well as `instance.save()`, because
+`create()` calls `save()` internally. It does **not** fire for `bulk_create`,
+`upsert`, `queryset.update()`, or raw SQL, none of those go through `save()`.
+Treat it as a convenience, not as an integrity guarantee; the database
+constraint is the guarantee.
 
 ###  `CascadesDeletesMixin`
 
@@ -489,8 +485,8 @@ admin = await Admin.create(email="a@b.com", password="hunter2")
 ```
 
 Verify with `sillo.helpers.hashing.verify_password`, never by comparing
-strings. And note the in-memory attribute keeps the plaintext for the
-lifetime of that instance — do not log the object.
+strings. And note the in-memory attribute keeps the plaintext for the lifetime
+of that instance. Do not log the object.
 
 `SlugField(source_field="title")` accepts and stores `source_field` but
 no code reads it. Generate the slug yourself in a mutator:
@@ -532,17 +528,17 @@ read.
 `__getattribute__` is overridden on every model instance. Each non-underscore
 attribute read checks `_meta.fields` membership and performs two class-level
 `getattr` calls. This is fine per request and noticeable across hundreds of
-thousands of reads — use `.values()` or `.values_list()` for bulk numeric
-work, which skips model instantiation entirely.
+thousands of reads. Use `.values()` or `.values_list()` for bulk numeric work,
+which skips model instantiation entirely.
 
 `save()` opens the `_encoded_cast_values()` context manager, which
 short-circuits when `_casts` is empty. Models without casts pay one dict
 lookup per save.
 
 `to_dict()` iterates all fields and does an `isinstance` check per value.
-Prefer `include=[...]` over `exclude=[...]` for wide tables — same cost
-in this implementation, but it keeps the payload from growing silently
-when someone adds a column.
+Prefer `include=[...]` over `exclude=[...]` for wide tables. Same cost in this
+implementation, but it keeps the payload from growing silently when someone
+adds a column.
 
 ##  API reference
 
@@ -562,9 +558,15 @@ when someone adds a column.
 
 ##  Related
 
-- [Record Overview](/guides/record/) — setup, configuration, and connection lifecycle
-- [Scopes & Events](/guides/record/scopes-events/) — global scopes for automatic soft-delete filtering
-- [Casting & Collections](/guides/record/casting-collections/) — `_casts` and result manipulation
-- [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/) — generating schemas from these models
-- [Hashing helpers](/guides/helpers/hashing/) — what `PasswordField` uses internally
-- [Serialization](/guides/serialization/) — how sillo encodes handler return values
+- [Record Overview](/guides/record/): setup, configuration, and connection
+  lifecycle
+- [Scopes & Events](/guides/record/scopes-events/): global scopes for automatic
+  soft-delete filtering
+- [Casting & Collections](/guides/record/casting-collections/): `_casts` and
+  result manipulation
+- [Exception Handlers & Pydantic](/guides/record/exceptions-pydantic/):
+  generating schemas from these models
+- [Hashing helpers](/guides/helpers/hashing/): what `PasswordField` uses
+  internally
+- [Serialization](/guides/serialization/): how sillo encodes handler return
+  values

@@ -1,6 +1,6 @@
 ---
 title: The Admin Panel
-description: "Mounting Sillo's admin panel — setup_admin, the routes it registers, what it auto-registers for you, and the first sign-in."
+description: "Mounting Sillo's admin panel: setup_admin, the routes it registers, what it auto-registers for you, and the first sign-in."
 head:
   - tag: meta
     attrs:
@@ -55,9 +55,8 @@ Returns the `AdminSite`, which is what you register models on.
 
 ### It needs a database
 
-The admin reads and writes through the ORM, so
-[`setup_record`](/orm/setup/) has to have run — and `sillo.admin.models` must
-be in `model_modules`:
+The admin reads and writes through the ORM, so [`setup_record`](/orm/setup/)
+has to have run, and `sillo.admin.models` must be in `model_modules`:
 
 ```python
 setup_record(
@@ -72,7 +71,7 @@ out and the first admin action fails on a missing table.
 
 ### Use your own user model
 
-Almost always what you want — the people who administer a site are usually
+Almost always what you want: the people who administer a site are usually
 people who use it, and one user model is one place to add a field, one password
 policy, one set of rows:
 
@@ -91,7 +90,7 @@ Any [`UserBaseModel`](/guides/users/) subclass works.
 1. **Auto-registers the user model**, so you can always browse who can sign in.
 2. **Registers the activity log**, `AdminActivity`.
 3. **Adds the auth middleware**, which enforces sign-in on the whole prefix.
-4. **Mounts the static files** — the admin's own CSS and JS.
+4. **Mounts the static files.** The admin's own CSS and JS.
 5. **Builds the routes on startup**, not at mount time.
 
 That last point matters: routes are built **on startup**, so every
@@ -99,7 +98,7 @@ That last point matters: routes are built **on startup**, so every
 after startup has no effect.
 
 `AdminRole` is deliberately *not* auto-registered. It only exists if you use
-the admin's own user model, and most projects do not — register it yourself if
+the admin's own user model, and most projects do not. Register it yourself if
 you do.
 
 ## The routes
@@ -125,7 +124,7 @@ And per registered model, where `post` is the lowercased class name:
 | `/admin/post/{id}/delete/` | GET, POST | Delete |
 | `/admin/post/bulk/` | POST | Bulk actions |
 
-Each is named — `admin-post-list`, `admin-post-detail` — so `url_for` works.
+Each is named (`admin-post-list`, `admin-post-detail`) so `url_for` works.
 
 :::caution[The slug is the class name]
 Two models with the same class name in different modules produce the same path,
@@ -141,7 +140,7 @@ sillo user:admin you@example.com
 ```
 
 That sets `is_staff`, which is the flag the admin checks. Being signed in is
-not enough — see [Permissions](/orm/admin-permissions/).
+not enough. See [Permissions](/orm/admin-permissions/).
 
 ## Exports
 
@@ -172,12 +171,12 @@ Every create, update, delete and export is recorded in `AdminActivity`, with
 the user's email, the model, the object id, the IP address and the user agent.
 The dashboard shows the recent entries.
 
-It records what the **admin** did. It is not a general audit log — nothing
+It records what the **admin** did. It is not a general audit log. Nothing
 outside the admin writes to it.
 
 ## Next
 
-- [Registering models](/orm/admin-registering/) — `ModelAdmin` and what it
+- [Registering models](/orm/admin-registering/): `ModelAdmin` and what it
   controls.
-- [Customising](/orm/admin-customising/) — lists, search, filters, forms.
-- [Permissions and auth](/orm/admin-permissions/) — who gets in, and to what.
+- [Customising](/orm/admin-customising/): lists, search, filters, forms.
+- [Permissions and auth](/orm/admin-permissions/): who gets in, and to what.

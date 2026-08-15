@@ -43,7 +43,9 @@ The header names the algorithm. The payload holds the claims. The signature cove
 
 <Aside type="danger" title="The payload is encoded, not encrypted">
 
-Base64 is not encryption. Anyone holding the token reads every claim in it — paste one into [jwt.io](https://jwt.io) and the payload appears in plain text, no key required.
+Base64 is not encryption. Anyone holding the token reads every claim in it,
+paste one into [jwt.io](https://jwt.io) and the payload appears in plain text,
+no key required.
 
 Never put anything confidential in a JWT: no passwords, no API keys, no personal data you would not print on a postcard, no internal identifiers you would rather not disclose. A token that says `{"sub": "42", "role": "admin", "plan": "enterprise"}` tells the holder your entire authorization model.
 
@@ -55,7 +57,7 @@ Registered claims that carry meaning:
 
 | Claim | Meaning | Set by |
 |---|---|---|
-| `sub` | Subject — who the token is about | You |
+| `sub` | Subject: who the token is about | You |
 | `exp` | Expiry, as a Unix timestamp | `create_access_token` |
 | `iat` | Issued at | `create_access_token` |
 | `nbf` | Not valid before | You |
@@ -93,7 +95,7 @@ refresh = jwt.create_refresh_token({"sub": "42"}, settings.SECRET_KEY)
 
 ###  `encode(payload, secret, algorithm="HS256", headers=None)`
 
-The unopinionated version. Adds nothing — no `exp`, no `iat`:
+The unopinionated version. Adds nothing, no `exp`, no `iat`:
 
 ```python
 jwt.encode({"sub": "42"}, settings.SECRET_KEY)
@@ -147,7 +149,9 @@ The distinction matters to clients. `token_expired` means "refresh and retry aut
 jwt.decode(token, secret, leeway=10)   # tolerate 10s of drift
 ```
 
-Without it, a server whose clock runs slightly ahead rejects tokens it issued moments earlier. Keep leeway small — 10 to 30 seconds. It extends the life of every expired token by that amount.
+Without it, a server whose clock runs slightly ahead rejects tokens it issued
+moments earlier. Keep leeway small, 10 to 30 seconds. It extends the life of
+every expired token by that amount.
 
 ###  `verify(token, secret, algorithms=None) -> bool`
 
@@ -158,7 +162,8 @@ jwt.verify(token, settings.SECRET_KEY)     # True
 jwt.verify(token, "wrong-secret")          # False
 ```
 
-Convenient for a health check or a quick filter. Do not use it in an auth path — you lose the reason for failure, so you cannot tell a client to refresh.
+Convenient for a health check or a quick filter. Do not use it in an auth path.
+You lose the reason for failure, so you cannot tell a client to refresh.
 
 ##  Reading without verifying
 
@@ -185,7 +190,8 @@ An attacker builds `{"sub": "1", "role": "admin"}`, base64-encodes it, appends a
 
 The legitimate uses are narrow and none of them involve trust:
 
-- Reading `kid` from the header to pick which public key to verify *with* — you still verify afterwards.
+- Reading `kid` from the header to pick which public key to verify *with*. You
+  still verify afterwards.
 - Logging or metrics on tokens you have already verified.
 - Debugging in a development tool.
 - Reading `iss` to route to the right verification config, then verifying.
@@ -203,7 +209,9 @@ payload = jwt.decode(token, secret)
 jwt.validate_claims(payload, audience="my-api", issuer="auth.example.com")
 ```
 
-It validates claims, not signatures. Running it on the output of `get_unverified_claims` gives you nothing — an attacker who forged the claims also forged the `aud` and `iss`.
+It validates claims, not signatures. Running it on the output of
+`get_unverified_claims` gives you nothing. An attacker who forged the claims
+also forged the `aud` and `iss`.
 
 ##  The access and refresh pattern
 
@@ -282,13 +290,18 @@ jwt.encode(payload, secret, algorithm="HS512")
 jwt.decode(token, secret, algorithms=["HS512"])
 ```
 
-`RS256` uses a private key to sign and a public key to verify. Use it when a separate service issues tokens and many services verify them — they need the public key only, so a compromised verifier cannot mint tokens.
+`RS256` uses a private key to sign and a public key to verify. Use it when a
+separate service issues tokens and many services verify them. They need the
+public key only, so a compromised verifier cannot mint tokens.
 
 <Aside type="danger" title="Always pin the algorithm on decode">
 
 Algorithm confusion is the classic JWT attack. The header names the algorithm, and the header comes from the attacker.
 
-Two variants. With `alg: none`, a naive verifier skips signature checking entirely. With RS256-to-HS256 confusion, the attacker flips the header to `HS256` and signs with your *public* key as the HMAC secret — and a verifier that trusts the header validates it, because the public key is not secret.
+Two variants. With `alg: none`, a naive verifier skips signature checking
+entirely. With RS256-to-HS256 confusion, the attacker flips the header to
+`HS256` and signs with your *public* key as the HMAC secret, and a verifier
+that trusts the header validates it, because the public key is not secret.
 
 Pass `algorithms` explicitly every time:
 
@@ -324,7 +337,10 @@ Rotating a JWT secret invalidates every outstanding token at once, logging out e
 
 **Do not issue long-lived access tokens.** Every minute of lifetime is a minute you cannot revoke.
 
-**Do not store tokens in `localStorage` if you can avoid it.** Any XSS reads it. An `HttpOnly` cookie is not readable from JavaScript — see [Sessions](/guides/sessions/) and [CSRF](/guides/csrf/), because cookies bring their own trade-off.
+**Do not store tokens in `localStorage` if you can avoid it.** Any XSS reads
+it. An `HttpOnly` cookie is not readable from JavaScript. See
+[Sessions](/guides/sessions/) and [CSRF](/guides/csrf/), because cookies bring
+their own trade-off.
 
 **Do not reuse the JWT secret for anything else.** Not for session signing, not for CSRF tokens, not for encryption.
 
@@ -334,7 +350,9 @@ Rotating a JWT secret invalidates every outstanding token at once, logging out e
 
 ##  Performance
 
-Signing and verifying HS256 is symmetric HMAC — microseconds, on the order of a SHA-256 of the payload. You can verify tens of thousands of tokens per second per core, which is why stateless auth is attractive.
+Signing and verifying HS256 is symmetric HMAC: microseconds, on the order of a
+SHA-256 of the payload. You can verify tens of thousands of tokens per second
+per core, which is why stateless auth is attractive.
 
 RS256 is asymmetric and materially slower, particularly signing. Verification is cheaper than signing, which suits the many-verifiers topology it is meant for.
 
@@ -360,8 +378,11 @@ Token size matters more than CPU. Every claim you add is sent on every request b
 
 ##  Related
 
-- [JWT Authentication](/guides/jwt-auth/) — the full auth layer built on this module
-- [Crypto](/guides/helpers/crypto/) — signing and encryption primitives
-- [Hashing](/guides/helpers/hashing/) — password storage for the login step
-- [Protecting Routes](/guides/protecting-routes/) — applying token auth to handlers
-- [Sessions](/guides/sessions/) — the stateful alternative, with revocation built in
+- [JWT Authentication](/guides/jwt-auth/): the full auth layer built on this
+  module
+- [Crypto](/guides/helpers/crypto/): signing and encryption primitives
+- [Hashing](/guides/helpers/hashing/): password storage for the login step
+- [Protecting Routes](/guides/protecting-routes/): applying token auth to
+  handlers
+- [Sessions](/guides/sessions/): the stateful alternative, with revocation
+  built in

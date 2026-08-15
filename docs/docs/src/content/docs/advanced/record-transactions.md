@@ -15,15 +15,15 @@ description: "Transaction context, savepoints, manual control, DatabaseManager"
 
 The transaction and database configuration layer provides:
 
-1. **Transaction API** — async context-manager-based transactions with
-   savepoint nesting, plus manual begin/commit/rollback for edge cases.
-2. **DatabaseConfig** — a dataclass that holds connection parameters with
+1. **Transaction API**: async context-manager-based transactions with savepoint
+   nesting, plus manual begin/commit/rollback for edge cases.
+2. **DatabaseConfig.** A dataclass that holds connection parameters with
    environment-variable loading and fluent factory methods for SQLite,
    Postgres, and MySQL.
-3. **DatabaseManager** — manages the Tortoise ORM lifecycle: init, shutdown,
+3. **DatabaseManager**: manages the Tortoise ORM lifecycle: init, shutdown,
    health checks, and per-request context propagation.
-4. **`setup_record`** — one-call wiring function that connects the database
-   to a Sillo application.
+4. **`setup_record`**: one-call wiring function that connects the database to a
+   Sillo application.
 
 ```mermaid
 graph TB
@@ -205,7 +205,7 @@ async def rollback(connection_name: str = "default") -> None:
 
 **When NOT to use manual control:**
 
-- Normal request handling — always use the context manager.
+- Normal request handling: always use the context manager.
 - Any code where an exception could skip the `commit()` or `rollback()`.
 
 ### 2.5 Transaction Flow Diagram
@@ -276,7 +276,7 @@ class DatabaseConfig:
 | `echo`             | `DB_ECHO`              | `false`              | Enable query logging at DEBUG level              |
 | `ssl`              | `DB_SSL`               | `false`              | Enable SSL for the connection                    |
 | `timezone`         | `DB_TIMEZONE`          | `UTC`                | Database timezone                                |
-| `charset`          | —                      | `utf8mb4`            | MySQL/MariaDB character set                      |
+| `charset`          |  | `utf8mb4`            | MySQL/MariaDB character set                      |
 | `ssl_ca`           | `DB_SSL_CA`            | `None`               | Path to CA certificate                           |
 | `ssl_cert`         | `DB_SSL_CERT`          | `None`               | Path to client certificate                       |
 | `ssl_key`          | `DB_SSL_KEY`           | `None`               | Path to client key                               |
@@ -367,7 +367,7 @@ off** in projects that use migrations:
 > - Tables are created outside the migration history, so a later
 >   `makemigrations` sees them as new and the migration then fails to apply
 >   against tables that already exist.
-> - Every process does it on startup — an app, a worker, and a scheduler
+> - Every process does it on startup: an app, a worker, and a scheduler
 >   sharing one SQLite file raise "database is locked" on boot.
 >
 > Set `DB_GENERATE_SCHEMAS=false` to disable.
@@ -431,7 +431,7 @@ async def init(self) -> None:
 **Steps:**
 
 1. Build the Tortoise config dict via `_build_tortoise_config()`.
-2. Call `Tortoise.init(config=cfg)` — this creates connections and registers
+2. Call `Tortoise.init(config=cfg)`: this creates connections and registers
    models.
 3. Capture the `TortoiseContext` returned by `Tortoise.init()` for per-request
    propagation (see §4.7).
@@ -469,7 +469,7 @@ async def health(self) -> bool:
 - Returns `True` if the connection is alive, `False` otherwise.
 - Catches all exceptions (connection refused, timeout, etc.).
 
-### 4.7 `ensure_context` — Per-Request Middleware
+### 4.7 `ensure_context`: Per-Request Middleware
 
 ```python
 async def ensure_context(self, request, response, call_next):
@@ -508,7 +508,7 @@ middleware, requests would fail with "no connection" errors.
   middleware is a pass-through.
 - Tortoise >= 0.25: the middleware propagates the context.
 
-### 4.8 `__aenter__` / `__aexit__` — Script Support
+### 4.8 `__aenter__` / `__aexit__`: Script Support
 
 ```python
 async def __aenter__(self) -> Self:
@@ -663,7 +663,7 @@ def _build_ssl_context(cfg: DatabaseConfig) -> ssl.SSLContext:
 
 ---
 
-## 6. `setup_record` — Application Wiring
+## 6. `setup_record`: Application Wiring
 
 **File:** `core/sillo/record/manager.py`
 
@@ -684,7 +684,7 @@ def setup_record(app, config: DatabaseConfig, *, model_modules=None) -> Database
 
 ### 6.1 What It Does
 
-1. **Idempotent** — if `app.state["record"]` already exists, returns it.
+1. **Idempotent.** If `app.state["record"]` already exists, returns it.
 2. Creates a `DatabaseManager` from the config.
 3. Registers model modules if provided.
 4. Stores the manager in `app.state["record"]` for access from handlers.
@@ -793,7 +793,7 @@ max_connections = pool_size + max_overflow
 - SSL: same `ssl.SSLContext` approach.
 
 **SQLite:**
-- No pool — single connection.
+- No pool: single connection.
 - `pool_size`, `max_overflow`, `ssl` are all ignored.
 - Concurrent writes are serialized by SQLite's file-level locking.
 
@@ -894,9 +894,9 @@ async def test_user_creation():
 
 ### 10.1 Connection Failures
 
-If `Tortoise.init()` fails (e.g., wrong credentials, server unreachable), the
+If `Tortoise.init()` fails (e.g. wrong credentials, server unreachable), the
 exception propagates to the caller. In a Sillo app, this happens during
-startup, so the app fails to start — which is the correct behavior.
+startup, so the app fails to start, which is the correct behavior.
 
 ### 10.2 Transaction Rollbacks
 
@@ -949,30 +949,30 @@ async with transaction() as tx:
 
 ## 12. Gotchas and Known Issues
 
-1. **`generate_schemas` in production** — Leave it `true` only for scratch
+1. **`generate_schemas` in production**: Leave it `true` only for scratch
    databases. In migration-managed projects, set `DB_GENERATE_SCHEMAS=false`.
 
-2. **Context propagation** — Tortoise >= 0.25 requires `ensure_context`
+2. **Context propagation.** Tortoise >= 0.25 requires `ensure_context`
    middleware. Without it, requests fail with "no connection" in ASGI apps.
 
-3. **Manual transactions** — `begin()` / `commit()` / `rollback()` execute raw
-   SQL. If the connection is in a transaction already (e.g., inside
+3. **Manual transactions**: `begin()` / `commit()` / `rollback()` execute raw
+   SQL. If the connection is in a transaction already (e.g. inside
    `transaction()`), these will conflict. Use savepoints instead.
 
-4. **`_normalize_db_url` only handles schemes** — It does not validate the
-   URL structure. A malformed URL will fail at `expand_db_url`, not here.
+4. **`_normalize_db_url` only handles schemes**: It does not validate the URL
+   structure. A malformed URL will fail at `expand_db_url`, not here.
 
-5. **SSL context is per-config** — All connections share the same SSL context.
+5. **SSL context is per-config**: All connections share the same SSL context.
    For different certificates per connection, extend `DatabaseManager`.
 
-6. **`ensure_context` is a middleware, not a hook** — It must be registered
-   with `app.use()`, not `app.on_startup()`. The startup hook is `init()`.
+6. **`ensure_context` is a middleware, not a hook**: It must be registered with
+   `app.use()`, not `app.on_startup()`. The startup hook is `init()`.
 
-7. **`pool_recycle` units differ** — asyncpg uses seconds
+7. **`pool_recycle` units differ**: asyncpg uses seconds
    (`max_inactive_connection_lifetime`), aiomysql uses seconds
-   (`pool_recycle`), but the config field is always in seconds. The mapping
-   is correct but the parameter names differ.
+   (`pool_recycle`), but the config field is always in seconds. The mapping is
+   correct but the parameter names differ.
 
-8. **SQLite concurrency** — SQLite allows only one writer at a time. Under
-   concurrent requests, writes will serialize and may timeout. Use
-   `PRAGMA journal_mode=WAL` for better concurrency.
+8. **SQLite concurrency.** SQLite allows only one writer at a time. Under
+   concurrent requests, writes will serialize and may timeout. Use `PRAGMA
+   journal_mode=WAL` for better concurrency.

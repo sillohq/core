@@ -49,7 +49,7 @@ app.use(AuthenticationMiddleware)
 app.use(SessionMiddleware)
 ```
 
-**File**: `core/sillo/core/routing/base.py` -- `build_middleware_stack`
+**File**: `core/sillo/core/routing/base.py`, `build_middleware_stack`
 
 ### 1.2 Mounted Router Swallowing
 
@@ -68,7 +68,7 @@ async def static_api():
     ...
 ```
 
-**File**: `core/sillo/core/routing/router.py` -- `__call__`
+**File**: `core/sillo/core/routing/router.py`, `__call__`
 
 ### 1.3 Match Status
 
@@ -82,7 +82,7 @@ async def static_api():
 | `PARTIAL` | Path matched but has remaining segments |
 | `NONE` | Path did not match |
 
-**File**: `core/sillo/core/routing/router.py` -- `Route.match`
+**File**: `core/sillo/core/routing/router.py`, `Route.match`
 
 ---
 
@@ -130,7 +130,7 @@ async def admin(request):
     ...
 ```
 
-**File**: `core/sillo/auth/use_auth.py` -- `useAuth.authenticate`
+**File**: `core/sillo/auth/use_auth.py`, `useAuth.authenticate`
 
 ### 2.2 Scope Keys
 
@@ -148,7 +148,7 @@ backend = JWTBackend(...)
 auth = useAuth(schemes=["jwt"])
 ```
 
-**File**: `core/sillo/auth/use_auth.py` -- `_check_schemes`
+**File**: `core/sillo/auth/use_auth.py`, `_check_schemes`
 
 ### 2.3 Legacy Aliases
 
@@ -166,7 +166,7 @@ app = SilloApp(auth=JWTBackend(...))
 app.use(AuthenticationMiddleware(backend=JWTBackend(...)))
 ```
 
-**File**: `core/sillo/application.py` -- `_register_auth`
+**File**: `core/sillo/application.py`, `_register_auth`
 
 ---
 
@@ -204,7 +204,7 @@ graph TD
 - The user lacks the required permission.
 - The user is not in the required group.
 
-**File**: `core/sillo/auth/use_auth.py` -- `authenticate` method
+**File**: `core/sillo/auth/use_auth.py`, `authenticate` method
 
 ---
 
@@ -243,7 +243,7 @@ app.use(AuthenticationMiddleware)  # Registered first
 app.use(SessionMiddleware)         # Registered second, runs first
 ```
 
-**File**: `core/sillo/session/middleware.py` -- `SessionMiddleware`
+**File**: `core/sillo/session/middleware.py`, `SessionMiddleware`
 
 ### 4.2 Secure Default
 
@@ -257,7 +257,7 @@ the browser accepts the cookie but never sends it back.
 SessionMiddleware(config=SessionConfig(secure=False))
 ```
 
-**File**: `core/sillo/session/config.py` -- `SessionConfig`
+**File**: `core/sillo/session/config.py`, `SessionConfig`
 
 ### 4.3 request.app vs base_app
 
@@ -274,7 +274,7 @@ db = request.app.state["record"]
 db = request.base_app.state["record"]
 ```
 
-**File**: `core/sillo/core/http/request.py` -- `HTTPConnection.app`,
+**File**: `core/sillo/core/http/request.py`, `HTTPConnection.app`,
 `HTTPConnection.base_app`
 
 ---
@@ -316,7 +316,7 @@ setup_record(app, config)
 setup_record(app, config, model_modules=["database.models"])
 ```
 
-**File**: `core/sillo/record/manager.py` -- `setup_record`
+**File**: `core/sillo/record/manager.py`, `setup_record`
 
 ### 5.2 __init__ Import
 
@@ -332,7 +332,7 @@ from .user import User
 from .post import Post
 ```
 
-**File**: `core/sillo/record/manager.py` -- `register_models`
+**File**: `core/sillo/record/manager.py`, `register_models`
 
 ### 5.3 contribute_to_class
 
@@ -341,7 +341,7 @@ from .post import Post
 **Diagnosis**: Check that custom fields implement `contribute_to_class`
 correctly.
 
-**File**: `core/sillo/record/fields.py` -- custom field implementations
+**File**: `core/sillo/record/fields.py`, custom field implementations
 
 ---
 
@@ -375,7 +375,7 @@ graph TD
 4. **Schema drift**: Run `sillo record migrate --fake`, then
    `sillo record makemigrations`.
 
-**File**: `core/sillo/record/commands/` -- migration command implementations
+**File**: `core/sillo/record/commands/`, migration command implementations
 
 ---
 
@@ -413,7 +413,7 @@ db = setup_record(app, config)
 app.use(db.ensure_context)
 ```
 
-**File**: `core/sillo/record/manager.py` -- `DatabaseManager.ensure_context`
+**File**: `core/sillo/record/manager.py`, `DatabaseManager.ensure_context`
 
 ### 7.2 Connection Leaks
 
@@ -465,7 +465,7 @@ await my_task.enqueue(
 )
 ```
 
-**File**: `core/sillo/work/backends.py` -- `is_duplicate`
+**File**: `core/sillo/work/backends.py`, `is_duplicate`
 
 ### 8.2 visibility_timeout
 
@@ -480,7 +480,7 @@ visible again after the timeout.
 RedisBackend(url="redis://...", visibility_timeout=600)
 ```
 
-**File**: `core/sillo/work/backends.py` -- `RedisBackend`
+**File**: `core/sillo/work/backends.py`, `RedisBackend`
 
 ---
 
@@ -528,7 +528,7 @@ auth = useAuth(schemes=["jwt"])
 auth = useAuth(schemes=["bearer"])
 ```
 
-**File**: `core/sillo/application.py` -- `_check_security`
+**File**: `core/sillo/application.py`, `_check_security`
 
 ---
 
@@ -572,7 +572,7 @@ resp = response.json({"ok": True})
 resp.set_cookie("session", "abc")
 ```
 
-**File**: `core/sillo/core/http/response.py` -- `Responder`
+**File**: `core/sillo/core/http/response.py`, `Responder`
 
 ### 10.2 Secure Default
 
@@ -586,7 +586,7 @@ But some middleware (like SessionMiddleware) may set `secure=True`.
 response.set_cookie("session", "abc", secure=False)
 ```
 
-**File**: `core/sillo/core/http/response.py` -- `BaseResponse.set_cookie`
+**File**: `core/sillo/core/http/response.py`, `BaseResponse.set_cookie`
 
 ---
 

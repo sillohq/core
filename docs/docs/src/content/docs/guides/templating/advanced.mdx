@@ -101,9 +101,9 @@ Usage in templates:
 {% endfor %}
 ```
 
-With `enable_async=True` — the default — Jinja2 awaits coroutines
-automatically wherever a value is used. There is no `await` keyword in
-template syntax; writing one is a `TemplateSyntaxError`.
+With `enable_async=True` (the default) Jinja2 awaits coroutines automatically
+wherever a value is used. There is no `await` keyword in template syntax;
+writing one is a `TemplateSyntaxError`.
 
 ##  Context Processors
 
@@ -159,11 +159,11 @@ app.use(template_context(
 
 <Aside type="caution" title="Prefer sillo.cache over a hand-rolled dict">
 
-sillo ships a cache module — `MemoryCache`, `RedisCache`, a `@cache`
-decorator, and key building — documented in [Cache](/guides/cache/). The
-in-memory example below is only worth using when you deliberately want a
-process-local cache with no dependencies; it has no size limit, no
-eviction beyond expiry, and is not shared between workers.
+sillo ships a cache module (`MemoryCache`, `RedisCache`, a `@cache` decorator,
+and key building) documented in [Cache](/guides/cache/). The in-memory example
+below is only worth using when you deliberately want a process-local cache with
+no dependencies; it has no size limit, no eviction beyond expiry, and is not
+shared between workers.
 
 </Aside>
 
@@ -244,8 +244,8 @@ async def template_error(request: Request, response: Response, exc: Exception):
 
 Templates fail in ways unit tests catch cheaply: a renamed context key, a
 filter that raises on `None`, a macro whose signature changed. Test the
-rendered string, not the HTML structure — assertions on exact markup
-break on every styling change and teach people to delete tests.
+rendered string, not the HTML structure, assertions on exact markup break on
+every styling change and teach people to delete tests.
 
 ```python
 import pytest
@@ -281,7 +281,7 @@ async def test_context_middleware(client: TestClient):
 
 ---
 
-##  Filters, tests, and globals — choosing between them
+##  Filters, tests, and globals: choosing between them
 
 Jinja2 offers three extension points and they are not interchangeable.
 
@@ -340,20 +340,20 @@ visible = [i for i in items if i.owner_id == user.id or user.is_admin]
 return await render("items.html", {"items": visible}, request=request)
 ```
 
-The second version can be unit tested, reviewed as code, and reused by
-the JSON version of the same endpoint. Authorization decisions especially
-belong in Python — a permission check written in a template is a check
-that no security review will find.
+The second version can be unit tested, reviewed as code, and reused by the JSON
+version of the same endpoint. Authorization decisions especially belong in
+Python, a permission check written in a template is a check that no security
+review will find.
 
 ##  Debugging a template
 
 Jinja2's errors are precise once you know how to read them.
 
 `TemplateNotFound` names the template but not the search path. The loader
-searches only `template_dir`, non-recursively by name — `{% extends "base.html" %}`
-resolves relative to the template root, not to the current file's
-directory. A partial in `templates/partials/nav.html` is
-`{% include "partials/nav.html" %}`.
+searches only `template_dir`, non-recursively by name. `{% extends "base.html"
+%}` resolves relative to the template root, not to the current file's
+directory. A partial in `templates/partials/nav.html` is `{% include
+"partials/nav.html" %}`.
 
 `UndefinedError: 'x' is undefined` means the variable was never in the
 context. Most often the cause is a missing `request=request`, which
@@ -374,9 +374,8 @@ if os.getenv("ENV") == "development":
     engine.env.undefined = StrictUndefined
 ```
 
-That one line converts a class of invisible bugs — renamed context keys,
-typo'd attribute names, forgotten processors — into immediate,
-line-numbered failures.
+That one line converts a class of invisible bugs (renamed context keys, typo'd
+attribute names, forgotten processors) into immediate, line-numbered failures.
 
 ##  Layout patterns that scale
 
@@ -402,12 +401,12 @@ that differ by one block should be one base with an overridable block.
 </html>
 ```
 
-**Partials for markup, macros for parameterised markup.** An `include`
-inherits the surrounding context implicitly, which is convenient and
-makes dependencies invisible. A macro takes explicit arguments, which is
-more typing and far easier to reason about. Use `include` for things that
-genuinely need the whole context — navigation, flash messages — and
-macros for anything you would otherwise pass variables to.
+**Partials for markup, macros for parameterised markup.** An `include` inherits
+the surrounding context implicitly, which is convenient and makes dependencies
+invisible. A macro takes explicit arguments, which is more typing and far
+easier to reason about. Use `include` for things that genuinely need the whole
+context (navigation, flash messages) and macros for anything you would
+otherwise pass variables to.
 
 ```html title="a macro with an explicit contract"
 {% macro card(title, body, href=None) %}
@@ -442,8 +441,7 @@ loops.
 The key ends up in shared storage.
 
 **Do not catch `TemplateError` and render another template** without a
-fallback — if the error template is the broken one, you have an infinite
-loop.
+fallback. If the error template is the broken one, you have an infinite loop.
 
 **Do not rely on undefined variables rendering as blank.** Use
 `StrictUndefined` in development.
@@ -453,21 +451,20 @@ tests, types, and reuse.
 
 ##  Performance notes
 
-Filters run once per value. A `markdown` filter applied inside a loop
-over a hundred rows parses Markdown a hundred times per request — render
-it once when the content is written and store the HTML, or cache the
-result keyed by content hash.
+Filters run once per value. A `markdown` filter applied inside a loop over a
+hundred rows parses Markdown a hundred times per request, render it once when
+the content is written and store the HTML, or cache the result keyed by content
+hash.
 
 Globals that fetch data run per call site, and a call site inside a loop
 runs per iteration. `{% for post in posts %}{{ get_author(post.id) }}{% endfor %}`
 is an N+1 query that no database profiler will attribute to a handler,
 because it happens during rendering. Prefetch in the handler.
 
-Macros are compiled once with the template that defines them, so
-importing a macro file from fifty templates costs one compilation.
-`{% include %}` resolves at render time and hits the template cache each
-time — cheap when cached, and another reason to size `cache_size`
-correctly.
+Macros are compiled once with the template that defines them, so importing a
+macro file from fifty templates costs one compilation. `{% include %}` resolves
+at render time and hits the template cache each time, cheap when cached, and
+another reason to size `cache_size` correctly.
 
 Fragment caching pays off when a fragment is expensive and shared across
 users. It costs more than it saves when the fragment is per-user, because
@@ -476,9 +473,12 @@ shared sidebar, not the personalised greeting.
 
 ##  Related
 
-- [Templating](/guides/templating/) — engine setup, autoescaping, and configuration
-- [Cache](/guides/cache/) — the real cache module, for fragment and page caching
-- [HTML helpers](/guides/helpers/html/) — escaping and why `sanitize_html` is not enough
-- [CSRF](/guides/csrf/) — where `csrf_token` comes from
-- [Error Handling](/guides/error-handling/) — registering the error handlers shown above
-- [Static Files](/guides/static-files/) — serving the assets templates reference
+- [Templating](/guides/templating/): engine setup, autoescaping, and
+  configuration
+- [Cache](/guides/cache/): the real cache module, for fragment and page caching
+- [HTML helpers](/guides/helpers/html/): escaping and why `sanitize_html` is
+  not enough
+- [CSRF](/guides/csrf/): where `csrf_token` comes from
+- [Error Handling](/guides/error-handling/): registering the error handlers
+  shown above
+- [Static Files](/guides/static-files/): serving the assets templates reference

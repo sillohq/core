@@ -208,12 +208,12 @@ In this example, we set the status code, add a cookie, and send a JSON response 
 
 ##  Aborting & Not Found
 
-Sometimes you don't want to *build* an error response — you want to **stop
+Sometimes you don't want to *build* an error response. You want to **stop
 processing immediately** with an HTTP error. The response object provides two
 short-circuit helpers that **raise** instead of returning a value:
 
-- `response.abort(status_code, detail=...)` — raise a generic `HTTPException`.
-- `response.not_found(detail=...)` — raise a `NotFoundException` (HTTP 404).
+- `response.abort(status_code, detail=...)`: raise a generic `HTTPException`.
+- `response.not_found(detail=...)`: raise a `NotFoundException` (HTTP 404).
 
 Because they raise, the framework's exception middleware catches them and
 renders a consistent error envelope (JSON by default; HTML for 404 when
@@ -525,10 +525,10 @@ believe you.
 **204 versus 200 with an empty body.** A 204 says "no content, do not
 parse". Some clients will attempt to parse an empty 200 body and throw.
 
-**404 versus 403.** A 404 for a resource that exists but is not yours
-hides its existence, which is sometimes what you want; a 403 confirms it
-exists. Pick deliberately — the choice is an information-disclosure
-decision, not a cosmetic one.
+**404 versus 403.** A 404 for a resource that exists but is not yours hides its
+existence, which is sometimes what you want; a 403 confirms it exists. Pick
+deliberately. The choice is an information-disclosure decision, not a cosmetic
+one.
 
 **409 versus 422.** A conflict with current state is a 409; an
 unacceptable value is a 422. Returning 422 for "email already taken"
@@ -541,9 +541,9 @@ from each.
 
 ##  Headers worth setting deliberately
 
-`Cache-Control` decides whether anything between you and the client keeps
-a copy. Its absence is not "no caching" — intermediaries apply heuristics.
-Say what you mean, especially `no-store` on anything authenticated.
+`Cache-Control` decides whether anything between you and the client keeps a
+copy. Its absence is not "no caching", intermediaries apply heuristics. Say
+what you mean, especially `no-store` on anything authenticated.
 
 `Content-Disposition` decides whether a browser renders or downloads.
 `attachment` on user-supplied files prevents an uploaded HTML file

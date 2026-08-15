@@ -1,6 +1,6 @@
 ---
 title: How Migrations Work
-description: "What a Sillo migration is — the generated file, how model changes are detected, what the generator cannot know, and the rules that keep a migration history usable."
+description: "What a Sillo migration is: the generated file, how model changes are detected, what the generator cannot know, and the rules that keep a migration history usable."
 head:
   - tag: meta
     attrs:
@@ -35,7 +35,7 @@ The package is named by [`set_migrations`](/orm/setup/#migrations), and
 `db:init` creates it.
 
 The number is the order. The suffix is what you passed to `db:make`, and is
-purely for humans — name them, because `0004_add_published_at` tells you
+purely for humans, name them, because `0004_add_published_at` tells you
 something and `0004_auto` does not.
 
 ## What a migration looks like
@@ -72,7 +72,7 @@ from scratch.
 the migrations already written, and describes the difference.
 
 Which means the migration history is the source of truth for what the database
-should look like. It is not read *from* the database — a schema someone altered
+should look like. It is not read *from* the database, a schema someone altered
 by hand is invisible to the generator, and the next migration will be written
 as if that change never happened.
 
@@ -88,8 +88,8 @@ headline = fields.CharField(max_length=200)
 title = fields.CharField(max_length=200)
 ```
 
-The generator sees one column gone and one column new. It writes exactly that
-— and applying it deletes every headline in the table.
+The generator sees one column gone and one column new. It writes exactly that,
+and applying it deletes every headline in the table.
 
 Edit the generated file to a rename before applying it. This is the single best
 reason to run `db:make` without `--apply` and read what came out.
@@ -115,7 +115,7 @@ sillo db:migrate
 ```
 
 [`db:sql`](/cli/database/#dbsql) prints the statements without running them,
-and `--backward` prints what a rollback would run — which is where you find out
+and `--backward` prints what a rollback would run, which is where you find out
 that a column drop has no way back.
 
 `db:make --apply` writes and applies in one step. Use it for a new model on a
@@ -127,7 +127,7 @@ local database; not for anything touching a column with data in it.
 No model changes to record.
 ```
 
-The models already match the last migration. No file is written — and the
+The models already match the last migration. No file is written, and the
 command knows the difference, rather than reporting success for a file that
 does not exist.
 
@@ -145,7 +145,7 @@ a file doing four things cannot be partly undone.
 
 **Resolve conflicts by renumbering.** Two branches both adding `0004_` is a
 merge conflict in the numbering, not in the files. Renumber the later one and
-re-read it — the state it was generated against has changed.
+re-read it. The state it was generated against has changed.
 
 **Keep `DB_GENERATE_SCHEMAS=false`** anywhere you run migrations. Schema
 generation creates missing tables and ignores changed ones, which is exactly
@@ -164,6 +164,6 @@ than passing a label per invocation.
 
 ## See also
 
-- [Applying migrations](/orm/migrations-applying/) — the deployment shape.
-- [Programmatically](/orm/migrations-programmatic/) — without the CLI.
-- [Database commands](/cli/database/) — every flag.
+- [Applying migrations](/orm/migrations-applying/): the deployment shape.
+- [Programmatically](/orm/migrations-programmatic/): without the CLI.
+- [Database commands](/cli/database/): every flag.

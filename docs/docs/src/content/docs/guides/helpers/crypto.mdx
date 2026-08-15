@@ -65,7 +65,9 @@ Encrypting the same value twice gives different ciphertext, because a fresh rand
 crypto.encrypt("x", key) != crypto.encrypt("x", key)   # True
 ```
 
-That is required. Deterministic encryption leaks equality — an attacker who sees two identical ciphertexts learns the plaintexts are identical, which is often enough to break the scheme in practice.
+That is required. Deterministic encryption leaks equality. An attacker who sees
+two identical ciphertexts learns the plaintexts are identical, which is often
+enough to break the scheme in practice.
 
 Decrypting with the wrong key raises `InvalidToken` from the `cryptography` package, and so does decrypting a ciphertext that has been modified by even one byte.
 
@@ -90,7 +92,9 @@ async def call_stripe(user_id: int):
 
 <Aside type="danger" title="Where the key lives is the whole problem">
 
-Encryption moves the secret from "the data" to "the key". If the key sits next to the data, you have achieved nothing — an attacker who dumps your database also reads `settings.py` from the same compromised host.
+Encryption moves the secret from "the data" to "the key". If the key sits next
+to the data, you have achieved nothing. An attacker who dumps your database
+also reads `settings.py` from the same compromised host.
 
 Rules that actually matter:
 
@@ -126,7 +130,9 @@ await Record.create(
 row = await Record.get(email_lookup=hmac_digest(settings.LOOKUP_KEY, email))
 ```
 
-The lookup column leaks equality by design — that is what makes it searchable — so it is a real trade-off, not a free trick. Use a separate key from the encryption key.
+The lookup column leaks equality by design (that is what makes it searchable)
+so it is a real trade-off, not a free trick. Use a separate key from the
+encryption key.
 
 </Aside>
 
@@ -173,7 +179,9 @@ key3 == key   # False
 
 `derive_key` returns `(key, salt)`, not just the key. Writing `key = derive_key(password)` binds the tuple, and the encryption call fails later with a confusing type error.
 
-You must store the salt. Without it you cannot re-derive the key, and the data encrypted with it is gone. The salt is not secret — store it in plain text next to the ciphertext.
+You must store the salt. Without it you cannot re-derive the key, and the data
+encrypted with it is gone. The salt is not secret. Store it in plain text next
+to the ciphertext.
 
 </Aside>
 
@@ -202,7 +210,10 @@ signed = crypto.sign_value("user-42", secret="app-secret")
 # 'dXNlci00Mg.1c6d6e1bd46195aafb5bc593f78574ff3024ad51303c9d6ce2195ea37d3a4c19'
 ```
 
-The format is `base64url(value).hex_signature`. The value is encoded, not encrypted — anyone can base64-decode the first segment and read it. What they cannot do is change it, because they cannot recompute the signature without the secret.
+The format is `base64url(value).hex_signature`. The value is encoded, not
+encrypted. Anyone can base64-decode the first segment and read it. What they
+cannot do is change it, because they cannot recompute the signature without the
+secret.
 
 ###  `unsign_value(signed, secret, algorithm="sha256", max_age=None) -> str`
 
@@ -227,7 +238,9 @@ Verification uses `hmac.compare_digest`, so it is not vulnerable to the timing a
 
 <Aside type="danger" title="max_age is accepted and does nothing">
 
-`unsign_value` takes a `max_age` parameter. The current implementation never reads it. There is no timestamp in the token format — the payload is only `base64url(value)` — so there is nothing to compare an age against.
+`unsign_value` takes a `max_age` parameter. The current implementation never
+reads it. There is no timestamp in the token format (the payload is only
+`base64url(value)`) so there is nothing to compare an age against.
 
 ```python
 signed = crypto.sign_value("data", "secret")
@@ -270,7 +283,8 @@ base64.urlsafe_b64decode("dXNlci00Mg" + "==")   # b'user-42'
 
 Never sign something the holder must not read. `sign_value("user_id=42&is_admin=false", ...)` tells the user they have an `is_admin` flag and invites them to attack it. They cannot flip it without breaking the signature, but you have disclosed your data model.
 
-If it must be unreadable, encrypt it. If it must be unreadable *and* tamper-proof, encrypt it — Fernet already authenticates.
+If it must be unreadable, encrypt it. If it must be unreadable *and*
+tamper-proof, encrypt it. Fernet already authenticates.
 
 </Aside>
 
@@ -295,7 +309,8 @@ async def unsubscribe(request, response):
     return response.json({"unsubscribed": True})
 ```
 
-The user can read their own ID in the token, which is fine — it is their ID. They cannot change it to somebody else's without invalidating the signature.
+The user can read their own ID in the token, which is fine. It is their ID.
+They cannot change it to somebody else's without invalidating the signature.
 
 ##  Choosing between the three
 
@@ -356,7 +371,8 @@ Fernet output is larger than its input: roughly 100 characters for a short strin
 
 ##  Related
 
-- [Hashing](/guides/helpers/hashing/) — one-way hashing, password storage, HMAC
-- [JWT](/guides/helpers/jwt/) — signed tokens with working expiry
-- [Sessions](/guides/sessions/) — signed session cookies built on these primitives
-- [Strings](/guides/helpers/strings/) — token generation and secret masking
+- [Hashing](/guides/helpers/hashing/): one-way hashing, password storage, HMAC
+- [JWT](/guides/helpers/jwt/): signed tokens with working expiry
+- [Sessions](/guides/sessions/): signed session cookies built on these
+  primitives
+- [Strings](/guides/helpers/strings/): token generation and secret masking

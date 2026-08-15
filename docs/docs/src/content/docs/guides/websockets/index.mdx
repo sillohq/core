@@ -38,8 +38,8 @@ magical.
 
 ##  When to reach for a WebSocket
 
-Use one when the *server* needs to initiate messages, and often — a chat
-room, a price ticker, a progress feed, a presence indicator.
+Use one when the *server* needs to initiate messages, and often: a chat room, a
+price ticker, a progress feed, a presence indicator.
 
 Do not use one when the client drives everything. A form submission, a
 search, a file upload, a CRUD API: all of these are request/response, and
@@ -74,9 +74,9 @@ async def echo(websocket: WebSocket):
         pass
 ```
 
-The handler takes exactly one argument — the `WebSocket`. It is not
-called with `request` and `response`, and it does not return anything.
-The connection ends when the handler returns.
+The handler takes exactly one argument. The `WebSocket`. It is not called with
+`request` and `response`, and it does not return anything. The connection ends
+when the handler returns.
 
 There is no `@app.websocket(...)` decorator. The name is `ws_route`.
 
@@ -107,11 +107,10 @@ async def room(websocket: WebSocket):
 
 <Aside type="caution" title="Index individual parameters; do not serialize the mapping">
 
-`websocket.path_params["room_id"]` gives you a plain `str`. The mapping
-itself is not directly JSON-serializable — passing it whole to
-`send_json` raises `TypeError: Object of type RouteParam is not JSON serializable`
-and, because that happens inside the connection handler, closes the
-socket.
+`websocket.path_params["room_id"]` gives you a plain `str`. The mapping itself
+is not directly JSON-serializable, passing it whole to `send_json` raises
+`TypeError: Object of type RouteParam is not JSON serializable` and, because
+that happens inside the connection handler, closes the socket.
 
 ```python
 await websocket.send_json(websocket.path_params)          # breaks
@@ -133,7 +132,7 @@ ws_router.add_ws_route(path="/presence", handler=presence)
 app.mount_router(ws_router)
 ```
 
-`mount_router` does not take a prefix — set it on the `Router`. And
+`mount_router` does not take a prefix. Set it on the `Router`. And
 `add_ws_route` wants either a `WebsocketRoute` instance or the
 `path=`/`handler=` keyword pair; a bare positional function will not do.
 
@@ -166,10 +165,10 @@ async def session(websocket: WebSocket):
         await cleanup()
 ```
 
-`iter_json()`, `iter_text()`, and `iter_bytes()` are async generators that
-loop until disconnect and then stop cleanly — they swallow
-`WebSocketDisconnect` internally, so the `except` above is belt and
-braces for anything raised by `handle`.
+`iter_json()`, `iter_text()`, and `iter_bytes()` are async generators that loop
+until disconnect and then stop cleanly. They swallow `WebSocketDisconnect`
+internally, so the `except` above is belt and braces for anything raised by
+`handle`.
 
 ###  Do work before accepting when you need to reject
 
@@ -191,15 +190,15 @@ async def private(websocket: WebSocket):
 
 Browsers cannot set custom headers on a WebSocket handshake, which is why
 tokens usually arrive as a query parameter or in the first message after
-accept. A query parameter ends up in access logs and proxy logs — prefer
-a short-lived, single-use ticket over a long-lived session token, and
-treat it as compromised the moment it is used.
+accept. A query parameter ends up in access logs and proxy logs. Prefer a
+short-lived, single-use ticket over a long-lived session token, and treat it as
+compromised the moment it is used.
 
 ##  The state machine
 
-`WebSocket` tracks two states — `client_state` and `application_state` —
-and enforces legal transitions. This is why the error messages are
-specific rather than mysterious.
+`WebSocket` tracks two states (`client_state` and `application_state`) and
+enforces legal transitions. This is why the error messages are specific rather
+than mysterious.
 
 | Attempt | Result |
 |---|---|
@@ -208,9 +207,9 @@ specific rather than mysterious.
 | `receive()` after a disconnect message | `RuntimeError: Cannot call "receive" once a disconnect message has been received.` |
 | `send()` when the peer is gone (`OSError`) | `WebSocketDisconnect(code=1006)` |
 
-Two of these matter in practice. Accepting exactly once is easy to get
-wrong when a base class also accepts — see the consumer guide. And
-`is_connected()` is a **method**, not a property:
+Two of these matter in practice. Accepting exactly once is easy to get wrong
+when a base class also accepts. See the consumer guide. And `is_connected()` is
+a **method**, not a property:
 
 ```python
 if websocket.is_connected():      # correct
@@ -237,9 +236,9 @@ obj = await websocket.receive_json()
 obj = await websocket.receive_json(mode="binary")
 ```
 
-`send_json` serializes with `separators=(",", ":")` and
-`ensure_ascii=False` — compact output, and non-ASCII characters sent as
-real UTF-8 rather than escapes.
+`send_json` serializes with `separators=(",", ":")` and `ensure_ascii=False`,
+compact output, and non-ASCII characters sent as real UTF-8 rather than
+escapes.
 
 Frame type must match on both ends. Calling `receive_text()` when the
 client sent a binary frame raises `KeyError: 'text'`, because the ASGI
@@ -270,10 +269,9 @@ The close codes worth knowing, all available as constants in
 | 1008 | `WS_1008_POLICY_VIOLATION` | Auth failure, rate limit |
 | 1011 | `WS_1011_INTERNAL_ERROR` | Unhandled exception |
 
-Codes in the 4000–4999 range are yours to define. Use them for
-application-level reasons the client should act on differently — "token
-expired, refresh and reconnect" versus "you were banned, do not
-reconnect".
+Codes in the 4000 to 4999 range are yours to define. Use them for
+application-level reasons the client should act on differently: "token expired,
+refresh and reconnect" versus "you were banned, do not reconnect".
 
 Note that browsers do not expose the close *reason* reliably and, for
 abnormal closures, report code 1006 regardless of what you sent. Anything
@@ -305,8 +303,8 @@ layer does, and it is roughly a hundred lines here.
 **A dedicated realtime service.** Move WebSocket termination out of the
 application entirely.
 
-Whichever you choose, decide before you ship — retrofitting the fan-out
-means touching every broadcast call site.
+Whichever you choose, decide before you ship, retrofitting the fan-out means
+touching every broadcast call site.
 
 </Aside>
 
@@ -339,9 +337,9 @@ def test_room_path_param():
 ```
 
 Leaving the inner block closes the connection, which is how you exercise
-disconnect handling — assert on whatever your `finally` was supposed to
-clean up. A rejected connection surfaces as `WebSocketDisconnect` raised
-by `websocket_connect`, so an auth test wraps it in `pytest.raises`.
+disconnect handling, assert on whatever your `finally` was supposed to clean
+up. A rejected connection surfaces as `WebSocketDisconnect` raised by
+`websocket_connect`, so an auth test wraps it in `pytest.raises`.
 
 ##  What not to do
 
@@ -377,10 +375,10 @@ thousand channels currently serializes it a thousand times, because
 large payloads to large groups, pre-serialize once and use text channels.
 
 Backpressure is the failure mode that surprises people. If a client stops
-reading and you keep sending, the frames queue in the server's buffers
-until memory runs out. Cap what you queue per connection and drop or
-disconnect a client that falls too far behind — a slow consumer must not
-be allowed to degrade the process.
+reading and you keep sending, the frames queue in the server's buffers until
+memory runs out. Cap what you queue per connection and drop or disconnect a
+client that falls too far behind. A slow consumer must not be allowed to
+degrade the process.
 
 ##  API reference
 
@@ -398,9 +396,12 @@ be allowed to degrade the process.
 
 ##  Related
 
-- [Consumers](/guides/websockets/consumer/) — the class-based API with lifecycle hooks
-- [Channels](/guides/websockets/channels/) — wrapping a connection with a payload type and expiry
-- [Groups](/guides/websockets/groups/) — broadcasting to many connections
-- [Events](/guides/websockets/events/) — routing messages to handlers by type
-- [Streaming Responses](/guides/streaming-response/) — SSE, for one-directional push
-- [Routing](/guides/routing/) — how paths and parameters are matched
+- [Consumers](/guides/websockets/consumer/): the class-based API with lifecycle
+  hooks
+- [Channels](/guides/websockets/channels/): wrapping a connection with a
+  payload type and expiry
+- [Groups](/guides/websockets/groups/): broadcasting to many connections
+- [Events](/guides/websockets/events/): routing messages to handlers by type
+- [Streaming Responses](/guides/streaming-response/): SSE, for one-directional
+  push
+- [Routing](/guides/routing/): how paths and parameters are matched

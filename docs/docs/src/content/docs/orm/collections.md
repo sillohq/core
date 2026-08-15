@@ -1,6 +1,6 @@
 ---
 title: Collections
-description: "The Collection class — chainable map, filter, pluck, group_by, sort_by, chunk and the aggregate helpers for working with a result set in Python."
+description: "The Collection class: chainable map, filter, pluck, group_by, sort_by, chunk and the aggregate helpers for working with a result set in Python."
 head:
   - tag: meta
     attrs:
@@ -31,8 +31,8 @@ titles = (
 
 ## Where this belongs
 
-**In memory, after the query.** Every method here operates on a Python list —
-nothing generates SQL.
+**In memory, after the query.** Every method here operates on a Python list.
+Nothing generates SQL.
 
 So the rule is simple: if the database can do it, let it.
 
@@ -69,7 +69,7 @@ collection.key_by("id")            # {3: post, 7: post}
 collection.chunk(100)              # [Collection, Collection, …]
 ```
 
-`key_by` is the one that saves you most often — it is how you avoid a lookup
+`key_by` is the one that saves you most often. It is how you avoid a lookup
 loop after a [`find_by_ids`](/orm/queries/#find_by_ids):
 
 ```python
@@ -106,7 +106,7 @@ collection.min("created_at")
 collection.max("views")
 ```
 
-With no key, `sum` and `avg` operate on the items themselves — useful when the
+With no key, `sum` and `avg` operate on the items themselves, useful when the
 collection holds numbers rather than models:
 
 ```python
@@ -133,9 +133,8 @@ collection.to_json(indent=2)
 ```
 
 `to_dict()` calls `to_dict()` on each item, so it works on model instances and
-gives you a list of dicts. The same caution as
-[model serialisation](/orm/models/#serialisation) applies — it includes every
-field.
+gives you a list of dicts. The same caution as [model
+serialisation](/orm/models/#serialisation) applies. It includes every field.
 
 ## It is not a queryset
 

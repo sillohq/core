@@ -34,10 +34,10 @@ This automatically creates:
 
 ##  Documentation Interfaces
 
-sillo provides multiple ways to explore your API. Which viewers are
-mounted is the `docs` argument — Atlas and ReDoc by default, plus Swagger
-UI, Scalar and anything you write yourself. See
-[Documentation UI](/guides/openapi/documentation-ui/).
+sillo provides multiple ways to explore your API. Which viewers are mounted is
+the `docs` argument: Atlas and ReDoc by default, plus Swagger UI, Scalar and
+anything you write yourself. See [Documentation
+UI](/guides/openapi/documentation-ui/).
 
 ###  Atlas (`/docs`)
 sillo's own reference, and the default. Features:
@@ -579,10 +579,9 @@ app = SilloApp(
 )
 ```
 
-The paths belong at construction — routes are registered there, so
-assigning `app.openapi.swagger_url` afterwards changes nothing. Passing
-`docs=[]` serves no viewer at all. See
-[Documentation UI](/guides/openapi/documentation-ui/).
+The paths belong at construction. Routes are registered there, so assigning
+`app.openapi.swagger_url` afterwards changes nothing. Passing `docs=[]` serves
+no viewer at all. See [Documentation UI](/guides/openapi/documentation-ui/).
 
 ###  Mounted Applications
 
@@ -650,11 +649,11 @@ typed clients for TypeScript, Swift, Kotlin, Go, and Python from the same
 file. A team consuming your API writes no HTTP code and gets compile-time
 errors when you break something.
 
-**Contract testing.** Tools like Schemathesis read the schema and
-generate requests that probe its edges — the boundary of every `maximum`,
-the empty string on every `minLength`, unicode where you expected ASCII.
-It finds the inputs you did not think to test, because it derives them
-from what you published.
+**Contract testing.** Tools like Schemathesis read the schema and generate
+requests that probe its edges: the boundary of every `maximum`, the empty
+string on every `minLength`, unicode where you expected ASCII. It finds the
+inputs you did not think to test, because it derives them from what you
+published.
 
 **Mock servers.** Prism and similar tools serve a fake implementation
 from the document, so a frontend can be built before the backend exists,
@@ -669,10 +668,10 @@ than maintaining it beside.
 The document lives at `/openapi.json` by default and the UIs at `/docs`
 and `/redoc`. Three decisions to make before that reaches production.
 
-**Whether to expose it publicly.** A public API should publish; an
-internal one probably should not. The schema is a complete map of every
-endpoint, parameter, and field name you have — including the endpoints
-you forgot were deployed. That is a gift to anyone probing you.
+**Whether to expose it publicly.** A public API should publish; an internal one
+probably should not. The schema is a complete map of every endpoint, parameter,
+and field name you have, including the endpoints you forgot were deployed. That
+is a gift to anyone probing you.
 
 **How to protect it if you keep it.** Put the docs routes behind the same
 authentication as your admin, or restrict them by IP at the proxy.
@@ -687,10 +686,10 @@ server URLs per environment rather than hard-coding one.
 
 Two failure modes appear once an API is more than a dozen routes.
 
-**Untagged routes.** Without tags, the UI lists every endpoint in one
-flat sequence and nobody can find anything. Tag from the first route, not
-when it hurts — retrofitting tags across sixty endpoints is an afternoon
-nobody schedules.
+**Untagged routes.** Without tags, the UI lists every endpoint in one flat
+sequence and nobody can find anything. Tag from the first route, not when it
+hurts, retrofitting tags across sixty endpoints is an afternoon nobody
+schedules.
 
 **Undocumented error responses.** Every endpoint documents its 200. Few
 document the 404, the 409, or the 422 shape, and those are what an
@@ -713,10 +712,10 @@ tagging from the first route.
 **Only success responses documented.** Clients write the failure paths
 too, and they need shapes for them.
 
-**Operation summaries that repeat the path.** `GET /orders` summarised as
-"Get orders" adds nothing. Say what it returns, what it excludes, and
-what it costs — "List orders for the authenticated customer, newest
-first, excluding cancelled".
+**Operation summaries that repeat the path.** `GET /orders` summarised as "Get
+orders" adds nothing. Say what it returns, what it excludes, and what it costs:
+"List orders for the authenticated customer, newest first, excluding
+cancelled".
 
 **Models named after their internals.** `UserResponseModelV2` in a public
 schema is a class name that escaped. Name published models the way you

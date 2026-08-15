@@ -16,10 +16,10 @@ head:
 
 ##  One flag decides everything
 
-**`VITE_DEV=true`** — the shell points at the Vite dev server, and you get hot
+**`VITE_DEV=true`**. The shell points at the Vite dev server, and you get hot
 module replacement. Nothing is built.
 
-**`VITE_DEV=false`** — the shell reads the build manifest and emits the hashed
+**`VITE_DEV=false`**. The shell reads the build manifest and emits the hashed
 filenames from it. `npm run build` must have run.
 
 ```bash
@@ -34,7 +34,7 @@ one thing or the other.
 
 Vite writes a manifest naming every hashed output file, and the adapter reads
 it to build the script tags. Without it a production render has no way to find
-the filenames — the page comes back with no script tag and no error.
+the filenames. The page comes back with no script tag and no error.
 
 ```ts
 // vite.config.ts
@@ -51,10 +51,10 @@ BUILD_DIR = BASE_DIR / "static" / "build"
 MANIFEST = BUILD_DIR / ".vite" / "manifest.json"
 ```
 
-The adapter is given the **full path** to the manifest rather than a
-directory. Vite moved it into `.vite/` inside the output directory as of Vite
-5 — it used to sit at the root — so naming the file means a future move fails
-loudly here instead of rendering a page with no script tag.
+The adapter is given the **full path** to the manifest rather than a directory.
+Vite moved it into `.vite/` inside the output directory as of Vite 5 (it used
+to sit at the root) so naming the file means a future move fails loudly here
+instead of rendering a page with no script tag.
 
 ##  Serving the built files
 
@@ -69,8 +69,8 @@ manifest that is perfectly correct.
 The mount is skipped when nothing is built, so `pytest` and `sillo serve --reload` do
 not require `npm run build` first.
 
-In production, put nginx or Caddy in front and let it serve `static/build/assets`
-directly — this mount never sees traffic.
+In production, put nginx or Caddy in front and let it serve
+`static/build/assets` directly. This mount never sees traffic.
 
 ##  Asset versions
 
@@ -120,7 +120,7 @@ still works, because the dev server serves whatever path it is asked for;
 production silently ships a page with no script tag.
 
 **Every script 404s but the manifest looks right.** The static mount is one
-level too high — it must be `static/build/assets`, not `static/build`.
+level too high. It must be `static/build/assets`, not `static/build`.
 
 **Styles missing in production only.** Tailwind is a Vite plugin here, so the
 stylesheet is an output of the build like any other. If `npm run build` did not
@@ -131,5 +131,5 @@ releases, so the version check never fires.
 
 ##  Related
 
-- [Deployment](/guides/start/deployment/) — everything both starters share
-- [Static Files](/guides/static-files/) — the file server itself
+- [Deployment](/guides/start/deployment/): everything both starters share
+- [Static Files](/guides/static-files/): the file server itself

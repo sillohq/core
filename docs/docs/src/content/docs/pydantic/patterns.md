@@ -1,6 +1,6 @@
 ---
 title: Patterns
-description: "The Pydantic shapes that come up repeatedly in a Sillo application — model families, shared bases, paginated envelopes, filter dependencies, config models and error contracts."
+description: "The Pydantic shapes that come up repeatedly in a Sillo application: model families, shared bases, paginated envelopes, filter dependencies, config models and error contracts."
 head:
   - tag: meta
     attrs:
@@ -101,8 +101,9 @@ async def list_posts(request, response, page=Query(1, type=int, ge=1)):
 ```
 
 Declared once, correct for every resource, and each parameterisation gets its
-own [named schema](/pydantic/openapi/#naming-and-collisions) — `PagePostSummary`
-— so generated clients get a real type instead of an untyped object.
+own [named schema](/pydantic/openapi/#naming-and-collisions)
+(`PagePostSummary`) so generated clients get a real type instead of an untyped
+object.
 
 ## Filters as a dependency
 
@@ -214,8 +215,8 @@ class Notification(RequestModel):
         return self
 ```
 
-A [model validator](/pydantic/validators/#model_validator) is the right place —
-it sees both fields, and does not depend on declaration order the way a field
+A [model validator](/pydantic/validators/#model_validator) is the right place.
+It sees both fields, and does not depend on declaration order the way a field
 validator would.
 
 ## An error contract
@@ -266,8 +267,8 @@ else, possibly by a newer version of your code. Validating it on the way out
 *and* on the way in turns a schema mismatch into a clear error instead of a
 `KeyError` at 3am.
 
-Keep job payloads flat and made of primitives — a `datetime` round-trips
-through JSON as a string, and the model is what turns it back.
+Keep job payloads flat and made of primitives. A `datetime` round-trips through
+JSON as a string, and the model is what turns it back.
 
 ## Anti-patterns
 

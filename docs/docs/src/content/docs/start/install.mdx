@@ -1,6 +1,6 @@
 ---
 title: Installing Sillo Start
-description: "Installing sillo-start as a standalone command with uv, pip or your own tooling environment — and running it without installing at all."
+description: "Installing sillo-start as a standalone command with uv, pip or your own tooling environment, and running it without installing at all."
 head:
   - tag: meta
     attrs:
@@ -41,8 +41,8 @@ Install it **globally**, once, and use it for every project after that.
     pip install sillo-start
     ```
 
-    Install it into whichever environment you keep your tooling in — a
-    dedicated one, or your user site with `pip install --user sillo-start`.
+    Install it into whichever environment you keep your tooling in, a dedicated
+    one, or your user site with `pip install --user sillo-start`.
 
     It is a small command-line tool with two dependencies (`typer` and `rich`),
     not something your application imports, so it does not belong in a
@@ -112,11 +112,11 @@ python --version
 
 ## Upgrading
 
-The tool and the starter release independently, which is the point of
-[fetching a repository rather than rendering templates](/start/). A fix to the
-application you get does not need a new version of `sillo-start` — the next
-`create-app` picks it up, because it fetches `main` unless you
-[pin a ref](/start/custom-starters/#pinning-a-revision).
+The tool and the starter release independently, which is the point of [fetching
+a repository rather than rendering templates](/start/). A fix to the
+application you get does not need a new version of `sillo-start`. The next
+`create-app` picks it up, because it fetches `main` unless you [pin a
+ref](/start/custom-starters/#pinning-a-revision).
 
 Upgrade the tool when its own behaviour changes:
 

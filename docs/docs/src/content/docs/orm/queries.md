@@ -1,6 +1,6 @@
 ---
 title: Queries
-description: "The query helpers around a Tortoise queryset — paginate, iter_all, explain, find_by_ids and count_by — and where plain Tortoise is the answer."
+description: "The query helpers around a Tortoise queryset (paginate, iter_all, explain, find_by_ids and count_by) and where plain Tortoise is the answer."
 head:
   - tag: meta
     attrs:
@@ -12,11 +12,11 @@ head:
       content: paginate, iter_all, explain, find_by_ids and count_by.
 ---
 
-The querying surface itself — `filter`, `order_by`, `limit`, `annotate`,
-`values`, `Q`, `select_related` — is documented across
-[The QuerySet API](/orm/queryset/), [Lookups](/orm/lookups/),
-[Filtering](/orm/filtering/), [Aggregation](/orm/aggregation/),
-[Eager loading](/orm/eager-loading/) and [Values](/orm/values/).
+The querying surface itself (`filter`, `order_by`, `limit`, `annotate`,
+`values`, `Q`, `select_related`) is documented across [The QuerySet
+API](/orm/queryset/), [Lookups](/orm/lookups/), [Filtering](/orm/filtering/),
+[Aggregation](/orm/aggregation/), [Eager loading](/orm/eager-loading/) and
+[Values](/orm/values/).
 
 ```python
 posts = await Post.filter(status="published").order_by("-created_at").limit(10)
@@ -62,7 +62,7 @@ An unordered `LIMIT/OFFSET` has no defined row order. Two requests for page 1
 can legitimately return different rows, and a row can appear on both page 1 and
 page 2 while nothing changes.
 
-Always order by something unique, or unique enough — `-created_at` alone is not
+Always order by something unique, or unique enough. `-created_at` alone is not
 if two rows can share a timestamp. `["-created_at", "id"]` is.
 :::
 
@@ -81,7 +81,7 @@ Walks a whole table in batches, holding one batch in memory rather than the
 table. For a migration script, a backfill, or a report over everything.
 
 The rule is the same as pagination's: **order the queryset**, or batches can
-overlap and skip. And a batched walk is not a snapshot — rows inserted while it
+overlap and skip. And a batched walk is not a snapshot, rows inserted while it
 runs may or may not be seen. Where that matters, walk by primary key range
 rather than offset, or do the whole thing in a
 [transaction](/orm/transactions/) if your database and your patience allow.
@@ -97,7 +97,7 @@ The database's own query plan. This is how you find out whether an index is
 being used, rather than inferring it from a timing.
 
 The output format is the database's, and differs between SQLite, PostgreSQL and
-MySQL. Read the plan for the database you deploy on — a SQLite plan tells you
+MySQL. Read the plan for the database you deploy on. A SQLite plan tells you
 almost nothing about how PostgreSQL will execute the same query.
 
 Related: [`DB_ECHO`](/orm/configuration/#echo) logs every statement, which is
@@ -110,8 +110,8 @@ posts = await find_by_ids(Post.all(), [3, 7, 11])
 ```
 
 One query, `WHERE id IN (…)`. The point is that it replaces a loop of `get`
-calls — the classic N+1 that looks harmless with three ids and is not with
-three hundred.
+calls. The classic N+1 that looks harmless with three ids and is not with three
+hundred.
 
 The result is not ordered to match the ids you passed. Reorder in Python if it
 matters:
@@ -130,12 +130,12 @@ counts = await count_by(Post.all(), "status")
 
 A `GROUP BY` with counts, as a dict. For a dashboard tile or a facet list.
 
-One query, whatever the number of groups — which is the difference from a
+One query, whatever the number of groups, which is the difference from a
 `count()` per value in a loop.
 
 ## The rest of the query surface
 
-Covered in full elsewhere in this section — the highlights:
+Covered in full elsewhere in this section, the highlights:
 
 ```python
 from tortoise.expressions import Q, F
@@ -157,8 +157,8 @@ await Post.all().prefetch_related("comments").select_related("author")
 
 `select_related` (a join, for forward foreign keys) and `prefetch_related` (a
 second query, for reverse and many-to-many) are the two to reach for the moment
-a template or serialiser touches a relation inside a loop — see
-[Eager loading](/orm/eager-loading/).
+a template or serialiser touches a relation inside a loop. See [Eager
+loading](/orm/eager-loading/).
 
 ## Raw SQL
 
@@ -173,8 +173,8 @@ rows = await conn.execute_query_dict(
 )
 ```
 
-Always parameterise, and note that the placeholder style is the driver's —
-`$1` on PostgreSQL, `%s` on MySQL, `?` on SQLite.
+Always parameterise, and note that the placeholder style is the driver's: `$1`
+on PostgreSQL, `%s` on MySQL, `?` on SQLite.
 
 Raw SQL bypasses [global scopes](/orm/scopes/), [casts](/orm/casting/) and
 [events](/orm/events/). That is the whole point of it, and the reason to keep

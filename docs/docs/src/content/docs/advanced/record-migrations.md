@@ -19,13 +19,13 @@ description: "Migration commands, MigrationHelper, bridge module, console comman
 Sillo's migration system wraps Tortoise ORM's migration engine with three
 layers:
 
-1. **Command functions** (`core/sillo/record/commands/functions.py`) — plain
+1. **Command functions** (`core/sillo/record/commands/functions.py`): plain
    async functions (`init`, `make`, `migrate`, `rollback`, `plan`, `sql`) that
    accept a `DatabaseManager` and perform migration operations.
-2. **MigrationHelper** (`core/sillo/record/helpers.py`) — the engine adapter
+2. **MigrationHelper** (`core/sillo/record/helpers.py`): the engine adapter
    that translates between sillo's `DatabaseManager` and Tortoise's migration
    API, handling config resolution, CLI bridging, and connection cleanup.
-3. **Console commands** (`core/sillo/record/console.py`) — CLI commands
+3. **Console commands** (`core/sillo/record/console.py`): CLI commands
    (`db:init`, `db:make`, `db:migrate`, `db:plan`, `db:rollback`, `db:sql`,
    `db:status`) that bind command functions to a database and provide argument
    parsing, output formatting, and confirmation prompts.
@@ -109,9 +109,9 @@ Database = Union["DatabaseManager", dict[str, Any], str]
 ```
 
 The `Database` type accepts three forms:
-- `DatabaseManager` — the normal case.
-- `dict` — a resolved Tortoise config mapping.
-- `str` — a dotted path to a config mapping (for legacy setups).
+- `DatabaseManager`: the normal case.
+- `dict`: a resolved Tortoise config mapping.
+- `str`: a dotted path to a config mapping (for legacy setups).
 
 ### 2.2 `_helper`
 
@@ -130,7 +130,7 @@ async def init(database: Database, *, app: str = "models") -> None:
     await _helper(database, app).init()
 ```
 
-Creates the migration package for the given app. Safe to re-run — existing
+Creates the migration package for the given app. Safe to re-run. Existing
 packages are left alone.
 
 ### 2.4 `make`
@@ -202,13 +202,13 @@ class MigrationHelper:
 
 **Parameters:**
 
-- `config` — one of:
-  - `DatabaseManager` — resolved via `manager.orm_config()`.
-  - `dict` — used as-is.
-  - `str` — imported and resolved to a dict.
-- `app` — the app label whose migrations are managed. `None` means all apps.
+- `config`: one of:
+  - `DatabaseManager`: resolved via `manager.orm_config()`.
+  - `dict`: used as-is.
+  - `str`: imported and resolved to a dict.
+- `app`: the app label whose migrations are managed. `None` means all apps.
 
-### 3.2 `_resolve` — Config Resolution
+### 3.2 `_resolve`: Config Resolution
 
 ```python
 @staticmethod
@@ -243,7 +243,7 @@ def _resolve(config: Any) -> dict[str, Any]:
 method bridges the two without requiring the developer to export a separate
 config dict.
 
-### 3.3 `_qualify` — Migration Name Qualification
+### 3.3 `_qualify`: Migration Name Qualification
 
 ```python
 def _qualify(self, target: str | None) -> str | None:
@@ -265,7 +265,7 @@ bare name like `"0001_initial"`, this method prefixes it with the app label:
 | `"models.0001_initial"` | any | `"models.0001_initial"` |
 | `"zero"`            | `models` | `"models.zero"`         |
 
-### 3.4 `_close` — Connection Cleanup
+### 3.4 `_close`: Connection Cleanup
 
 ```python
 @staticmethod
@@ -278,7 +278,7 @@ Closes all connections the migration engine opened. **Critical for scripts:**
 an open connection keeps the event loop alive, causing the script to hang at
 exit.
 
-### 3.5 `_cli` — CLI Bridge
+### 3.5 `_cli`: CLI Bridge
 
 ```python
 async def _cli(self, *args: str) -> None:
@@ -306,11 +306,11 @@ async def _cli(self, *args: str) -> None:
 
 **The problem it solves:**
 
-Two migration operations — `init` (create migration package) and
-`makemigrations` (write a migration from model changes) — exist only behind
+Two migration operations, `init` (create migration package) and
+`makemigrations` (write a migration from model changes), exist only behind
 Tortoise's CLI, which reads its configuration by *importing a dotted path*.
-When the helper was built from a `DatabaseManager` or a dict, there is no
-such path.
+When the helper was built from a `DatabaseManager` or a dict, there is no such
+path.
 
 **The solution:**
 
@@ -491,7 +491,7 @@ classDiagram
     RecordCommand --> _Config
 ```
 
-### 4.2 `_Config` — Database Binding
+### 4.2 `_Config`: Database Binding
 
 ```python
 class _Config:
@@ -507,7 +507,7 @@ class _Config:
 - `resolve()` calls the callable on each access (not once at registration),
   because a factory usually builds a fresh manager per invocation.
 
-### 4.3 `RecordCommand` — Base Class
+### 4.3 `RecordCommand`: Base Class
 
 ```python
 class RecordCommand(Command):
@@ -735,7 +735,7 @@ class Status(RecordCommand):
 
 ---
 
-## 5. `record_commands` — Command Registration
+## 5. `record_commands`: Command Registration
 
 ```python
 def record_commands(
@@ -809,7 +809,7 @@ COMMANDS: list[type[RecordCommand]] = [
 
 ---
 
-## 6. `_bridge.py` — Published Config Context
+## 6. `_bridge.py`: Published Config Context
 
 **File:** `core/sillo/record/_bridge.py`
 
@@ -1013,38 +1013,38 @@ async def test_adopt_existing_schema():
 
 ## 11. Gotchas and Known Issues
 
-1. **`init` and `make` require the CLI** — These operations have no Python
-   API in Tortoise. The helper must go through `_cli()` → `run_cli_async()`.
+1. **`init` and `make` require the CLI**: These operations have no Python API
+   in Tortoise. The helper must go through `_cli()` → `run_cli_async()`.
 
-2. **`_bridge.py` is not thread-safe** — The global `CONFIG` is shared state.
-   Do not run migration commands concurrently.
+2. **`_bridge.py` is not thread-safe**: The global `CONFIG` is shared state. Do
+   not run migration commands concurrently.
 
-3. **`"zero"` vs `"__first__"`** — The developer uses `"zero"` to unapply
+3. **`"zero"` vs `"__first__"`**: The developer uses `"zero"` to unapply
    everything. Tortoise's API uses `"__first__"`. The helper translates.
 
-4. **`sql()` requires a single app** — It raises `ValueError` if `self._app`
-   is `None`. Build the helper with `app="models"` to use `sql()`.
+4. **`sql()` requires a single app**: It raises `ValueError` if `self._app` is
+   `None`. Build the helper with `app="models"` to use `sql()`.
 
-5. **`_close()` is critical** — Without it, open connections keep the event
-   loop alive. Every `MigrationHelper` method that opens connections calls
+5. **`_close()` is critical**: Without it, open connections keep the event loop
+   alive. Every `MigrationHelper` method that opens connections calls
    `_close()` in a `finally` block.
 
-6. **`make()` detection** — The console command compares `plan()` output
-   before and after `make()` to detect whether a migration was written.
-   Without this, it would report success even when there were no changes.
+6. **`make()` detection**: The console command compares `plan()` output before
+   and after `make()` to detect whether a migration was written. Without this,
+   it would report success even when there were no changes.
 
-7. **`rollback` has no implicit "one step back"** — You must name the target
+7. **`rollback` has no implicit "one step back"**: You must name the target
    migration. There is no `rollback(db, steps=1)`.
 
-8. **`record_commands` creates subclasses** — Each call to `record_commands()`
+8. **`record_commands` creates subclasses**: Each call to `record_commands()`
    creates new classes. If you call it twice with different databases, you get
    two sets of commands that do not interfere with each other.
 
-9. **`generate_schemas` must be off** — In migration-managed projects, set
-   `DB_GENERATE_SCHEMAS=false`. Otherwise, `init()` creates tables outside
-   the migration history.
+9. **`generate_schemas` must be off**: In migration-managed projects, set
+   `DB_GENERATE_SCHEMAS=false`. Otherwise, `init()` creates tables outside the
+   migration history.
 
-10. **Connection cleanup order** — `_close()` calls
-    `Tortoise.close_connections()`, which closes ALL connections. If other
-    code is using the connections concurrently, it will fail. Migration
-    commands should run in isolation.
+10. **Connection cleanup order.** `_close()` calls
+    `Tortoise.close_connections()`, which closes ALL connections. If other code
+    is using the connections concurrently, it will fail. Migration commands
+    should run in isolation.

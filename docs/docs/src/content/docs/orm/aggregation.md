@@ -1,6 +1,6 @@
 ---
 title: Aggregation
-description: "Counting, summing and averaging in the database — annotate and the aggregate functions, grouping, filtering on an aggregate, and the join-inflation trap."
+description: "Counting, summing and averaging in the database: annotate and the aggregate functions, grouping, filtering on an aggregate, and the join-inflation trap."
 head:
   - tag: meta
     attrs:
@@ -34,8 +34,8 @@ The name you choose becomes an attribute on the instance, and can be used in
 await Author.annotate(post_count=Count("posts")).order_by("-post_count").limit(10)
 ```
 
-That is one query. The Python equivalent — loading every author, fetching their
-posts, counting in a loop — is one query per author and moves every row across
+That is one query. The Python equivalent (loading every author, fetching their
+posts, counting in a loop) is one query per author and moves every row across
 the wire to be thrown away.
 
 ## The functions
@@ -68,8 +68,8 @@ await Post.annotate(size=Length("body")).filter(size__gt=5000)
 await Author.annotate(display=Coalesce("nickname", "name"))
 ```
 
-`Coalesce` is the useful one for optional columns — the first non-null value,
-so a fallback happens in SQL rather than in a comprehension afterwards.
+`Coalesce` is the useful one for optional columns, the first non-null value, so
+a fallback happens in SQL rather than in a comprehension afterwards.
 
 ## Grouping
 
@@ -86,7 +86,7 @@ rows = await (
 Three parts: `group_by` names the grouping columns, `annotate` supplies the
 aggregates, `values` selects what comes back.
 
-Every column in `values()` must be either grouped or aggregated — that is SQL's
+Every column in `values()` must be either grouped or aggregated. That is SQL's
 rule, not the ORM's, and the error comes from the database.
 
 For the common case, Record has a shortcut:
@@ -146,7 +146,7 @@ await Author.annotate(
 ```
 
 Both numbers are wrong. Each `Count` is over the same joined result set, so an
-author with 3 posts and 5 comments produces 15 joined rows — and both counts
+author with 3 posts and 5 comments produces 15 joined rows, and both counts
 report 15.
 
 Three ways out:
@@ -209,7 +209,7 @@ await Author.annotate(
 )
 ```
 
-Two counts over the same join in one pass, with no inflation — because both are
+Two counts over the same join in one pass, with no inflation, because both are
 sums over the same rows rather than counts of them. This is the pattern for a
 status breakdown per parent.
 
@@ -231,12 +231,12 @@ await Order.annotate(total=Coalesce(Sum("amount"), 0))
 Aggregation reads every matching row. Two things help:
 
 - **Filter first**, so the aggregate runs over fewer rows.
-- **Index the grouping and filter columns** — see
-  [Meta and indexes](/orm/meta/#indexes).
+- **Index the grouping and filter columns.** See [Meta and
+  indexes](/orm/meta/#indexes).
 
 For a dashboard where a number is read constantly and changes slowly, the
 cheapest query is the one you do not run: cache it, or keep a counter column
-updated with [`F`](/orm/filtering/#f--referring-to-a-column) on write.
+updated with [`F`](/orm/filtering/#f-referring-to-a-column) on write.
 
 Check what a query actually does with [`explain()`](/orm/queries/#explain).
 
@@ -244,4 +244,4 @@ Check what a query actually does with [`explain()`](/orm/queries/#explain).
 
 - [Values and projections](/orm/values/#group_by)
 - [Filtering with Q and F](/orm/filtering/)
-- [Queries](/orm/queries/#count_by) — `count_by`
+- [Queries](/orm/queries/#count_by): `count_by`

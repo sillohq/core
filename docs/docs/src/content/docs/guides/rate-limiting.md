@@ -70,20 +70,24 @@ app.use(RateLimit(limit=100, window=60, backend="record"))
 
 `RateLimitConfig` (or the `RateLimit(...)` kwargs) accepts:
 
-- **`limit`** (`int`) — max requests per `window` (default `60`)
-- **`window`** (`int`) — time window in seconds (default `60`)
-- **`strategy`** — `"token"` (default), `"fixed"`, `"sliding"`, or a strategy instance
-- **`backend`** — `"memory"` (default), `"redis"`, `"record"`, or a backend instance
-- **`key_func`** — `Callable[[Request], Optional[str]]` mapping a request to an
-  identity. Return `None` to skip limiting. **Default: client IP**
-  (falls back to `X-Forwarded-For`).
-- **`namespace`** (`str`) — key prefix to avoid collisions (default `"sillo_rl"`)
-- **`cost`** (`int`) — tokens consumed per request (default `1`; raise for heavy routes)
-- **`include_headers`** (`bool`) — emit `X-RateLimit-*` headers (default `True`)
-- **`fail_open`** (`bool`) — if the backend errors, allow the request
-  (default `True`). Set `False` to fail closed (deny on backend failure).
-- **`on_exceed`** — `"deny"` (default, returns `429`) or a callable
-  `fn(request, response, result)` returning a custom response.
+- **`limit`** (`int`): max requests per `window` (default `60`)
+- **`window`** (`int`): time window in seconds (default `60`)
+- **`strategy`**: `"token"` (default), `"fixed"`, `"sliding"`, or a strategy
+  instance
+- **`backend`**: `"memory"` (default), `"redis"`, `"record"`, or a backend
+  instance
+- **`key_func`**: `Callable[[Request], Optional[str]]` mapping a request to an
+  identity. Return `None` to skip limiting. **Default: client IP** (falls back
+  to `X-Forwarded-For`).
+- **`namespace`** (`str`): key prefix to avoid collisions (default
+  `"sillo_rl"`)
+- **`cost`** (`int`): tokens consumed per request (default `1`; raise for heavy
+  routes)
+- **`include_headers`** (`bool`): emit `X-RateLimit-*` headers (default `True`)
+- **`fail_open`** (`bool`): if the backend errors, allow the request (default
+  `True`). Set `False` to fail closed (deny on backend failure).
+- **`on_exceed`**: `"deny"` (default, returns `429`) or a callable `fn(request,
+  response, result)` returning a custom response.
 
 ###  Custom identity (per API key, per user)
 
@@ -141,7 +145,8 @@ For each request, the middleware runs this sequence:
 2. Build the backend key as `namespace + ":" + identity`.
 3. Ask the strategy + backend for a `RateLimitResult` (`allowed`, `limit`, `remaining`, `reset_at`, `retry_after`).
 4. If `allowed`, attach `X-RateLimit-Limit` / `Remaining` / `Reset` and let the handler run.
-5. If not `allowed`, call `on_exceed` — by default a `429` with `Retry-After` and the quota headers; a custom callable may return its own response.
+5. If not `allowed`, call `on_exceed`: by default a `429` with `Retry-After`
+   and the quota headers; a custom callable may return its own response.
 
 Backends store an **opaque state dict**; strategies are stateless and interpret that state. That separation is why `memory`, `redis`, and `record` are drop-in replacements for each other.
 
@@ -178,10 +183,18 @@ Keyed by IP, the limit applies across every login attempt from that address. Swa
 
 ##  Works with
 
-- **`sillo.security` Shield/CSRF/CORS** — rate limiting is a sibling middleware; order them so rate limiting runs early (cheap to reject) and CSRF validation runs only on accepted requests.
-- **Authentication / sessions** — pass `key_func` that reads the authenticated identity (`request.state.user.id`) to rate-limit *per account* rather than per IP, which is harder for an attacker to rotate.
-- **Dependency injection** — a dependency can compute the identity and stash it on `request.state` for `key_func` to read, keeping route handlers free of limiting logic.
-- **`sillo.record`** — the `"record"` backend persists counters as `sillo_ratelimit_counters` rows; no Redis required, at the cost of DB round-trips per request.
+- **`sillo.security` Shield/CSRF/CORS**: rate limiting is a sibling middleware;
+  order them so rate limiting runs early (cheap to reject) and CSRF validation
+  runs only on accepted requests.
+- **Authentication / sessions**: pass `key_func` that reads the authenticated
+  identity (`request.state.user.id`) to rate-limit *per account* rather than
+  per IP, which is harder for an attacker to rotate.
+- **Dependency injection.** A dependency can compute the identity and stash it
+  on `request.state` for `key_func` to read, keeping route handlers free of
+  limiting logic.
+- **`sillo.record`**: the `"record"` backend persists counters as
+  `sillo_ratelimit_counters` rows; no Redis required, at the cost of DB
+  round-trips per request.
 
 ##  Testing
 
@@ -226,11 +239,17 @@ To reset between cases, call `backend.clear()` (the memory backend supports it) 
 
 ##  Production considerations
 
-- **Backend choice** — `memory` is per-process; behind multiple workers/instances it under-counts, so use `redis` or `record` for real fairness.
-- **`fail_open`** — `True` favors availability (a backend outage lets traffic through); `False` favors safety (outage denies everything). Pick based on what a flood costs you.
-- **Key design** — IP-only limits are easy to evade by rotating addresses; per-account or per-API-key keys are stronger for abuse control.
+- **Backend choice.** `memory` is per-process; behind multiple
+  workers/instances it under-counts, so use `redis` or `record` for real
+  fairness.
+- **`fail_open`**: `True` favors availability (a backend outage lets traffic
+  through); `False` favors safety (outage denies everything). Pick based on
+  what a flood costs you.
+- **Key design.** IP-only limits are easy to evade by rotating addresses;
+  per-account or per-API-key keys are stronger for abuse control.
 - **`X-RateLimit-Reset`** is a Unix timestamp; clients use it to schedule retries. Keep `include_headers=True` so well-behaved clients back off instead of hammering.
-- **Cost** — set `cost > 1` on expensive routes so one heavy call consumes more of the quota.
+- **Cost.** Set `cost > 1` on expensive routes so one heavy call consumes more
+  of the quota.
 
 ##  Design Notes
 

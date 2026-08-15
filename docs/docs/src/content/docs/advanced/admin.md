@@ -174,7 +174,7 @@ flowchart TD
 **Deferred route registration:** Routes are registered in `on_startup`, not at
 `mount()` time, so the ORM is initialized before routes are built.
 
-### `_model_is_usable(model)` — Static
+### `_model_is_usable(model)`: Static
 
 ```python
 # core/sillo/admin/__init__.py, line 167
@@ -190,7 +190,7 @@ Returns `True` if the model's ORM module was registered.  Used to guard sidebar
 links and dashboard cards against models whose ORM modules were never registered
 by the application.
 
-### `setup_admin(app, ...)` — Convenience Function
+### `setup_admin(app, ...)`: Convenience Function
 
 ```python
 # core/sillo/admin/__init__.py, line 191
@@ -365,7 +365,7 @@ class SessionAuth(AuthBackend):
         self.user_model = user_model
 ```
 
-#### `may_enter(user)` — Access Gate
+#### `may_enter(user)`: Access Gate
 
 ```python
 # core/sillo/admin/auth.py, line 67
@@ -456,7 +456,7 @@ class AdminUser(UserBaseModel):
     role = ForeignKeyField("models.AdminRole", null=True)
 ```
 
-Extends `UserBaseModel` — Sillo's shared user/auth contract.  `PasswordField`
+Extends `UserBaseModel`, Sillo's shared user/auth contract. `PasswordField`
 auto-hashes plaintext on assignment.
 
 **`has_permission(permission: str) -> bool`** (line 85):
@@ -685,8 +685,8 @@ Every mutation writes an `AdminActivity` row:
 
 | Action | Trigger | Detail |
 |--------|---------|--------|
-| `login` | Successful login | — |
-| `logout` | Logout | — |
+| `login` | Successful login |  |
+| `logout` | Logout |  |
 | `create` | Object created | Model name + object ID |
 | `update` | Object updated | Model name + object ID |
 | `delete` | Object deleted | Model name + object ID |

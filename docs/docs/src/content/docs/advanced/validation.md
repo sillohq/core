@@ -4,11 +4,11 @@ description: "Pydantic compilation, LocationSpec, CompiledValidator, error accum
 ---
 
 > **Source files:**
-> - `core/sillo/validation/compiler.py` — `LocationSpec`, `CompiledValidator`, `compile_validator`, `ResponseModelValidator`, `raise_if_errors`, `_build_spec`
-> - `core/sillo/validation/errors.py` — `prefix_errors`, `RequestValidationError`, `ResponseValidationError`
-> - `core/sillo/validation/fields.py` — `ParameterExtractor`, `ParameterLocation`, `bind_marker`
-> - `core/sillo/validation/__init__.py` — Package docstring and public re-exports
-> - `core/sillo/core/dependencies/base.py` — `resolve_validated_params` (runtime caller)
+> - `core/sillo/validation/compiler.py`: `LocationSpec`, `CompiledValidator`, `compile_validator`, `ResponseModelValidator`, `raise_if_errors`, `_build_spec`
+> - `core/sillo/validation/errors.py`: `prefix_errors`, `RequestValidationError`, `ResponseValidationError`
+> - `core/sillo/validation/fields.py`: `ParameterExtractor`, `ParameterLocation`, `bind_marker`
+> - `core/sillo/validation/__init__.py`, Package docstring and public re-exports
+> - `core/sillo/core/dependencies/base.py`, `resolve_validated_params` (runtime caller)
 
 ---
 
@@ -18,11 +18,11 @@ Sillo's validation system converts every declared parameter into a Pydantic
 model **once at registration time**, then validates all parameters of a given
 location in a single `model_validate()` call per request. This gives you:
 
-- **All errors at once** — a client with a bad query param and a malformed
-  body sees both failures in one 422 response
-- **Schema = validation** — the same Pydantic model generates the OpenAPI
+- **All errors at once**: a client with a bad query param and a malformed body
+  sees both failures in one 422 response
+- **Schema = validation**: the same Pydantic model generates the OpenAPI
   document and enforces constraints at runtime, so they cannot drift
-- **Zero introspection per request** — everything is compiled up front
+- **Zero introspection per request.** Everything is compiled up front
 
 ```mermaid
 flowchart LR
@@ -131,9 +131,9 @@ def gather(self, source: Any) -> dict[str, Any]:
 1. **Absent keys are omitted** rather than set to `None`. This lets Pydantic
    distinguish "not supplied" (apply default / report missing) from "explicitly
    null".
-2. **`getlist` fallback** — if the source mapping lacks `getlist` (unlikely
-   but possible with custom request objects), it falls back to `get`.
-3. **Pre-computed alias tuples** — the hot path iterates tuples built at
+2. **`getlist` fallback**: if the source mapping lacks `getlist` (unlikely but
+   possible with custom request objects), it falls back to `get`.
+3. **Pre-computed alias tuples**: the hot path iterates tuples built at
    registration rather than re-deriving aliases from markers.
 
 ### 13.2.4  Validation: `LocationSpec.validate()`
@@ -172,8 +172,8 @@ def validate(self, source: Any) -> tuple[dict[str, Any], Any]:
     return values, ()
 ```
 
-Returns `(values, errors)` — on success, `errors` is empty; on failure,
-`values` is empty and every failure is reported.
+Returns `(values, errors)`, on success, `errors` is empty; on failure, `values`
+is empty and every failure is reported.
 
 **Passthrough handling:** File parameters bypass Pydantic validation. They are
 extracted directly from the source mapping and appended to the values dict
@@ -212,10 +212,10 @@ def is_active(self) -> bool:
     return bool(self.specs) or self.needs_form
 ```
 
-- `needs_form` — whether the route must parse a form body
-- `is_active` — whether this validator has any validated-mode work. Routes
-  using only legacy markers compile to an inactive validator and skip the
-  Pydantic path entirely.
+- `needs_form`: whether the route must parse a form body
+- `is_active`: whether this validator has any validated-mode work. Routes using
+  only legacy markers compile to an inactive validator and skip the Pydantic
+  path entirely.
 
 ### 13.3.3  Sync Validation: `validate_sync()`
 
@@ -322,7 +322,7 @@ _SYNC_LOCATIONS = (
 Sync locations are validated in this fixed order. Form is handled separately
 because it requires awaiting the request body.
 
-### 13.4.4  `_build_spec()` — Model Construction
+### 13.4.4  `_build_spec()`: Model Construction
 
 ```python
 # compiler.py:296-368
@@ -335,11 +335,13 @@ def _build_spec(
 
 For each location:
 
-1. **Collect field definitions** — `marker.resolve_type()` + `marker.to_field_info()`
-2. **Detect sequence types** — fields that need `getlist`
-3. **Separate passthroughs** — `File` markers bypass Pydantic
-4. **Build model** — `pydantic.create_model(model_name, __config__=_MODEL_CONFIG, **definitions)`
-5. **Precompute gather plan** — scalar aliases, list plan, passthrough plan
+1. **Collect field definitions**: `marker.resolve_type()` +
+   `marker.to_field_info()`
+2. **Detect sequence types**: fields that need `getlist`
+3. **Separate passthroughs.** `File` markers bypass Pydantic
+4. **Build model**: `pydantic.create_model(model_name,
+   __config__=_MODEL_CONFIG, **definitions)`
+5. **Precompute gather plan**: scalar aliases, list plan, passthrough plan
 
 ```python
 # compiler.py:32-33
@@ -478,10 +480,10 @@ def prefix_errors(
 
 ### 13.7.1  Purpose
 
-Pydantic reports `loc` tuples relative to the model it validated — a field
-failure arrives as `("page",)` with no indication of *where* `page` came
-from. `prefix_errors()` prepends the request location so clients can tell a
-bad query string from a bad JSON body.
+Pydantic reports `loc` tuples relative to the model it validated. A field
+failure arrives as `("page",)` with no indication of *where* `page` came from.
+`prefix_errors()` prepends the request location so clients can tell a bad query
+string from a bad JSON body.
 
 ### 13.7.2  Transformation
 
@@ -509,7 +511,7 @@ restores the wire name so the error path matches what the client actually sent.
 ### 13.7.4  URL Stripping
 
 Pydantic includes a `url` key pointing at pydantic.dev docs. This is stripped
-from API responses — it is noise for API consumers.
+from API responses. It is noise for API consumers.
 
 ### 13.7.5  Input Preservation
 
@@ -596,7 +598,7 @@ class ResponseValidationError(Exception):
 ### 13.9.1  HTTP Mapping
 
 `ResponseValidationError` maps to **HTTP 500 Internal Server Error**. Unlike
-`RequestValidationError`, this is **not** a client error — the client sent a
+`RequestValidationError`, this is **not** a client error. The client sent a
 valid request; the application produced a response that does not match its
 published contract. Returning 422 would wrongly blame the caller.
 
@@ -770,8 +772,8 @@ def _schemas_for_spec(self, spec):
     }
 ```
 
-This is why documented constraints cannot drift from enforced ones — there
-is exactly one model for both.
+This is why documented constraints cannot drift from enforced ones. There is
+exactly one model for both.
 
 ---
 
@@ -784,18 +786,18 @@ is exactly one model for both.
 | `model_validate()`    | Per request   | O(fields) per location    |
 | `prefix_errors()`     | On failure    | O(errors)                 |
 | `validate_sync()`     | Per request   | O(locations)              |
-| `validate_form()`     | Per request   | O(1) — usually skipped    |
+| `validate_form()`     | Per request   | O(1): usually skipped |
 
 **Key optimizations:**
 
 - **One `model_validate()` per location**, not per parameter
 - **Pre-computed source getters** (C-level `attrgetter`) avoid branching
-- **`is_active` check** — inactive validators (legacy-only routes) skip
-  the Pydantic path entirely
-- **`_validator_plan` emptiness test** — routes with no validated params
-  never allocate a coroutine for validation
-- **Form parsed once** — `_needs_form` flag prevents redundant parsing
-- **`_NO_VALIDATED` sentinel** — shared empty dict avoids allocation
+- **`is_active` check**: inactive validators (legacy-only routes) skip the
+  Pydantic path entirely
+- **`_validator_plan` emptiness test**: routes with no validated params never
+  allocate a coroutine for validation
+- **Form parsed once.** `_needs_form` flag prevents redundant parsing
+- **`_NO_VALIDATED` sentinel**: shared empty dict avoids allocation
 
 ---
 
@@ -898,7 +900,7 @@ usually an empty tuple and the `if self.list_plan:` branch is skipped entirely.
 ### 13.17.1  Why Files Bypass Pydantic
 
 `UploadedFile` wraps a spooled temporary file handle. Pydantic cannot
-meaningfully validate it — there are no string constraints, no type coercion,
+meaningfully validate it. There are no string constraints, no type coercion,
 and no JSON representation. Files are passed through directly.
 
 ### 13.17.2  Passthrough Plan
@@ -1107,7 +1109,7 @@ If the handler returns `{"id": 42, "name": "Alice"}` (missing `email`):
 1. `ResponseModelValidator.validate({"id": 42, "name": "Alice"})` called
 2. Pydantic validates against `UserOut`
 3. `email` is required and missing → `ResponseValidationError`
-4. 500 response (server error — the handler broke its own contract)
+4. 500 response (server error: the handler broke its own contract)
 
 ---
 

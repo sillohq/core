@@ -134,7 +134,7 @@ These are merged into the Jinja2 `Environment` during `setup_environment()`.
 useful for debugging and logging.
 
 **Known issue:** `custom_filters` and `custom_globals` default to mutable empty
-dicts (`{}`).  This is a Python anti-pattern — the same dict instance is shared
+dicts (`{}`). This is a Python anti-pattern. The same dict instance is shared
 across all `TemplateConfig` instances that don't override these parameters.
 
 ---

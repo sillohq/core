@@ -14,7 +14,10 @@ head:
 
 #  Protecting Routes
 
-`useAuth` is the gate you put on a route to decide whether the already-resolved `request.user` is allowed to call the handler. Pass it as the `auth=` argument to any route registration — decorators (`@app.get`), `app.route`, `Route(...)`, and router decorators all accept it.
+`useAuth` is the gate you put on a route to decide whether the already-resolved
+`request.user` is allowed to call the handler. Pass it as the `auth=` argument
+to any route registration: decorators (`@app.get`), `app.route`, `Route(...)`,
+and router decorators all accept it.
 
 It runs after `AuthenticationMiddleware` has set `request.user`, but before your handler body. If the check fails it raises `AuthenticationFailed` (401) or `PermissionDenied` (403) and the handler never executes.
 
@@ -38,7 +41,7 @@ async def handler(request, response): ...
 
 | Parameter | Type | Default | Effect |
 | --- | --- | --- | --- |
-| `scopes` | `list[str]` | `[]` | **Deprecated** — the old spelling of `schemes`. Translated and merged into it, with a warning naming the replacement. |
+| `scopes` | `list[str]` | `[]` | **Deprecated**. The old spelling of `schemes`. Translated and merged into it, with a warning naming the replacement. |
 | `permissions` | `list[str]` | `[]` | Every string must pass `user.has_permission(perm)`. |
 | `schemes` | `list[str]` \| `dict[str, list[str]]` | `{}` | OpenAPI scheme names accepted. Matches `request.scope["auth_scheme"]`, **and** becomes the route's documented `security`. |
 | `all_of` | `bool` | `False` | Whether every entry in `schemes` is required together rather than any one. |
@@ -65,7 +68,8 @@ Each backend stamps its scheme name on `request.scope["auth"]` and `["auth_schem
 async def webhook(request, response): ...
 ```
 
-A JWT-authenticated caller hitting `/webhook` gets 401 — authenticated, but via the wrong method.
+A JWT-authenticated caller hitting `/webhook` gets 401, authenticated, but via
+the wrong method.
 
 ##  Permissions
 
@@ -89,7 +93,11 @@ await Permission.assign(current_user, "delete:users")
 async def delete_user(request, response, id: int): ...
 ```
 
-Permission logic in `PermissionMixin`: superusers pass all checks, inactive users fail all checks, everyone else is matched against their cached permission set (loaded via `load_permissions()` after login). The cache includes both **direct** assignments and **group-inherited** permissions — users automatically get whatever permissions their groups hold, with no extra configuration.
+Permission logic in `PermissionMixin`: superusers pass all checks, inactive
+users fail all checks, everyone else is matched against their cached permission
+set (loaded via `load_permissions()` after login). The cache includes both
+**direct** assignments and **group-inherited** permissions, users automatically
+get whatever permissions their groups hold, with no extra configuration.
 
 For contract-only users (no database), implement `has_permission` directly:
 
@@ -186,20 +194,23 @@ app.mount_router(api)
 | Scope mismatch | 401 | `AuthenticationFailed` |
 | Permission denied | 403 | `PermissionDenied` |
 | Backend override fails + `required=True` | 401 | `AuthenticationFailed` |
-| `required=False` + anonymous | 200 (handler runs) | — |
+| `required=False` + anonymous | 200 (handler runs) |  |
 
 ##  Best practices
 
-- Put `auth=useAuth()` on every protected route. Don't re-check `request.user.is_authenticated` by hand inside handlers — the gate is the single, testable boundary.
+- Put `auth=useAuth()` on every protected route. Don't re-check
+  `request.user.is_authenticated` by hand inside handlers. The gate is the
+  single, testable boundary.
 - Be specific with `scopes` when you know the expected method; it's self-documenting and blocks the wrong credential type.
 - Express business rules as `permissions` strings (`read:users`, `admin:settings`) rather than ad-hoc checks.
 - Push cross-cutting rules (IP allow-list, org membership, per-user rate limit) into a reusable `useAuth` subclass.
 
 ##  Related
 
-- [Permissions](/guides/permissions/) — full permission system with groups, caching, and inheritance
-- [Authentication](/guides/authentication/) — middleware + backend model
-- [Users & User Models](/guides/users/) — `has_permission`, `UserProtocol`
+- [Permissions](/guides/permissions/): full permission system with groups,
+  caching, and inheritance
+- [Authentication](/guides/authentication/): middleware + backend model
+- [Users & User Models](/guides/users/): `has_permission`, `UserProtocol`
 - [JWT](/guides/jwt-auth/) · [Sessions](/guides/session-auth/) · [API Keys](/guides/api-keys/)
 
 
@@ -212,15 +223,15 @@ weakest on its own because it protects the route rather than the data.
 scope. Visible in code review and in generated documentation, and
 impossible to forget inside a long handler.
 
-**Object level** checks that this caller may act on this specific record.
-This is where most real authorization lives, and no route declaration can
-do it — the route does not know which order id was requested.
+**Object level** checks that this caller may act on this specific record. This
+is where most real authorization lives, and no route declaration can do it. The
+route does not know which order id was requested.
 
 **Query level** scopes every query by the authenticated principal, so
 code that forgot to check still cannot see other people's rows.
 
-**Database level** — foreign keys, row-level security — survives
-application bugs entirely.
+**Database level** (foreign keys, row-level security) survives application bugs
+entirely.
 
 The failure that route-level protection cannot catch is the common one:
 an authenticated user reading someone else's record by changing an
@@ -237,9 +248,9 @@ matters when identifiers are sequential and enumerable.
 
 ##  Failing closed
 
-Every branch that cannot decide must deny. An unknown scope, a missing
-role, a resource type the checker does not recognise, an exception inside
-the check — each must result in refusal.
+Every branch that cannot decide must deny. An unknown scope, a missing role, a
+resource type the checker does not recognise, an exception inside the check.
+Each must result in refusal.
 
 The reason is that permission code accumulates cases, and the case
 somebody adds without updating the checker will hit the default. A
@@ -293,11 +304,11 @@ narrow, rather than starting from "allow" and excluding.
 
 ##  Related
 
-- [Authentication](/guides/authentication/) — establishing who the caller is
-- [Permissions](/guides/permissions/) — deciding what they may do
-- [Scopes & Events](/guides/record/scopes-events/) — query-level enforcement
-- [Middleware](/guides/middleware/) — where authentication runs
-- [Security](/guides/security/) — the wider checklist
+- [Authentication](/guides/authentication/): establishing who the caller is
+- [Permissions](/guides/permissions/): deciding what they may do
+- [Scopes & Events](/guides/record/scopes-events/): query-level enforcement
+- [Middleware](/guides/middleware/): where authentication runs
+- [Security](/guides/security/): the wider checklist
 
 
 ##  Documenting what is protected
@@ -344,9 +355,9 @@ Cache the coarse part. A user's roles change rarely, and a short-lived
 cache keyed by user id removes a query from every request without
 meaningfully delaying a permission change.
 
-Do not cache the fine-grained part. Ownership depends on the specific
-record, so a cached `can_edit(user)` is a value that is right for one
-resource and wrong for the rest — and the failure is silent.
+Do not cache the fine-grained part. Ownership depends on the specific record,
+so a cached `can_edit(user)` is a value that is right for one resource and
+wrong for the rest, and the failure is silent.
 
 Where a handler checks and then fetches, combine them. Filtering the
 query by owner is one round trip; checking then fetching is two, and the

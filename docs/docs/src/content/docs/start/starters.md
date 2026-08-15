@@ -1,6 +1,6 @@
 ---
 title: The Official Starters
-description: "What sillohq/starter and sillohq/starter-inertia contain — the layout, the dependencies each pulls in, and how to choose between them."
+description: "What sillohq/starter and sillohq/starter-inertia contain: the layout, the dependencies each pulls in, and how to choose between them."
 head:
   - tag: meta
     attrs:
@@ -34,7 +34,7 @@ Take **Inertia** when you want React or Vue components with the routing,
 validation and auth still on the Python side. You get a frontend without
 writing an API for your own frontend to consume.
 
-You are not locked in either way — Inertia is a dependency and a mount, and can
+You are not locked in either way. Inertia is a dependency and a mount, and can
 be added to a project that started without it.
 
 ## What `sillohq/starter` ships
@@ -70,7 +70,7 @@ and a `README.md`.
 
 - **Session authentication** against a real user model, not a stub.
 - **The admin panel**, at `/admin/`.
-- **Migrations**, with the initial one committed — so `sillo db:migrate` on a
+- **Migrations**, with the initial one committed, so `sillo db:migrate` on a
   fresh clone produces a working database rather than an empty one.
 - **A queue and a scheduler**, with the directories to put work in.
 - **Tests**, including fixtures for an authenticated client.
@@ -90,7 +90,7 @@ email-validator
 
 SQLite by default, so there is nothing to run before the first request. Swap
 the driver for `asyncpg` or `asyncmy` and change `DATABASE_URL` when you want a
-server — see [Database setup](/orm/setup/).
+server. See [Database setup](/orm/setup/).
 
 ## What `sillohq/starter-inertia` ships
 
@@ -130,7 +130,7 @@ frontend side.
 ## The Makefile
 
 Both starters ship one, and you can ignore it. Every target is a plain `sillo`,
-`uvicorn` or `pytest` invocation — it exists so `make` on its own lists what a
+`uvicorn` or `pytest` invocation. It exists so `make` on its own lists what a
 project can do, not because anything depends on it.
 
 The documentation uses the underlying commands throughout, so nothing here

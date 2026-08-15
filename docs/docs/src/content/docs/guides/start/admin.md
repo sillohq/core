@@ -14,7 +14,7 @@ head:
 
 #  The Admin Panel
 
-At `/admin/` — note the trailing slash, the routes need it.
+At `/admin/`. Note the trailing slash, the routes need it.
 
 ```bash
 sillo user:admin ada@example.com ada
@@ -30,10 +30,10 @@ There is no separate administrator account. Sign-in is checked against
 your project's `User`, so people use their normal account, and adding a
 field to `User` adds it everywhere.
 
-That works because the admin's own default user model and yours both
-extend `sillo.users.UserBaseModel` — the same `set_password`,
-`check_password` and `verify_credentials`. Passing yours replaces the
-other outright rather than adapting to it:
+That works because the admin's own default user model and yours both extend
+`sillo.users.UserBaseModel`, the same `set_password`, `check_password` and
+`verify_credentials`. Passing yours replaces the other outright rather than
+adapting to it:
 
 ```python
 admin = AdminSite(
@@ -43,8 +43,8 @@ admin = AdminSite(
 )
 ```
 
-`database/config.py` therefore registers `sillo.admin.models` — the
-activity log — but **not** `sillo.admin.default_user`:
+`database/config.py` therefore registers `sillo.admin.models` (the activity
+log) but **not** `sillo.admin.default_user`:
 
 ```python
 MODEL_MODULES = ["database.models", "sillo.admin.models"]
@@ -56,9 +56,9 @@ of accounts to keep in step, or to forget about, that nothing would ever
 write a row to.
 
 :::note
-**If you *want* the standalone admin user model** — an admin panel for a
-system whose users are not the application's users — register that module
-and let `AdminSite` use its default:
+**If you *want* the standalone admin user model** (an admin panel for a system
+whose users are not the application's users) register that module and let
+`AdminSite` use its default:
 
 ```python
 MODEL_MODULES = ["database.models", "sillo.admin.models", "sillo.admin.default_user"]
@@ -116,7 +116,7 @@ For every registered model, mounted under the admin's prefix:
 | `/admin/<model>/export/` | Export the current list |
 | `/admin/<model>/bulk/` | Bulk actions |
 
-`<model>` is the class name lowercased — `Post` becomes `/admin/post/`.
+`<model>` is the class name lowercased. `Post` becomes `/admin/post/`.
 
 Password fields get a dedicated widget with a strength meter and a
 confirmation field named `password__confirm`. Submitting the form without
@@ -125,7 +125,7 @@ than creating an account with an unverified password.
 
 ##  Who may enter
 
-An account needs `is_staff` — `sillo user:admin` sets it, along with
+An account needs `is_staff`. `sillo user:admin` sets it, along with
 `is_superuser`.
 
 The rule is **active, and staff or superuser**, and it is checked at
@@ -169,8 +169,8 @@ await set_staff(user, True, model=User)     # let them in
 await set_staff(user, False, model=User)    # and out again
 ```
 
-Or edit the `is_staff` checkbox on the user's own admin page — which is
-why `User` is registered in the admin at all.
+Or edit the `is_staff` checkbox on the user's own admin page, which is why
+`User` is registered in the admin at all.
 
 ##  The activity log
 
@@ -185,9 +185,9 @@ ada@example.com           create    Users        7
 ada@example.com           export    Users        —
 ```
 
-Writes to it are best-effort — a failure to record must not fail the
-action being recorded — so a missing table means the log is simply empty
-rather than that the admin breaks.
+Writes to it are best-effort (a failure to record must not fail the action
+being recorded) so a missing table means the log is simply empty rather than
+that the admin breaks.
 
 ###  Turning it off
 
@@ -207,9 +207,8 @@ registered model with no table is a real case, and a nav link that leads
 to a 500 is worse than no link.
 
 :::note
-**How the admin decides.** Whether a model is usable is asked **per
-request**, by resolving a connection the way a query would — not at
-startup.
+**How the admin decides.** Whether a model is usable is asked **per request**,
+by resolving a connection the way a query would, not at startup.
 
 It cannot be asked at startup. `AdminSite.mount()` is called before
 `setup_record` in a conventional application factory, because mounting
@@ -238,9 +237,9 @@ class PostAdmin(ModelAdmin):
         return request.user.is_superuser
 ```
 
-They control the buttons on the dashboard and the list page. Anything
-enforcing a rule that matters should also be enforced in the model or the
-route — an admin that hides a button has hidden a button.
+They control the buttons on the dashboard and the list page. Anything enforcing
+a rule that matters should also be enforced in the model or the route. An admin
+that hides a button has hidden a button.
 
 The **query console** at `/admin/query/` is superuser-only regardless: it
 grants read and write on every table, so being signed in is not enough.
@@ -256,8 +255,8 @@ admin = AdminSite(
 )
 ```
 
-For authentication that is not sessions — SSO, LDAP, a proxy header —
-subclass `AuthBackend`:
+For authentication that is not sessions (SSO, LDAP, a proxy header) subclass
+`AuthBackend`:
 
 ```python
 from sillo.admin.auth import AuthBackend
@@ -309,7 +308,9 @@ Useful for an API-only deployment of the same codebase.
 
 ##  Related
 
-- [Users & Authentication](/guides/start/authentication/) — the model the admin signs in
-- [Database & Migrations](/guides/start/database/) — what `MODEL_MODULES` decides
-- [Project Structure](/guides/start/structure/) — where `app/admin.py` sits
-- [Middleware](/guides/middleware/) — why registration order matters
+- [Users & Authentication](/guides/start/authentication/): the model the admin
+  signs in
+- [Database & Migrations](/guides/start/database/): what `MODEL_MODULES`
+  decides
+- [Project Structure](/guides/start/structure/): where `app/admin.py` sits
+- [Middleware](/guides/middleware/): why registration order matters

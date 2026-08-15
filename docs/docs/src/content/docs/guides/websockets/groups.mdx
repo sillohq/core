@@ -27,9 +27,9 @@ ChannelBox.CHANNEL_GROUPS == {
 }
 ```
 
-Groups are dictionaries keyed by channel, with `...` as a placeholder
-value — a dict used as an ordered set. Everything on `ChannelBox` is a
-classmethod operating on that one class-level dictionary.
+Groups are dictionaries keyed by channel, with `...` as a placeholder value. A
+dict used as an ordered set. Everything on `ChannelBox` is a classmethod
+operating on that one class-level dictionary.
 
 ##  When to reach for groups
 
@@ -37,9 +37,9 @@ Use them for fan-out to a set of connections that changes over time: chat
 rooms, document collaborators, subscribers to a live metric, everyone
 watching a build.
 
-Do not use them as a connection registry keyed by user. `send_to` scans
-every group looking for a UUID, which is O(all connections) per message —
-keep your own `{user_id: channels}` mapping for direct messaging.
+Do not use them as a connection registry keyed by user. `send_to` scans every
+group looking for a UUID, which is O(all connections) per message. Keep your
+own `{user_id: channels}` mapping for direct messaging.
 
 Do not use them at all if you run more than one worker process without a
 fan-out layer. That constraint is important enough to state before
@@ -47,9 +47,9 @@ anything else.
 
 <Aside type="danger" title="Groups are per-process and are not shared">
 
-`CHANNEL_GROUPS` is a plain class attribute — a dictionary in one
-Python process's memory. It is not shared between uvicorn workers,
-between gunicorn processes, or between machines.
+`CHANNEL_GROUPS` is a plain class attribute: a dictionary in one Python
+process's memory. It is not shared between uvicorn workers, between gunicorn
+processes, or between machines.
 
 With `--workers 4`, a client connected to worker 1 will never receive a
 broadcast issued from worker 3. Roughly three quarters of your messages
@@ -60,9 +60,9 @@ The same applies to `show_history` and to any HTTP endpoint that
 broadcasts: the endpoint runs on whichever worker the load balancer
 picked, and reaches only that worker's connections.
 
-If you need more than one process, put a message bus underneath — the
-Redis pattern at the end of this page is about sixty lines. Decide this
-before you ship, because every broadcast call site changes.
+If you need more than one process, put a message bus underneath, the Redis
+pattern at the end of this page is about sixty lines. Decide this before you
+ship, because every broadcast call site changes.
 
 </Aside>
 
@@ -77,9 +77,9 @@ await ChannelBox.add_channel_to_group(channel, "room:42")
 await ChannelBox.remove_channel_from_group(channel, "room:42")
 ```
 
-A channel can be in any number of groups at once. Groups are created on
-first join and deleted when their last member leaves — there is no
-explicit create or destroy.
+A channel can be in any number of groups at once. Groups are created on first
+join and deleted when their last member leaves. There is no explicit create or
+destroy.
 
 ###  The return values are not what they look like
 
@@ -150,10 +150,10 @@ status = await ChannelBox.group_send(
 | `GROUP_SEND` | The group had at least one channel and the loop ran |
 | `NO_SUCH_GROUP` | The group was missing or empty |
 
-`GROUP_SEND` is not a delivery receipt. `Channel._send` catches
-`RuntimeError` — which is what a closed socket raises — logs it at DEBUG,
-and continues. A broadcast to a group of five hundred where four hundred
-have gone away still returns `GROUP_SEND`.
+`GROUP_SEND` is not a delivery receipt. `Channel._send` catches `RuntimeError`
+(which is what a closed socket raises) logs it at DEBUG, and continues. A
+broadcast to a group of five hundred where four hundred have gone away still
+returns `GROUP_SEND`.
 
 Three properties to internalise:
 
@@ -170,8 +170,8 @@ await asyncio.gather(
 )
 ```
 
-`return_exceptions=True` matters — without it, one timeout cancels the
-rest of the fan-out.
+`return_exceptions=True` matters, without it, one timeout cancels the rest of
+the fan-out.
 
 **There is no sender exclusion.** `group_send` has no `exclude`
 parameter. Filter by UUID if you need "everyone but me".
@@ -182,8 +182,8 @@ one recipient's send path affects the others.
 
 ##  Broadcasting from an HTTP handler
 
-Groups are global to the process, so any code can broadcast — a REST
-endpoint, a background task, a webhook receiver.
+Groups are global to the process, so any code can broadcast: a REST endpoint, a
+background task, a webhook receiver.
 
 ```python title="pushing from an ordinary route"
 @app.post("/rooms/{room_id}/announce")
@@ -199,9 +199,9 @@ async def announce(request, response):
 
 This is the pattern that makes WebSockets useful in an otherwise
 request/response application: the HTTP side writes, the WebSocket side
-notifies. It is also the pattern most affected by the multi-worker
-problem above — this endpoint reaches only the connections held by the
-worker that served the POST.
+notifies. It is also the pattern most affected by the multi-worker problem
+above. This endpoint reaches only the connections held by the worker that
+served the POST.
 
 ##  Message history
 
@@ -217,9 +217,9 @@ await ChannelBox.flush_history("room:42")
 await ChannelBox.flush_history()                      # everything
 ```
 
-Each stored message is a `ChannelMessageDC` with `payload`, a `uuid`, and
-a UTC `created` timestamp. The uuid and timestamp are per-message —
-generated by `default_factory` rather than evaluated once at import.
+Each stored message is a `ChannelMessageDC` with `payload`, a `uuid`, and a UTC
+`created` timestamp. The uuid and timestamp are per-message, generated by
+`default_factory` rather than evaluated once at import.
 
 ```python title="replaying history to a new joiner"
 async def on_connect(self, websocket):
@@ -231,13 +231,13 @@ async def on_connect(self, websocket):
 
 <Aside type="danger" title="The default history manager's size limit does not work">
 
-`InMemoryHistoryManager` checks `sys.getsizeof(self._history[group])`
-against its limit. `sys.getsizeof` on a list returns the size of the
-list's own pointer array — not the size of the objects it contains.
+`InMemoryHistoryManager` checks `sys.getsizeof(self._history[group])` against
+its limit. `sys.getsizeof` on a list returns the size of the list's own pointer
+array, not the size of the objects it contains.
 
-Fifty messages of 100 KB each — 5 MB of payloads — measure as 472 bytes.
-The 1 MiB default limit is never reached, and history grows without
-bound until the process runs out of memory.
+Fifty messages of 100 KB each (5 MB of payloads) measure as 472 bytes. The 1
+MiB default limit is never reached, and history grows without bound until the
+process runs out of memory.
 
 When the limit *does* trip, at roughly 130,000 messages regardless of
 size, the handler **clears the entire group's history** rather than
@@ -291,10 +291,10 @@ what "keep the last N" should mean.
 
 </Aside>
 
-`BaseHistoryManager` is a three-method ABC, so a Redis- or
-database-backed implementation is straightforward — and is what you want
-anyway once you have more than one process, since history has exactly the
-same per-process problem as groups.
+`BaseHistoryManager` is a three-method ABC, so a Redis- or database-backed
+implementation is straightforward, and is what you want anyway once you have
+more than one process, since history has exactly the same per-process problem
+as groups.
 
 ##  Inspection and shutdown
 
@@ -357,15 +357,15 @@ async def start_fanout():
     app.state["fanout"] = asyncio.create_task(fanout_listener())
 ```
 
-Every process subscribes; every process delivers to its own local
-members. Call `publish()` instead of `ChannelBox.group_send()` from your
-application code — the listener is the only caller of `group_send`.
+Every process subscribes; every process delivers to its own local members. Call
+`publish()` instead of `ChannelBox.group_send()` from your application code.
+The listener is the only caller of `group_send`.
 
-Two caveats. Each process receives every message regardless of whether it
-has members in that group, so at high volume you want per-group channels
-rather than one firehose. And pub/sub is at-most-once — a worker that is
-restarting misses messages entirely, which is why history belongs in a
-shared store rather than being reconstructed from the bus.
+Two caveats. Each process receives every message regardless of whether it has
+members in that group, so at high volume you want per-group channels rather
+than one firehose. And pub/sub is at-most-once. A worker that is restarting
+misses messages entirely, which is why history belongs in a shared store rather
+than being reconstructed from the bus.
 
 ##  What not to do
 
@@ -393,17 +393,16 @@ members.
 
 ##  Performance notes
 
-`group_send` is O(group size) and sequential. At a thousand members and
-one millisecond per send, a broadcast takes a second — during which that
-task is doing nothing else.
+`group_send` is O(group size) and sequential. At a thousand members and one
+millisecond per send, a broadcast takes a second, during which that task is
+doing nothing else.
 
 `_clean_expired()` sweeps every group and every channel, and runs on each
 `remove_channel_from_group`. High connection churn makes this the hot
 path; manage membership yourself if you are seeing it in profiles.
 
-`send_to` iterates all groups and all channels. It is the single most
-expensive operation on `ChannelBox` and has an easy replacement — your
-own dictionary.
+`send_to` iterates all groups and all channels. It is the single most expensive
+operation on `ChannelBox` and has an easy replacement, your own dictionary.
 
 History with the default manager grows without bound. Measure resident
 memory on a long-running process before trusting it.
@@ -426,8 +425,10 @@ memory on a long-running process before trusting it.
 
 ##  Related
 
-- [Channels](/guides/websockets/channels/) — what goes into a group
-- [Consumers](/guides/websockets/consumer/) — `join_group`, `leave_group`, `broadcast`
-- [WebSockets](/guides/websockets/) — connections and routing
-- [Events](/guides/websockets/events/) — dispatching by message type
-- [Startup & Shutdown](/guides/startups-and-shutdowns/) — where `close_all_connections` belongs
+- [Channels](/guides/websockets/channels/): what goes into a group
+- [Consumers](/guides/websockets/consumer/): `join_group`, `leave_group`,
+  `broadcast`
+- [WebSockets](/guides/websockets/): connections and routing
+- [Events](/guides/websockets/events/): dispatching by message type
+- [Startup & Shutdown](/guides/startups-and-shutdowns/): where
+  `close_all_connections` belongs

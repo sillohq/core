@@ -30,7 +30,11 @@ Two things happened: `"7"` was coerced to `7`, and `password_hash` **never left 
 
 ##  Why this matters
 
-The leak protection is the point. Without a response model, a column added to that table next year starts appearing in your API the moment someone adds it to the database — no code change, no review, no notice. Password hashes, internal flags, soft-delete timestamps, another tenant's identifiers: all of it ships the instant it exists.
+The leak protection is the point. Without a response model, a column added to
+that table next year starts appearing in your API the moment someone adds it to
+the database: no code change, no review, no notice. Password hashes, internal
+flags, soft-delete timestamps, another tenant's identifiers: all of it ships
+the instant it exists.
 
 With a response model, the response can only ever contain what the model declares. New columns are invisible until someone deliberately adds them to the output schema, which is a change a reviewer can see.
 
@@ -60,7 +64,9 @@ async def get_user(request, response, user_id=Path(type=int)):
     return await User.get(id=user_id)     # a model instance, not a dict
 ```
 
-This works because sillo validates with `from_attributes` enabled. Any object with matching attributes is acceptable — an ORM row, a dataclass, a `NamedTuple`, or a plain class of your own.
+This works because sillo validates with `from_attributes` enabled. Any object
+with matching attributes is acceptable: an ORM row, a dataclass, a
+`NamedTuple`, or a plain class of your own.
 
 ---
 
@@ -120,9 +126,11 @@ Item(name="a")                    # tag unset, count unset
 Item(name="a", tag=None, count=0) # tag set to None, count set to its default
 ```
 
-- `exclude_none` drops `tag` in both cases — it only looks at the value.
-- `exclude_unset` drops `tag` and `count` in the first case, neither in the second — it tracks what the client or your code actually provided.
-- `exclude_defaults` drops `count` in both — it compares against the declared default.
+- `exclude_none` drops `tag` in both cases: it only looks at the value.
+- `exclude_unset` drops `tag` and `count` in the first case, neither in the
+  second. It tracks what the client or your code actually provided.
+- `exclude_defaults` drops `count` in both: it compares against the declared
+  default.
 
 `exclude_unset` is the one to reach for in a PATCH-style response, where you want to echo back only what changed.
 
@@ -179,7 +187,9 @@ class UserOut(BaseModel):
 {"first_name": "Ada", "last_name": "Lovelace", "full_name": "Ada Lovelace"}
 ```
 
-Computed fields appear in the generated OpenAPI schema, so clients see them documented. The return annotation is required — it is what determines the published type.
+Computed fields appear in the generated OpenAPI schema, so clients see them
+documented. The return annotation is required. It is what determines the
+published type.
 
 ##  Custom serializers
 
@@ -212,7 +222,10 @@ class Money(BaseModel):
         return f"{self.amount} {self.currency}"
 ```
 
-Be aware that a custom serializer can diverge from the declared schema — Pydantic will not stop you returning a string from a model documented as an object. Use `@field_serializer(..., return_type=str)` or annotate the serializer so the generated schema stays truthful.
+Be aware that a custom serializer can diverge from the declared schema.
+Pydantic will not stop you returning a string from a model documented as an
+object. Use `@field_serializer(..., return_type=str)` or annotate the
+serializer so the generated schema stays truthful.
 
 ##  How types are rendered
 
@@ -220,9 +233,9 @@ Response models serialize in JSON mode, which converts Python types to JSON-comp
 
 | Python | JSON |
 | --- | --- |
-| `datetime` | ISO 8601 string — `"2024-01-02T03:04:05"` |
+| `datetime` | ISO 8601 string: `"2024-01-02T03:04:05"` |
 | `date`, `time` | ISO 8601 string |
-| `timedelta` | ISO 8601 duration — `"PT1H"` |
+| `timedelta` | ISO 8601 duration: `"PT1H"` |
 | `UUID` | string |
 | `Decimal` | string, preserving exactness |
 | `Enum` | the member's value |
@@ -230,7 +243,9 @@ Response models serialize in JSON mode, which converts Python types to JSON-comp
 | `set`, `frozenset` | array |
 | `IPv4Address` and friends | string |
 
-`Decimal` becoming a string is deliberate and correct — rendering `19.99` as a JSON number would round-trip through a float and lose precision. Clients handling money should parse the string.
+`Decimal` becoming a string is deliberate and correct, rendering `19.99` as a
+JSON number would round-trip through a float and lose precision. Clients
+handling money should parse the string.
 
 ##  Handler-built responses pass through
 
@@ -245,7 +260,9 @@ async def get_user(request, response, user_id=Path(type=int)):
     return user                                                          # shaped
 ```
 
-Once you have taken over status, headers, and body, sillo does not second-guess the payload. This is what makes error branches natural to write — a 404 body does not have to satisfy `UserOut`.
+Once you have taken over status, headers, and body, sillo does not second-guess
+the payload. This is what makes error branches natural to write. A 404 body
+does not have to satisfy `UserOut`.
 
 The same applies to redirects, file responses, and streams.
 
@@ -263,7 +280,9 @@ async def get_user(request, response):
 {"error": "Internal Server Error", "detail": "Response validation failed"}
 ```
 
-The caller did nothing wrong — the application broke the contract it published, which is a server-side bug. Returning 422 would wrongly blame the client and mislead anything that retries on 4xx.
+The caller did nothing wrong, the application broke the contract it published,
+which is a server-side bug. Returning 422 would wrongly blame the client and
+mislead anything that retries on 4xx.
 
 The offending value is logged server-side and deliberately **not** echoed to the client, since filtering it out is exactly what the response model was for. To alert on these:
 
@@ -290,14 +309,17 @@ async def get_user(request, response): ...
 
 ##  Performance
 
-A response model costs one validation plus one serialization pass. Because Pydantic already emits JSON-safe primitives, sillo skips its own encoder for these routes rather than walking the payload a second time — so a large collection is not penalized twice. Measured at roughly 2.9 µs for a small object, scaling linearly with size.
+A response model costs one validation plus one serialization pass. Because
+Pydantic already emits JSON-safe primitives, sillo skips its own encoder for
+these routes rather than walking the payload a second time, so a large
+collection is not penalized twice. Measured at roughly 2.9 µs for a small
+object, scaling linearly with size.
 
 
 ##  The output model is your public contract
 
-An input model protects you from clients. An output model protects
-clients from you — and protects you from leaking things you did not mean
-to.
+An input model protects you from clients. An output model protects clients from
+you, and protects you from leaking things you did not mean to.
 
 The leak is the more urgent half. A handler that returns an ORM object
 directly returns every column: password hashes, internal flags, soft-delete
@@ -334,8 +356,8 @@ clients depend on what you send in ways you cannot see.
 Publish it and move on.
 
 **Removing a field is breaking.** Something out there reads it. Deprecate
-first — mark it in the schema, keep sending it for a release or two, and
-measure whether anyone still reads it if you can.
+first: mark it in the schema, keep sending it for a release or two, and measure
+whether anyone still reads it if you can.
 
 **Changing a type is breaking, quietly.** An `int` id that becomes a
 `str` id passes every one of your tests and breaks a client that does
@@ -352,21 +374,20 @@ routine, which is the opposite of what versions are for.
 
 ##  Nullability is part of the contract
 
-`str | None` and `str` are different promises, and clients write different
-code for them. A field declared non-optional that occasionally serializes
-as `null` will crash a typed client — TypeScript, Swift, Kotlin — at the
-point of use, far from your endpoint.
+`str | None` and `str` are different promises, and clients write different code
+for them. A field declared non-optional that occasionally serializes as `null`
+will crash a typed client (TypeScript, Swift, Kotlin) at the point of use, far
+from your endpoint.
 
 Be deliberate. If a field can be absent, say so in the model. If it
 cannot, make the handler guarantee it rather than letting `None` through
 and hoping.
 
-`exclude_none=True` interacts with this badly if used casually: it turns
-a declared-but-null field into a missing key, which a client expecting
-the key will read as `undefined`. Omitting a key and sending `null` are
-different messages. Pick one per field and stay consistent across the
-API — mixed conventions are the thing that makes client code defensive
-everywhere.
+`exclude_none=True` interacts with this badly if used casually: it turns a
+declared-but-null field into a missing key, which a client expecting the key
+will read as `undefined`. Omitting a key and sending `null` are different
+messages. Pick one per field and stay consistent across the API. Mixed
+conventions are the thing that makes client code defensive everywhere.
 
 ##  Lists, envelopes, and pagination
 
@@ -384,11 +405,10 @@ class UserListOut(BaseModel):
     page_size: int
 ```
 
-The cost is one level of nesting; the benefit is that adding `has_next`
-later is additive rather than breaking. Endpoints that return a
-collection should almost always use an envelope, and the exception —
-a genuinely fixed, small, complete set — is rarer than it feels when you
-are writing it.
+The cost is one level of nesting; the benefit is that adding `has_next` later
+is additive rather than breaking. Endpoints that return a collection should
+almost always use an envelope, and the exception (a genuinely fixed, small,
+complete set) is rarer than it feels when you are writing it.
 
 
 ##  Testing that the contract holds
@@ -415,6 +435,6 @@ string breaks typed clients and passes any test that compares it to
 in practice will only show up on the record where it is null. Seed one
 deliberately.
 
-These are cheap tests that catch expensive bugs, and they are the reason
-to declare `response_model` even on endpoints where the shape feels
-obvious — the model gives the test something to be a contract against.
+These are cheap tests that catch expensive bugs, and they are the reason to
+declare `response_model` even on endpoints where the shape feels obvious. The
+model gives the test something to be a contract against.

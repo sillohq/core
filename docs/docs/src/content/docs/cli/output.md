@@ -1,6 +1,6 @@
 ---
 title: Output
-description: "Writing readable console output — lines, levels, bullets, key/value pairs, tables, panels, rules, progress bars and spinners, with colour that degrades cleanly."
+description: "Writing readable console output: lines, levels, bullets, key/value pairs, tables, panels, rules, progress bars and spinners, with colour that degrades cleanly."
 head:
   - tag: meta
     attrs:
@@ -37,9 +37,9 @@ self.muted("  Nothing done.")
 ```
 
 The five levels each carry their own colour and marker. `muted` is the one to
-reach for when a line is a *continuation* of the one above it — a hint under a
-warning, a count under a table — which is why it appears indented throughout
-the framework's own commands.
+reach for when a line is a *continuation* of the one above it (a hint under a
+warning, a count under a table) which is why it appears indented throughout the
+framework's own commands.
 
 Errors written with `self.error` still go to stdout. It is the console's
 top-level failure reporting that uses stderr, so that a command's own narration
@@ -74,7 +74,7 @@ self.pairs([
 ```
 
 The keys are padded to a common width. This is the shape to use for a small
-fixed set of facts — a header before the work starts, a summary after.
+fixed set of facts. A header before the work starts, a summary after.
 
 ## Tables
 
@@ -94,7 +94,7 @@ self.table(
 ```
 
 `align` takes `"left"`, `"right"` or `"center"` per column, and defaults to
-left. Right-align numbers — a column of counts that is left-aligned is
+left. Right-align numbers. A column of counts that is left-aligned is
 noticeably harder to compare at a glance.
 
 Values are stringified as they are, so format them before they arrive if you
@@ -129,7 +129,7 @@ The bar redraws in place on one line. `advance(step)` moves by more than one;
 work reports its own position rather than counting iterations.
 
 Leaving the `with` block finishes the bar and moves to a new line, including
-when the body raised — so a failure does not leave a half-drawn bar as the last
+when the body raised, so a failure does not leave a half-drawn bar as the last
 thing on screen.
 
 ## Spinners
@@ -142,16 +142,16 @@ with self.spinner("Resolving dependencies"):
 For work whose size is not known in advance. A progress bar that cannot show
 progress is worse than a spinner, because it implies a total it does not have.
 
-Both the bar and the spinner detect a non-interactive stream and stop animating
-— a build log should not contain several thousand redraw frames.
+Both the bar and the spinner detect a non-interactive stream and stop
+animating. A build log should not contain several thousand redraw frames.
 
 ## Colour
 
 Colour is decided per stream, once, by four checks in order:
 
-1. `NO_COLOR` set to anything at all — a presence check, per the convention, so
+1. `NO_COLOR` set to anything at all: a presence check, per the convention, so
    `NO_COLOR=0` still disables colour.
-2. `FORCE_COLOR` set to anything — for build systems that pipe output but do
+2. `FORCE_COLOR` set to anything: for build systems that pipe output but do
    render escapes.
 3. `TERM=dumb`.
 4. Whether the stream is a terminal.
@@ -185,7 +185,7 @@ a table.
 
 ## Using `Output` directly
 
-Outside a command — in a script, or your own tooling — the same object is
+Outside a command (in a script, or your own tooling) the same object is
 available on its own:
 
 ```python

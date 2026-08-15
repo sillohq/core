@@ -18,7 +18,10 @@ import { Aside } from '@astrojs/starlight/components';
 
 Accepting a file upload means accepting a name, a size, and a byte stream from someone you do not trust. Each of the three is an attack surface. The name can escape your upload directory. The declared size can lie. The extension can claim to be a JPEG while the bytes are a shell script.
 
-This module covers the mechanical parts of handling that: formatting sizes for humans, parsing size limits from configuration, classifying extensions, and — most importantly — turning a hostile filename into one that is safe to write to disk.
+This module covers the mechanical parts of handling that: formatting sizes for
+humans, parsing size limits from configuration, classifying extensions, and
+(most importantly) turning a hostile filename into one that is safe to write to
+disk.
 
 ```python
 from sillo.helpers import files
@@ -55,7 +58,8 @@ A billion bytes is 1.0 GB under the SI definition that "MB" implies. `format_siz
 
 In practice this matters when your number must line up with someone else's. Disk manufacturers, cloud storage billing, and network transfer quotas are all decimal. If you display "953.7 MB" next to a provider's "1.0 GB" for the same object, users will file a bug.
 
-`format_size_binary` is correct and unambiguous — use it. If you need true decimal output, compute it yourself:
+`format_size_binary` is correct and unambiguous. Use it. If you need true
+decimal output, compute it yourself:
 
 ```python
 def format_size_si(n: int) -> str:
@@ -200,7 +204,9 @@ Separators become the replacement character, so the result stays inside the dire
 
 <Aside type="caution" title="The .. characters survive; only the separators are replaced">
 
-`safe_filename("../../etc/passwd")` returns `'.._.._etc_passwd'`, not `'etc_passwd'`. The dots are still there — what makes the result safe is that no `/` or `\` remains, so the whole thing is a single filename component.
+`safe_filename("../../etc/passwd")` returns `'.._.._etc_passwd'`, not
+`'etc_passwd'`. The dots are still there. What makes the result safe is that no
+`/` or `\` remains, so the whole thing is a single filename component.
 
 That is sufficient for traversal, but it means the result can still be a name you did not expect, including a leading dot (a hidden file on Unix). If that matters, strip leading dots yourself.
 
@@ -211,7 +217,9 @@ That is sufficient for traversal, but it means the result can still be a name yo
 `safe_filename` handles the name. It does not handle:
 
 - **Length.** Most filesystems cap a component at 255 bytes. A longer name raises `OSError` on write. Truncate, and preserve the extension when you do.
-- **Reserved Windows names.** `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9` are reserved regardless of extension. Writing `CON.txt` on Windows fails or behaves strangely.
+- **Reserved Windows names.** `CON`, `PRN`, `AUX`, `NUL`, `COM1`: `COM9`,
+  `LPT1`. `LPT9` are reserved regardless of extension. Writing `CON.txt` on
+  Windows fails or behaves strangely.
 - **Case-insensitive collisions.** `Report.PDF` and `report.pdf` are different names on Linux and the same file on macOS and Windows.
 - **Unicode normalization.** Two visually identical names can differ in bytes, and macOS normalizes on write, so a name you stored may not be the name you get back.
 
@@ -330,7 +338,8 @@ Run it from the scheduler ([Scheduled Jobs](/guides/work/scheduler/)) rather tha
 
 ##  Performance
 
-Formatting, parsing, and extension functions are pure string arithmetic — nanoseconds, no I/O.
+Formatting, parsing, and extension functions are pure string arithmetic,
+nanoseconds, no I/O.
 
 The filesystem functions are the ones to watch. `file_age`, `file_age_human`, and `unique_filename` each perform a `stat()`. `list_files` walks the directory and, with `recursive=True`, the entire tree beneath it. `ensure_directory` is a `mkdir` syscall. All are synchronous and block the event loop.
 
@@ -346,7 +355,7 @@ The rule for an async handler is simple: string functions are free, anything tha
 | `get_extension` | `(filename: str)` | Lowercased extension with dot, or `''` |
 | `get_extension_clean` | `(filename: str)` | Extension without the dot |
 | `guess_mime_type` | `(filename: str)` | MIME type or `None`. Extension-based only. |
-| `is_dangerous_extension` | `(filename: str)` | `bool`. Blocklist — do not rely on it. |
+| `is_dangerous_extension` | `(filename: str)` | `bool`. Blocklist. Do not rely on it. |
 | `is_image_extension` | `(filename: str)` | `bool` |
 | `is_media_extension` | `(filename: str)` | `bool` |
 | `safe_filename` | `(filename: str, replacement: str = "_")` | Single-component safe name |
@@ -358,8 +367,11 @@ The rule for an async handler is simple: string functions are free, anything tha
 
 ##  Related
 
-- [File Uploads](/guides/file-upload/) — receiving and streaming uploads safely
-- [Static Files](/guides/static-files/) — serving files, and why not from the upload directory
-- [Strings](/guides/helpers/strings/) — generating stored filenames
-- [Hashing](/guides/helpers/hashing/) — content-addressed storage and deduplication
-- [Background Tasks](/guides/work/background/) — moving disk work out of the request
+- [File Uploads](/guides/file-upload/): receiving and streaming uploads safely
+- [Static Files](/guides/static-files/): serving files, and why not from the
+  upload directory
+- [Strings](/guides/helpers/strings/): generating stored filenames
+- [Hashing](/guides/helpers/hashing/): content-addressed storage and
+  deduplication
+- [Background Tasks](/guides/work/background/): moving disk work out of the
+  request

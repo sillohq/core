@@ -6,7 +6,7 @@ description: "System layers, boundaries, component relationships, dependency gra
 ## 1. System Layers and Boundaries
 
 Sillo is a standalone ASGI web framework. It does **not** inherit from any base
-application class — `SilloApp` is a plain Python object that implements the ASGI
+application class. `SilloApp` is a plain Python object that implements the ASGI
 protocol via `__call__(scope, receive, send)`.
 
 The codebase is organized into four concentric layers:
@@ -32,19 +32,22 @@ The codebase is organized into four concentric layers:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Layer 1 — ASGI Primitives** defines the type aliases and data structures that
-map directly to the ASGI spec: `Scope`, `Message`, `Receive`, `Send`, `ASGIApp`.
-All higher layers depend on these types; they depend on nothing within sillo.
+**Layer 1: ASGI Primitives** defines the type aliases and data structures that
+map directly to the ASGI spec: `Scope`, `Message`, `Receive`, `Send`,
+`ASGIApp`. All higher layers depend on these types; they depend on nothing
+within sillo.
 
-**Layer 2 — Core Engine** implements the request/response cycle: routing,
-dependency injection, encoding, error handling, and the middleware bridge. These
-modules are framework-internal and are not part of the public API surface.
+**Layer 2: Core Engine** implements the request/response cycle: routing,
+dependency injection, encoding, error handling, and the middleware bridge.
+These modules are framework-internal and are not part of the public API
+surface.
 
-**Layer 3 — Framework Surface** provides the features application developers
-interact with: configuration, events, authentication, sessions, mail, templates,
-GraphQL, permissions, and validation. These modules depend on the core engine.
+**Layer 3. Framework Surface** provides the features application developers
+interact with: configuration, events, authentication, sessions, mail,
+templates, GraphQL, permissions, and validation. These modules depend on the
+core engine.
 
-**Layer 4 — User Application** is the `SilloApp` instance and everything the
+**Layer 4. User Application** is the `SilloApp` instance and everything the
 developer writes. It composes layers 2 and 3.
 
 ### Key Source Files
@@ -62,7 +65,7 @@ developer writes. It composes layers 2 and 3.
 | `core/error/handler.py` | 2 | `ServerErrorMiddleware`, debug HTML error page |
 | `core/http/` | 2 | `Request`, `Response` (Responder), `StreamingResponse` |
 | `_internals/_middleware.py` | 2 | `ASGIRequestResponseBridge`, `DefineMiddleware`, `_CachedRequest` |
-| `application.py` | 3 | `SilloApp` — the application entry point |
+| `application.py` | 3 | `SilloApp`: the application entry point |
 | `exception_handler.py` | 3 | `ExceptionMiddleware`, built-in exception handlers |
 | `config/core.py` | 3 | `Config` base class (Pydantic + `.env` loading) |
 | `events/` | 3 | `EventEmitter`, transports, event protocol |
@@ -255,13 +258,19 @@ graph TD
 
 Every `SilloApp` instance depends on exactly seven subsystems at construction time:
 
-1. **Router** (`core/routing/`) — route registration, path matching, request dispatch
-2. **ExceptionMiddleware** (`exception_handler.py`) — exception-to-response mapping
-3. **OpenAPI / APIDocumentation** (`openapi/`) — schema generation, docs UI mounting
-4. **EventEmitter** (`events/`) — application-level event broadcasting
-5. **Middleware Stack** (`_internals/_middleware.py`) — `ASGIRequestResponseBridge` wrapping
-6. **Config** (`config/`) — configuration management (used by subsystems, not directly by SilloApp)
-7. **Dependencies** (`core/dependencies/`) — `Depend` / `Dependant` / `solve_dependencies`
+1. **Router** (`core/routing/`): route registration, path matching, request
+   dispatch
+2. **ExceptionMiddleware** (`exception_handler.py`): exception-to-response
+   mapping
+3. **OpenAPI / APIDocumentation** (`openapi/`): schema generation, docs UI
+   mounting
+4. **EventEmitter** (`events/`): application-level event broadcasting
+5. **Middleware Stack** (`_internals/_middleware.py`):
+   `ASGIRequestResponseBridge` wrapping
+6. **Config** (`config/`): configuration management (used by subsystems, not
+   directly by SilloApp)
+7. **Dependencies** (`core/dependencies/`): `Depend` / `Dependant` /
+   `solve_dependencies`
 
 ```mermaid
 graph LR
@@ -323,9 +332,10 @@ ServerErrorMiddleware          ← catches unhandled exceptions, debug pages
 self.http_middleware.insert(0, Middleware(ASGIRequestResponseBridge, dispatch=middleware))
 ```
 
-This means middleware added later wraps middleware added earlier — **inside-out**
-application. The first middleware added is closest to the router; the last
-middleware added is outermost (closest to `ServerErrorMiddleware`).
+This means middleware added later wraps middleware added earlier,
+**inside-out** application. The first middleware added is closest to the
+router; the last middleware added is outermost (closest to
+`ServerErrorMiddleware`).
 
 **Chain assembly** in `handle_request()`:
 
@@ -444,9 +454,9 @@ request.scope["path_params"]   # Route parameters (injected by Router)
 Sillo is transport-agnostic at the ASGI level. The `SilloApp.__call__` method
 handles three scope types:
 
-- `"lifespan"` → `handle_lifespan(receive, send)` — startup/shutdown lifecycle
-- `"http"` → `handle_request(scope, receive, send)` — HTTP request processing
-- `"websocket"` → `handle_request(scope, receive, send)` — WebSocket upgrade
+- `"lifespan"` → `handle_lifespan(receive, send)`: startup/shutdown lifecycle
+- `"http"` → `handle_request(scope, receive, send)`: HTTP request processing
+- `"websocket"` → `handle_request(scope, receive, send)`: WebSocket upgrade
 
 The transport layer is fully abstracted by the ASGI protocol. Sillo works with
 any ASGI server: uvicorn, granian, daphne, hypercorn, etc.
@@ -658,9 +668,9 @@ between `application.py` and `core/encoding.py`.
 The middleware chain is assembled once per request in `handle_request()`. The
 assembly is deterministic:
 
-1. `ServerErrorMiddleware` (outermost — catches everything)
+1. `ServerErrorMiddleware` (outermost: catches everything)
 2. User middleware (in `app.use()` insertion order, LIFO)
-3. `ExceptionMiddleware` (innermost before router — catches handler exceptions)
+3. `ExceptionMiddleware` (innermost before router: catches handler exceptions)
 4. `Router` (route matching + handler execution)
 
 Each middleware layer wraps the next via `ASGIRequestResponseBridge`, which
@@ -688,8 +698,8 @@ All JSON encoding flows through a single function: `jsonable_encoder()`. It
 consults three registries in priority order:
 
 1. **Custom encoders** (`CUSTOM_ENCODERS` + per-call `custom_encoder` dict)
-2. **Built-in type encoders** (`ENCODERS_BY_TYPE` — direct type match)
-3. **Isinstance-based encoders** (`encoders_by_class_tuples` — inverted index)
+2. **Built-in type encoders** (`ENCODERS_BY_TYPE`: direct type match)
+3. **Isinstance-based encoders** (`encoders_by_class_tuples`: inverted index)
 
 Application-level custom encoders are registered via:
 - `app.add_encoder(type_, encoder)` → updates both `app.custom_encoders` and global `CUSTOM_ENCODERS`
@@ -702,7 +712,7 @@ either way are visible to `jsonable_encoder()`.
 
 ## Appendix A: File Inventory
 
-### Layer 1 — ASGI Primitives
+### Layer 1: ASGI Primitives
 
 ```
 core/sillo/types.py                    — 41 lines   — Type aliases
@@ -714,7 +724,7 @@ core/sillo/objects/routing.py          — 780 lines  — URL, URLPath, RoutePar
 core/sillo/websockets/                 — WebSocket support
 ```
 
-### Layer 2 — Core Engine
+### Layer 2: Core Engine
 
 ```
 core/sillo/core/routing/               — Router, Route, WebsocketRoute, path matching
@@ -726,7 +736,7 @@ core/sillo/_internals/_middleware.py   — 546 lines  — ASGIRequestResponseBri
 core/sillo/middleware/                  — BaseMiddleware, gzip, security utilities
 ```
 
-### Layer 3 — Framework Surface
+### Layer 3: Framework Surface
 
 ```
 core/sillo/application.py              — 2800+ lines — SilloApp
@@ -753,37 +763,36 @@ core/sillo/work/                       — Background tasks
 
 ## Appendix B: Key Design Decisions
 
-1. **Standalone ASGI app** — `SilloApp` does not inherit from any base class.
-   It implements `__call__(scope, receive, send)` directly.
+1. **Standalone ASGI app.** `SilloApp` does not inherit from any base class. It
+   implements `__call__(scope, receive, send)` directly.
 
-2. **Dispatch-style middleware** — User middleware follows
-   `(request, response, call_next) -> Response` rather than raw ASGI
-   `(scope, receive, send)`. The `ASGIRequestResponseBridge` handles the
-   conversion.
+2. **Dispatch-style middleware**: User middleware follows `(request, response,
+   call_next) -> Response` rather than raw ASGI `(scope, receive, send)`. The
+   `ASGIRequestResponseBridge` handles the conversion.
 
-3. **Tree-based DI** — Dependencies are declared via `Depend()` markers in
+3. **Tree-based DI**: Dependencies are declared via `Depend()` markers in
    function signatures. The tree is built once at registration and flattened
    into an execution plan for iterative resolution.
 
-4. **Scope dict as communication bus** — All per-request context flows through
+4. **Scope dict as communication bus**: All per-request context flows through
    the ASGI scope dictionary. No global state, no ContextVar for core features.
 
-5. **Config per subsystem** — Each subsystem (database, session, mail, etc.)
+5. **Config per subsystem.** Each subsystem (database, session, mail, etc.)
    owns its own `Config` subclass. The base `Config` class provides `.env`
    loading and secret masking.
 
-6. **Single encoding path** — All JSON serialization flows through
+6. **Single encoding path**: All JSON serialization flows through
    `jsonable_encoder()`, which consults a prioritized chain of encoder
    registries.
 
-7. **OpenAPI built at startup** — The OpenAPI document is generated once during
+7. **OpenAPI built at startup.** The OpenAPI document is generated once during
    `_startup()` and cached per mount prefix. Serving it writes a stored string.
 
-8. **Event system is pluggable** — The `EventEmitter` supports multiple
+8. **Event system is pluggable.** The `EventEmitter` supports multiple
    transport backends (in-memory, Redis, database) via a pluggable transport
    registry. Events carry priority, phase, and cancellation semantics.
 
-9. **Console commands are co-registered** — Application commands are registered
+9. **Console commands are co-registered**: Application commands are registered
    on `SilloApp.commands` and discovered by the `sillo` CLI at import time,
    eliminating the need for a separate command registry file.
 
@@ -793,7 +802,7 @@ core/sillo/work/                       — Background tasks
 
 | Term | Definition |
 |------|-----------|
-| **ASGI** | Asynchronous Server Gateway Interface — the async successor to WSGI |
+| **ASGI** | Asynchronous Server Gateway Interface: the async successor to WSGI |
 | **Scope** | A mutable dict carrying per-connection metadata through the ASGI stack |
 | **Dispatch middleware** | Middleware following `(request, response, call_next) -> Response` |
 | **ASGI middleware** | Middleware following raw `(scope, receive, send) -> None` |

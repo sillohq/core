@@ -7,8 +7,9 @@ description: Request ID generation and request-scoped context with the sillo.lif
 
 The `sillo.lifecycle` module provides first‑party middleware and helpers for request‑scoped concerns:
 
-- **`RequestId`** — generates and propagates a unique ID per request
-- **`RequestContext`** — a request‑scoped context manager for sharing data across your call chain
+- **`RequestId`**: generates and propagates a unique ID per request
+- **`RequestContext`**: a request‑scoped context manager for sharing data
+  across your call chain
 
 ##  Quick Start
 
@@ -134,7 +135,13 @@ def some_deep_helper():
     return ctx.get("user_id")
 ```
 
-`RequestContext()` (used as a `with` block) creates *and activates* a new context for the current request. To read it later from a function that did not open the block, call the classmethod `RequestContext.current()` — do **not** write `RequestContext()` outside a `with` block, because that constructs a fresh, empty context instead of returning the active one. The context resets automatically when the `with` block exits, so values do not leak across requests.
+`RequestContext()` (used as a `with` block) creates *and activates* a new
+context for the current request. To read it later from a function that did not
+open the block, call the classmethod `RequestContext.current()`. Do **not**
+write `RequestContext()` outside a `with` block, because that constructs a
+fresh, empty context instead of returning the active one. The context resets
+automatically when the `with` block exits, so values do not leak across
+requests.
 
 ##  Advanced Usage
 
@@ -412,21 +419,20 @@ those accumulate into a process that is busy doing nothing useful.
 Measuring the handler alone will mislead you. A request spends time in
 five places, and the handler is often not the largest.
 
-**The server** parsing the request — small, and proportional to header
-count and body size.
+**The server** parsing the request, small, and proportional to header count and
+body size.
 
-**Middleware** — every layer, on every request, including 404s. Ten
-layers at one millisecond each is ten milliseconds on your fastest
-endpoint, and it does not appear in handler timings.
+**Middleware**: every layer, on every request, including 404s. Ten layers at
+one millisecond each is ten milliseconds on your fastest endpoint, and it does
+not appear in handler timings.
 
-**Dependency resolution** — anything that queries in a dependency is
-latency before your handler starts.
+**Dependency resolution**. Anything that queries in a dependency is latency
+before your handler starts.
 
-**The handler** — usually dominated by whatever it awaits, not by your
-code.
+**The handler**, usually dominated by whatever it awaits, not by your code.
 
-**Serialization** — proportional to response size, and pure CPU on the
-event loop.
+**Serialization**, proportional to response size, and pure CPU on the event
+loop.
 
 The way to find the real cost is to measure the whole thing at the
 outermost middleware and compare it against the handler's own timing. A
@@ -439,9 +445,9 @@ Three tools, in the order they usually help.
 
 `sillo urls` confirms the route exists and matches what you think.
 
-A request id threaded through every log line ties the messages from
-middleware, handler, and background work into one story — see
-[Request Info](/guides/request-info/).
+A request id threaded through every log line ties the messages from middleware,
+handler, and background work into one story. See [Request
+Info](/guides/request-info/).
 
 The test client reproduces a request in-process, which removes the
 network, the proxy, and the server from consideration. If it works there
@@ -451,12 +457,11 @@ a much smaller search.
 
 ##  Streaming and long-lived requests
 
-Not every request follows the linear path above. A
-[streamed response](/guides/streaming-response/) returns from the handler
-before the body has finished being produced, so middleware unwinds while
-data is still being written — anything measuring duration in middleware
-will report the wrong number, and anything closing a resource there will
-close it too early.
+Not every request follows the linear path above. A [streamed
+response](/guides/streaming-response/) returns from the handler before the body
+has finished being produced, so middleware unwinds while data is still being
+written. Anything measuring duration in middleware will report the wrong
+number, and anything closing a resource there will close it too early.
 
 A [WebSocket](/guides/websockets/) leaves the request lifecycle entirely
 after the handshake. HTTP middleware does not run per message, and the
@@ -465,32 +470,31 @@ connection may outlive many ordinary requests.
 
 ##  Summary
 
-The order is fixed and knowable: middleware outward-in, routing,
-dependencies, validation, handler, response validation, encoding,
-middleware inward-out. Nearly every confusing behaviour in an application
-resolves to something running at a different point in that sequence than
-expected — usually middleware seeing unvalidated values, or per-process
-state being built per request.
+The order is fixed and knowable: middleware outward-in, routing, dependencies,
+validation, handler, response validation, encoding, middleware inward-out.
+Nearly every confusing behaviour in an application resolves to something
+running at a different point in that sequence than expected, usually middleware
+seeing unvalidated values, or per-process state being built per request.
 
 
 ##  Related
 
-- [Middleware](/guides/middleware/) — the layers wrapping every request
-- [Routing](/guides/routing/) — how a path becomes a handler
-- [Validation](/guides/validation/) — where input is checked
-- [Handlers](/guides/handlers/) — what runs at the centre
-- [Concurrency](/guides/concurrency/) — what the loop is doing meanwhile
-- [Startup & Shutdown](/guides/startups-and-shutdowns/) — what happens before the first request
+- [Middleware](/guides/middleware/): the layers wrapping every request
+- [Routing](/guides/routing/): how a path becomes a handler
+- [Validation](/guides/validation/): where input is checked
+- [Handlers](/guides/handlers/): what runs at the centre
+- [Concurrency](/guides/concurrency/): what the loop is doing meanwhile
+- [Startup & Shutdown](/guides/startups-and-shutdowns/): what happens before
+  the first request
 
 
 ##  Background work happens after the response
 
-Anything you launch with [`BackgroundTask`](/guides/work/background/)
-runs after the response has been sent, on the same event loop. Two
-consequences: the client is not waiting for it, which is the point; and
-it is not covered by any middleware, so request-scoped context —
-`request.state`, a correlation id, an open transaction — is gone unless
-you captured what you need before launching.
+Anything you launch with [`BackgroundTask`](/guides/work/background/) runs
+after the response has been sent, on the same event loop. Two consequences: the
+client is not waiting for it, which is the point; and it is not covered by any
+middleware, so request-scoped context (`request.state`, a correlation id, an
+open transaction) is gone unless you captured what you need before launching.
 
 Capture values, not the request. A closure holding the request object
 keeps the whole request alive, including its body buffer, for as long as

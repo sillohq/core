@@ -13,9 +13,13 @@ description: "Permission model, groups, PermissionMixin, cache, authorization fl
 
 Sillo's permission system provides fine-grained access control through named permissions, direct user assignments, and group-based inheritance. The system is designed around three principles:
 
-1. **Permissions are simple strings** — no dotted convention, no app_label scoping. A permission is just `"edit_posts"`.
-2. **Assignments are polymorphic** — `user_id` is a `CharField`, not a foreign key. Any identity (UUID, email, integer ID) works.
-3. **Caching is automatic** — `PermissionMixin.load_permissions()` queries both direct and group-inherited permissions into an in-memory set (`_perm_cache`), and `has_permission()` is a pure set lookup.
+1. **Permissions are simple strings**: no dotted convention, no app_label
+   scoping. A permission is just `"edit_posts"`.
+2. **Assignments are polymorphic.** `user_id` is a `CharField`, not a foreign
+   key. Any identity (UUID, email, integer ID) works.
+3. **Caching is automatic.** `PermissionMixin.load_permissions()` queries both
+   direct and group-inherited permissions into an in-memory set
+   (`_perm_cache`), and `has_permission()` is a pure set lookup.
 
 ```mermaid
 flowchart TD
@@ -86,7 +90,7 @@ erDiagram
 
 ## Permission Model
 
-**File:** `core/sillo/permissions/models.py` (lines 8–279)
+**File:** `core/sillo/permissions/models.py` (lines 8 to 279)
 
 ### Fields
 
@@ -97,7 +101,7 @@ erDiagram
 
 Table: `permissions`
 
-### Class Methods — CRUD Operations
+### Class Methods: CRUD Operations
 
 #### `define(name, description="")` → `Permission`
 
@@ -129,7 +133,8 @@ await Permission.revoke(user, "edit_posts", "delete_comments")
 
 #### `of(user)` → `list[str]`
 
-Returns all permission names directly assigned to a user, sorted. Only direct assignments — group-inherited permissions are not included.
+Returns all permission names directly assigned to a user, sorted. Only direct
+assignments. Group-inherited permissions are not included.
 
 ```python
 perms = await Permission.of(user)
@@ -138,7 +143,9 @@ perms = await Permission.of(user)
 
 #### `has(user, name)` → `bool`
 
-Live database check — two-step lookup: resolves the `Permission` by name, then checks for a `UserPermission` link. This is NOT the cached check; for request handlers, use `user.has_permission()` after `load_permissions()`.
+Live database check, two-step lookup: resolves the `Permission` by name, then
+checks for a `UserPermission` link. This is NOT the cached check; for request
+handlers, use `user.has_permission()` after `load_permissions()`.
 
 ```python
 if await Permission.has(user, "edit_posts"):
@@ -164,9 +171,9 @@ holders = await Permission.holders("edit_posts")
 
 ---
 
-## UserPermission — The Direct Assignment Join Table
+## UserPermission: The Direct Assignment Join Table
 
-**File:** `core/sillo/permissions/models.py` (lines 282–324)
+**File:** `core/sillo/permissions/models.py` (lines 282 to 324)
 
 ```python
 class UserPermission(Model):
@@ -188,7 +195,7 @@ The `user_id` stores whatever `user.identity` returns (a string).
 
 ## Group Model
 
-**File:** `core/sillo/permissions/models.py` (lines 326–637)
+**File:** `core/sillo/permissions/models.py` (lines 326 to 637)
 
 ### Fields
 
@@ -251,9 +258,9 @@ await admins.get_permissions()  # ["delete_posts", "edit_posts", "manage_users"]
 
 ---
 
-## UserGroup — The Membership Join Table
+## UserGroup: The Membership Join Table
 
-**File:** `core/sillo/permissions/models.py` (lines 640–681)
+**File:** `core/sillo/permissions/models.py` (lines 640 to 681)
 
 ```python
 class UserGroup(Model):
@@ -265,13 +272,14 @@ class UserGroup(Model):
         unique_together = (("user_id", "group"),)
 ```
 
-Same `CharField` pattern as `UserPermission` — `user_id` is a string, not a foreign key. The `unique_together` constraint prevents duplicate memberships.
+Same `CharField` pattern as `UserPermission`. `user_id` is a string, not a
+foreign key. The `unique_together` constraint prevents duplicate memberships.
 
 ---
 
-## GroupPermission — The Group-to-Permission Join Table
+## GroupPermission: The Group-to-Permission Join Table
 
-**File:** `core/sillo/permissions/models.py` (lines 684–727)
+**File:** `core/sillo/permissions/models.py` (lines 684 to 727)
 
 ```python
 class GroupPermission(Model):
@@ -287,9 +295,9 @@ Links groups to permissions. The `unique_together` constraint prevents duplicate
 
 ---
 
-## PermissionMixin — Bridging Permissions into User Models
+## PermissionMixin: Bridging Permissions into User Models
 
-**File:** `core/sillo/permissions/mixins.py` (lines 4–225)
+**File:** `core/sillo/permissions/mixins.py` (lines 4 to 225)
 
 ### Usage
 
@@ -340,8 +348,8 @@ async def load_permissions(self) -> set[str]:
 ```
 
 **When is it called?**
-- Automatically by `UserBaseModel.load_user()` — called during authentication
-- Automatically by `UserBaseModel.verify_credentials()` — called during login
+- Automatically by `UserBaseModel.load_user()`: called during authentication
+- Automatically by `UserBaseModel.verify_credentials()`: called during login
 - Manually by application code to refresh after runtime permission changes
 
 ### `has_permission(permission)` → `bool`
@@ -425,7 +433,8 @@ The permission system is deliberately decoupled from the user model. Using a `Ch
 - The permission system can be used with different user models in the same database
 - Tests can assign permissions without creating real user records
 
-The trade-off is no referential integrity — orphaned `UserPermission` rows can exist if a user is deleted without revoking permissions first.
+The trade-off is no referential integrity. Orphaned `UserPermission` rows can
+exist if a user is deleted without revoking permissions first.
 
 ### Why `define()` uses `get_or_create`?
 
@@ -441,7 +450,10 @@ The alternative is to trigger a database query. But `has_permission()` is called
 
 ### Why superusers bypass all permission checks?
 
-This is a deliberate convenience: superusers should not need explicit permission assignments. The check is in `has_permission()` rather than in the route gate, so it applies everywhere — route gates, template conditions, admin views.
+This is a deliberate convenience: superusers should not need explicit
+permission assignments. The check is in `has_permission()` rather than in the
+route gate, so it applies everywhere: route gates, template conditions, admin
+views.
 
 ### Why `of()` and `has()` are separate?
 
@@ -453,41 +465,41 @@ This is a deliberate convenience: superusers should not need explicit permission
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `Permission` model | `core/sillo/permissions/models.py` | 8–279 |
-| `Permission.define` | `core/sillo/permissions/models.py` | 57–87 |
-| `Permission.assign` | `core/sillo/permissions/models.py` | 91–122 |
-| `Permission.revoke` | `core/sillo/permissions/models.py` | 124–158 |
-| `Permission.of` | `core/sillo/permissions/models.py` | 160–187 |
-| `Permission.has` | `core/sillo/permissions/models.py` | 191–222 |
-| `Permission.of_group` | `core/sillo/permissions/models.py` | 226–251 |
-| `Permission.holders` | `core/sillo/permissions/models.py` | 253–279 |
-| `UserPermission` model | `core/sillo/permissions/models.py` | 282–324 |
-| `Group` model | `core/sillo/permissions/models.py` | 326–637 |
-| `Group.add_user` | `core/sillo/permissions/models.py` | 408–428 |
-| `Group.remove_user` | `core/sillo/permissions/models.py` | 430–450 |
-| `Group.has_user` | `core/sillo/permissions/models.py` | 452–473 |
-| `Group.get_members` | `core/sillo/permissions/models.py` | 475–496 |
-| `Group.add_permissions` | `core/sillo/permissions/models.py` | 521–548 |
-| `Group.remove_permissions` | `core/sillo/permissions/models.py` | 550–575 |
-| `Group.has_permission` | `core/sillo/permissions/models.py` | 577–600 |
-| `Group.get_permissions` | `core/sillo/permissions/models.py` | 602–622 |
-| `Group.of_user` | `core/sillo/permissions/models.py` | 626–631 |
-| `Group.names_of_user` | `core/sillo/permissions/models.py` | 633–637 |
-| `UserGroup` model | `core/sillo/permissions/models.py` | 640–681 |
-| `GroupPermission` model | `core/sillo/permissions/models.py` | 684–727 |
-| `PermissionMixin` | `core/sillo/permissions/mixins.py` | 4–225 |
-| `PermissionMixin.load_permissions` | `core/sillo/permissions/mixins.py` | 36–81 |
-| `PermissionMixin.has_permission` | `core/sillo/permissions/mixins.py` | 83–113 |
-| `PermissionMixin.has_perm` | `core/sillo/permissions/mixins.py` | 115–137 |
-| `PermissionMixin.get_groups` | `core/sillo/permissions/mixins.py` | 141–164 |
-| `PermissionMixin.is_in_group` | `core/sillo/permissions/mixins.py` | 166–190 |
-| `PermissionMixin.get_group_permissions` | `core/sillo/permissions/mixins.py` | 192–225 |
+| `Permission` model | `core/sillo/permissions/models.py` | 8-279 |
+| `Permission.define` | `core/sillo/permissions/models.py` | 57-87 |
+| `Permission.assign` | `core/sillo/permissions/models.py` | 91-122 |
+| `Permission.revoke` | `core/sillo/permissions/models.py` | 124-158 |
+| `Permission.of` | `core/sillo/permissions/models.py` | 160-187 |
+| `Permission.has` | `core/sillo/permissions/models.py` | 191-222 |
+| `Permission.of_group` | `core/sillo/permissions/models.py` | 226-251 |
+| `Permission.holders` | `core/sillo/permissions/models.py` | 253-279 |
+| `UserPermission` model | `core/sillo/permissions/models.py` | 282-324 |
+| `Group` model | `core/sillo/permissions/models.py` | 326-637 |
+| `Group.add_user` | `core/sillo/permissions/models.py` | 408-428 |
+| `Group.remove_user` | `core/sillo/permissions/models.py` | 430-450 |
+| `Group.has_user` | `core/sillo/permissions/models.py` | 452-473 |
+| `Group.get_members` | `core/sillo/permissions/models.py` | 475-496 |
+| `Group.add_permissions` | `core/sillo/permissions/models.py` | 521-548 |
+| `Group.remove_permissions` | `core/sillo/permissions/models.py` | 550-575 |
+| `Group.has_permission` | `core/sillo/permissions/models.py` | 577-600 |
+| `Group.get_permissions` | `core/sillo/permissions/models.py` | 602-622 |
+| `Group.of_user` | `core/sillo/permissions/models.py` | 626-631 |
+| `Group.names_of_user` | `core/sillo/permissions/models.py` | 633-637 |
+| `UserGroup` model | `core/sillo/permissions/models.py` | 640-681 |
+| `GroupPermission` model | `core/sillo/permissions/models.py` | 684-727 |
+| `PermissionMixin` | `core/sillo/permissions/mixins.py` | 4-225 |
+| `PermissionMixin.load_permissions` | `core/sillo/permissions/mixins.py` | 36-81 |
+| `PermissionMixin.has_permission` | `core/sillo/permissions/mixins.py` | 83-113 |
+| `PermissionMixin.has_perm` | `core/sillo/permissions/mixins.py` | 115-137 |
+| `PermissionMixin.get_groups` | `core/sillo/permissions/mixins.py` | 141-164 |
+| `PermissionMixin.is_in_group` | `core/sillo/permissions/mixins.py` | 166-190 |
+| `PermissionMixin.get_group_permissions` | `core/sillo/permissions/mixins.py` | 192-225 |
 
 ---
 
 ## Implementation Deep Dive
 
-### Permission Model — Complete Method Reference
+### Permission Model: Complete Method Reference
 
 #### `define(name, description="")`
 
@@ -597,7 +609,7 @@ async def holders(cls, name: str) -> list[str]:
 - Returns identity strings of direct holders only
 - Does NOT include users who inherit through groups
 
-### Group Model — Complete Method Reference
+### Group Model: Complete Method Reference
 
 #### `get_or_create(name, description=None)`
 
@@ -621,7 +633,7 @@ async def add_user(self, user) -> None:
     await UserGroup.get_or_create(group=self, user_id=user_id)
 ```
 
-- Idempotent — adding existing member is a no-op
+- Idempotent: adding existing member is a no-op
 
 #### `remove_user(user)`
 
@@ -723,7 +735,7 @@ async def names_of_user(cls, user) -> list[str]:
     return sorted([g.name for g in groups])
 ```
 
-### PermissionMixin — Complete Implementation
+### PermissionMixin: Complete Implementation
 
 #### `load_permissions()`
 
@@ -772,7 +784,7 @@ def has_permission(self, permission: str) -> bool:
     return cache is not None and permission in cache
 ```
 
-**Performance:** O(1) set lookup — no database query.
+**Performance:** O(1) set lookup, no database query.
 
 #### `get_groups()`
 
@@ -781,7 +793,7 @@ async def get_groups(self) -> list[str]:
     return await Group.names_of_user(self)
 ```
 
-**Note:** Not cached — database query each call.
+**Note:** Not cached, database query each call.
 
 #### `is_in_group(name)`
 
@@ -791,7 +803,7 @@ async def is_in_group(self, name: str) -> bool:
     return name in groups
 ```
 
-**Note:** Calls `get_groups()` internally — 1 database query.
+**Note:** Calls `get_groups()` internally, 1 database query.
 
 #### `get_group_permissions()`
 
@@ -928,15 +940,20 @@ CREATE TABLE perm_group_permissions (
 
 ### Performance Considerations
 
-1. **`load_permissions()` makes 3 database queries** — called once per request during authentication. The result is cached in `_perm_cache`.
+1. **`load_permissions()` makes 3 database queries**: called once per request
+   during authentication. The result is cached in `_perm_cache`.
 
-2. **`has_permission()` is O(1)** — pure set lookup against the cached set. No database query.
+2. **`has_permission()` is O(1)**: pure set lookup against the cached set. No
+   database query.
 
-3. **`get_groups()` is not cached** — makes a database query each call. Avoid calling in tight loops.
+3. **`get_groups()` is not cached**: makes a database query each call. Avoid
+   calling in tight loops.
 
-4. **`Permission.has()` is a live DB check** — use `user.has_permission()` in request handlers instead.
+4. **`Permission.has()` is a live DB check**: use `user.has_permission()` in
+   request handlers instead.
 
-5. **Prefetching** — `of()`, `of_group()`, and `load_permissions()` use `prefetch_related` to minimize queries.
+5. **Prefetching**: `of()`, `of_group()`, and `load_permissions()` use
+   `prefetch_related` to minimize queries.
 
 ### Testing the Permission System
 

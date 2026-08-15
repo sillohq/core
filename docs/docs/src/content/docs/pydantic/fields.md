@@ -1,6 +1,6 @@
 ---
 title: Fields
-description: "Field() in full — defaults and factories, numeric and string constraints, aliases, documentation metadata, exclusion, and how each one reaches your OpenAPI schema."
+description: "Field in full: defaults and factories, numeric and string constraints, aliases, documentation metadata, exclusion, and how each one reaches your OpenAPI schema."
 head:
   - tag: meta
     attrs:
@@ -36,7 +36,7 @@ tags: list[str] = Field(default_factory=list)
 created: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 ```
 
-Use `default_factory` when the default must be computed per instance — a
+Use `default_factory` when the default must be computed per instance: a
 timestamp, a UUID, a fresh container.
 
 `Field(...)` with a literal ellipsis means required, and is the way to make a
@@ -90,8 +90,8 @@ email: str = Field(to_lower=True, strip_whitespace=True)
 ```
 
 `min_length=1` is the one most models are missing. Without it, `""` passes a
-`str` annotation — and an empty title is almost never what the endpoint means
-by "a title".
+`str` annotation, and an empty title is almost never what the endpoint means by
+"a title".
 
 `pattern` is a full match, not a search, so no anchors are needed.
 
@@ -105,7 +105,7 @@ usually what you want for normalising user input.
 tags: list[str] = Field(min_length=1, max_length=10)
 ```
 
-`min_length` and `max_length` apply to the number of items — these replace v1's
+`min_length` and `max_length` apply to the number of items. These replace v1's
 `min_items` and `max_items`.
 
 Set an upper bound on any list a client controls. Without one, a request can
@@ -142,7 +142,7 @@ To accept both spellings:
 model_config = ConfigDict(populate_by_name=True)
 ```
 
-Then either `eventType` or `event_type` validates — useful while a client is
+Then either `eventType` or `event_type` validates, useful while a client is
 migrating.
 
 For a whole model, generate them:
@@ -169,9 +169,9 @@ title: str = Field(
 )
 ```
 
-These do not affect validation at all — they go straight into the
-[OpenAPI schema](/pydantic/openapi/), which is what an API reference and a
-generated client read.
+These do not affect validation at all. They go straight into the [OpenAPI
+schema](/pydantic/openapi/), which is what an API reference and a generated
+client read.
 
 `examples` is worth filling in for anything whose format is not obvious.
 Someone reading your API docs learns more from one real value than from
@@ -195,7 +195,7 @@ class UserOut(BaseModel):
 `exclude=True` keeps the field out of every `model_dump()`. For a value the
 model needs internally but which must never leave.
 
-Prefer a separate output model where you can — see
+Prefer a separate output model where you can. See
 [Patterns](/pydantic/patterns/). A field that is excluded is still a field
 somebody can un-exclude by adding an argument at a call site.
 

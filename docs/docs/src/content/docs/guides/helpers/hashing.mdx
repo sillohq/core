@@ -61,7 +61,11 @@ hashed = hashing.hash_password("correct-horse-battery")
 # "$2b$12$3HCTa1AWrcvE/..."   60 characters
 ```
 
-The output is a 60-character string that packs four things together: the algorithm identifier (`$2b$`), the cost factor (`$12$`), the 22-character salt, and the 31-character hash. You store that one string. You do not need a separate salt column — the salt is already in there, which is why `verify_password` needs only the password and the hash.
+The output is a 60-character string that packs four things together: the
+algorithm identifier (`$2b$`), the cost factor (`$12$`), the 22-character salt,
+and the 31-character hash. You store that one string. You do not need a
+separate salt column. The salt is already in there, which is why
+`verify_password` needs only the password and the hash.
 
 Hashing the same password twice gives two different strings, because the salt differs:
 
@@ -159,7 +163,9 @@ if verify_password(candidate, user.password):
     return issue_token(user)
 ```
 
-Users who log in are migrated silently. Users who never log in keep the old cost, which is fine — an unused account is not an active risk, and you will never get their plaintext again.
+Users who log in are migrated silently. Users who never log in keep the old
+cost, which is fine. An unused account is not an active risk, and you will
+never get their plaintext again.
 
 Raising the cost factor doubles login CPU time per increment. Cost 12 is roughly 250ms; cost 14 is roughly one second. Measure on your production hardware before raising it, because login latency is user-visible and bcrypt occupies a whole CPU core for the duration.
 
@@ -208,7 +214,9 @@ async def upload(request, response):
 
 Both have practical collision attacks: an attacker can construct two different inputs with the same digest. MD5 collisions are computed in seconds on a laptop, SHA-1 collisions in hours on rented hardware.
 
-That matters when the digest is a security claim — a signature, a download-integrity check, a "these files are the same" assertion an attacker benefits from subverting. Use SHA-256 there.
+That matters when the digest is a security claim: a signature, a
+download-integrity check, a "these files are the same" assertion an attacker
+benefits from subverting. Use SHA-256 there.
 
 It does not matter when the digest is only a lookup key you generate from your own data. MD5 is faster and shorter, and an attacker gains nothing by colliding your cache keys with themselves. They are included here for that use and for interoperating with systems that already require them.
 
@@ -244,7 +252,10 @@ async def stripe_webhook(request, response):
     return response.json({"received": True})
 ```
 
-Two details in that example are not optional. Sign the **raw body**, not the re-serialized JSON — key order and whitespace change after a parse/dump round trip, and the signature stops matching. And compare with `constant_time_compare`, not `==`.
+Two details in that example are not optional. Sign the **raw body**, not the
+re-serialized JSON: key order and whitespace change after a parse/dump round
+trip, and the signature stops matching. And compare with
+`constant_time_compare`, not `==`.
 
 ###  `constant_time_compare(a, b) -> bool`
 
@@ -278,7 +289,9 @@ hashing.hash_file("upload.bin", algorithm="md5")    # md5
 hashing.hash_file("upload.bin", chunk_size=1048576) # 1 MiB chunks
 ```
 
-The result is identical to hashing the whole file in memory — `chunk_size` affects only the memory/syscall trade-off, never the digest. A missing path raises `OSError`.
+The result is identical to hashing the whole file in memory. `chunk_size`
+affects only the memory/syscall trade-off, never the digest. A missing path
+raises `OSError`.
 
 <Aside type="caution" title="hash_file is synchronous and will block the event loop">
 
@@ -359,8 +372,8 @@ The password functions dominate any endpoint they appear on. A login handler can
 
 ##  Related
 
-- [Crypto](/guides/helpers/crypto/) — for values you need to read back
-- [Strings](/guides/helpers/strings/) — token generation and masking
-- [JWT](/guides/helpers/jwt/) — signed tokens built on HMAC
-- [Authentication](/guides/authentication/) — the full auth stack
-- [Rate Limiting](/guides/rate-limiting/) — protecting expensive login endpoints
+- [Crypto](/guides/helpers/crypto/): for values you need to read back
+- [Strings](/guides/helpers/strings/): token generation and masking
+- [JWT](/guides/helpers/jwt/): signed tokens built on HMAC
+- [Authentication](/guides/authentication/): the full auth stack
+- [Rate Limiting](/guides/rate-limiting/): protecting expensive login endpoints

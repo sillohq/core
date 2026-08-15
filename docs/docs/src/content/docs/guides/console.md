@@ -25,9 +25,9 @@ configured twice.
 
 `sillo.console` is what both are built on. It gives you a command class,
 explicit parameter declaration, a dispatcher, and the output and prompt
-primitives that make a console readable. The file, the command set and the names
-stay yours — the framework supplies the operations, the project decides what to
-call them.
+primitives that make a console readable. The file, the command set and the
+names stay yours. The framework supplies the operations, the project decides
+what to call them.
 
 Nothing in the package imports anything outside the standard library. There is
 no extra to install and no dependency to audit.
@@ -83,7 +83,7 @@ app = "app.main:app"
 ##  Commands
 
 A command is a class with a name, an optional parameter list, and a `handle`
-method. `handle` may be `async def` or `def` — both work.
+method. `handle` may be `async def` or `def`, both work.
 
 ```python
 from sillo.console import Argument, Command, Flag, Option
@@ -305,7 +305,7 @@ Every prompt has a defined behaviour in CI, a cron job or a pipe:
 | `confirm_destructive` | Returns `False` |
 
 Give a default to every prompt a command might hit unattended and the same
-command works in both places. A `secret` never falls back — read it from the
+command works in both places. A `secret` never falls back. Read it from the
 environment instead.
 
 Colour follows the usual rules: `NO_COLOR` disables it, `FORCE_COLOR` forces it,
@@ -377,7 +377,7 @@ That is all. `sillo` imports the application and offers what it found.
 
 That is 23 commands, from six lines of setup you were writing anyway.
 
-###  Database — from `setup_record`
+###  Database: from `setup_record`
 
 | Command | What it does |
 |---|---|
@@ -390,14 +390,14 @@ That is 23 commands, from six lines of setup you were writing anyway.
 | `db:status` | Show whether the database is up to date |
 
 These appear when the application has a database. Set the migrations package on
-the manager — `database.set_migrations("database.migrations")` — or `db:make`
-has nowhere to write.
+the manager (`database.set_migrations("database.migrations")`) or `db:make` has
+nowhere to write.
 
 `db:rollback zero` unapplies everything, and asks you to type `zero` back before
 it does. Without a terminal it refuses rather than assuming yes, so an
 unattended run cannot drop the schema.
 
-###  Accounts — from `setup_record` too
+###  Accounts: from `setup_record` too
 
 | Command | What it does |
 |---|---|
@@ -409,21 +409,21 @@ unattended run cannot drop the schema.
 | `user:active <identifier> [--off]` | Activate or deactivate |
 | `user:staff <identifier> [--revoke]` | Grant or revoke admin access |
 
-**No model is required.** The commands use the application's
-`auth_user_model` — set through `SilloApp(auth_user_model=…)` or through
+**No model is required.** The commands use the application's `auth_user_model`:
+set through `SilloApp(auth_user_model=…)` or through
 `AuthenticationMiddleware(user_model=…)`, whichever you already use. With
 neither, `sillo.users.commands` falls back to the built-in
 `sillo.users.base.User`, so a project that has not defined its own still gets
 working account management.
 
-`identifier` is an email address or a username, and matches deactivated accounts
-too — an account you cannot find is one you can never turn back on.
+`identifier` is an email address or a username, and matches deactivated
+accounts too. An account you cannot find is one you can never turn back on.
 
 Passwords come from a hidden prompt, or from `SILLO_PASSWORD` when there is no
 terminal. With neither, the command fails and says so rather than blocking on a
 prompt nobody can answer.
 
-###  Queues and the scheduler — from `setup_scheduler`
+###  Queues and the scheduler: from `setup_scheduler`
 
 | Command | What it does |
 |---|---|
@@ -466,8 +466,8 @@ ones it does, rather than silently producing a smaller console.
 ###  Renaming or replacing one
 
 The factories are a convenience, not a requirement. The operations underneath
-are public — `sillo.record.commands`, `sillo.users.commands` and
-`sillo.work.commands` — so a project that wants different names, different
+are public (`sillo.record.commands`, `sillo.users.commands` and
+`sillo.work.commands`) so a project that wants different names, different
 output or different arguments writes its own command and calls them directly.
 That is the same split as everywhere else in sillo: the framework owns the
 operation, the project owns the interface.
@@ -604,8 +604,8 @@ app.add_command(ListUsers)
 ##  Building a console of your own
 
 `sillo` is the ordinary path. Building a `Console` by hand is still there for
-the cases it does not cover — a tool that ships separately from the
-application, or one that should not import it at all:
+the cases it does not cover. A tool that ships separately from the application,
+or one that should not import it at all:
 
 ```python
 from sillo.console import Console

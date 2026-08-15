@@ -10,7 +10,11 @@ description: Apply secure HTTP response headers (CSP, HSTS, frame options, and m
 Use it to raise the browser-enforced baseline of your app without hand-writing header logic in every handler.
 
 <aside type="caution" title="Shield is headers only">
-Shield sets **response headers**. It does not handle CORS, CSRF, or authentication — those are separate middleware (`CORSMiddleware`, `CSRFMiddleware`, and the auth/session modules). Docs that put `cors_enabled`/`allowed_origins` on `Shield(...)` are wrong; configure CORS with its own middleware (see [CORS](/guides/cors/)).
+Shield sets **response headers**. It does not handle CORS, CSRF, or
+authentication. Those are separate middleware (`CORSMiddleware`,
+`CSRFMiddleware`, and the auth/session modules). Docs that put
+`cors_enabled`/`allowed_origins` on `Shield(...)` are wrong; configure CORS
+with its own middleware (see [CORS](/guides/cors/)).
 </aside>
 
 ##  The smallest useful form
@@ -27,13 +31,18 @@ With no arguments, `Shield` applies a strict default policy: CSP locked to `'sel
 
 ##  How Shield applies headers
 
-`Shield` is a `BaseMiddleware`. In `process_response` it writes each configured header onto the response before it leaves the stack. Because it runs late in the chain, headers are present even on error responses and redirects — unless a later middleware overrides them.
+`Shield` is a `BaseMiddleware`. In `process_response` it writes each configured
+header onto the response before it leaves the stack. Because it runs late in
+the chain, headers are present even on error responses and redirects, unless a
+later middleware overrides them.
 
 Defaults that are safe to change:
 
-- `ssl_redirect=False` — off by default because it requires TLS termination in front of sillo. Enable only when HTTPS is enforced upstream or by sillo.
-- `csp_report_only=False` — set `True` to emit CSP violations as reports without blocking, while you tune the policy.
-- `hide_server=True` — strips the `Server` header so the stack isn't advertised.
+- `ssl_redirect=False`: off by default because it requires TLS termination in
+  front of sillo. Enable only when HTTPS is enforced upstream or by sillo.
+- `csp_report_only=False`: set `True` to emit CSP violations as reports without
+  blocking, while you tune the policy.
+- `hide_server=True`: strips the `Server` header so the stack isn't advertised.
 
 ##  Configuring the policy
 
@@ -110,10 +119,17 @@ Shield and CORS are independent: Shield owns the security headers, `CORSMiddlewa
 
 ##  Errors and edge cases
 
-- **HSTS is hard to undo** — once a browser caches `max-age` + `preload`, rolling back requires users to flush HSTS state. Only set `hsts_preload=True` after the host is permanently HTTPS.
-- **CSP blocks assets** — a policy missing a needed source silently breaks scripts/styles/images in the browser console. Use `csp_report_only=True` in staging to collect violations before enforcing.
-- **`ssl_redirect=True` without TLS** — redirects every request to HTTPS; if sillo itself serves plain HTTP (no proxy), clients loop or get refused. Keep it off unless HTTPS is terminated in front of sillo.
-- **Server header** — `hide_server=True` removes `Server`; some observability stacks key on it, so disable if you rely on it.
+- **HSTS is hard to undo.** Once a browser caches `max-age` + `preload`,
+  rolling back requires users to flush HSTS state. Only set `hsts_preload=True`
+  after the host is permanently HTTPS.
+- **CSP blocks assets.** A policy missing a needed source silently breaks
+  scripts/styles/images in the browser console. Use `csp_report_only=True` in
+  staging to collect violations before enforcing.
+- **`ssl_redirect=True` without TLS**: redirects every request to HTTPS; if
+  sillo itself serves plain HTTP (no proxy), clients loop or get refused. Keep
+  it off unless HTTPS is terminated in front of sillo.
+- **Server header.** `hide_server=True` removes `Server`; some observability
+  stacks key on it, so disable if you rely on it.
 
 ##  Testing
 
@@ -141,18 +157,25 @@ def test_shield_sets_headers():
 
 ##  Production considerations
 
-- **HTTPS first** — enable `ssl_redirect` only when a proxy or sillo terminates TLS; otherwise enforce HTTPS at the edge.
-- **CSP as a process** — start `csp_report_only=True`, collect violations, then enforce. A one-shot strict policy breaks real pages.
-- **Preload carefully** — `hsts_preload=True` enters the browser preload list; it is effectively permanent for that host.
-- **Layering** — Shield complements, not replaces, CSRF, CORS, and authentication. Keep each concern in its own middleware so behavior is auditable.
-- **Don't hide everything** — `hide_server=True` is fine, but if your monitoring depends on the `Server` header, turn it off rather than lose telemetry.
+- **HTTPS first**: enable `ssl_redirect` only when a proxy or sillo terminates
+  TLS; otherwise enforce HTTPS at the edge.
+- **CSP as a process**: start `csp_report_only=True`, collect violations, then
+  enforce. A one-shot strict policy breaks real pages.
+- **Preload carefully.** `hsts_preload=True` enters the browser preload list;
+  it is effectively permanent for that host.
+- **Layering.** Shield complements, not replaces, CSRF, CORS, and
+  authentication. Keep each concern in its own middleware so behavior is
+  auditable.
+- **Don't hide everything.** `hide_server=True` is fine, but if your monitoring
+  depends on the `Server` header, turn it off rather than lose telemetry.
 
 ##  Related topics
 
-- [CORS](/guides/cors/) — cross-origin access as its own middleware
-- [CSRF](/guides/csrf/) — synchronizer-token protection for state-changing requests
-- [Authentication](/guides/authentication/) — verifying who the caller is
-- [Rate Limiting](/guides/rate-limiting/) — throttling abuse
+- [CORS](/guides/cors/): cross-origin access as its own middleware
+- [CSRF](/guides/csrf/): synchronizer-token protection for state-changing
+  requests
+- [Authentication](/guides/authentication/): verifying who the caller is
+- [Rate Limiting](/guides/rate-limiting/): throttling abuse
 
 
 ##  The checklist
@@ -162,10 +185,9 @@ before a release.
 
 ###  Input
 
-Every request input is attacker-controlled — body, query, headers,
-cookies, path, and uploads.
-[Validate](/guides/validation/) shape at the boundary, and remember that
-shape is not meaning: a valid `user_id` is not an authorized one.
+Every request input is attacker-controlled: body, query, headers, cookies,
+path, and uploads. [Validate](/guides/validation/) shape at the boundary, and
+remember that shape is not meaning: a valid `user_id` is not an authorized one.
 
 Never interpolate user input into SQL, a shell command, a filesystem
 path, or a redirect target. Parameterised queries, allowlists, and
@@ -177,9 +199,8 @@ upload sizes and counts, and string lengths.
 ###  Output
 
 Escape by context. HTML escaping is not URL escaping is not JavaScript
-escaping, and a value safe in one is dangerous in another. Templates
-autoescape `.html` files — see [Templating](/guides/templating/) — and
-`|safe` disables it.
+escaping, and a value safe in one is dangerous in another. Templates autoescape
+`.html` files. See [Templating](/guides/templating/), and `|safe` disables it.
 
 Return only declared fields. A
 [response model](/guides/validation/response-models/) drops everything
@@ -192,7 +213,7 @@ and file paths are reconnaissance. See
 
 ###  Authentication and authorization
 
-Hash passwords with a password hash — bcrypt, scrypt, Argon2 — never a
+Hash passwords with a password hash (bcrypt, scrypt, Argon2) never a
 general-purpose one. See [Hashing helpers](/guides/helpers/hashing/).
 
 Rate limit the login path by IP and by account. Credential stuffing is
@@ -211,18 +232,18 @@ in middleware so it covers errors and static files.
 
 ###  Dependencies and secrets
 
-Secrets from the environment, never the repository — and rotate anything
-that has ever been committed, because history is forever.
+Secrets from the environment, never the repository, and rotate anything that
+has ever been committed, because history is forever.
 
 Pin dependencies and scan them. Most vulnerabilities in a Python
 application are in code nobody on your team wrote.
 
 ##  Threats worth understanding, not just checking
 
-**Injection** is what happens when data becomes code. The defence is
-never escaping — it is never mixing the two: parameterised queries,
-argument lists rather than shell strings, allowlists for anything that
-selects a column or a table.
+**Injection** is what happens when data becomes code. The defence is never
+escaping. It is never mixing the two: parameterised queries, argument lists
+rather than shell strings, allowlists for anything that selects a column or a
+table.
 
 **Broken access control** is the most common serious finding in real
 applications, and it never shows up in a happy-path test. The specific
@@ -238,9 +259,9 @@ automatically. It applies to cookie sessions and largely not to header
 credentials. See [CSRF](/guides/csrf/).
 
 **Server-side request forgery** is your server fetching a URL an attacker
-chose — including internal addresses and cloud metadata endpoints. Any
-feature that fetches a user-supplied URL needs an allowlist and a check
-that the resolved address is not private.
+chose, including internal addresses and cloud metadata endpoints. Any feature
+that fetches a user-supplied URL needs an allowlist and a check that the
+resolved address is not private.
 
 **Denial of service** rarely needs a botnet. An unbounded page size, an
 unbounded upload, a regex with catastrophic backtracking, or a
@@ -282,11 +303,11 @@ handlers that keep internals out of responses when you configure them to.
 management, dependency scanning, audit logging, or any decision about
 what your application should permit.
 
-The pages in these guides flag several places where a helper is weaker
-than its name suggests — `sanitize_html` is a regex scanner with known
-bypasses, the `"encrypted"` cast is XOR, and `unsign_value`'s `max_age`
-is not read. Each is documented where it lives, with a working
-alternative. Read those warnings before relying on a name.
+The pages in these guides flag several places where a helper is weaker than its
+name suggests. `sanitize_html` is a regex scanner with known bypasses, the
+`"encrypted"` cast is XOR, and `unsign_value`'s `max_age` is not read. Each is
+documented where it lives, with a working alternative. Read those warnings
+before relying on a name.
 
 ##  Building a security review into the work
 
@@ -307,13 +328,13 @@ probably passed, and each is a hole that nobody is looking at.
 
 ##  Related
 
-- [Validation](/guides/validation/) — bounding what you accept
-- [Authentication](/guides/authentication/) — establishing identity
-- [Permissions](/guides/permissions/) — deciding what is allowed
-- [Protecting Routes](/guides/protecting-routes/) — enforcing it
-- [CSRF](/guides/csrf/) and [CORS](/guides/cors/) — cross-origin concerns
-- [Headers](/guides/headers/) — the security header set
-- [Error Handling](/guides/error-handling/) — not leaking internals
+- [Validation](/guides/validation/): bounding what you accept
+- [Authentication](/guides/authentication/): establishing identity
+- [Permissions](/guides/permissions/): deciding what is allowed
+- [Protecting Routes](/guides/protecting-routes/): enforcing it
+- [CSRF](/guides/csrf/) and [CORS](/guides/cors/): cross-origin concerns
+- [Headers](/guides/headers/): the security header set
+- [Error Handling](/guides/error-handling/): not leaking internals
 - [Crypto helpers](/guides/helpers/crypto/) and [Hashing helpers](/guides/helpers/hashing/)
 
 
@@ -322,14 +343,14 @@ probably passed, and each is a hole that nobody is looking at.
 A checklist protects against what is on it. Thinking about your specific
 application catches what is not.
 
-Three questions are usually enough to find the gaps. What is the most
-valuable thing an attacker could reach — and what stands between them and
-it? What would an authenticated but hostile user do, given that they can
-change any identifier they see? And what happens if one component is
-compromised: does an XSS in the frontend, or a stolen worker credential,
-give them everything or something bounded?
+Three questions are usually enough to find the gaps. What is the most valuable
+thing an attacker could reach, and what stands between them and it? What would
+an authenticated but hostile user do, given that they can change any identifier
+they see? And what happens if one component is compromised: does an XSS in the
+frontend, or a stolen worker credential, give them everything or something
+bounded?
 
-The answers tend to point at layers that do not exist yet — a missing
-query-level scope, a service account with more permission than it needs,
-a session that cannot be revoked. Those are cheaper to add before an
-incident than during one.
+The answers tend to point at layers that do not exist yet: a missing
+query-level scope, a service account with more permission than it needs, a
+session that cannot be revoked. Those are cheaper to add before an incident
+than during one.

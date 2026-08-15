@@ -122,17 +122,17 @@ flowchart TD
 
 ### Critical Ordering Dependencies
 
-1. **Router must exist before `setup()`** — `setup()` registers routes on
+1. **Router must exist before `setup()`**: `setup()` registers routes on
    `self.router` for the OpenAPI JSON endpoint and docs UIs.
 
-2. **ExceptionMiddleware must exist before route registration** — Exception
+2. **ExceptionMiddleware must exist before route registration.** Exception
    handlers are registered on `self.exceptions_handler`.
 
-3. **OpenAPIConfig must exist before `_register_auth()`** — Auth backend
+3. **OpenAPIConfig must exist before `_register_auth()`**: Auth backend
    registration publishes security schemes to the config.
 
-4. **`setup()` is called last** — It mounts documentation routes that depend
-   on all prior initialization.
+4. **`setup()` is called last**: It mounts documentation routes that depend on
+   all prior initialization.
 
 ---
 

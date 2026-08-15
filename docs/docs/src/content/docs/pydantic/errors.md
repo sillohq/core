@@ -1,6 +1,6 @@
 ---
 title: Validation Errors
-description: "The 422 a client receives — the error structure, what loc means, how failures from several locations are reported together, and how to customise the message or the whole response."
+description: "The 422 a client receives. The error structure, what loc means, how failures from several locations are reported together, and how to customise the message or the whole response."
 head:
   - tag: meta
     attrs:
@@ -35,7 +35,7 @@ failure listed:
 ```
 
 Note that both failures are in one response. A bad query parameter **and** a
-malformed body are reported together rather than one per round trip — a client
+malformed body are reported together rather than one per round trip. A client
 fixing a form gets every problem at once instead of discovering them in
 sequence.
 
@@ -48,7 +48,7 @@ sequence.
 | `type` | Machine-readable error code |
 | `input` | The value that failed, when available |
 
-Pydantic's own `url` key — a link to pydantic.dev — is stripped. It is noise in
+Pydantic's own `url` key (a link to pydantic.dev) is stripped. It is noise in
 an HTTP API response, and it points at documentation for a library the client
 may not be using.
 
@@ -67,9 +67,9 @@ The first element names **where** the value came from:
 ```
 
 That prefix is Sillo's addition. Pydantic reports locations relative to the
-model it validated, which for a query string is a synthetic per-location
-model — so a failure would otherwise arrive as just `["page"]` with no
-indication of where `page` came from.
+model it validated, which for a query string is a synthetic per-location model,
+so a failure would otherwise arrive as just `["page"]` with no indication of
+where `page` came from.
 
 **Aliases are resolved.** When a field has a
 [validation alias](/pydantic/fields/#aliases), the path shows the wire name the
@@ -124,7 +124,7 @@ def url_safe(cls, value: str) -> str:
 ```
 
 Pydantic prefixes `Value error, `. Write the message as a continuation of that
-so it reads properly, and write it for whoever has to fix the request —
+so it reads properly, and write it for whoever has to fix the request,
 "invalid" tells them nothing.
 
 For a custom `type` as well as a message:
@@ -153,8 +153,8 @@ displaying the message.
 
 ## Customising the response
 
-The default shape is `{"detail": [...]}`. To change it — to match an existing
-API convention, or to add a request id — register your own handler:
+The default shape is `{"detail": [...]}`. To change it (to match an existing
+API convention, or to add a request id) register your own handler:
 
 ```python
 from sillo.validation import RequestValidationError
@@ -192,7 +192,7 @@ If your API accepts secrets, strip `input` in a custom handler.
 
 When a handler returns something its
 [`response_model`](/pydantic/response-models/) does not permit, that is a
-server-side bug — the client sent a valid request and your application produced
+server-side bug. The client sent a valid request and your application produced
 an invalid response.
 
 ```json
@@ -202,9 +202,9 @@ an invalid response.
 Status **500**. Returning 422 would blame the caller and would mislead clients
 that retry on 4xx.
 
-The offending value is deliberately not echoed — it may contain exactly the
-data the response model existed to filter out. It is logged instead, with the
-method and path, so you can find it.
+The offending value is deliberately not echoed. It may contain exactly the data
+the response model existed to filter out. It is logged instead, with the method
+and path, so you can find it.
 
 ## Catching it yourself
 

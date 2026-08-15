@@ -14,9 +14,9 @@ head:
 
 #  Users & Authentication
 
-A new project has **one user model**. Everyone is a row in `users` — the
-person who signs up through the API and the person who signs in to the
-admin. What separates them is `is_staff`, not a second table.
+A new project has **one user model**. Everyone is a row in `users`. The person
+who signs up through the API and the person who signs in to the admin. What
+separates them is `is_staff`, not a second table.
 
 ##  The model
 
@@ -55,8 +55,8 @@ flags, `last_login`, `email_verified_at`, and the behaviour authentication
 depends on: `set_password`, `check_password`, `verify_credentials`,
 `has_perm`, `load_user`.
 
-Subclassing it — rather than using `sillo.users.User` directly — gives you
-a model you can add fields to.
+Subclassing it (rather than using `sillo.users.User` directly) gives you a
+model you can add fields to.
 
 ###  `password = PasswordField()` is declared, not inherited
 
@@ -68,9 +68,9 @@ user.password = "hunter2"
 await user.save()
 ```
 
-writes the **plaintext**, silently. `PasswordField` hashes on the way to
-the database, and it is what the admin's own user model uses — declaring
-it here is what makes your model the same kind of thing.
+writes the **plaintext**, silently. `PasswordField` hashes on the way to the
+database, and it is what the admin's own user model uses. Declaring it here is
+what makes your model the same kind of thing.
 
 Going through `set_password()` or `objects.create_user()` was always safe.
 Direct assignment was not, and direct assignment is what someone reaches
@@ -82,10 +82,10 @@ for at 2am.
 User.objects.contribute_to_class(User, "objects")
 ```
 
-Tortoise does not call Django's `contribute_to_class` hook, so without
-that line the manager has no model and falls back to sillo's built-in
-`User` — which the project does not register, producing a confusing
-`default_connection cannot be None` at the first query.
+Tortoise does not call Django's `contribute_to_class` hook, so without that
+line the manager has no model and falls back to sillo's built-in `User`, which
+the project does not register, producing a confusing `default_connection cannot
+be None` at the first query.
 
 ###  Some names are properties, not fields
 
@@ -228,10 +228,9 @@ pair = TokenForUser(user, secret=config.jwt_secret).token_pair()
 
 :::caution
 **`identifier="sub"` is required, not cosmetic.** The backend defaults to
-reading an `id` claim, but tokens carry the user id in `sub`. With the
-default, every authenticated request silently fails to load a user — no
-error, no log line, just an anonymous request where you expected a
-signed-in one.
+reading an `id` claim, but tokens carry the user id in `sub`. With the default,
+every authenticated request silently fails to load a user: no error, no log
+line, just an anonymous request where you expected a signed-in one.
 :::
 
 **Keep the session middleware either way.** The admin authenticates
@@ -240,7 +239,7 @@ Removing it takes the admin down with it.
 
 ##  Who may reach the admin
 
-An account needs `is_staff` — which `user admin` sets.
+An account needs `is_staff`, which `user admin` sets.
 
 That flag is load-bearing rather than decorative. With one shared user
 model, **every registered account holds a session**, so if a session alone
@@ -252,10 +251,10 @@ POST /api/auth/login     ->  200
 GET  /admin/             ->  200        # read and write on every model
 ```
 
-The rule is: **active, and staff or superuser**. It is checked at sign-in
-*and* on every request — the session carries only an identity and a
-display name, so revoking `is_staff` has to take effect on the next
-request rather than at the next sign-in.
+The rule is: **active, and staff or superuser**. It is checked at sign-in *and*
+on every request. The session carries only an identity and a display name, so
+revoking `is_staff` has to take effect on the next request rather than at the
+next sign-in.
 
 ```python
 @staticmethod
@@ -285,8 +284,8 @@ class User(UserBaseModel):
 sillo db:make add user profile fields --apply
 ```
 
-Because there is one user model, that field exists everywhere — the API,
-the admin, your scripts — with no second model to mirror it into.
+Because there is one user model, that field exists everywhere (the API, the
+admin, your scripts) with no second model to mirror it into.
 
 :::danger
 **Do not add `sillo.users` to `MODEL_MODULES`.** Models are keyed by class
@@ -316,8 +315,8 @@ await set_active(user, False, model=User)
 await set_password("ada", "N3w!password", model=User)
 ```
 
-`find_user` finds **deactivated** accounts too — you frequently need to
-act on an account precisely because it was disabled.
+`find_user` finds **deactivated** accounts too. You frequently need to act on
+an account precisely because it was disabled.
 
 ##  Things that will bite you
 
@@ -339,9 +338,9 @@ act on an account precisely because it was disabled.
 
 ##  Related
 
-- [The Admin Panel](/guides/start/admin/) — what `is_staff` gets you into
-- [The Console](/guides/start/console/) — the `user` commands
-- [Authentication](/guides/authentication/) — the framework-level reference
-- [JWT Authentication](/guides/jwt-auth/) — tokens in depth
-- [Protecting Routes](/guides/protecting-routes/) — guards and permissions
-- [Hashing](/guides/hashing/) — the password hashing scheme
+- [The Admin Panel](/guides/start/admin/): what `is_staff` gets you into
+- [The Console](/guides/start/console/): the `user` commands
+- [Authentication](/guides/authentication/): the framework-level reference
+- [JWT Authentication](/guides/jwt-auth/): tokens in depth
+- [Protecting Routes](/guides/protecting-routes/): guards and permissions
+- [Hashing](/guides/hashing/): the password hashing scheme

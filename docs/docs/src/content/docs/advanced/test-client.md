@@ -160,7 +160,7 @@ def websocket_connect(self, url, subprotocols=None, **kwargs) -> WebSocketTestSe
 
 ### Context Managers
 
-#### `__enter__` — Sync
+#### `__enter__`: Sync
 
 ```python
 # core/sillo/testclient/base.py, line 374
@@ -172,7 +172,7 @@ def __enter__(self) -> Self:
 3. Starts the lifespan task.
 4. Calls `wait_startup()`.
 
-#### `__aenter__` — Async
+#### `__aenter__`: Async
 
 ```python
 # core/sillo/testclient/base.py, line 411
@@ -358,7 +358,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     encoding: str = "ascii"
 ```
 
-Same architecture as `TestClientTransport` but async-native — no portal needed.
+Same architecture as `TestClientTransport` but async-native, no portal needed.
 Directly `await`s the ASGI app.
 
 ### Key Differences from Sync Transport

@@ -1,6 +1,6 @@
 ---
 title: Customising the Admin
-description: "Shaping the admin for real work — list columns, search, filters, ordering, page size, form fields, read-only fields, bulk actions and exports."
+description: "Shaping the admin for real work: list columns, search, filters, ordering, page size, form fields, read-only fields, bulk actions and exports."
 head:
   - tag: meta
     attrs:
@@ -24,7 +24,7 @@ class PostAdmin(ModelAdmin):
 Columns are shown in the order given. Each name is a field, a relation, or a
 method on the `ModelAdmin` or the model.
 
-Default is `["__str__"]` — one column, the row's string form.
+Default is `["__str__"]`, one column, the row's string form.
 
 `list_display_links` decides which columns are links to the detail page.
 Without it the first column links. Naming `title` is usually better: a linked
@@ -42,7 +42,7 @@ class PostAdmin(ModelAdmin):
         return len(post.body.split())
 ```
 
-For anything derived. Keep it cheap — it runs once per row, and a method that
+For anything derived. Keep it cheap. It runs once per row, and a method that
 queries is an N+1 by construction.
 
 ### Relations cost a query each
@@ -71,7 +71,7 @@ search_fields = ["title", "body", "author__username"]
 Adds the search box. Fields are matched case-insensitively and OR-ed together,
 so one term searches all of them. `__`-spanning works.
 
-An empty `search_fields` means no search box at all — not a box that finds
+An empty `search_fields` means no search box at all, not a box that finds
 nothing.
 
 Search is `LIKE '%term%'`. That cannot use a normal B-tree index, so on a large
@@ -85,8 +85,8 @@ to scan.
 list_filter = ["status", "is_published", "author"]
 ```
 
-Each becomes a filter control in the sidebar. Best on low-cardinality
-fields — a status, a boolean, a foreign key with a handful of rows.
+Each becomes a filter control in the sidebar. Best on low-cardinality fields: a
+status, a boolean, a foreign key with a handful of rows.
 
 A filter on a field with thousands of distinct values produces a list with
 thousands of entries, and the query to build it is not free. Use search for
@@ -102,7 +102,7 @@ The default sort. A leading `-` is descending.
 
 Include a tiebreaker. `-published_at` alone is not a stable order if two rows
 share a timestamp, and unstable ordering means rows appear on two pages or on
-none — see [Pagination](/orm/pagination/#ordering-is-not-optional).
+none. See [Pagination](/orm/pagination/#ordering-is-not-optional).
 
 Without `ordering`, the order is the database's, which is to say undefined.
 
@@ -129,7 +129,7 @@ appears in model order.
 exclude = ["deleted_at", "internal_notes"]
 ```
 
-The inverse. `fields` wins if both are given — it is a whitelist, and honouring
+The inverse. `fields` wins if both are given. It is a whitelist, and honouring
 a blacklist alongside it would be ambiguous.
 
 Prefer `fields`. A column added next year appears in the form automatically
@@ -166,7 +166,7 @@ the only save button is a scroll away.
 ### Password fields
 
 A [`PasswordField`](/orm/fields/#passwordfield) is detected and rendered as a
-password widget — reveal toggle, strength meter, confirmation — rather than a
+password widget (reveal toggle, strength meter, confirmation) rather than a
 text input, and the stored hash is never rendered back into the form.
 
 ## Bulk actions
@@ -196,7 +196,7 @@ It is set-based SQL: no [events](/orm/events/), no
 and `updated_at` does not move unless you set it.
 
 That is exactly what you want for a thousand rows, and exactly what you do not
-want when a hook has to run. Loop and `save()` when it does — and think about
+want when a hook has to run. Loop and `save()` when it does, and think about
 how many rows someone can select before you do.
 :::
 
@@ -215,6 +215,6 @@ the building, and the log is how you find out that it did.
 
 ## The dashboard
 
-Shows the registered models and the recent activity. It is not configurable —
+Shows the registered models and the recent activity. It is not configurable:
 for anything bespoke, build a page in your own application, where you have the
 full framework rather than the admin's templates.

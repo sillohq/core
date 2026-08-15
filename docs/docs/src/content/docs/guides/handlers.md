@@ -14,7 +14,11 @@ head:
 
 #  Handlers
 
-A *handler* is the function sillo calls when a request matches a route. It is where your application logic lives: read the request, do the work, return a response. Almost everything else in sillo — routing, middleware, dependency injection, serialization — exists to get the right request to the right handler and turn its result into bytes on the wire.
+A *handler* is the function sillo calls when a request matches a route. It is
+where your application logic lives: read the request, do the work, return a
+response. Almost everything else in sillo (routing, middleware, dependency
+injection, serialization) exists to get the right request to the right handler
+and turn its result into bytes on the wire.
 
 This page covers the handler contract end to end: the two arguments every handler receives, the many shapes a return value can take, how to read path/query/body data, how to set status codes and headers, how to raise errors, and how to pull dependencies in.
 
@@ -32,7 +36,9 @@ async def index(request, response):
 
 Two things to notice:
 
-1. The handler is `async` and takes **at least two positional parameters** — `request` and `response`. Their names are yours to choose (`request, response` works too), but order matters: request first, response second.
+1. The handler is `async` and takes **at least two positional parameters**:
+   `request` and `response`. Their names are yours to choose (`request,
+   response` works too), but order matters: request first, response second.
 2. Returning a plain `str` is enough. sillo wraps it in a `200 OK` JSON-or-text response for you. For anything beyond the simplest case, use the `response` object.
 
 <aside type="tip" title="Name them what you like">
@@ -43,8 +49,13 @@ The framework binds the first two handler parameters by position, not by name. `
 
 Every handler receives:
 
-- **`request`** — a `sillo.http.Request` instance carrying the method, URL, headers, query, cookies, body, client address, and auth/session state. See [Request Information](/guides/request-info/).
-- **`response`** — a `sillo.http.response.Responder` (also importable as `Response`) — a fluent builder you use to produce JSON, HTML, files, redirects, headers, and cookies. See [Sending Responses](/guides/sending-responses/).
+- **`request`**: a `sillo.http.Request` instance carrying the method, URL,
+  headers, query, cookies, body, client address, and auth/session state. See
+  [Request Information](/guides/request-info/).
+- **`response`**: a `sillo.http.response.Responder` (also importable as
+  `Response`): a fluent builder you use to produce JSON, HTML, files,
+  redirects, headers, and cookies. See [Sending
+  Responses](/guides/sending-responses/).
 
 ```python
 from sillo.core.http import Request, Response
@@ -54,7 +65,8 @@ async def index(request: Request, response: Response):
     return response.json({"method": request.method})
 ```
 
-Type annotations are optional but recommended — they give you IDE autocomplete and let static analyzers check your code. They do not change runtime behavior.
+Type annotations are optional but recommended. They give you IDE autocomplete
+and let static analyzers check your code. They do not change runtime behavior.
 
 ##  Registering handlers
 
@@ -72,7 +84,8 @@ async def items(request, response):
     ...
 ```
 
-For finer control — or when building routes programmatically — use the `Route` class and `app.add_route`:
+For finer control (or when building routes programmatically) use the `Route`
+class and `app.add_route`:
 
 ```python
 from sillo.core.routing import Route
@@ -112,7 +125,9 @@ Available converters: `str`, `int`, `float`, `path`. Register your own with `reg
 
 ###  Query parameters
 
-Read them off `request.query_params` (a dict-like, case-preserving object), or — preferably — declare them with the `Query` extractor so sillo does type conversion for you.
+Read them off `request.query_params` (a dict-like, case-preserving object), or
+(preferably) declare them with the `Query` extractor so sillo does type
+conversion for you.
 
 ```python
 @app.get("/search")
@@ -147,7 +162,9 @@ async def process_data(request, response):
     return {"keys": list(json_data.keys()) if isinstance(json_data, dict) else None}
 ```
 
-`request.json`, `request.form`, `request.body`, `request.text`, and `request.files` are all **awaitable properties** — `await` them once; the result is cached for the request.
+`request.json`, `request.form`, `request.body`, `request.text`, and
+`request.files` are all **awaitable properties**, `await` them once; the result
+is cached for the request.
 
 For validated bodies, set `request_model` on the route (or `app.post(...)`) with a Pydantic model; the validated instance is available as `request.validated_data`:
 
@@ -281,7 +298,10 @@ async def me(request, response, user: dict = Depend(get_current_user)):
     return response.json(user)
 ```
 
-Dependencies can be nested, cached per request, and clean up after themselves via async generators. The full system — `get_request=True`, sub-dependencies, caching, generator teardown — is documented in [Dependency Injection](/guides/dependency-injection/).
+Dependencies can be nested, cached per request, and clean up after themselves
+via async generators. The full system (`get_request=True`, sub-dependencies,
+caching, generator teardown) is documented in [Dependency
+Injection](/guides/dependency-injection/).
 
 <aside type="caution" title="No `Context()` and no `scope=` on Depend">
 Two patterns you may see in older examples are not part of sillo's API: `Context().request` for injecting the request, and `Depend(fn, scope="request")`. Use a plain `request` parameter in the dependency, or `Depend(get_request=True)`, instead. `Depend` accepts only `dependency` and `get_request`.
@@ -327,17 +347,24 @@ This one handler demonstrates: path-less body validation (`request_model`), an i
 
 ##  Works with
 
-- [Routing](/guides/routing/) — path syntax, converters, `name=`, and route options
-- [Request Information](/guides/request-info/) — every `request.*` attribute
-- [Request Parameters](/guides/request-parameters/) — `Query` / `Header` / `Cookie`
-- [Sending Responses](/guides/sending-responses/) — the `response` builder in depth
-- [Dependency Injection](/guides/dependency-injection/) — `Depend`, nesting, caching, teardown
+- [Routing](/guides/routing/): path syntax, converters, `name=`, and route
+  options
+- [Request Information](/guides/request-info/): every `request.*` attribute
+- [Request Parameters](/guides/request-parameters/): `Query` / `Header` /
+  `Cookie`
+- [Sending Responses](/guides/sending-responses/): the `response` builder in
+  depth
+- [Dependency Injection](/guides/dependency-injection/): `Depend`, nesting,
+  caching, teardown
 
 ##  Related topics
 
-- [Error Handling](/guides/error-handling/) — `HTTPException` and custom handlers
-- [Routers & Sub-Apps](/guides/routers-and-subapps/) — group related function handlers behind a prefix
-- [Middleware](/guides/middleware/) — logic that wraps handlers for every request
+- [Error Handling](/guides/error-handling/): `HTTPException` and custom
+  handlers
+- [Routers & Sub-Apps](/guides/routers-and-subapps/): group related function
+  handlers behind a prefix
+- [Middleware](/guides/middleware/): logic that wraps handlers for every
+  request
 
 
 ##  Keep handlers thin
@@ -371,8 +398,8 @@ An exception that escapes a handler becomes a 500 through the error
 middleware. That is the right default for genuine bugs and the wrong
 answer for expected failures.
 
-Raise `HTTPException` for anything the client caused — it carries the
-status and short-circuits cleanly:
+Raise `HTTPException` for anything the client caused. It carries the status and
+short-circuits cleanly:
 
 ```python
 if order.owner_id != request.user.id:
@@ -389,9 +416,9 @@ behaviour a client, a proxy, or your own monitoring relies on.
 
 ##  Sync handlers
 
-A handler may be a plain `def`. sillo runs it in a thread so it does not
-block the loop — which is correct, and slower than an async handler by
-the cost of a thread hop.
+A handler may be a plain `def`. sillo runs it in a thread so it does not block
+the loop, which is correct, and slower than an async handler by the cost of a
+thread hop.
 
 Use one when you are calling a synchronous library and the alternative is
 `run_in_threadpool` on every line. Otherwise write `async def`: everything
@@ -406,14 +433,13 @@ in the process. See [Concurrency](/guides/concurrency/).
 ##  What a handler receives
 
 Every handler takes `request` and `response` as its first two parameters.
-Anything after them comes from the framework: validated markers,
-dependencies, and — for `request_model=` routes — the validated body.
+Anything after them comes from the framework: validated markers, dependencies,
+and (for `request_model=` routes) the validated body.
 
-`request` carries the input: path and query parameters, headers, cookies,
-the body, the client address, and `request.state` for anything middleware
-attached. `response` is a factory for building replies — `response.json`,
-`response.text`, `response.html`, `response.redirect`, and the streaming
-and file variants.
+`request` carries the input: path and query parameters, headers, cookies, the
+body, the client address, and `request.state` for anything middleware attached.
+`response` is a factory for building replies: `response.json`, `response.text`,
+`response.html`, `response.redirect`, and the streaming and file variants.
 
 Returning a response object is explicit and preferred. Returning a plain
 dict or list also works and is encoded to JSON with a 200; that shortcut
@@ -424,8 +450,8 @@ outcome.
 ##  Naming and organisation
 
 Handler names appear in `sillo urls`, in generated documentation, and in
-tracebacks, so they are worth choosing. Name for the action —
-`create_order`, `list_orders`, `cancel_order` — not for the mechanism.
+tracebacks, so they are worth choosing. Name for the action (`create_order`,
+`list_orders`, `cancel_order`) not for the mechanism.
 
 Group handlers by resource in modules that mirror your URLs, and mount
 them with [routers](/guides/routers-and-subapps/). A single file of two
@@ -435,10 +461,10 @@ merge conflicts alone justify splitting it well before that point.
 
 ##  Idempotency
 
-`GET`, `HEAD`, `PUT`, and `DELETE` are expected to be idempotent —
-calling them twice has the same effect as calling them once. Clients,
-proxies, and retry logic all rely on that, and a `GET` with a side effect
-breaks assumptions well outside your codebase.
+`GET`, `HEAD`, `PUT`, and `DELETE` are expected to be idempotent. Calling them
+twice has the same effect as calling them once. Clients, proxies, and retry
+logic all rely on that, and a `GET` with a side effect breaks assumptions well
+outside your codebase.
 
 `POST` is not idempotent by definition, which is why a retried `POST` can
 create two orders. Where that matters, accept an idempotency key from the

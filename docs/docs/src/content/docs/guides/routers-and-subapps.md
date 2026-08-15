@@ -14,7 +14,11 @@ head:
 
 #  Routers & Sub-Applications
 
-As an app grows, a single flat list of `@app.get(...)` decorators becomes hard to navigate. sillo lets you group routes into **`Router`** objects with their own path prefix, mount them under the main app, and nest them arbitrarily. You can also mount an entire **sub-application** — another `SilloApp`, or any ASGI app such as a FastAPI service — under a path using a **`Group`**.
+As an app grows, a single flat list of `@app.get(...)` decorators becomes hard
+to navigate. sillo lets you group routes into **`Router`** objects with their
+own path prefix, mount them under the main app, and nest them arbitrarily. You
+can also mount an entire **sub-application** (another `SilloApp`, or any ASGI
+app such as a FastAPI service) under a path using a **`Group`**.
 
 The mental model:
 
@@ -64,10 +68,14 @@ v1 = Router(
 )
 ```
 
-- **`tags`** — groups the router's endpoints under a tag in generated OpenAPI docs.
-- **`dependencies`** — a list of `Depend(...)` objects resolved for *every* route in the router (e.g. a shared auth dependency).
-- **`middleware`** — functions applied to requests matching this router's routes.
-- **`name`** — an identifier for the router (mostly for referencing in tooling/URL generation within the router tree).
+- **`tags`**: groups the router's endpoints under a tag in generated OpenAPI
+  docs.
+- **`dependencies`**: a list of `Depend(...)` objects resolved for *every*
+  route in the router (e.g. a shared auth dependency).
+- **`middleware`**: functions applied to requests matching this router's
+  routes.
+- **`name`**: an identifier for the router (mostly for referencing in
+  tooling/URL generation within the router tree).
 
 ##  Nesting routers
 
@@ -93,7 +101,9 @@ v1.mount_router(users)
 app.mount_router(v1)
 ```
 
-Final paths: `/v1/users/` and `/v1/users/{id}`. You can nest as deeply as you like — `v1.mount_router(users)`, `users.mount_router(posts)`, and so on. sillo resolves the full prefix by walking the tree at startup.
+Final paths: `/v1/users/` and `/v1/users/{id}`. You can nest as deeply as you
+like: `v1.mount_router(users)`, `users.mount_router(posts)`, and so on. sillo
+resolves the full prefix by walking the tree at startup.
 
 ##  Per-router middleware and dependencies
 
@@ -124,7 +134,9 @@ Here `require_staff` resolves for every route registered on `admin`. (You can al
 
 ##  Groups: mounting a sub-application
 
-When the thing you want to mount is itself an app — a separate `SilloApp`, or any ASGI app — use `Group`. A `Group` takes either `app=` (an ASGI app) or `routes=` (a list of `Route` objects), plus a `path` prefix.
+When the thing you want to mount is itself an app (a separate `SilloApp`, or
+any ASGI app) use `Group`. A `Group` takes either `app=` (an ASGI app) or
+`routes=` (a list of `Route` objects), plus a `path` prefix.
 
 ###  Mounting another SilloApp
 
@@ -143,7 +155,9 @@ admin_group = Group(path="/admin", app=admin_app)
 main_app.add_route(admin_group)
 ```
 
-Now `/admin/dashboard` is served by `admin_app`. The sub-app keeps its own routes, handlers, and (if you add them) its own middleware — useful when different teams own different parts of a system.
+Now `/admin/dashboard` is served by `admin_app`. The sub-app keeps its own
+routes, handlers, and (if you add them) its own middleware, useful when
+different teams own different parts of a system.
 
 ###  Mounting a list of routes
 
@@ -246,14 +260,18 @@ This gives you `/api/v1/health` and `/admin/stats` from two independently-define
 
 ##  Works with
 
-- [Routing](/guides/routing/) — path syntax, converters, `name=`, and all route options
-- [Handlers](/guides/handlers/) — the handler contract used inside routers
-- [Middleware](/guides/middleware/) — router-scoped and global middleware
-- [Handlers](/guides/handlers/) — define function handlers for router endpoints
-- [Dependency Injection](/guides/dependency-injection/) — router-level `dependencies=`
+- [Routing](/guides/routing/): path syntax, converters, `name=`, and all route
+  options
+- [Handlers](/guides/handlers/): the handler contract used inside routers
+- [Middleware](/guides/middleware/): router-scoped and global middleware
+- [Handlers](/guides/handlers/): define function handlers for router endpoints
+- [Dependency Injection](/guides/dependency-injection/): router-level
+  `dependencies=`
 
 ##  Related topics
 
-- [Startup & Shutdown](/guides/startups-and-shutdowns/) — run setup when the composed app boots
-- [Error Handling](/guides/error-handling/) — exception handlers registered per app vs. globally
-- [Events](/guides/events/) — router-level event hooks
+- [Startup & Shutdown](/guides/startups-and-shutdowns/): run setup when the
+  composed app boots
+- [Error Handling](/guides/error-handling/): exception handlers registered per
+  app vs. globally
+- [Events](/guides/events/): router-level event hooks

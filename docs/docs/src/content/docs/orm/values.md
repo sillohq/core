@@ -1,6 +1,6 @@
 ---
 title: Values & Projections
-description: "Fetching less than a whole row — values, values_list, only, distinct, in_bulk and group_by — and when a dict beats a model instance."
+description: "Fetching less than a whole row (values, values_list, only, distinct, in_bulk and group_by) and when a dict beats a model instance."
 head:
   - tag: meta
     attrs:
@@ -57,7 +57,7 @@ await Post.all().values_list("id", flat=True)
 ```
 
 `flat=True` takes exactly one field and unwraps the tuples. It is the shortest
-way to get a list of ids for a subsequent query — though a
+way to get a list of ids for a subsequent query, though a
 [`Subquery`](/orm/filtering/#subquery) is better still, since it never brings
 the ids into Python at all.
 
@@ -82,11 +82,11 @@ column the database still reads and sends over the wire.
 `values()` and `values_list()` return plain data:
 
 - no `to_dict()`, no [casts](/orm/casting/), no model methods;
-- no `save()` — you cannot write these back;
+- no `save()`: you cannot write these back;
 - no [property or computed attributes](/orm/models/).
 
 A [cast](/orm/casting/) field fetched with `values()` gives you the **encoded**
-column value — the JSON string, not the dict. Decoding happens on the instance,
+column value: the JSON string, not the dict. Decoding happens on the instance,
 and there is no instance.
 
 ## `only`
@@ -99,7 +99,7 @@ Real instances, with only those columns loaded. You get the model's methods,
 `save()` works, and the wide columns are left in the database.
 
 The catch is that touching an unloaded field triggers a second query per
-instance — the same N+1 shape as an unfetched relation, from a different
+instance, the same N+1 shape as an unfetched relation, from a different
 direction. Only project what the code path genuinely does not use.
 
 The primary key is always included, whether or not you name it.
@@ -117,15 +117,15 @@ await Post.all().values_list("status", flat=True).distinct()
 [many-to-many](/orm/relationships/#filtering-across-it) produces one row per
 match, so a post with two matching tags appears twice.
 
-**Getting the distinct values of a column**, as in the second example — the
-list of statuses actually in use, for a filter dropdown.
+**Getting the distinct values of a column**, as in the second example. The list
+of statuses actually in use, for a filter dropdown.
 
 `DISTINCT` deduplicates the **whole selected row**, so adding a column can
 change the answer. `values_list("status", flat=True).distinct()` gives distinct
 statuses; `.distinct().values_list("status", flat=True)` on full rows does not,
 because the rows differ by id.
 
-For "the newest row per group", `DISTINCT` is the wrong tool — that is a window
+For "the newest row per group", `DISTINCT` is the wrong tool. That is a window
 function in [raw SQL](/orm/raw-sql/), or a
 [`Subquery`](/orm/filtering/#subquery).
 
@@ -150,7 +150,7 @@ for row in rows:
     row.post = posts.get(row.post_id)
 ```
 
-Missing ids are simply absent from the dict — use `.get()` rather than `[]`
+Missing ids are simply absent from the dict. Use `.get()` rather than `[]`
 unless you have already established they all exist.
 
 `field_name` need not be the primary key; any unique column works.
@@ -199,6 +199,6 @@ await (
 
 Two rules worth knowing:
 
-- `values()` and `values_list()` are **terminal** in shape — you cannot chain
+- `values()` and `values_list()` are **terminal** in shape: you cannot chain
   `filter()` after them and get a queryset back.
 - `only()` is not terminal; it returns a queryset like any other.

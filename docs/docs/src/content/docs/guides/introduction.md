@@ -18,7 +18,11 @@ Sillo is Python with the pieces already in place.
 
 The language does not change. You write the same Python, with the same type hints and the same `async`/`await` you already know. What changes is how much of the backend is waiting for you when you start: routing, validation, dependency injection, the ORM, authentication, sessions, background jobs, scheduling, caching, WebSockets, the admin, and the testing tools are all first-party modules that share one configuration model.
 
-Each of those is a solved problem, and there are good packages for every one of them. The work that remains is the fitting — reconciling interfaces, configuration styles, failure modes, and upgrade cycles that were never designed against each other. Sillo does that fitting once, so your time goes into the product instead.
+Each of those is a solved problem, and there are good packages for every one of
+them. The work that remains is the fitting: reconciling interfaces,
+configuration styles, failure modes, and upgrade cycles that were never
+designed against each other. Sillo does that fitting once, so your time goes
+into the product instead.
 
 ##  What Sillo Is
 
@@ -222,10 +226,10 @@ authenticate with cookies.
 read its scaling section before you design anything, because the answer
 changes what you build.
 
-**Anything going to production.** [Security](/guides/security/),
-[Startup & Shutdown](/guides/startups-and-shutdowns/), and
-[Concurrency](/guides/concurrency/) — in that order. The third one is
-where most performance surprises come from.
+**Anything going to production.** [Security](/guides/security/), [Startup &
+Shutdown](/guides/startups-and-shutdowns/), and
+[Concurrency](/guides/concurrency/), in that order. The third one is where most
+performance surprises come from.
 
 ##  A note on this documentation
 
@@ -243,8 +247,8 @@ verified by running it.
 
 A few things recur in every guide and are worth knowing once.
 
-**Handlers take `request, response`.** Everything after those two is
-injected — validated parameters, dependencies, the request body.
+**Handlers take `request, response`.** Everything after those two is injected:
+validated parameters, dependencies, the request body.
 
 **`app.state` is process-wide, `request.state` is per-request.** The
 first is written by lifespan hooks; the second by middleware.
@@ -269,18 +273,18 @@ The guides are organised by subsystem, and the sidebar mirrors the
 package layout, so `sillo.record` is under Record and `sillo.work` under
 Work. If you know the module, you can find the page.
 
-For questions the guides do not answer, the source is small enough to
-read. Most modules are a few hundred lines, the abstractions are shallow,
-and the answer to "what does this actually do" is usually one file away —
-which is how several of the warnings in these pages were found.
+For questions the guides do not answer, the source is small enough to read.
+Most modules are a few hundred lines, the abstractions are shallow, and the
+answer to "what does this actually do" is usually one file away, which is how
+several of the warnings in these pages were found.
 
 
 ##  Prerequisites
 
-These guides assume working Python and a rough familiarity with HTTP —
-methods, status codes, headers, and what a request body is. They do not
-assume prior experience with an async framework; where `async`/`await`
-matters, the page explains what it changes.
+These guides assume working Python and a rough familiarity with HTTP: methods,
+status codes, headers, and what a request body is. They do not assume prior
+experience with an async framework; where `async`/`await` matters, the page
+explains what it changes.
 
 Python 3.10 or newer is required. Several guides use `match`, `X | None`
 syntax, and `asyncio.timeout`, which is 3.11+.
@@ -305,9 +309,9 @@ async def index(request, response):
 sillo serve main:app --reload
 ```
 
-That is a complete ASGI application. Everything else in these guides —
-validation, the ORM, background work, WebSockets — is something you add
-to this when you need it, and nothing is required to get here.
+That is a complete ASGI application. Everything else in these guides
+(validation, the ORM, background work, WebSockets) is something you add to this
+when you need it, and nothing is required to get here.
 
 ##  Next step
 

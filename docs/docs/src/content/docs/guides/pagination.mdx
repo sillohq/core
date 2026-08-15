@@ -495,9 +495,9 @@ what makes the page boundary stable.
 
 ##  Offset pagination degrades; keyset does not
 
-`OFFSET 100000` makes the database read and discard a hundred thousand
-rows before returning twenty. Page one is instant, page five thousand is
-a table scan, and no index fixes it — the offset must be counted.
+`OFFSET 100000` makes the database read and discard a hundred thousand rows
+before returning twenty. Page one is instant, page five thousand is a table
+scan, and no index fixes it. The offset must be counted.
 
 Keyset pagination replaces the offset with a `WHERE` clause on the last
 row seen, which an index can satisfy directly:
@@ -512,10 +512,10 @@ rows = await qs.limit(21)
 Fetching one extra row tells you whether a next page exists without a
 `COUNT(*)`, which is the other expensive half of offset pagination.
 
-The tradeoff is that keyset paging cannot jump to an arbitrary page —
-there is no "page 47". For feeds, timelines, and infinite scroll that is
-no loss. For an admin table where users click page numbers, offset is the
-right tool and the page count is bounded by the filter.
+The tradeoff is that keyset paging cannot jump to an arbitrary page. There is
+no "page 47". For feeds, timelines, and infinite scroll that is no loss. For an
+admin table where users click page numbers, offset is the right tool and the
+page count is bounded by the filter.
 
 
 ##  Total counts are expensive
@@ -524,12 +524,11 @@ right tool and the page count is bounded by the filter.
 limited `SELECT` can, and on a large table it is frequently the slower
 half of a paginated response.
 
-Three ways out, in increasing order of how much you give up. Cache the
-count for a few seconds — most users cannot tell a stale total from a
-fresh one. Return an approximate count from table statistics for
-unfiltered lists. Or drop the total entirely and return only "is there a
-next page", which is all an infinite-scroll UI needs and costs one extra
-row rather than a full count.
+Three ways out, in increasing order of how much you give up. Cache the count
+for a few seconds. Most users cannot tell a stale total from a fresh one.
+Return an approximate count from table statistics for unfiltered lists. Or drop
+the total entirely and return only "is there a next page", which is all an
+infinite-scroll UI needs and costs one extra row rather than a full count.
 
 Whatever you choose, be consistent about it in the response shape.
 Sometimes-present metadata is harder for clients than metadata that is

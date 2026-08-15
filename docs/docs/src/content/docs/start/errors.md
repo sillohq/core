@@ -1,6 +1,6 @@
 ---
 title: Errors and Exit Codes
-description: "Every failure sillo-start reports, what it means, and how to fix it — plus the exception hierarchy, exit codes, and what --verbose adds."
+description: "Every failure sillo-start reports, what it means, and how to fix it: plus the exception hierarchy, exit codes, and what --verbose adds."
 head:
   - tag: meta
     attrs:
@@ -27,9 +27,9 @@ guess; the hint is where the tool tells you what to type.
 
 | Code | Raised by | Meaning |
 | --- | --- | --- |
-| `0` | — | Success |
-| `1` | `CommandError`, `ToolNotFoundError` | Something failed — a fetch, an install, a missing tool |
-| `2` | `UsageError` | Bad input — a name, a directory, an unparseable starter |
+| `0` |  | Success |
+| `1` | `CommandError`, `ToolNotFoundError` | Something failed: a fetch, an install, a missing tool |
+| `2` | `UsageError` | Bad input: a name, a directory, an unparseable starter |
 | `130` | Ctrl-C | Cancelled |
 
 Anything unexpected also exits `1`, with a message asking you to report it.
@@ -54,10 +54,9 @@ The starter has to resolve to exactly `owner/repo`. See
 
 ## Fetch failures
 
-**`Could not find acme/nope at ref 'main'.`**
-The repository, the branch or tag, or the repository's visibility. All three
-produce a 404 from GitHub, and the tool cannot tell them apart — which is why
-the hint names all three:
+**`Could not find acme/nope at ref 'main'.`** The repository, the branch or
+tag, or the repository's visibility. All three produce a 404 from GitHub, and
+the tool cannot tell them apart, which is why the hint names all three:
 
 ```
 Check the name and the branch or tag, and that the repository is public.
@@ -69,16 +68,15 @@ Check the name and the branch or tag, and that the repository is public.
 Usually rate limiting from an unauthenticated address. Wait, or fetch from a
 different network.
 
-**`Could not reach GitHub: …`**
-No network, DNS, or a proxy in the way. Creating a project needs network
-access — there is no offline mode, because there is no bundled copy of the
-starter to fall back to.
+**`Could not reach GitHub: …`** No network, DNS, or a proxy in the way.
+Creating a project needs network access. There is no offline mode, because
+there is no bundled copy of the starter to fall back to.
 
 The fetch times out after **60 seconds**.
 
-**`acme/template contains an unsafe path: ../../.ssh/authorized_keys`**
-An archive member whose path escapes the destination directory. Refused rather
-than sanitised — that is how a malicious archive overwrites files elsewhere on
+**`acme/template contains an unsafe path: ../../.ssh/authorized_keys`** An
+archive member whose path escapes the destination directory. Refused rather
+than sanitised. That is how a malicious archive overwrites files elsewhere on
 your machine, and quietly repairing the path would hide that someone tried.
 
 **`acme/template produced an empty archive.`**
@@ -86,10 +84,10 @@ The ref resolved but has nothing in it.
 
 ## Install failures
 
-**`uv exited with code 1.`**
-The manager's own output follows. It is never swallowed — the resolver's
-message is the useful one. The project is still on disk; fix the cause and
-install by hand. See [Package managers](/start/package-managers/).
+**`uv exited with code 1.`** The manager's own output follows. It is never
+swallowed. The resolver's message is the useful one. The project is still on
+disk; fix the cause and install by hand. See [Package
+managers](/start/package-managers/).
 
 ## Getting more detail
 
@@ -130,10 +128,9 @@ except SilloStartError as error:
     raise SystemExit(error.exit_code)
 ```
 
-The CLI catches the base class in exactly one place — a decorator applied to
-every command body — so the rendering and the exit codes are decided once
-rather than per command. `KeyboardInterrupt` is caught there too and becomes
-`130`.
+The CLI catches the base class in exactly one place (a decorator applied to
+every command body) so the rendering and the exit codes are decided once rather
+than per command. `KeyboardInterrupt` is caught there too and becomes `130`.
 
 ## Reporting a bug
 

@@ -1,6 +1,6 @@
 ---
 title: Models
-description: "The Record base model — automatic timestamps and soft deletes, Meta options, serialisation with to_dict and to_json, and the get_or_none and get_or_create shortcuts."
+description: "The Record base model, automatic timestamps and soft deletes, Meta options, serialisation with to_dict and to_json, and the get_or_none and get_or_create shortcuts."
 head:
   - tag: meta
     attrs:
@@ -53,7 +53,7 @@ post.deleted_at        # None
 ```
 
 They are real columns and appear in your migrations. If you do not want them,
-inherit from Tortoise's `Model` directly — there is no way to switch them off
+inherit from Tortoise's `Model` directly. There is no way to switch them off
 individually, because a base class that sometimes has a column is a base class
 whose migrations are unpredictable.
 
@@ -98,7 +98,7 @@ post = await Post.get_or_none(id=4)
 ```
 
 `None` instead of raising `DoesNotExist`. The right shape when absence is an
-expected answer — a lookup by a user-supplied id, say.
+expected answer, a lookup by a user-supplied id, say.
 
 ```python
 tag, created = await Post.get_or_create(
@@ -113,7 +113,7 @@ used only on creation; the rest are the lookup.
 :::note[`get_or_create` is not atomic]
 It is a `SELECT` followed by an `INSERT`. Two concurrent callers can both find
 nothing and both insert. Put a unique constraint on the lookup fields so the
-loser gets an `IntegrityError` rather than a duplicate row, and handle it — or
+loser gets an `IntegrityError` rather than a duplicate row, and handle it, or
 use [`upsert`](/orm/bulk/#upsert), which is one statement.
 :::
 
@@ -147,7 +147,7 @@ More in [Mixins](/orm/mixins/#softdeletesmixin).
 
 ## `Meta`
 
-Tortoise's `Meta` options all apply — `table`, `ordering`, `unique_together`,
+Tortoise's `Meta` options all apply: `table`, `ordering`, `unique_together`,
 `indexes`, `abstract`, `table_description`.
 
 ```python
@@ -163,13 +163,13 @@ The base class sets `manager = RecordManager()`, which is what applies
 
 :::caution[A docstring is a schema change]
 A model's docstring becomes its `table_description`. Editing one produces a
-migration — which is why [`sillo-start` does not rewrite model
+migration, which is why [`sillo-start` does not rewrite model
 files](/start/personalisation/#model-files) when it renames a project.
 :::
 
 ## The rest
 
-- [Fields](/orm/fields/) — the field types Record adds
-- [Mass assignment](/orm/mass-assignment/) — `fillable` and `guarded`
-- [Mixins](/orm/mixins/) — the composable behaviours
-- [Bulk operations](/orm/bulk/) — `bulk_create`, `upsert`, `bulk_upsert`
+- [Fields](/orm/fields/): the field types Record adds
+- [Mass assignment](/orm/mass-assignment/): `fillable` and `guarded`
+- [Mixins](/orm/mixins/): the composable behaviours
+- [Bulk operations](/orm/bulk/): `bulk_create`, `upsert`, `bulk_upsert`

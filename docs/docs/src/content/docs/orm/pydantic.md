@@ -1,6 +1,6 @@
 ---
 title: Pydantic Schemas
-description: "Generating Pydantic models from Tortoise models — pydantic_model_from_tortoise, its include/exclude/optional options, the type mapping, and when a hand-written schema is better."
+description: "Generating Pydantic models from Tortoise models: pydantic_model_from_tortoise, its include/exclude/optional options, the type mapping, and when a hand-written schema is better."
 head:
   - tag: meta
     attrs:
@@ -47,7 +47,7 @@ list, so two unnamed schemas from the same model collide as `UserSchema`.
 
 ## What becomes optional
 
-A field is optional — typed `Optional[T]`, defaulting to `None` — when any of
+A field is optional (typed `Optional[T]`, defaulting to `None`) when any of
 these is true:
 
 1. it is named in `optional_fields`;
@@ -60,7 +60,7 @@ supply.
 
 The annotation and the default follow from that single answer, so they cannot
 disagree. Deciding them separately is how a field ends up typed `Optional` but
-still required — satisfiable only by passing `None` explicitly, which is
+still required, satisfiable only by passing `None` explicitly, which is
 nobody's intent.
 
 ## The type mapping
@@ -78,7 +78,7 @@ nobody's intent.
 
 Three of those are worth pausing on.
 
-**Dates and datetimes become `str`.** No parsing, no format validation — any
+**Dates and datetimes become `str`.** No parsing, no format validation, any
 string is accepted, and you get a string in `validated_data`. Parse it
 yourself, or declare the field in a hand-written schema as `datetime` and let
 Pydantic do it properly.
@@ -89,7 +89,7 @@ Declare those by hand as `condecimal(...)`.
 
 **Unknown fields fall back to `str`.** Including relations and every custom
 field type. The fallback means generation never fails, at the cost of a wrong
-type where the mapping has no entry — so read what you generated for any model
+type where the mapping has no entry, so read what you generated for any model
 with unusual fields.
 
 ## Relations are not handled
@@ -116,7 +116,7 @@ class PostOut(BaseModel):
 
 ## Generated versus hand-written
 
-Generate when the schema really is "the model, minus a few fields" — an admin
+Generate when the schema really is "the model, minus a few fields": an admin
 create form, an internal endpoint, a prototype. It stays in step with the model
 for free.
 
@@ -138,7 +138,7 @@ exclude=["password", "password_hash", "api_key"]
 A generated schema includes every field it can see. On a *response* model that
 is how a hashed password ends up in a JSON body.
 
-Prefer `include` for responses — a whitelist means a column added next year is
+Prefer `include` for responses. A whitelist means a column added next year is
 not published by default:
 
 ```python
@@ -150,7 +150,7 @@ Same reasoning as [`fillable` over `guarded`](/orm/mass-assignment/#which-to-rea
 
 ## See also
 
-- [Validation](/guides/validation/) — how request models are used.
+- [Validation](/guides/validation/): how request models are used.
 - [Response models](/guides/validation/response-models/).
-- [Exception handlers](/orm/exceptions/) — turning database errors into
+- [Exception handlers](/orm/exceptions/): turning database errors into
   responses.

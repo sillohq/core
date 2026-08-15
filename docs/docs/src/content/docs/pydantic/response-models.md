@@ -1,6 +1,6 @@
 ---
 title: Response Models
-description: "Declaring what an endpoint returns with response_model — enforcement rather than documentation, list responses, the serialisation options, and why a failure is a 500."
+description: "Declaring what an endpoint returns with response_model: enforcement rather than documentation, list responses, the serialisation options, and why a failure is a 500."
 head:
   - tag: meta
     attrs:
@@ -33,7 +33,7 @@ same object.
 ## Enforced, not documented
 
 This is the distinction worth internalising. A response model is not a comment
-about what the endpoint returns — it is a filter the value passes through.
+about what the endpoint returns. It is a filter the value passes through.
 
 ```python
 class UserOut(BaseModel):
@@ -50,7 +50,7 @@ async def get_user(request, response, id=Path(type=int)):
 ```
 
 The user row carries a hashed password. `UserOut` does not declare it, so it
-never reaches the client — and the same is true of every column added to that
+never reaches the client, and the same is true of every column added to that
 table next year.
 
 Compare with returning `user.to_dict()`, which publishes
@@ -92,8 +92,8 @@ async def list_posts(request, response, page=Query(1, type=int, ge=1)):
     return {"items": result.items, "total": result.total, "page": result.page}
 ```
 
-Which documents the envelope properly — `PagePostOut` appears in your schema
-list — rather than describing it as an untyped object.
+Which documents the envelope properly (`PagePostOut` appears in your schema
+list) rather than describing it as an untyped object.
 
 ## `from_attributes`
 
@@ -118,7 +118,7 @@ class PostOut(BaseModel):
 ```
 
 `PostOut` naming `author` means validation reads `post.author`. If it was never
-fetched, that raises — **inside the response serialiser**, where the traceback
+fetched, that raises, **inside the response serialiser**, where the traceback
 is least helpful and the client gets a 500.
 
 ```python
@@ -154,7 +154,7 @@ On a list endpoint this is also the difference between 2 queries and 21. See
 `response_model_by_alias` defaults to **`True`**, so a model with
 [aliases](/pydantic/fields/#aliases) emits the alias without further
 configuration. That is the opposite of Pydantic's own default, and it is the
-right one for an API — the alias is the wire name.
+right one for an API. The alias is the wire name.
 
 `exclude_none=True` is tempting for tidy output and usually wrong: it makes
 "absent" and "explicitly null" indistinguishable to the client, and it makes
@@ -182,7 +182,7 @@ response that does not match the contract it published. That is a server-side
 bug, and returning a 4xx would blame the caller and mislead clients that retry
 on 4xx.
 
-The offending value is deliberately **not** echoed to the client — it may
+The offending value is deliberately **not** echoed to the client. It may
 contain exactly the data the response model existed to filter out. It is logged
 with the method and path instead.
 

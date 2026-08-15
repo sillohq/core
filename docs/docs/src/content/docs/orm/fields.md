@@ -1,6 +1,6 @@
 ---
 title: Fields
-description: "The field types sillo.record adds on top of Tortoise — PasswordField, the timestamp fields, SlugField and ULIDField — and exactly what each does and does not do."
+description: "The field types sillo.record adds on top of Tortoise (PasswordField, the timestamp fields, SlugField and ULIDField) and exactly what each does and does not do."
 head:
   - tag: meta
     attrs:
@@ -12,7 +12,7 @@ head:
       content: PasswordField, CreatedAtField, UpdatedAtField, SoftDeleteField, SlugField and ULIDField.
 ---
 
-Every [Tortoise field type](https://tortoise.github.io/fields.html) works —
+Every [Tortoise field type](https://tortoise.github.io/fields.html) works:
 `IntField`, `CharField`, `TextField`, `JSONField`, `ForeignKeyField` and the
 rest. Record adds six.
 
@@ -56,8 +56,7 @@ if verify_password(submitted, account.password):
 ```
 
 The [admin panel](/orm/admin/) detects `PasswordField` and renders a password
-widget — reveal toggle, strength meter, confirmation — rather than a text
-input.
+widget (reveal toggle, strength meter, confirmation) rather than a text input.
 
 ### Two things to know
 
@@ -70,7 +69,7 @@ uv add "sillo-framework[hashing-bcrypt]"
 
 **Its "already hashed" check is bcrypt-specific.** A value starting `$2b$`,
 `$2a$` or `$2y$` is passed through untouched; anything else is hashed. So a
-hash produced by another scheme — argon2, scrypt — assigned to this field would
+hash produced by another scheme (argon2, scrypt) assigned to this field would
 be hashed *again*, as if it were a plaintext password, and would never verify.
 
 If your project standardises on argon2, do not mix it with this field. Hash
@@ -97,8 +96,8 @@ Declared on [the base model](/orm/models/), so you rarely write them yourself.
 | `SoftDeleteField` | `DatetimeField(null=True, default=None)` | `None` means active |
 
 They are thin: each sets one Tortoise default and adds nothing else. The value
-is that the intent is in the name — `deleted_at = SoftDeleteField()` says what
-a nullable datetime is for.
+is that the intent is in the name. `deleted_at = SoftDeleteField()` says what a
+nullable datetime is for.
 
 Use them directly when a model needs a second one:
 
@@ -153,7 +152,7 @@ framework reads it. There is no automatic slug generation.
 slug = SlugField(source_field="title")   # has no effect
 ```
 
-Generate the slug yourself — a [model event](/orm/events/) is the tidy place,
+Generate the slug yourself. A [model event](/orm/events/) is the tidy place,
 because it applies however the row was created:
 
 ```python
@@ -171,7 +170,7 @@ async def fill_slug(post):
         post.slug = slugify(post.title)
 ```
 
-Add `unique=True` and decide what happens on a collision — usually a numeric
+Add `unique=True` and decide what happens on a collision, usually a numeric
 suffix.
 :::
 
@@ -191,6 +190,6 @@ class UpperCharField(fields.CharField):
         return value
 ```
 
-For converting values without a custom column type,
-[casting](/orm/casting/) is usually the lighter answer — it is configured per
-model rather than declared as a type.
+For converting values without a custom column type, [casting](/orm/casting/) is
+usually the lighter answer. It is configured per model rather than declared as
+a type.

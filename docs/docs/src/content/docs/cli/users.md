@@ -1,6 +1,6 @@
 ---
 title: User Commands
-description: "The user:* command family — creating accounts and administrators, listing, inspecting, changing passwords, and activating or revoking access from the terminal."
+description: "The user:* command family: creating accounts and administrators, listing, inspecting, changing passwords, and activating or revoking access from the terminal."
 head:
   - tag: meta
     attrs:
@@ -37,8 +37,8 @@ Instead, in order:
 1. **`SILLO_PASSWORD`**, if it is set.
 2. **A hidden prompt**, asked twice and required to match.
 
-With neither — a pipe, a CI job, a non-interactive shell — the command fails
-and names the variable rather than prompting into a pipe and hanging:
+With neither (a pipe, a CI job, a non-interactive shell) the command fails and
+names the variable rather than prompting into a pipe and hanging:
 
 ```
 No terminal to read a password from. Set SILLO_PASSWORD instead.
@@ -63,7 +63,7 @@ sillo user:create someone@example.com someone --admin
 | `username` | argument | Username. Must not already be taken |
 | `--admin` | flag | Give the account admin access |
 
-Rejections come from the framework's own rules, and it names which one failed —
+Rejections come from the framework's own rules, and it names which one failed,
 which address is taken, or which part of the password policy was not met.
 
 ## `user:admin`
@@ -80,7 +80,7 @@ sillo user:admin you@example.com admin
 
 The same as `user:create --admin`, kept separate because it is what people look
 for by name when setting a project up. Omit the username and the mailbox part
-of the address is used — `you@example.com` becomes `you`.
+of the address is used. `you@example.com` becomes `you`.
 
 On success it tells you where to go:
 
@@ -148,10 +148,10 @@ sillo user:active someone@example.com          # activate
 sillo user:active someone@example.com --off    # deactivate
 ```
 
-A deactivated account keeps its rows and its history — it simply cannot sign
-in. That is almost always what "delete this user" should actually mean: the
-posts they wrote, the orders they placed and the audit trail they appear in all
-still have to resolve to something.
+A deactivated account keeps its rows and its history. It simply cannot sign in.
+That is almost always what "delete this user" should actually mean: the posts
+they wrote, the orders they placed and the audit trail they appear in all still
+have to resolve to something.
 
 ## `user:staff`
 
@@ -160,8 +160,8 @@ sillo user:staff someone@example.com            # grant
 sillo user:staff someone@example.com --revoke   # revoke
 ```
 
-Grants or revokes admin access — the `is_staff` flag the
-[admin panel](/orm/admin/) checks.
+Grants or revokes admin access, the `is_staff` flag the [admin
+panel](/orm/admin/) checks.
 
 ## Which model these act on
 
@@ -178,12 +178,12 @@ from sillo.users.console import user_commands
 console.add_many(user_commands(model=Account, context=database))
 ```
 
-`context` is opened around every command — the ORM has to be initialised before
+`context` is opened around every command. The ORM has to be initialised before
 these touch a model, and that is the application's job, not the command's. See
 [Building a console](/cli/standalone-consoles/).
 
 ## See also
 
 - [Users and user models](/guides/users/)
-- [Permissions](/guides/permissions/) — groups and per-object rules, which are
+- [Permissions](/guides/permissions/): groups and per-object rules, which are
   managed in the admin rather than here.

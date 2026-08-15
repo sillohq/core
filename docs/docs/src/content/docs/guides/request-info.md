@@ -272,23 +272,22 @@ Everything on a request comes from the client except the connection
 address, and even that is unreliable behind a proxy. A short trust
 ranking, most trustworthy first.
 
-**The transport peer address** — who actually connected. Correct, and
-behind a load balancer it is the balancer, not the user.
+**The transport peer address**: who actually connected. Correct, and behind a
+load balancer it is the balancer, not the user.
 
-**Path and method** — set by the client but validated by routing, so by
-the time your handler runs they match a route you declared.
+**Path and method**. Set by the client but validated by routing, so by the time
+your handler runs they match a route you declared.
 
-**Headers** — entirely client-controlled. `User-Agent`, `Referer`,
-`Origin`, and every `X-` header are whatever the caller typed. Useful for
-analytics, never for authorization.
+**Headers**: entirely client-controlled. `User-Agent`, `Referer`, `Origin`, and
+every `X-` header are whatever the caller typed. Useful for analytics, never
+for authorization.
 
-**Forwarded headers** — `X-Forwarded-For`, `X-Real-IP`,
-`X-Forwarded-Proto`. Trustworthy only if a proxy you control sets them
-and strips any the client sent. Otherwise a client can claim any address.
-See [Network helpers](/guides/helpers/network/) for the trusted-proxy
-handling this needs.
+**Forwarded headers**: `X-Forwarded-For`, `X-Real-IP`, `X-Forwarded-Proto`.
+Trustworthy only if a proxy you control sets them and strips any the client
+sent. Otherwise a client can claim any address. See [Network
+helpers](/guides/helpers/network/) for the trusted-proxy handling this needs.
 
-**The body** — client-controlled, and the reason
+**The body**, client-controlled, and the reason
 [validation](/guides/validation/) exists.
 
 ##  Identifying a client
@@ -329,9 +328,9 @@ async def request_id_middleware(request, response, call_next):
 Returning it matters as much as logging it: a user reporting a failure
 can quote the id, and you can find the exact request.
 
-Accepting a client-supplied id is convenient for tracing across services
-and means the value is attacker-controlled — bound its length and strip
-anything that is not alphanumeric before it reaches a log line.
+Accepting a client-supplied id is convenient for tracing across services and
+means the value is attacker-controlled, bound its length and strip anything
+that is not alphanumeric before it reaches a log line.
 
 
 ##  Proxies change everything
@@ -346,10 +345,10 @@ a `X-Forwarded-*` header carrying the original value, and each of those
 headers is forgeable unless the proxy overwrites it.
 
 Two rules make this safe. Configure an explicit list of trusted proxy
-addresses, and only read forwarded headers when the immediate peer is one
-of them. And ensure the outermost proxy **replaces** rather than appends
-to headers a client may have set — otherwise a client can prepend a fake
-entry to `X-Forwarded-For`.
+addresses, and only read forwarded headers when the immediate peer is one of
+them. And ensure the outermost proxy **replaces** rather than appends to
+headers a client may have set. Otherwise a client can prepend a fake entry to
+`X-Forwarded-For`.
 
 Getting this wrong has concrete consequences: rate limits keyed on a
 spoofable IP are trivially bypassed, and audit logs record whatever the
@@ -361,11 +360,10 @@ attacker chose.
 consume the request stream. Reading one and then another may give you
 nothing, because the bytes are gone.
 
-Where middleware needs the body — logging, signature verification — read
-it once, cache it on `request.state`, and have downstream code use the
-cached copy. And bound it: a body read into memory is memory a client
-chose the size of, which is why the size limit belongs at the proxy as
-well as in your code.
+Where middleware needs the body (logging, signature verification) read it once,
+cache it on `request.state`, and have downstream code use the cached copy. And
+bound it: a body read into memory is memory a client chose the size of, which
+is why the size limit belongs at the proxy as well as in your code.
 
 
 ##  Practical checks
@@ -386,20 +384,21 @@ handler with an empty payload.
 
 ##  Related
 
-- [Headers](/guides/headers/) — reading and setting them safely
-- [Network helpers](/guides/helpers/network/) — client IP resolution and trusted proxies
-- [Middleware](/guides/middleware/) — where request correlation belongs
-- [Request Lifecycle](/guides/request-lifecycle/) — when each of these values becomes available
-- [Security](/guides/security/) — what not to trust from a request
+- [Headers](/guides/headers/): reading and setting them safely
+- [Network helpers](/guides/helpers/network/): client IP resolution and trusted
+  proxies
+- [Middleware](/guides/middleware/): where request correlation belongs
+- [Request Lifecycle](/guides/request-lifecycle/): when each of these values
+  becomes available
+- [Security](/guides/security/): what not to trust from a request
 
 
 ##  Content negotiation inputs
 
-`Accept`, `Accept-Language`, and `Accept-Encoding` are the headers a
-client uses to state preferences, each a weighted list rather than a
-single value. Parsing them naively — taking the first entry, or
-substring-matching — produces wrong answers for any client that sends
-real quality values.
+`Accept`, `Accept-Language`, and `Accept-Encoding` are the headers a client
+uses to state preferences, each a weighted list rather than a single value.
+Parsing them naively (taking the first entry, or substring-matching) produces
+wrong answers for any client that sends real quality values.
 
 Anything whose response varies by one of these must set `Vary` naming it,
 or a shared cache will serve one representation to everyone. See
@@ -423,9 +422,9 @@ async def echo(request, response):
     })
 ```
 
-Remove it before shipping, or protect it — it reflects headers including
-`Authorization` and `Cookie`, which is a credential-disclosure endpoint
-if it survives into production.
+Remove it before shipping, or protect it. It reflects headers including
+`Authorization` and `Cookie`, which is a credential-disclosure endpoint if it
+survives into production.
 
 
 ##  Related reading in the standard specs

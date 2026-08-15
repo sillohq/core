@@ -1,6 +1,6 @@
 ---
 title: Exception Handlers
-description: "Turning database errors into HTTP responses — the four bundled handlers, their status codes, registering them, and why the default detail should not be shipped as-is."
+description: "Turning database errors into HTTP responses: the four bundled handlers, their status codes, registering them, and why the default detail should not be shipped as-is."
 head:
   - tag: meta
     attrs:
@@ -39,11 +39,11 @@ Raised by `.get()` when nothing matches.
 post = await Post.get(id=post_id)     # 404 if there is no such post
 ```
 
-Which makes the handler-level shape pleasantly short — no `if post is None`
+Which makes the handler-level shape pleasantly short, no `if post is None`
 branch in every endpoint.
 
 The alternative is [`get_or_none()`](/orm/models/#fetch-shortcuts) and an
-explicit branch. Use that when absence is *not* a 404 — when you want to return
+explicit branch. Use that when absence is *not* a 404. When you want to return
 an empty object, or a different message.
 
 ### `IntegrityError` → 409
@@ -53,13 +53,12 @@ violations.
 
 409 is right for the duplicate case: the request was well-formed, and conflicts
 with the current state. It is less right for a null or FK violation, which is
-usually a bug rather than a conflict — but the exception type does not
+usually a bug rather than a conflict, but the exception type does not
 distinguish them, and 409 is the least-wrong single answer.
 
 ### `ValidationError` → 422
 
-Tortoise's own field validation — a value too long for its column, a bad
-choice.
+Tortoise's own field validation, a value too long for its column, a bad choice.
 
 Most validation should never reach here. [Request
 validation](/guides/validation/) runs before the handler and produces
@@ -70,9 +69,9 @@ field-level errors; this is the backstop for what gets past it.
 Connection refused, timeout, network partition.
 
 503 tells a load balancer and a monitoring system that the instance is
-unhealthy rather than that the request was bad — which is what you want when
-the database is down: shed load, do not retry the same broken request as if it
-were the client's fault.
+unhealthy rather than that the request was bad, which is what you want when the
+database is down: shed load, do not retry the same broken request as if it were
+the client's fault.
 
 Note this one **does not** include the exception text. A connection error can
 name hosts, ports and users, and none of that belongs in a public response
@@ -86,8 +85,8 @@ body.
 
 That is the driver's message, and it names your table and column. Sometimes
 useful in development, and on a public API it hands out schema details for
-free — and for a login or sign-up endpoint, a unique-violation message
-confirms whether an address is registered.
+free, and for a login or sign-up endpoint, a unique-violation message confirms
+whether an address is registered.
 
 Override them in production:
 
@@ -121,9 +120,9 @@ app.add_exception_handler(DoesNotExist, handle_does_not_exist)
 app.add_exception_handler(OperationalError, handle_operational_error)
 ```
 
-Each handler is a plain async function taking `(request, response, exc)` —
-the same signature as any other [exception handler](/guides/error-handling/) —
-so they compose with your own and can be wrapped.
+Each handler is a plain async function taking `(request, response, exc)`, the
+same signature as any other [exception handler](/guides/error-handling/), so
+they compose with your own and can be wrapped.
 
 ## Ordering
 

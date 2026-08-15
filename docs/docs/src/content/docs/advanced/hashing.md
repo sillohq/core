@@ -11,7 +11,10 @@ description: "Schemes (bcrypt/argon2/scrypt/pbkdf2), verification, password util
 
 ## Overview
 
-Sillo's hashing subsystem provides password hashing, verification, and strength validation through a pluggable scheme registry. It supports five algorithms — bcrypt, argon2, scrypt, pbkdf2_sha256, and pbkdf2_sha512 — with bcrypt as the preferred default and pbkdf2_sha256 as the always-available fallback.
+Sillo's hashing subsystem provides password hashing, verification, and strength
+validation through a pluggable scheme registry. It supports five algorithms
+(bcrypt, argon2, scrypt, pbkdf2_sha256, and pbkdf2_sha512) with bcrypt as the
+preferred default and pbkdf2_sha256 as the always-available fallback.
 
 The design principle: **auto-detect on verify, explicit on hash**. When hashing, the caller can specify a scheme or use the default. When verifying, the algorithm is detected from the hash prefix automatically, so hashes from any supported algorithm can be verified without knowing which one was used.
 
@@ -84,9 +87,9 @@ classDiagram
 
 ---
 
-## SchemeConfig — Scheme Metadata
+## SchemeConfig: Scheme Metadata
 
-**File:** `core/sillo/hashing/config.py` (lines 6–13)
+**File:** `core/sillo/hashing/config.py` (lines 6 to 13)
 
 ```python
 @dataclass
@@ -106,9 +109,9 @@ class SchemeConfig:
 
 ---
 
-## SCHEMES — The Scheme Registry
+## SCHEMES: The Scheme Registry
 
-**File:** `core/sillo/hashing/config.py` (lines 16–39)
+**File:** `core/sillo/hashing/config.py` (lines 16 to 39)
 
 ```python
 SCHEMES: dict[str, SchemeConfig] = {
@@ -142,7 +145,7 @@ SCHEMES: dict[str, SchemeConfig] = {
 
 ## Scheme Availability
 
-**File:** `core/sillo/hashing/config.py` (lines 42–73)
+**File:** `core/sillo/hashing/config.py` (lines 42 to 73)
 
 ### `get_default_scheme()` → `str`
 
@@ -249,15 +252,19 @@ def hash_password(password, scheme=None, salt=None, **kwargs) -> str:
 
 **Two code paths:**
 
-1. **bcrypt** — uses the `bcrypt` library directly with `gensalt(rounds=12)` and `hashpw`. This bypasses passlib for performance and to avoid the passlib bcrypt backend deprecation warning.
+1. **bcrypt**: uses the `bcrypt` library directly with `gensalt(rounds=12)` and
+   `hashpw`. This bypasses passlib for performance and to avoid the passlib
+   bcrypt backend deprecation warning.
 
-2. **Other schemes** — delegates to passlib's `CryptContext.hash()`, which handles argon2, scrypt, and pbkdf2.
+2. **Other schemes**: delegates to passlib's `CryptContext.hash()`, which
+   handles argon2, scrypt, and pbkdf2.
 
 **Parameters:**
-- `password` — plaintext password to hash
-- `scheme` — algorithm to use (defaults to `_default_scheme`, which is bcrypt if available)
-- `salt` — optional salt for bcrypt only (advanced use; normally auto-generated)
-- `**kwargs` — passed to passlib for non-bcrypt schemes
+- `password`: plaintext password to hash
+- `scheme`: algorithm to use (defaults to `_default_scheme`, which is bcrypt if
+  available)
+- `salt`: optional salt for bcrypt only (advanced use; normally auto-generated)
+- `**kwargs`: passed to passlib for non-bcrypt schemes
 
 ### `set_default_scheme(scheme)` → `None`
 
@@ -300,8 +307,9 @@ def verify_password(password, hashed) -> bool:
 ```
 
 **Two code paths** (mirrors `hash_password`):
-1. **bcrypt hashes** — detected by prefix (`$2a$`, `$2b$`, `$2x$`, `$2y$`), verified directly with `bcrypt.checkpw`
-2. **Other hashes** — verified via passlib's `CryptContext.verify()`
+1. **bcrypt hashes**: detected by prefix (`$2a$`, `$2b$`, `$2x$`, `$2y$`),
+   verified directly with `bcrypt.checkpw`
+2. **Other hashes**: verified via passlib's `CryptContext.verify()`
 
 Returns `False` on any error (malformed hash, unsupported algorithm, wrong password).
 
@@ -343,7 +351,7 @@ def needs_rehash(hashed, rounds=12) -> bool:
 
 For bcrypt hashes, explicitly checks if the round count is below the specified minimum. For other schemes, delegates to `needs_update`.
 
-### Usage Pattern — Rehash on Login
+### Usage Pattern: Rehash on Login
 
 ```python
 async def login(request, email, password):
@@ -439,7 +447,7 @@ The `user` parameter is unused but kept for API compatibility (Django's `validat
 
 ### `password_strength(password)` → `dict`
 
-Analyzes password strength on a 0–6 scale:
+Analyzes password strength on a 0 to 6 scale:
 
 ```python
 def password_strength(password) -> dict:
@@ -462,9 +470,9 @@ def password_strength(password) -> dict:
 
 | Score | Strength |
 |-------|----------|
-| 0–2 | `"weak"` |
-| 3–4 | `"medium"` |
-| 5–6 | `"strong"` |
+| 0-2 | `"weak"` |
+| 3-4 | `"medium"` |
+| 5-6 | `"strong"` |
 
 ### `constant_time_compare(val1, val2)` → `bool`
 
@@ -481,8 +489,8 @@ Prevents timing attacks by ensuring comparison time is independent of where stri
 
 | Function | Purpose |
 |----------|---------|
-| `md5(value)` | MD5 hex digest (NOT for passwords — checksums only) |
-| `sha256(value)` | SHA-256 hex digest (NOT for passwords — checksums only) |
+| `md5(value)` | MD5 hex digest (NOT for passwords: checksums only) |
+| `sha256(value)` | SHA-256 hex digest (NOT for passwords: checksums only) |
 
 Both accept `str` or `bytes` input.
 
@@ -539,36 +547,36 @@ The `md5` and `sha256` functions are fast hash functions designed for checksums,
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `SchemeConfig` | `core/sillo/hashing/config.py` | 6–13 |
-| `SCHEMES` | `core/sillo/hashing/config.py` | 16–39 |
-| `get_default_scheme` | `core/sillo/hashing/config.py` | 42–52 |
-| `is_scheme_available` | `core/sillo/hashing/config.py` | 55–68 |
-| `get_available_schemes` | `core/sillo/hashing/config.py` | 71–73 |
-| `hash_password` | `core/sillo/hashing/core.py` | 33–109 |
-| `verify_password` | `core/sillo/hashing/core.py` | 112–163 |
-| `needs_update` | `core/sillo/hashing/core.py` | 166–187 |
-| `set_default_scheme` | `core/sillo/hashing/core.py` | 190–210 |
-| `needs_rehash` | `core/sillo/hashing/core.py` | 226–256 |
+| `SchemeConfig` | `core/sillo/hashing/config.py` | 6-13 |
+| `SCHEMES` | `core/sillo/hashing/config.py` | 16-39 |
+| `get_default_scheme` | `core/sillo/hashing/config.py` | 42-52 |
+| `is_scheme_available` | `core/sillo/hashing/config.py` | 55-68 |
+| `get_available_schemes` | `core/sillo/hashing/config.py` | 71-73 |
+| `hash_password` | `core/sillo/hashing/core.py` | 33-109 |
+| `verify_password` | `core/sillo/hashing/core.py` | 112-163 |
+| `needs_update` | `core/sillo/hashing/core.py` | 166-187 |
+| `set_default_scheme` | `core/sillo/hashing/core.py` | 190-210 |
+| `needs_rehash` | `core/sillo/hashing/core.py` | 226-256 |
 | `HashingError` | `core/sillo/hashing/exceptions.py` | 4 |
 | `InvalidSchemeError` | `core/sillo/hashing/exceptions.py` | 8 |
 | `VerificationError` | `core/sillo/hashing/exceptions.py` | 12 |
 | `UNUSABLE_PASSWORD_PREFIX` | `core/sillo/hashing/utils.py` | 9 |
-| `make_unusable_password` | `core/sillo/hashing/utils.py` | 13–19 |
-| `is_password_usable` | `core/sillo/hashing/utils.py` | 22–31 |
-| `validate_password` | `core/sillo/hashing/utils.py` | 34–67 |
-| `password_strength` | `core/sillo/hashing/utils.py` | 70–115 |
-| `constant_time_compare` | `core/sillo/hashing/utils.py` | 118–130 |
-| `md5` | `core/sillo/hashing/utils.py` | 133–147 |
-| `sha256` | `core/sillo/hashing/utils.py` | 150–164 |
-| `make_password` | `core/sillo/users/protocol.py` | 33–63 |
-| `check_password` | `core/sillo/users/protocol.py` | 66–104 |
-| Backward-compat helpers | `core/sillo/helpers/hashing.py` | 1–184 |
+| `make_unusable_password` | `core/sillo/hashing/utils.py` | 13-19 |
+| `is_password_usable` | `core/sillo/hashing/utils.py` | 22-31 |
+| `validate_password` | `core/sillo/hashing/utils.py` | 34-67 |
+| `password_strength` | `core/sillo/hashing/utils.py` | 70-115 |
+| `constant_time_compare` | `core/sillo/hashing/utils.py` | 118-130 |
+| `md5` | `core/sillo/hashing/utils.py` | 133-147 |
+| `sha256` | `core/sillo/hashing/utils.py` | 150-164 |
+| `make_password` | `core/sillo/users/protocol.py` | 33-63 |
+| `check_password` | `core/sillo/users/protocol.py` | 66-104 |
+| Backward-compat helpers | `core/sillo/helpers/hashing.py` | 1-184 |
 
 ---
 
 ## Implementation Deep Dive
 
-### hash_password — Complete Code Walkthrough
+### hash_password: Complete Code Walkthrough
 
 ```python
 def hash_password(password: str, scheme: str | None = None, salt: str | None = None, **kwargs) -> str:
@@ -606,7 +614,7 @@ def hash_password(password: str, scheme: str | None = None, salt: str | None = N
         raise HashingError(f"Failed to hash password: {e}") from e
 ```
 
-### verify_password — Complete Code Walkthrough
+### verify_password: Complete Code Walkthrough
 
 ```python
 def verify_password(password: str, hashed: str) -> bool:
@@ -660,22 +668,25 @@ def _get_context() -> CryptContext:
     return _context
 ```
 
-- `schemes=available_schemes` — only configured with installed schemes
-- `deprecated="auto"` — passlib marks hashes using deprecated schemes for rehashing
-- Singleton pattern — created once, reused for all operations
+- `schemes=available_schemes`: only configured with installed schemes
+- `deprecated="auto"`: passlib marks hashes using deprecated schemes for
+  rehashing
+- Singleton pattern: created once, reused for all operations
 
 ### bcrypt Direct vs passlib
 
 The `hash_password` function uses bcrypt directly instead of passlib for bcrypt hashing. Reasons:
 
-1. **passlib's bcrypt backend is unmaintained** — it raises deprecation warnings with newer bcrypt versions
-2. **Performance** — direct bcrypt calls avoid passlib's abstraction overhead
-3. **Control** — direct access to `gensalt(rounds=12)` for explicit round control
-4. **Compatibility** — avoids version mismatches between passlib and bcrypt
+1. **passlib's bcrypt backend is unmaintained.** It raises deprecation warnings
+   with newer bcrypt versions
+2. **Performance.** Direct bcrypt calls avoid passlib's abstraction overhead
+3. **Control**: direct access to `gensalt(rounds=12)` for explicit round
+   control
+4. **Compatibility**: avoids version mismatches between passlib and bcrypt
 
 For non-bcrypt schemes, passlib is still used because it provides unified argon2 and scrypt support.
 
-### needs_rehash — Complete Logic
+### needs_rehash: Complete Logic
 
 ```python
 def needs_rehash(hashed: str, rounds: int = 12) -> bool:
@@ -704,7 +715,7 @@ def needs_rehash(hashed: str, rounds: int = 12) -> bool:
 - bcrypt rounds below threshold
 - Malformed hash
 
-### validate_password — Complete Rules
+### validate_password: Complete Rules
 
 ```python
 def validate_password(password: str, user: object | None = None, min_length: int = 8) -> list[str]:
@@ -733,7 +744,7 @@ def validate_password(password: str, user: object | None = None, min_length: int
     return errors
 ```
 
-### password_strength — Scoring Breakdown
+### password_strength: Scoring Breakdown
 
 | Condition | Points | Cumulative |
 |-----------|--------|------------|
@@ -746,9 +757,9 @@ def validate_password(password: str, user: object | None = None, min_length: int
 
 | Total Score | Strength |
 |-------------|----------|
-| 0–2 | `"weak"` |
-| 3–4 | `"medium"` |
-| 5–6 | `"strong"` |
+| 0-2 | `"weak"` |
+| 3-4 | `"medium"` |
+| 5-6 | `"strong"` |
 
 **Feedback conditions:**
 - Length < 8 → `"Too short"`

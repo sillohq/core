@@ -1,6 +1,6 @@
 ---
 title: Mixins
-description: "The composable model behaviours in sillo.record.mixins — soft deletes, timestamps, ULIDs, serialisation, validation before save, and cascading deletes."
+description: "The composable model behaviours in sillo.record.mixins. Soft deletes, timestamps, ULIDs, serialisation, validation before save, and cascading deletes."
 head:
   - tag: meta
     attrs:
@@ -19,10 +19,10 @@ from sillo.record.mixins import (
 )
 ```
 
-Six behaviours you compose onto a model. Two of them —
-soft deletes and serialisation — are already on
-[the base model](/orm/models/); the mixins exist so a model inheriting from
-Tortoise's `Model` directly can have them, and so the behaviour has a name.
+Six behaviours you compose onto a model. Two of them (soft deletes and
+serialisation) are already on [the base model](/orm/models/); the mixins exist
+so a model inheriting from Tortoise's `Model` directly can have them, and so
+the behaviour has a name.
 
 ```python
 class Invoice(Model, ValidatesBeforeSaveMixin, CascadesDeletesMixin):
@@ -67,7 +67,7 @@ everything.
 :::
 
 A soft delete does not cascade, and does not release a unique constraint. A
-soft-deleted account still occupies its email address — usually correct, and
+soft-deleted account still occupies its email address, usually correct, and
 worth knowing before someone tries to re-register.
 
 ## `TimestampsMixin`
@@ -77,7 +77,7 @@ await post.touch()          # updated_at = now, saved
 post.set_created_at()       # created_at = now, not saved
 ```
 
-`touch()` is for recording activity that changed nothing else — a "last seen"
+`touch()` is for recording activity that changed nothing else, a "last seen"
 without another column.
 
 The fields themselves are on [the base model](/orm/models/#what-you-get-for-free);
@@ -130,8 +130,8 @@ Depth exists because a serialiser that follows relations without a limit turns
 one row into the whole graph, and a cycle turns it into a hang. Cap it at what
 the response actually needs.
 
-For anything leaving the process, prefer a
-[Pydantic response model](/orm/pydantic/) — see the caution under
+For anything leaving the process, prefer a [Pydantic response
+model](/orm/pydantic/). See the caution under
 [Serialisation](/orm/models/#serialisation).
 
 ## `ValidatesBeforeSaveMixin`
@@ -160,7 +160,7 @@ async def validate(self):
         raise ValueError(f"invoice number {self.number} is already used")
 ```
 
-Although a unique constraint is the reliable version of that — the query above
+Although a unique constraint is the reliable version of that. The query above
 still races. Use both: the constraint for correctness, the check for a decent
 error message.
 
@@ -178,7 +178,7 @@ listed, then the row itself.
 
 :::note[Prefer the database's own cascade]
 `on_delete=fields.CASCADE` on the foreign key is enforced by the database, in
-one statement, for every writer — including a migration, a console session, and
+one statement, for every writer: including a migration, a console session, and
 another service.
 
 This mixin is application-level: it only applies to a delete that goes through
@@ -187,7 +187,7 @@ cannot express, such as deleting rows in a second database or firing
 [events](/orm/events/) per child.
 :::
 
-Wrap it in a [transaction](/orm/transactions/) — a cascade that fails halfway
+Wrap it in a [transaction](/orm/transactions/). A cascade that fails halfway
 has already deleted the children.
 
 ```python

@@ -730,9 +730,9 @@ How should breaking changes be handled during alpha?
 
 ### Chosen Solution
 
-During alpha, breaking changes are taken **cleanly** -- no deprecation
-warnings, no backward-compatible shims.  The changelog documents every
-breaking change with a migration guide.
+During alpha, breaking changes are taken **cleanly**, no deprecation warnings,
+no backward-compatible shims. The changelog documents every breaking change
+with a migration guide.
 
 Example from sillo-inertia 0.0.1a4:
 - Old: `inertia.render(request, response, "Dashboard", {...})`

@@ -429,11 +429,10 @@ schema from the database model. It produces a document that leaks your
 storage layout, includes fields clients must never set, and breaks every
 time you refactor a table.
 
-Model the request as its own thing: only the fields a client may provide,
-named the way an integrator would expect, with constraints reflecting
-business rules rather than column types. A `VARCHAR(255)` becomes
-`max_length=255` only if 255 is genuinely the rule — otherwise document
-the real limit.
+Model the request as its own thing: only the fields a client may provide, named
+the way an integrator would expect, with constraints reflecting business rules
+rather than column types. A `VARCHAR(255)` becomes `max_length=255` only if 255
+is genuinely the rule, otherwise document the real limit.
 
 The published schema then describes what you accept, and refactoring
 storage is invisible to clients, which is the whole point of having a
@@ -444,9 +443,9 @@ contract.
 Every request schema makes an implicit promise about extra keys, and
 clients depend on it whether or not you documented it.
 
-Ignoring unknown fields is forgiving and lets a client send a superset
-without breaking. Rejecting them catches typos — a client sending
-`emial` gets a clear error instead of silently failing to set an email.
+Ignoring unknown fields is forgiving and lets a client send a superset without
+breaking. Rejecting them catches typos. A client sending `emial` gets a clear
+error instead of silently failing to set an email.
 
 Both are defensible. What is not defensible is leaving it undecided,
 because the behaviour differs per model and integrators discover it by
@@ -463,26 +462,26 @@ transition period where both names are accepted.
 A schema with no examples is a schema people get wrong on the first try.
 A schema with unrealistic examples is worse, because they copy them.
 
-Good request examples share three properties. They validate — an example
-that fails your own model is a trap, and one worth checking in CI. They
-are complete enough to actually work, including required fields a reader
-might not notice. And they show the common case, not the exotic one; the
-example for a payment endpoint should be a simple card payment, not the
-three-way split with a partial refund.
+Good request examples share three properties. They validate. An example that
+fails your own model is a trap, and one worth checking in CI. They are complete
+enough to actually work, including required fields a reader might not notice.
+And they show the common case, not the exotic one; the example for a payment
+endpoint should be a simple card payment, not the three-way split with a
+partial refund.
 
-Where a body has variants — a discriminated union, an optional block that
-changes meaning — give one whole-model example per variant. Field-level
-examples cannot express "when `type` is `card`, `card_token` is
-required", and that relationship is exactly what integrators get wrong.
+Where a body has variants (a discriminated union, an optional block that
+changes meaning) give one whole-model example per variant. Field-level examples
+cannot express "when `type` is `card`, `card_token` is required", and that
+relationship is exactly what integrators get wrong.
 
 ##  Content types beyond JSON
 
-Most APIs accept JSON and nothing else, and the schema should say so
-rather than leaving it implied. When you do accept more than one —
-JSON and form-encoded, JSON and multipart for uploads — document each
-content type separately, because their schemas genuinely differ. A file
-cannot be expressed in JSON, and a nested object cannot be expressed in
-a form without a convention.
+Most APIs accept JSON and nothing else, and the schema should say so rather
+than leaving it implied. When you do accept more than one (JSON and
+form-encoded, JSON and multipart for uploads) document each content type
+separately, because their schemas genuinely differ. A file cannot be expressed
+in JSON, and a nested object cannot be expressed in a form without a
+convention.
 
 If you accept only one, being explicit still helps: a client sending
 `text/plain` gets a clear 415 and a schema that told them why, rather
@@ -491,11 +490,10 @@ than a parse error they have to interpret.
 
 ##  Reusing schemas across endpoints
 
-A model referenced by several routes is emitted once into
-`components.schemas` and referenced by `$ref`, which keeps the document
-small and — more importantly — tells clients that the two endpoints
-genuinely share a type. Generated clients then produce one class instead
-of two identical ones with different names.
+A model referenced by several routes is emitted once into `components.schemas`
+and referenced by `$ref`, which keeps the document small and (more importantly)
+tells clients that the two endpoints genuinely share a type. Generated clients
+then produce one class instead of two identical ones with different names.
 
 That is a reason to define shared shapes deliberately rather than
 declaring a fresh model per route. An `Address` used by three endpoints
@@ -521,7 +519,7 @@ The requiredness also differs. A `POST` body requires `name`; the
 response always has `name` but a `PATCH` body must not require it. One
 model cannot express three different requiredness rules.
 
-Two or three small models per resource — `OrderCreate`, `OrderUpdate`,
-`OrderOut` — read better in the generated document than one model with
-every field optional, and they let a generated client tell the developer
-which fields are actually needed.
+Two or three small models per resource (`OrderCreate`, `OrderUpdate`,
+`OrderOut`) read better in the generated document than one model with every
+field optional, and they let a generated client tell the developer which fields
+are actually needed.

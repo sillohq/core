@@ -16,17 +16,17 @@ import { Aside } from '@astrojs/starlight/components';
 
 #  WebSocket Events
 
-A WebSocket endpoint receives an undifferentiated stream of messages. An
-HTTP application gets routing for free — method plus path picks the
-handler. Over a socket you have to build that yourself, and the shape you
-choose early is hard to change later because clients depend on it.
+A WebSocket endpoint receives an undifferentiated stream of messages. An HTTP
+application gets routing for free. Method plus path picks the handler. Over a
+socket you have to build that yourself, and the shape you choose early is hard
+to change later because clients depend on it.
 
 This page covers two directions:
 
-**Inbound** — a client sends `{"type": "message", ...}` and something has
-to decide which function handles it.
+**Inbound**. A client sends `{"type": "message", ...}` and something has to
+decide which function handles it.
 
-**Outbound** — an order is placed by an HTTP request, a job finishes in a
+**Outbound**. An order is placed by an HTTP request, a job finishes in a
 worker, a row changes in the database, and connected clients need to know.
 
 ##  A message envelope
@@ -37,11 +37,11 @@ Decide on an envelope before writing any handlers. The one that works:
 {"type": "chat.message", "id": "c7f1", "data": {"text": "hello"}}
 ```
 
-`type` selects the handler. `data` carries the payload, kept in its own
-object so the envelope can gain fields without colliding with application
-keys. `id` is a client-generated correlation id, echoed in any reply, so
-a client that sends three requests can match three responses — there is
-no request/response pairing in the protocol itself.
+`type` selects the handler. `data` carries the payload, kept in its own object
+so the envelope can gain fields without colliding with application keys. `id`
+is a client-generated correlation id, echoed in any reply, so a client that
+sends three requests can match three responses. There is no request/response
+pairing in the protocol itself.
 
 Use dotted namespaces (`chat.message`, `chat.typing`, `presence.ping`).
 They group naturally in logs, and they give you an obvious prefix to
@@ -131,10 +131,9 @@ class ChatConsumer(Dispatcher):
         )
 ```
 
-Note `handlers = {}` redeclared on the subclass. Without it, every
-subclass shares the base class's dictionary and registers into the same
-table — one consumer's message types silently become available on
-another's endpoint.
+Note `handlers = {}` redeclared on the subclass. Without it, every subclass
+shares the base class's dictionary and registers into the same table, one
+consumer's message types silently become available on another's endpoint.
 
 The catch-all `except Exception` is load-bearing. Without it, one bad
 message propagates out of `on_receive` and terminates the connection, as
@@ -186,9 +185,8 @@ async def handle_message(self, websocket, envelope):
 
 <Aside type="caution" title="Every message is untrusted input, and there is no framework validation">
 
-An HTTP route with `request_model=` gets a 422 for free. A WebSocket
-message gets nothing — whatever the client sends arrives in
-`on_receive` unexamined.
+An HTTP route with `request_model=` gets a 422 for free. A WebSocket message
+gets nothing. Whatever the client sends arrives in `on_receive` unexamined.
 
 Three things follow. Validate every payload before use, exactly as you
 would an HTTP body. Enforce a size limit yourself, because a client can
@@ -212,9 +210,9 @@ async def on_receive(self, websocket, data):
 
 ##  Rate limiting per connection
 
-A socket that is open is a socket that can be flooded. The HTTP rate
-limiter does not apply — it works per request, and a WebSocket is one
-request that never ends.
+A socket that is open is a socket that can be flooded. The HTTP rate limiter
+does not apply. It works per request, and a WebSocket is one request that never
+ends.
 
 ```python title="a token bucket per connection"
 import time
@@ -249,8 +247,8 @@ class RateLimited(Dispatcher):
 
 State lives on the instance, and instances are per-connection, so this is
 naturally scoped correctly. Replying rather than disconnecting is usually
-kinder — a well-behaved client backs off, and a misbehaving one can be
-closed after N violations.
+kinder. A well-behaved client backs off, and a misbehaving one can be closed
+after N violations.
 
 ##  Outbound: bridging domain events
 
@@ -306,11 +304,11 @@ Now the endpoint emits once and knows nothing about sockets or email:
 await events.emit("order.shipped", {"id": order.id, "email": order.email})
 ```
 
-Two properties of `emit` worth knowing. It is fire-and-forget — it
-schedules the listeners and returns a dict immediately rather than
-awaiting them, so a slow listener does not delay the HTTP response, and a
-failing listener does not fail the request. And listeners run in priority
-order, `HIGHEST` through `LOWEST`, defaulting to `NORMAL`:
+Two properties of `emit` worth knowing. It is fire-and-forget. It schedules the
+listeners and returns a dict immediately rather than awaiting them, so a slow
+listener does not delay the HTTP response, and a failing listener does not fail
+the request. And listeners run in priority order, `HIGHEST` through `LOWEST`,
+defaulting to `NORMAL`:
 
 ```python
 @events.on("order.shipped", priority=EventPriority.HIGHEST)
@@ -323,11 +321,10 @@ continuing. The full emitter API is covered in [Events](/guides/events/).
 
 ##  Naming inbound and outbound types consistently
 
-Use the same vocabulary in both directions. If clients send
-`chat.message`, the broadcast that results should also be
-`chat.message` — the client's rendering code then handles its own
-messages and other people's identically, which is what you want, since
-`group_send` includes the sender anyway.
+Use the same vocabulary in both directions. If clients send `chat.message`, the
+broadcast that results should also be `chat.message`: the client's rendering
+code then handles its own messages and other people's identically, which is
+what you want, since `group_send` includes the sender anyway.
 
 Keep server-only types clearly distinguishable: `presence.join`,
 `order.shipped`, `system.reconnect`. A client that receives an unknown
@@ -340,11 +337,10 @@ Connections drop. Phones change networks, laptops sleep, load balancers
 recycle, and deployments restart every worker. Any design that assumes a
 connection lasts is a design that loses messages.
 
-Nothing in `ChannelBox` addresses this. A broadcast issued while a client
-is reconnecting is gone — it was written to a socket that no longer
-exists, and `_send` swallowed the error. Message history is per-process
-and, with the default manager, unbounded and prone to being wiped
-wholesale.
+Nothing in `ChannelBox` addresses this. A broadcast issued while a client is
+reconnecting is gone. It was written to a socket that no longer exists, and
+`_send` swallowed the error. Message history is per-process and, with the
+default manager, unbounded and prone to being wiped wholesale.
 
 The pattern that works is a sequence number plus a catch-up query.
 
@@ -381,13 +377,12 @@ The client stores the highest `seq` it has seen and passes it as `since`
 on reconnect. The database is the source of truth; the socket is a
 low-latency optimisation over polling, not the record.
 
-Two details matter. Join the group *before* running the catch-up query,
-so a message arriving mid-catch-up is delivered rather than falling into
-the gap between the query and the subscription — the client will
-occasionally see a duplicate, which is why messages carry an id it can
-deduplicate on. And cap the catch-up: a client returning after a week
-should get a bounded page and a "history truncated" marker, not thirty
-thousand frames.
+Two details matter. Join the group *before* running the catch-up query, so a
+message arriving mid-catch-up is delivered rather than falling into the gap
+between the query and the subscription. The client will occasionally see a
+duplicate, which is why messages carry an id it can deduplicate on. And cap the
+catch-up: a client returning after a week should get a bounded page and a
+"history truncated" marker, not thirty thousand frames.
 
 This also means at-least-once delivery, not exactly-once. Design clients
 to be idempotent per `seq` and the whole class of problems disappears.
@@ -421,17 +416,17 @@ blocked for the duration; emit an event and return.
 
 ##  Ordering guarantees
 
-Within one connection, WebSocket frames arrive in the order they were
-sent — TCP guarantees that, and neither sillo nor the ASGI server
-reorders them. So a client that sends A then B has them handled A then B.
+Within one connection, WebSocket frames arrive in the order they were sent. TCP
+guarantees that, and neither sillo nor the ASGI server reorders them. So a
+client that sends A then B has them handled A then B.
 
 Across connections there is no ordering at all. Two clients posting
-simultaneously reach the server in whatever order the event loop happens
-to schedule, and a broadcast triggered by the second can be written to a
-socket before the broadcast triggered by the first. If order matters —
-document edits, financial transactions, anything with a "last write
-wins" rule — assign the sequence server-side and let clients sort by it,
-rather than trusting arrival order.
+simultaneously reach the server in whatever order the event loop happens to
+schedule, and a broadcast triggered by the second can be written to a socket
+before the broadcast triggered by the first. If order matters (document edits,
+financial transactions, anything with a "last write wins" rule) assign the
+sequence server-side and let clients sort by it, rather than trusting arrival
+order.
 
 Fan-out order is also not the order of a `gather`. The moment you
 parallelise sends for throughput, two clients in the same room can
@@ -443,13 +438,13 @@ this too, which is one more reason to add them early.
 Dispatch through a dictionary is O(1) and irrelevant to your latency
 budget. What matters is what handlers do.
 
-Anything slow inside `on_receive` stalls that connection's entire receive
-loop — the client can send, but nothing is read until the handler
-returns. Push slow work to a background task or a job queue and reply
-immediately with an acknowledgement.
+Anything slow inside `on_receive` stalls that connection's entire receive loop.
+The client can send, but nothing is read until the handler returns. Push slow
+work to a background task or a job queue and reply immediately with an
+acknowledgement.
 
-Validation is cheap; `pydantic-core` is Rust. Building a schema per
-message is not — construct them once at import time.
+Validation is cheap; `pydantic-core` is Rust. Building a schema per message is
+not, construct them once at import time.
 
 Broadcast fan-out is the real cost. One message from one client that
 triggers a broadcast to a thousand-member group is a thousand sends. At
@@ -460,9 +455,10 @@ state.
 
 ##  Related
 
-- [Consumers](/guides/websockets/consumer/) — the class these patterns extend
-- [Groups](/guides/websockets/groups/) — `group_send` and its delivery semantics
-- [Channels](/guides/websockets/channels/) — what a group contains
-- [WebSockets](/guides/websockets/) — connections, routing, and close codes
-- [Events](/guides/events/) — the full application event emitter API
-- [Rate Limiting](/guides/rate-limiting/) — the HTTP limiter, and why it does not cover sockets
+- [Consumers](/guides/websockets/consumer/): the class these patterns extend
+- [Groups](/guides/websockets/groups/): `group_send` and its delivery semantics
+- [Channels](/guides/websockets/channels/): what a group contains
+- [WebSockets](/guides/websockets/): connections, routing, and close codes
+- [Events](/guides/events/): the full application event emitter API
+- [Rate Limiting](/guides/rate-limiting/): the HTTP limiter, and why it does
+  not cover sockets

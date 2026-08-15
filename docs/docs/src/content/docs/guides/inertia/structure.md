@@ -1,6 +1,6 @@
 ---
 title: Project Structure
-description: How an Inertia project is laid out — views, js, root.html — and the three paths that must agree across Vite, the adapter and TypeScript.
+description: How an Inertia project is laid out (views, js, root.html) and the three paths that must agree across Vite, the adapter and TypeScript.
 head:
   - tag: meta
     attrs:
@@ -33,16 +33,16 @@ myapp/
   vite.config.ts
 ```
 
-`app/`, `database/` and `routes/` mean what they mean in any Sillo project —
-see [Project Structure](/guides/start/structure/) for that boundary and why it
+`app/`, `database/` and `routes/` mean what they mean in any Sillo project. See
+[Project Structure](/guides/start/structure/) for that boundary and why it
 points one way. Three directories are new here, and one is gone.
 
 ##  `views/`
 
-Everything React renders. Pages live in `views/pages/`, one component each,
-and are resolved by name: `render("Dashboard", …)` finds
-`views/pages/Dashboard.tsx`. Nested names work — `render("iam/Users", …)`
-finds `views/pages/iam/Users.tsx`.
+Everything React renders. Pages live in `views/pages/`, one component each, and
+are resolved by name: `render("Dashboard", …)` finds
+`views/pages/Dashboard.tsx`. Nested names work. `render("iam/Users", …)` finds
+`views/pages/iam/Users.tsx`.
 
 The resolution happens in `js/main.tsx`, against a Vite glob:
 
@@ -60,8 +60,8 @@ rather than rendering an empty page.
 
 **`Layout.tsx`** wraps pages and persists across navigations. That persistence
 is what makes an Inertia application feel like a single-page application
-without being written as one: the layout's state — an open menu, a scroll
-position, a running timer — survives a page change.
+without being written as one: the layout's state (an open menu, a scroll
+position, a running timer) survives a page change.
 
 ##  `js/`
 
@@ -80,9 +80,9 @@ checked against what the server actually sends.
 
 ##  `root.html`
 
-The HTML shell, at the project root rather than buried in a template
-directory. It is served once, on the first visit, and never again — every
-navigation after that swaps props into the page already in the browser.
+The HTML shell, at the project root rather than buried in a template directory.
+It is served once, on the first visit, and never again, every navigation after
+that swaps props into the page already in the browser.
 
 ```html
 <!DOCTYPE html>
@@ -98,7 +98,7 @@ navigation after that swaps props into the page already in the browser.
 </html>
 ```
 
-`{{ inertia_head }}` expands to the script and stylesheet tags — the Vite dev
+`{{ inertia_head }}` expands to the script and stylesheet tags. The Vite dev
 server's client and entry in development, the hashed files from the build
 manifest in production. `{{ inertia }}` renders the page object.
 
@@ -117,7 +117,7 @@ older placement boots with a null page and throws
 
 ##  No `templates/`
 
-Server-side templating is still available and still works — it is just not how
+Server-side templating is still available and still works. It is just not how
 an Inertia project renders pages. `root.html` is the only template, and it is
 rendered once per session rather than once per request.
 
@@ -135,11 +135,11 @@ The alias needs both because Vite resolves imports at build time and `tsc`
 only type-checks; neither reads the other's config. The entry and output need
 both because Vite writes the manifest and the adapter reads it.
 
-Drift in the entry is the dangerous one. Development keeps working — the dev
-server serves whatever path it is asked for — and production ships a page with
+Drift in the entry is the dangerous one. Development keeps working (the dev
+server serves whatever path it is asked for) and production ships a page with
 no script tag and no error.
 
 ##  Next
 
-- [Pages and Props](/guides/inertia/pages/) — writing a page
-- [Assets and Deployment](/guides/inertia/assets/) — what the manifest is for
+- [Pages and Props](/guides/inertia/pages/): writing a page
+- [Assets and Deployment](/guides/inertia/assets/): what the manifest is for

@@ -37,9 +37,8 @@ channel.websocket     # the underlying WebSocket
 
 That is all of it. There is no `channel.id`, no `channel.metadata`, no
 `channel.is_active`, no `channel.touch()`, no `channel.receive()`, and no
-`channel.close()`. Sending is `_send()`, and expiry testing is
-`_is_expired()` — both underscore-prefixed, both the only way to do those
-things.
+`channel.close()`. Sending is `_send()`, and expiry testing is `_is_expired()`.
+Both underscore-prefixed, both the only way to do those things.
 
 ##  When to reach for a channel
 
@@ -78,9 +77,9 @@ async def room(websocket: WebSocket):
 ```
 
 The constructor asserts on all three arguments. `websocket` must be a
-`WebSocket` instance, `expires` must be an `int` if given, and
-`payload_type` must be exactly one of `"json"`, `"text"`, or `"bytes"` —
-the string, not the enum member:
+`WebSocket` instance, `expires` must be an `int` if given, and `payload_type`
+must be exactly one of `"json"`, `"text"`, or `"bytes"`, the string, not the
+enum member:
 
 ```python
 Channel(websocket=ws, payload_type=PayloadTypeEnum.JSON)         # AssertionError
@@ -114,8 +113,8 @@ validate input that came from outside your code.
 
 The last row is the fallback that assertions normally prevent you from
 reaching. It passes the payload straight to the ASGI send callable, which
-expects a dict with a `type` key — anything else raises deep inside the
-protocol layer.
+expects a dict with a `type` key. Anything else raises deep inside the protocol
+layer.
 
 Note the type coupling: a group containing both a `"json"` channel and a
 `"text"` channel cannot be broadcast to with a single payload.
@@ -138,10 +137,10 @@ Sending to a channel whose socket has already closed raises
 continues. In production, where DEBUG is usually off, the send silently
 does nothing.
 
-This is deliberate — one dead connection in a group of five hundred
-should not abort the broadcast — but it means `group_send` returning
-`GROUP_SEND` tells you the loop ran, not that anyone received anything.
-If delivery matters, have clients acknowledge and track that yourself.
+This is deliberate (one dead connection in a group of five hundred should not
+abort the broadcast) but it means `group_send` returning `GROUP_SEND` tells you
+the loop ran, not that anyone received anything. If delivery matters, have
+clients acknowledge and track that yourself.
 
 Note also that `self.created` is reset **after** every send attempt,
 successful or not. That is what makes expiry an idle timer.
@@ -153,7 +152,7 @@ successful or not. That is what makes expiry an idle timer.
 every `_send`. So a channel expires only after `expires` seconds with no
 outbound traffic.
 
-`expires=None` means never — the check short-circuits.
+`expires=None` means never. The check short-circuits.
 
 <Aside type="danger" title="Expiry removes live connections from their groups">
 
@@ -161,17 +160,17 @@ outbound traffic.
 `CHANNEL_GROUPS` and drops groups that become empty. It does **not**
 close the underlying socket.
 
-The result is a connection that is still open, still readable, still
-sending — and no longer a member of any group. The client sees a working
-connection that has silently stopped receiving broadcasts. Nothing is
-logged at a level you would notice.
+The result is a connection that is still open, still readable, still sending,
+and no longer a member of any group. The client sees a working connection that
+has silently stopped receiving broadcasts. Nothing is logged at a level you
+would notice.
 
 `_clean_expired()` runs on every `remove_channel_from_group` call, so on
 a busy server it runs constantly.
 
 Consumers hard-code `expires=3600`, which makes this reachable for any
-connection that goes an hour without receiving a broadcast — a presence
-socket, a notification feed, a dashboard nobody is looking at.
+connection that goes an hour without receiving a broadcast: a presence socket,
+a notification feed, a dashboard nobody is looking at.
 
 Two defences:
 
@@ -198,9 +197,8 @@ async def heartbeat(group: str, interval: int = 30):
 ##  Identity
 
 `channel.uuid` is a fresh UUID4 per channel, and it is the only handle
-`ChannelBox.send_to` accepts. It is not a user id and it does not survive
-a reconnect — a client that drops and reconnects is a new channel with a
-new UUID.
+`ChannelBox.send_to` accepts. It is not a user id and it does not survive a
+reconnect. A client that drops and reconnects is a new channel with a new UUID.
 
 If you want to message a user rather than a connection, keep your own
 mapping and update it on connect and disconnect:
@@ -226,9 +224,9 @@ async def notify(user_id: int, payload: dict) -> None:
         await channel._send(payload)
 ```
 
-A `set` rather than a single channel, because one user commonly has
-several tabs open. Iterating over a copy matters — `_send` can trigger
-cleanup that mutates the collection.
+A `set` rather than a single channel, because one user commonly has several
+tabs open. Iterating over a copy matters. `_send` can trigger cleanup that
+mutates the collection.
 
 This is also considerably faster than `ChannelBox.send_to`, which scans
 every group and every channel looking for a UUID match.
@@ -245,7 +243,7 @@ not match.
 ##  Building your own channel type
 
 Because the surface is small, subclassing is practical when you want
-per-connection metadata — the thing the class conspicuously lacks.
+per-connection metadata. The thing the class conspicuously lacks.
 
 ```python title="a channel that carries context"
 from sillo.websockets import Channel
@@ -272,8 +270,8 @@ for channel in await ChannelBox.CHANNEL_GROUPS.get("lobby", {}):
         await channel._send(payload)
 ```
 
-Overriding `_send` is the other useful hook — pre-serialization, metrics,
-or per-channel rate limiting all belong there:
+Overriding `_send` is the other useful hook: pre-serialization, metrics, or
+per-channel rate limiting all belong there:
 
 ```python title="a channel that counts what it sends"
 class MeteredChannel(Channel):
@@ -284,10 +282,9 @@ class MeteredChannel(Channel):
 
 ##  A worked example: presence
 
-Presence — "who is in this room right now" — is the case that exercises
-every part of the channel API at once, and the one where the expiry
-behaviour bites hardest, because a presence connection is idle by
-definition.
+Presence ("who is in this room right now") is the case that exercises every
+part of the channel API at once, and the one where the expiry behaviour bites
+hardest, because a presence connection is idle by definition.
 
 ```python title="a presence endpoint built on channels"
 import asyncio
@@ -352,25 +349,25 @@ roster built by reading the group directly, because there is no API for
 "list a group with metadata". And the guarded removal in `finally`,
 because `remove_channel_from_group` raises on a path this code can reach.
 
-The `pong` branch pairs with a server-side heartbeat that keeps proxies
-from closing the connection — it does nothing but prove the client is
-alive, and its absence over two intervals is your cue to close.
+The `pong` branch pairs with a server-side heartbeat that keeps proxies from
+closing the connection. It does nothing but prove the client is alive, and its
+absence over two intervals is your cue to close.
 
 ##  Channels versus the raw WebSocket
 
 | | `WebSocket` | `Channel` |
 |---|---|---|
 | Send | `send_text` / `send_json` / `send_bytes` | `_send`, dispatching on `payload_type` |
-| Receive | Yes | **No** — go through `channel.websocket` |
-| Close | Yes | **No** — go through `channel.websocket` |
+| Receive | Yes | **No**: go through `channel.websocket` |
+| Close | Yes | **No**: go through `channel.websocket` |
 | Identity | None | `uuid` |
 | Group membership | Not possible | Via `ChannelBox` |
 | Errors on a dead socket | Raises | Swallowed and logged at DEBUG |
 
-The division is: receive on the `WebSocket`, send through the `Channel`
-when the message is a broadcast, and send on the `WebSocket` directly
-when the message is for this client only. Mixing the two is normal —
-`channel.websocket` is public precisely so you can.
+The division is: receive on the `WebSocket`, send through the `Channel` when
+the message is a broadcast, and send on the `WebSocket` directly when the
+message is for this client only. Mixing the two is normal. `channel.websocket`
+is public precisely so you can.
 
 ##  What not to do
 
@@ -398,10 +395,9 @@ reconnect.
 
 ##  Performance notes
 
-A `Channel` is three attributes and a UUID — negligible. The cost is in
-`_send`, which serializes independently per channel. Broadcasting one
-JSON payload to a thousand channels performs a thousand `json.dumps`
-calls of the same object.
+A `Channel` is three attributes and a UUID. Negligible. The cost is in `_send`,
+which serializes independently per channel. Broadcasting one JSON payload to a
+thousand channels performs a thousand `json.dumps` calls of the same object.
 
 For large groups, serialize once and use text channels:
 
@@ -429,11 +425,11 @@ yourself rather than through `ChannelBox`.
 | `.payload_type` | `str` | `"json"`, `"text"`, `"bytes"` |
 | `._send` | `(payload)` | Swallows `RuntimeError` |
 | `._is_expired` | `() -> bool` | `False` when `expires` is `None` |
-| `PayloadTypeEnum` | enum | `.JSON`, `.TEXT`, `.BYTES` — pass `.value` |
+| `PayloadTypeEnum` | enum | `.JSON`, `.TEXT`, `.BYTES`. Pass `.value` |
 
 ##  Related
 
-- [WebSockets](/guides/websockets/) — the underlying connection
-- [Consumers](/guides/websockets/consumer/) — where channels get built for you
-- [Groups](/guides/websockets/groups/) — `ChannelBox`, broadcast, and history
-- [Events](/guides/websockets/events/) — dispatching messages by type
+- [WebSockets](/guides/websockets/): the underlying connection
+- [Consumers](/guides/websockets/consumer/): where channels get built for you
+- [Groups](/guides/websockets/groups/): `ChannelBox`, broadcast, and history
+- [Events](/guides/websockets/events/): dispatching messages by type

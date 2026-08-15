@@ -1,6 +1,6 @@
 ---
 title: Model Configuration
-description: "model_config and ConfigDict — every option worth knowing, what each one changes, and the settings a Sillo request or response model usually wants."
+description: "model_config and ConfigDict: every option worth knowing, what each one changes, and the settings a Sillo request or response model usually wants."
 head:
   - tag: meta
     attrs:
@@ -48,7 +48,7 @@ and it hides typos: a client sending `publish` instead of `published` gets a
 {"loc": ["body", "publish"], "msg": "Extra inputs are not permitted"}
 ```
 
-The trade-off is compatibility — a client sending a field your newer version
+The trade-off is compatibility: a client sending a field your newer version
 removed now fails. For an internal API, forbid. For a public one consumed by
 clients you do not control, `ignore` is the kinder default.
 
@@ -80,9 +80,9 @@ validate_default=True       # validate defaults too
 revalidate_instances="always"
 ```
 
-`strict=True` is right for a JSON body, where the client controls the types.
-It is wrong for anything derived from a URL or a form, which is strings by
-definition — see [Types](/pydantic/types/#strict-mode).
+`strict=True` is right for a JSON body, where the client controls the types. It
+is wrong for anything derived from a URL or a form, which is strings by
+definition. See [Types](/pydantic/types/#strict-mode).
 
 `validate_assignment=True` closes the gap where a model is valid at
 construction and invalid a line later:
@@ -92,7 +92,7 @@ post.title = 123      # raises, with this on
 ```
 
 `validate_default=True` catches a default that does not satisfy its own
-constraints — a mistake that otherwise only surfaces when someone omits the
+constraints. A mistake that otherwise only surfaces when someone omits the
 field.
 
 ## Immutability
@@ -133,7 +133,7 @@ looks like JavaScript. See [Fields](/pydantic/fields/#aliases).
 from_attributes=True
 ```
 
-Lets `model_validate()` read attributes instead of dict keys — which is what
+Lets `model_validate()` read attributes instead of dict keys, which is what
 makes an ORM instance validate directly:
 
 ```python
@@ -157,7 +157,7 @@ model_config = ConfigDict(
 
 Both flow into the [OpenAPI document](/pydantic/openapi/). A worked example at
 the model level is the single most useful thing you can add to an API
-reference — more useful than per-field descriptions, because it shows a whole
+reference, more useful than per-field descriptions, because it shows a whole
 valid request.
 
 ## Arbitrary types
@@ -167,7 +167,7 @@ arbitrary_types_allowed=True
 ```
 
 Permits a field annotated with a class Pydantic knows nothing about. It is then
-validated only by `isinstance`, and has no JSON schema — so a model using it
+validated only by `isinstance`, and has no JSON schema, so a model using it
 cannot be a request or response model.
 
 Fine for an internal model that never crosses the wire; a dead end for anything
@@ -232,5 +232,5 @@ was too strict.
 PostCreate.model_config
 ```
 
-A plain dict, merged across the inheritance chain — useful when a base class
+A plain dict, merged across the inheritance chain, useful when a base class
 several levels up is setting something surprising.

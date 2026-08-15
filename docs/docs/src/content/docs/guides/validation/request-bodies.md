@@ -31,7 +31,9 @@ There is exactly one way to declare a body, so there is never a question of whic
 
 ##  How the body reaches your handler
 
-sillo injects the validated model into the **first plain parameter** after `request` and `response` — a parameter with no default, which nothing else in the framework would fill. The name is entirely yours:
+sillo injects the validated model into the **first plain parameter** after
+`request` and `response`, a parameter with no default, which nothing else in
+the framework would fill. The name is entirely yours:
 
 ```python
 # All equivalent — the third positional parameter receives the validated
@@ -91,7 +93,8 @@ class UserCreate(BaseModel):
     tags: list[str] = []         # optional, defaults to an empty list
 ```
 
-Mutable defaults are safe here — Pydantic copies them per instance, so unlike a plain Python function default, `tags` is not shared between requests.
+Mutable defaults are safe here: Pydantic copies them per instance, so unlike a
+plain Python function default, `tags` is not shared between requests.
 
 ###  `str | None` versus a default
 
@@ -117,7 +120,9 @@ class UserCreate(BaseModel):
                        examples=["ada@example.com"])
 ```
 
-`Field()` takes the same constraints as a sillo marker — `gt`, `ge`, `lt`, `le`, `multiple_of`, `min_length`, `max_length`, `pattern`, `strict` — plus documentation keywords that flow into your OpenAPI schema.
+`Field()` takes the same constraints as a sillo marker (`gt`, `ge`, `lt`, `le`,
+`multiple_of`, `min_length`, `max_length`, `pattern`, `strict`) plus
+documentation keywords that flow into your OpenAPI schema.
 
 To make a field required *and* constrained, either use `Field(...)` with the Ellipsis, or simply omit the default:
 
@@ -150,7 +155,7 @@ class Order(BaseModel):
 
 ##  Nested models
 
-Nesting needs no special handling — declare one model as another's field type:
+Nesting needs no special handling. Declare one model as another's field type:
 
 ```python
 class Address(BaseModel):
@@ -212,14 +217,16 @@ class UserCreate(BaseModel):
         return v
 ```
 
-Raise `ValueError` to fail — Pydantic converts it into a proper validation error, and sillo returns it as part of the 422:
+Raise `ValueError` to fail. Pydantic converts it into a proper validation
+error, and sillo returns it as part of the 422:
 
 ```json
 {"detail": [{"loc": ["body", "username"], "msg": "Value error, that username is reserved",
              "type": "value_error"}]}
 ```
 
-Return the value — possibly transformed — to accept it. Validators are a normalization hook as much as a rejection hook:
+Return the value (possibly transformed) to accept it. Validators are a
+normalization hook as much as a rejection hook:
 
 ```python
 @field_validator("username")
@@ -246,7 +253,9 @@ def strip_strings(cls, v):
 
 ###  Before and after
 
-By default a validator runs *after* Pydantic has coerced the value to the declared type, so `v` is already the right type. Use `mode="before"` to see the raw input instead — useful for accepting a format Pydantic does not know:
+By default a validator runs *after* Pydantic has coerced the value to the
+declared type, so `v` is already the right type. Use `mode="before"` to see the
+raw input instead, useful for accepting a format Pydantic does not know:
 
 ```python
 @field_validator("tags", mode="before")
@@ -342,7 +351,9 @@ class UserCreate(BaseModel):
 | `"forbid"` | Unknown keys are a validation error. |
 | `"allow"` | Unknown keys are kept on the instance. |
 
-`"forbid"` catches client typos that would otherwise pass silently — a request sending `emial` gets told about it rather than having the field quietly ignored:
+`"forbid"` catches client typos that would otherwise pass silently. A request
+sending `emial` gets told about it rather than having the field quietly
+ignored:
 
 ```json
 {"detail": [{"loc": ["body", "emial"], "msg": "Extra inputs are not permitted",
@@ -462,7 +473,9 @@ user.model_fields_set     # {"name", "email"} — the fields explicitly provided
 
 ##  Do not mix with forms
 
-A request has one body, and it is either JSON or a form — never both. Declaring `request_model=` alongside `Form` or `File` parameters on the same route means one of them always receives nothing. Pick the encoding per endpoint.
+A request has one body, and it is either JSON or a form. Never both. Declaring
+`request_model=` alongside `Form` or `File` parameters on the same route means
+one of them always receives nothing. Pick the encoding per endpoint.
 
 
 ##  Modelling input separately from storage
@@ -470,11 +483,11 @@ A request has one body, and it is either JSON or a form — never both. Declarin
 The most consequential decision on this page is whether your request
 model is also your database model. It should not be.
 
-A table has columns a client must never set — `id`, `created_at`,
-`owner_id`, `is_admin`, `balance`. A request model derived from that
-table inherits every one of them, and Pydantic will happily populate them
-from the request body. That is mass assignment, and it is the mechanism
-behind a long history of privilege escalation bugs.
+A table has columns a client must never set, `id`, `created_at`, `owner_id`,
+`is_admin`, `balance`. A request model derived from that table inherits every
+one of them, and Pydantic will happily populate them from the request body.
+That is mass assignment, and it is the mechanism behind a long history of
+privilege escalation bugs.
 
 ```python title="the input model is a subset, deliberately"
 class ArticleCreate(BaseModel):
@@ -500,9 +513,9 @@ sources. Nothing a client sends can reach them, because they are not in
 the model.
 
 The second reason to separate them is churn. A table changes for storage
-reasons — a column split, an index, a denormalisation — and none of those
-should break your API. Keeping the two independent means a migration is a
-migration rather than a breaking API change.
+reasons (a column split, an index, a denormalisation) and none of those should
+break your API. Keeping the two independent means a migration is a migration
+rather than a breaking API change.
 
 ##  Create and update are different shapes
 
@@ -534,9 +547,9 @@ await article.update_from_dict(request.validated_data.model_dump(exclude_unset=T
 ```
 
 Without `exclude_unset`, a PATCH that sends only `title` also sends
-`body=None`, and the update nulls the body. This is the single most
-common bug in partial-update endpoints, and it is silent — the request
-succeeds and data disappears.
+`body=None`, and the update nulls the body. This is the single most common bug
+in partial-update endpoints, and it is silent. The request succeeds and data
+disappears.
 
 `exclude_unset` distinguishes "not sent" from "sent as null", which is
 exactly the distinction PATCH needs. If clients must be able to null a
@@ -548,7 +561,7 @@ set.
 A JSON body is parsed before it is validated, so a body large enough to
 exhaust memory does so before any of your constraints apply.
 
-Enforce a byte limit at the proxy — `client_max_body_size` in nginx — so
+Enforce a byte limit at the proxy (`client_max_body_size` in nginx) so
 oversized requests never reach Python. Inside the application, bound the
 collections your models accept:
 

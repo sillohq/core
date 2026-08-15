@@ -1,6 +1,6 @@
 ---
 title: Types
-description: "What Pydantic understands — scalars, collections, dates, enums, unions and the library's own constrained types — plus the coercion rules and strict mode."
+description: "What Pydantic understands (scalars, collections, dates, enums, unions and the library's own constrained types) plus the coercion rules and strict mode."
 head:
   - tag: meta
     attrs:
@@ -34,7 +34,7 @@ class Order(BaseModel):
     paid: bool
 ```
 
-**Use `Decimal` for money.** `float` is binary floating point — `0.1 + 0.2` is
+**Use `Decimal` for money.** `float` is binary floating point. `0.1 + 0.2` is
 not `0.3`, and an invoice built on it will not add up. It pairs with
 [`DecimalField`](/orm/field-reference/#numbers) on the ORM side.
 
@@ -47,7 +47,7 @@ coordinates: tuple[float, float]
 unique_ids: set[int]
 ```
 
-The parameter is validated too, item by item — `list[str]` rejects a list
+The parameter is validated too, item by item. `list[str]` rejects a list
 containing an `int`, naming the index that failed.
 
 `list` unparameterised accepts anything and validates nothing. It is almost
@@ -59,10 +59,10 @@ your [OpenAPI schema](/pydantic/openapi/).
 tags: list[str] = []                          # dangerous elsewhere in Python
 ```
 
-Pydantic deep-copies field defaults per instance, so this is actually safe here
-— unlike a plain Python default argument, and unlike an
-[ORM field default](/orm/field-reference/#arguments-every-field-takes), where
-it is a real bug.
+Pydantic deep-copies field defaults per instance, so this is actually safe
+here: unlike a plain Python default argument, and unlike an [ORM field
+default](/orm/field-reference/#arguments-every-field-takes), where it is a real
+bug.
 
 `Field(default_factory=list)` is still clearer, and is required when the
 default is expensive or must be genuinely fresh.
@@ -85,7 +85,7 @@ int or float. `"2026-08-15T10:30:00Z"` parses, and so does `1786000000`.
 
 :::note[Naive and aware are both accepted]
 `datetime` allows both. A string without an offset produces a naive datetime,
-and comparing it with an aware one raises `TypeError` — usually much later,
+and comparing it with an aware one raises `TypeError`, usually much later,
 somewhere unrelated.
 
 Pin it when the value is going into a database:
@@ -124,7 +124,7 @@ OpenAPI it becomes an `enum` with the allowed values listed, so the
 documentation shows exactly what a client may send.
 
 Inheriting `str` makes the member JSON-serialisable and comparable to a plain
-string — worth doing for anything that crosses the wire. It also lines up with
+string, worth doing for anything that crosses the wire. It also lines up with
 [`CharEnumField`](/orm/field-reference/#enums) on the model.
 
 ## `Literal`
@@ -135,8 +135,8 @@ from typing import Literal
 sort: Literal["created_at", "title", "views"] = "created_at"
 ```
 
-An inline enumeration. For a small fixed set that does not deserve a class —
-a sort key, a mode flag — this is the shortest way to get validation *and* a
+An inline enumeration. For a small fixed set that does not deserve a class (a
+sort key, a mode flag) this is the shortest way to get validation *and* a
 documented list of options.
 
 It is also how you replace v1's `const=`.
@@ -150,16 +150,16 @@ identifier: int | str
 
 **`| None` does not make a field optional in v2.** It allows `None` as a value;
 the field is still required unless it has a default. This is the single most
-common v1-to-v2 surprise — see [Models](/pydantic/models/#v1-to-v2).
+common v1-to-v2 surprise. See [Models](/pydantic/models/#v1-to-v2).
 
 ```python
 x: int | None            # required, may be null
 x: int | None = None     # optional, defaults to null
 ```
 
-For a union of several models, use a
-[discriminated union](/pydantic/nested/#discriminated-unions) — it is faster
-and produces far better errors than trying each in turn.
+For a union of several models, use a [discriminated
+union](/pydantic/nested/#discriminated-unions). It is faster and produces far
+better errors than trying each in turn.
 
 ## Pydantic's own types
 
@@ -195,7 +195,7 @@ uv add email-validator
 ```
 
 `SecretStr` is worth reaching for on anything sensitive. It keeps the value out
-of `repr()`, out of tracebacks, and out of a `model_dump()` unless you ask —
+of `repr()`, out of tracebacks, and out of a `model_dump()` unless you ask,
 which is the difference between a password appearing in an error report and
 not.
 
@@ -266,8 +266,8 @@ count = Query(type=int, strict=True)
 
 Strict is right for a JSON body, where the client controls the types and
 sending `"42"` for a number is a client bug worth surfacing. It is wrong for
-query parameters, headers and form fields, which are strings by definition —
-strict mode there rejects every input.
+query parameters, headers and form fields, which are strings by definition.
+Strict mode there rejects every input.
 
 ## Any and no annotation
 
@@ -275,8 +275,8 @@ strict mode there rejects every input.
 metadata: Any                 # accepted unvalidated
 ```
 
-`Any` accepts anything and validates nothing. Occasionally correct — a webhook
-payload you store verbatim — and usually a sign that the shape has not been
+`Any` accepts anything and validates nothing. Occasionally correct (a webhook
+payload you store verbatim) and usually a sign that the shape has not been
 decided yet.
 
 In OpenAPI it becomes an empty schema, so a client generator produces

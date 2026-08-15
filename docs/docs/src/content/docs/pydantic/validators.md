@@ -1,6 +1,6 @@
 ---
 title: Validators
-description: "Custom validation in Pydantic v2 — field validators and their modes, model validators, reusable Annotated validators, and serialisation validators."
+description: "Custom validation in Pydantic v2: field validators and their modes, model validators, reusable Annotated validators, and serialisation validators."
 head:
   - tag: meta
     attrs:
@@ -89,9 +89,9 @@ def split_tags(cls, value):
     return value
 ```
 
-Now `"python, async"` and `["python", "async"]` both validate as a
-`list[str]`. Note the `isinstance` guard — a `before` validator receives
-whatever arrived, including types you did not anticipate.
+Now `"python, async"` and `["python", "async"]` both validate as a `list[str]`.
+Note the `isinstance` guard. A `before` validator receives whatever arrived,
+including types you did not anticipate.
 
 **`wrap`** lets you catch and substitute:
 
@@ -108,7 +108,7 @@ def default_on_bad_date(cls, value, handler: ValidatorFunctionWrapHandler):
         return None
 ```
 
-Rare, and worth a comment when you use it — silently accepting invalid input is
+Rare, and worth a comment when you use it, silently accepting invalid input is
 usually the wrong call for an API.
 
 ### Seeing other fields
@@ -130,7 +130,7 @@ class Booking(BaseModel):
         return value
 ```
 
-`info.data` holds the fields validated **so far** — which means declaration
+`info.data` holds the fields validated **so far**, which means declaration
 order matters, and a field cannot see one declared after it.
 
 When a rule involves two fields, a [model validator](#model_validator) is
@@ -171,7 +171,7 @@ def unwrap_envelope(cls, data):
     return data
 ```
 
-Receives the raw input — usually a dict — before any field is looked at. For
+Receives the raw input (usually a dict) before any field is looked at. For
 reshaping a payload whose structure differs from your model: unwrapping an
 envelope, renaming a legacy key, flattening a nested object.
 
@@ -188,7 +188,7 @@ against the model as a whole:
 ```
 
 To attach it to a specific field, raise a `PydanticCustomError` or restructure
-as a field validator. For most cases the model-level message is fine — the
+as a field validator. For most cases the model-level message is fine, the
 message names the fields.
 
 ## Reusable `Annotated` validators
@@ -216,7 +216,7 @@ class CategoryCreate(BaseModel):
 ```
 
 The rule is written once and applied by annotation. This is the better shape
-whenever a rule belongs to a *type* rather than to one model — and it composes
+whenever a rule belongs to a *type* rather than to one model, and it composes
 with [`Field()`](/pydantic/fields/):
 
 ```python
@@ -270,10 +270,10 @@ That constraint is a useful one. It pushes the layers apart:
 | An invariant of the row | [`ValidatesBeforeSaveMixin`](/orm/mixins/#validatesbeforesavemixin) |
 | What must hold for every writer | A [database constraint](/orm/meta/#constraints) |
 
-A uniqueness check in a validator would also race — between the check and the
+A uniqueness check in a validator would also race: between the check and the
 insert, another request can take the value. The reliable version is a unique
-constraint plus a caught `IntegrityError`, which the
-[exception handlers](/orm/exceptions/) already turn into a 409.
+constraint plus a caught `IntegrityError`, which the [exception
+handlers](/orm/exceptions/) already turn into a 409.
 
 ## Error messages
 

@@ -54,7 +54,9 @@ _compute_delay(3, base=1.0, factor=2.0, cap=10.0, jitter=True)
 
 ###  `@retry(max_attempts=3, base_delay=1.0, max_delay=60.0, backoff_factor=2.0, jitter=True, retryable_exceptions=Exception)`
 
-Wraps a function so every call retries on failure. Works on both sync and async functions — it inspects the target at decoration time and returns the matching wrapper:
+Wraps a function so every call retries on failure. Works on both sync and async
+functions. It inspects the target at decoration time and returns the matching
+wrapper:
 
 ```python
 from sillo.helpers.retry import retry
@@ -129,13 +131,16 @@ async def call_api(): ...
 async def call_api(): ...
 ```
 
-For HTTP work, the status code matters more than the exception type. Retry 429, 502, 503, and 504. Do not retry 400, 401, 403, 404, or 422 — the request is wrong and repeating it verbatim cannot help.
+For HTTP work, the status code matters more than the exception type. Retry 429,
+502, 503, and 504. Do not retry 400, 401, 403, 404, or 422. The request is
+wrong and repeating it verbatim cannot help.
 
 </Aside>
 
 ##  One-shot forms
 
-When you cannot decorate the function — it belongs to a library, or the retry policy varies per call site — use the functional forms.
+When you cannot decorate the function (it belongs to a library, or the retry
+policy varies per call site) use the functional forms.
 
 ###  `sync_retry(func, *args, **kwargs)`
 
@@ -183,7 +188,9 @@ result = await async_retry(
 
 ##  Idempotency: the rule that decides everything
 
-Retrying is only safe when performing the operation twice has the same effect as performing it once. That property is called idempotency, and it is not a detail — it is the whole question.
+Retrying is only safe when performing the operation twice has the same effect
+as performing it once. That property is called idempotency, and it is not a
+detail. It is the whole question.
 
 The dangerous case is a request that succeeded on the server and failed on the way back. The server charged the card, then the connection dropped before the response arrived. Your client sees a `ConnectionError`, retries, and charges the card again.
 
@@ -214,7 +221,7 @@ A rough guide:
 |---|---|
 | `GET` / read query | Yes |
 | `PUT` with a full resource body | Yes, it is idempotent by definition |
-| `DELETE` | Usually — the second one 404s, which you can treat as success |
+| `DELETE` | Usually: the second one 404s, which you can treat as success |
 | `POST` that creates something | Only with an idempotency key |
 | Payment, email send, SMS | Only with an idempotency key |
 | Database write inside a transaction | Retry the whole transaction, never one statement |
@@ -227,7 +234,8 @@ The most common mistake with this module is putting it somewhere it makes the us
 
 Default settings give up after roughly 60 seconds of sleeping. The client's connection is held open the whole time, one of your workers is occupied, and the user is staring at a spinner. Most browsers and load balancers time out first, so the user gets an error *and* you paid the full cost.
 
-Inside a request, keep the total retry budget under your own timeout — two attempts with a short delay at most:
+Inside a request, keep the total retry budget under your own timeout, two
+attempts with a short delay at most:
 
 ```python
 @app.get("/dashboard")
@@ -257,7 +265,12 @@ Retries add load exactly when a system is least able to take it. Three specific 
 
 **The synchronized herd.** Covered above, and the reason jitter defaults to on. Never turn it off in production; the only reason to disable it is deterministic tests.
 
-**Retrying past the point of usefulness.** A service that has been down for a minute is not coming back within your backoff window. Continuing to retry keeps your workers occupied and adds load to a system already in trouble. A circuit breaker — fail fast for a cooldown period after N consecutive failures, then probe with a single request — is the standard complement to retries, and this module does not provide one. For a dependency you call constantly, add one.
+**Retrying past the point of usefulness.** A service that has been down for a
+minute is not coming back within your backoff window. Continuing to retry keeps
+your workers occupied and adds load to a system already in trouble. A circuit
+breaker (fail fast for a cooldown period after N consecutive failures, then
+probe with a single request) is the standard complement to retries, and this
+module does not provide one. For a dependency you call constantly, add one.
 
 **A retry budget helps too.** Cap retries as a fraction of total requests (say 10%), so a broad failure cannot triple your outbound traffic no matter how many individual calls want to retry.
 
@@ -329,7 +342,8 @@ Startup checks are the one place a long total budget is right. Waiting 30 second
 
 ##  Performance
 
-The retry wrappers themselves cost nothing measurable — a loop, an exception check, and a delay computation.
+The retry wrappers themselves cost nothing measurable: a loop, an exception
+check, and a delay computation.
 
 The cost is the waiting. With the defaults, five attempts spend up to 30 seconds sleeping. In async code that sleep is `await`ed and the event loop serves other requests, so the cost is latency for that one caller. In sync code the thread is blocked, and a thread pool full of retrying threads serves nobody.
 
@@ -355,8 +369,10 @@ That asymmetry is worth remembering: `async_retry` and the async decorator are c
 
 ##  Related
 
-- [Background Tasks](/guides/work/background/) — where patient retries belong
-- [Job Queue](/guides/work/queue/) — durable retries that survive a restart
-- [HTTP Client](/guides/http/client/) — has its own retry configuration
-- [Error Handling](/guides/error-handling/) — turning exhausted retries into responses
-- [Async Helpers](/guides/helpers/async/) — sync and async detection, which the decorator uses
+- [Background Tasks](/guides/work/background/): where patient retries belong
+- [Job Queue](/guides/work/queue/): durable retries that survive a restart
+- [HTTP Client](/guides/http/client/): has its own retry configuration
+- [Error Handling](/guides/error-handling/): turning exhausted retries into
+  responses
+- [Async Helpers](/guides/helpers/async/): sync and async detection, which the
+  decorator uses

@@ -1,6 +1,6 @@
 ---
 title: Parameters
-description: "Query, Path, Header, Cookie, Form and File — declaring typed, validated parameters with Pydantic constraints, and the legacy mode that predates them."
+description: "Query, Path, Header, Cookie, Form and File: declaring typed, validated parameters with Pydantic constraints, and the legacy mode that predates them."
 head:
   - tag: meta
     attrs:
@@ -48,7 +48,7 @@ from sillo import Query, Path, Header, Cookie, Form, File
 
 This is the thing to understand first.
 
-**Legacy mode** — constructed with only a default, `alias` or `required`.
+**Legacy mode**, constructed with only a default, `alias` or `required`.
 Behaves exactly as Sillo always has: coercion inferred from the default's
 runtime type, a missing required parameter raising `ValueError`, and a
 parameter with no default yielding the raw string.
@@ -57,7 +57,7 @@ parameter with no default yielding the raw string.
 page = Query(1)             # legacy
 ```
 
-**Validated mode** — constructed with an explicit `type` **or any constraint**.
+**Validated mode**, constructed with an explicit `type` **or any constraint**.
 The parameter is compiled into a Pydantic field at route registration and
 validated per request, producing a proper 422 rather than a 500.
 
@@ -66,9 +66,9 @@ page = Query(1, type=int, ge=1)      # validated
 ```
 
 The mode is decided by what you constructed the marker with, never by
-annotations. Documentation-only keywords — `description`, `example`, `title`,
-`deprecated` — deliberately do **not** switch the mode, so enriching an
-OpenAPI entry can never silently change runtime behaviour.
+annotations. Documentation-only keywords (`description`, `example`, `title`,
+`deprecated`) deliberately do **not** switch the mode, so enriching an OpenAPI
+entry can never silently change runtime behaviour.
 
 To opt a whole application in, including markers written the old way:
 
@@ -102,7 +102,7 @@ size = Query(20, type=int, ge=1, le=100)
 sort = Query("created_at", type=str, pattern=r"^-?(created_at|title|views)$")
 ```
 
-Constraints are enforced **and** published — the `ge=1` above appears as
+Constraints are enforced **and** published. The `ge=1` above appears as
 `minimum: 1` in your [OpenAPI document](/pydantic/openapi/), so the validation
 and the documentation cannot disagree.
 
@@ -167,7 +167,7 @@ async def get_post(request, response, post_id=Path(type=int)):
     ...
 ```
 
-Path parameters are always required — the route did not match otherwise — so a
+Path parameters are always required (the route did not match otherwise) so a
 default is meaningless here.
 
 Note the converter in the path (`{post_id:int}`) **and** the type on the
@@ -218,22 +218,21 @@ async def upload(
 
 :::caution[Validate uploads yourself]
 Neither marker checks a file's size or its real content type. `content_type` is
-supplied by the client and is trivially wrong — a `.php` renamed `.jpg` still
+supplied by the client and is trivially wrong. A `.php` renamed `.jpg` still
 announces itself as an image.
 
 Check the size as you read, sniff the actual bytes, and never trust the
 filename as a path. See [File uploads](/guides/file-upload/).
 :::
 
-Do not mix `Form`/`File` with
-[`request_model`](/pydantic/request-models/) — a request has one body, and it
-is either JSON or a form.
+Do not mix `Form`/`File` with [`request_model`](/pydantic/request-models/). A
+request has one body, and it is either JSON or a form.
 
 ## How it is compiled
 
 At **route registration**, Sillo groups the markers by location and compiles
-one Pydantic model per location — one for the query string, one for headers,
-and so on.
+one Pydantic model per location: one for the query string, one for headers, and
+so on.
 
 A request then costs a fixed number of validation calls with no signature
 introspection on the hot path. That is the reason for declaring parameters as
@@ -241,7 +240,7 @@ markers rather than reading annotations per request: the work happens once, at
 import.
 
 It is also why failures from several locations arrive together. Each location's
-model is validated, and the errors are concatenated — so a bad query parameter
+model is validated, and the errors are concatenated, so a bad query parameter
 and a bad body are one 422, not two round trips.
 
 ## Errors
@@ -281,6 +280,6 @@ the shape for a pagination or filter set shared across endpoints.
 
 ## See also
 
-- [Request models](/pydantic/request-models/) — the JSON body
-- [Fields](/pydantic/fields/) — the same constraints on model fields
-- [Request parameters](/guides/request-parameters/) — the wider guide
+- [Request models](/pydantic/request-models/): the JSON body
+- [Fields](/pydantic/fields/): the same constraints on model fields
+- [Request parameters](/guides/request-parameters/): the wider guide

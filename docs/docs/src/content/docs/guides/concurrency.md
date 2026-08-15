@@ -16,7 +16,10 @@ head:
 
 `sillo.utils.concurrency` provides one utility: `run_in_threadpool`. It moves a synchronous function call to a shared thread pool so the event loop isn't blocked.
 
-For all other async concurrency patterns — `asyncio.gather`, `asyncio.TaskGroup`, `asyncio.create_task`, `asyncio.Event`, `asyncio.Lock` — use Python's standard library directly. They're well-designed, well-tested, and already available.
+For all other async concurrency patterns (`asyncio.gather`,
+`asyncio.TaskGroup`, `asyncio.create_task`, `asyncio.Event`, `asyncio.Lock`)
+use Python's standard library directly. They're well-designed, well-tested, and
+already available.
 
 ---
 
@@ -75,8 +78,9 @@ async def handler(request, response):
 
 ###  When not to use
 
-- Pure async I/O — just `await` directly.
-- Very fast sync operations (dict lookups, string formatting) — the thread switch overhead costs more than just running them inline.
+- Pure async I/O: just `await` directly.
+- Very fast sync operations (dict lookups, string formatting): the thread
+  switch overhead costs more than just running them inline.
 - `asyncio`-native libraries already handle this for you.
 
 
@@ -88,10 +92,10 @@ sillo runs on a single event loop per process. There is no thread per
 request and no process per request; one loop interleaves thousands of
 connections by switching between them at every `await`.
 
-That is why an async framework handles high concurrency on modest
-hardware — a request waiting on a database is a request costing nothing
-but memory. And it is why one badly-behaved handler degrades everything:
-there is no other thread to pick up the slack.
+That is why an async framework handles high concurrency on modest hardware, a
+request waiting on a database is a request costing nothing but memory. And it
+is why one badly-behaved handler degrades everything: there is no other thread
+to pick up the slack.
 
 ```python title="what await actually does"
 async def handler(request, response):
@@ -100,15 +104,15 @@ async def handler(request, response):
     return response.json(...)        # and here
 ```
 
-Between those `await`s, your code runs exclusively. That is the useful
-mental model: **your handler is single-threaded until it awaits**, so you
-never need a lock around code with no `await` in it — and you always need
-to think about interleaving around code that does.
+Between those `await`s, your code runs exclusively. That is the useful mental
+model: **your handler is single-threaded until it awaits**, so you never need a
+lock around code with no `await` in it, and you always need to think about
+interleaving around code that does.
 
 ##  Blocking is the failure mode
 
 Any synchronous call that takes real time stops the entire loop. Not that
-request — every request in the process.
+request, every request in the process.
 
 ```python title="the arithmetic"
 def resize(data):        # 200 ms of CPU
@@ -133,9 +137,9 @@ blocking I/O at all, belongs off the loop.
 
 ##  `run_in_threadpool` in practice
 
-The pool is shared across the whole process and reused between calls, so
-there is no per-call thread creation cost — but there is a fixed number
-of threads, and saturating them queues everything behind them.
+The pool is shared across the whole process and reused between calls, so there
+is no per-call thread creation cost, but there is a fixed number of threads,
+and saturating them queues everything behind them.
 
 Two consequences for how you use it.
 
@@ -143,11 +147,11 @@ Two consequences for how you use it.
 contention. Wrapping a dictionary lookup makes it slower, not faster. The
 threshold is roughly a millisecond of work.
 
-**It is a shared resource.** `sillo.mail`, any `run_in_executor` call in
-a library you depend on, and your own offloaded work all draw from the
-same default pool. A burst of slow file writes can starve an unrelated
-subsystem, and the symptom — "email got slow when we added image
-uploads" — looks unrelated to its cause.
+**It is a shared resource.** `sillo.mail`, any `run_in_executor` call in a
+library you depend on, and your own offloaded work all draw from the same
+default pool. A burst of slow file writes can starve an unrelated subsystem,
+and the symptom ("email got slow when we added image uploads") looks unrelated
+to its cause.
 
 For sustained heavy offloading, give that workload its own executor
 rather than sharing the default:
@@ -180,7 +184,7 @@ user, orders, prefs = await asyncio.gather(
 )
 ```
 
-`return_exceptions=True` when a partial result is better than a failure —
+`return_exceptions=True` when a partial result is better than a failure,
 without it, the first exception cancels the rest and you lose results you
 already had.
 
@@ -190,8 +194,8 @@ single grouped exception, which is usually what you want for "all of this
 or none of it".
 
 Bound the fan-out. `gather` over a list of unknown length opens as many
-connections as the list is long — a semaphore turns that into a
-controlled concurrency:
+connections as the list is long. A semaphore turns that into a controlled
+concurrency:
 
 ```python title="bounded concurrency"
 sem = asyncio.Semaphore(10)
@@ -217,9 +221,9 @@ async with asyncio.timeout(5):
 
 `asyncio.timeout` (3.11+) cancels the operation when the budget expires.
 `asyncio.wait_for` does the same on older versions. Either way, the
-cancellation surfaces inside the awaited code as `CancelledError` — so
-cleanup in a `finally` still runs, and code that swallows `CancelledError`
-breaks cancellation for everyone above it.
+cancellation surfaces inside the awaited code as `CancelledError`, so cleanup
+in a `finally` still runs, and code that swallows `CancelledError` breaks
+cancellation for everyone above it.
 
 Never catch `CancelledError` and continue. Re-raise it after cleaning up;
 suppressing it is how a task becomes unkillable.
@@ -230,17 +234,16 @@ Four places work can happen, with genuinely different costs.
 
 | Where | Good for | Cost |
 |---|---|---|
-| The event loop | Async I/O — database, HTTP, sockets | Nothing while awaiting |
+| The event loop | Async I/O: database, HTTP, sockets | Nothing while awaiting |
 | A thread (`run_in_threadpool`) | Blocking I/O, sync libraries, short CPU work | A thread switch, GIL contention |
 | A process (queue worker) | Heavy CPU, anything durable | Serialization, latency |
 | Another machine | Anything that scales independently | Network, operational complexity |
 
-The GIL is why threads help less than expected for CPU work. A thread
-running pure Python holds the interpreter lock, so two CPU-bound threads
-do not run twice as fast — they take turns. Threads help most for
-*blocking I/O*, where the lock is released while waiting, and for
-libraries that release it themselves (numpy, Pillow, and most C
-extensions do).
+The GIL is why threads help less than expected for CPU work. A thread running
+pure Python holds the interpreter lock, so two CPU-bound threads do not run
+twice as fast. They take turns. Threads help most for *blocking I/O*, where the
+lock is released while waiting, and for libraries that release it themselves
+(numpy, Pillow, and most C extensions do).
 
 For genuinely CPU-bound Python, a separate process is the only real
 answer. That is what a [queue worker](/guides/work/queue/) gives you, and
@@ -250,9 +253,9 @@ it comes with durability as a side effect.
 
 Two signals tell you whether the loop is healthy.
 
-**Event loop lag** — the delay between when a callback was scheduled and
-when it ran. Under a millisecond is healthy; tens of milliseconds means
-something is blocking. It is measurable in a few lines:
+**Event loop lag**, the delay between when a callback was scheduled and when it
+ran. Under a millisecond is healthy; tens of milliseconds means something is
+blocking. It is measurable in a few lines:
 
 ```python title="a loop-lag probe"
 async def measure_lag(interval: float = 1.0):
@@ -279,11 +282,11 @@ notice.
 
 ##  What sillo deliberately does not wrap
 
-Everything above is standard library. sillo provides `run_in_threadpool`
-and nothing else, on purpose — `asyncio.gather`, `TaskGroup`,
-`create_task`, `Semaphore`, `Lock`, `Event`, and `Queue` are well
-designed, well documented, and already present. A framework wrapper would
-add a name to learn and a layer to debug through.
+Everything above is standard library. sillo provides `run_in_threadpool` and
+nothing else, on purpose: `asyncio.gather`, `TaskGroup`, `create_task`,
+`Semaphore`, `Lock`, `Event`, and `Queue` are well designed, well documented,
+and already present. A framework wrapper would add a name to learn and a layer
+to debug through.
 
 The one exception is worth knowing: `asyncio.Lock` and friends are **not**
 shared across processes. With multiple workers, a lock coordinates one
@@ -309,10 +312,10 @@ def fire(coro):
     return task
 ```
 
-**Exceptions vanish silently** unless something retrieves them. Attach a
-done callback that logs, or use
-[`BackgroundTask`](/guides/work/background/), which handles both — and
-read that page's note about its registry before using it at high volume.
+**Exceptions vanish silently** unless something retrieves them. Attach a done
+callback that logs, or use [`BackgroundTask`](/guides/work/background/), which
+handles both, and read that page's note about its registry before using it at
+high volume.
 
 ##  What not to do
 
@@ -339,11 +342,15 @@ per-process.
 
 ##  Related
 
-- [Background Tasks](/guides/work/background/) — managed fire-and-forget with result tracking
-- [Work Overview](/guides/work/) — moving heavy work out of the web process entirely
-- [HTTP Client](/guides/http/client/) — timeouts, pooling, and gathering upstream calls
-- [Async helpers](/guides/helpers/async/) — the utilities that complement these primitives
-- [Middleware](/guides/middleware/) — where a blocking call hurts most
+- [Background Tasks](/guides/work/background/): managed fire-and-forget with
+  result tracking
+- [Work Overview](/guides/work/): moving heavy work out of the web process
+  entirely
+- [HTTP Client](/guides/http/client/): timeouts, pooling, and gathering
+  upstream calls
+- [Async helpers](/guides/helpers/async/): the utilities that complement these
+  primitives
+- [Middleware](/guides/middleware/): where a blocking call hurts most
 
 
 ##  Common mistakes and what they look like in production

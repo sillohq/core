@@ -1,6 +1,6 @@
 ---
 title: Serialisation
-description: "Turning a model back into data — model_dump and model_dump_json, include and exclude, aliases, computed fields, custom serialisers and the round-trip guarantees."
+description: "Turning a model back into data: model_dump and model_dump_json, include and exclude, aliases, computed fields, custom serialisers and the round-trip guarantees."
 head:
   - tag: meta
     attrs:
@@ -42,7 +42,7 @@ event.model_dump(mode="json")
 # {"id": "...", "at": "2026-08-15T10:30:00Z"}
 ```
 
-Which is what you want when handing a dict to `response.json()` — the default
+Which is what you want when handing a dict to `response.json()`. The default
 `mode="python"` leaves a `datetime` in place, and the encoder then has to deal
 with it.
 
@@ -101,7 +101,7 @@ post.model_dump(exclude_defaults=True)   # omit anything equal to its default
 post.model_dump(exclude_none=True)       # omit anything that is None
 ```
 
-`exclude_none` is tempting for tidy responses and is usually wrong — it makes
+`exclude_none` is tempting for tidy responses and is usually wrong. It makes
 "absent" and "explicitly null" indistinguishable to the client.
 
 ## Aliases
@@ -110,7 +110,7 @@ post.model_dump(exclude_none=True)       # omit anything that is None
 webhook.model_dump(by_alias=True)
 ```
 
-Emits the serialisation aliases rather than the field names — the camelCase
+Emits the serialisation aliases rather than the field names. The camelCase
 form, when you have set one. See [Fields](/pydantic/fields/#aliases).
 
 Sillo's [response models](/pydantic/response-models/) do not set this for you,
@@ -141,7 +141,7 @@ class OrderOut(BaseModel):
 
 Computed fields are **output only**: they appear in `model_dump()` and in the
 response schema, and are not accepted on input. Which is exactly right for a
-derived value — a client should not be able to send a total that disagrees with
+derived value. A client should not be able to send a total that disagrees with
 its parts.
 
 The return annotation is required; it is what the schema is generated from.
@@ -202,7 +202,7 @@ creds.model_dump()
 creds.password.get_secret_value()
 ```
 
-Which is greppable — you can audit every place a secret is actually read.
+Which is greppable. You can audit every place a secret is actually read.
 
 ## Warnings on mismatch
 
@@ -228,8 +228,8 @@ Holds for plain models. It does **not** hold when:
 - `exclude` or `exclude_unset` dropped something required;
 - a computed field is present, since it cannot be validated back in.
 
-Where a round trip matters — caching a model, queueing one as a job payload —
-use `model_dump_json()` and `model_validate_json()`, and keep the model plain.
+Where a round trip matters (caching a model, queueing one as a job payload) use
+`model_dump_json()` and `model_validate_json()`, and keep the model plain.
 
 ## In a Sillo handler
 
@@ -241,5 +241,5 @@ async def get_post(request, response, id=Path(type=int)):
 ```
 
 With `response_model=` declared, Sillo validates and shapes the return value
-for you — see [Response models](/pydantic/response-models/), which is the
+for you. See [Response models](/pydantic/response-models/), which is the
 shorter and safer form of the above.

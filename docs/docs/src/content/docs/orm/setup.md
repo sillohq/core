@@ -1,6 +1,6 @@
 ---
 title: Setup
-description: "Wiring a database into a Sillo application with setup_record — model registration, the connection lifecycle, per-request context, and the health check."
+description: "Wiring a database into a Sillo application with setup_record: model registration, the connection lifecycle, per-request context, and the health check."
 head:
   - tag: meta
     attrs:
@@ -47,7 +47,7 @@ model_modules=["database.models", "sillo.admin.models"]
 ```
 
 Dotted paths to modules containing models. Tortoise discovers models by
-importing these — a model in a module not listed here has no table, and the
+importing these, a model in a module not listed here has no table, and the
 error you get is a confusing one about a missing relation rather than a missing
 model.
 
@@ -88,10 +88,9 @@ and an ASGI application handling concurrent requests needs that variable set
 for the task the handler runs in. This is what does it.
 
 The practical consequence: a model call from inside a request works. A model
-call from a background task that escaped the request — a bare
-`asyncio.create_task` — may not, because it is a different task with a
-different context. Use [background tasks](/guides/work/background/), which
-carry it.
+call from a background task that escaped the request (a bare
+`asyncio.create_task`) may not, because it is a different task with a different
+context. Use [background tasks](/guides/work/background/), which carry it.
 
 ## Using the manager directly
 
@@ -102,7 +101,7 @@ await database.health()          # True when the connection answers
 config = database.orm_config()   # the dict Tortoise/Aerich want
 ```
 
-`health()` runs a trivial query and returns a boolean rather than raising —
+`health()` runs a trivial query and returns a boolean rather than raising,
 which is what a `/health` endpoint wants:
 
 ```python
@@ -131,7 +130,7 @@ finally:
 ```
 
 Which is what a script or a standalone [console](/cli/standalone-consoles/)
-needs — nothing has started an application there, so nothing has connected.
+needs. Nothing has started an application there, so nothing has connected.
 
 ## Migrations
 
@@ -151,7 +150,7 @@ See [Migrations](/orm/migrations/).
 startup when they do not exist.
 
 That is right for tests and for a first run, and wrong for anything with data
-in it — it creates missing tables and does nothing about the ones whose shape
+in it. It creates missing tables and does nothing about the ones whose shape
 has changed, which is exactly the divergence migrations exist to prevent.
 
 Turn it off wherever you run migrations:
@@ -162,6 +161,6 @@ DB_GENERATE_SCHEMAS=false
 
 ## See also
 
-- [Configuration](/orm/configuration/) — every setting and its environment
+- [Configuration](/orm/configuration/): every setting and its environment
   variable.
-- [Database commands](/cli/database/) — the CLI this setup unlocks.
+- [Database commands](/cli/database/): the CLI this setup unlocks.

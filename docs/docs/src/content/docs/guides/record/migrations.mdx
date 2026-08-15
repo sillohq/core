@@ -36,9 +36,9 @@ failure appears at query time, as an `OperationalError` naming a column
 you can plainly see in your model file. That is the moment most people
 discover they needed migrations two weeks ago.
 
-Use `generate_schemas` for tests and throwaway SQLite files. Use
-migrations for anything holding data you would be sad to lose — and turn
-`generate_schemas` **off** once you have them:
+Use `generate_schemas` for tests and throwaway SQLite files. Use migrations for
+anything holding data you would be sad to lose, and turn `generate_schemas`
+**off** once you have them:
 
 ```python
 DatabaseConfig(url=..., generate_schemas=False)
@@ -103,9 +103,9 @@ in order and records each in the `tortoise_migrations` table.
 
 <Aside type="note" title="rollback names a target, not a number of steps">
 
-There is no "one step back". Name the migration to stop at —
-`rollback(database(), "0003_add_slug")` — or `"zero"` to unapply
-everything. A bare name is qualified with the app label for you.
+There is no "one step back". Name the migration to stop at
+(`rollback(database(), "0003_add_slug")`) or `"zero"` to unapply everything. A
+bare name is qualified with the app label for you.
 
 </Aside>
 
@@ -121,9 +121,8 @@ TABLE ... RENAME COLUMN` by hand.
 A changed column type is emitted with no `USING` clause, which fails on
 PostgreSQL when the conversion is not implicit.
 
-A new non-null column without a default fails on any table with existing
-rows. Add it nullable, backfill, then add the constraint — three
-migrations, not one.
+A new non-null column without a default fails on any table with existing rows.
+Add it nullable, backfill, then add the constraint, three migrations, not one.
 
 `sql()` shows you what a migration will execute without executing it:
 
@@ -171,11 +170,11 @@ good day, two failures.
 sillo db:migrate && exec uvicorn myapp.app:app --host 0.0.0.0 --port 8000
 ```
 
-That is fine for a single-instance deployment. For rolling deployments,
-make the step a job that runs once and gates the rollout, and keep each
-migration compatible with both the old and new application version — add
-columns before the code that writes them, drop them a release after the
-code that read them is gone.
+That is fine for a single-instance deployment. For rolling deployments, make
+the step a job that runs once and gates the rollout, and keep each migration
+compatible with both the old and new application version. Add columns before
+the code that writes them, drop them a release after the code that read them is
+gone.
 
 ##  MigrationHelper
 
@@ -215,9 +214,9 @@ seeder.seed(Post, [
 count = await seeder.run()
 ```
 
-`seed()` returns the seeder, so calls chain. `run()` inserts in the order
-the calls were made — which is how you satisfy foreign keys, by seeding
-parents before children — and returns the number of rows created.
+`seed()` returns the seeder, so calls chain. `run()` inserts in the order the
+calls were made (which is how you satisfy foreign keys, by seeding parents
+before children) and returns the number of rows created.
 
 Rows are created with `Model.create()`, so casts, mutators, and
 `ValidatesBeforeSaveMixin` all apply. Note that lifecycle events do
@@ -239,8 +238,8 @@ async def seed_defaults():
     await Role.get_or_create({"label": "Member"}, slug="member")
 ```
 
-The `db_manager` argument is stored and never used, so passing `None`
-works. Pass the manager anyway — the parameter may become meaningful.
+The `db_manager` argument is stored and never used, so passing `None` works.
+Pass the manager anyway. The parameter may become meaningful.
 
 ##  Fixtures
 
@@ -266,9 +265,9 @@ load before children. Each file is inserted inside a transaction, so a
 row that violates a constraint leaves that table untouched rather than
 half-populated.
 
-The model is resolved from the filename, ignoring case and a trailing
-plural — `users.json` finds `User`, `categories.jsonl` finds `Category`.
-When the name does not match, map it explicitly:
+The model is resolved from the filename, ignoring case and a trailing plural:
+`users.json` finds `User`, `categories.jsonl` finds `Category`. When the name
+does not match, map it explicitly:
 
 ```python
 FixtureLoader("fixtures/", models={"people": User})
@@ -276,10 +275,9 @@ FixtureLoader("fixtures/", models={"people": User})
 
 <Aside type="note" title="Resolution needs an open database">
 
-Model lookup reads the registry the ORM populates on init. Loading
-fixtures before the database is open raises `LookupError` listing "none"
-as the known models — that is the registry being empty, not your filename
-being wrong.
+Model lookup reads the registry the ORM populates on init. Loading fixtures
+before the database is open raises `LookupError` listing "none" as the known
+models. That is the registry being empty, not your filename being wrong.
 
 </Aside>
 
@@ -288,7 +286,7 @@ being wrong.
 | Tool | Use for | Runs when |
 |---|---|---|
 | Migrations | Schema changes | Deployment, once |
-| `Seeder` / fixtures | Reference data — roles, plans, countries | Deployment or first boot |
+| `Seeder` / fixtures | Reference data: roles, plans, countries | Deployment or first boot |
 | [`Factory`](/guides/record/transactions-factories/) | Randomised test data | Test setup |
 
 The distinction that matters: reference data is part of the application's
@@ -314,8 +312,8 @@ will race.
 
 **Do not make production seeds non-idempotent.** Use `get_or_create`.
 
-**Do not commit the database file.** Commit the migrations instead —
-they are the schema's source of truth.
+**Do not commit the database file.** Commit the migrations instead. They are
+the schema's source of truth.
 
 ##  Performance notes
 
@@ -325,9 +323,9 @@ seconds. `bulk_create` with `batch_size=500` takes about twenty
 statements.
 
 On PostgreSQL, DDL is transactional and a failed migration leaves nothing
-behind. On MySQL, DDL causes an implicit commit, so a migration that
-fails halfway leaves the schema partially changed — write MySQL
-migrations so each step is independently safe.
+behind. On MySQL, DDL causes an implicit commit, so a migration that fails
+halfway leaves the schema partially changed. Write MySQL migrations so each
+step is independently safe.
 
 Adding an index on a large PostgreSQL table locks it for writes for the
 duration. Use `CREATE INDEX CONCURRENTLY` in a hand-edited migration, and
@@ -340,7 +338,7 @@ note that it cannot run inside a transaction.
 | `commands.init` | `(database, *, app="models")` | Creates the migrations package. Safe to re-run |
 | `commands.make` | `(database, name=None, *, app="models")` | Writes a migration from model changes |
 | `commands.migrate` | `(database, *, target=None, fake=False, app="models")` | Applies what is pending |
-| `commands.rollback` | `(database, target, *, fake=False, app="models")` | `target` is required — no implicit one step |
+| `commands.rollback` | `(database, target, *, fake=False, app="models")` | `target` is required: no implicit one step |
 | `commands.plan` | `(database, *, target=None, app="models") -> list[str]` | Shows without running |
 | `commands.sql` | `(database, migration, *, backward=False, app="models") -> list[str]` | Needs a single `app` |
 | `DatabaseManager.register_models` | `(*modules) -> DatabaseManager` | Chains |
@@ -353,8 +351,12 @@ note that it cannot run inside a transaction.
 
 ##  Related
 
-- [Record Overview](/guides/record/) — configuration, and why `generate_schemas` is not enough
-- [Models & Mixins](/guides/record/models/) — `bulk_create` for fast seeding
-- [Transactions & Factories](/guides/record/transactions-factories/) — factories for test data
-- [Scopes & Events](/guides/record/scopes-events/) — why seeding does not fire lifecycle events
-- [Startup & Shutdown](/guides/startups-and-shutdowns/) — why migrations do not belong in a startup hook
+- [Record Overview](/guides/record/): configuration, and why `generate_schemas`
+  is not enough
+- [Models & Mixins](/guides/record/models/): `bulk_create` for fast seeding
+- [Transactions & Factories](/guides/record/transactions-factories/): factories
+  for test data
+- [Scopes & Events](/guides/record/scopes-events/): why seeding does not fire
+  lifecycle events
+- [Startup & Shutdown](/guides/startups-and-shutdowns/): why migrations do not
+  belong in a startup hook

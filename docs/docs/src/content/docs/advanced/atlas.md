@@ -125,14 +125,14 @@ function createApiReference(
 
 | Field | Type | Default | Purpose |
 |---|---|---|---|
-| `url` | `string` | — | URL to fetch the OpenAPI document from |
-| `spec` | `object \| string` | — | Inline document object or JSON string |
+| `url` | `string` |  | URL to fetch the OpenAPI document from |
+| `spec` | `object \| string` |  | Inline document object or JSON string |
 | `theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | Color theme |
 | `deepLinking` | `boolean` | `true` | Update `location.hash` while reading |
-| `fetchHeaders` | `Record<string, string>` | — | Extra headers for fetching a private spec |
-| `servers` | `string[]` | — | Override the document's server list |
-| `onLoaded` | `(spec: ParsedSpec) => void` | — | Callback when ready |
-| `onError` | `(error: Error) => void` | — | Callback when loading/parsing fails |
+| `fetchHeaders` | `Record<string, string>` |  | Extra headers for fetching a private spec |
+| `servers` | `string[]` |  | Override the document's server list |
+| `onLoaded` | `(spec: ParsedSpec) => void` |  | Callback when ready |
+| `onError` | `(error: Error) => void` |  | Callback when loading/parsing fails |
 
 ### AtlasInstance
 
@@ -460,7 +460,7 @@ Generates one-line type labels: `array<Widget>`, `string . date-time`,
 
 **Source**: `/Users/admin/sillo.build/atlas/src/ui/dom.ts` (222 lines)
 
-Atlas builds DOM **directly** -- no framework, no virtual DOM, no `innerHTML`.
+Atlas builds DOM **directly**: no framework, no virtual DOM, no `innerHTML`.
 Every user-supplied string reaches the page as a text node.
 
 ### Core Helpers
@@ -488,9 +488,8 @@ menu, check, external.
 
 ### Security
 
-The `text` attribute key maps to `textContent` (never `innerHTML`).  This is
-the fundamental XSS defense -- a JSON string in a response body cannot become
-markup.
+The `text` attribute key maps to `textContent` (never `innerHTML`). This is the
+fundamental XSS defense, a JSON string in a response body cannot become markup.
 
 ---
 

@@ -20,15 +20,15 @@ styled terminal output, interactive prompts, and raw keyboard input handling.
 ```mermaid
 graph TD
     subgraph "core/sillo/console/"
-        A["__init__.py<br/>110 lines — public API"]
-        B["arguments.py<br/>550 lines — Parameter/Argument/Option/Flag, parse()"]
-        C["command.py<br/>450 lines — Command base class"]
-        D["console.py<br/>672 lines — Console registry & dispatcher"]
-        E["exceptions.py<br/>60 lines — Error hierarchy"]
-        F["output.py<br/>601 lines — Output, ProgressBar, Spinner"]
-        G["prompt.py<br/>610 lines — Prompt (ask/secret/confirm/choice)"]
-        H["style.py<br/>275 lines — Style, Palette, SGR codes"]
-        I["terminal.py<br/>393 lines — Terminal capabilities, raw_mode, read_key"]
+        A["__init__.py<br/>110 lines: public API"]
+        B["arguments.py<br/>550 lines: Parameter/Argument/Option/Flag, parse()"]
+        C["command.py<br/>450 lines: Command base class"]
+        D["console.py<br/>672 lines: Console registry & dispatcher"]
+        E["exceptions.py<br/>60 lines: Error hierarchy"]
+        F["output.py<br/>601 lines: Output, ProgressBar, Spinner"]
+        G["prompt.py<br/>610 lines: Prompt (ask/secret/confirm/choice)"]
+        H["style.py<br/>275 lines: Style, Palette, SGR codes"]
+        I["terminal.py<br/>393 lines: Terminal capabilities, raw_mode, read_key"]
     end
 
     A --> B
@@ -205,12 +205,12 @@ flowchart TD
 ```
 
 **Recognised patterns:**
-- `--name value` — option with space-separated value
-- `--name=value` — option with equals-separated value
-- `-n value` — short option
-- `-nvalue` — short option with attached value
-- `-abc` — bundled short flags
-- `--` — stop option parsing, rest is extra
+- `--name value`: option with space-separated value
+- `--name=value`: option with equals-separated value
+- `-n value`: short option
+- `-nvalue`: short option with attached value
+- `-abc`: bundled short flags
+- `--`: stop option parsing, rest is extra
 
 **Error conditions** (all raise `UsageError`):
 - Unknown option
@@ -242,7 +242,7 @@ flowchart TD
 def __init__(self, input: ParsedInput, output: Output, prompt: Prompt, console=None):
 ```
 
-Binds one invocation — the parsed input, output handle, prompt handle, and
+Binds one invocation: the parsed input, output handle, prompt handle, and
 parent console.
 
 ### Methods to Override
@@ -454,7 +454,7 @@ Walks tokens to handle global options:
 4. Parse remaining arguments via `parse()`.
 5. Return `(CommandClass, ParsedInput)`.
 
-### `_dispatch(command, parsed)` — Async
+### `_dispatch(command, parsed)`: Async
 
 ```python
 # core/sillo/console/console.py, line 428
@@ -466,7 +466,7 @@ async def _dispatch(self, command, parsed) -> int:
 3. Wrap in `context()` if provided.
 4. Return exit code or 0.
 
-### `_dispatch_sync(command, parsed)` — Sync
+### `_dispatch_sync(command, parsed)`: Sync
 
 ```python
 # core/sillo/console/console.py, line 459
@@ -502,9 +502,9 @@ flowchart TD
 | `Abort` / `KeyboardInterrupt` | 130 | Prints "Aborted." |
 | `CommandError` | Configurable | Prints error message |
 | `ConsoleError` | 1 | Prints error message |
-| Other | — | Re-raised |
+| Other |  | Re-raised |
 
-### `run(argv)` — Sync Entry Point
+### `run(argv)`: Sync Entry Point
 
 ```python
 # core/sillo/console/console.py, line 571
@@ -517,7 +517,7 @@ def run(self, argv=None) -> int:
 4. Calls `_guard(command, lambda: _dispatch_sync(command, parsed))`.
 5. Returns exit code.
 
-### `run_async(argv)` — Async Entry Point
+### `run_async(argv)`: Async Entry Point
 
 ```python
 # core/sillo/console/console.py, line 614
@@ -526,7 +526,7 @@ async def run_async(self, argv=None) -> int:
 
 For use inside a running event loop.  Same flow but uses `_dispatch` directly.
 
-### `main(argv)` — SystemExit Wrapper
+### `main(argv)`: SystemExit Wrapper
 
 ```python
 def main(self, argv=None):
@@ -619,11 +619,11 @@ class Output:
 
 | Method | Style | Prefix |
 |--------|-------|--------|
-| `info(text)` | `INFO` (cyan) | — |
+| `info(text)` | `INFO` (cyan) |  |
 | `success(text)` | `SUCCESS` (green) | tick glyph |
 | `warn(text)` | `WARNING` (yellow) | `!` |
 | `error(text)` | `DANGER` (red) | cross glyph |
-| `muted(text)` | `MUTED` (grey) | — |
+| `muted(text)` | `MUTED` (grey) |  |
 | `heading(text)` | `HEADING` (bold) | blank line before |
 
 #### Structures
@@ -841,7 +841,7 @@ class Style:
     strike: bool = False
 ```
 
-- **Merge operator:** `style_a | style_b` — other wins on any attribute it sets.
+- **Merge operator:** `style_a | style_b`: other wins on any attribute it sets.
   Booleans are OR'd.
 - **`with_(**changes)`:** Returns a copy with changes applied via
   `dataclasses.replace`.

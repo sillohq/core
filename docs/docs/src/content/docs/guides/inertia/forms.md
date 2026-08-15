@@ -1,6 +1,6 @@
 ---
 title: Forms and Validation
-description: Returning validation errors from an Inertia submission — why they travel through the session, and why the redirect is a 303.
+description: Returning validation errors from an Inertia submission, why they travel through the session, and why the redirect is a 303.
 head:
   - tag: meta
     attrs:
@@ -24,8 +24,8 @@ That single constraint explains the shape of everything below.
 
 1. The form posts.
 2. The handler validates. On failure it flashes the errors and redirects back.
-3. The next render reads the errors out of the session — which also clears
-   them — and passes them to the page as a shared prop.
+3. The next render reads the errors out of the session: which also clears them,
+   and passes them to the page as a shared prop.
 4. The component renders them beside the fields.
 
 ##  Flashing
@@ -66,9 +66,8 @@ Two details make this work, and both are easy to get wrong.
 attempted twice.
 
 **The redirect goes to the referring page**, falling back to the form's own
-URL. Inertia's client follows it, and the errors are read out of the session
-by the shared prop while that next page renders — which is also what clears
-them.
+URL. Inertia's client follows it, and the errors are read out of the session by
+the shared prop while that next page renders, which is also what clears them.
 
 ##  `errors` is always present
 
@@ -109,9 +108,9 @@ Rendered once in `Layout.tsx`, so no page has to remember to show them.
 
 ##  Accepting both encodings
 
-Inertia's client posts JSON. A plain HTML form — the no-JavaScript fallback,
-and what `curl -d` sends — posts urlencoded fields. Reading both means the
-routes work before the front end has booted:
+Inertia's client posts JSON. A plain HTML form (the no-JavaScript fallback, and
+what `curl -d` sends) posts urlencoded fields. Reading both means the routes
+work before the front end has booted:
 
 ```python
 content_type = (request.content_type or "").lower()
@@ -123,7 +122,7 @@ return {key: form.get(key) for key in form}
 ```
 
 :::caution
-`json` and `form` are async **properties**, not methods — awaited without
+`json` and `form` are async **properties**, not methods, awaited without
 parentheses. `await request.json()` calls the coroutine the property returns,
 which raises `TypeError` and leaves a "coroutine was never awaited" warning as
 the only clue.
@@ -131,8 +130,8 @@ the only clue.
 
 ##  CSRF
 
-Inertia's client is axios, which attaches a CSRF header on unsafe methods —
-but under its own convention: it reads the `XSRF-TOKEN` cookie and sends
+Inertia's client is axios, which attaches a CSRF header on unsafe methods, but
+under its own convention: it reads the `XSRF-TOKEN` cookie and sends
 `X-XSRF-TOKEN`. Sillo's defaults are `csrftoken` and `X-CSRFToken`, so left
 alone every POST from the front end is rejected with a 403 and nothing on
 either side explains why.
@@ -150,10 +149,10 @@ CSRFMiddleware(config=CSRFConfig(
 
 `httponly` is off for this cookie only, because axios cannot read a cookie the
 browser hides from JavaScript. That is safe precisely because the token is
-useless without the session cookie, which stays `httponly` — someone who can
+useless without the session cookie, which stays `httponly`. Someone who can
 read the CSRF token still cannot act as the user.
 
 ##  Next
 
-- [Assets and Deployment](/guides/inertia/assets/) — building and shipping it
-- [CSRF Protection](/guides/csrf/) — the middleware itself
+- [Assets and Deployment](/guides/inertia/assets/): building and shipping it
+- [CSRF Protection](/guides/csrf/): the middleware itself

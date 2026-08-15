@@ -18,7 +18,10 @@ import { Aside } from '@astrojs/starlight/components';
 
 Deleting a public function is easy. Deleting it without breaking somebody is the hard part.
 
-If you maintain anything other people import — a library, an internal shared package, a plugin API, an SDK used by another team — you eventually need to remove something. Removing it in one release means every caller breaks on upgrade with a bare `AttributeError` and no hint about what to use instead.
+If you maintain anything other people import (a library, an internal shared
+package, a plugin API, an SDK used by another team) you eventually need to
+remove something. Removing it in one release means every caller breaks on
+upgrade with a bare `AttributeError` and no hint about what to use instead.
 
 A deprecation cycle replaces that cliff with a ramp. The old code keeps working, and every call emits a warning naming the replacement and the release in which it disappears. Users migrate on their own schedule, and when removal day arrives nobody is surprised.
 
@@ -48,7 +51,8 @@ Stdlib-only, built on `warnings` and `functools`.
 
 ##  The warning class
 
-`DeprecatedError` is the category everything here emits. Despite the name it is a **warning, not an exception** — it subclasses `FutureWarning`:
+`DeprecatedError` is the category everything here emits. Despite the name it is
+a **warning, not an exception**. It subclasses `FutureWarning`:
 
 ```python
 issubclass(DeprecatedError, FutureWarning)   # True
@@ -120,7 +124,9 @@ class UserService:
         return self.get_by_id(user_id)
 ```
 
-`functools.wraps` preserves the name, docstring, and signature, so `help()`, IDE autocomplete, and introspection keep working. Exceptions from the wrapped function propagate unchanged — the warning does not swallow anything.
+`functools.wraps` preserves the name, docstring, and signature, so `help()`,
+IDE autocomplete, and introspection keep working. Exceptions from the wrapped
+function propagate unchanged. The warning does not swallow anything.
 
 ##  Deprecating a parameter
 
@@ -176,7 +182,8 @@ Adding `*` is itself a breaking change for positional callers, so do it in the r
 
 ###  `warn_deprecated(message, version, removed_in, stacklevel=3)`
 
-For cases a decorator cannot express — a deprecated branch inside a live function, a config key, a value that is no longer supported:
+For cases a decorator cannot express: a deprecated branch inside a live
+function, a config key, a value that is no longer supported:
 
 ```python
 from sillo.core.helpers.deprecation import warn_deprecated
@@ -251,7 +258,8 @@ That turns a silent warning into a failing test, which is the only reliable way 
 
 Renaming a function and changing its return type at the same time, over three releases.
 
-**Release 0.5.0 — introduce and deprecate.** The new function ships, the old one delegates to it and adapts the return value:
+**Release 0.5.0, introduce and deprecate.** The new function ships, the old one
+delegates to it and adapts the return value:
 
 ```python title="0.5.0"
 from sillo.core.helpers.deprecation import deprecated
@@ -272,9 +280,12 @@ def get_user(user_id: int) -> dict:
 
 The message earns its place here. `replacement="fetch_user"` alone would tell a user what to call and not that the return type changed, so their code breaks in a new way after they migrate. Say what actually differs.
 
-**Releases 0.6 through 0.9 — leave it alone.** Do not tighten the warning, do not change the behaviour, do not shorten the window. Users are upgrading on their own timelines and the deprecated path must stay boring.
+**Releases 0.6 through 0.9. Leave it alone.** Do not tighten the warning, do
+not change the behaviour, do not shorten the window. Users are upgrading on
+their own timelines and the deprecated path must stay boring.
 
-**Release 1.0.0 — remove.** Delete `get_user` and its test. Add a changelog entry naming it explicitly:
+**Release 1.0.0, remove.** Delete `get_user` and its test. Add a changelog
+entry naming it explicitly:
 
 ```markdown
 ### Removed
@@ -286,7 +297,10 @@ Someone upgrading from 0.4 straight to 1.0 never saw a runtime warning, because 
 
 ##  Versions and compatibility
 
-The `since` and `removed_in` strings are free-form, and the decorator does no parsing or comparison — they are documentation for humans, not enforced constraints. That means nothing stops you writing `removed_in="2.0.0"` and shipping the removal in `1.6.0`. Only your own discipline prevents it.
+The `since` and `removed_in` strings are free-form, and the decorator does no
+parsing or comparison. They are documentation for humans, not enforced
+constraints. That means nothing stops you writing `removed_in="2.0.0"` and
+shipping the removal in `1.6.0`. Only your own discipline prevents it.
 
 If you follow semantic versioning, the rule is simple: a deprecation may appear in any minor release, and the removal happens only in a major one. Under calendar versioning, pick a fixed window (two releases, or six months) and apply it consistently so users can plan.
 
@@ -336,7 +350,9 @@ The second test matters more than it looks. A parameter deprecation that warns u
 
 ##  Performance
 
-The decorators add one function call and one `warnings.warn` per invocation. `warnings.warn` is not free — it walks the stack to find the calling frame — but Python's dedupe registry means the expensive path runs once per location.
+The decorators add one function call and one `warnings.warn` per invocation.
+`warnings.warn` is not free (it walks the stack to find the calling frame) but
+Python's dedupe registry means the expensive path runs once per location.
 
 For anything called at request rate, prefer a single warning when the module is imported or the deprecated object is constructed, rather than one per call.
 
@@ -353,6 +369,9 @@ For anything called at request rate, prefer a single warning when the module is 
 
 ##  Related
 
-- [Async Helpers](/guides/helpers/async/) — the coroutine detection these decorators use
-- [Plugin API](/reference/plugin-api/) — the surface most likely to need a deprecation cycle
-- [Contribution Guide](/community/contribution-guide/) — sillo's own compatibility policy
+- [Async Helpers](/guides/helpers/async/): the coroutine detection these
+  decorators use
+- [Plugin API](/reference/plugin-api/): the surface most likely to need a
+  deprecation cycle
+- [Contribution Guide](/community/contribution-guide/): sillo's own
+  compatibility policy

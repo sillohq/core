@@ -1,6 +1,6 @@
 ---
 title: Project Names
-description: "What makes a valid Sillo project name, why it is checked before anything is fetched, and the name shapes derived from yours — package, distribution, table and class names."
+description: "What makes a valid Sillo project name, why it is checked before anything is fetched, and the name shapes derived from yours: package, distribution, table and class names."
 head:
   - tag: meta
     attrs:
@@ -79,8 +79,8 @@ Start derives them all from one input, so they cannot drift apart:
 | `table_name` | `blog_posts` | `blog_posts` |
 
 The splitter handles camelCase, PascalCase, snake_case, kebab-case and
-space-separated text, including acronym runs — `APIKey` splits to
-`["api", "key"]` rather than `["a", "p", "i", "key"]`.
+space-separated text, including acronym runs. `APIKey` splits to `["api",
+"key"]` rather than `["a", "p", "i", "key"]`.
 
 ## Pluralisation
 
@@ -107,7 +107,7 @@ class Meta:
     table = "people_records"
 ```
 
-Which is the right escape hatch — an inflection library would be a dependency
+Which is the right escape hatch. An inflection library would be a dependency
 carried by every project to be right about a handful of nouns.
 
 ## Using them yourself
@@ -123,7 +123,7 @@ from sillo_start.utils.naming import (
 )
 ```
 
-`ensure_suffix` is the one worth knowing about — it appends a suffix unless it
+`ensure_suffix` is the one worth knowing about. It appends a suffix unless it
 is already there, case-insensitively:
 
 ```python

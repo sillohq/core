@@ -42,8 +42,8 @@ async def signup(request, response):
     return response.json({"id": user.id}, status_code=201)
 ```
 
-That `if not result.success` is not defensive padding. It is the only way
-you will ever learn that the email did not send — see below.
+That `if not result.success` is not defensive padding. It is the only way you
+will ever learn that the email did not send. See below.
 
 ##  When to reach for this
 
@@ -56,11 +56,10 @@ no bounce handling, no suppression list, and no delivery tracking beyond
 "SMTP accepted it". Marketing sends and anything over a few hundred
 recipients belong with a provider whose API does those things.
 
-Do not send email inline in a request handler for anything that matters.
-SMTP handshakes take hundreds of milliseconds to seconds, and a slow mail
-server becomes a slow endpoint. Hand it to the
-[queue](/guides/work/queue/) and let a worker do it — where the retry
-also lives.
+Do not send email inline in a request handler for anything that matters. SMTP
+handshakes take hundreds of milliseconds to seconds, and a slow mail server
+becomes a slow endpoint. Hand it to the [queue](/guides/work/queue/) and let a
+worker do it, where the retry also lives.
 
 ##  Setup
 
@@ -72,7 +71,7 @@ mail = setup_mail(app, MailConfig())     # every field reads an env var
 
 `setup_mail` stores the client in `app.state["mail_client"]`, registers
 `client.start` on startup and `client.stop` on shutdown, and returns the
-client. Like the other `setup_*` helpers it is idempotent — a second call
+client. Like the other `setup_*` helpers it is idempotent. A second call
 returns the existing client and ignores the new config.
 
 Inside a handler, either close over the client or pull it out of state:
@@ -119,10 +118,10 @@ MailConfig(smtp_port=587)              # forces use_tls=True, use_ssl=False
 MailConfig(use_ssl=True, use_tls=True) # ValueError: Cannot use both SSL and TLS
 ```
 
-Port 465 is implicit TLS — the connection is encrypted from the first
-byte. Port 587 is STARTTLS — the connection opens in the clear and
-upgrades. Both are fine; setting the port correctly is enough, and
-fighting the defaults usually means the port is wrong.
+Port 465 is implicit TLS (the connection is encrypted from the first byte. Port
+587 is STARTTLS) the connection opens in the clear and upgrades. Both are fine;
+setting the port correctly is enough, and fighting the defaults usually means
+the port is wrong.
 
 `to_dict()` masks `smtp_password` as `***`, so it is safe to log a config
 while debugging.
@@ -184,12 +183,12 @@ result = await mail.send_message(message)
 All three route through `send_message`, and all three return an
 `EmailResult`.
 
-<Aside type="danger" title="Sending never raises — it returns success=False">
+<Aside type="danger" title="Sending never raises. It returns success=False">
 
-`send_message` wraps its entire body in `try/except Exception`. Every
-failure — no `from` address, authentication rejected, connection refused,
-DNS failure, a recipient the server rejects, a template that does not
-exist — is caught, logged at ERROR, and returned as:
+`send_message` wraps its entire body in `try/except Exception`. Every failure
+(no `from` address, authentication rejected, connection refused, DNS failure, a
+recipient the server rejects, a template that does not exist) is caught, logged
+at ERROR, and returned as:
 
 ```python
 EmailResult(success=False, error="...", message_id=..., to=[...], subject=...)
@@ -239,10 +238,10 @@ templates/mail/
   welcome.txt
 ```
 
-`template_name="welcome"` resolves both extensions — the HTML file
-becomes `html_body` and the text file becomes `body`. Ship both.
-Text-only clients and many spam filters treat an HTML-only message as a
-signal, and a plain-text alternative costs one extra file.
+`template_name="welcome"` resolves both extensions. The HTML file becomes
+`html_body` and the text file becomes `body`. Ship both. Text-only clients and
+many spam filters treat an HTML-only message as a signal, and a plain-text
+alternative costs one extra file.
 
 `template_auto_escape` defaults to `True`, which escapes variables in the
 HTML template. Keep it on. A user-supplied display name rendered into an
@@ -259,12 +258,12 @@ message.add_attachment("logo.png", png_bytes, content_type="image/png")
 A string is treated as a filesystem path and read; bytes are used
 directly. When `content_type` is omitted it is guessed from the filename.
 
-Two limits worth respecting. Attachments are base64-encoded into the
-message, which inflates them by about a third, and most providers reject
-messages over 20–25 MB total. And reading a file happens synchronously
-inside the coroutine — a large attachment blocks the event loop. For
-anything sizeable, upload the file to object storage and email a link,
-which is also what recipients prefer.
+Two limits worth respecting. Attachments are base64-encoded into the message,
+which inflates them by about a third, and most providers reject messages over
+20 to 25 MB total. And reading a file happens synchronously inside the
+coroutine: a large attachment blocks the event loop. For anything sizeable,
+upload the file to object storage and email a link, which is also what
+recipients prefer.
 
 ##  Concurrency
 
@@ -278,8 +277,8 @@ into the same socket, interleaving SMTP commands. The failure modes are
 ugly and non-deterministic: `SMTPServerDisconnected`, replies matched to
 the wrong command, a message delivered to another message's recipients.
 
-This is reachable from ordinary code — two requests sending email at the
-same time is not an edge case.
+This is reachable from ordinary code, two requests sending email at the same
+time is not an edge case.
 
 Serialize sends with a lock:
 
@@ -300,10 +299,10 @@ you retries, which the client does not have.
 
 </Aside>
 
-`_ensure_connected` sends a `NOOP` before each message and reconnects if
-it fails, so a connection dropped by an idle timeout heals itself. That
-reconnect is not free — it is a full handshake and login — so a
-low-traffic application pays connection setup on most sends.
+`_ensure_connected` sends a `NOOP` before each message and reconnects if it
+fails, so a connection dropped by an idle timeout heals itself. That reconnect
+is not free (it is a full handshake and login) so a low-traffic application
+pays connection setup on most sends.
 
 ##  Testing
 
@@ -315,8 +314,7 @@ config = MailConfig(suppress_send=True, default_from="test@example.com")
 ```
 
 Set `MAIL_SUPPRESS_SEND=true` in your test environment and no test can
-accidentally email a real person — the mistake everyone makes exactly
-once.
+accidentally email a real person. The mistake everyone makes exactly once.
 
 Because suppressed sends report success, assert on `provider_response` if
 you need to distinguish them:
@@ -332,8 +330,8 @@ arrives.
 
 ##  A worked example
 
-Email that is durable, retried, and observable — the shape worth copying
-for anything a user is waiting on.
+Email that is durable, retried, and observable, the shape worth copying for
+anything a user is waiting on.
 
 ```python title="sending through the queue"
 class SendPasswordReset(Job):
@@ -411,12 +409,12 @@ their key.
 **DMARC** tells receivers what to do when SPF and DKIM disagree, and asks
 them to send you reports. Start at `p=none` to observe, then tighten.
 
-Beyond DNS: send from a subdomain you use only for transactional mail, so
-a marketing reputation problem cannot take down password resets. Set a
-reachable `Reply-To`. Include a plain-text alternative. And never put
-user-supplied text in the subject without stripping newlines — a `\n` in
-a subject is a header-injection vector that lets a caller add arbitrary
-headers, including extra recipients.
+Beyond DNS: send from a subdomain you use only for transactional mail, so a
+marketing reputation problem cannot take down password resets. Set a reachable
+`Reply-To`. Include a plain-text alternative. And never put user-supplied text
+in the subject without stripping newlines. A `\n` in a subject is a
+header-injection vector that lets a caller add arbitrary headers, including
+extra recipients.
 
 ```python title="the one sanitization that matters"
 subject = " ".join(user_supplied.splitlines())[:200]
@@ -432,9 +430,9 @@ The `NOOP` check before each send is a network round trip. On a
 high-latency link that is a meaningful fraction of total send time, and
 it happens even when the connection is definitely alive.
 
-Template rendering is Jinja2 and is fast, but the environment is built
-once at client start — changing a template file requires a restart, since
-there is no auto-reload.
+Template rendering is Jinja2 and is fast, but the environment is built once at
+client start, changing a template file requires a restart, since there is no
+auto-reload.
 
 ##  API reference
 
@@ -453,8 +451,10 @@ there is no auto-reload.
 
 ##  Related
 
-- [Queue System](/guides/work/queue/) — where email sending belongs
-- [Jobs](/guides/work/jobs/) — retry and failure handling for delivery
-- [Background Tasks](/guides/work/background/) — the non-durable alternative
-- [Templating](/guides/templating/) — the Jinja2 environment used for HTML bodies
-- [Startup & Shutdown](/guides/startups-and-shutdowns/) — the hooks `setup_mail` registers
+- [Queue System](/guides/work/queue/): where email sending belongs
+- [Jobs](/guides/work/jobs/): retry and failure handling for delivery
+- [Background Tasks](/guides/work/background/): the non-durable alternative
+- [Templating](/guides/templating/): the Jinja2 environment used for HTML
+  bodies
+- [Startup & Shutdown](/guides/startups-and-shutdowns/): the hooks `setup_mail`
+  registers

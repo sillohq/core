@@ -22,7 +22,7 @@ and getting out of the way.
 
 Key design decisions:
 1. **Starter repo, not template**: The user gets a real, working application
-   that runs immediately -- not a skeleton that needs scaffolding.
+   that runs immediately, not a skeleton that needs scaffolding.
 2. **Targeted substitutions**: Only specific files are modified.  Model files
    are deliberately untouched to avoid desyncing from committed migrations.
 3. **No secrets in the starter**: `generate_secret_key()` creates unique
@@ -126,7 +126,7 @@ def url(self) -> str:
     return f"https://codeload.github.com/{self.owner}/{self.repo}/tar.gz/{self.ref}"
 ```
 
-The URL points to GitHub's raw tarball endpoint -- not the repository page.
+The URL points to GitHub's raw tarball endpoint, not the repository page.
 Public repos need no authentication.
 
 ### Template.parse()
@@ -204,7 +204,7 @@ directory (e.g., `../../etc/cron.d/evil`).
 
 ### Python 3.12+ Safety
 
-Extracts with `filter="data"` -- Python 3.12's tarfile safety filter that:
+Extracts with `filter="data"`. Python 3.12's tarfile safety filter that:
 - Strips leading `/` from paths.
 - Rejects absolute paths.
 - Rejects `..` components.
@@ -272,7 +272,7 @@ def _write_env(root: Path, name: str) -> bool
 2. Creates `.env` from it.
 3. Replaces placeholder values for keys `SECRET_KEY`, `JWT_SECRET`, `APP_KEY`
    with `generate_secret_key()`.
-4. **Never replaces an existing `.env`** -- it may hold real credentials.
+4. **Never replaces an existing `.env`**: it may hold real credentials.
 5. Returns `True` if a file was written.
 
 ---
@@ -667,7 +667,7 @@ graph TD
     C --> D[Template.parse]
     D --> E[Check directory exists/empty]
     E -->|Non-empty, no --force| F[Error]
-    E -->|OK| G["fetch(template, root) — spinner"]
+    E -->|OK| G["fetch(template, root): spinner"]
     G --> H["personalise(root, name)"]
     H --> I{--git?}
     I -->|Yes| J["git init --quiet"]
@@ -794,7 +794,7 @@ def tarball():
 ### 13.3 Test Coverage
 
 **test_template.py**:
-- `TestParse`: owner/repo, @ref, explicit --ref winning, URL variants, invalid values.
+- `TestParse`: owner/repo, @ref, explicit `--ref` winning, URL variants, invalid values.
 - `TestFetch`: top-level dir stripping, path-escaping refusal, 404 error, network failure.
 - `TestPersonalise`: name propagation, prose left alone, lock file rename, .env with real secret, existing .env never replaced.
 - `TestSecretKey`: two calls differ; length respected.
@@ -802,8 +802,8 @@ def tarball():
 **test_cli.py**:
 - Uses `typer.testing.CliRunner`.
 - `no_fetch` fixture: monkeypatches `fetch` to write starter files instead of downloading.
-- `TestCreateApp`: one-argument, two-argument, ref pinning, directory choice, no-name error, invalid names, non-empty directory, --force, fetch failure, --no-install, git init.
-- `TestTopLevel`: --version, bare invocation, create-app being the only command.
+- `TestCreateApp`: one-argument, two-argument, ref pinning, directory choice, no-name error, invalid names, non-empty directory, `--force`, fetch failure, `--no-install`, git init.
+- `TestTopLevel`: `--version`, bare invocation, create-app being the only command.
 
 ---
 

@@ -78,13 +78,26 @@ from sillo.core.helpers.async_helpers import is_async_callable   # correct
 
 Four of these modules touch security directly. Every page has its own warnings section; these are the ones that most often cause real incidents.
 
-**[HTML](/guides/helpers/html/) — `sanitize_html` is not safe for untrusted input.** It is a regex scanner, not a parser, and has verified bypasses including entity-encoded and whitespace-split `javascript:` URLs. Use `nh3` or `bleach` for anything a stranger typed. That page shows the exact payloads that get through.
+**[HTML](/guides/helpers/html/). `sanitize_html` is not safe for untrusted
+input.** It is a regex scanner, not a parser, and has verified bypasses
+including entity-encoded and whitespace-split `javascript:` URLs. Use `nh3` or
+`bleach` for anything a stranger typed. That page shows the exact payloads that
+get through.
 
-**[Network](/guides/helpers/network/) — `get_client_ip` trusts every header by default.** `trusted_proxies` defaults to `None`, which means "believe anyone". Any client can then claim any IP, defeating rate limiting, geoblocking, and audit logs. Always pass the parameter.
+**[Network](/guides/helpers/network/): `get_client_ip` trusts every header by
+default.** `trusted_proxies` defaults to `None`, which means "believe anyone".
+Any client can then claim any IP, defeating rate limiting, geoblocking, and
+audit logs. Always pass the parameter.
 
-**[Hashing](/guides/helpers/hashing/) — never store a password with a digest.** `sha256` is built to be fast, which is exactly wrong for password storage. Use `hash_password`. Also note bcrypt's hard 72-byte input limit, which raises rather than truncating.
+**[Hashing](/guides/helpers/hashing/): never store a password with a digest.**
+`sha256` is built to be fast, which is exactly wrong for password storage. Use
+`hash_password`. Also note bcrypt's hard 72-byte input limit, which raises
+rather than truncating.
 
-**[Crypto](/guides/helpers/crypto/) — `unsign_value(max_age=...)` does nothing.** The parameter is accepted and never read; there is no timestamp in the token format. Tokens you believe expire do not. Put the expiry inside the signed payload, or use [JWT](/guides/helpers/jwt/).
+**[Crypto](/guides/helpers/crypto/). `unsign_value(max_age=...)` does
+nothing.** The parameter is accepted and never read; there is no timestamp in
+the token format. Tokens you believe expire do not. Put the expiry inside the
+signed payload, or use [JWT](/guides/helpers/jwt/).
 
 ##  Picking the right module
 
@@ -202,13 +215,21 @@ def user():
     return User(email="a@example.com", password=KNOWN_HASH)
 ```
 
-Never lower the bcrypt cost factor to speed up tests by changing production configuration — you will eventually ship the reduced value.
+Never lower the bcrypt cost factor to speed up tests by changing production
+configuration. You will eventually ship the reduced value.
 
 **Pin the clock, not the helper, for time-dependent behaviour.** `file_age` and the JWT expiry checks read the current time. Rather than patching them, use a library like `freezegun` or inject the timestamp, so you are testing your logic rather than your mocking.
 
 ##  Performance in one paragraph
 
-Almost everything here is a pure in-memory string operation costing microseconds, and you can ignore the cost. Three exceptions matter. `hash_password` and `verify_password` take roughly 250 ms each and occupy a full CPU core — that is deliberate, and it caps how many logins you serve per core. `derive_key` costs the same for the same reason. Anything that touches the disk (`hash_file`, `list_files`, `file_age`) is blocking I/O and stalls the entire event loop if called directly from an async handler; push it to a thread or a [background task](/guides/work/background/).
+Almost everything here is a pure in-memory string operation costing
+microseconds, and you can ignore the cost. Three exceptions matter.
+`hash_password` and `verify_password` take roughly 250 ms each and occupy a
+full CPU core. That is deliberate, and it caps how many logins you serve per
+core. `derive_key` costs the same for the same reason. Anything that touches
+the disk (`hash_file`, `list_files`, `file_age`) is blocking I/O and stalls the
+entire event loop if called directly from an async handler; push it to a thread
+or a [background task](/guides/work/background/).
 
 ##  Common tasks, and where to look
 
@@ -246,8 +267,10 @@ A quick index by problem rather than by module, for when you know what you need 
 
 ##  Related
 
-- [Authentication](/guides/authentication/) — the full auth stack built on hashing and JWT
-- [Rate Limiting](/guides/rate-limiting/) — the main consumer of `get_client_ip`
-- [File Uploads](/guides/file-upload/) — where the file helpers get used
-- [Validation](/guides/validation/) — input validation, which these helpers do not do
-- [Security](/guides/security/) — headers and hardening beyond these utilities
+- [Authentication](/guides/authentication/): the full auth stack built on
+  hashing and JWT
+- [Rate Limiting](/guides/rate-limiting/): the main consumer of `get_client_ip`
+- [File Uploads](/guides/file-upload/): where the file helpers get used
+- [Validation](/guides/validation/): input validation, which these helpers do
+  not do
+- [Security](/guides/security/): headers and hardening beyond these utilities

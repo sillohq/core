@@ -134,7 +134,9 @@ EventError (base)
 
 **File:** `/Users/admin/sillo.build/core/sillo/events/core.py` (866 lines)
 
-The `Event` class is the core of the system — 866 lines implementing priority-based dispatch, DOM-style propagation, thread safety, metrics, and history.
+The `Event` class is the core of the system: 866 lines implementing
+priority-based dispatch, DOM-style propagation, thread safety, metrics, and
+history.
 
 ### 4.1 Constructor
 
@@ -205,7 +207,7 @@ Parent-child relationships enable capture/bubble propagation. Children are store
 
 ## 5. Listener Registration
 
-### 5.1 `listen()` — Persistent Listener
+### 5.1 `listen()`: Persistent Listener
 
 ```python
 def listen(
@@ -222,7 +224,7 @@ Can be used as:
 - Parameterized decorator: `@event.listen(priority=EventPriority.HIGH)`
 - Direct call: `event.listen(my_func)`
 
-### 5.2 `once()` — One-Shot Listener
+### 5.2 `once()`: One-Shot Listener
 
 ```python
 def once(
@@ -236,7 +238,7 @@ def once(
 
 Same API as `listen()` but the listener is removed after the first invocation.
 
-### 5.3 `_add_listener()` — Internal Registration
+### 5.3 `_add_listener()`: Internal Registration
 
 ```python
 def _add_listener(self, listener, *, priority=EventPriority.NORMAL, once=False, weak_ref=False):
@@ -261,8 +263,8 @@ def _add_listener(self, listener, *, priority=EventPriority.NORMAL, once=False, 
 ```
 
 **Validation:**
-1. Max listener check — raises `MaxListenersExceededError`
-2. Duplicate check — raises `ListenerAlreadyRegisteredError`
+1. Max listener check: raises `MaxListenersExceededError`
+2. Duplicate check: raises `ListenerAlreadyRegisteredError`
 3. Optional weak reference wrapping
 
 ### 5.4 `remove_listener()` and `remove_all_listeners()`
@@ -287,7 +289,7 @@ def remove_all_listeners(self):
             self._once_listeners[priority].clear()
 ```
 
-### 5.5 `_listeners_equal()` — Weak Reference Resolution
+### 5.5 `_listeners_equal()`: Weak Reference Resolution
 
 ```python
 def _listeners_equal(self, listener1, listener2) -> bool:
@@ -336,7 +338,7 @@ graph TD
 | `AT_TARGET` | On the target event | Always |
 | `BUBBLING` | Child → Parent | After target phase (if not cancelled) |
 
-### 6.2 `trigger()` — Synchronous Dispatch
+### 6.2 `trigger()`: Synchronous Dispatch
 
 ```python
 def trigger(self, *args, **kwargs) -> dict[str, Any]:
@@ -380,7 +382,7 @@ def trigger(self, *args, **kwargs) -> dict[str, Any]:
         raise
 ```
 
-### 6.3 `trigger_async()` — Async Dispatch
+### 6.3 `trigger_async()`: Async Dispatch
 
 Identical semantics but coroutine listeners are **awaited** (in priority order) rather than fire-and-forget:
 
@@ -530,7 +532,7 @@ def event(self, event_name: str) -> Event:
 
 Events are lazily created on first access.
 
-### 8.3 `emit()` — Synchronous (Memory Only)
+### 8.3 `emit()`: Synchronous (Memory Only)
 
 ```python
 def emit(self, event_name, *args, **kwargs) -> dict[str, Any]:
@@ -539,7 +541,7 @@ def emit(self, event_name, *args, **kwargs) -> dict[str, Any]:
     return self.event(event_name).trigger(*args, **kwargs)
 ```
 
-### 8.4 `emit_async()` — All Backends
+### 8.4 `emit_async()`: All Backends
 
 ```python
 async def emit_async(self, event_name, *args, **kwargs) -> dict[str, Any]:
@@ -548,7 +550,7 @@ async def emit_async(self, event_name, *args, **kwargs) -> dict[str, Any]:
     return {"event_id": envelope["event_id"], "backend": self._backend}
 ```
 
-### 8.5 `on()` and `once()` — Registration
+### 8.5 `on()` and `once()`: Registration
 
 ```python
 def on(self, event_name, func=None, *, priority=EventPriority.NORMAL, weak_ref=False):
@@ -561,7 +563,7 @@ def on(self, event_name, func=None, *, priority=EventPriority.NORMAL, weak_ref=F
     return decorator(func)
 ```
 
-### 8.6 `_subscribe()` — Transport Subscription
+### 8.6 `_subscribe()`: Transport Subscription
 
 ```python
 def _subscribe(self, event_name):
@@ -876,20 +878,20 @@ await emitter.emit_async("order.placed", order_data)
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `Event` class | `core/sillo/events/core.py` | 26–866 |
-| `EventEmitter` | `core/sillo/events/emitter.py` | 14–525 |
-| `EventNamespace` | `core/sillo/events/emitter.py` | 527–628 |
-| `AsyncEventEmitter` (deprecated) | `core/sillo/events/emitter.py` | 631–691 |
-| `EventPriority` enum | `core/sillo/events/enums.py` | 4–29 |
-| `EventPhase` enum | `core/sillo/events/enums.py` | 32–53 |
-| `EventContext` | `core/sillo/events/types.py` | 20–59 |
-| `EventProtocol` | `core/sillo/events/types.py` | 69–122 |
-| Exceptions | `core/sillo/events/exceptions.py` | 1–98 |
-| `EventSerializationMixin` | `core/sillo/events/mixins.py` | 6–108 |
-| `BaseTransport` | `core/sillo/events/transports/base.py` | 241–580 |
-| `serialize_payload` | `core/sillo/events/transports/base.py` | 100–169 |
-| `MemoryTransport` | `core/sillo/events/transports/memory.py` | 16–77 |
-| `RedisTransport` | `core/sillo/events/transports/redis.py` | 49–263 |
-| `PersistentTransport` | `core/sillo/events/transports/persistent.py` | 43–288 |
-| `RecordTransport` | `core/sillo/events/transports/record.py` | 106–231 |
-| Transport registry | `core/sillo/events/transports/__init__.py` | 31–183 |
+| `Event` class | `core/sillo/events/core.py` | 26-866 |
+| `EventEmitter` | `core/sillo/events/emitter.py` | 14-525 |
+| `EventNamespace` | `core/sillo/events/emitter.py` | 527-628 |
+| `AsyncEventEmitter` (deprecated) | `core/sillo/events/emitter.py` | 631-691 |
+| `EventPriority` enum | `core/sillo/events/enums.py` | 4-29 |
+| `EventPhase` enum | `core/sillo/events/enums.py` | 32-53 |
+| `EventContext` | `core/sillo/events/types.py` | 20-59 |
+| `EventProtocol` | `core/sillo/events/types.py` | 69-122 |
+| Exceptions | `core/sillo/events/exceptions.py` | 1-98 |
+| `EventSerializationMixin` | `core/sillo/events/mixins.py` | 6-108 |
+| `BaseTransport` | `core/sillo/events/transports/base.py` | 241-580 |
+| `serialize_payload` | `core/sillo/events/transports/base.py` | 100-169 |
+| `MemoryTransport` | `core/sillo/events/transports/memory.py` | 16-77 |
+| `RedisTransport` | `core/sillo/events/transports/redis.py` | 49-263 |
+| `PersistentTransport` | `core/sillo/events/transports/persistent.py` | 43-288 |
+| `RecordTransport` | `core/sillo/events/transports/record.py` | 106-231 |
+| Transport registry | `core/sillo/events/transports/__init__.py` | 31-183 |

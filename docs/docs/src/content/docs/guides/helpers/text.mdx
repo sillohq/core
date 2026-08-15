@@ -16,7 +16,9 @@ import { Aside } from '@astrojs/starlight/components';
 
 #  Text (`sillo.helpers.text`)
 
-[Strings](/guides/helpers/strings/) handles identifiers: slugs, tokens, case conversion. This module handles *prose* — the paragraphs a person wrote and another person will read.
+[Strings](/guides/helpers/strings/) handles identifiers: slugs, tokens, case
+conversion. This module handles *prose*. The paragraphs a person wrote and
+another person will read.
 
 The work is presentation. A card layout needs a title that fits in two lines. A search results page needs the snippet around the matched word. A notification needs "3 items" rather than "3 item". A meta description needs 160 characters of plain text out of a rich-text body.
 
@@ -58,7 +60,11 @@ async def article(request, response, slug: str):
 
 Python string length is code points. Several things a user sees as one character are more than one code point, and cutting between them produces mojibake.
 
-Emoji with modifiers are the common case: a family emoji or a flag is a sequence joined by zero-width joiners, and slicing mid-sequence leaves fragments. Combining accents behave the same way — `e` plus a combining acute is two code points that render as `é`, and cutting between them orphans the accent onto whatever follows.
+Emoji with modifiers are the common case: a family emoji or a flag is a
+sequence joined by zero-width joiners, and slicing mid-sequence leaves
+fragments. Combining accents behave the same way, `e` plus a combining acute is
+two code points that render as `é`, and cutting between them orphans the accent
+onto whatever follows.
 
 For text that is mostly Latin prose this never comes up. For user-generated content with emoji, use a grapheme-aware library such as `regex` with `\X`, or truncate on a word boundary well short of the limit so a cut never lands mid-cluster.
 
@@ -89,7 +95,9 @@ text.wrap_text("short", width=80)   # unchanged
 text.wrap_text("")                  # ''
 ```
 
-Every output line is at most `width` characters. Use it for plain-text email bodies, terminal output, and fixed-width reports — anywhere the renderer will not wrap for you.
+Every output line is at most `width` characters. Use it for plain-text email
+bodies, terminal output, and fixed-width reports. Anywhere the renderer will
+not wrap for you.
 
 Do not use it for HTML. Browsers wrap according to the layout, and baked-in newlines fight the CSS. The exception is `<pre>`, where the newlines are the point.
 
@@ -110,7 +118,9 @@ When the query is absent, the text is returned rather than an error or an empty 
 text.excerpt("hello world", "missing")   # 'hello world'
 ```
 
-That fallback matters. A search engine can match on a stemmed or fuzzy form that does not appear literally in the body — searching "running" matches a document containing "run" — and the excerpt still needs to render something.
+That fallback matters. A search engine can match on a stemmed or fuzzy form
+that does not appear literally in the body (searching "running" matches a
+document containing "run") and the excerpt still needs to render something.
 
 ```python title="Search results with context"
 from sillo.helpers.text import excerpt, strip_html
@@ -165,7 +175,10 @@ f"{count} {text.pluralize('result', count)} found"
 
 `pluralize` encodes English grammar. It has no concept of locale.
 
-Many languages have more than two plural forms. Russian has three, selected by the last digit of the number. Arabic has six. Japanese and Chinese have none — the noun does not change. Feeding any of them through an English pluralizer produces text that is wrong in a way native speakers find jarring.
+Many languages have more than two plural forms. Russian has three, selected by
+the last digit of the number. Arabic has six. Japanese and Chinese have none.
+The noun does not change. Feeding any of them through an English pluralizer
+produces text that is wrong in a way native speakers find jarring.
 
 Worse, the pattern `f"{n} {pluralize(word, n)}"` bakes English word order into your code. Languages that put the number after the noun, or that inflect the noun by case, cannot be expressed by string concatenation at all.
 
@@ -210,7 +223,10 @@ The function splits on whitespace. That is a reasonable approximation for langua
 
 Chinese, Japanese, and Thai are written without spaces. A 2,000-character Japanese article counts as a handful of "words", so a reading-time estimate reads "1 min read" for a twenty-minute article, and a word-count limit lets through arbitrarily long submissions.
 
-Hyphenated compounds count as one, contractions count as one, and an em-dash between words with no spaces counts the pair as one. For a reading-time estimate these are noise. For a hard limit you enforce against users, count characters instead — it is unambiguous and works in every script.
+Hyphenated compounds count as one, contractions count as one, and an em-dash
+between words with no spaces counts the pair as one. For a reading-time
+estimate these are noise. For a hard limit you enforce against users, count
+characters instead. It is unambiguous and works in every script.
 
 </Aside>
 
@@ -236,7 +252,9 @@ Removing a tag does not remove what was inside it:
 text.strip_html("<script>alert(1)</script>")   # 'alert(1)'
 ```
 
-The result is not executable — it is text now — but the raw payload appears in your output. If that output is a search index or a meta description, the attacker's string is on your page, in a search result, or in a link preview.
+The result is not executable (it is text now) but the raw payload appears in
+your output. If that output is a search index or a meta description, the
+attacker's string is on your page, in a search result, or in a link preview.
 
 Strip scripts and styles before stripping tags, or use a parser that discards those elements' contents.
 
@@ -344,7 +362,9 @@ That turns a per-request scan of a 50 KB document into a column read.
 
 ##  Related
 
-- [Strings](/guides/helpers/strings/) — identifiers, slugs, and tokens
-- [HTML](/guides/helpers/html/) — escaping and sanitizing, and the other `strip_tags`
-- [Templating](/guides/templating/) — where truncation and wrapping usually get applied
-- [Mail](/guides/services/mail/) — confirming that an extracted address is real
+- [Strings](/guides/helpers/strings/): identifiers, slugs, and tokens
+- [HTML](/guides/helpers/html/): escaping and sanitizing, and the other
+  `strip_tags`
+- [Templating](/guides/templating/): where truncation and wrapping usually get
+  applied
+- [Mail](/guides/services/mail/): confirming that an extracted address is real

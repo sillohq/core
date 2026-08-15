@@ -1,6 +1,6 @@
 ---
 title: Admin Permissions & Auth
-description: "Who gets into the admin and what they may do — the is_staff gate, the four permission hooks, non-superuser access, auth backends, and the activity log."
+description: "Who gets into the admin and what they may do. The is_staff gate, the four permission hooks, non-superuser access, auth backends, and the activity log."
 head:
   - tag: meta
     attrs:
@@ -22,7 +22,7 @@ sillo user:admin you@example.com
 ```
 
 Signing in is not enough. When the admin shares your application's user model
-— the ordinary arrangement — every registered account holds a session, and
+(the ordinary arrangement) every registered account holds a session, and
 admitting anyone with a session would hand the whole database to whoever last
 filled in the sign-up form.
 
@@ -41,7 +41,7 @@ sillo user:staff someone@example.com            # grant
 sillo user:staff someone@example.com --revoke   # revoke
 ```
 
-The check runs on **every request**, from the current row — not from something
+The check runs on **every request**, from the current row, not from something
 stamped into the session at sign-in. So revoking access takes effect on the
 next click, without waiting for a session to expire.
 
@@ -64,7 +64,7 @@ All return `True` by default: any staff user may do anything to any registered
 model. Override them to narrow it.
 
 `obj` is the row for change and delete, and `None` when the question is about
-the model in general — rendering the "Add" button, say.
+the model in general, rendering the "Add" button, say.
 
 ### Non-superuser access
 
@@ -122,7 +122,7 @@ class PostAdmin(ModelAdmin):
         return request.user.has_permission("posts.delete")
 ```
 
-Permissions have to be loaded before `has_permission` can answer — see
+Permissions have to be loaded before `has_permission` can answer: see
 [Permissions](/guides/permissions/). Loading them in middleware, once per
 request, keeps these hooks free.
 
@@ -145,7 +145,7 @@ The hooks control **actions**, not visibility of rows. Returning `False` for
 someone else's post stops them editing it; the row is still listed, and its
 detail page still renders.
 
-[`get_queryset`](/orm/admin-registering/#get_queryset) is what filters rows —
+[`get_queryset`](/orm/admin-registering/#get_queryset) is what filters rows,
 and it does not receive the request, so it cannot filter by user.
 
 The honest conclusion: **the admin is not built for per-user data isolation.**
@@ -161,7 +161,7 @@ cannot reach the create route by typing the URL.
 
 Not covered by the per-model hooks:
 
-- **The dashboard** — any staff user sees it.
+- **The dashboard**: any staff user sees it.
 - **The query console** at `/admin/query/`, which is checked as a view
   permission on the model being queried, not per user.
 - **Exports**, which follow `has_view_permission`.
@@ -209,7 +209,7 @@ class SsoAuth(AuthBackend):
 admin = setup_admin(app, auth_backend=SsoAuth())
 ```
 
-`middleware` is what enforces sign-in across the prefix — the backend supplies
+`middleware` is what enforces sign-in across the prefix. The backend supplies
 it, so an SSO backend can redirect to an identity provider rather than to a
 form.
 
@@ -233,12 +233,12 @@ Every create, update, delete and export is written to `AdminActivity`:
 | `user_email` | Who |
 | `action` | What |
 | `model_name`, `object_id` | To what |
-| `detail` | Extra context — an export's format and row count |
+| `detail` | Extra context. An export's format and row count |
 | `ip_address`, `user_agent` | From where |
 
 Recent entries appear on the dashboard.
 
-Two limits worth stating. It records what the **admin** did — nothing else
+Two limits worth stating. It records what the **admin** did. Nothing else
 writing to your database appears in it. And it is an ordinary table, so someone
 with the query console can read it and, given the right grants, change it. It
 is a record for you, not evidence against a determined insider.
@@ -248,6 +248,6 @@ is a record for you, not evidence against a determined insider.
 - Grant `is_staff` deliberately, and audit it. `sillo user:list --staff`.
 - Reserve deletion for superusers on anything you cannot recreate.
 - Turn the admin off in environments where nobody needs it.
-- Put it behind whatever network controls you already have — the admin is a
-  full database client with a web interface.
+- Put it behind whatever network controls you already have: the admin is a full
+  database client with a web interface.
 - Watch the activity log for exports.

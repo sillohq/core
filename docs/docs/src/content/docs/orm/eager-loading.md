@@ -1,6 +1,6 @@
 ---
 title: Eager Loading
-description: "Avoiding the N+1 — select_related, prefetch_related, the Prefetch object, fetch_related, and how to tell which one a relation needs."
+description: "Avoiding the N+1: select_related, prefetch_related, the Prefetch object, fetch_related, and how to tell which one a relation needs."
 head:
   - tag: meta
     attrs:
@@ -32,7 +32,7 @@ for post in posts:
     print(post.author.name)      # already loaded
 ```
 
-Two queries instead of fifty-one — and one of them was going to happen anyway.
+Two queries instead of fifty-one, and one of them was going to happen anyway.
 
 ## `select_related`
 
@@ -45,7 +45,7 @@ await Post.all().select_related("author__profile")
 A **join**. The related row comes back in the same query, in the same result
 set.
 
-Use it for **forward** relations — the ones where this table holds the foreign
+Use it for **forward** relations. The ones where this table holds the foreign
 key:
 
 - [`ForeignKeyField`](/orm/relationships/#foreign-keys)
@@ -70,17 +70,17 @@ Use it for the one-to-many directions:
 - [many-to-many](/orm/relationships/#many-to-many) (`post.tags`)
 
 It works on forward relations too, at the cost of an extra query rather than a
-join — which is occasionally what you want when the joined row is wide and
+join, which is occasionally what you want when the joined row is wide and
 repeated.
 
 ## Choosing
 
 | Relation | Use |
 | --- | --- |
-| Forward FK — `post.author` | `select_related` |
-| One-to-one — `user.profile` | `select_related` |
-| Reverse FK — `author.posts` | `prefetch_related` |
-| Many-to-many — `post.tags` | `prefetch_related` |
+| Forward FK: `post.author` | `select_related` |
+| One-to-one: `user.profile` | `select_related` |
+| Reverse FK: `author.posts` | `prefetch_related` |
+| Many-to-many: `post.tags` | `prefetch_related` |
 
 The rule underneath: **one row on the other side, join; many rows, prefetch.**
 
@@ -94,7 +94,7 @@ await (
 )
 ```
 
-## `Prefetch` — filtering what is prefetched
+## `Prefetch`: filtering what is prefetched
 
 ```python
 from tortoise.query_utils import Prefetch
@@ -133,8 +133,8 @@ A `LIMIT` in a prefetch queryset applies to the single combined query, not per
 parent. `Prefetch("posts", queryset=Post.all().limit(5))` gives you five posts
 across *all* authors, not five each.
 
-"The five most recent per author" is a window function — see
-[raw SQL](/orm/raw-sql/).
+"The five most recent per author" is a window function. See [raw
+SQL](/orm/raw-sql/).
 :::
 
 ## `fetch_related`
@@ -146,8 +146,8 @@ post = await Post.get(id=1)
 await post.fetch_related("author", "tags")
 ```
 
-Fine for one object. Inside a loop it **is** the N+1 — that is the same
-sequence of queries, written out. If you are calling it in a loop, the fix is
+Fine for one object. Inside a loop it **is** the N+1. That is the same sequence
+of queries, written out. If you are calling it in a loop, the fix is
 `prefetch_related` on the query that produced the loop.
 
 ## Nested
@@ -158,7 +158,7 @@ await Author.all().prefetch_related("posts__tags")
 await Comment.all().select_related("post__author")
 ```
 
-Depth is fine. Breadth is what gets expensive — each prefetched relation is
+Depth is fine. Breadth is what gets expensive. Each prefetched relation is
 another query, and each joined relation widens every row.
 
 ## Diagnosing an N+1
@@ -189,7 +189,7 @@ def get_queryset(cls, queryset):
 
 Eager loading trades queries for data transferred. Both have a cost.
 
-- **A relation you might not use** — behind a conditional — is better fetched
+- **A relation you might not use.** Behind a conditional, is better fetched
   when the condition is true.
 - **A join that multiplies rows.** Two `prefetch_related` calls are two clean
   queries; two joins over one-to-many relations would be a cross product.

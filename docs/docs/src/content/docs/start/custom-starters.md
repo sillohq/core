@@ -1,6 +1,6 @@
 ---
 title: Custom Starters
-description: "Using any GitHub repository as a Sillo starter, pinning to a branch or tag, and what makes a repository work well as one — including the conventions personalisation looks for."
+description: "Using any GitHub repository as a Sillo starter, pinning to a branch or tag, and what makes a repository work well as one, including the conventions personalisation looks for."
 head:
   - tag: meta
     attrs:
@@ -33,7 +33,7 @@ www.github.com/acme/our-template
 
 All of them parse to the same owner and repository. A `www.` prefix, the
 `https://` scheme and a trailing `.git` are stripped, and trailing slashes are
-ignored — so pasting a browser URL or a clone URL both work.
+ignored, so pasting a browser URL or a clone URL both work.
 
 Anything that does not resolve to exactly two path segments is refused:
 
@@ -70,7 +70,7 @@ cd myapp && rm -rf .git && git init
 ```
 
 You lose the renaming and the secret generation; do those by hand, or run
-`personalise` yourself — see [Internals](/start/internals/).
+`personalise` yourself. See [Internals](/start/internals/).
 
 ## Building one
 
@@ -81,7 +81,7 @@ make personalisation work, and they cost nothing to adopt.
 
 `personalise` takes the starter's own name as a parameter and defaults to
 `starter`. From the command line there is no way to change that default, so a
-repository that calls itself `starter` internally gets the renaming for free —
+repository that calls itself `starter` internally gets the renaming for free,
 whatever the repository itself is called.
 
 That is why `sillohq/starter-inertia` still names its package `starter`.
@@ -115,7 +115,7 @@ DATABASE_URL=sqlite://storage/starter.db
 ### Ship a `.env.example`
 
 It is what `.env` is generated from. Name your signing keys `SECRET_KEY`,
-`JWT_SECRET` or `APP_KEY` and each gets a freshly generated value — see
+`JWT_SECRET` or `APP_KEY` and each gets a freshly generated value. See
 [Secrets](/start/secrets/).
 
 Anything else is copied verbatim, which is correct for configuration and wrong
@@ -133,8 +133,8 @@ the docstrings say whatever they say.
 
 This is the part that makes a starter worth more than a template. A workflow
 that starts the application and calls its routes is what catches middleware
-ordering, a missing static mount, an auth backend reading the wrong claim —
-none of which a render check would notice.
+ordering, a missing static mount, an auth backend reading the wrong claim, none
+of which a render check would notice.
 
 The official starters do exactly this on every push, across three Python
 versions.
@@ -143,7 +143,7 @@ versions.
 
 The tarball has no history, so whoever creates a project from your starter
 begins with a clean slate and no commits of yours to delete. Nothing to do
-here — just worth knowing that is what they get.
+here, just worth knowing that is what they get.
 
 ## Testing your starter
 

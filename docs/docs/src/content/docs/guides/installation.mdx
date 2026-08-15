@@ -20,9 +20,8 @@ import { Aside, TabItem, Tabs } from '@astrojs/starlight/components';
 
 One command puts the framework in place: routing, validation, dependency
 injection, the response builder, and the middleware stack. The heavier pieces
-— the ORM, JWT, templating, Redis — are optional extras you add when the
-product needs them, so the dependency tree stays proportional to what you
-build.
+(the ORM, JWT, templating, Redis) are optional extras you add when the product
+needs them, so the dependency tree stays proportional to what you build.
 
 ## Requirements
 
@@ -106,8 +105,8 @@ python --version
     ```
 
     `venv` and `pip` ship with Python, so this needs nothing installed first.
-    With the environment activated, commands are typed as they appear —
-    `sillo --version`, no prefix.
+    With the environment activated, commands are typed as they appear, `sillo
+    --version`, no prefix.
 
     Nothing records what you installed, so pin it yourself:
 
@@ -126,14 +125,14 @@ version as well as the packages, and needs no separate step to create or
 activate an environment. Everything in these guides is written against it.
 
 Sillo does not care either way. It is an ordinary package with a standard
-`pyproject.toml`, so PDM, Hatch, Pipenv or a bare `venv` all work — nothing in
+`pyproject.toml`, so PDM, Hatch, Pipenv or a bare `venv` all work. Nothing in
 the framework reads a lockfile or shells out to a package manager.
 :::
 
 :::note
-Every later example is written as a bare command — `sillo db:migrate`. Prefix
-it with `uv run` under uv, or `poetry run` under Poetry. With an activated
-`venv`, type it as written.
+Every later example is written as a bare command: `sillo db:migrate`. Prefix it
+with `uv run` under uv, or `poetry run` under Poetry. With an activated `venv`,
+type it as written.
 :::
 
 ## Add a development server
@@ -266,20 +265,25 @@ app = SilloApp(title="Projects API")
 ```
 
 <Aside type="danger" title="`silloApp` no longer exists">
-Do this before you upgrade. `silloApp` was removed in **0.0.2a2** — there is no alias and no deprecation period left, so `from sillo import silloApp` raises `ImportError` at import time, before any of your code runs.
+Do this before you upgrade. `silloApp` was removed in **0.0.2a2**. There is no
+alias and no deprecation period left, so `from sillo import silloApp` raises
+`ImportError` at import time, before any of your code runs.
 
 0.0.2a1 briefly kept the old name working behind a `DeprecationWarning`. If you are on that release, run your suite with `-W error::DeprecationWarning` to find every remaining use before moving on.
 </Aside>
 
-Nothing else in the constructor changed — every argument, and every method on the returned application, is the same. The only other visible difference is that `str(app)` now reads `<SilloApp: title>`, which matters if you assert on dev-server output or log lines.
+Nothing else in the constructor changed: every argument, and every method on
+the returned application, is the same. The only other visible difference is
+that `str(app)` now reads `<SilloApp: title>`, which matters if you assert on
+dev-server output or log lines.
 
 ## Why uv is recommended
 
-Recommended, not required — and recommended strongly. It resolves and
-installs an order of magnitude faster than pip, produces a lockfile without a
-separate tool, installs the Python interpreter itself when you need a version
-you do not have, and runs commands inside the environment without an activate
-step to forget.
+Recommended, not required, and recommended strongly. It resolves and installs
+an order of magnitude faster than pip, produces a lockfile without a separate
+tool, installs the Python interpreter itself when you need a version you do not
+have, and runs commands inside the environment without an activate step to
+forget.
 
 Poetry gives you the lockfile and the dependency groups but not the speed or
 the interpreter management. `venv` and `pip` give you neither, in exchange for

@@ -14,7 +14,10 @@ head:
 
 #  API Keys
 
-API keys are for **server-to-server** and **programmatic** access: a long-lived secret sent in a header, scoped to specific permissions, and stored hashed (never plaintext). sillo gives you the full lifecycle — generate, verify, list, revoke.
+API keys are for **server-to-server** and **programmatic** access: a long-lived
+secret sent in a header, scoped to specific permissions, and stored hashed
+(never plaintext). sillo gives you the full lifecycle: generate, verify, list,
+revoke.
 
 ##  1. Protecting routes with the backend
 
@@ -42,12 +45,16 @@ Backend parameters:
 | `verify_with_manager` | `False` | When `True`, validates the key against an `ApiKey` DB row (checks hash, expiry, `is_active`). |
 
 <aside type="note" title="verify_with_manager is what makes keys real">
-With `verify_with_manager=False`, the backend only checks the prefix and that *some* value is present — it does **not** validate the key against your database. For any real API key system, pass `verify_with_manager=True`, which hashes the presented key and matches it to an `ApiKey` row, honoring `is_active`, `expires_at`, and `scopes`.
+With `verify_with_manager=False`, the backend only checks the prefix and that
+*some* value is present. It does **not** validate the key against your
+database. For any real API key system, pass `verify_with_manager=True`, which
+hashes the presented key and matches it to an `ApiKey` row, honoring
+`is_active`, `expires_at`, and `scopes`.
 </aside>
 
 On success, `request.scope["auth"]` becomes `"apikey"`.
 
-##  2. Storing keys — ApiKey & ApiKeyManager
+##  2. Storing keys: ApiKey & ApiKeyManager
 
 Keys are hashed with SHA-256 before storage. You never persist the raw key.
 
@@ -76,7 +83,7 @@ await ApiKeyManager().revoke_all_for_user(1)
 
 `ApiKey` fields: `name`, `key_hash` (unique), `user_id`, `scopes` (JSON list), `last_used_at`, `expires_at`, `is_active`. Helpers: `mark_used()`, `revoke()`, and the property `is_expired`.
 
-##  3. Issuing keys from a user — ApiKeyUserMixin
+##  3. Issuing keys from a user: ApiKeyUserMixin
 
 Add `ApiKeyUserMixin` to your user class so a user can self-service keys:
 
@@ -102,11 +109,14 @@ await user.revoke_api_key(key_id)           # revoke one
 await user.revoke_all_api_keys()            # revoke all for this user
 ```
 
-`create_api_key` returns `(full_key, ApiKey)` — `full_key` is shown once; afterwards only the hash exists in the database.
+`create_api_key` returns `(full_key, ApiKey)`. `full_key` is shown once;
+afterwards only the hash exists in the database.
 
 ##  4. Scopes and the auth gate
 
-The backend confirms *that* the key is valid but does **not** expose the key's `scopes` on the request — so scope enforcement is your job. Re-verify the presented key in the handler to get the `ApiKey` row (which carries `scopes`):
+The backend confirms *that* the key is valid but does **not** expose the key's
+`scopes` on the request, so scope enforcement is your job. Re-verify the
+presented key in the handler to get the `ApiKey` row (which carries `scopes`):
 
 ```python
 from sillo.auth.apikey import ApiKeyManager
@@ -143,7 +153,8 @@ A request with `X-API-Key` authenticates as `"apiKeyHeader"`; one with a bearer 
 
 ##  Related
 
-- [Authentication](/guides/authentication/) — middleware + backend model
-- [Protecting Routes](/guides/protecting-routes/) — `useAuth(schemes=["apiKeyHeader"])`
-- [Users & User Models](/guides/users/) — `ApiKeyUserMixin` wiring
+- [Authentication](/guides/authentication/): middleware + backend model
+- [Protecting Routes](/guides/protecting-routes/):
+  `useAuth(schemes=["apiKeyHeader"])`
+- [Users & User Models](/guides/users/): `ApiKeyUserMixin` wiring
 - [JWT](/guides/jwt-auth/) · [Sessions](/guides/session-auth/)

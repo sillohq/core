@@ -69,7 +69,9 @@ network.is_trusted_proxy("10.0.0.1", None)
 
 Any client can send `X-Forwarded-For: 8.8.8.8` and your application will report `8.8.8.8`. That defeats per-IP rate limiting (a new IP every request), IP allowlists, geoblocking, fraud scoring, and any audit log that records an address.
 
-**Always pass `trusted_proxies` in production.** The value is the address of *your own* infrastructure — the load balancer or proxy that sits directly in front of the app:
+**Always pass `trusted_proxies` in production.** The value is the address of
+*your own* infrastructure, the load balancer or proxy that sits directly in
+front of the app:
 
 ```python
 TRUSTED_PROXIES = [
@@ -107,7 +109,10 @@ network.get_client_ip({"x-forwarded-for": "1.2.3.4, 10.0.0.2, 10.0.0.1"},
 # '1.2.3.4'
 ```
 
-Scanning right-to-left skips the hops you control and stops at the first address that could not have been forged past them. Taking the leftmost value instead — which many hand-rolled implementations do — means trusting whatever the client typed.
+Scanning right-to-left skips the hops you control and stops at the first
+address that could not have been forged past them. Taking the leftmost value
+instead (which many hand-rolled implementations do) means trusting whatever the
+client typed.
 
 When every entry is private, the first is returned as a fallback:
 
@@ -222,7 +227,10 @@ Without that check, `http://169.254.169.254/latest/meta-data/` reads your cloud 
 
 <Aside type="caution" title="Resolve-then-fetch is still racy">
 
-The example above resolves the hostname, checks the address, then fetches by URL — and the fetch resolves again. An attacker controlling the DNS record can return a public address for the first lookup and an internal one for the second. This is DNS rebinding.
+The example above resolves the hostname, checks the address, then fetches by
+URL, and the fetch resolves again. An attacker controlling the DNS record can
+return a public address for the first lookup and an internal one for the
+second. This is DNS rebinding.
 
 Closing it properly means resolving once and connecting to the resolved address directly with the `Host` header set by hand, or using an HTTP client that supports pinning the resolved address. If you accept URLs from strangers, do it properly or route the fetch through an egress proxy that enforces the policy.
 
@@ -296,7 +304,9 @@ TRUSTED_PROXIES = load_cdn_ranges()   # refreshed on deploy
 
 Once you trust your CDN's ranges, anyone who can reach your origin server directly and spoof a source address inside those ranges can forge any client IP. More practically: an attacker who finds your origin's real address bypasses the CDN entirely, and whether their forged headers are believed now depends on your firewall, not your code.
 
-Restrict the origin at the network layer so only the CDN can reach it — a security group, a firewall rule, or an authenticated origin pull. The header trust is only as strong as that restriction.
+Restrict the origin at the network layer so only the CDN can reach it: a
+security group, a firewall rule, or an authenticated origin pull. The header
+trust is only as strong as that restriction.
 
 </Aside>
 
@@ -324,7 +334,10 @@ network.ip_to_int("255.255.255.255")    # 4294967295
 network.int_to_ip(network.ip_to_int("::1"), version=6)   # '::1'
 ```
 
-Integer form is useful for storing addresses in a plain integer column and for range queries — `WHERE ip_int BETWEEN ? AND ?` uses an index, whereas string comparison on dotted quads does not sort correctly (`"9.0.0.0"` sorts after `"10.0.0.0"`).
+Integer form is useful for storing addresses in a plain integer column and for
+range queries. `WHERE ip_int BETWEEN ? AND ?` uses an index, whereas string
+comparison on dotted quads does not sort correctly (`"9.0.0.0"` sorts after
+`"10.0.0.0"`).
 
 `int_to_ip` defaults to `version=4`. An IPv6 address converted to an integer and back without `version=6` produces a wrong IPv4 address or raises, depending on the magnitude. Store the version alongside the integer if you handle both families.
 
@@ -379,7 +392,9 @@ Normalize on write. An allowlist storing one spelling will not match a request c
 
 ##  Performance
 
-Every function parses its input with the stdlib `ipaddress` module, which allocates an object per call. That is microseconds — irrelevant once per request, noticeable in a loop over a million rows.
+Every function parses its input with the stdlib `ipaddress` module, which
+allocates an object per call. That is microseconds, irrelevant once per
+request, noticeable in a loop over a million rows.
 
 `subnet_contains` reparses the subnet on every call. Checking one address against fifty CIDRs reparses all fifty every time. If that runs per request, parse the networks once at startup:
 
@@ -412,7 +427,8 @@ def is_trusted(ip: str) -> bool:
 
 ##  Related
 
-- [Rate Limiting](/guides/rate-limiting/) — the main consumer of client IP
-- [Request Information](/guides/request-info/) — reading headers and the peer address
-- [Security](/guides/security/) — trusted hosts and the wider hardening story
-- [Middleware](/guides/middleware/) — where IP resolution usually belongs
+- [Rate Limiting](/guides/rate-limiting/): the main consumer of client IP
+- [Request Information](/guides/request-info/): reading headers and the peer
+  address
+- [Security](/guides/security/): trusted hosts and the wider hardening story
+- [Middleware](/guides/middleware/): where IP resolution usually belongs

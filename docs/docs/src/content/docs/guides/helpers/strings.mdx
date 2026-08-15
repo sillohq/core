@@ -144,7 +144,10 @@ async def get_user(request, response, id: int):
 
 <Aside type="caution" title="Case conversion is lossy, so round-trips are not guaranteed">
 
-`camel_to_snake(snake_to_camel(x))` returns `x` for well-formed input, but the reverse is not reliable. `snake_to_camel(camel_to_snake("HTTPServer"))` gives `"httpServer"`, not `"HTTPServer"` — the information that "HTTP" was an acronym is gone after the first conversion.
+`camel_to_snake(snake_to_camel(x))` returns `x` for well-formed input, but the
+reverse is not reliable. `snake_to_camel(camel_to_snake("HTTPServer"))` gives
+`"httpServer"`, not `"HTTPServer"`. The information that "HTTP" was an acronym
+is gone after the first conversion.
 
 If you convert keys on the way out and back on the way in, a field named `userID` becomes `user_id` becomes `userId`, and your client's field name silently changes. Pick one canonical form and convert in a single direction, or declare the mapping explicitly with [response-model aliases](/guides/validation/response-models/).
 
@@ -215,7 +218,11 @@ strings.mask_email("a@x.com")                  # "a*@x.com"
 
 A local part of two characters or fewer collapses to the first character plus a single asterisk, so a one-character address does not render as a bare `a@`.
 
-The domain is never masked. That is the right default for the usual purpose — letting a user confirm *"we sent a reset link to j\*\*n@example.com"* — but the domain does leak. For a corporate domain that identifies an employer, or a niche provider that narrows the user population, drop the field rather than masking it.
+The domain is never masked. That is the right default for the usual purpose
+(letting a user confirm *"we sent a reset link to j\*\*n@example.com"*) but the
+domain does leak. For a corporate domain that identifies an employer, or a
+niche provider that narrows the user population, drop the field rather than
+masking it.
 
 ```python title="Confirming a password reset without leaking the address"
 @app.post("/password-reset")
@@ -233,7 +240,10 @@ async def request_reset(request, response):
 
 <Aside type="caution" title="mask_email assumes a well-formed address">
 
-The function splits on the first `@`. Input with no `@` is treated as an all-local-part address and the result has an empty domain: `mask_email("notanemail")` returns `"n********l@"`. Validate the address before masking it — this is a formatter, not a parser.
+The function splits on the first `@`. Input with no `@` is treated as an
+all-local-part address and the result has an empty domain:
+`mask_email("notanemail")` returns `"n********l@"`. Validate the address before
+masking it. This is a formatter, not a parser.
 
 </Aside>
 
@@ -263,7 +273,8 @@ strings.random_digits(4)    # "5013"
 
 ###  `random_token(length=64)`
 
-URL-safe base64. The argument is **bytes of entropy, not output length** — the single most misread signature in this module:
+URL-safe base64. The argument is **bytes of entropy, not output length**, the
+single most misread signature in this module:
 
 ```python
 token = strings.random_token(32)
@@ -311,7 +322,10 @@ Choose length by what the value protects:
 
 `random_digits(6)` is fine for a one-time code and unacceptable for anything long-lived. An attacker who can make unlimited attempts finds it in an average of 500,000 tries, which is minutes against an unprotected endpoint.
 
-A numeric OTP is only safe with all three of: a short expiry (5–10 minutes), a hard attempt limit per code (3–5 tries, then invalidate), and per-account rate limiting. See [Rate Limiting](/guides/rate-limiting/) for the middleware. Without those, use `random_token` instead.
+A numeric OTP is only safe with all three of: a short expiry (5 to 10 minutes),
+a hard attempt limit per code (3 to 5 tries, then invalidate), and per-account
+rate limiting. See [Rate Limiting](/guides/rate-limiting/) for the middleware.
+Without those, use `random_token` instead.
 
 </Aside>
 
@@ -348,7 +362,9 @@ Store the normalized form alongside the original at write time. Normalizing ever
 
 **Do not use `slugify` output as a primary key.** It is not unique, it can be empty, and it changes when the title is edited. Keep an integer or UUID as the key and treat the slug as a display field.
 
-**Do not mask a value before storing it.** Masking is a rendering step. Store the real value (encrypted, or hashed if you never need it back — see [Hashing](/guides/helpers/hashing/)) and mask on the way out.
+**Do not mask a value before storing it.** Masking is a rendering step. Store
+the real value (encrypted, or hashed if you never need it back. See
+[Hashing](/guides/helpers/hashing/)) and mask on the way out.
 
 **Do not assume `random_token(n)` returns `n` characters.** It returns roughly `4n/3`.
 
@@ -389,8 +405,13 @@ The case-conversion functions use precompiled module-level regexes, so there is 
 
 ##  Related
 
-- [Hashing](/guides/helpers/hashing/) — password hashing and digests, for values you never display
-- [Crypto](/guides/helpers/crypto/) — signing and encrypting values you need to read back
-- [Text](/guides/helpers/text/) — truncation, excerpts, and extraction for longer prose
-- [HTML](/guides/helpers/html/) — escaping and sanitizing before rendering into a page
-- [Rate Limiting](/guides/rate-limiting/) — required whenever you issue short numeric codes
+- [Hashing](/guides/helpers/hashing/): password hashing and digests, for values
+  you never display
+- [Crypto](/guides/helpers/crypto/): signing and encrypting values you need to
+  read back
+- [Text](/guides/helpers/text/): truncation, excerpts, and extraction for
+  longer prose
+- [HTML](/guides/helpers/html/): escaping and sanitizing before rendering into
+  a page
+- [Rate Limiting](/guides/rate-limiting/): required whenever you issue short
+  numeric codes

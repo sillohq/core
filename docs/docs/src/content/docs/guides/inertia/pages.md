@@ -1,6 +1,6 @@
 ---
 title: Pages and Props
-description: Writing an Inertia page — render, shared props, deferred work, redirects, and handlers that only gather data.
+description: "Writing an Inertia page: render, shared props, deferred work, redirects, and handlers that only gather data."
 head:
   - tag: meta
     attrs:
@@ -59,7 +59,7 @@ in step.
 `render`, `redirect`, `back` and `location` are importable on their own. They
 find the adapter through the middleware handling the request, so a routes
 module builds Inertia responses without importing the module that owns the
-application — and so without the circular import that would otherwise cause.
+application, and so without the circular import that would otherwise cause.
 
 ```python
 from sillo_inertia import render
@@ -69,7 +69,7 @@ async def home(request: Request, response: Response):
     return await render("Home", {"name": "Sillo"})
 ```
 
-Outside a request — a background job, a test calling a handler directly — pass
+Outside a request (a background job, a test calling a handler directly) pass
 one explicitly:
 
 ```python
@@ -102,8 +102,8 @@ publish:
 {"user": user}                                     # ships every column
 ```
 
-Listing them by hand is what stops a column added later — a password hash, an
-internal note — from quietly starting to reach the client.
+Listing them by hand is what stops a column added later (a password hash, an
+internal note) from quietly starting to reach the client.
 
 ##  Shared props
 
@@ -160,7 +160,7 @@ inertia.back(fallback="/posts")  # ...when there is no Referer
 The 303 is not decoration. On a 302 the browser repeats the POST against the
 new URL, so a redirect after a successful create makes a second record.
 
-To send someone out of Inertia entirely — an external URL, a hosted checkout —
+To send someone out of Inertia entirely (an external URL, a hosted checkout)
 use `location`, which asks the client for a full browser visit rather than an
 XHR one:
 
@@ -198,7 +198,7 @@ Do not rely on it to keep an expensive query off the first page load.
 
 ##  Next
 
-- [Forms and Validation](/guides/inertia/forms/) — returning errors from a
+- [Forms and Validation](/guides/inertia/forms/): returning errors from a
   failed submission
-- [Assets and Deployment](/guides/inertia/assets/) — asset versions and
-  shipping it
+- [Assets and Deployment](/guides/inertia/assets/): asset versions and shipping
+  it

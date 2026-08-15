@@ -23,9 +23,9 @@ transformations.
 
 ##  Attribute casting
 
-A cast is a pair of functions — an encoder that runs on the way into the
-database and a decoder that runs on the way out. Declaring one means you
-stop writing `json.loads(user.metadata)` at every read site.
+A cast is a pair of functions. An encoder that runs on the way into the
+database and a decoder that runs on the way out. Declaring one means you stop
+writing `json.loads(user.metadata)` at every read site.
 
 ```python title="declaring casts"
 from tortoise import fields
@@ -57,9 +57,9 @@ user.metadata["theme"] # 'dark'
 
 ###  Where the encode and decode happen
 
-Decoding happens in `Model.__getattribute__`. Every read of a cast field
-runs the decoder. There is no caching — reading `user.metadata` five
-times parses the JSON five times.
+Decoding happens in `Model.__getattribute__`. Every read of a cast field runs
+the decoder. There is no caching, reading `user.metadata` five times parses the
+JSON five times.
 
 Encoding happens in `Model.save()`, inside the `_encoded_cast_values()`
 context manager. It swaps the encoded value in, lets Tortoise write, then
@@ -92,8 +92,8 @@ A subtlety in `_set_kwargs`: for a cast field, Tortoise's own
 | `"float"` | `float(value)` | `float(value)` | `REAL` |
 | `("encrypted", {"key": ...})` | XOR + base64 | base64 + XOR | `TEXT` |
 
-`None` bypasses both encoder and decoder — a null column reads back as
-`None` rather than crashing the decoder.
+`None` bypasses both encoder and decoder. A null column reads back as `None`
+rather than crashing the decoder.
 
 <Aside type="danger" title="The &quot;bool&quot; cast corrupts data over a text column">
 
@@ -106,11 +106,11 @@ row = await Flagged.get(id=1)
 row.enabled                             # True
 ```
 
-The value survives the round trip inverted. The `"bool"` cast is only
-safe over a genuine `BooleanField` or `IntField`, where the driver
-returns `0`/`1` — and over those columns Tortoise already gives you a
-Python bool, so the cast is redundant. There is no case where this cast
-is both necessary and correct. Do not use it.
+The value survives the round trip inverted. The `"bool"` cast is only safe over
+a genuine `BooleanField` or `IntField`, where the driver returns `0`/`1`, and
+over those columns Tortoise already gives you a Python bool, so the cast is
+redundant. There is no case where this cast is both necessary and correct. Do
+not use it.
 
 </Aside>
 
@@ -150,10 +150,10 @@ class Customer(Model):
     _casts = {"ssn": "fernet"}
 ```
 
-Note that encrypted columns cannot be filtered, sorted, or indexed by
-value — every `WHERE ssn = ...` becomes a full scan and decrypt. If you
-need lookups, store a separate HMAC of the value and query that.
-See [Crypto helpers](/guides/helpers/crypto/).
+Note that encrypted columns cannot be filtered, sorted, or indexed by value.
+Every `WHERE ssn = ...` becomes a full scan and decrypt. If you need lookups,
+store a separate HMAC of the value and query that. See [Crypto
+helpers](/guides/helpers/crypto/).
 
 </Aside>
 
@@ -199,8 +199,8 @@ class Reading(Model):
 
 ###  Decoder failures surface at attribute access
 
-If a column contains a value the decoder cannot handle, the exception is
-raised from the attribute read — not from the query.
+If a column contains a value the decoder cannot handle, the exception is raised
+from the attribute read, not from the query.
 
 ```python
 row = await Flagged.get(id=1)      # succeeds
@@ -273,8 +273,8 @@ database awareness. `len(c)`, `for row in c`, and `c[0]` all work.
 
 ###  `sort_by` coerces falsy values to zero
 
-The sort key is `getattr(item, key, None) or 0`. Every falsy value —
-`None`, `""`, `0`, `False`, `[]` — becomes the integer `0`.
+The sort key is `getattr(item, key, None) or 0`. Every falsy value (`None`,
+`""`, `0`, `False`, `[]`) becomes the integer `0`.
 
 ```python title="what breaks"
 Collection([Row("b"), Row(None), Row("a")]).sort_by("v")
@@ -310,10 +310,10 @@ raises `ValueError: min() iterable argument is empty`. Guard with
 ###  `unique()` without a key requires hashable items
 
 `unique()` with no argument does `list(set(self._items))`, which raises
-`TypeError: unhashable type: 'dict'` on dict rows and discards ordering
-even when it succeeds. `unique(key="plan")` uses a seen-set over the
-attribute values, preserves order, and keeps the first occurrence — that
-is the form you want almost always.
+`TypeError: unhashable type: 'dict'` on dict rows and discards ordering even
+when it succeeds. `unique(key="plan")` uses a seen-set over the attribute
+values, preserves order, and keeps the first occurrence. That is the form you
+want almost always.
 
 ###  `to_dict()` returns a list
 
@@ -364,10 +364,9 @@ async def summary(request, response):
     })
 ```
 
-Note the `limit(1000)`. A `Collection` holds every row in memory; the
-limit is what keeps this endpoint bounded. For an accurate count over a
-large table, use `await User.active().count()` — one `COUNT(*)` instead
-of a full fetch.
+Note the `limit(1000)`. A `Collection` holds every row in memory; the limit is
+what keeps this endpoint bounded. For an accurate count over a large table, use
+`await User.active().count()`, one `COUNT(*)` instead of a full fetch.
 
 ##  What not to do
 
@@ -397,9 +396,9 @@ it holds everything.
 ##  Performance notes
 
 Casting costs one function call per read and one per field per save. JSON
-decoding a large document on every attribute access is the case that
-actually shows up in profiles — assign it to a local variable rather than
-reading `row.metadata` repeatedly inside a loop.
+decoding a large document on every attribute access is the case that actually
+shows up in profiles, assign it to a local variable rather than reading
+`row.metadata` repeatedly inside a loop.
 
 Collections are ordinary Python list comprehensions. Every chained call
 allocates a new list, so a five-step chain over ten thousand rows
@@ -425,9 +424,13 @@ anything you would not want to print.
 
 ##  Related
 
-- [Models & Mixins](/guides/record/models/) — accessors, mutators, and serialization
-- [Record Overview](/guides/record/) — setup and configuration
-- [Scopes & Events](/guides/record/scopes-events/) — reusable query constraints
-- [Pagination](/guides/record/pagination/) — bounding result sets before collecting them
-- [Crypto helpers](/guides/helpers/crypto/) — proper symmetric encryption and HMAC
-- [Serialization](/guides/serialization/) — how sillo encodes handler return values
+- [Models & Mixins](/guides/record/models/): accessors, mutators, and
+  serialization
+- [Record Overview](/guides/record/): setup and configuration
+- [Scopes & Events](/guides/record/scopes-events/): reusable query constraints
+- [Pagination](/guides/record/pagination/): bounding result sets before
+  collecting them
+- [Crypto helpers](/guides/helpers/crypto/): proper symmetric encryption and
+  HMAC
+- [Serialization](/guides/serialization/): how sillo encodes handler return
+  values

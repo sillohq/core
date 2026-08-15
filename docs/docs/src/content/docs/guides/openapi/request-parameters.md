@@ -578,21 +578,20 @@ modify a request. `/orders/42` and `/orders?status=open` are both right.
 `/orders?id=42` and `/orders/open` are both wrong, and the second is
 worse because it looks like a resource and is not.
 
-**Optional or required?** A required query parameter is unusual and often
-a design smell — if it is genuinely required to identify what you are
-fetching, it probably belongs in the path. Optional parameters with
-sensible defaults let a client start with the simple call and add
-precision later.
+**Optional or required?** A required query parameter is unusual and often a
+design smell. If it is genuinely required to identify what you are fetching, it
+probably belongs in the path. Optional parameters with sensible defaults let a
+client start with the simple call and add precision later.
 
 **Repeated or delimited?** `?tag=a&tag=b` and `?tags=a,b` both work, and
 the first is more standard and handles values containing commas. Pick one
 convention for the whole API; supporting both accidentally means neither
 is documented correctly.
 
-**Flat or nested?** Query strings have no native nesting, and every
-convention for faking it — `filter[status]`, `filter.status` — is a
-convention someone has to learn. Flat parameters with prefixed names
-document better and generate better clients.
+**Flat or nested?** Query strings have no native nesting, and every convention
+for faking it (`filter[status]`, `filter.status`) is a convention someone has
+to learn. Flat parameters with prefixed names document better and generate
+better clients.
 
 ##  Documenting for the client, not the implementation
 
@@ -601,9 +600,9 @@ earns its place. An internal field called `q` should be documented as
 `query` if that is clearer, and a parameter that must be called `from`
 cannot be a Python identifier at all.
 
-Descriptions do the work names cannot. `page_size` is self-evident;
-`window` is not — does it mean seconds, a count, a named period? One
-sentence in `description=` prevents the support ticket.
+Descriptions do the work names cannot. `page_size` is self-evident; `window` is
+not, does it mean seconds, a count, a named period? One sentence in
+`description=` prevents the support ticket.
 
 Examples do more than descriptions for anything with format. A parameter
 described as "the region code" with `examples=["eu-west-1"]` answers
@@ -618,9 +617,9 @@ instead of a support incident.
 ##  Constraints are documentation
 
 Every constraint you declare is published as JSON Schema, so `ge=1` and
-`le=100` on a page size are not just enforcement — they tell a client
-exactly what range to offer in a UI, and they let contract-testing tools
-probe the boundary automatically.
+`le=100` on a page size are not just enforcement. They tell a client exactly
+what range to offer in a UI, and they let contract-testing tools probe the
+boundary automatically.
 
 The reverse is also true: a limit enforced in handler code rather than in
 the constraint is invisible to every consumer of the schema. If the rule

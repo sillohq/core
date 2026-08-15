@@ -1,6 +1,6 @@
 ---
 title: Scheduler Commands
-description: "Running and inspecting scheduled tasks from the terminal — schedule:run, schedule:list, schedule:pause and schedule:resume."
+description: "Running and inspecting scheduled tasks from the terminal: schedule:run, schedule:list, schedule:pause and schedule:resume."
 head:
   - tag: meta
     attrs:
@@ -13,7 +13,7 @@ head:
 ---
 
 The `schedule:*` commands appear when the application has a scheduler on
-`app.state` — what [`setup_scheduler`](/guides/work/scheduler/) puts there.
+`app.state`, what [`setup_scheduler`](/guides/work/scheduler/) puts there.
 
 Without one, the commands are still registered but say what is missing rather
 than failing obscurely:
@@ -83,7 +83,7 @@ Tasks are read out of the scheduler in the process you ran the command in, so
 sillo schedule:pause reports:daily
 ```
 
-Stops a task from running. Takes the task's id — the `name` column of
+Stops a task from running. Takes the task's id, the `name` column of
 `schedule:list`. An unknown id is an error.
 
 ## `schedule:resume`
@@ -101,7 +101,7 @@ from a shell does not reach the long-running `schedule:run` process, and a
 restart forgets it.
 
 For an operational off switch that survives both, put the condition in the task
-itself — a feature flag it reads before doing any work.
+itself. A feature flag it reads before doing any work.
 :::
 
 ## Running it in production
@@ -120,5 +120,5 @@ job needs a worker running or the job simply accumulates. See
 
 ## See also
 
-- [Scheduler](/guides/work/scheduler/) — defining tasks and triggers.
-- [Queue commands](/cli/queues/) — the worker the scheduler feeds.
+- [Scheduler](/guides/work/scheduler/): defining tasks and triggers.
+- [Queue commands](/cli/queues/): the worker the scheduler feeds.

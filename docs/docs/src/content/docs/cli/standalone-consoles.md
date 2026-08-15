@@ -1,6 +1,6 @@
 ---
 title: Building a Console
-description: "Assembling a command-line tool of your own with sillo.console — the Console object, the bundled command factories, binding a database, the function form, loops and exit codes."
+description: "Assembling a command-line tool of your own with sillo.console: the Console object, the bundled command factories, binding a database, the function form, loops and exit codes."
 head:
   - tag: meta
     attrs:
@@ -15,7 +15,7 @@ head:
 Most projects never need this. Registering a command on the application puts it
 on `sillo`, and that is the shortest path.
 
-Build a console of your own when you want a **different** command-line tool —
+Build a console of your own when you want a **different** command-line tool:
 one with its own name, its own subset of commands, or one that does not depend
 on importing a web application at all.
 
@@ -56,7 +56,7 @@ Console(prog="console.py", description="", version=None,
 ```
 
 `version` is what `--version` reports; omit it and the flag is not offered at
-all. The three stream parameters and the two overrides exist for tests — see
+all. The three stream parameters and the two overrides exist for tests. See
 [Testing](#testing) below.
 
 ## The bundled command factories
@@ -82,7 +82,7 @@ console.add_many(record_commands(database, only=["db:migrate", "db:status"]))
 ```
 
 `database` is a `DatabaseManager` **or a callable returning one**. Both are
-accepted rather than making you remember which — a project often exports a
+accepted rather than making you remember which. A project often exports a
 factory rather than an instance. A callable is called on each access, not once
 at registration, because a factory usually builds a fresh manager per
 invocation and caching it here would share one connection across commands that
@@ -99,8 +99,8 @@ console.add_many(record_commands(database, app="models"))
 console.add_many(record_commands(reporting, app="reporting", only=["db:migrate"]))
 ```
 
-Each call generates a fresh subclass per command, so two consoles — or two
-registrations in one console — can bind the same command to different databases
+Each call generates a fresh subclass per command, so two consoles (or two
+registrations in one console) can bind the same command to different databases
 without the second overwriting the first.
 
 ### `user_commands`
@@ -113,7 +113,7 @@ console.add_many(user_commands(model=Account, context=database))
 built-in `User`, so the commands work on a project that has not defined one
 yet.
 
-`context` is an async context manager — or a callable returning one — opened
+`context` is an async context manager (or a callable returning one) opened
 around every command. **This is the part that matters outside an application.**
 The ORM has to be initialised before these touch a model, and in a standalone
 console nothing has done that. Without it the first command fails inside
@@ -141,8 +141,8 @@ console.add_many(work_commands(
 | `context` | Opened around every command. |
 
 Pass `failed=` if you want `queue:failed` to show anything. Without it the
-commands use a fresh in-memory repository, which is empty in every new process
-— and they say so rather than reporting "no failures" at someone about to go
+commands use a fresh in-memory repository, which is empty in every new process,
+and they say so rather than reporting "no failures" at someone about to go
 home.
 
 Omit `scheduler=` and the `schedule:*` commands still register but report what
@@ -208,10 +208,9 @@ Use `await console.run_async(argv)` instead.
 
 ### Loops
 
-`run` only creates an event loop for the commands that want one. An
-`async def handle` runs inside `asyncio.run`; a plain `def handle` — one handing
-the loop to something else, like `uvicorn.run` — runs with no loop in that
-thread at all.
+`run` only creates an event loop for the commands that want one. An `async def
+handle` runs inside `asyncio.run`; a plain `def handle` (one handing the loop
+to something else, like `uvicorn.run`) runs with no loop in that thread at all.
 
 The dispatcher works this out from the method itself, so a command opts in
 purely by how it is written.
@@ -225,7 +224,7 @@ console.add_many([Backfill, Reindex])
 ```
 
 A duplicate name or alias is an error by default, naming what already holds it.
-`override=True` replaces the registration and every alias pointing at it — this
+`override=True` replaces the registration and every alias pointing at it. This
 is how `sillo` lets a project's command win over a bundled one of the same
 name.
 
@@ -270,12 +269,12 @@ terminal.
 | Code | Meaning |
 | --- | --- |
 | `0` | Success |
-| `1` | `CommandError` — a command failed at its work |
-| `2` | `UsageError` — bad input, or an unknown command |
-| `130` | `Abort` — Ctrl-C |
+| `1` | `CommandError`. A command failed at its work |
+| `2` | `UsageError`: bad input, or an unknown command |
+| `130` | `Abort`: Ctrl-C |
 
 ## See also
 
 - [Writing commands](/cli/custom-commands/)
 - [Arguments, options and flags](/cli/arguments/)
-- [Console internals](/advanced/console/) — how the dispatcher is built.
+- [Console internals](/advanced/console/): how the dispatcher is built.

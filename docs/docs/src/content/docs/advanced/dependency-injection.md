@@ -4,10 +4,10 @@ description: "Depend(), Dependant tree, execution plan, resolution algorithm"
 ---
 
 > **Source files:**
-> - `core/sillo/core/dependencies/base.py` — `Depend`, `ExecutionStep`, `Dependant`, `get_dependant`, `_build_execution_plan`, `solve_dependencies`, `_execute_dependency`, `_collect_kwargs`, `resolve_validated_params`
-> - `core/sillo/core/dependencies/__init__.py` — public re-exports
-> - `core/sillo/validation/compiler.py` — `CompiledValidator`, `compile_validator`
-> - `core/sillo/validation/fields.py` — `ParameterExtractor`, `SolvedParamDependency`
+> - `core/sillo/core/dependencies/base.py`: `Depend`, `ExecutionStep`, `Dependant`, `get_dependant`, `_build_execution_plan`, `solve_dependencies`, `_execute_dependency`, `_collect_kwargs`, `resolve_validated_params`
+> - `core/sillo/core/dependencies/__init__.py`, public re-exports
+> - `core/sillo/validation/compiler.py`, `CompiledValidator`, `compile_validator`
+> - `core/sillo/validation/fields.py`, `ParameterExtractor`, `SolvedParamDependency`
 
 ---
 
@@ -116,16 +116,16 @@ class ExecutionStep:
 ```
 
 Each step in the flattened execution plan wraps one `Dependant` node. The
-`is_root` flag marks the final step — when the solver reaches it, it returns
-the collected kwargs instead of executing the callable.
+`is_root` flag marks the final step. When the solver reaches it, it returns the
+collected kwargs instead of executing the callable.
 
 ---
 
 ## 11.4  The `Dependant` Dataclass
 
 `Dependant` is the central node in the dependency graph. Every callable that
-participates in DI — the handler itself, each sub-dependency, and each
-sub-dependency's sub-dependencies — becomes a `Dependant`.
+participates in DI (the handler itself, each sub-dependency, and each
+sub-dependency's sub-dependencies) becomes a `Dependant`.
 
 ```python
 # base.py:126-191
@@ -153,7 +153,7 @@ class Dependant:
 |----------------------|----------------------------------------------|-------------|
 | `call`               | `Callable \| None`                           | The wrapped callable. `None` for the root node that only collects kwargs. |
 | `name`               | `str \| None`                                | Parameter name under which this dependency's result is stored. `None` for root. |
-| `dependencies`       | `list[Dependant]`                            | Child `Dependant` nodes — direct sub-dependencies declared via `Depend()`. |
+| `dependencies`       | `list[Dependant]`                            | Child `Dependant` nodes: direct sub-dependencies declared via `Depend()`. |
 | `request_param_names`| `list[str]`                                  | Parameter names that receive the raw `Request` (from `Depend(get_request=True)`). |
 | `param_extractors`   | `list[SolvedParamDependency]`                | Legacy-mode parameter markers (Query, Header, Cookie) that extract from the request. |
 | `validator`          | `CompiledValidator \| None`                  | Pydantic models compiled for this callable's validated parameters. `None` when none declared. |
@@ -170,8 +170,8 @@ class Dependant:
 
 The three boolean flags (`is_coroutine`, `is_generator`, `is_async_generator`)
 are set once at registration by `inspect.is*function()` calls and drive the
-dispatch in `_execute_dependency`. They are mutually exclusive in practice — a
-callable is one of the four types — but the flags are checked in priority order:
+dispatch in `_execute_dependency`. They are mutually exclusive in practice (a
+callable is one of the four types) but the flags are checked in priority order:
 async generator > sync generator > async func > regular func.
 
 ---
@@ -338,7 +338,7 @@ graph TD
 
 **Execution plan:** `[Step(C), Step(D), Step(A), Step(D), Step(B), Step(Root)]`
 
-Note that `D` appears twice — once as a child of `A` and once as a child of `B`.
+Note that `D` appears twice, once as a child of `A` and once as a child of `B`.
 The cache ensures it is executed only once.
 
 ### 11.6.2  Why Post-Order?
@@ -409,7 +409,7 @@ validated = (
 
 Validation runs **before** any dependency execution. The `_validator_plan`
 emptiness check avoids allocating a coroutine for routes with no validated
-parameters — the overwhelmingly common case.
+parameters, the overwhelmingly common case.
 
 `_NO_VALIDATED` is a shared empty dict (never mutated) to avoid allocation:
 
@@ -450,13 +450,13 @@ return {}
 
 ### 11.7.4  Dependency Cache
 
-The cache is a `dict[tuple[Callable, tuple[str, ...]], Any]` — keyed by
+The cache is a `dict[tuple[Callable, tuple[str, ...]], Any]`, keyed by
 `(callable, param_names_tuple)`. It is:
 
-- **Scoped per request** — created fresh or passed in by the caller
-- **Shared across the tree** — if two dependencies both depend on `get_db`,
-  the database connection is created once
-- **Opt-in per node** — `use_cache=False` disables caching for a specific node
+- **Scoped per request**: created fresh or passed in by the caller
+- **Shared across the tree.** If two dependencies both depend on `get_db`, the
+  database connection is created once
+- **Opt-in per node**: `use_cache=False` disables caching for a specific node
 
 ```python
 # base.py:451
@@ -517,11 +517,11 @@ return kwargs
 
 1. **Sub-dependencies** are looked up by `name` in the `values` dict, which
    was populated by earlier steps in the execution plan.
-2. **Parameter extractors** call `extract(request)` directly — this is the
+2. **Parameter extractors** call `extract(request)` directly: this is the
    legacy synchronous extraction path.
 3. **Validated params** are pre-computed by `resolve_validated_params()` and
-   keyed by `id(node)` — the same identity used in `_validator_plan`.
-4. **Raw request** injection is the simplest case — just assign the request.
+   keyed by `id(node)`: the same identity used in `_validator_plan`.
+4. **Raw request** injection is the simplest case: just assign the request.
 
 ---
 
@@ -592,7 +592,7 @@ return func(**kwargs)
 ## 11.10  Generator Cleanup
 
 Generators (both sync and async) are a first-class pattern in sillo's DI for
-resource management — database connections, file handles, transaction scopes:
+resource management: database connections, file handles, transaction scopes:
 
 ```python
 # Example: generator-based dependency
@@ -706,9 +706,9 @@ is a single boolean test.
 
 ## 11.12  The DI Provider Pattern
 
-Sillo's DI follows a **provider pattern** — each dependency is a callable
-(function, async function, or generator) that *provides* a value. There are
-no classes to register, no containers to configure, and no decorators beyond
+Sillo's DI follows a **provider pattern**. Each dependency is a callable
+(function, async function, or generator) that *provides* a value. There are no
+classes to register, no containers to configure, and no decorators beyond
 `Depend`.
 
 ### 11.12.1  Provider Types
@@ -779,7 +779,7 @@ its value is in the `values` dict.
 
 ### 11.12.4  Request Injection
 
-`Depend(get_request=True)` is a special case — it bypasses the callable
+`Depend(get_request=True)` is a special case. It bypasses the callable
 execution entirely and directly assigns the `Request` object:
 
 ```python
@@ -821,8 +821,7 @@ The `CompiledValidator` on each `Dependant` node holds:
 - `form_spec`: Model for Form/File parameters
 - `legacy`: Markers on the pre-Pydantic extraction path
 
-See [Document 12 — Parameters](./12-PARAMETERS.md) and
-[Document 13 — Validation](./13-VALIDATION.md) for the full picture.
+See [Parameters](/advanced/parameters/) and [Validation](/advanced/validation/) for the full picture.
 
 ---
 
@@ -830,21 +829,21 @@ See [Document 12 — Parameters](./12-PARAMETERS.md) and
 
 | Aspect              | Registration          | Per-Request           |
 |---------------------|-----------------------|-----------------------|
-| Signature walk      | O(params × depth)     | —                     |
-| Model compilation   | O(markers)            | —                     |
-| Execution plan      | O(nodes)              | —                     |
-| Validation          | —                     | O(validators)         |
-| Iteration           | —                     | O(plan length)        |
-| Cache lookup        | —                     | O(1) per node         |
+| Signature walk      | O(params × depth)     |  |
+| Model compilation   | O(markers)            |  |
+| Execution plan      | O(nodes)              |  |
+| Validation          |  | O(validators)         |
+| Iteration           |  | O(plan length)        |
+| Cache lookup        |  | O(1) per node         |
 
 **Key optimizations:**
 
-- **Zero recursion** on the hot path — the flat list is iterated linearly
-- **No signature introspection** per request — everything is pre-computed
-- **`_NO_VALIDATED` sentinel** — avoids allocating a coroutine for routes
-  with no validated parameters
-- **Pre-computed source getters** — `attrgetter` objects avoid branching
-- **Form parsed once** — `_needs_form` flag prevents redundant parsing
+- **Zero recursion** on the hot path: the flat list is iterated linearly
+- **No signature introspection** per request: everything is pre-computed
+- **`_NO_VALIDATED` sentinel**: avoids allocating a coroutine for routes with
+  no validated parameters
+- **Pre-computed source getters**: `attrgetter` objects avoid branching
+- **Form parsed once.** `_needs_form` flag prevents redundant parsing
 
 ---
 
@@ -878,7 +877,7 @@ Execution plan: `[C, A, C, B, Root]`. The second `C` step hits the cache.
 ### 11.15.4  Circular Dependencies
 
 Circular dependencies would cause infinite recursion in `get_dependant()`.
-Python's call stack prevents this naturally — if A depends on B which depends
-on A, `get_dependant(A)` calls `get_dependant(B)` which calls
-`get_dependant(A)`, and so on until `RecursionError`. This is a programming
-error caught at registration time, not at request time.
+Python's call stack prevents this naturally. If A depends on B which depends on
+A, `get_dependant(A)` calls `get_dependant(B)` which calls `get_dependant(A)`,
+and so on until `RecursionError`. This is a programming error caught at
+registration time, not at request time.

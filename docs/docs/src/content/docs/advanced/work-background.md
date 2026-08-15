@@ -49,8 +49,8 @@ class BackgroundTask:
 ```
 
 Every `BackgroundTask` instance is automatically added to `_instances` on construction and (implicitly) removed when garbage collected. This enables:
-- `drain()` — wait for all tracked tasks before shutdown
-- `count()` — monitoring dashboard metrics
+- `drain()`: wait for all tracked tasks before shutdown
+- `count()`: monitoring dashboard metrics
 
 ### 2.2 Constructor
 
@@ -117,7 +117,7 @@ def cancel(self) -> bool:
     return False
 ```
 
-### 2.6 `run()` — Class Method Factory
+### 2.6 `run()`: Class Method Factory
 
 ```python
 @classmethod
@@ -131,7 +131,7 @@ def run(cls, func, *args, **kwargs) -> BackgroundTask:
 
 Must be called from within an async context (running event loop).
 
-### 2.7 `run_sync()` — Auto-Wrap Sync Functions
+### 2.7 `run_sync()`: Auto-Wrap Sync Functions
 
 ```python
 @classmethod
@@ -145,7 +145,7 @@ def run_sync(cls, func, *args, **kwargs) -> BackgroundTask:
 
 Automatically wraps synchronous functions in an async wrapper.
 
-### 2.8 `drain()` — Graceful Shutdown
+### 2.8 `drain()`: Graceful Shutdown
 
 ```python
 @classmethod
@@ -190,7 +190,7 @@ sequenceDiagram
     BT-->>App: {"total": 3, "completed": 2, "cancelled": 1}
 ```
 
-### 2.9 `count()` — Status Summary
+### 2.9 `count()`: Status Summary
 
 ```python
 @classmethod
@@ -270,7 +270,7 @@ class Supervisor:
         self._stopped = asyncio.Event()
 ```
 
-### 3.3 `start()` — Monitoring Loop
+### 3.3 `start()`: Monitoring Loop
 
 ```python
 async def start(self, *args, **kwargs) -> None:
@@ -386,9 +386,9 @@ stateDiagram-v2
 ```
 
 The circuit breaker pattern prevents cascading failures:
-- **CLOSED** — Normal operation; requests flow through
-- **OPEN** — Failures exceeded threshold; requests are shed immediately
-- **HALF_OPEN** — After a timeout, one test request is allowed through
+- **CLOSED**: Normal operation; requests flow through
+- **OPEN.** Failures exceeded threshold; requests are shed immediately
+- **HALF_OPEN**: After a timeout, one test request is allowed through
 
 ### 4.2 CircuitBreakerOpen Exception
 
@@ -481,11 +481,16 @@ def setup_work(app, *, queue_backend=None, queue_name="default") -> dict:
 
 ### 6.1 Wiring Steps
 
-1. **Create connection** — `SyncConnection()` or `RedisConnection()` based on `queue_backend`
-2. **Store in app.state** — `app.state["queue_connection"]`, `app.state["default_queue"]`
-3. **Register DI providers** — `scheduler`, `queue_connection`, `events`, `default_queue`
-4. **Hook lifecycle** — Scheduler start/stop via `app.on_startup` / `app.on_shutdown`
-5. **Import commands** — `sillo.work.commands` at module level for CLI registration
+1. **Create connection**: `SyncConnection()` or `RedisConnection()` based on
+   `queue_backend`
+2. **Store in app.state**: `app.state["queue_connection"]`,
+   `app.state["default_queue"]`
+3. **Register DI providers**: `scheduler`, `queue_connection`, `events`,
+   `default_queue`
+4. **Hook lifecycle**: Scheduler start/stop via `app.on_startup` /
+   `app.on_shutdown`
+5. **Import commands**: `sillo.work.commands` at module level for CLI
+   registration
 
 ### 6.2 DI Providers
 
@@ -559,7 +564,9 @@ async def shutdown():
 ## 8. Design Decisions
 
 ### D-1: Class-Level Instance Tracking
-Using a class-level `set` enables `drain()` and `count()` without requiring a global registry. The trade-off is that instances are never explicitly removed from the set — they are garbage collected when no references remain.
+Using a class-level `set` enables `drain()` and `count()` without requiring a
+global registry. The trade-off is that instances are never explicitly removed
+from the set. They are garbage collected when no references remain.
 
 ### D-2: Immediate Launch on Construction
 `BackgroundTask` launches immediately on construction (via `asyncio.ensure_future`). This is intentional for fire-and-forget patterns but means the task cannot be configured after construction.
@@ -576,17 +583,17 @@ The `min(base * 2^n, max_delay)` formula prevents unbounded delay growth while s
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `BackgroundTask` | `core/sillo/work/background/tasks.py` | 27–235 |
-| `RestartPolicy` enum | `core/sillo/work/background/supervisor.py` | 24–30 |
-| `Supervisor` | `core/sillo/work/background/supervisor.py` | 33–137 |
-| `CircuitState` enum | `core/sillo/work/types.py` | 75–80 |
-| `QueueHealth` enum | `core/sillo/work/types.py` | 83–88 |
-| `QueueStats` | `core/sillo/work/types.py` | 236–256 |
-| `WorkerStats` | `core/sillo/work/types.py` | 259–279 |
-| `SchedulerStats` | `core/sillo/work/types.py` | 282–300 |
-| `TaskResult` | `core/sillo/work/types.py` | 138–233 |
-| `setup_work()` | `core/sillo/work/__init__.py` | 1–73 |
-| DI providers | `core/sillo/work/dependency.py` | 1–49 |
+| `BackgroundTask` | `core/sillo/work/background/tasks.py` | 27-235 |
+| `RestartPolicy` enum | `core/sillo/work/background/supervisor.py` | 24-30 |
+| `Supervisor` | `core/sillo/work/background/supervisor.py` | 33-137 |
+| `CircuitState` enum | `core/sillo/work/types.py` | 75-80 |
+| `QueueHealth` enum | `core/sillo/work/types.py` | 83-88 |
+| `QueueStats` | `core/sillo/work/types.py` | 236-256 |
+| `WorkerStats` | `core/sillo/work/types.py` | 259-279 |
+| `SchedulerStats` | `core/sillo/work/types.py` | 282-300 |
+| `TaskResult` | `core/sillo/work/types.py` | 138-233 |
+| `setup_work()` | `core/sillo/work/__init__.py` | 1-73 |
+| DI providers | `core/sillo/work/dependency.py` | 1-49 |
 
 ---
 
@@ -620,7 +627,8 @@ _instances: ClassVar[set[BackgroundTask]] = set()
 **Key properties:**
 - Class-level, shared across all `BackgroundTask` instances
 - Instances are added on construction
-- Instances are **not** explicitly removed — they are garbage collected when no external references remain
+- Instances are **not** explicitly removed: they are garbage collected when no
+  external references remain
 - `drain()` snapshots the set at call time: `instances = list(cls._instances)`
 - `count()` iterates the set to compute status breakdowns
 
@@ -651,7 +659,9 @@ def run_sync(cls, func, *args, **kwargs) -> BackgroundTask:
     return cls(func, *args, **kwargs)
 ```
 
-The wrapper is a simple async function that calls the sync function. No thread pool is used — the sync function runs on the event loop thread. For CPU-bound work, consider using `asyncio.to_thread()` instead.
+The wrapper is a simple async function that calls the sync function. No thread
+pool is used. The sync function runs on the event loop thread. For CPU-bound
+work, consider using `asyncio.to_thread()` instead.
 
 ### 10.5 Error Handling in `wait()`
 
@@ -817,9 +827,9 @@ class QueueHealth(enum.Enum):
 ```
 
 **Assessment logic:**
-- `HEALTHY` — Queue size is within normal bounds, consumers are active
-- `DEGRADED` — Queue size is growing (backlog exceeds threshold)
-- `STALLED` — No consumers are connected or processing
+- `HEALTHY`: Queue size is within normal bounds, consumers are active
+- `DEGRADED`: Queue size is growing (backlog exceeds threshold)
+- `STALLED`: No consumers are connected or processing
 
 ### 13.2 QueueStats Fields
 
@@ -1076,7 +1086,7 @@ Each `Supervisor` maintains:
 - 1 `asyncio.Event` for stop signaling
 - Backoff state (restart count, delay calculation)
 
-The supervisor itself is lightweight — the main cost is the supervised task.
+The supervisor itself is lightweight. The main cost is the supervised task.
 
 ### 16.3 Memory Management
 

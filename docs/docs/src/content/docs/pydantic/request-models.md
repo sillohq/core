@@ -1,6 +1,6 @@
 ---
 title: Request Models
-description: "Validating a JSON body with request_model — how the payload reaches your handler, what happens on failure, form bodies, and the models a real endpoint wants."
+description: "Validating a JSON body with request_model: how the payload reaches your handler, what happens on failure, form bodies, and the models a real endpoint wants."
 head:
   - tag: meta
     attrs:
@@ -29,7 +29,7 @@ async def create_post(request, response, payload):
 ```
 
 The body is read, parsed, validated and injected. By the time the handler runs,
-`payload` is a valid `PostCreate` — there is no branch to write and no state in
+`payload` is a valid `PostCreate`. There is no branch to write and no state in
 which it is not.
 
 ## Why the body is on the decorator
@@ -37,11 +37,10 @@ which it is not.
 Every other input has a marker: `Query`, `Path`, `Header`, `Cookie`, `Form`,
 `File`. The JSON body is the one declared as `request_model=` instead.
 
-A request has exactly one body, so there is exactly one place to declare it —
-and putting it on the decorator is what lets the
-[OpenAPI document](/pydantic/openapi/) describe the request without
-introspecting the handler's annotations. Sillo handlers are not required to
-annotate anything.
+A request has exactly one body, so there is exactly one place to declare it,
+and putting it on the decorator is what lets the [OpenAPI
+document](/pydantic/openapi/) describe the request without introspecting the
+handler's annotations. Sillo handlers are not required to annotate anything.
 
 ## Where the payload lands
 
@@ -54,7 +53,7 @@ async def create_post(request, response, post): ...
 ```
 
 Sillo looks at the parameters **after** `request` and `response`, skips any
-that something else fills — a `Depend`, a parameter marker, a path parameter —
+that something else fills (a `Depend`, a parameter marker, a path parameter)
 and injects into the **first remaining one with no default**.
 
 That means it composes with everything:
@@ -124,7 +123,7 @@ Five things that are easy to leave out and worth putting in:
 - **`str_strip_whitespace=True`**, so `"  "` fails `min_length` as it should.
 - **`frozen=True`**, so nothing downstream edits what the client sent.
 
-Set the config once on a base and inherit — see
+Set the config once on a base and inherit. See
 [Configuration](/pydantic/config/#defaults-worth-adopting).
 
 ## What the model must not do
@@ -162,7 +161,7 @@ post = await Post.create(**payload.model_dump(), author_id=request.user.id)
 ```
 
 The same reasoning as [mass assignment](/orm/mass-assignment/) on the ORM side,
-one layer out — and this is the layer where it is cheapest to get right.
+one layer out, and this is the layer where it is cheapest to get right.
 
 ## Partial updates
 
@@ -181,8 +180,8 @@ async def update_post(request, response, payload, id=Path(type=int)):
 ```
 
 `exclude_unset=True` is what makes this a real PATCH. Without it, a client
-sending only `{"title": "New"}` also writes `body = None` — because that is the
-model's default — and the endpoint silently destroys data.
+sending only `{"title": "New"}` also writes `body = None` (because that is the
+model's default) and the endpoint silently destroys data.
 
 Note that both parts are needed on each field: `| None` to allow null, `= None`
 to make it optional. See [Types](/pydantic/types/#unions-and-optionals).
@@ -229,7 +228,7 @@ class PostCreate(BaseModel):
 
 Both go straight into the [OpenAPI document](/pydantic/openapi/). A single
 worked example at the model level is the most useful thing you can add to an
-API reference — more useful than per-field descriptions, because it shows a
+API reference, more useful than per-field descriptions, because it shows a
 whole valid request.
 
 ## Testing

@@ -3,9 +3,10 @@ title: "Auth Backends"
 description: "Session auth, JWT auth, API key auth, token lifecycle"
 ---
 
-**Version:** 2026-08-11
-**Audience:** Core maintainers, backend developers, security engineers
-**Purpose:** Document the three shipped authentication backends — session, JWT, and API key — including their models, mixins, and token lifecycle
+**Version:** 2026-08-11 **Audience:** Core maintainers, backend developers,
+security engineers **Purpose:** Document the three shipped authentication
+backends (session, JWT, and API key) including their models, mixins, and token
+lifecycle
 
 ---
 
@@ -55,9 +56,9 @@ flowchart TD
 
 All three backends inherit from `AuthenticationBackend` and override:
 
-- `name` — the OpenAPI security scheme name
-- `describe()` — returns the OpenAPI `SecurityScheme` object
-- `authenticate(request)` — extracts and verifies the credential
+- `name`: the OpenAPI security scheme name
+- `describe()`: returns the OpenAPI `SecurityScheme` object
+- `authenticate(request)`: extracts and verifies the credential
 
 The backends are lazy-loaded from `core/sillo/auth/__init__.py` via `deferred()` to avoid pulling in Tortoise ORM or PyJWT at import time:
 
@@ -79,14 +80,15 @@ __getattr__ = deferred(
 ## Session Authentication
 
 **Files:**
-- `core/sillo/auth/session_auth/backend.py` — `login()`, `logout()`, `SessionAuthBackend`
-- `core/sillo/auth/session_auth/models.py` — `Session` model
-- `core/sillo/auth/session_auth/mixins.py` — `SessionUserMixin`
-- `core/sillo/auth/session_auth/guard.py` — `SessionGuard`
+- `core/sillo/auth/session_auth/backend.py`: `login()`, `logout()`,
+  `SessionAuthBackend`
+- `core/sillo/auth/session_auth/models.py`: `Session` model
+- `core/sillo/auth/session_auth/mixins.py`: `SessionUserMixin`
+- `core/sillo/auth/session_auth/guard.py`: `SessionGuard`
 
 ### login() and logout()
 
-**File:** `core/sillo/auth/session_auth/backend.py` (lines 22–91)
+**File:** `core/sillo/auth/session_auth/backend.py` (lines 22 to 91)
 
 ```python
 def login(request, user, session_key="user", identifier="id"):
@@ -105,11 +107,12 @@ def logout(request, session_key="user"):
 
 `login()` writes the user's identity and display name into the session dictionary. It removes any existing entry first to ensure a clean state. `logout()` deletes the session entry.
 
-Both require the session middleware to be installed — they assert on `request.scope["session"]`.
+Both require the session middleware to be installed. They assert on
+`request.scope["session"]`.
 
 ### SessionAuthBackend
 
-**File:** `core/sillo/auth/session_auth/backend.py` (lines 94–197)
+**File:** `core/sillo/auth/session_auth/backend.py` (lines 94 to 197)
 
 ```python
 class SessionAuthBackend(AuthenticationBackend):
@@ -216,11 +219,11 @@ sequenceDiagram
 ## JWT Authentication
 
 **Files:**
-- `core/sillo/auth/jwt_auth/__init__.py` — `create_jwt()`, `decode_jwt()`
-- `core/sillo/auth/jwt_auth/backend.py` — `JWTAuthBackend`
-- `core/sillo/auth/jwt_auth/tokens.py` — `TokenForUser`
-- `core/sillo/auth/jwt_auth/models.py` — `JWTToken`, `TokenBlacklist`
-- `core/sillo/auth/jwt_auth/mixins.py` — `JWTUserMixin`
+- `core/sillo/auth/jwt_auth/__init__.py`: `create_jwt()`, `decode_jwt()`
+- `core/sillo/auth/jwt_auth/backend.py`: `JWTAuthBackend`
+- `core/sillo/auth/jwt_auth/tokens.py`: `TokenForUser`
+- `core/sillo/auth/jwt_auth/models.py`: `JWTToken`, `TokenBlacklist`
+- `core/sillo/auth/jwt_auth/mixins.py`: `JWTUserMixin`
 
 ### create_jwt / decode_jwt
 
@@ -307,18 +310,18 @@ class TokenForUser:
 |--------|----------------|---------|
 | `access_token(expires_in, jti)` | 15 minutes | Short-lived access token with `typ="access"` |
 | `refresh_token(expires_in, jti)` | 7 days | Long-lived refresh token with `typ="refresh"` |
-| `token_pair(access_expires, refresh_expires)` | — | Returns `{"access_token", "refresh_token", "token_type": "bearer"}` |
-| `verify(token)` | — | Full validation (signature + expiry + issuer/audience) |
-| `verify_no_expire(token)` | — | Validates signature and claims but ignores expiration |
-| `decode_unverified(token)` (static) | — | Decodes payload without verification |
-| `get_unverified_header(token)` (static) | — | Extracts header without verification |
+| `token_pair(access_expires, refresh_expires)` |  | Returns `{"access_token", "refresh_token", "token_type": "bearer"}` |
+| `verify(token)` |  | Full validation (signature + expiry + issuer/audience) |
+| `verify_no_expire(token)` |  | Validates signature and claims but ignores expiration |
+| `decode_unverified(token)` (static) |  | Decodes payload without verification |
+| `get_unverified_header(token)` (static) |  | Extracts header without verification |
 
 **Base payload** always includes:
-- `sub` — user identity string
-- `iat` — issued-at timestamp
-- `typ` — token type (`"access"` or `"refresh"`)
-- `iss` — issuer (if configured)
-- `aud` — audience (if configured)
+- `sub`: user identity string
+- `iat`: issued-at timestamp
+- `typ`: token type (`"access"` or `"refresh"`)
+- `iss`: issuer (if configured)
+- `aud`: audience (if configured)
 
 ### JWTToken Model
 
@@ -338,8 +341,8 @@ Tortoise model tracking issued JWT tokens. Table: `jwt_tokens`.
 | `revoked` | `BooleanField(default=False)` | Revocation flag |
 
 **Properties:**
-- `is_expired` — `datetime.now(utc) > expires_at`
-- `is_active` — `not revoked and not is_expired`
+- `is_expired`: `datetime.now(utc) > expires_at`
+- `is_active`: `not revoked and not is_expired`
 
 **Methods:**
 
@@ -418,13 +421,14 @@ The theft detection works by tracking token families. When a refresh token is ro
 ## API Key Authentication
 
 **Files:**
-- `core/sillo/auth/apikey/models.py` — `generate_api_key()`, `verify_api_key()`, `hash_api_key()`, `ApiKey`, `ApiKeyManager`
-- `core/sillo/auth/apikey/backend.py` — `APIKeyAuthBackend`
-- `core/sillo/auth/apikey/mixins.py` — `ApiKeyUserMixin`
+- `core/sillo/auth/apikey/models.py`: `generate_api_key()`, `verify_api_key()`,
+  `hash_api_key()`, `ApiKey`, `ApiKeyManager`
+- `core/sillo/auth/apikey/backend.py`: `APIKeyAuthBackend`
+- `core/sillo/auth/apikey/mixins.py`: `ApiKeyUserMixin`
 
 ### Key Generation and Verification
 
-**File:** `core/sillo/auth/apikey/models.py` (lines 12–80)
+**File:** `core/sillo/auth/apikey/models.py` (lines 12 to 80)
 
 ```python
 def generate_api_key(prefix="sillo") -> tuple[str, str, str]:
@@ -443,13 +447,13 @@ def hash_api_key(raw_key) -> str:
 
 **Security properties:**
 - `generate_api_key` uses `secrets.token_urlsafe(32)` for cryptographic randomness
-- Keys are stored as SHA-256 hashes — plaintext is never persisted
+- Keys are stored as SHA-256 hashes: plaintext is never persisted
 - `verify_api_key` uses `secrets.compare_digest` for constant-time comparison (prevents timing attacks)
 - The full key format is `{prefix}_{raw}` (e.g. `sillo_abc123...`)
 
 ### ApiKey Model
 
-**File:** `core/sillo/auth/apikey/models.py` (lines 83–178)
+**File:** `core/sillo/auth/apikey/models.py` (lines 83 to 178)
 
 Tortoise model for API key records. Table: `api_keys`.
 
@@ -465,13 +469,13 @@ Tortoise model for API key records. Table: `api_keys`.
 | `user_id` | `IntField(index=True)` | Owning user's ID |
 
 **Methods:**
-- `is_expired` (property) — checks `expires_at` against now
-- `mark_used()` — updates `last_used_at`
-- `revoke()` — sets `is_active = False`
+- `is_expired` (property): checks `expires_at` against now
+- `mark_used()`: updates `last_used_at`
+- `revoke()`: sets `is_active = False`
 
 ### ApiKeyManager
 
-**File:** `core/sillo/auth/apikey/models.py` (lines 181–307)
+**File:** `core/sillo/auth/apikey/models.py` (lines 181 to 307)
 
 High-level manager for API key operations:
 
@@ -510,8 +514,11 @@ class APIKeyAuthBackend(AuthenticationBackend):
 ```
 
 **Two verification modes:**
-1. **`verify_with_manager=False`** (default) — any non-empty header value is accepted. The raw token is the identity. Fast, no database lookup.
-2. **`verify_with_manager=True`** — the key is verified against the database via `ApiKeyManager`. The user ID is the identity. Supports expiry, revocation, and scope checking.
+1. **`verify_with_manager=False`** (default): any non-empty header value is
+   accepted. The raw token is the identity. Fast, no database lookup.
+2. **`verify_with_manager=True`**: the key is verified against the database via
+   `ApiKeyManager`. The user ID is the identity. Supports expiry, revocation,
+   and scope checking.
 
 ### ApiKeyUserMixin
 
@@ -571,32 +578,32 @@ The `PermissionMixin` should come first so its `has_permission` method takes pre
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `login()` | `core/sillo/auth/session_auth/backend.py` | 22–63 |
-| `logout()` | `core/sillo/auth/session_auth/backend.py` | 66–91 |
-| `SessionAuthBackend` | `core/sillo/auth/session_auth/backend.py` | 94–197 |
-| `Session` model | `core/sillo/auth/session_auth/models.py` | 10–184 |
-| `SessionUserMixin` | `core/sillo/auth/session_auth/mixins.py` | 8–163 |
-| `SessionGuard` | `core/sillo/auth/session_auth/guard.py` | 16–287 |
-| `create_jwt` | `core/sillo/auth/jwt_auth/__init__.py` | 11–42 |
-| `decode_jwt` | `core/sillo/auth/jwt_auth/__init__.py` | 45–76 |
-| `JWTAuthBackend` | `core/sillo/auth/jwt_auth/backend.py` | 39–173 |
-| `TokenForUser` | `core/sillo/auth/jwt_auth/tokens.py` | 8–300 |
-| `JWTToken` model | `core/sillo/auth/jwt_auth/models.py` | 27–198 |
-| `TokenBlacklist` model | `core/sillo/auth/jwt_auth/models.py` | 200–257 |
-| `JWTUserMixin` | `core/sillo/auth/jwt_auth/mixins.py` | 10–236 |
-| `generate_api_key` | `core/sillo/auth/apikey/models.py` | 12–37 |
-| `verify_api_key` | `core/sillo/auth/apikey/models.py` | 40–61 |
-| `hash_api_key` | `core/sillo/auth/apikey/models.py` | 64–80 |
-| `ApiKey` model | `core/sillo/auth/apikey/models.py` | 83–178 |
-| `ApiKeyManager` | `core/sillo/auth/apikey/models.py` | 181–307 |
-| `APIKeyAuthBackend` | `core/sillo/auth/apikey/backend.py` | 11–123 |
-| `ApiKeyUserMixin` | `core/sillo/auth/apikey/mixins.py` | 8–131 |
+| `login()` | `core/sillo/auth/session_auth/backend.py` | 22-63 |
+| `logout()` | `core/sillo/auth/session_auth/backend.py` | 66-91 |
+| `SessionAuthBackend` | `core/sillo/auth/session_auth/backend.py` | 94-197 |
+| `Session` model | `core/sillo/auth/session_auth/models.py` | 10-184 |
+| `SessionUserMixin` | `core/sillo/auth/session_auth/mixins.py` | 8-163 |
+| `SessionGuard` | `core/sillo/auth/session_auth/guard.py` | 16-287 |
+| `create_jwt` | `core/sillo/auth/jwt_auth/__init__.py` | 11-42 |
+| `decode_jwt` | `core/sillo/auth/jwt_auth/__init__.py` | 45-76 |
+| `JWTAuthBackend` | `core/sillo/auth/jwt_auth/backend.py` | 39-173 |
+| `TokenForUser` | `core/sillo/auth/jwt_auth/tokens.py` | 8-300 |
+| `JWTToken` model | `core/sillo/auth/jwt_auth/models.py` | 27-198 |
+| `TokenBlacklist` model | `core/sillo/auth/jwt_auth/models.py` | 200-257 |
+| `JWTUserMixin` | `core/sillo/auth/jwt_auth/mixins.py` | 10-236 |
+| `generate_api_key` | `core/sillo/auth/apikey/models.py` | 12-37 |
+| `verify_api_key` | `core/sillo/auth/apikey/models.py` | 40-61 |
+| `hash_api_key` | `core/sillo/auth/apikey/models.py` | 64-80 |
+| `ApiKey` model | `core/sillo/auth/apikey/models.py` | 83-178 |
+| `ApiKeyManager` | `core/sillo/auth/apikey/models.py` | 181-307 |
+| `APIKeyAuthBackend` | `core/sillo/auth/apikey/backend.py` | 11-123 |
+| `ApiKeyUserMixin` | `core/sillo/auth/apikey/mixins.py` | 8-131 |
 
 ---
 
 ## Implementation Deep Dive
 
-### Session Authentication — Complete Flow
+### Session Authentication: Complete Flow
 
 #### Login Sequence
 
@@ -651,7 +658,7 @@ await guard.logout(request)
 # 3. SessionMiddleware saves empty session → new cookie (or cleared cookie)
 ```
 
-### Session Model — Lifecycle Management
+### Session Model: Lifecycle Management
 
 ```python
 # Create a tracked session
@@ -680,7 +687,7 @@ expired = await Session.cleanup_expired()
 print(f"Cleaned up {expired} expired sessions")
 ```
 
-### JWT Authentication — Complete Flow
+### JWT Authentication: Complete Flow
 
 #### Token Issuance
 
@@ -760,7 +767,7 @@ expired = await JWTToken.cleanup_expired()
 blacklisted = await TokenBlacklist.prune_expired()
 ```
 
-### API Key Authentication — Complete Flow
+### API Key Authentication: Complete Flow
 
 #### Key Generation
 
@@ -917,10 +924,10 @@ for backend in self.backends:
 
 | Scenario | Behavior |
 |----------|----------|
-| Missing Authorization header | `AuthResult(success=False)` — next backend tried |
+| Missing Authorization header | `AuthResult(success=False)`: next backend tried |
 | Expired JWT | `ValueError("Token has expired")` → caught → next backend |
 | Invalid JWT signature | `ValueError("Invalid token")` → caught → next backend |
-| Blacklisted JWT | `AuthResult(success=False)` — next backend tried |
+| Blacklisted JWT | `AuthResult(success=False)`: next backend tried |
 | Database down (session/JWT/API key) | Exception → `handle_exception` → next backend |
 | No session middleware | `AssertionError` → caught → next backend |
 

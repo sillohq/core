@@ -200,9 +200,9 @@ it outside local development, and even there a browser will accept it on
 `Strict` also blocks inbound navigation, which breaks links from email
 and other sites; `None` sends it everywhere and requires `Secure`.
 
-`Max-Age` or `Expires` decides persistence. Without either, the cookie is
-a session cookie and dies with the browser process — which, given modern
-browsers restore sessions on restart, is less reliable than it sounds.
+`Max-Age` or `Expires` decides persistence. Without either, the cookie is a
+session cookie and dies with the browser process: which, given modern browsers
+restore sessions on restart, is less reliable than it sounds.
 
 `Domain` and `Path` scope it. Setting `Domain` to a parent domain shares
 the cookie with every subdomain, including any an attacker controls. Omit
@@ -213,16 +213,15 @@ it unless you need the sharing.
 Browsers allow roughly 4 KB per cookie and around 50 cookies per domain,
 and total header size caps the practical number lower.
 
-Every cookie for a domain is sent on **every request to that domain** —
-images, stylesheets, API calls, all of them. Ten kilobytes of cookies is
-ten kilobytes of upload per request, which on a mobile connection is
-measurable latency on every asset.
+Every cookie for a domain is sent on **every request to that domain**. Images,
+stylesheets, API calls, all of them. Ten kilobytes of cookies is ten kilobytes
+of upload per request, which on a mobile connection is measurable latency on
+every asset.
 
-Two consequences worth designing around. Serve static assets from a
-cookieless domain or a CDN, so asset requests carry nothing. And keep an
-identifier in the cookie rather than data, with the data server-side —
-which is the same argument as for session storage, arriving from a
-different direction.
+Two consequences worth designing around. Serve static assets from a cookieless
+domain or a CDN, so asset requests carry nothing. And keep an identifier in the
+cookie rather than data, with the data server-side, which is the same argument
+as for session storage, arriving from a different direction.
 
 ##  Reading and writing
 
@@ -240,9 +239,9 @@ resp.set_cookie(
 return resp
 ```
 
-Deleting requires matching attributes. A cookie set with `path="/app"`
-is not removed by a delete on `path="/"` — the browser treats them as
-different cookies, and the stale one keeps being sent.
+Deleting requires matching attributes. A cookie set with `path="/app"` is not
+removed by a delete on `path="/"`. The browser treats them as different
+cookies, and the stale one keeps being sent.
 
 Cookie values are client-controlled like any other input. A value that
 came back from a browser may have been edited, so a cookie carrying
@@ -270,11 +269,11 @@ match or the cookie survives.
 
 ##  Related
 
-- [Sessions](/guides/sessions/) — what most cookies carry
-- [Session Auth](/guides/session-auth/) — the authentication flow
-- [CSRF](/guides/csrf/) — why cookies need `SameSite` and a token
-- [Headers](/guides/headers/) — `Set-Cookie` and header size limits
-- [Security](/guides/security/) — the wider checklist
+- [Sessions](/guides/sessions/): what most cookies carry
+- [Session Auth](/guides/session-auth/): the authentication flow
+- [CSRF](/guides/csrf/): why cookies need `SameSite` and a token
+- [Headers](/guides/headers/): `Set-Cookie` and header size limits
+- [Security](/guides/security/): the wider checklist
 
 
 ##  Signed cookies
@@ -293,12 +292,11 @@ if value is None:
     ...   # tampered or absent — treat as no preference
 ```
 
-Two things to be clear about. Signing proves the value came from you; it
-does not hide it, so the contents remain readable by the user and by
-anything with access to their disk. And a signed cookie has no built-in
-expiry — see the note on `max_age` in
-[Crypto helpers](/guides/helpers/crypto/) — so if the value should stop
-being valid, put a timestamp inside it and check that yourself.
+Two things to be clear about. Signing proves the value came from you; it does
+not hide it, so the contents remain readable by the user and by anything with
+access to their disk. And a signed cookie has no built-in expiry. See the note
+on `max_age` in [Crypto helpers](/guides/helpers/crypto/), so if the value
+should stop being valid, put a timestamp inside it and check that yourself.
 
 ##  Third-party cookie deprecation
 
@@ -309,9 +307,9 @@ tracking pixel, or a cross-site API on a different registrable domain
 should be treated as already broken in some browsers and eventually
 broken in all of them.
 
-First-party cookies — your domain, your page — are unaffected. If your
-architecture requires cross-site cookies, moving the API to a subdomain
-of the site that uses it converts the problem into a same-site one.
+First-party cookies (your domain, your page) are unaffected. If your
+architecture requires cross-site cookies, moving the API to a subdomain of the
+site that uses it converts the problem into a same-site one.
 
 
 ##  Debugging cookie problems
@@ -342,27 +340,26 @@ Assert on the attributes, not just the value. A test checking that a
 session cookie exists passes when `HttpOnly` was accidentally dropped;
 a test checking `httponly=True, secure=True, samesite="lax"` catches it.
 
-For deletion, assert that a subsequent request with the old cookie is
-rejected — not merely that a `Set-Cookie` clearing it was sent, which is
-true even when the server-side session survives.
+For deletion, assert that a subsequent request with the old cookie is rejected,
+not merely that a `Set-Cookie` clearing it was sent, which is true even when
+the server-side session survives.
 
 
 ##  Summary
 
-The attributes are the security model, and the defaults are the
-permissive ones. Set `HttpOnly` and `Secure` on anything that is a
-credential, `SameSite=Lax` on everything, and scope `Domain` and `Path`
-as narrowly as the application allows. Keep an identifier in the cookie
-and the data on the server — it avoids the size limit, the per-request
-upload cost, and the disclosure that comes from a value the user can
-read.
+The attributes are the security model, and the defaults are the permissive
+ones. Set `HttpOnly` and `Secure` on anything that is a credential,
+`SameSite=Lax` on everything, and scope `Domain` and `Path` as narrowly as the
+application allows. Keep an identifier in the cookie and the data on the
+server: it avoids the size limit, the per-request upload cost, and the
+disclosure that comes from a value the user can read.
 
 
 ##  Cookies and caching
 
-A response carrying `Set-Cookie` must never be cached publicly. A shared
-cache that stores it will hand the same cookie — and therefore the same
-session — to the next person who requests that URL.
+A response carrying `Set-Cookie` must never be cached publicly. A shared cache
+that stores it will hand the same cookie (and therefore the same session) to
+the next person who requests that URL.
 
 Set `Cache-Control: private, no-store` on anything that sets a cookie,
 and be aware that some CDNs strip `Set-Cookie` from cacheable responses

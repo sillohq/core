@@ -4,10 +4,10 @@ description: "Query/Header/Cookie/Path/Form/File markers, dual-mode validation"
 ---
 
 > **Source files:**
-> - `core/sillo/validation/fields.py` — `ParameterLocation`, `ParameterExtractor`, `Query`, `Header`, `Cookie`, `Path`, `Form`, `File`, `SolvedParamDependency`, `bind_marker`, `solve_params`, `resolve_param`
-> - `core/sillo/parameters.py` — Re-export shim (legacy import path)
-> - `core/sillo/validation/compiler.py` — `compile_validator`, `LocationSpec`
-> - `core/sillo/core/dependencies/base.py` — `get_dependant` (signature walk)
+> - `core/sillo/validation/fields.py`: `ParameterLocation`, `ParameterExtractor`, `Query`, `Header`, `Cookie`, `Path`, `Form`, `File`, `SolvedParamDependency`, `bind_marker`, `solve_params`, `resolve_param`
+> - `core/sillo/parameters.py`, Re-export shim (legacy import path)
+> - `core/sillo/validation/compiler.py`, `compile_validator`, `LocationSpec`
+> - `core/sillo/core/dependencies/base.py`, `get_dependant` (signature walk)
 
 ---
 
@@ -16,7 +16,7 @@ description: "Query/Header/Cookie/Path/Form/File markers, dual-mode validation"
 Sillo's parameter system extracts, coerces, and validates values from every
 part of an HTTP request: query strings, headers, cookies, URL path segments,
 form bodies, and uploaded files. Parameters are declared as handler defaults
-using marker classes — no type annotations required.
+using marker classes, no type annotations required.
 
 ```mermaid
 flowchart TD
@@ -69,7 +69,7 @@ class ParameterLocation(Enum):
 | `BODY`   | `"body"` | JSON request body                | `request_model=` (no marker) |
 | `FORM`   | `"form"` | URL-encoded or multipart form    | `Form`, `File`      |
 
-The `BODY` location is special — it is declared via the `request_model=` route
+The `BODY` location is special. It is declared via the `request_model=` route
 argument rather than a parameter marker. It exists in the enum so validation
 errors can report `"body"` as the location.
 
@@ -146,7 +146,7 @@ def is_legacy(self) -> bool:
 A marker stays legacy until it receives information only the Pydantic engine
 can act on: an explicit `type` or a validation constraint. Documentation-only
 keywords (`title`, `description`, `example`, `deprecated`) are deliberately
-excluded — enriching an OpenAPI entry never changes runtime behavior.
+excluded, enriching an OpenAPI entry never changes runtime behavior.
 
 ### 12.3.3  Constraint and Metadata Separation
 
@@ -204,10 +204,10 @@ def resolve_type(self) -> Any:
 
 Resolution never consults type annotations. The priority chain is:
 
-1. **Explicit `type`** — `Query(type=int)` → `int`
-2. **Runtime type of `default`** — `Query(1)` → `int`, `Query("x")` → `str`
-3. **List inference** — `Query([])` → `list[str]`, `Query([1,2])` → `list[int]`
-4. **Fallback** — `Query()` (no default, no type) → `str`
+1. **Explicit `type`**: `Query(type=int)` → `int`
+2. **Runtime type of `default`**: `Query(1)` → `int`, `Query("x")` → `str`
+3. **List inference**: `Query([])` → `list[str]`, `Query([1,2])` → `list[int]`
+4. **Fallback**: `Query()` (no default, no type) → `str`
 
 ```mermaid
 flowchart TD
@@ -446,7 +446,7 @@ class Form(ParameterExtractor):
         return False  # Always validated — no legacy path
 ```
 
-`Form` is always on the validated path — its `is_legacy` property is hardcoded
+`Form` is always on the validated path. Its `is_legacy` property is hardcoded
 to `False`. Form field binding did not exist before the Pydantic engine.
 
 ### 12.7.6  `File`
@@ -700,8 +700,8 @@ For each location, a synthetic Pydantic model is built using
 `pydantic.create_model()`. Field names are the **handler parameter names**,
 and field definitions come from `resolve_type()` + `to_field_info()`.
 
-`File` markers bypass the model entirely — they are stored in `passthrough`
-and delivered directly without Pydantic coercion.
+`File` markers bypass the model entirely. They are stored in `passthrough` and
+delivered directly without Pydantic coercion.
 
 ---
 
@@ -893,13 +893,13 @@ classDiagram
 
 | Method               | `Query` | `Header` | `Cookie` | `Path` | `Form` | `File` |
 |----------------------|---------|----------|----------|--------|--------|--------|
-| `extract()`          | Override| Override | Override | Override| —      | —      |
+| `extract()`          | Override| Override | Override | Override|  |  |
 | `is_legacy`          | Inherit | Inherit  | Inherit  | Inherit| `False`| Inherit|
 | `resolve_type()`     | Inherit | Inherit  | Inherit  | Inherit| Inherit| Override|
 | `to_field_info()`    | Inherit | Inherit  | Inherit  | Override| Inherit| Inherit|
 
 `Form` and `File` never define `extract()` because they are always on the
-validated path — their source (form body) requires async parsing.
+validated path. Their source (form body) requires async parsing.
 
 ---
 
