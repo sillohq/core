@@ -187,6 +187,38 @@ def needs_update(hashed: str) -> bool:
         return False
 
 
+def is_hashed(value: str) -> bool:
+    """Report whether a string is already a hash this application can verify.
+
+    Asks passlib to identify the scheme rather than matching a prefix. A
+    prefix test has to name every algorithm it accepts, and the one that
+    existed only knew bcrypt, so an argon2 or scrypt hash was treated as a
+    plaintext password and hashed a second time.
+
+    Args:
+        value: The string to inspect. Usually a value on its way into a
+            password column, which may be either plaintext or a hash.
+
+    Returns:
+        True when the value is recognised as a hash produced by one of the
+        configured schemes, False for plaintext or for a hash from a scheme
+        this application has no handler for.
+
+    Example:
+        if not is_hashed(value):
+            value = hash_password(value)
+    """
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        return _get_context().identify(value) is not None
+    except Exception:
+        # An unrecognised string is plaintext as far as the caller is
+        # concerned. Reporting True here would let it reach the database
+        # unhashed, so the safe answer is False.
+        return False
+
+
 def set_default_scheme(scheme: str) -> None:
     """Set the default hashing scheme for the application.
 

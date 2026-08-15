@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from tortoise import fields as _fields
 
-from sillo.helpers.hashing import hash_password
+from sillo.helpers.hashing import hash_password, is_hashed
 
 
 class PasswordField(_fields.CharField):
@@ -25,7 +25,7 @@ class PasswordField(_fields.CharField):
     password widget (reveal toggle, strength meter, confirmation).  Plaintext
     assigned through the ORM is hashed automatically via
     :func:`sillo.helpers.hashing.hash_password` — so ``user.password = "secret"``
-    stores a bcrypt hash, not the raw string.
+    stores a hash, not the raw string.
 
     Always verify with :func:`sillo.helpers.hashing.verify_password`
     (or the model's ``check_password`` helper) rather than comparing directly.
@@ -44,8 +44,12 @@ class PasswordField(_fields.CharField):
         """To Db Value"""
         if value is None or value == "":
             return value
-        if isinstance(value, str) and value.startswith(("$2b$", "$2a$", "$2y$")):
-            return value  # already a bcrypt hash
+        # Asks passlib which scheme produced the value rather than matching a
+        # prefix. The prefixes here were bcrypt's alone, so an argon2, scrypt
+        # or pbkdf2 hash looked like plaintext and was hashed a second time,
+        # and every login against it then failed.
+        if is_hashed(value):
+            return value
         return hash_password(value)
 
     def to_python_value(self, value, *args, **kwargs):
@@ -83,7 +87,20 @@ class SoftDeleteField(_fields.DatetimeField):
 
 
 class SlugField(_fields.CharField):
-    """URL-safe slug, optionally auto-generated from a source field."""
+    """URL-safe slug, optionally auto-generated from a source field.
+
+    With ``source_field`` set, saving a row that has no slug fills one in from
+    that attribute::
+
+        class Post(Model):
+            title = fields.CharField(max_length=200)
+            slug = SlugField(source_field="title")
+
+        post = await Post.create(title="Hello World")   # slug == "hello-world"
+
+    An explicitly assigned slug is always kept. Generation only ever fills a
+    blank, so editing the source later does not silently move a published URL.
+    """
 
     def __init__(
         self, max_length: int = 200, source_field: str | None = None, **kwargs
@@ -92,6 +109,26 @@ class SlugField(_fields.CharField):
         kwargs.setdefault("max_length", max_length)
         super().__init__(**kwargs)
         self._source_field = source_field
+
+    def to_db_value(self, value, instance, *args, **kwargs):
+        """Generate the slug when one was not supplied.
+
+        ``source_field`` used to be stored on the field and read by nothing at
+        all, so the documented auto-generation never happened and the argument
+        was accepted in silence.
+        """
+        if not value and self._source_field is not None:
+            source = getattr(instance, self._source_field, None)
+            if source:
+                from sillo.helpers.strings import slugify
+
+                value = slugify(str(source))[: self.max_length]
+                # Written back to the instance as well, so the object in hand
+                # after `create()` carries the slug the row was given rather
+                # than the None it was constructed with.
+                if self.model_field_name:
+                    setattr(instance, self.model_field_name, value)
+        return super().to_db_value(value, instance, *args, **kwargs)
 
 
 class ULIDField(_fields.CharField):

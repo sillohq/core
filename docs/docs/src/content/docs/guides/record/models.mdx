@@ -464,13 +464,13 @@ a [transaction](/guides/record/transactions-factories/).
 | `CreatedAtField` | `DatetimeField(auto_now_add=True)` | Works |
 | `UpdatedAtField` | `DatetimeField(auto_now=True)` | Works |
 | `SoftDeleteField` | `DatetimeField(null=True, default=None)` | Works |
-| `SlugField` | `CharField` with a `source_field` argument | Stores the argument; **never generates a slug** |
+| `SlugField` | `CharField` with a `source_field` argument | Fills a blank slug from that field on save |
 | `ULIDField` | `CharField(max_length=26, pk=True)` | **Never generates a value** |
-| `PasswordField` | `CharField` that bcrypt-hashes on write | Works; not exported from `sillo.record` |
+| `PasswordField` | `CharField` that hashes on write | Works; not exported from `sillo.record` |
 
-`PasswordField` is the useful one. It hashes plaintext in `to_db_value`
-and passes through values already starting with `$2b$`, `$2a$`, or
-`$2y$`, so re-saving a loaded row does not double-hash.
+`PasswordField` hashes plaintext in `to_db_value` and passes through a value
+that is already a hash, whichever scheme produced it, so re-saving a loaded row
+does not double-hash.
 
 ```python title="PasswordField"
 from sillo.record.fields import PasswordField   # not exported from sillo.record
@@ -488,14 +488,8 @@ Verify with `sillo.helpers.hashing.verify_password`, never by comparing
 strings. And note the in-memory attribute keeps the plaintext for the lifetime
 of that instance. Do not log the object.
 
-`SlugField(source_field="title")` accepts and stores `source_field` but
-no code reads it. Generate the slug yourself in a mutator:
-
-```python
-def set_title_attribute(self, value):
-    self.slug = slugify(value)
-    return value
-```
+`SlugField(source_field="title")` fills the slug from `title` when a row is
+saved without one. An explicitly set slug is always kept.
 
 ##  What not to do
 

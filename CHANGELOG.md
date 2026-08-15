@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **The `encrypted` cast is now real encryption.** It was XOR against a
+  repeating key with a source comment reading *"Simple XOR + base64 for demo"*,
+  so a column named `encrypted` held recoverable plaintext. It is now Fernet
+  (AES-128-CBC with an HMAC-SHA256 tag), keyed by PBKDF2-HMAC-SHA256 over the
+  passphrase. **Values written by the old caster cannot be read by this one.**
+  They were not protected in the first place, so rewrite them from plaintext.
+  Needs the new `crypto` extra; without `cryptography` installed the cast
+  raises rather than falling back to something weaker.
+
+- **`PasswordField` no longer double-hashes non-bcrypt hashes.** Its
+  already-hashed check matched the bcrypt prefixes alone, so an argon2, scrypt
+  or pbkdf2 hash assigned to the field was hashed a second time and never
+  verified again. It now asks passlib which scheme produced the value. Added
+  `sillo.hashing.is_hashed` for the same question elsewhere.
+
+### Fixed
+
+- **`Session.extend()` wrote a float into a `DatetimeField`.** `expires_at`
+  received `datetime.now(...).timestamp() + seconds`, which the database layer
+  rejected and which made `is_expired` raise when it compared a datetime
+  against it. Nothing in the suite called `extend()`, so it went unnoticed.
+
+- **`SlugField(source_field=...)` now generates the slug.** The argument was
+  stored on the field and read by nothing, so the documented auto-generation
+  never happened and the parameter was accepted in silence. A row saved without
+  a slug now gets one from the named attribute; an explicit slug is kept.
+
+- **`QuerySet.update()` applies `_casts`.** `save()` and the bulk helpers
+  encoded cast fields, but a queryset update wrote the raw Python value into a
+  column every other writer had encoded, so a JSON cast stored a Python repr
+  and an encrypted one stored plaintext.
+
+- Response payloads are encoded once instead of twice. The default route path
+  ran `jsonable_encoder` and then handed the result to `JSONResponse`, which
+  encoded it again. A custom encoder registered on a JSON-native type
+  (`str`, `int`, `dict`, `list`) was therefore applied twice and is now applied
+  once. Encoders registered on your own types are unaffected.
+
+- The debug error page reports the full Python version. It was built from
+  `major.minor.micro`, so a crash on a pre-release rendered as though it came
+  from the final release.
+
+### Added
+
+- Python 3.14 is supported and declared. The test and type-check matrices run
+  3.10 through 3.15, and the package now carries classifiers at all, having
+  previously published none. 3.15 runs in CI without gating while it is a beta.
+
+- `crypto` extra for `cryptography`, used by the `encrypted` cast and
+  `sillo.helpers.crypto`.
+
+### Changed
+
+- `asyncio.iscoroutinefunction` replaced with `inspect.iscoroutinefunction`
+  throughout, ahead of its removal in Python 3.16.
+
 ## [0.1.0b1] - 2026-08-13
 
 The first beta. The version moves off the 0.0.2 line because five of the

@@ -9,7 +9,8 @@ Supported cast types:
 - ``"datetime"`` — parse/format ISO datetime strings
 - ``"bool"`` — convert to Python bool
 - ``"int"`` / ``"float"`` — numeric casting
-- ``"encrypted"`` — encrypt/decrypt with the provided key
+- ``"encrypted"`` — Fernet encrypt/decrypt, keyed by the provided passphrase
+  (needs the optional ``cryptography`` package)
 - Any callable that returns ``(encoder, decoder)``
 """
 
@@ -60,19 +61,49 @@ def _datetime_decoder(value: str) -> datetime | None:
     return datetime.fromisoformat(value)
 
 
+#: Fixed salt for the passphrase-to-key derivation below. Field encryption has
+#: to be deterministic about its key, so the salt cannot be random per value the
+#: way it would be for a password hash. Fernet still generates a fresh IV per
+#: encryption, so two writes of the same plaintext do not produce the same
+#: ciphertext.
+_CAST_KEY_SALT = b"sillo.record.casting/encrypted/v1"
+
+
+def _fernet_key(passphrase: str) -> bytes:
+    """Turn an arbitrary passphrase into a Fernet key."""
+    from sillo.helpers.crypto import derive_key
+
+    derived, _ = derive_key(passphrase, salt=_CAST_KEY_SALT)
+    return base64.urlsafe_b64encode(derived)
+
+
 def _encrypted_factory(key: str):
-    """Create an encrypted caster with a symmetric key."""
+    """Create an encrypted caster with a symmetric key.
+
+    This used to be XOR against a repeating key, which is trivially reversible
+    and gave a field named ``encrypted`` no confidentiality at all. It is now
+    Fernet (AES-128-CBC with an HMAC-SHA256 tag), keyed by PBKDF2-HMAC-SHA256
+    over the passphrase.
+
+    ``cryptography`` is an optional dependency, and its absence raises rather
+    than falling back to something weaker: a cast that silently stops
+    protecting the column is worse than one that refuses to run.
+
+    Values written by the old caster cannot be read by this one. Anything
+    already stored under it was not protected in the first place and needs
+    rewriting from plaintext.
+    """
+    from sillo.helpers.crypto import decrypt, encrypt
+
+    fernet_key = _fernet_key(key)
 
     def encoder(value: str) -> str:
         """Encoder"""
-        # Simple XOR + base64 for demo. Use cryptography.fernet in production.
-        encoded = bytes([ord(c) ^ ord(key[i % len(key)]) for i, c in enumerate(value)])
-        return base64.b64encode(encoded).decode()
+        return encrypt(value, fernet_key)
 
     def decoder(value: str) -> str:
         """Decoder"""
-        decoded = base64.b64decode(value)
-        return "".join(chr(b ^ ord(key[i % len(key)])) for i, b in enumerate(decoded))
+        return decrypt(value, fernet_key)
 
     return encoder, decoder
 

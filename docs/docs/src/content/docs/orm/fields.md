@@ -67,23 +67,22 @@ uses the default. Install the extra:
 uv add "sillo-framework[hashing-bcrypt]"
 ```
 
-**Its "already hashed" check is bcrypt-specific.** A value starting `$2b$`,
-`$2a$` or `$2y$` is passed through untouched; anything else is hashed. So a
-hash produced by another scheme (argon2, scrypt) assigned to this field would
-be hashed *again*, as if it were a plaintext password, and would never verify.
-
-If your project standardises on argon2, do not mix it with this field. Hash
-explicitly and store in a plain `CharField`, so there is one place deciding the
-scheme:
+**It recognises a hash from any configured scheme.** Assigning a value that is
+already hashed stores it as-is; anything else is treated as a plaintext
+password and hashed. The check asks passlib which scheme produced the value, so
+argon2, scrypt and pbkdf2 hashes are all passed through, not just bcrypt.
 
 ```python
-from sillo.helpers.hashing import hash_password
+from sillo.hashing import hash_password
 
-class Account(Model):
-    password = fields.CharField(max_length=255)
-
-account.password = hash_password(plaintext, scheme="argon2")
+account.password = hash_password(plaintext, scheme="argon2")   # stored as given
+account.password = plaintext                                   # hashed for you
 ```
+
+:::note[Changed in 0.1.0]
+This check used to match the bcrypt prefixes alone, so an argon2 or scrypt hash
+assigned to the field was hashed a second time and never verified.
+:::
 
 ## The timestamp fields
 
@@ -144,34 +143,30 @@ class Post(Model):
 
 A `CharField` sized for a slug, with the intent in the name.
 
-:::caution[`source_field` does nothing]
-The constructor accepts `source_field=` and stores it, but nothing in the
-framework reads it. There is no automatic slug generation.
+### Generating the slug
+
+Pass `source_field` and a row saved without a slug gets one from that
+attribute:
 
 ```python
-slug = SlugField(source_field="title")   # has no effect
-```
-
-Generate the slug yourself. A [model event](/orm/events/) is the tidy place,
-because it applies however the row was created:
-
-```python
-from sillo.helpers.strings import slugify
-
-
-class Post(Model, HasEvents):
+class Post(Model):
     title = fields.CharField(max_length=200)
-    slug = SlugField()
+    slug = SlugField(source_field="title")
 
 
-@Post.on("before_create")
-async def fill_slug(post):
-    if not post.slug:
-        post.slug = slugify(post.title)
+post = await Post.create(title="Hello World")
+post.slug          # "hello-world"
 ```
+
+An explicitly assigned slug is kept. Generation only fills a blank, so editing
+the title later does not move a published URL.
 
 Add `unique=True` and decide what happens on a collision, usually a numeric
 suffix.
+
+:::note[Changed in 0.1.0]
+`source_field` was previously stored on the field and read by nothing, so no
+slug was ever generated and the argument was accepted in silence.
 :::
 
 ## Writing your own

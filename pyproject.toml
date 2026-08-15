@@ -91,6 +91,11 @@ jwt = ["pyjwt>=2.7.0"]
 # native migration engine, which does not exist before it.
 record = ["tortoise-orm>=1.0"]
 
+# Field encryption: the `encrypted` cast and sillo.helpers.crypto. Optional
+# because most applications never store a reversible secret, and the ones that
+# do should have to say so.
+crypto = ["cryptography>=41.0.0"]
+
 # Password Hashing Algorithms (fallback to pbkdf2_sha256 if none installed)
 hashing-bcrypt = ["bcrypt>=4.0.0"]
 hashing-argon2 = ["argon2-cffi>=21.2.0"]

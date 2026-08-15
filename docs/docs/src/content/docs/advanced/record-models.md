@@ -209,8 +209,8 @@ class SlugField(_fields.CharField):
 ```
 
 - A `CharField` with a shorter default `max_length` (200 vs 255).
-- The `source_field` parameter is stored for application-level slug generation
-  (e.g., "generate slug from the `title` field").
+- The `source_field` parameter names the attribute a blank slug is generated
+  from at save time (e.g. "generate the slug from the `title` field").
 
 ### 3.3 ULIDField
 

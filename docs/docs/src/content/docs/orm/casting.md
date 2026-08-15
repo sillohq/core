@@ -1,6 +1,6 @@
 ---
 title: Attribute Casting
-description: "Converting model attributes on the way in and out with _casts: the built-in casters, custom ones, how encoding happens at save time, and the encrypted cast's real security."
+description: "Converting model attributes on the way in and out with _casts: the built-in casters, custom ones, how encoding happens at save time, and what the encrypted cast provides."
 head:
   - tag: meta
     attrs:
@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: The _casts dict, built-in casters, custom casters, and what the encrypted cast actually does.
+      content: The _casts dict, built-in casters, custom casters, and the Fernet-backed encrypted cast.
 ---
 
 A cast converts an attribute between the shape your code wants and the shape
@@ -45,7 +45,7 @@ The base `Model` already includes `HasCasts`, so `_casts` is all you declare.
 | `"bool"` | `bool(value)` | `bool(value)` |
 | `"int"` | `int(value)` | `int(value)`, `None` passes through |
 | `"float"` | `float(value)` | `float(value)`, `None` passes through |
-| `"encrypted"` | see [below](#the-encrypted-cast-is-not-encryption) | |
+| `"encrypted"` | see [below](#the-encrypted-cast) | |
 
 `None` is never passed to a caster. A null column stays null.
 
@@ -115,52 +115,44 @@ class Invoice(Model):
 The callable is invoked each time the cast is resolved, which is what lets it
 close over configuration.
 
-## The `encrypted` cast is not encryption
+## The `encrypted` cast
 
 ```python
 _casts = {"api_key": ("encrypted", {"key": "my-secret"})}
 ```
 
-:::danger[Do not use this for secrets]
-The `encrypted` caster is **XOR against a repeating key, base64-encoded**. The
-source says so: *"Simple XOR + base64 for demo. Use cryptography.fernet in
-production."*
+The value is encrypted with **Fernet** (AES-128-CBC with an HMAC-SHA256 tag).
+The passphrase you pass is stretched into a key with PBKDF2-HMAC-SHA256 at
+600,000 iterations, so an ordinary string is usable as the key without being
+used as one directly.
 
-A repeating-key XOR is broken by anyone who can guess a plaintext fragment, and
-for structured values like a key prefix or a JSON brace, that is most of them.
-It provides no integrity protection at all: an attacker with database access
-can flip bits in the ciphertext and change the decrypted value.
+Fernet is authenticated, so a tampered ciphertext fails to decrypt rather than
+decrypting to something else. Each write carries its own IV, which means two
+rows holding the same secret do not share a ciphertext.
 
-It is obfuscation. Treat a column using it as **plaintext** in every threat
-model.
+:::caution[This needs the `cryptography` package]
+```bash
+uv add "sillo-framework[crypto]"
+```
+Without it the cast raises on first use. It does not fall back to anything
+weaker, because a cast that quietly stops protecting a column is worse than one
+that refuses to run.
 :::
 
-For real encryption at rest, register a caster over a real primitive:
-
-```python
-from cryptography.fernet import Fernet
-from sillo.record.casting import CastRegistry
-
-fernet = Fernet(settings.field_encryption_key)
-
-CastRegistry.register(
-    "secret",
-    lambda value: fernet.encrypt(value.encode()).decode(),
-    lambda value: fernet.decrypt(value.encode()).decode(),
-)
-```
-
-```python
-_casts = {"api_key": "secret"}
-```
-
-Fernet is authenticated: a tampered ciphertext fails to decrypt rather than
-decrypting to something else. Keep the key out of the database, and remember
-that a rotated key needs every row re-encrypted.
+Keep the passphrase out of the database, and remember that changing it needs
+every row re-encrypted: rows written under the old passphrase will not decrypt
+under the new one.
 
 Often the better answer is not to store the secret at all. Store a hash if you
 only need to verify it, or a reference to a secrets manager if you need to use
 it.
+
+:::note[Changed in 0.1.0]
+This caster used to be XOR against a repeating key, which gave a column named
+`encrypted` no real confidentiality. Values written by that version cannot be
+read by this one. They were not protected in the first place, so rewrite them
+from plaintext.
+:::
 
 ## The methods
 
@@ -180,10 +172,8 @@ model would.
   column for that.
 - **A field not in `_meta.fields` is skipped** at save time, so a cast naming a
   property rather than a column silently does nothing.
-- **`QuerySet.update()` bypasses casts.** It writes SQL directly without
-  building an instance, so `Post.filter(...).update(metadata={...})` sends the
-  dict to the driver rather than the encoded string. Load and `save()` when a
-  cast field is involved.
 
-[Bulk operations](/orm/bulk/) *are* covered, `bulk_create`, `bulk_upsert` and
-`upsert` all encode each instance before inserting.
+[Bulk operations](/orm/bulk/) are covered too: `bulk_create`, `bulk_upsert` and
+`upsert` all encode each instance before inserting, and `QuerySet.update()`
+encodes the values it is handed, so `Post.filter(...).update(metadata={...})`
+stores the same bytes a `save()` would.

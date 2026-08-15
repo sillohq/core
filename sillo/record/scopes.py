@@ -12,6 +12,8 @@ from collections.abc import Callable
 from tortoise.manager import Manager
 from tortoise.queryset import QuerySet
 
+from .casting import HasCasts
+
 
 class ScopeRegistry:
     """Registry of global scopes applied to every query."""
@@ -102,6 +104,29 @@ class RecordQuerySet(QuerySet):
         queryset = self.__class__(self.model)
         queryset._db = self._db
         return queryset
+
+    def update(self, **kwargs):
+        """Apply ``_casts`` to the values before handing them to the database.
+
+        ``save()`` and the bulk helpers encode cast fields on the way out, but
+        this path never builds an instance, so a queryset update wrote the raw
+        Python value straight into a column whose other writers had encoded it.
+        A JSON cast stored ``"{'a': 1}"`` instead of ``{"a": 1}``, and an
+        encrypted one stored the plaintext.
+        """
+        casts = getattr(self.model, "_casts", None)
+        if casts:
+            encoded = {}
+            for key, value in kwargs.items():
+                if key in casts and value is not None:
+                    # `get_cast` reads only `_casts`, a ClassVar, so the model
+                    # class stands in for the instance it is written against.
+                    encoder, _ = HasCasts.get_cast(self.model, key)  # ty: ignore[invalid-argument-type]
+                    if encoder is not None:
+                        value = encoder(value)
+                encoded[key] = value
+            kwargs = encoded
+        return super().update(**kwargs)
 
 
 class RecordManager(Manager):

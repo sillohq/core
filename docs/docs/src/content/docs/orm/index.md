@@ -130,5 +130,6 @@ one:
 
 Some parts of this package are thinner than a first read suggests, and you are
 better served knowing which up front than finding out during an incident. Where
-that is true, the page says so plainly. See for example the [`encrypted`
-cast](/orm/casting/#the-encrypted-cast-is-not-encryption).
+that is true, the page says so plainly, including what a helper needs before it
+will do what its name says. See for example the [`encrypted`
+cast](/orm/casting/#the-encrypted-cast).

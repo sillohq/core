@@ -304,8 +304,8 @@ management, dependency scanning, audit logging, or any decision about
 what your application should permit.
 
 The pages in these guides flag several places where a helper is weaker than its
-name suggests. `sanitize_html` is a regex scanner with known bypasses, the
-`"encrypted"` cast is XOR, and `unsign_value`'s `max_age` is not read. Each is
+name suggests. `sanitize_html` is a regex scanner with known bypasses, and `unsign_value`'s
+`max_age` is not read. Each is
 documented where it lives, with a working alternative. Read those warnings
 before relying on a name.
 

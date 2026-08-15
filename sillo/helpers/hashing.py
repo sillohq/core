@@ -15,6 +15,9 @@ from sillo.hashing import (
     hash_password as _hash_password,
 )
 from sillo.hashing import (
+    is_hashed as _is_hashed,
+)
+from sillo.hashing import (
     md5 as _md5,
 )
 from sillo.hashing import (
@@ -36,6 +39,18 @@ def hash_password(password: str, scheme: str = "bcrypt") -> str:
         Hashed password string.
     """
     return _hash_password(password, scheme=scheme)
+
+
+def is_hashed(value: str) -> bool:
+    """Report whether a string is already a hash rather than a plaintext password.
+
+    Args:
+        value: The string to inspect.
+
+    Returns:
+        True when one of the configured schemes recognises it, False otherwise.
+    """
+    return _is_hashed(value)
 
 
 def verify_password(password: str, hashed: str) -> bool:

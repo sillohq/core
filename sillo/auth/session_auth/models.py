@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from tortoise import fields
 
@@ -127,7 +127,12 @@ class Session(Model, TimestampsMixin):
             None: Database errors from the underlying ORM save
             operation propagate to the caller unchanged.
         """
-        self.expires_at = datetime.now(timezone.utc).timestamp() + duration_seconds
+        # `expires_at` is a DatetimeField. Assigning `.timestamp() + seconds`
+        # put a float there, which the database layer rejected and which made
+        # `is_expired` raise when it compared a datetime against it.
+        self.expires_at = datetime.now(timezone.utc) + timedelta(
+            seconds=duration_seconds
+        )
         await self.save(update_fields=["expires_at"])
 
     @classmethod

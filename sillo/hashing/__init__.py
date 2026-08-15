@@ -34,6 +34,7 @@ Installation:
 from .core import (
     get_available_schemes_list,
     hash_password,
+    is_hashed,
     needs_rehash,
     needs_update,
     set_default_scheme,
@@ -61,6 +62,7 @@ __all__ = [
     "constant_time_compare",
     "get_available_schemes_list",
     "hash_password",
+    "is_hashed",
     "is_password_usable",
     "make_unusable_password",
     "md5",

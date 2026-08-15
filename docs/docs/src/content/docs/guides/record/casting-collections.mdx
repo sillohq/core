@@ -90,7 +90,7 @@ A subtlety in `_set_kwargs`: for a cast field, Tortoise's own
 | `"bool"` | `bool(value)` | `bool(value)` | `BOOLEAN` / `INTEGER` |
 | `"int"` | `int(value)` | `int(value)` | `INTEGER` |
 | `"float"` | `float(value)` | `float(value)` | `REAL` |
-| `("encrypted", {"key": ...})` | XOR + base64 | base64 + XOR | `TEXT` |
+| `("encrypted", {"key": ...})` | Fernet encrypt | Fernet decrypt | `TEXT` |
 
 `None` bypasses both encoder and decoder. A null column reads back as `None`
 rather than crashing the decoder.
@@ -114,46 +114,26 @@ not use it.
 
 </Aside>
 
-<Aside type="danger" title="The &quot;encrypted&quot; cast is not encryption">
+<Aside type="note" title="The &quot;encrypted&quot; cast needs the crypto extra">
 
-`_encrypted_factory` XORs the plaintext against a repeating key and
-base64-encodes the result. The source comment says so: *"Simple XOR +
-base64 for demo. Use cryptography.fernet in production."*
+`_encrypted_factory` encrypts with Fernet (AES-128-CBC plus an HMAC-SHA256
+tag), keyed by PBKDF2-HMAC-SHA256 over the passphrase you pass.
 
 ```python
 _casts = {"ssn": ("encrypted", {"key": "k3y"})}
-# 'hunter2' is stored as 'A0YXH1YLWQ=='
-# base64.b64decode('A0YXH1YLWQ==') -> b'\x03F\x17\x1fV\x0bY'
 ```
 
-A repeating-key XOR is broken by anyone with a sample of ciphertext and a
-guess at the plaintext format. There is no authentication, so ciphertext
-can be modified undetectably. A database dump containing these columns
-should be treated as a plaintext leak.
-
-Use a real caster instead:
-
-```python
-from cryptography.fernet import Fernet
-from sillo.record.casting import CastRegistry
-
-_fernet = Fernet(os.environ["FIELD_ENCRYPTION_KEY"])
-
-CastRegistry.register(
-    "fernet",
-    lambda value: _fernet.encrypt(value.encode()).decode(),
-    lambda value: _fernet.decrypt(value.encode()).decode(),
-)
-
-class Customer(Model):
-    ssn = fields.TextField(null=True)
-    _casts = {"ssn": "fernet"}
+```bash
+uv add "sillo-framework[crypto]"
 ```
 
-Note that encrypted columns cannot be filtered, sorted, or indexed by value.
-Every `WHERE ssn = ...` becomes a full scan and decrypt. If you need lookups,
-store a separate HMAC of the value and query that. See [Crypto
-helpers](/guides/helpers/crypto/).
+Without `cryptography` installed the cast raises rather than falling back to
+anything weaker. Each write carries its own IV, so two rows holding the same
+value do not share a ciphertext, and a tampered ciphertext fails to decrypt
+instead of decrypting to something else.
+
+Before 0.1.0 this was repeating-key XOR. Rows written then cannot be read now,
+and were not protected anyway, so rewrite them from plaintext.
 
 </Aside>
 
@@ -373,11 +353,8 @@ what keeps this endpoint bounded. For an accurate count over a large table, use
 **Do not use the `"bool"` cast.** It inverts `False` over a text column
 and is redundant over a boolean one.
 
-**Do not use the `"encrypted"` cast for anything sensitive.** It is
-repeating-key XOR. Register a Fernet caster.
-
-**Do not use `queryset.update()` on a cast field.** It bypasses the
-encoder.
+**The `"encrypted"` cast needs the `crypto` extra.** It raises without
+`cryptography` rather than falling back to something weaker.
 
 **Do not read a cast field in a hot loop.** The decoder runs on every
 access, uncached.
