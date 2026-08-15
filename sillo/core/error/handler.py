@@ -1267,7 +1267,10 @@ class ServerErrorMiddleware(BaseMiddleware):
         Raises:
             None.
         """
-        python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        # major.minor.micro drops the release level, so a crash on 3.15.0rc1
+        # reported itself as 3.15.0 and the page could not be told apart from
+        # one taken on the final release. platform.python_version() keeps it.
+        python_version = platform.python_version()
 
         _html = f"""
         <div class="info-grid">
@@ -1368,7 +1371,7 @@ class ServerErrorMiddleware(BaseMiddleware):
             },
             "system": {
                 "sillo_version": sillo_version,
-                "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+                "python_version": platform.python_version(),
                 "platform": platform.platform(),
                 "debug_mode": self.debug,
             },

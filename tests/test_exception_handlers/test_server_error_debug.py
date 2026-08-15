@@ -149,9 +149,17 @@ def test_format_locals_survives_an_unreprable_value(middleware):
 
 
 def test_system_info_reports_the_python_version(middleware):
+    import re
     import sys
 
-    assert sys.version.split()[0] in middleware._format_system_info()
+    # Not a substring check against the whole page: sys.path is rendered there
+    # too, and an interpreter installed at .../cpython-3.15.0b4-.../ puts its
+    # own version in that list. The assertion then passes on the path alone and
+    # says nothing about the version field, which is how a pre-release reporting
+    # itself as 3.15.0 went unnoticed.
+    page = middleware._format_system_info()
+    reported = re.findall(r'<div class="info-value">([^<]+)</div>', page)
+    assert sys.version.split()[0] in reported
 
 
 def test_debugging_suggestions_are_produced(middleware, caught):
