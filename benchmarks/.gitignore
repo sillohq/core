@@ -1,0 +1,8 @@
+# Benchmark output. Results are machine-specific; committing them would invite
+# comparing numbers from two different laptops.
+results/*
+!results/.gitkeep
+
+.venv/
+__pycache__/
+*.egg-info/
