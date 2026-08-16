@@ -27,6 +27,7 @@ import anyio.to_thread
 from anyio import AsyncFile
 from typing_extensions import Doc
 
+from sillo.core.encoding import jsonable_encoder
 from sillo.core.http.request import ClientDisconnect, Request
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.objects import MutableHeaders
@@ -647,8 +648,6 @@ class JSONResponse(BaseResponse):
                 # which case the second attempt raises the same thing and the
                 # caller sees the error it would always have seen.
                 pass
-
-        from sillo.core.encoding import jsonable_encoder
 
         return json.dumps(
             jsonable_encoder(content, custom_encoder=custom_encoder),
