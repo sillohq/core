@@ -34,7 +34,7 @@ def normalize_etag(tag: str) -> str:
 
 
 def set_response_etag(response: Response, etag: str, override: bool = True) -> None:
-    response.set_header("etag", normalize_etag(etag), overide=override)
+    response.set_header("etag", normalize_etag(etag), override=override)
 
 
 def compute_and_set_etag(

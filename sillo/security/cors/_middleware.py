@@ -151,19 +151,19 @@ class CORSMiddleware(BaseMiddleware):
             response.set_header(
                 "Access-Control-Allow-Origin",
                 self.allow_origin_value(origin),
-                overide=True,
+                override=True,
             )
 
             if self.allow_credentials:
                 response.set_header(
-                    "Access-Control-Allow-Credentials", "true", overide=True
+                    "Access-Control-Allow-Credentials", "true", override=True
                 )
 
         if self.expose_headers:
             response.set_header(
                 "Access-Control-Expose-Headers",
                 ", ".join(self.expose_headers),
-                overide=True,
+                override=True,
             )
         return cnext
 

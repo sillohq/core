@@ -75,9 +75,9 @@ class RateLimitMiddleware(BaseMiddleware):
         result = self._last_result
         if result is None or not self.config.include_headers:
             return
-        response.set_header(_HEADER_LIMIT, str(result.limit), overide=True)
-        response.set_header(_HEADER_REMAINING, str(result.remaining), overide=True)
-        response.set_header(_HEADER_RESET, str(int(result.reset_at)), overide=True)
+        response.set_header(_HEADER_LIMIT, str(result.limit), override=True)
+        response.set_header(_HEADER_REMAINING, str(result.remaining), override=True)
+        response.set_header(_HEADER_RESET, str(int(result.reset_at)), override=True)
 
     def _deny(self, request: Request, response: Response, result: Any):
         """Deny"""

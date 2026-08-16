@@ -1064,7 +1064,7 @@ class AcceptsMiddleware(BaseMiddleware):
         if self.vary:
             existing_vary = response.headers.get("Vary")
             response.set_header(
-                "Vary", create_vary_header(existing_vary, self.vary), overide=True
+                "Vary", create_vary_header(existing_vary, self.vary), override=True
             )
         if not response.headers.get("Content-Type") and self.default_content_type:
             accept_header = request.headers.get("Accept")
@@ -1073,10 +1073,10 @@ class AcceptsMiddleware(BaseMiddleware):
                     accept_header, [self.default_content_type]
                 )
                 if negotiated_type:
-                    response.set_header("Content-Type", negotiated_type, overide=True)
+                    response.set_header("Content-Type", negotiated_type, override=True)
             else:
                 response.set_header(
-                    "Content-Type", self.default_content_type, overide=True
+                    "Content-Type", self.default_content_type, override=True
                 )
         return response
 

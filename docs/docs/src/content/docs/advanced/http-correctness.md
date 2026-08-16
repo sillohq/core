@@ -577,7 +577,7 @@ flowchart TD
 if is_fresh(request, response, weak_compare=True):
     response.status(304)
     response.set_body(b"")
-    response.set_header("content-length", "0", overide=True)
+    response.set_header("content-length", "0", override=True)
 ```
 
 The 304 response:
@@ -599,7 +599,7 @@ Convenience functions for manual ETag management:
 ```python
 # core/sillo/http/etag.py:35
 def set_response_etag(response: Response, etag: str, override: bool = True) -> None:
-    response.set_header("etag", normalize_etag(etag), overide=override)
+    response.set_header("etag", normalize_etag(etag), override=override)
 
 def compute_and_set_etag(
     response: Response, body: bytes = b"", weak: bool = True, override: bool = False
@@ -680,9 +680,9 @@ flowchart TD
 if len(self._ranges) == 1:
     start, end = self._ranges[0]
     self.set_header(
-        "content-range", f"bytes {start}-{end}/{file_size}", overide=True
+        "content-range", f"bytes {start}-{end}/{file_size}", override=True
     )
-    self.set_header("content-length", str(end - start + 1), overide=True)
+    self.set_header("content-length", str(end - start + 1), override=True)
     return
 ```
 
@@ -701,10 +701,10 @@ self._multipart_boundary = self._generate_multipart_boundary()
 self.set_header(
     "content-type",
     f"multipart/byteranges; boundary={self._multipart_boundary}",
-    overide=True,
+    override=True,
 )
 self.set_header(
-    "content-length", str(self._multipart_length(file_size)), overide=True
+    "content-length", str(self._multipart_length(file_size)), override=True
 )
 ```
 
@@ -772,8 +772,8 @@ The `_handle_range_header` catches this and sets up a 416:
 # core/sillo/core/http/response.py:749
 except ValueError:
     self._ranges = []
-    self.set_header("content-range", f"bytes */{file_size}", overide=True)
-    self.set_header("content-length", "0", overide=True)
+    self.set_header("content-range", f"bytes */{file_size}", override=True)
+    self.set_header("content-length", "0", override=True)
     self.status_code = 416
     return
 ```

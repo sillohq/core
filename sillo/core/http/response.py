@@ -7,6 +7,7 @@ import mimetypes
 import os
 import stat
 import typing
+import warnings
 from base64 import b64encode
 from collections.abc import AsyncIterable, AsyncIterator, Callable
 from datetime import datetime, timedelta, timezone
@@ -115,6 +116,39 @@ class RangeNotSatisfiable(Exception):
             None: This method does not raise exceptions.
         """
         self.max_size = max_size
+
+
+def _resolve_override(
+    correct: bool,
+    misspelled: bool | None,
+    method: str,
+    correct_name: str,
+    misspelled_name: str,
+) -> bool:
+    """Accept the misspelled keyword, and say so once.
+
+    ``set_header`` and ``set_headers`` shipped with ``overide`` and
+    ``overide_all`` -- one 'r' short -- so that spelling is in working code
+    and in the published documentation. Renaming outright would break it
+    silently in the worst way: ``overide=True`` would land in ``**kwargs`` or
+    raise ``TypeError`` at the one moment a caller is trying to *replace* a
+    header, and a duplicate header is not an error anyone notices quickly.
+
+    The correct spelling is a normal positional parameter, so callers passing
+    it positionally were never affected. The misspelling survives as a
+    keyword-only alias that warns.
+    """
+    if misspelled is None:
+        return correct
+
+    warnings.warn(
+        f"{method}({misspelled_name}=...) is a misspelling of "
+        f"{method}({correct_name}=...) and will be removed in a future "
+        "release.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    return misspelled
 
 
 class BaseResponse:
@@ -257,7 +291,7 @@ class BaseResponse:
             and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
             content_length = str(len(body))
-            self.set_header("content-length", content_length, overide=True)
+            self.set_header("content-length", content_length, override=True)
         content_type: str | None = self.content_type
         if content_type is not None and populate_content_type:
             if (
@@ -472,7 +506,7 @@ class BaseResponse:
             This response, for chaining.
         """
         self._body = self.render(content)
-        self.set_header("content-length", str(len(self._body)), overide=True)
+        self.set_header("content-length", str(len(self._body)), override=True)
         return self
 
     def _generate_etag(self) -> str:
@@ -481,21 +515,33 @@ class BaseResponse:
         content_hash.update(self._body)
         return f'W/"{b64encode(content_hash.digest()).decode("utf-8")}"'
 
-    def set_header(self, key: str, value: str, overide: bool = False) -> BaseResponse:
+    def set_header(
+        self,
+        key: str,
+        value: str,
+        override: bool = False,
+        *,
+        overide: bool | None = None,
+    ) -> BaseResponse:
         """Set a response header.
 
         Args:
             key: Header name.
             value: Header value.
-            overide: If True, replace existing header with same name.
+            override: If True, replace any existing header with the same name.
+            overide: Deprecated misspelling of ``override``.
         """
+        override = _resolve_override(
+            override, overide, "set_header", "override", "overide"
+        )
+
         key_bytes = key.lower().encode(
             "latin-1"
         )  # Normalize key to lowercase for case-insensitive comparison
         value_bytes = value.encode("latin-1")
         new_header = (key_bytes, value_bytes)
 
-        if overide:
+        if override:
             # Edit in place rather than rebinding: `self.headers` caches a
             # MutableHeaders around this exact list, and a fresh list leaves
             # that cache pointing at an orphan, so later edits through
@@ -507,14 +553,25 @@ class BaseResponse:
         self.raw_headers.append(new_header)
         return self
 
-    def set_headers(self, headers: dict[str, str], overide_all: bool = False):
+    def set_headers(
+        self,
+        headers: dict[str, str],
+        override_all: bool = False,
+        *,
+        overide_all: bool | None = None,
+    ):
         """Set multiple headers at once.
 
         Args:
             headers: Dict of header name to value.
-            overide_all: If True, replace all existing headers.
+            override_all: If True, replace all existing headers.
+            overide_all: Deprecated misspelling of ``override_all``.
         """
-        if overide_all:
+        override_all = _resolve_override(
+            override_all, overide_all, "set_headers", "override_all", "overide_all"
+        )
+
+        if override_all:
             self.raw_headers[:] = [
                 (k.lower().encode("latin-1"), v.encode("latin-1"))
                 for k, v in headers.items()
@@ -721,7 +778,7 @@ class FileResponse(BaseResponse):
         etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
         etag = f'"{hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()}"'
 
-        self.set_header("content-length", content_length, overide=True)
+        self.set_header("content-length", content_length, override=True)
         self.headers.setdefault("last-modified", last_modified)
         self.headers.setdefault("etag", etag)
 
@@ -825,11 +882,11 @@ class FileResponse(BaseResponse):
             self._ranges = self._parse_ranges(range_header, file_size)
         except ValueError:
             self._ranges = []
-            self.set_header("content-range", f"bytes */{file_size}", overide=True)
+            self.set_header("content-range", f"bytes */{file_size}", override=True)
             # `set_stat_headers` declared the whole file. A 416 sends no body
             # at all, so leaving that in place promises bytes that never come
             # and the server tears the connection down mid-response.
-            self.set_header("content-length", "0", overide=True)
+            self.set_header("content-length", "0", override=True)
             self.status_code = 416
             return
 
@@ -838,9 +895,9 @@ class FileResponse(BaseResponse):
         if len(self._ranges) == 1:
             start, end = self._ranges[0]
             self.set_header(
-                "content-range", f"bytes {start}-{end}/{file_size}", overide=True
+                "content-range", f"bytes {start}-{end}/{file_size}", override=True
             )
-            self.set_header("content-length", str(end - start + 1), overide=True)
+            self.set_header("content-length", str(end - start + 1), override=True)
             return
 
         # Several ranges travel as one multipart/byteranges body, where each
@@ -852,10 +909,10 @@ class FileResponse(BaseResponse):
         self.set_header(
             "content-type",
             f"multipart/byteranges; boundary={self._multipart_boundary}",
-            overide=True,
+            override=True,
         )
         self.set_header(
-            "content-length", str(self._multipart_length(file_size)), overide=True
+            "content-length", str(self._multipart_length(file_size)), override=True
         )
 
     async def _send_response(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -1610,9 +1667,26 @@ class Responder:
         self._response.status_code = status_code
         return self
 
-    def set_header(self, key: str, value: str, overide: bool = False):
-        """Set a response header."""
-        self._response.set_header(key, value, overide=overide)
+    def set_header(
+        self,
+        key: str,
+        value: str,
+        override: bool = False,
+        *,
+        overide: bool | None = None,
+    ):
+        """Set a response header.
+
+        Args:
+            key: Header name.
+            value: Header value.
+            override: If True, replace any existing header with the same name.
+            overide: Deprecated misspelling of ``override``.
+        """
+        override = _resolve_override(
+            override, overide, "set_header", "override", "overide"
+        )
+        self._response.set_header(key, value, override)
         return self
 
     def set_cookie(
@@ -1810,10 +1884,31 @@ class Responder:
             self.set_cookie(**cookie)
         return self
 
-    def set_headers(self, headers: dict[str, str], overide_all: bool = False):
-        """Set multiple headers at once."""
-        if overide_all:
-            self._response.set_headers(headers)
+    def set_headers(
+        self,
+        headers: dict[str, str],
+        override_all: bool = False,
+        *,
+        overide_all: bool | None = None,
+    ):
+        """Set multiple headers at once.
+
+        Args:
+            headers: Dict of header name to value.
+            override_all: If True, replace all existing headers.
+            overide_all: Deprecated misspelling of ``override_all``.
+        """
+        override_all = _resolve_override(
+            override_all, overide_all, "set_headers", "override_all", "overide_all"
+        )
+
+        if override_all:
+            # The flag has to be forwarded. Calling `set_headers(headers)`
+            # here dropped it, so the underlying response took its *appending*
+            # branch: asking a Responder to replace every header quietly added
+            # to them instead, and the caller's own headers survived alongside
+            # the ones meant to replace them.
+            self._response.set_headers(headers, True)
             return self
         for key, value in headers.items():
             self.set_header(key, value)

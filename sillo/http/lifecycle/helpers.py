@@ -74,7 +74,7 @@ def set_request_id_header(
     Raises:
         None.
     """
-    response.set_header(header_name, request_id, overide=True)
+    response.set_header(header_name, request_id, override=True)
 
 
 def get_or_generate_request_id(

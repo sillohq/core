@@ -250,7 +250,7 @@ This means edits through `response.headers` and direct `set_header()` calls
 modify the **same list**. The ASGI `send()` reads `self.raw_headers` directly.
 
 > **Cache trap**: The `MutableHeaders` is cached in `self._headers`. If you
-> replace `self.raw_headers` with a new list (e.g., via `set_headers(..., overide_all=True)`),
+> replace `self.raw_headers` with a new list (e.g., via `set_headers(..., override_all=True)`),
 > the cached `_headers` becomes an orphan. The `set_header()` method avoids this
 > by editing `self.raw_headers[:]` in-place (line 502).
 
@@ -258,12 +258,12 @@ modify the **same list**. The ASGI `send()` reads `self.raw_headers` directly.
 
 ```python
 # core/sillo/core/http/response.py:483-532
-def set_header(self, key: str, value: str, overide: bool = False) -> BaseResponse:
+def set_header(self, key: str, value: str, override: bool = False) -> BaseResponse:
     key_bytes = key.lower().encode("latin-1")
     value_bytes = value.encode("latin-1")
     new_header = (key_bytes, value_bytes)
 
-    if overide:
+    if override:
         # Edit in place to preserve MutableHeaders cache binding
         self.raw_headers[:] = [
             (k, v) for k, v in self.raw_headers if k != key_bytes
@@ -273,16 +273,21 @@ def set_header(self, key: str, value: str, overide: bool = False) -> BaseRespons
     return self
 ```
 
-**`overide` parameter** (note: the codebase uses the spelling `overide`, not `override`):
+**`override` parameter**:
 
-- `overide=False` (default): Appends the header, allowing duplicates.
-- `overide=True`: Removes all existing entries with the same key, then appends.
+- `override=False` (default): Appends the header, allowing duplicates.
+- `override=True`: Removes all existing entries with the same key, then appends.
+
+> **Renamed**: this shipped as `overide`, one `r` short. The misspelling
+> still works as a keyword and raises a `DeprecationWarning`; it will be
+> removed in a future release. Callers who passed the flag positionally
+> were never affected.
 
 **`set_headers()`** is a batch variant:
 
 ```python
-def set_headers(self, headers: dict[str, str], overide_all: bool = False):
-    if overide_all:
+def set_headers(self, headers: dict[str, str], override_all: bool = False):
+    if override_all:
         self.raw_headers[:] = [
             (k.lower().encode("latin-1"), v.encode("latin-1"))
             for k, v in headers.items()
@@ -292,7 +297,7 @@ def set_headers(self, headers: dict[str, str], overide_all: bool = False):
         self.set_header(key, value)
 ```
 
-> **Warning**: `overide_all=True` replaces the **entire** header list. This
+> **Warning**: `override_all=True` replaces the **entire** header list. This
 > discards Content-Type, Content-Length, and any cookies. Use with caution.
 
 **`remove_header()`** delegates to `MutableHeaders.__delitem__`:
@@ -308,7 +313,7 @@ def remove_header(self, key: str):
 # core/sillo/core/http/response.py:460-475
 def set_body(self, content: typing.Any) -> BaseResponse:
     self._body = self.render(content)
-    self.set_header("content-length", str(len(self._body)), overide=True)
+    self.set_header("content-length", str(len(self._body)), override=True)
     return self
 ```
 
@@ -660,7 +665,7 @@ def set_stat_headers(self, stat_result: os.stat_result) -> None:
     etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
     etag = f'"{hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()}"'
 
-    self.set_header("content-length", content_length, overide=True)
+    self.set_header("content-length", content_length, override=True)
     self.headers.setdefault("last-modified", last_modified)
     self.headers.setdefault("etag", etag)
 ```
@@ -753,9 +758,9 @@ over-reaching end positions (RFC 9110 §14.1.2).
 if len(self._ranges) == 1:
     start, end = self._ranges[0]
     self.set_header(
-        "content-range", f"bytes {start}-{end}/{file_size}", overide=True
+        "content-range", f"bytes {start}-{end}/{file_size}", override=True
     )
-    self.set_header("content-length", str(end - start + 1), overide=True)
+    self.set_header("content-length", str(end - start + 1), override=True)
     return
 ```
 
@@ -780,10 +785,10 @@ self._multipart_boundary = self._generate_multipart_boundary()
 self.set_header(
     "content-type",
     f"multipart/byteranges; boundary={self._multipart_boundary}",
-    overide=True,
+    override=True,
 )
 self.set_header(
-    "content-length", str(self._multipart_length(file_size)), overide=True
+    "content-length", str(self._multipart_length(file_size)), override=True
 )
 ```
 
@@ -827,8 +832,8 @@ def _handle_range_header(self, range_header: str) -> None:
         self._ranges = self._parse_ranges(range_header, file_size)
     except ValueError:
         self._ranges = []
-        self.set_header("content-range", f"bytes */{file_size}", overide=True)
-        self.set_header("content-length", "0", overide=True)
+        self.set_header("content-range", f"bytes */{file_size}", override=True)
+        self.set_header("content-length", "0", override=True)
         self.status_code = 416
         return
 ```
@@ -1221,8 +1226,8 @@ async def get_users(request, response):
 ### 10.9 Header & Cookie Chaining
 
 ```python
-def set_header(self, key, value, overide=False):
-    self._response.set_header(key, value, overide=overide)
+def set_header(self, key, value, override=False):
+    self._response.set_header(key, value, override=override)
     return self
 
 def set_cookie(self, key, value, max_age=None, expires=None, path="/",
@@ -1712,7 +1717,7 @@ consider `use_encoder=False` if you know the data is already serializable.
 ### 18.4 MutableHeaders Caching
 
 The `headers` property lazily creates a `MutableHeaders` instance and caches
-it. If you modify `raw_headers` directly (e.g., via `set_header(overide=True)`),
+it. If you modify `raw_headers` directly (e.g., via `set_header(override=True)`),
 the cached `MutableHeaders` sees the changes because it holds a reference to
 the same list. However, replacing `raw_headers` entirely (e.g., `self.raw_headers = [...]`)
 breaks the cache binding.
@@ -1738,12 +1743,12 @@ response._body = b"new body"
 response.set_body(b"new body")
 ```
 
-### 19.2 Using Mutable Headers After `set_headers(..., overide_all=True)`
+### 19.2 Using Mutable Headers After `set_headers(..., override_all=True)`
 
 ```python
 # DANGEROUS: This replaces the entire header list,
 # orphaning the cached MutableHeaders
-response.set_headers({"new-header": "value"}, overide_all=True)
+response.set_headers({"new-header": "value"}, override_all=True)
 
 # Later edits through response.headers won't reach the wire:
 response.headers["another"] = "broken"  # Writes to orphaned list
