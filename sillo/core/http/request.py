@@ -167,7 +167,15 @@ class HTTPConnection:
         """
         assert scope["type"] in ("http", "websocket")
         self.scope = scope
-        self.scope.update({"extensions": {"websocket.http.response": {}}})
+        # Merged, not replaced. `update` overwrote the whole `extensions`
+        # mapping, discarding everything the ASGI server had advertised --
+        # so `send_push_promise` could never fire, because the
+        # `http.response.push` key it looks for was erased by the constructor
+        # of the very request it was about to push from. Any middleware
+        # reading `scope["extensions"]` after a Request was built was also
+        # being told the server supports one extension and no others.
+        extensions = self.scope.setdefault("extensions", {})
+        extensions.setdefault("websocket.http.response", {})
 
     def __getitem__(self, key: str) -> typing.Any:
         """Retrieve a value from the underlying ASGI scope by key.

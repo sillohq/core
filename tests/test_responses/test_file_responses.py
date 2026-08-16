@@ -536,7 +536,7 @@ def test_set_header_override_keeps_headers_mapping_live(
     async def headers(request: Request, response: Response):
         inner = response.json({"ok": True}).get_response()
         inner.headers["x-first"] = "1"  # builds the cached view
-        inner.set_header("x-second", "2", overide=True)  # used to rebind
+        inner.set_header("x-second", "2", override=True)  # used to rebind
         inner.headers["x-third"] = "3"  # must still reach the wire
         return response
 
