@@ -2,7 +2,12 @@
 
 from passlib.context import CryptContext
 
-from .config import get_available_schemes, get_default_scheme, is_scheme_available
+from .config import (
+    get_available_schemes,
+    get_default_scheme,
+    install_hint,
+    is_scheme_available,
+)
 from .exceptions import HashingError, InvalidSchemeError
 
 _context: CryptContext | None = None
@@ -81,7 +86,7 @@ def hash_password(
 
     if not is_scheme_available(scheme):
         raise InvalidSchemeError(
-            f"Scheme '{scheme}' is not available. Install with: pip install {scheme}"
+            f"Scheme '{scheme}' is not available. Install with: {install_hint(scheme)}"
         )
 
     try:
@@ -236,7 +241,7 @@ def set_default_scheme(scheme: str) -> None:
 
     if not is_scheme_available(scheme):
         raise InvalidSchemeError(
-            f"Scheme '{scheme}' is not available. Install with: pip install {scheme}"
+            f"Scheme '{scheme}' is not available. Install with: {install_hint(scheme)}"
         )
 
     _default_scheme = scheme

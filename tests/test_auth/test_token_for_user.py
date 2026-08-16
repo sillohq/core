@@ -143,7 +143,10 @@ class TestTokenForUserEdgeCases:
         u.identity = "1"
         tokens = TokenForUser(u, secret="key")
         token = tokens.access_token()
-        tampered = token[:-5] + "xxxxx"
+        # Guarded so the substitution cannot be a no-op on a token that
+        # already ends that way, which would leave the token untampered and
+        # the test passing for the wrong reason.
+        tampered = token[:-5] + ("xxxxx" if token[-5:] != "xxxxx" else "yyyyy")
         with pytest.raises(Exception):
             tokens.verify(tampered)
 

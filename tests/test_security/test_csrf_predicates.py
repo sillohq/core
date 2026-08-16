@@ -165,9 +165,55 @@ class TestTokens:
 
         assert instance._csrf_tokens_match(first, second) is False
 
-    def test_a_tampered_token_does_not_match(self):
+    def test_a_tampered_payload_does_not_match(self):
+        """Tamper with the payload, which is where a forgery would have to
+        land, and where every bit is load-bearing.
+
+        The payload is base64 of a 45-byte JSON string -- 60 characters
+        exactly, a whole number of 4-character groups -- so no bit of it is
+        discarded on the way back and any edit both changes the value and
+        breaks the signature over it.
+        """
         instance = middleware()
         token = instance._generate_csrf_token()
-        tampered = token[:-1] + ("a" if token[-1] != "a" else "b")
+        payload, _, signature = token.partition(".")
+        edited = payload[:-1] + ("a" if payload[-1] != "a" else "b")
 
-        assert instance._csrf_tokens_match(token, tampered) is False
+        assert instance._csrf_tokens_match(token, f"{edited}.{signature}") is False
+
+    def test_a_token_signed_with_another_key_does_not_match(self):
+        """The threat this defends against: an attacker who can see a token
+        and copy its shape, but does not hold the secret."""
+        instance = middleware()
+        forger = CSRFMiddleware(config=CSRFConfig(secret_key="x" * 32))
+        forger._setup_csrf_config()
+
+        assert instance._csrf_tokens_match(
+            instance._generate_csrf_token(), forger._generate_csrf_token()
+        ) is False
+
+    def test_the_last_signature_character_carries_two_spare_bits(self):
+        """Editing the final character alone is not tampering, and a test that
+        treated it as such was wrong rather than unlucky.
+
+        The signature is a 20-byte HMAC-SHA1 written as 27 base64 characters.
+        27 characters carry 162 bits and the digest is 160, so the last
+        character's low 2 bits are slack that decoding throws away: ``...SoY``
+        and ``...Soa`` are byte-for-byte the same signature, and itsdangerous
+        accepts both. This is base64 malleability, not a forgery -- it takes a
+        valid token to produce and yields a token for the same value, so it
+        grants an attacker nothing.
+
+        Asserted here so the equality is recorded as understood, and so the
+        flaky version of this test (flip the last character, expect a
+        mismatch) is not written a second time.
+        """
+        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+        instance = middleware()
+        token = instance._generate_csrf_token()
+        _, _, signature = token.partition(".")
+        assert len(signature) == 27
+        twin = token[:-1] + alphabet[alphabet.index(token[-1]) ^ 0b11]
+
+        assert twin != token
+        assert instance._csrf_tokens_match(token, twin) is True

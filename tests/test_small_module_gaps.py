@@ -7,12 +7,19 @@ file, and because the pattern is the same in every case: the module was
 exercised through its happy path only.
 """
 
+import importlib.metadata
+
 import pytest
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.core.routing._utils import get_route_path
 from sillo.exceptions import HTTPException
-from sillo.hashing.config import SCHEMES, get_default_scheme, is_scheme_available
+from sillo.hashing.config import (
+    SCHEMES,
+    get_default_scheme,
+    install_hint,
+    is_scheme_available,
+)
 from sillo.security.ratelimit.strategies.base import RateLimitStrategy
 
 
@@ -98,6 +105,47 @@ class TestHashingSchemeSelection:
         builtin = [n for n, c in SCHEMES.items() if c.package is None]
         for name in builtin:
             assert is_scheme_available(name) is True
+
+    @pytest.mark.parametrize(
+        "scheme", sorted(n for n, c in SCHEMES.items() if c.package)
+    )
+    def test_an_installed_distribution_reports_its_scheme_available(self, scheme):
+        """The general form of a bug that hid for as long as it existed.
+
+        Availability is decided by importing, and the module a distribution
+        installs is not always its own name: ``argon2-cffi`` installs
+        ``argon2``. The old probe swapped dashes for underscores and looked
+        for ``argon2_cffi``, so argon2 reported missing on every machine that
+        had it, ``hash_password(scheme="argon2")`` raised, and the one test
+        that would have noticed skipped itself for the same reason.
+
+        Ask packaging whether the distribution is installed, and require the
+        framework to agree with it.
+        """
+        package = SCHEMES[scheme].package
+        try:
+            importlib.metadata.distribution(package)
+        except importlib.metadata.PackageNotFoundError:
+            pytest.skip(f"{package} is not installed")
+
+        assert is_scheme_available(scheme) is True
+
+    def test_argon2_is_probed_by_its_module_not_its_distribution(self):
+        """Stated outright, so it holds even where argon2 is not installed and
+        the check above can only skip."""
+        assert SCHEMES["argon2"].package == "argon2-cffi"
+        assert SCHEMES["argon2"].import_name == "argon2"
+
+    def test_the_install_hint_names_the_package_to_install(self):
+        """``pip install argon2`` names an unrelated project, so the old
+        message sent people to the wrong package to fix a problem that
+        installing it would not have fixed."""
+        assert install_hint("argon2") == "pip install argon2-cffi"
+
+    def test_the_install_hint_survives_an_unknown_scheme(self):
+        """It is only ever called on the failure path, and raising there would
+        replace a clear error with a confusing one."""
+        assert "not a known scheme" in install_hint("no-such-scheme")
 
     def test_pbkdf2_is_the_fallback_when_nothing_else_is_installed(
         self, monkeypatch
