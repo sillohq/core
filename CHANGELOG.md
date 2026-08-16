@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0b3] - 2026-08-16
+
+### Performance
+
+- **The two built-in error layers are now raw ASGI middleware**, which is worth
+  roughly a 26x cut in framework overhead on small responses. `ServerErrorMiddleware`
+  and `ExceptionMiddleware` were dispatch middleware — `(request, response,
+  call_next)` — each wrapped in an `ASGIRequestResponseBridge` that built a
+  `Request`, a `Response`, an `anyio.Event`, a memory object stream and a
+  background task, on every request. Neither ever wanted any of it: both only
+  look at a request that raised. They now take the next app and are called with
+  `(scope, receive, send)`, constructing a request and a response only inside
+  their `except` clause.
+
+  Measured in-process against equivalent applications, driven directly through
+  their ASGI interface:
+
+  | case | before | after | FastAPI 0.141.1 |
+  | --- | --- | --- | --- |
+  | plain text | 702.8µs | 27.1µs | 48.4µs |
+  | small JSON | 730.2µs | 37.5µs | 58.9µs |
+  | int path param | 821.8µs | 38.0µs | 75.1µs |
+  | 200-row JSON | 1679.7µs | 826.0µs | 2279.3µs |
+
+  The router was never the bottleneck — it matched at ~20µs on its own. This is
+  framework overhead only, with no server, sockets or database in the numbers;
+  a handler doing a 2ms query is 2ms either way.
+
+### Added
+
+- **`app.use(middleware, *args, raw=True, **kwargs)` registers raw ASGI
+  middleware.** The argument is a factory, called `middleware(next_app, *args,
+  **kwargs)`, and what it returns is called with `(scope, receive, send)`.
+  Nothing is constructed on its behalf, so it is the cheaper form when the
+  middleware does not need a parsed request, and ASGI middleware written for
+  other frameworks drops straight in. The dispatch form is unchanged and
+  remains the default.
+
+  Extra arguments without `raw=True` now raise `TypeError` rather than being
+  silently dropped, since the dispatch form takes a middleware that is already
+  configured and there is nowhere for them to go.
+
+### Fixed
+
+- **Reading the request body from an exception handler no longer hangs.** A body
+  can only be read once off the wire, and more than one `Request` is built for a
+  connection: the router builds one, and an exception handler running after the
+  route handler already drained it gets another. The second awaited a `receive`
+  that could never produce another chunk, and the request hung until the client
+  gave up. It now fails immediately with `RuntimeError: Stream consumed`, the
+  same error a single request re-reading its own body raises. A body that was
+  never read is still available to the handler, and a dispatch middleware
+  peeking at the body still leaves it readable downstream.
+
+### Changed
+
+These are internals — neither class is exported from `sillo` or listed in
+`__all__`, and reaching them takes a deep import — but the signatures moved:
+
+- `ServerErrorMiddleware.__init__` takes the next ASGI app as its **first**
+  positional parameter: `ServerErrorMiddleware(app, handler=..., debug=...)`.
+  Keyword calls such as `ServerErrorMiddleware(debug=True)` are unaffected;
+  a positional `ServerErrorMiddleware(handler)` now binds the handler to `app`.
+- `ServerErrorMiddleware` and `ExceptionMiddleware` are called with
+  `(scope, receive, send)`, so neither can be passed to `app.use()` in its
+  dispatch form.
+- `ServerErrorMiddleware` no longer subclasses `BaseMiddleware`.
+- `ExceptionMiddleware` now holds the next app on `.app` and is rebound when the
+  chain is rebuilt, so one instance can no longer be shared between two
+  applications.
+
+Everything an application normally touches is unchanged: `app.use()` with
+dispatch functions and `BaseMiddleware` subclasses, `add_exception_handler` for
+both exception classes and status codes, handler signatures, `server_error_handler`,
+debug tracebacks, 404s, and validation errors.
+
 ## [0.1.0b2] - 2026-08-15
 
 ### Security
