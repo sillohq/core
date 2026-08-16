@@ -203,49 +203,73 @@ class Version(Command):
 
 
 class Serve(Command):
-    """Run the application with uvicorn."""
+    """Run the application on the Sillo server."""
 
     name = "serve"
-    help = "Run the application with uvicorn"
+    help = "Run the application on the Sillo server"
 
     arguments: ClassVar[list] = [
         Argument("app", default=None, help="Import string. Defaults to the app found"),
         Option("host", default="127.0.0.1", help="Interface to bind"),
         Option("port", type=int, default=8000, short="p", help="Port to bind"),
+        Option("workers", type=int, default=1, short="w", help="Worker processes"),
+        Option(
+            "log-level",
+            default="info",
+            help="debug, info, warning or error",
+        ),
         Flag("reload", short="r", help="Restart when the source changes"),
+        Flag("no-access-log", help="Do not log a line per request"),
+        Flag(
+            "plain",
+            help="Use uvicorn's own output instead of Sillo's",
+        ),
     ]
 
     def handle(self) -> int | None:
         """Run the server.
 
-        Synchronous: uvicorn owns the event loop, and starting it from inside
-        one would nest two.
+        Synchronous: the server owns the event loop, and starting it from
+        inside one would nest two.
 
         Returns:
             An exit code, or None when the server stopped cleanly.
         """
-        try:
-            import uvicorn
-        except ImportError:
-            self.fail("uvicorn is not installed. uv add uvicorn")
-
         _ensure_cwd_importable()
         target = self.argument("app") or _configured_app() or DEFAULT_APPS[0]
 
-        self.pairs(
-            [
-                ("app", target),
-                ("address", f"http://{self.option('host')}:{self.option('port')}"),
-            ]
-        )
-        self.blank()
+        if self.flag("plain"):
+            # An escape hatch, for anyone diagnosing a problem who needs to see
+            # what uvicorn itself is saying rather than Sillo's rendering of it.
+            try:
+                import uvicorn
+            except ImportError:
+                self.fail("uvicorn is not installed. uv add uvicorn")
 
-        uvicorn.run(
-            target,
-            host=self.option("host"),
-            port=self.option("port"),
-            reload=self.flag("reload"),
-        )
+            uvicorn.run(
+                target,
+                host=self.option("host"),
+                port=self.option("port"),
+                workers=self.option("workers"),
+                log_level=self.option("log-level"),
+                reload=self.flag("reload"),
+            )
+            return None
+
+        from sillo.server import run
+
+        try:
+            run(
+                target,
+                host=self.option("host"),
+                port=self.option("port"),
+                workers=self.option("workers"),
+                log_level=self.option("log-level"),
+                reload=self.flag("reload"),
+                access_log=not self.flag("no-access-log"),
+            )
+        except RuntimeError as error:
+            self.fail(str(error))
         return None
 
 
