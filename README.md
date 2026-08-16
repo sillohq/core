@@ -31,7 +31,7 @@ Each of those is a solved problem with good packages behind it. The work that re
 
 | | |
 |---|---|
-| Tests | 4,733 passing, on CPython 3.10 through 3.14. Python 3.15 runs too, and reports without gating the branch while it is a beta |
+| Tests | 4,738 passing, on CPython 3.10 through 3.15. The 3.15 leg reports without gating the branch, because a beta can regress under us |
 | Coverage | 91%, with a 90% floor enforced in CI before anything is published |
 | Types | Ships `py.typed`, so your own checker sees Sillo's annotations rather than `Any` |
 | Type check | `ty` clean across the package |
