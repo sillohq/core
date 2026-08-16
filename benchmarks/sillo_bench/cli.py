@@ -16,7 +16,14 @@ from pathlib import Path
 from sillo_bench import loadtools, report
 from sillo_bench import scenarios as scenario_registry
 from sillo_bench.environment import Environment
-from sillo_bench.runner import FRAMEWORKS, RunConfig, Server, free_port, run_framework
+from sillo_bench.runner import (
+    DISTRIBUTIONS,
+    FRAMEWORKS,
+    RunConfig,
+    Server,
+    free_port,
+    run_framework,
+)
 
 DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "results"
 
@@ -34,10 +41,16 @@ def _framework_importable(name: str) -> tuple[bool, str]:
     Returns:
         ``(importable, detail)`` where detail is the version or the error.
     """
-    module = {"sillo": "sillo", "fastapi": "fastapi", "django": "django"}[name]
+    # The application module rather than the bare package: importing Flask
+    # proves nothing about `a2wsgi`, and importing Django proves nothing about
+    # whether the settings this suite configures are valid. Importing what will
+    # actually be served is the only check worth making.
+    module = FRAMEWORKS[name].split(":")[0]
+    distribution = DISTRIBUTIONS[name]
     probe = (
-        f"import {module}; "
-        f"print(getattr({module}, '__version__', 'unknown'))"
+        "import importlib, importlib.metadata as m; "
+        f"importlib.import_module({module!r}); "
+        f"print(m.version({distribution!r}))"
     )
     result = subprocess.run(
         [sys.executable, "-c", probe], capture_output=True, text=True, timeout=60

@@ -1,10 +1,19 @@
 # The Sillo benchmark
 
-Sillo, FastAPI and Django, serving identical routes over real HTTP, measured by
+Six Python web frameworks serving identical routes over real HTTP, measured by
 an established load generator.
 
+| framework | kind | in the suite because |
+| --- | --- | --- |
+| **Sillo** | async ASGI | the subject |
+| **FastAPI** | async ASGI | the incumbent Sillo is most often compared to |
+| **Litestar** | async ASGI | the closest modern competitor; serializes with `msgspec` |
+| **Starlette** | async ASGI | FastAPI is built on it, so the pair isolates what FastAPI's validation layer costs — and it is the practical floor for a Python ASGI framework |
+| **Django** | async ASGI | the batteries-included incumbent |
+| **Flask** | **WSGI** | the classic micro-framework. The only non-ASGI entry, which changes how its row should be read — see [Flask](#flask-is-the-asymmetric-one) |
+
 Everything here is designed so you can run it yourself and disagree with us.
-The applications are three short files you can read in a couple of minutes, the
+Each application is one short file you can read in a couple of minutes, the
 payloads have a single shared definition, and every export carries the machine
 the numbers came from.
 
@@ -21,18 +30,18 @@ uv pip install -e ".[all]"
 brew install oha          # macOS. see "Load generators" for other platforms
 
 python -m sillo_bench doctor       # confirm the suite can run here
-python -m sillo_bench run          # ~13 minutes at the defaults
+python -m sillo_bench run          # ~18 minutes at the defaults, all six
 ```
 
 Results print to the terminal and are written to `results/` as CSV, JSON and
 Markdown.
 
-If you'd rather not install all three frameworks, install the ones you want and
-run those:
+If you'd rather not install all six, install the ones you want and run those.
+Each framework is its own extra:
 
 ```bash
-uv pip install -e ".[sillo,fastapi]"
-python -m sillo_bench run --frameworks sillo,fastapi
+uv pip install -e ".[sillo,fastapi,litestar]"
+python -m sillo_bench run --frameworks sillo,fastapi,litestar
 ```
 
 ---
@@ -67,9 +76,9 @@ results describe framework overhead and nothing else. See
 This is a benchmark published by the authors of one of the frameworks in it, so
 the methodology matters more than the numbers.
 
-**One shared payload definition.** All three applications import their response
-bodies from `sillo_bench/payloads.py`. Neither can serve a slightly smaller
-object than another.
+**One shared payload definition.** All six applications import their response
+bodies from `sillo_bench/payloads.py`. None can serve a slightly smaller object
+than another.
 
 **One server, one configuration.** Every framework is served by the same
 uvicorn, same version, same worker count, access logging off, on a fresh
@@ -97,7 +106,7 @@ says so explicitly rather than presenting the median as settled.
 handler declared `async def rows() -> dict` serializes through pydantic-core's
 Rust serializer. Drop the annotation and it falls back to FastAPI's pure-Python
 `jsonable_encoder`. On the `rows` payload that is a **13x** difference — 286µs
-against 3731µs — larger than any gap between the three frameworks here.
+against 3731µs — larger than the gap between most of the frameworks here.
 
 The annotations stay. Showing a framework at its best is the only defensible
 choice for a benchmark published by a competitor, and it is what modern FastAPI
@@ -105,7 +114,34 @@ code looks like. It is worth knowing about in its own right: if your own FastAPI
 service is slower than this table suggests, check your return annotations before
 anything else.
 
-**Django's middleware is the one real judgement call.** Django ships a default
+### Flask is the asymmetric one
+
+Flask is WSGI, and every other application here is native ASGI. Three things
+follow, none of them hideable:
+
+**It runs behind a WSGI-to-ASGI bridge** (`a2wsgi`), because uvicorn cannot serve
+it directly. Keeping one server across the whole suite is what makes the other
+five rows comparable, and swapping in gunicorn for one framework would distort
+things far more than the bridge does — but part of Flask's overhead here is the
+bridge rather than Flask.
+
+**WSGI is synchronous, so requests run in a thread pool** rather than on an event
+loop. Concurrency is capped by pool size. That is a real property of WSGI, not an
+artefact. The pool is 32 threads by default and tunable with
+`SILLO_BENCH_FLASK_THREADS`.
+
+**This is not how Flask is deployed.** Production Flask runs under gunicorn or
+uWSGI with several worker *processes*, sidestepping the GIL in a way one uvicorn
+worker cannot. A real Flask deployment on the same hardware would post a
+considerably better number. Read the Flask row as "per-request cost under a
+controlled server", not as "what Flask can do".
+
+Flask's JSON key sorting is switched off, since no other framework here sorts and
+leaving it on would bill Flask for work nothing else performs.
+
+### Django's middleware is the other judgement call
+
+Django ships a default
 `MIDDLEWARE` list — security headers, sessions, CSRF, auth, messages,
 clickjacking. A bare Sillo or FastAPI application has no equivalent, so running
 Django's default stack against nothing would measure the stack rather than the
@@ -245,16 +281,26 @@ and a parser returning a `Measurement`.
 
 ## Reading the output
 
+One ranked block per scenario, because a six-column grid would wrap into
+nonsense and ranking is what you want from a row anyway.
+
 ```
-scenario      sillo                 fastapi               django
---------------------------------------------------------------------------
-plaintext         21,340 rps (1.00x)    12,880 rps (0.60x)     7,410 rps (0.35x)
-                p50 2.87ms            p50 4.76ms            p50 8.31ms
+rows
+  Dominated by the JSON encoder: 200 nested objects.
+    litestar        2,208 rps   1.00x   p50    3.55ms   p99    4.63ms
+    fastapi         1,480 rps   0.67x   p50    5.22ms   p99    8.37ms
+    starlette       1,413 rps   0.64x   p50    5.53ms   p99    7.48ms
+    flask             635 rps   0.29x   p50   12.03ms   p99   19.08ms
+    sillo             571 rps   0.26x   p50   13.89ms   p99   19.17ms
+    django            525 rps   0.24x   p50   14.61ms   p99   22.31ms
 ```
 
 Throughput is the median of the measured rounds; higher is better. The
-multiplier compares each framework to the fastest in that row, and is the part
-that carries between machines — the absolute figures do not.
+multiplier compares each framework to the fastest in that scenario, and is the
+part that carries between machines — the absolute figures do not.
+
+The CSV and Markdown exports keep the framework-per-column shape, which is what
+you want in a spreadsheet.
 
 ---
 

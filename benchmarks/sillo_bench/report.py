@@ -184,49 +184,41 @@ def render_table(
     grouped = _grouped(results)
     lines: list[str] = ["", environment.describe(), ""]
 
-    name_width = max([len(s.name) for s in scenarios] + [8]) + 2
-    cell_width = 22
-
-    header = "scenario".ljust(name_width) + "".join(
-        f.ljust(cell_width) for f in frameworks
-    )
-    lines.append(header)
-    lines.append("-" * len(header))
+    # One ranked block per scenario rather than a framework-per-column grid.
+    # Six frameworks would put a grid past 150 characters and wrap it into
+    # nonsense, and ranking is what the reader wants from a row anyway.
+    width = max(len(f) for f in frameworks) + 2
 
     for scenario in scenarios:
         row = grouped.get(scenario.name, {})
-        best = max(
-            (r.rps for r in row.values() if r.ok),
-            default=0.0,
-        )
+        best = max((r.rps for r in row.values() if r.ok), default=0.0)
 
-        cells = []
-        for framework in frameworks:
+        lines.append(f"{scenario.name}")
+        lines.append(f"  {scenario.summary}")
+
+        ranked = sorted(
+            frameworks,
+            key=lambda f: row[f].rps if f in row and row[f].ok else -1.0,
+            reverse=True,
+        )
+        for framework in ranked:
             result = row.get(framework)
             if result is None:
-                cells.append("-".ljust(cell_width))
+                lines.append(f"    {framework.ljust(width)}  not run")
             elif not result.ok:
-                cells.append("failed".ljust(cell_width))
+                lines.append(f"    {framework.ljust(width)}  failed")
             else:
-                ratio = f" ({result.rps / best:.2f}x)" if best else ""
-                cells.append(f"{result.rps:>10,.0f} rps{ratio}".ljust(cell_width))
-
-        lines.append(scenario.name.ljust(name_width) + "".join(cells))
-
-        latency_cells = []
-        for framework in frameworks:
-            result = row.get(framework)
-            if result is None or not result.ok:
-                latency_cells.append("".ljust(cell_width))
-            else:
-                latency_cells.append(
-                    f"  p50 {result.p50:.2f}ms".ljust(cell_width)
+                ratio = f"{result.rps / best:.2f}x" if best else "-"
+                lines.append(
+                    f"    {framework.ljust(width)}"
+                    f"{result.rps:>10,.0f} rps  {ratio:>6}"
+                    f"   p50 {result.p50:>7.2f}ms"
+                    f"   p99 {result.p99:>7.2f}ms"
                 )
-        lines.append(" " * name_width + "".join(latency_cells))
+        lines.append("")
 
-    lines.append("")
     lines.append("throughput is the median of the measured rounds; higher is better.")
-    lines.append("the multiplier compares each framework to the fastest in that row.")
+    lines.append("the multiplier compares each framework to the fastest in that scenario.")
 
     noisy = [r for r in results if r.ok and r.spread > 0.10]
     if noisy:

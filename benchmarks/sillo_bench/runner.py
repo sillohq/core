@@ -32,10 +32,30 @@ from sillo_bench.loadtools import LoadTool, Measurement
 from sillo_bench.scenarios import Scenario
 
 #: Each framework's ASGI application, as uvicorn import strings.
+#:
+#: Ordered roughly by what they are: the two being compared head to head, then
+#: the ASGI toolkit FastAPI is built on, then the two batteries-included
+#: incumbents. Report column order follows this.
 FRAMEWORKS: dict[str, str] = {
     "sillo": "sillo_bench.apps.sillo_app:app",
     "fastapi": "sillo_bench.apps.fastapi_app:app",
+    "litestar": "sillo_bench.apps.litestar_app:app",
+    "starlette": "sillo_bench.apps.starlette_app:app",
     "django": "sillo_bench.apps.django_app:app",
+    "flask": "sillo_bench.apps.flask_app:app",
+}
+
+#: Distribution name for each framework, for version reporting. Read from
+#: installed metadata rather than a ``__version__`` attribute, because not
+#: every framework exposes one and Litestar's is a structured object rather
+#: than a string.
+DISTRIBUTIONS: dict[str, str] = {
+    "sillo": "sillo-framework",
+    "fastapi": "fastapi",
+    "litestar": "litestar",
+    "starlette": "starlette",
+    "django": "django",
+    "flask": "flask",
 }
 
 
