@@ -164,7 +164,9 @@ def render(
     return "\n".join(lines)
 
 
-def render_shutdown(*, requests: int | None = None, uptime_s: float | None = None) -> str:
+def render_shutdown(
+    *, requests: int | None = None, uptime_s: float | None = None
+) -> str:
     """Build the line printed once the server has stopped.
 
     Args:
@@ -179,7 +181,9 @@ def render_shutdown(*, requests: int | None = None, uptime_s: float | None = Non
         parts.append(f"{requests} request{'s' if requests != 1 else ''}")
     if uptime_s is not None:
         parts.append(
-            f"{uptime_s:.0f}s uptime" if uptime_s < 3600 else f"{uptime_s / 3600:.1f}h uptime"
+            f"{uptime_s:.0f}s uptime"
+            if uptime_s < 3600
+            else f"{uptime_s / 3600:.1f}h uptime"
         )
 
     mark = theme.paint(theme.GLYPHS["mark"], theme.DIM)

@@ -109,6 +109,7 @@ class SilloConfig(uvicorn.Config):
         if self.sillo_access_log and self.loaded_app is not None:
             self.loaded_app = AccessLog(self.loaded_app)
 
+
 class SilloServer(uvicorn.Server):
     """uvicorn's server, announcing itself as Sillo.
 
@@ -198,7 +199,5 @@ class SilloServer(uvicorn.Server):
         """
         if getattr(self.config, "sillo_banner", True):
             banner.write(
-                banner.render_shutdown(
-                    uptime_s=time.perf_counter() - self._started_at
-                )
+                banner.render_shutdown(uptime_s=time.perf_counter() - self._started_at)
             )

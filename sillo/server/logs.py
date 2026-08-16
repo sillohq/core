@@ -45,6 +45,7 @@ _LEVEL_NAMES: dict[int, str] = {
 #: Width of the level column, so messages start at a fixed offset.
 _LEVEL_WIDTH = 7
 
+
 def _watching(args: tuple) -> tuple[str, tuple]:
     """Render the reloader's watch list as paths rather than a list repr.
 
