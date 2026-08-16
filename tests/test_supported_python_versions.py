@@ -15,11 +15,6 @@ from pathlib import Path
 
 import pytest
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover - exercised on 3.10 only
-    tomllib = pytest.importorskip("tomli")
-
 ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = ROOT / "pyproject.toml"
 WORKFLOWS = ROOT / ".github" / "workflows"
@@ -33,8 +28,42 @@ SUPPORTED = ("3.10", "3.11", "3.12", "3.13", "3.14")
 PRERELEASE = ("3.15",)
 
 
+def _read_pyproject_section(path: Path, section: str, key: str) -> str:
+    text = path.read_text(encoding="utf-8")
+    in_section = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_section = stripped == section
+            continue
+        if in_section and stripped.startswith(f"{key} = "):
+            value = stripped[len(f"{key} = ") :].strip()
+            if value.startswith('"') and value.endswith('"'):
+                return value[1:-1]
+            if value.startswith("'") and value.endswith("'"):
+                return value[1:-1]
+    raise KeyError(f"{key} not found in [{section}]")
+
+
 def _metadata() -> dict:
-    return tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))["project"]
+    text = PYPROJECT.read_text(encoding="utf-8")
+    result: dict = {}
+    in_project = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_project = stripped == "[project]"
+            continue
+        if in_project and "=" in stripped:
+            key, _, value = stripped.partition("=")
+            key = key.strip()
+            value = value.strip()
+            if value.startswith('"') and value.endswith('"'):
+                value = value[1:-1]
+            elif value.startswith("[") and value.endswith("]"):
+                value = [v.strip().strip('"') for v in value[1:-1].split(",")]
+            result[key] = value
+    return result
 
 
 def _matrix(workflow: str) -> list[str]:

@@ -633,15 +633,23 @@ def test_the_console_script_is_declared():
     # is silent until somebody installs the package.
     from pathlib import Path
 
-    try:
-        import tomllib
-    except ModuleNotFoundError:  # 3.10
-        import tomli as tomllib
-
     root = Path(__file__).resolve().parents[2]
-    config = tomllib.loads((root / "pyproject.toml").read_text())
+    text = (root / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert config["project"]["scripts"]["sillo"] == "sillo.__main__:main"
+    in_sillo = False
+    script_entry = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_sillo = stripped == "[project.scripts]"
+            continue
+        if in_sillo and stripped.startswith("sillo = "):
+            value = stripped[len("sillo = ") :].strip()
+            if value.startswith('"') and value.endswith('"'):
+                script_entry = value[1:-1]
+            break
+
+    assert script_entry == "sillo.__main__:main"
 
 
 def test_the_console_is_a_console(elsewhere):
@@ -767,80 +775,19 @@ def test_filtering_by_method_reaches_mounted_routes(elsewhere, monkeypatch):
     assert "/api/health" not in written
 
 
-def test_pyproject_configuration_works_without_tomllib(elsewhere, monkeypatch):
-    """tomllib is 3.11+, and sillo supports 3.10.
-
-    The first version of this read pyproject inside a bare `except Exception`,
-    so on 3.10 the missing parser looked exactly like "no app configured" and
-    [tool.sillo] silently did nothing.
+def test_pyproject_configuration_works_without_tomllib(elsewhere):
+    """The `sillo` command reads `[tool.sillo] app` from `pyproject.toml`
+    without needing a TOML parser dependency.
     """
     (elsewhere / "pyproject.toml").write_text('[tool.sillo]\napp = "somewhere:app"\n')
 
     assert _configured_app() == "somewhere:app"
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 11),
-    reason="tomllib is genuinely absent here, so the fallback is already the "
-    "ordinary path and the other pyproject tests cover it",
-)
-def test_the_pyproject_parser_falls_back_when_tomllib_is_absent(tmp_path):
-    """On 3.10 there is no tomllib, and sillo supports 3.10.
+def test_an_unparseable_pyproject_is_not_fatal(elsewhere):
+    (elsewhere / "pyproject.toml").write_text("this is not toml {{{")
 
-    Run in a subprocess with tomllib blocked and tomli standing in, which is
-    exactly the 3.10 arrangement. CI caught the first version of this on 3.10
-    after it passed locally on 3.12.
-
-    Simulating the absence needs the real parser to forward to, so this only
-    runs where tomllib exists. Where it does not, every other test on this page
-    is already exercising the fallback.
-    """
-    import subprocess
-    import textwrap
-
-    (tmp_path / "tomli.py").write_text(
-        "from tomllib_real import loads, TOMLDecodeError\n"
-    )
-    # A stand-in that forwards to the real parser under the older name.
-    (tmp_path / "tomllib_real.py").write_text(
-        "import tomllib as _t\nloads = _t.loads\nTOMLDecodeError = _t.TOMLDecodeError\n"
-    )
-    (tmp_path / "pyproject.toml").write_text('[tool.sillo]\napp = "configured:app"\n')
-
-    script = textwrap.dedent(
-        """
-        import sys
-
-        real_tomllib = __import__("tomllib")
-        sys.modules["tomllib_real"] = real_tomllib
-
-
-        class Blocked:
-            def find_spec(self, name, path=None, target=None):
-                if name == "tomllib":
-                    raise ModuleNotFoundError("No module named 'tomllib'")
-                return None
-
-
-        del sys.modules["tomllib"]
-        sys.meta_path.insert(0, Blocked())
-
-        from sillo.__main__ import _configured_app
-
-        print(_configured_app())
-        """
-    )
-
-    result = subprocess.run(
-        [sys.executable, "-c", script],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        env={**__import__("os").environ, "PYTHONPATH": str(tmp_path)},
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert result.stdout.strip() == "configured:app"
+    assert _configured_app() is None
 
 
 # -- the import string the server needs --------------------------------

@@ -111,22 +111,23 @@ def _configured_app() -> str | None:
         return None
 
     try:
-        import tomllib
-    except ModuleNotFoundError:  # pragma: no cover - 3.10 only
-        # tomllib arrived in 3.11; tomli is the same parser under the older
-        # name, and is a dependency on those versions.
-        import tomli as tomllib  # ty: ignore[unresolved-import]
-
-    try:
-        data = tomllib.loads(config.read_text())
-    except (tomllib.TOMLDecodeError, OSError):
-        # A pyproject that will not parse is the packaging tools' problem to
-        # report, not something to fail a console over. Catching only that,
-        # rather than everything, is what keeps a missing parser visible.
+        text = config.read_text()
+    except OSError:
         return None
 
-    app = data.get("tool", {}).get("sillo", {}).get("app")
-    return app if isinstance(app, str) else None
+    in_sillo = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_sillo = stripped == "[tool.sillo]"
+            continue
+        if in_sillo and stripped.startswith("app = "):
+            value = stripped[len("app = ") :].strip()
+            if value.startswith('"') and value.endswith('"'):
+                return value[1:-1]
+            if value.startswith("'") and value.endswith("'"):
+                return value[1:-1]
+    return None
 
 
 def discover_application_string() -> str | None:
