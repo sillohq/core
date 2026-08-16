@@ -15,16 +15,22 @@ head:
 #  Deployment
 
 ```bash
-sillo serve
-```
-
-which is:
-
-```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-Everything else on this page is what to change before that is a good idea.
+Under a process manager, behind a reverse proxy. Everything else on this page
+is what to change before that is a good idea.
+
+:::caution[Not `sillo serve`]
+`sillo serve` is the **development** server. It is a single process by default,
+its `--reload` restarts on any file change, and its access log is formatted for
+a person watching a terminal rather than for a log collector. It also supervises
+nothing: a worker that dies stays dead.
+
+Run `uvicorn` directly, as above, with systemd or your orchestrator restarting
+it. That is the same server `sillo serve` uses underneath — what changes is the
+configuration and who is watching it.
+:::
 
 ##  Settings
 

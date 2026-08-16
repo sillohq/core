@@ -186,6 +186,16 @@ class SilloServer(uvicorn.Server):
             sockets: Forwarded to uvicorn.
         """
         await super().shutdown(sockets)
+        self._log_stopped_message()
+
+    def _log_stopped_message(self) -> None:
+        """Print the closing card.
+
+        Its own method rather than inline in ``shutdown`` so it is reachable
+        without driving uvicorn's entire shutdown sequence — which reads
+        ``self.servers`` and ``self.lifespan``, both set up by ``startup``.
+        Naming it mirrors ``_log_started_message``, which uvicorn already has.
+        """
         if getattr(self.config, "sillo_banner", True):
             banner.write(
                 banner.render_shutdown(

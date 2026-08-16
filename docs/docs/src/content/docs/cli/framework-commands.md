@@ -57,36 +57,111 @@ sillo serve --reload
 sillo serve --host 0.0.0.0 --port 8080
 ```
 
-Runs the application with [uvicorn](https://www.uvicorn.org/).
+Runs the application on the **Sillo development server**.
+
+:::caution[Do not deploy with this]
+`sillo serve` is a development server. It is fine to leave running all day
+while you work, and it is not what should be answering requests from the
+internet. See [Deployment](/guides/start/deployment/) for what to run instead,
+and [Why not in production](#why-not-in-production) below for why.
+:::
 
 | Parameter | Kind | Default | Meaning |
 | --- | --- | --- | --- |
 | `app` | argument | discovered | Import string, e.g. `app.main:app` |
 | `--host` | option | `127.0.0.1` | Interface to bind |
-| `-p`, `--port` | option | `8000` | Port to bind |
+| `-p`, `--port` | option | `8000` | Port to bind. `0` asks the OS for a free one |
+| `-w`, `--workers` | option | `1` | Worker processes |
+| `--log-level` | option | `info` | `debug`, `info`, `warning` or `error` |
 | `-r`, `--reload` | flag | off | Restart when the source changes |
+| `--no-access-log` | flag | off | Stop logging a line per request |
+| `--plain` | flag | off | Use uvicorn's own output instead of Sillo's |
 
 The import string is resolved by uvicorn, not by `sillo`, which is what makes
-`--reload` work. Reloading requires re-importing the application in a fresh
-process, so uvicorn needs the string rather than the object.
+`--reload` work. Reloading re-imports the application in a fresh process, so
+the string is needed rather than the object — and `--workers` needs it for the
+same reason.
 
-The address is printed before the server starts:
+### What you see
 
 ```
-  app       app.main:app
-  address   http://127.0.0.1:8000
+  ● sillo 0.1.0b3
+
+    app      app.main:app
+    url      http://127.0.0.1:8000
+    routes   23
+    mode     reload
+    pid      48210
+
+    ready in 41ms  ·  press ctrl-c to stop
+
+  14:14:50  GET     200  /                                      527us
+  14:14:50  GET     200  /users/42                              406us
+  14:14:50  GET     200  /reports/monthly                     151.2ms
+  14:14:51  GET     404  /nope                                  431us
 ```
+
+The route count is the line worth knowing about. No other server prints it,
+and a count that reads `0` is usually the entire explanation for the 404 you
+were about to go and investigate.
+
+Every access line carries a duration. uvicorn's own access log does not — the
+protocol logs at the moment the response starts and never measures how long
+the handler took — so Sillo times each request itself, outside everything the
+application installs. What it reports is what the client waited for. Durations
+past 100ms are tinted, and past a second more strongly, which is enough to
+find the slow endpoint in a scrolling log without reading the numbers.
+
+Colour and glyphs degrade on their own. Piped to a file or run in CI, the
+output has no escape sequences; on a terminal that cannot take Unicode the
+glyphs fall back to ASCII of the same width, so the columns still line up.
+
+### Underneath
+
+The server is uvicorn. Sillo replaces everything above the HTTP protocol —
+the logging configuration, the lifecycle announcements, the access log, the
+startup output — and leaves the protocol implementation alone, because
+replacing a battle-tested HTTP stack to change some strings would be a bad
+trade.
+
+If you need to see what uvicorn itself is saying, `--plain` turns all of it
+off and gives you uvicorn's own output. That is the flag to reach for when you
+suspect the server rather than the application.
 
 uvicorn is not a dependency of the framework. If it is not installed the
 command says so and tells you what to install rather than raising an
 `ImportError`.
 
-:::note[Development only]
-`--reload` watches the filesystem and restarts the process. Do not use it in
-production. Run uvicorn or
-[granian](https://github.com/emmett-framework/granian) directly with a process
-manager, as described in [Deployment](/guides/start/deployment/).
-:::
+You can call the same server directly:
+
+```python
+from sillo.server import run
+
+run("app.main:app", port=8080, reload=True)
+```
+
+### Why not in production
+
+`sillo serve` is a thin, opinionated wrapper for one machine and one developer.
+What makes it good at that is what makes it wrong for a deployment:
+
+- **It is a single process by default.** One `--workers 1` uvicorn is one
+  Python process on one core. Production wants a process manager that restarts
+  a worker that dies, and enough of them to use the machine.
+- **`--reload` watches the filesystem.** It restarts the process on any source
+  change, which under a deploy that rsyncs files is a server that restarts
+  mid-request.
+- **The access log is per-request and human-shaped.** It writes a formatted,
+  coloured line for every request, aimed at a person watching a terminal. A
+  production log wants to be structured and consumed by something else.
+- **There is no supervision, no TLS termination, no static file serving, and
+  no rate limiting.** Those belong to a reverse proxy and an init system, and
+  Sillo does not pretend to provide them.
+
+None of that is a criticism of uvicorn, which is a production-grade server and
+is exactly what you should run — just under a process manager, behind a proxy,
+with production settings rather than these. [Deployment](/guides/start/deployment/)
+covers that.
 
 ### Why this one is synchronous
 

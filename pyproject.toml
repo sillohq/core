@@ -188,9 +188,11 @@ source = ["sillo"]
 
 [tool.coverage.report]
 show_missing = true
-# Measured 87% locally with the Redis tests skipped (no server); CI runs them
-# against a real Redis, so this floor leaves headroom without going slack.
-fail_under = 85
+# Measured 90.04% locally with the Redis tests skipped (no server); CI runs
+# them against a real Redis, so the real figure is higher. The floor is set at
+# the local number rather than below it: a floor with slack in it is a floor
+# that quietly absorbs the next uncovered module.
+fail_under = 90
 
 [tool.mypy]
 python_version = "3.13"

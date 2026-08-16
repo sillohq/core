@@ -339,7 +339,7 @@ router; the last middleware added is outermost (closest to
 ```python
 app = self.app  # Router
 middleware = (
-    [Middleware(ASGIRequestResponseBridge, dispatch=ServerErrorMiddleware(...))]
+    [ServerErrorMiddleware(app, handler=..., debug=...)]
     + self.http_middleware                                    # user middleware
     + [Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)]
 )

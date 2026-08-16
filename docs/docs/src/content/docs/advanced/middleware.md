@@ -105,6 +105,58 @@ The bridge exists because:
 3. **Composability.** `ASGIRequestResponseBridge` lets both styles mix in a
    single chain without either side knowing about the other.
 
+### 2.4 Registering raw ASGI middleware: `raw=True`
+
+`app.use()` takes either style. By default the argument is a dispatch
+middleware — an instance or function taking `(request, response, call_next)` —
+and sillo wraps it in the bridge.
+
+Passing `raw=True` registers a raw ASGI middleware instead. The argument is
+then a **factory**, usually a class, called as
+`middleware(next_app, *args, **kwargs)`, and whatever it returns is called with
+`(scope, receive, send)`:
+
+```python
+from uuid import uuid4
+
+
+class RequestId:
+    def __init__(self, app, header: str = "x-request-id"):
+        self.app = app
+        self.header = header.encode()
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        async def send_with_id(message):
+            if message["type"] == "http.response.start":
+                message["headers"].append((self.header, uuid4().hex.encode()))
+            await send(message)
+
+        await self.app(scope, receive, send_with_id)
+
+
+app.use(RequestId, raw=True, header="x-trace-id")
+```
+
+Positional and keyword arguments after the factory are forwarded to it. They
+are only accepted with `raw=True`; passing them to the dispatch form raises
+`TypeError` rather than dropping them silently, because a dispatch middleware
+is already configured by the time you hand it over.
+
+**When to reach for it.** Raw middleware costs less: nothing is constructed on
+its behalf, where the dispatch form builds a `Request`, a `Response` and a
+background task per layer per request. Use it when the middleware does not need
+a parsed request — header stamping, metrics, routing on `scope["path"]` — and
+use the dispatch form when it does. ASGI middleware written for other
+frameworks generally drops straight in.
+
+sillo's own `ServerErrorMiddleware` and `ExceptionMiddleware` are written this
+way, for exactly that reason: both only care about a request that raised, so
+building a request and a response for every request that did not was pure
+waste.
+
 ---
 
 ## 3. Onion Model: How the Chain Works
@@ -201,7 +253,7 @@ wrapping each layer around the previous result.
 # core/sillo/application.py, SilloApp.handle_request() (lines 1189–1204)
 app = self.app
 middleware = (
-    [Middleware(ASGIRequestResponseBridge, dispatch=ServerErrorMiddleware(...))]
+    [ServerErrorMiddleware(app, handler=..., debug=...)]
     + self.http_middleware
     + [Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)]
 )
@@ -253,11 +305,11 @@ The first middleware registered is the first to see every request.
 graph TB
     subgraph "SilloApp middleware assembly"
         direction TB
-        SE["ServerErrorMiddleware\n(via Bridge): outermost"]
+        SE["ServerErrorMiddleware\n(raw ASGI): outermost"]
         MW1["User Middleware 1\n(first registered)"]
         MW2["User Middleware 2"]
         MWn["User Middleware N\n(last registered)"]
-        EX["ExceptionsHandler\n(via Bridge): innermost"]
+        EX["ExceptionsHandler\n(raw ASGI): innermost"]
         ROUTER["Router → Route Handler"]
 
         SE --> MW1 --> MW2 --> MWn --> EX --> ROUTER
@@ -1123,7 +1175,7 @@ When a request arrives, `SilloApp.handle_request()` assembles the complete stack
 
 ```python
 middleware = (
-    [Middleware(ASGIRequestResponseBridge, dispatch=ServerErrorMiddleware(...))]
+    [ServerErrorMiddleware(app, handler=..., debug=...)]
     + self.http_middleware   # user middleware (from app.use())
     + [Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)]
 )
@@ -1288,9 +1340,9 @@ This diagram traces a single HTTP request through every layer of the middleware 
 sequenceDiagram
     participant Server as ASGI Server (uvicorn)
     participant App as SilloApp
-    participant SMW as ServerErrorMiddleware (via Bridge)
-    participant UserMW as User Middleware (via Bridge)
-    participant EXH as ExceptionsHandler (via Bridge)
+    participant SMW as ServerErrorMiddleware (raw ASGI)
+    participant UserMW as User Middleware (via Bridge, unless raw=True)
+    participant EXH as ExceptionsHandler (raw ASGI)
     participant Router as Router
     participant RouteMW as Route Middleware (via Bridge)
     participant Handler as Route Handler

@@ -483,23 +483,22 @@ flowchart TD
 ### Implementation
 
 ```python
-def handle_request(self, scope: Scope, receive: Receive, send: Send):
+def _build_request_chain(self) -> None:
     app = self.app  # Router (innermost)
-    middleware = (
-        [
-            Middleware(
-                ASGIRequestResponseBridge,
-                dispatch=ServerErrorMiddleware(
-                    handler=self.server_error_handler, debug=self.debug
-                ),
-            )
-        ]
-        + self.http_middleware                          # User middleware (LIFO order)
-        + [Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)]
-    )
-    for cls, args, kwargs in reversed(middleware):
+
+    # Both built-in layers are raw ASGI: they take the next app and are called
+    # with (scope, receive, send). Neither reads the body or rewrites the
+    # response on the way out, so neither needs a request/response bridge.
+    self.exceptions_handler.app = app
+    app = self.exceptions_handler
+
+    for cls, args, kwargs in reversed(self.http_middleware):   # user, LIFO
         app = cls(app, *args, **kwargs)
-    return app(scope, receive, send)
+
+    app = ServerErrorMiddleware(
+        app, handler=self.server_error_handler, debug=self.debug
+    )
+    self._request_chain = app
 ```
 
 ### Chain Assembly
@@ -507,9 +506,9 @@ def handle_request(self, scope: Scope, receive: Receive, send: Send):
 The middleware list is assembled as:
 
 ```
-Position 0: ServerErrorMiddleware (wrapped in ASGIRequestResponseBridge)
+Position 0: ServerErrorMiddleware (raw ASGI)
 Position 1..N: User middleware (in app.use() insertion order)
-Position N+1: ExceptionMiddleware (wrapped in ASGIRequestResponseBridge)
+Position N+1: ExceptionMiddleware (raw ASGI)
 ```
 
 The `reversed()` iteration builds from innermost to outermost:
@@ -525,7 +524,12 @@ The `reversed()` iteration builds from innermost to outermost:
 
 ### ASGIRequestResponseBridge
 
-Each middleware is wrapped in `ASGIRequestResponseBridge`, which:
+The two built-in layers above are raw ASGI and are not wrapped. Middleware
+registered with `app.use()` is wrapped in `ASGIRequestResponseBridge` unless it
+was registered with `raw=True`, in which case it too is called directly with
+`(scope, receive, send)`.
+
+The bridge:
 
 1. **Non-HTTP scopes**: Passes through directly to the inner app
 2. **HTTP scopes**: Creates a `_CachedRequest`, a `Responder`, and an
