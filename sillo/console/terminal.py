@@ -140,6 +140,75 @@ def supports_unicode(stream: IO[str] | None = None) -> bool:
     return True
 
 
+#: Terminals known to render OSC 8 hyperlinks, keyed on what they advertise.
+#:
+#: An allow-list rather than a probe, because there is no way to ask a terminal
+#: whether it supports the sequence — the query would be indistinguishable from
+#: input. Terminals that do not support it *usually* ignore it, but some print
+#: the URL as literal text, which would leave an escape-sequence smear through
+#: every log line. Being wrong in the quiet direction is the right default: a
+#: missing hyperlink costs a click, a broken one costs legibility.
+_HYPERLINK_PROGRAMS = frozenset(
+    {"iterm.app", "wezterm", "vscode", "ghostty", "hyper", "rio", "tabby"}
+)
+
+
+def supports_hyperlinks(stream: IO[str] | None = None) -> bool:
+    """Return whether *stream* renders OSC 8 hyperlinks.
+
+    Args:
+        stream: The stream to check. Defaults to stdout.
+
+    Returns:
+        True when the stream is a terminal known to make ``OSC 8`` sequences
+        clickable. ``SILLO_HYPERLINKS`` forces the answer either way, which is
+        the escape hatch for a terminal this does not recognise and for
+        capturing plain output in a test.
+    """
+    forced = os.environ.get("SILLO_HYPERLINKS", "").strip().lower()
+    if forced in ("1", "true", "yes", "on"):
+        return True
+    if forced in ("0", "false", "no", "off"):
+        return False
+
+    stream = stream if stream is not None else sys.stdout
+    if not _is_tty(stream):
+        return False
+
+    # Windows Terminal advertises nothing else useful.
+    if os.environ.get("WT_SESSION"):
+        return True
+
+    if os.environ.get("TERM_PROGRAM", "").strip().lower() in _HYPERLINK_PROGRAMS:
+        return True
+
+    if os.environ.get("TERM", "") == "xterm-kitty":
+        return True
+
+    # GNOME Terminal and everything else built on VTE, from 0.50 onwards.
+    try:
+        return int(os.environ.get("VTE_VERSION", "0")) >= 5000
+    except ValueError:
+        return False
+
+
+def hyperlink(url: str, text: str, stream: IO[str] | None = None) -> str:
+    """Wrap *text* so that clicking it opens *url*.
+
+    Args:
+        url: The target. Rendered as given, so it must already be escaped.
+        text: What the user sees.
+        stream: The stream the result is destined for. Defaults to stdout.
+
+    Returns:
+        The text wrapped in an ``OSC 8`` sequence, or unchanged when the
+        terminal would not make it clickable.
+    """
+    if not supports_hyperlinks(stream):
+        return text
+    return f"\x1b]8;;{url}\x1b\\{text}\x1b]8;;\x1b\\"
+
+
 def is_interactive(
     input_stream: IO[str] | None = None,
     output_stream: IO[str] | None = None,

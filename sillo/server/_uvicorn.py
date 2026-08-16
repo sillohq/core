@@ -26,6 +26,8 @@ import uvicorn
 
 from sillo.server import banner
 from sillo.server.access import AccessLog
+from sillo.server.inspector import MOUNT as INSPECTOR_MOUNT
+from sillo.server.inspector import Inspector, RequestLog, is_loopback
 from sillo.server.logs import logging_config
 
 __all__ = ["SilloConfig", "SilloServer"]
@@ -46,6 +48,8 @@ class SilloConfig(uvicorn.Config):
         *args: Any,
         sillo_access_log: bool = True,
         sillo_banner: bool = True,
+        sillo_inspect: bool = True,
+        sillo_inspect_capacity: int = 200,
         **kwargs: Any,
     ) -> None:
         """Configure the server.
@@ -54,10 +58,21 @@ class SilloConfig(uvicorn.Config):
             *args: Forwarded to ``uvicorn.Config``.
             sillo_access_log: Wrap the application in the access logger.
             sillo_banner: Print the startup banner.
+            sillo_inspect: Mount the request inspector, if the bind address
+                allows it. Requesting it is not the same as getting it — see
+                ``inspector_refusal``.
+            sillo_inspect_capacity: How many requests the inspector keeps.
             **kwargs: Forwarded to ``uvicorn.Config``.
         """
         self.sillo_access_log = sillo_access_log
         self.sillo_banner = sillo_banner
+        self.sillo_inspect = sillo_inspect
+        self.sillo_inspect_capacity = sillo_inspect_capacity
+        #: Populated when the inspector was asked for and declined, so the
+        #: banner can say why rather than leaving the developer to wonder why
+        #: their log lines are not clickable.
+        self.inspector_refusal: str = ""
+        self.request_log: RequestLog | None = None
         # Held so the banner can report a route count, which means holding
         # the application object rather than only the import string.
         self.sillo_app: Any = None
@@ -106,8 +121,32 @@ class SilloConfig(uvicorn.Config):
         """
         super().load()
         self.sillo_app = self.loaded_app
-        if self.sillo_access_log and self.loaded_app is not None:
-            self.loaded_app = AccessLog(self.loaded_app)
+        if self.loaded_app is None:
+            return
+
+        # The inspector renders the headers every request arrived with, which
+        # includes session cookies and bearer tokens. On a loopback address
+        # that is the same trust boundary as the terminal it is printed in; on
+        # any other interface it would publish one developer's credentials to
+        # everyone who can reach the port. So the bind address decides, not a
+        # flag, and a refusal is reported rather than silent.
+        if self.sillo_inspect:
+            host = self.host or "127.0.0.1"
+            if is_loopback(host):
+                self.request_log = RequestLog(self.sillo_inspect_capacity)
+                self.loaded_app = Inspector(self.loaded_app, self.request_log)
+            else:
+                self.inspector_refusal = (
+                    f"not mounted: bound to {host}, which other machines can "
+                    "reach, and it renders request headers"
+                )
+
+        if self.sillo_access_log:
+            self.loaded_app = AccessLog(
+                self.loaded_app,
+                log=self.request_log,
+                base_url=f"http://{self.host or '127.0.0.1'}:{self.port}",
+            )
 
 
 class SilloServer(uvicorn.Server):
@@ -154,6 +193,12 @@ class SilloServer(uvicorn.Server):
                 app=getattr(config, "sillo_app", None),
                 elapsed_ms=(time.perf_counter() - self._boot_started) * 1000,
                 workers=config.workers or 1,
+                inspect_url=(
+                    f"http://{config.host or '127.0.0.1'}:{port}{INSPECTOR_MOUNT}"
+                    if getattr(config, "request_log", None) is not None
+                    else ""
+                ),
+                inspect_refusal=getattr(config, "inspector_refusal", ""),
             )
         )
 

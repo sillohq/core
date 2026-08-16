@@ -75,6 +75,7 @@ and [Why not in production](#why-not-in-production) below for why.
 | `--log-level` | option | `info` | `debug`, `info`, `warning` or `error` |
 | `-r`, `--reload` | flag | off | Restart when the source changes |
 | `--no-access-log` | flag | off | Stop logging a line per request |
+| `--no-inspect` | flag | off | Do not mount the request inspector |
 | `--plain` | flag | off | Use uvicorn's own output instead of Sillo's |
 
 The import string is resolved by uvicorn, not by `sillo`, which is what makes
@@ -115,6 +116,48 @@ find the slow endpoint in a scrolling log without reading the numbers.
 Colour and glyphs degrade on their own. Piped to a file or run in CI, the
 output has no escape sequences; on a terminal that cannot take Unicode the
 glyphs fall back to ASCII of the same width, so the columns still line up.
+
+### Clicking a request
+
+Every access line is a link. In a terminal that supports OSC 8 hyperlinks —
+iTerm2, WezTerm, Kitty, Ghostty, Windows Terminal, VS Code's terminal, GNOME
+Terminal and anything else built on VTE — clicking the path opens that request
+in your browser:
+
+- how long it took, and when it started
+- every request header, and every response header
+- query parameters, broken out rather than left in the URL
+- the client address, protocol and response size
+- the exception, if the handler raised one
+
+The index at `http://127.0.0.1:8000/__sillo/requests` lists the most recent 200,
+newest first. There is a `/__sillo/requests/json` endpoint alongside it if you
+want to script against the same data.
+
+Terminals that do not support hyperlinks are not broken by this: the line
+renders as plain text and the inspector is still reachable by typing the URL.
+`SILLO_HYPERLINKS=0` forces them off, `=1` forces them on for a terminal this
+does not recognise.
+
+:::caution[It renders request headers, so it is loopback-only]
+The inspector shows the headers each request arrived with, which includes
+session cookies and `Authorization` tokens. Two things follow.
+
+**It will not mount on an address other machines can reach.** Bound to
+`0.0.0.0` or a LAN address it refuses, and the banner says why:
+
+```
+    inspect   not mounted: bound to 0.0.0.0, which other machines can reach,
+              and it renders request headers
+```
+
+**Credentials are redacted even on loopback.** A sensitive header is shown as a
+short prefix and a length — `Bearer s… (38 chars, redacted)` — which is enough
+to tell which token a request carried without reproducing it.
+
+Records live in a bounded in-memory ring that dies with the process. Nothing is
+written to disk. `--no-inspect` turns the whole thing off.
+:::
 
 ### Underneath
 

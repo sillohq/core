@@ -221,6 +221,10 @@ class Serve(Command):
         Flag("reload", short="r", help="Restart when the source changes"),
         Flag("no-access-log", help="Do not log a line per request"),
         Flag(
+            "no-inspect",
+            help="Do not mount the clickable request inspector",
+        ),
+        Flag(
             "plain",
             help="Use uvicorn's own output instead of Sillo's",
         ),
@@ -267,6 +271,7 @@ class Serve(Command):
                 log_level=self.option("log-level"),
                 reload=self.flag("reload"),
                 access_log=not self.flag("no-access-log"),
+                inspect=not self.flag("no-inspect"),
             )
         except RuntimeError as error:
             self.fail(str(error))

@@ -106,6 +106,8 @@ def render(
     app: Any = None,
     elapsed_ms: float | None = None,
     workers: int = 1,
+    inspect_url: str = "",
+    inspect_refusal: str = "",
 ) -> str:
     """Build the startup banner.
 
@@ -118,6 +120,10 @@ def render(
         app: The loaded application, read for a route count.
         elapsed_ms: How long startup took, if it was measured.
         workers: Worker process count.
+        inspect_url: Where the request inspector is listening, when it is.
+        inspect_refusal: Why the inspector is not running, when it was asked
+            for and declined. Reported rather than left silent, so nobody has
+            to wonder why their log lines are not clickable.
 
     Returns:
         The banner, ready to write.
@@ -136,6 +142,11 @@ def render(
     routes = _route_count(app)
     if routes is not None:
         rows.append(("routes", str(routes)))
+
+    if inspect_url:
+        rows.append(("inspect", inspect_url))
+    elif inspect_refusal:
+        rows.append(("inspect", inspect_refusal))
 
     mode = "reload" if reload else "serving"
     if workers > 1:

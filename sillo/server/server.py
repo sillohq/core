@@ -72,6 +72,7 @@ def run(
     log_level: str = "info",
     access_log: bool = True,
     show_banner: bool = True,
+    inspect: bool = True,
     **uvicorn_options: Any,
 ) -> None:
     """Serve an application with the Sillo server.
@@ -95,6 +96,9 @@ def run(
         log_level: Lowest level to log.
         access_log: Write a line per request, with its duration.
         show_banner: Print the startup banner and the shutdown card.
+        inspect: Mount the request inspector and make each access line a
+            clickable link to it. Only honoured on a loopback address; see
+            :mod:`sillo.server.inspector` for why.
         **uvicorn_options: Anything else ``uvicorn.Config`` accepts, forwarded
             untouched.
 
@@ -126,6 +130,7 @@ def run(
         log_level=log_level,
         sillo_access_log=access_log,
         sillo_banner=show_banner,
+        sillo_inspect=inspect,
         **uvicorn_options,
     )
     server = server_class(config)
