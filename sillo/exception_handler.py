@@ -20,7 +20,16 @@ from sillo.core.helpers.async_helpers import collapse_excgroups
 from sillo.core.http import Request, Response
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.handlers.not_found import handle_404_error
-from sillo.types import ASGIApp, ExceptionHandlerType, Message, Receive, Scope, Send
+from sillo.types import (
+    ASGIApp,
+    ExceptionHandlerFor,
+    ExceptionHandlerType,
+    ExcT,
+    Message,
+    Receive,
+    Scope,
+    Send,
+)
 from sillo.validation import RequestValidationError, ResponseValidationError
 
 logger = logging.getLogger("sillo")
@@ -116,7 +125,7 @@ async def wrap_http_exceptions(
         if isinstance(exc, HTTPException):
             handler: ExceptionHandlerType | None = status_handlers.get(exc.status_code)
             if handler:
-                return await handler(request, response, exc)  # ty: ignore[invalid-await]
+                return await handler(request, response, exc)
 
         if handler is None:
             handler = _lookup_exception_handler(exception_handlers, exc)
@@ -191,19 +200,34 @@ class ExceptionMiddleware:
         self.app = app
         self.debug = False
         self._status_handlers: dict[int, ExceptionHandlerType] = {}
-        self._exception_handlers = {
-            HTTPException: self.http_exception,
-            AuthenticationFailed: AuthErrorHandler,
-            NotFoundException: handle_404_error,
-            ValidationError: pydantic_validation_error_handler,
-            RequestValidationError: request_validation_error_handler,
-            ResponseValidationError: response_validation_error_handler,
-        }
+        # Annotated rather than inferred. Left bare, this narrows to a dict of
+        # exactly those six classes and their six distinct handler signatures,
+        # so registering any *other* exception -- the entire purpose of
+        # `add_exception_handler` -- becomes a type error.
+        #
+        # The cast erases each handler's own exception type for the same
+        # reason `add_exception_handler` does: every one of these is narrowed
+        # to the class it is keyed by, and it is the pairing inside this dict
+        # that makes that sound. No annotation can state "the value's third
+        # parameter is the key".
+        self._exception_handlers: dict[type[Exception], ExceptionHandlerType] = (
+            typing.cast(
+                "dict[type[Exception], ExceptionHandlerType]",
+                {
+                    HTTPException: self.http_exception,
+                    AuthenticationFailed: AuthErrorHandler,
+                    NotFoundException: handle_404_error,
+                    ValidationError: pydantic_validation_error_handler,
+                    RequestValidationError: request_validation_error_handler,
+                    ResponseValidationError: response_validation_error_handler,
+                },
+            )
+        )
 
     def add_exception_handler(
         self,
-        exc_class_or_status_code: int | type[Exception],
-        handler: ExceptionHandlerType,
+        exc_class_or_status_code: int | type[ExcT],
+        handler: ExceptionHandlerFor[ExcT],
     ) -> None:
         """Register a custom exception handler for a specific exception class or status code.
 
@@ -233,11 +257,18 @@ class ExceptionMiddleware:
             handler will replace the existing handler. This allows applications
             to override the built-in default handlers.
         """
+        # The registries are keyed by exception class and hold the erased
+        # signature. Narrowing is dropped deliberately at this boundary: a
+        # handler is only ever invoked for the class it was registered
+        # against, so the pairing that makes the narrow type sound is the
+        # dictionary itself, which no annotation can express.
+        erased = typing.cast(ExceptionHandlerType, handler)
+
         if isinstance(exc_class_or_status_code, int):
-            self._status_handlers[exc_class_or_status_code] = handler
+            self._status_handlers[exc_class_or_status_code] = erased
         else:
             assert issubclass(exc_class_or_status_code, Exception)
-            self._exception_handlers[exc_class_or_status_code] = handler  # ty: ignore[invalid-assignment]
+            self._exception_handlers[exc_class_or_status_code] = erased
 
     @property
     def has_handlers(self) -> bool:

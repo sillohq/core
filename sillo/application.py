@@ -29,7 +29,7 @@ from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.core.routing import Route, Router, WebsocketRoute
 from sillo.core.routing.base import BaseRoute
 from sillo.events import EventEmitter
-from sillo.exception_handler import ExceptionHandlerType, ExceptionMiddleware
+from sillo.exception_handler import ExceptionMiddleware
 from sillo.logging import create_logger
 from sillo.objects import URLPath
 from sillo.openapi import Contact, License
@@ -41,6 +41,8 @@ from sillo.openapi.ui import DocsContext, DocsUI, default_docs
 from .types import (
     ArgsType,
     ASGIApp,
+    ExceptionHandlerFor,
+    ExcT,
     HandlerType,
     Message,
     MiddlewareType,
@@ -2816,8 +2818,8 @@ class SilloApp:
 
     def add_exception_handler(
         self,
-        exc_class_or_status_code: type[Exception] | int,
-        handler: ExceptionHandlerType | None = None,
+        exc_class_or_status_code: type[ExcT] | int,
+        handler: ExceptionHandlerFor[ExcT] | None = None,
     ) -> Any:
         """
         Register a custom exception handler for specific exception types or status codes.
@@ -2845,7 +2847,7 @@ class SilloApp:
         """
         if handler is None:
             # If handler is not given yet, return a decorator
-            def decorator(func: ExceptionHandlerType) -> Any:
+            def decorator(func: ExceptionHandlerFor[ExcT]) -> Any:
                 self.exceptions_handler.add_exception_handler(
                     exc_class_or_status_code, func
                 )
