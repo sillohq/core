@@ -3,7 +3,7 @@ title: "Password Hashing"
 description: "Schemes (bcrypt/argon2/scrypt/pbkdf2), verification, password utilities"
 ---
 
-**Version:** 2026-08-11
+**Version:** 2026-08-17
 **Audience:** Core maintainers, security engineers, application developers
 **Purpose:** Document the hashing scheme registry, core hashing operations, verification, rehash detection, and password utilities
 
@@ -56,8 +56,10 @@ classDiagram
     class SchemeConfig {
         +str name
         +str package
+        +str module
         +bool default
         +bool deprecated
+        +import_name() str
     }
 
     class HashingError {
@@ -89,47 +91,59 @@ classDiagram
 
 ## SchemeConfig: Scheme Metadata
 
-**File:** `core/sillo/hashing/config.py` (lines 6 to 13)
+**File:** `core/sillo/hashing/config.py` (lines 6 to 25)
 
 ```python
 @dataclass
 class SchemeConfig:
     name: str
     package: str | None = None
+    module: str | None = None
     default: bool = False
     deprecated: bool = False
+
+    @property
+    def import_name(self) -> str | None:
+        return self.module or self.package
 ```
 
 | Field | Purpose |
 |-------|---------|
 | `name` | The scheme identifier used in API calls (e.g. `"bcrypt"`) |
-| `package` | The pip package that provides this scheme (`None` for built-in schemes) |
+| `package` | The distribution you install, used in the "not available" message (`None` for built-in schemes) |
+| `module` | The module actually imported to test availability, when it differs from the distribution |
 | `default` | Whether this is the preferred default scheme |
 | `deprecated` | Whether this scheme should trigger rehashing on verification |
+
+`package` and `module` are separate because they are separate things:
+`argon2-cffi` is the distribution you install, and `argon2` is the module it
+installs. One cannot be derived from the other by swapping dashes for
+underscores, and doing so meant argon2 reported missing on machines that had
+it installed.
 
 ---
 
 ## SCHEMES: The Scheme Registry
 
-**File:** `core/sillo/hashing/config.py` (lines 16 to 39)
+**File:** `core/sillo/hashing/config.py` (lines 29 to 52)
 
 ```python
 SCHEMES: dict[str, SchemeConfig] = {
     "bcrypt": SchemeConfig(name="bcrypt", package="bcrypt", default=True),
-    "argon2": SchemeConfig(name="argon2", package="argon2-cffi"),
+    "argon2": SchemeConfig(name="argon2", package="argon2-cffi", module="argon2"),
     "scrypt": SchemeConfig(name="scrypt", package="scrypt"),
     "pbkdf2_sha256": SchemeConfig(name="pbkdf2_sha256", package=None),
     "pbkdf2_sha512": SchemeConfig(name="pbkdf2_sha512", package=None),
 }
 ```
 
-| Scheme | Package | Default | Security Profile |
-|--------|---------|---------|------------------|
-| `bcrypt` | `bcrypt` | ✅ | Fast, widely supported, 12 rounds default |
-| `argon2` | `argon2-cffi` | ❌ | Memory-hard, most secure against GPU attacks |
-| `scrypt` | `scrypt` | ❌ | GPU-resistant, good middle ground |
-| `pbkdf2_sha256` | Built-in | ❌ | NIST-approved, always available |
-| `pbkdf2_sha512` | Built-in | ❌ | Stronger variant of pbkdf2 |
+| Scheme | Install | Imports as | Default | Security Profile |
+|--------|---------|------------|---------|------------------|
+| `bcrypt` | `bcrypt` | `bcrypt` | ✅ | Fast, widely supported, 12 rounds default |
+| `argon2` | `argon2-cffi` | `argon2` | ❌ | Memory-hard, most secure against GPU attacks |
+| `scrypt` | `scrypt` | `scrypt` | ❌ | GPU-resistant, good middle ground |
+| `pbkdf2_sha256` | Built-in | n/a | ❌ | NIST-approved, always available |
+| `pbkdf2_sha512` | Built-in | n/a | ❌ | Stronger variant of pbkdf2 |
 
 **Hash prefix detection:**
 
@@ -145,7 +159,7 @@ SCHEMES: dict[str, SchemeConfig] = {
 
 ## Scheme Availability
 
-**File:** `core/sillo/hashing/config.py` (lines 42 to 73)
+**File:** `core/sillo/hashing/config.py` (lines 55 to 100)
 
 ### `get_default_scheme()` → `str`
 
@@ -161,23 +175,43 @@ def get_default_scheme() -> str:
 
 ### `is_scheme_available(scheme)` → `bool`
 
-Checks if a scheme's package is installed:
+Checks if a scheme's module can actually be imported:
 
 ```python
 def is_scheme_available(scheme: str) -> bool:
     config = SCHEMES.get(scheme)
     if not config:
         return False
-    if config.package is None:
+    module = config.import_name
+    if module is None:
         return True  # Built-in, always available
     try:
-        __import__(config.package.replace("-", "_"))
+        __import__(module)
         return True
     except ImportError:
         return False
 ```
 
-Built-in schemes (`package=None`) are always available. Optional schemes check for their package at runtime.
+Built-in schemes (`package=None`) are always available. Optional schemes are
+probed at runtime by importing `import_name`, which is the module rather than
+the distribution.
+
+### `install_hint(scheme)` → `str`
+
+The remedy shown when a scheme is unavailable. It names the distribution to
+install, which is not always the scheme name:
+
+```python
+def install_hint(scheme: str) -> str:
+    config = SCHEMES.get(scheme)
+    if config is None or config.package is None:
+        return f"'{scheme}' is not a known scheme"
+    return f"pip install {config.package}"
+```
+
+So an unavailable argon2 reports `pip install argon2-cffi`. `pip install
+argon2` is a different, unrelated project and would not make the scheme
+available.
 
 ### `get_available_schemes()` → `list[str]`
 
@@ -547,11 +581,12 @@ The `md5` and `sha256` functions are fast hash functions designed for checksums,
 
 | Component | File | Lines |
 |-----------|------|-------|
-| `SchemeConfig` | `core/sillo/hashing/config.py` | 6-13 |
-| `SCHEMES` | `core/sillo/hashing/config.py` | 16-39 |
-| `get_default_scheme` | `core/sillo/hashing/config.py` | 42-52 |
-| `is_scheme_available` | `core/sillo/hashing/config.py` | 55-68 |
-| `get_available_schemes` | `core/sillo/hashing/config.py` | 71-73 |
+| `SchemeConfig` | `core/sillo/hashing/config.py` | 6-25 |
+| `SCHEMES` | `core/sillo/hashing/config.py` | 29-52 |
+| `get_default_scheme` | `core/sillo/hashing/config.py` | 55-65 |
+| `is_scheme_available` | `core/sillo/hashing/config.py` | 68-82 |
+| `install_hint` | `core/sillo/hashing/config.py` | 85-95 |
+| `get_available_schemes` | `core/sillo/hashing/config.py` | 98-100 |
 | `hash_password` | `core/sillo/hashing/core.py` | 33-109 |
 | `verify_password` | `core/sillo/hashing/core.py` | 112-163 |
 | `needs_update` | `core/sillo/hashing/core.py` | 166-187 |
