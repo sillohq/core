@@ -223,12 +223,15 @@ curl http://127.0.0.1:PORT/rows
 
 ## Exports
 
-`run` writes three files per invocation, timestamped so runs accumulate rather
-than overwrite.
+`run` writes four files, with fixed names. **A run replaces the previous one**,
+so `results/` always holds exactly one answer and never a pile you have to date-
+sort to read. The clearing is by explicit filename, never a wipe of the
+directory — `--out` points wherever you say, and a suite that empties a folder
+it was handed is one bad flag away from deleting your work.
 
-**`results-<stamp>.csv`** — one row per scenario/framework cell, a clean
-rectangle with a fixed column order, so appended runs stay concatenable and it
-loads into a dataframe without a header block to skip.
+**`results.csv`** — one row per scenario/framework cell, a clean
+rectangle with a fixed column order, so it loads into a dataframe
+without a header block to skip.
 
 ```
 scenario,framework,requests_per_second,latency_mean_ms,latency_p50_ms,
@@ -238,19 +241,19 @@ round_spread_pct,error
 
 ```python
 import pandas as pd
-df = pd.read_csv("results/results-20260816T101500Z.csv")
+df = pd.read_csv("results/results.csv")
 df.pivot(index="scenario", columns="framework", values="requests_per_second")
 ```
 
-**`environment-<stamp>.csv`** — the machine and package versions, as key/value
+**`environment.csv`** — the machine and package versions, as key/value
 pairs. Separate from the results so the results stay rectangular.
 
-**`results-<stamp>.json`** — the archival record: every individual round plus
+**`results.json`** — the archival record: every individual round plus
 the load generator's raw output. The terminal table and the CSV both collapse
 rounds to a median; this keeps what was collapsed, so a number that looks wrong
 later can be checked rather than re-argued.
 
-**`results-<stamp>.md`** — throughput and p99 tables plus the environment
+**`results.md`** — throughput and p99 tables plus the environment
 block, ready to paste into a README or an issue.
 
 Export a subset with `--export csv` or `--export json,md`.

@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 from sillo_bench import loadtools, report
@@ -204,6 +203,15 @@ def cmd_run(args: argparse.Namespace) -> int:
         environment.notes.extend(args.note)
 
     output = Path(args.out).expanduser().resolve()
+    output.mkdir(parents=True, exist_ok=True)
+
+    # A run replaces the last one. Cleared here rather than after measuring so
+    # that the server logs written during the run are this run's logs, and so
+    # `results/` never holds two answers to the same question at once.
+    removed = report.clear_previous(output)
+    if removed and not args.quiet:
+        print(f"cleared {removed} file(s) from the previous run")
+
     log_dir = output / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -240,18 +248,17 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     print(report.render_table(results, frameworks, selected_scenarios, environment))
 
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     formats = {f.strip() for f in args.export.split(",") if f.strip()}
     written = []
 
     if "csv" in formats:
-        written.append(report.write_csv(results, output / f"results-{stamp}.csv"))
+        written.append(report.write_csv(results, output / report.RESULTS_CSV))
         written.append(
-            report.write_environment_csv(environment, output / f"environment-{stamp}.csv")
+            report.write_environment_csv(environment, output / report.ENVIRONMENT_CSV)
         )
     if "json" in formats:
         written.append(
-            report.write_json(results, environment, output / f"results-{stamp}.json")
+            report.write_json(results, environment, output / report.RESULTS_JSON)
         )
     if "md" in formats:
         written.append(
@@ -260,7 +267,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 frameworks,
                 selected_scenarios,
                 environment,
-                output / f"results-{stamp}.md",
+                output / report.RESULTS_MD,
             )
         )
 

@@ -22,7 +22,69 @@ from sillo_bench.environment import Environment
 from sillo_bench.runner import Result
 from sillo_bench.scenarios import Scenario
 
-#: Column order for CSV. Fixed, so appended runs stay concatenable.
+#: The four files a run produces. Fixed names rather than timestamped ones: a
+#: run replaces the previous result instead of adding to a pile, so `results/`
+#: always answers "what does this machine do now" without anyone having to
+#: work out which file is the current one.
+RESULTS_CSV = "results.csv"
+ENVIRONMENT_CSV = "environment.csv"
+RESULTS_JSON = "results.json"
+RESULTS_MD = "results.md"
+
+#: Everything a run is allowed to delete on its way in.
+#:
+#: An explicit list, not a wipe of the output directory. `--out` points
+#: wherever the caller says, and a suite that empties a directory it was
+#: handed is one bad flag away from deleting somebody's work. The timestamped
+#: patterns are the names earlier versions wrote, so upgrading clears the pile
+#: they left behind.
+OUTPUT_PATTERNS = (
+    RESULTS_CSV,
+    ENVIRONMENT_CSV,
+    RESULTS_JSON,
+    RESULTS_MD,
+    "results-*.csv",
+    "results-*.json",
+    "results-*.md",
+    "environment-*.csv",
+)
+
+
+def clear_previous(output: Path) -> int:
+    """Delete the previous run's output.
+
+    Only files matching :data:`OUTPUT_PATTERNS` are removed, and only from the
+    top level of *output* — never a recursive delete, and never anything the
+    suite did not write itself.
+
+    Args:
+        output: The results directory.
+
+    Returns:
+        How many files were removed.
+    """
+    if not output.is_dir():
+        return 0
+
+    removed = 0
+    for pattern in OUTPUT_PATTERNS:
+        for path in output.glob(pattern):
+            if path.is_file():
+                path.unlink()
+                removed += 1
+
+    # Server logs are regenerated per run; a stale one belongs to a framework
+    # this run may not even have included.
+    logs = output / "logs"
+    if logs.is_dir():
+        for path in logs.glob("*.log"):
+            path.unlink()
+            removed += 1
+
+    return removed
+
+
+#: Column order for CSV. Fixed, so a result loads into a dataframe unchanged.
 CSV_COLUMNS = [
     "scenario",
     "framework",
