@@ -640,7 +640,7 @@ class AsyncEventEmitter(EventEmitter):
 
     def __init__(self, max_workers: int | None = None):
         warnings.warn(
-            "AsyncEventEmitter is deprecated and will be removed in a future version. "
+            "AsyncEventEmitter is deprecated and will be removed in Sillo 0.2.0. "
             "Use EventEmitter instead, which supports async listeners natively.",
             DeprecationWarning,
             stacklevel=2,

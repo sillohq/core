@@ -50,7 +50,8 @@ def create_api_key(prefix: str = "key"):
             future release.
     """
     _warnings.warn(
-        "create_api_key() is deprecated, use generate_api_key() instead",
+        "create_api_key() is deprecated and will be removed in Sillo 0.2.0. "
+        "Use generate_api_key() instead.",
         DeprecationWarning,
         stacklevel=2,
     )

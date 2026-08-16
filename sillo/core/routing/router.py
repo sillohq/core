@@ -3346,7 +3346,7 @@ class Router(BaseRouter):
         """
 
         warnings.warn(
-            "Router.register(...) is deprecated and will be removed in a future release. "
+            "Router.register(...) is deprecated and will be removed in Sillo 0.2.0. "
             "Please mount sub-apps using Group directly (Group(path=..., app=...)) or use Router.mount_router(...) for sub-routers.",
             DeprecationWarning,
             stacklevel=2,

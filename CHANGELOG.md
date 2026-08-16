@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-17
+
+The first stable release. The API surface is now covered by semantic
+versioning: anything documented here is something a 0.1.x release will not
+break, and the deprecations listed below name the version that removes them
+rather than pointing at "a future release".
+
+### Added
+
+- **`sillo serve` is Sillo's own server command.** It starts the application
+  with no import string, looking for `app.main:app`, `main:app` and `app:app`
+  in turn, and can be pinned with the `SILLO_APP` environment variable or a
+  `[tool.sillo] app` entry in `pyproject.toml`. Request lines are logged with
+  their timing, and the banner links a request inspector at
+  `/__sillo/requests` that is clickable in terminals supporting OSC 8. Use
+  `--no-inspect` to leave the inspector out, or `--plain` for the underlying
+  server's own output.
+
+- **A benchmark suite**, run against FastAPI, Starlette, Django and Flask
+  through their ASGI interfaces in-process, so the numbers are framework
+  overhead rather than a measurement of the network.
+
+### Changed
+
+- **`response.set_headers(..., overide=...)` is now `override=...`.** The
+  misspelling was in the public signature of four methods. The correct
+  spelling is a normal positional parameter, so callers who passed it
+  positionally are unaffected; the misspelling survives as a keyword-only
+  alias that warns. See Deprecated below.
+
+- **JSON responses serialize the payload once**, and compactly, rather than
+  encoding it a second time to measure it.
+
+### Fixed
+
+- **argon2 was unusable even when installed.** Scheme availability derived an
+  import name from the distribution name by swapping dashes for underscores,
+  so `argon2-cffi` was probed as `argon2_cffi` and never found.
+  `hash_password(scheme="argon2")` therefore raised `InvalidSchemeError` on
+  every machine that had argon2 installed, and `set_default_scheme("argon2")`
+  failed the same way. The error's remedy was wrong too: `pip install argon2`
+  names an unrelated project. The distribution and the module are now separate
+  fields, and the message names the distribution you can actually install.
+
+- **`Request` discarded the ASGI extensions the server advertised.** The
+  constructor replaced the whole `extensions` mapping instead of adding to it,
+  so `http.response.push` and anything else the server offered was gone by the
+  time a handler could look. `send_push_promise` could never fire. Extensions
+  are now merged.
+
+- **`response.set_headers(headers, override=True)` dropped the flag** when
+  called through `Responder`, so headers were merged where the caller asked
+  for a replacement.
+
+- **`sillo serve` assumed an application rather than finding one.** It used
+  the first of three candidate locations and nothing else, so an ordinary
+  `main.py` in the working directory failed with `ModuleNotFoundError: No
+  module named 'app'`, naming a package the author had never mentioned. It
+  now tries each candidate and, when none resolves, says what it looked for
+  and how to point it elsewhere.
+
+- **`sillo.record.rollback` resolved to the wrong function.** The migration
+  command and the transaction helper share a name, and the package re-exported
+  whichever was imported last. The migration command is now
+  `rollback_migrations`.
+
+- **Exception handlers could not be typed as async.** `ExceptionHandlerType`
+  annotated a synchronous return, though every handler the framework calls is
+  awaited. Handlers now type as returning `Awaitable[Response]`, and
+  `ExceptionHandlerFor[ExcT]` types a handler narrowed to one exception class.
+
+- **Two comments stopped mypy before it started.** mypy reads any line
+  beginning `# type:` as a PEP 484 type comment and halts on a syntax error,
+  so a prose comment that happened to start that way, and an invalid
+  module-level `# type: ignore[overide]`, made the package unanalysable.
+
+### Deprecated
+
+Each of these now names its removal version. All are removed in **Sillo
+0.2.0**.
+
+- `response.set_headers(overide=...)` and `overide_all=...`: use `override`
+  and `override_all`.
+- `Router.register(...)`: mount with `Group(path=..., app=...)` or
+  `Router.mount_router(...)`.
+- `create_api_key()`: use `generate_api_key()`.
+- `AsyncEventEmitter`: `EventEmitter` supports async listeners natively.
+- `WS_1004_NO_STATUS_RCVD` and `WS_1005_ABNORMAL_CLOSURE`: the numbering was
+  off by one, so use `WS_1005_NO_STATUS_RCVD` and `WS_1006_ABNORMAL_CLOSURE`.
+
 ## [0.1.0b3] - 2026-08-16
 
 ### Performance

@@ -91,7 +91,7 @@ uv run sillo serve --reload
 ```
 
 ```
-  ● sillo 0.1.0b3
+  ● sillo 0.1.0
 
     app       main:app
     url       http://127.0.0.1:8000

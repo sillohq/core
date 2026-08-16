@@ -143,8 +143,7 @@ def _resolve_override(
 
     warnings.warn(
         f"{method}({misspelled_name}=...) is a misspelling of "
-        f"{method}({correct_name}=...) and will be removed in a future "
-        "release.",
+        f"{method}({correct_name}=...) and will be removed in Sillo 0.2.0.",
         DeprecationWarning,
         stacklevel=3,
     )
