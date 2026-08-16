@@ -1,4 +1,3 @@
-# type: ignore[overide]
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -11,7 +10,13 @@ try:
     import email_validator  # noqa f401
     from pydantic import EmailStr
 except ImportError:
-    EmailStr = str  # ty:ignore[invalid-assignment]
+    # Rebinding a name to a second type is what an optional-dependency
+    # fallback *is*, so both checkers are told about it here, on the line
+    # itself. This file used to open with `# type: ignore[overide]` instead,
+    # which silenced nothing twice over: a module-level ignore cannot carry an
+    # error code -- mypy rejects the form outright -- and `overide` is not one
+    # of its codes in any case.
+    EmailStr = str  # type: ignore[misc]  # ty:ignore[invalid-assignment]
 
 
 from typing import Annotated, Literal

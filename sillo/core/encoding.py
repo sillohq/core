@@ -287,9 +287,15 @@ def jsonable_encoder(
     else:
         custom_encoder = {}
         # Nothing in this call can change how a dict or list is walked, so the
-        # JSON-native shapes are returned directly. The checks are on the exact
-        # type: a str-valued Enum, a defaultdict or a tuple all have to keep
-        # falling through to the full dispatch below.
+        # JSON-native shapes are returned directly. The checks are on the
+        # exact type -- a str-valued Enum, a defaultdict or a tuple all have
+        # to keep falling through to the full dispatch below.
+        #
+        # The dash is load-bearing. Written as "the exact type:" the line wrapped
+        # so that "# type:" began a line, and mypy reads a line-initial
+        # "# type:" as a PEP 484 type comment: it reported "Invalid syntax"
+        # here and then stopped, so nobody importing sillo could type-check
+        # their own project at all.
         if (
             not include
             and not exclude
