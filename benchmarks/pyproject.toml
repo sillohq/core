@@ -14,7 +14,6 @@ dependencies = [
 [project.optional-dependencies]
 sillo = ["sillo-framework>=0.1.0b3"]
 fastapi = ["fastapi>=0.110"]
-litestar = ["litestar>=2.0"]
 starlette = ["starlette>=0.37"]
 django = ["django>=5.0"]
 # Flask is WSGI, so it needs a bridge to be served by the same uvicorn as
@@ -24,7 +23,6 @@ flask = ["flask>=3.0", "a2wsgi>=1.10"]
 all = [
     "sillo-framework>=0.1.0b3",
     "fastapi>=0.110",
-    "litestar>=2.0",
     "starlette>=0.37",
     "django>=5.0",
     "flask>=3.0",

@@ -109,14 +109,12 @@ class Environment:
                 for name in (
                     "sillo-framework",
                     "fastapi",
-                    "litestar",
                     "starlette",
                     "django",
                     "flask",
                     "uvicorn",
                     "a2wsgi",
                     "pydantic",
-                    "msgspec",
                     "httptools",
                     "uvloop",
                 )

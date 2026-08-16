@@ -1,13 +1,12 @@
 # The Sillo benchmark
 
-Six Python web frameworks serving identical routes over real HTTP, measured by
+Five Python web frameworks serving identical routes over real HTTP, measured by
 an established load generator.
 
 | framework | kind | in the suite because |
 | --- | --- | --- |
 | **Sillo** | async ASGI | the subject |
 | **FastAPI** | async ASGI | the incumbent Sillo is most often compared to |
-| **Litestar** | async ASGI | the closest modern competitor; serializes with `msgspec` |
 | **Starlette** | async ASGI | FastAPI is built on it, so the pair isolates what FastAPI's validation layer costs — and it is the practical floor for a Python ASGI framework |
 | **Django** | async ASGI | the batteries-included incumbent |
 | **Flask** | **WSGI** | the classic micro-framework. The only non-ASGI entry, which changes how its row should be read — see [Flask](#flask-is-the-asymmetric-one) |
@@ -30,18 +29,18 @@ uv pip install -e ".[all]"
 brew install oha          # macOS. see "Load generators" for other platforms
 
 python -m sillo_bench doctor       # confirm the suite can run here
-python -m sillo_bench run          # ~18 minutes at the defaults, all six
+python -m sillo_bench run          # ~15 minutes at the defaults, all five
 ```
 
 Results print to the terminal and are written to `results/` as CSV, JSON and
 Markdown.
 
-If you'd rather not install all six, install the ones you want and run those.
+If you'd rather not install all five, install the ones you want and run those.
 Each framework is its own extra:
 
 ```bash
-uv pip install -e ".[sillo,fastapi,litestar]"
-python -m sillo_bench run --frameworks sillo,fastapi,litestar
+uv pip install -e ".[sillo,fastapi]"
+python -m sillo_bench run --frameworks sillo,fastapi
 ```
 
 ---
@@ -76,7 +75,7 @@ results describe framework overhead and nothing else. See
 This is a benchmark published by the authors of one of the frameworks in it, so
 the methodology matters more than the numbers.
 
-**One shared payload definition.** All six applications import their response
+**One shared payload definition.** All five applications import their response
 bodies from `sillo_bench/payloads.py`. None can serve a slightly smaller object
 than another.
 
@@ -284,18 +283,17 @@ and a parser returning a `Measurement`.
 
 ## Reading the output
 
-One ranked block per scenario, because a six-column grid would wrap into
+One ranked block per scenario, because a wide grid would wrap into
 nonsense and ranking is what you want from a row anyway.
 
 ```
 rows
   Dominated by the JSON encoder: 200 nested objects.
-    litestar        2,208 rps   1.00x   p50    3.55ms   p99    4.63ms
-    fastapi         1,480 rps   0.67x   p50    5.22ms   p99    8.37ms
-    starlette       1,413 rps   0.64x   p50    5.53ms   p99    7.48ms
-    flask             635 rps   0.29x   p50   12.03ms   p99   19.08ms
-    sillo             571 rps   0.26x   p50   13.89ms   p99   19.17ms
-    django            525 rps   0.24x   p50   14.61ms   p99   22.31ms
+    fastapi         2,315 rps   1.00x   p50   26.87ms   p99   44.10ms
+    sillo           2,048 rps   0.88x   p50   28.80ms   p99   56.18ms
+    starlette       2,034 rps   0.88x   p50   30.55ms   p99   46.69ms
+    flask           1,042 rps   0.45x   p50   62.01ms   p99   80.42ms
+    django            781 rps   0.34x   p50   81.48ms   p99  162.24ms
 ```
 
 Throughput is the median of the measured rounds; higher is better. The
