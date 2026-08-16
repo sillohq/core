@@ -9,6 +9,7 @@ from typing import (
     AsyncContextManager,
     ContextManager,
     Literal,
+    cast,
 )
 
 from typing_extensions import Doc
@@ -1008,8 +1009,11 @@ class SilloApp:
             0,
             # Raw middleware is the factory itself: the chain builder calls
             # `cls(next_app, *args, **kwargs)`, which is exactly the ASGI
-            # convention, so no wrapper is involved at all.
-            Middleware(middleware, *args, **kwargs)
+            # convention, so no wrapper is involved at all. `raw=True` is the
+            # caller stating which half of the union they passed, and nothing
+            # in the type system carries that from the flag to the value, so
+            # the cast is where that claim is recorded.
+            Middleware(cast(MiddlewareFactory, middleware), *args, **kwargs)
             if raw
             else Middleware(ASGIRequestResponseBridge, dispatch=middleware),
         )

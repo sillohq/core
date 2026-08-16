@@ -292,8 +292,16 @@ class ExceptionMiddleware:
                 left to replace. ``ServerErrorMiddleware`` sits above this one
                 and is what turns a re-raise into a 500.
         """
+        if self.app is None:
+            raise RuntimeError(
+                "ExceptionMiddleware was constructed without an inner "
+                "application and cannot serve requests. The application "
+                "assigns it while assembling its middleware chain."
+            )
+        app = self.app
+
         if scope["type"] != "http" or not self.has_handlers:
-            await self.app(scope, receive, send)  # ty: ignore[not-callable]
+            await app(scope, receive, send)
             return
 
         response_started = False
@@ -311,7 +319,7 @@ class ExceptionMiddleware:
 
         try:
             with collapse_excgroups():
-                await self.app(scope, receive, send_watching_start)  # ty: ignore[not-callable]
+                await app(scope, receive, send_watching_start)
         except Exception as exc:
             handler = self._handler_for(exc)
             if handler is None or response_started:

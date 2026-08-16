@@ -919,6 +919,29 @@ class ServerErrorMiddleware:
         self.handler = handler
         self.debug = debug
 
+    def _inner(self) -> ASGIApp:
+        """Return the inner application, refusing to serve without one.
+
+        ``app`` is optional at construction because the debug page renderers
+        are useful on their own and are used that way, but a middleware built
+        that way cannot handle a request. Checking once per call turns what
+        would otherwise surface as ``'NoneType' object is not callable``, from
+        somewhere deep in the ASGI stack, into a sentence naming the mistake.
+
+        Returns:
+            The next ASGI application in the chain.
+
+        Raises:
+            RuntimeError: If this middleware was constructed without an app.
+        """
+        if self.app is None:
+            raise RuntimeError(
+                "ServerErrorMiddleware was constructed without an inner "
+                "application and cannot serve requests. Pass the next ASGI "
+                "app as its first argument: ServerErrorMiddleware(app, ...)."
+            )
+        return self.app
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Run the inner application, converting anything it raises into a response.
 
@@ -940,8 +963,9 @@ class ServerErrorMiddleware:
                 letting the server drop the connection is the only honest
                 signal left.
         """
+        app = self._inner()
         if scope["type"] != "http":
-            await self.app(scope, receive, send)  # ty: ignore[not-callable]
+            await app(scope, receive, send)
             return
 
         response_started = False
@@ -959,7 +983,7 @@ class ServerErrorMiddleware:
 
         try:
             with collapse_excgroups():
-                await self.app(scope, receive, send_watching_start)  # ty: ignore[not-callable]
+                await app(scope, receive, send_watching_start)
         except Exception as exc:
             if response_started:
                 raise

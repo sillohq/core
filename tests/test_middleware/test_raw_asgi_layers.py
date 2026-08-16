@@ -16,6 +16,7 @@ registered after the chain is built still fire, and the ``raw=`` flag on
 
 from typing import Callable
 
+import anyio
 import pytest
 
 from sillo import SilloApp
@@ -437,3 +438,40 @@ class TestReadingTheBodyFromAnExceptionHandler:
 
         with test_client_factory(app) as client:
             assert client.post("/echo", json={"a": 1}).json() == {"seen": {"a": 1}}
+
+
+class TestAMiddlewareBuiltWithoutAnInnerApp:
+    """Both take `app` optionally, so the failure has to name itself.
+
+    `ServerErrorMiddleware` is constructed with no app on purpose — the debug
+    page renderers are useful on their own — and `ExceptionMiddleware` exists
+    before the application has a chain to put it in. Calling either in that
+    state would otherwise surface as "'NoneType' object is not callable" from
+    somewhere deep in the ASGI stack.
+    """
+
+    @staticmethod
+    def _serve(middleware) -> None:
+        scope = {"type": "http", "path": "/", "method": "GET", "headers": []}
+
+        async def receive():
+            return {"type": "http.request"}
+
+        async def send(message):
+            pass
+
+        anyio.run(middleware.__call__, scope, receive, send)
+
+    def test_the_server_error_layer_says_so(self):
+        with pytest.raises(RuntimeError, match="without an inner application"):
+            self._serve(ServerErrorMiddleware())
+
+    def test_the_exception_layer_says_so(self):
+        with pytest.raises(RuntimeError, match="without an inner application"):
+            self._serve(ExceptionMiddleware())
+
+    def test_the_renderer_is_still_usable_without_one(self):
+        # The whole reason `app` is optional.
+        assert "boom" in ServerErrorMiddleware(debug=True).generate_html(
+            RuntimeError("boom"), None
+        )
