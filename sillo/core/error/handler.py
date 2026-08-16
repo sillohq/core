@@ -11,9 +11,10 @@ import uuid
 from typing import cast
 
 from sillo import __version__ as sillo_version
+from sillo.core.helpers.async_helpers import collapse_excgroups
 from sillo.core.http import Request, Response
 from sillo.logging import DEBUG, create_logger
-from sillo.middleware.base import BaseMiddleware
+from sillo.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = create_logger(__name__, log_level=DEBUG)
 STYLES = """
@@ -855,15 +856,28 @@ CENTER_LINE = """
 ServerErrHandlerType = typing.Callable[[Request, Response, Exception], typing.Any]
 
 
-class ServerErrorMiddleware(BaseMiddleware):
-    """Middleware that intercepts unhandled exceptions and produces error responses.
+class ServerErrorMiddleware:
+    """Pure-ASGI middleware that turns an unhandled exception into a response.
 
     In debug mode, generates rich HTML error pages with tracebacks, local variables,
     request information, system details, and debugging suggestions. In production
     mode, returns a plain 500 Internal Server Error response. Optionally delegates
     to a user-supplied error handler callback before generating the final response.
 
+    This is the outermost layer of every application's chain, so it is the last
+    thing standing between an exception and the ASGI server. It is written in
+    the plain ASGI form — ``__init__(app, ...)`` and ``__call__(scope, receive,
+    send)`` — rather than sillo's ``(request, response, call_next)`` dispatch
+    form, and that is a deliberate performance decision. The dispatch form is
+    convenient because sillo builds the ``Request`` and ``Response`` and turns
+    the rest of the chain into something awaitable, but doing that costs a
+    request object, a response object, an ``anyio.Event``, a memory object
+    stream and a background task on *every* request, including the overwhelming
+    majority that never raise. This middleware only ever wants a request that
+    failed, so it builds nothing until it is inside the ``except``.
+
     Attributes:
+        app: The next ASGI application in the chain.
         handler: Optional user-defined callback for custom error handling.
         debug: Whether to render detailed debug error pages.
 
@@ -872,10 +886,20 @@ class ServerErrorMiddleware(BaseMiddleware):
     is visible to — and overwritable by — every other request in flight.
     """
 
-    def __init__(self, handler: ServerErrHandlerType | None = None, debug: bool = True):
+    def __init__(
+        self,
+        app: ASGIApp | None = None,
+        handler: ServerErrHandlerType | None = None,
+        debug: bool = True,
+    ):
         """Initialize the ServerErrorMiddleware with optional handler and debug flag.
 
         Args:
+            app: The next ASGI application to run. Optional so that the class
+                can be constructed purely to render an error page — the debug
+                page generators are useful on their own and several tests use
+                them that way — but a middleware built without one cannot be
+                called.
             handler: An optional callable that receives the current Request,
                 Response, and the raised Exception. When provided, this callback
                 is invoked before generating the default error response, allowing
@@ -891,49 +915,68 @@ class ServerErrorMiddleware(BaseMiddleware):
         Raises:
             None.
         """
+        self.app = app
         self.handler = handler
         self.debug = debug
 
-    async def __call__(
-        self,
-        request: Request,
-        response: Response,
-        call_next: typing.Callable[[], typing.Awaitable[Response]],
-    ):
-        """Process an incoming request and handle any exceptions that occur.
-
-        Stores the current request for error context, then delegates to the next
-        middleware or handler in the chain. If an exception is raised during
-        processing, it is caught and routed through the optional user-defined
-        handler callback and/or the debug or production error response generators.
-        Any server error headers stored in the request scope are applied to the
-        response before returning, and the full traceback is logged.
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Run the inner application, converting anything it raises into a response.
 
         Args:
-            request: The incoming HTTP request object containing scope, headers,
-                and other request metadata for the current transaction.
-            response: The HTTP response object that will be populated with the
-                error response content if an exception is caught.
-            call_next: An awaitable callable representing the next middleware or
-                route handler in the processing chain to invoke.
+            scope: The ASGI connection scope. Non-HTTP scopes are forwarded
+                untouched, since there is no HTTP response to send for them.
+            receive: The ASGI receive callable, passed straight through — this
+                middleware never reads the request body.
+            send: The ASGI send callable. Wrapped only far enough to notice
+                whether the response has already started.
 
         Returns:
-            The Response object from the next handler on success, or an error
-            response (debug HTML page or plain 500 text) if an exception occurs.
+            None.
 
         Raises:
-            None. All exceptions are caught internally and converted into
-            appropriate error responses based on the debug mode setting.
+            Exception: The original exception, re-raised when the inner
+                application had already begun sending its response. Once the
+                status line is on the wire it cannot be replaced with a 500, so
+                letting the server drop the connection is the only honest
+                signal left.
         """
-        # The request is deliberately not stored on ``self``. One instance of
-        # this middleware serves every request — `use()` keeps the instance,
-        # and the application assembles its chain once — so an attribute
-        # written here is overwritten by whatever request runs during the
-        # ``await`` below, and the debug page renders every header it is
-        # handed. It is passed down to the renderer instead.
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)  # ty: ignore[not-callable]
+            return
+
+        response_started = False
+
+        async def send_watching_start(message: Message) -> None:
+            """Forward an ASGI message, noting when the response begins.
+
+            Args:
+                message: The ASGI message the inner application is sending.
+            """
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
         try:
-            return await call_next()
+            with collapse_excgroups():
+                await self.app(scope, receive, send_watching_start)  # ty: ignore[not-callable]
         except Exception as exc:
+            if response_started:
+                raise
+
+            # Built here rather than up front: on every request that does not
+            # raise — which is nearly all of them — neither object is needed,
+            # and constructing them anyway was the single largest fixed cost
+            # in the framework's request path.
+            #
+            # The request is also deliberately not stored on ``self``. One
+            # instance of this middleware serves every request, so an attribute
+            # written here is overwritten by whatever request runs during the
+            # ``await`` below, and the debug page would render every header it
+            # was handed. It is passed down to the renderer instead.
+            request = Request(scope, receive)
+            response = Response(request)
+
             if self.handler:
                 # A user-supplied handler owns the response outright. This is
                 # an elif rather than a second if: previously the handler ran
@@ -945,11 +988,12 @@ class ServerErrorMiddleware(BaseMiddleware):
                 response = self.get_debug_response(request, response, exc)
             else:
                 response = self.error_response(response)
-            headers = request.scope.get("server_error_headers", {})
+
+            headers = scope.get("server_error_headers", {})
             response.set_headers(headers)
             err = traceback.format_exc()
             logger.error(err)
-            return response
+            await response(scope, receive, send)
 
     def error_response(self, res: Response):
         """Generate a minimal plain-text 500 Internal Server Error response.

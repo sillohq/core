@@ -15,6 +15,7 @@ from typing_extensions import Doc
 
 from sillo._internals._middleware import (
     ASGIRequestResponseBridge,
+    MiddlewareFactory,
 )
 from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo.core.dependencies import Depend
@@ -894,10 +895,26 @@ class SilloApp:
     def use(
         self,
         middleware: Annotated[
-            MiddlewareType,
+            MiddlewareType | MiddlewareFactory,
             Doc(
                 "A callable middleware function that processes requests and responses."
             ),
+        ],
+        *args: Annotated[
+            Any,
+            Doc("Positional arguments forwarded to a `raw=True` middleware factory."),
+        ],
+        raw: Annotated[
+            bool,
+            Doc(
+                "Treat `middleware` as a raw ASGI middleware factory, called as "
+                "`middleware(next_app, *args, **kwargs)`, instead of a dispatch "
+                "function."
+            ),
+        ] = False,
+        **kwargs: Annotated[
+            Any,
+            Doc("Keyword arguments forwarded to a `raw=True` middleware factory."),
         ],
     ) -> None:
         """
@@ -907,22 +924,77 @@ class SilloApp:
         modifications to requests before they reach the route handler and responses
         before they are sent back to the client.
 
+        Two forms are accepted.
+
+        The default is sillo's dispatch form: an instance, or a plain function,
+        taking `(request, response, call_next)`. sillo builds the `Request` and
+        the `Response` for it and turns the rest of the chain into something
+        awaitable. That is convenient, and it costs a request object, a
+        response object and a background task per layer per request.
+
+        Passing `raw=True` registers a raw ASGI middleware instead. The
+        argument is then a *factory* — usually a class — invoked as
+        `middleware(next_app, *args, **kwargs)`, and whatever it returns is
+        called with `(scope, receive, send)`. Nothing is built on its behalf,
+        so it is the cheaper form and the one to reach for when the middleware
+        does not need a parsed request; it is also how sillo's own
+        `ServerErrorMiddleware` and `ExceptionMiddleware` are written. ASGI
+        middleware from other frameworks generally drops straight in.
+
         Args:
-            middleware (MiddlewareType): A callable that takes a `Request`, `Response`,
-            and a `Callable` (next middleware or handler) and returns a `Response`.
+            middleware: With `raw=False`, a callable taking a `Request`, a
+                `Response` and a `call_next` callable, returning a `Response`.
+                With `raw=True`, a factory taking the next ASGI application as
+                its first argument and returning an ASGI application.
+            *args: Positional arguments for the factory. `raw=True` only.
+            raw: Whether `middleware` is a raw ASGI middleware factory.
+            **kwargs: Keyword arguments for the factory. `raw=True` only.
 
         Returns:
             None
 
+        Raises:
+            TypeError: If extra arguments are passed without `raw=True`. The
+                dispatch form takes a middleware that is already configured, so
+                there is nowhere for them to go and silently dropping them
+                would leave the middleware running on its defaults.
+
         Example:
             ```python
-            def logging_middleware(request: Request, response: Response, next_call: Callable) -> Response:
+            # dispatch form
+            async def logging_middleware(request: Request, response: Response, call_next):
                 print(f"Request received: {request.method} {request.url}")
-                return next_call()
+                return await call_next()
 
             app.use(logging_middleware)
+
+
+            # raw ASGI form
+            class RequestId:
+                def __init__(self, app, header: str = "x-request-id"):
+                    self.app = app
+                    self.header = header.encode()
+
+                async def __call__(self, scope, receive, send):
+                    if scope["type"] != "http":
+                        return await self.app(scope, receive, send)
+
+                    async def send_with_id(message):
+                        if message["type"] == "http.response.start":
+                            message["headers"].append((self.header, uuid4().hex.encode()))
+                        await send(message)
+
+                    await self.app(scope, receive, send_with_id)
+
+            app.use(RequestId, raw=True, header="x-trace-id")
             ```
         """
+        if not raw and (args or kwargs):
+            raise TypeError(
+                "use() forwards extra arguments only to raw ASGI middleware. "
+                "Pass raw=True to have them handed to the factory, or "
+                "configure the middleware before registering it."
+            )
 
         # Authentication can be configured two ways: SilloApp(auth_user_model=…)
         # or AuthenticationMiddleware(user_model=…) passed to use(). Both name
@@ -934,7 +1006,12 @@ class SilloApp:
 
         self.http_middleware.insert(
             0,
-            Middleware(ASGIRequestResponseBridge, dispatch=middleware),
+            # Raw middleware is the factory itself: the chain builder calls
+            # `cls(next_app, *args, **kwargs)`, which is exactly the ASGI
+            # convention, so no wrapper is involved at all.
+            Middleware(middleware, *args, **kwargs)
+            if raw
+            else Middleware(ASGIRequestResponseBridge, dispatch=middleware),
         )
         self._build_request_chain()
 
@@ -1229,20 +1306,27 @@ class SilloApp:
         from a startup hook, long after the chain exists — needs no rebuild.
         """
         app = self.app
-        middleware = (
-            [
-                Middleware(
-                    ASGIRequestResponseBridge,
-                    dispatch=ServerErrorMiddleware(
-                        handler=self.server_error_handler, debug=self.debug
-                    ),
-                )
-            ]
-            + self.http_middleware
-            + [Middleware(ASGIRequestResponseBridge, dispatch=self.exceptions_handler)]
-        )
-        for cls, args, kwargs in reversed(middleware):
+
+        # Innermost first. Both built-in layers are raw ASGI middleware: they
+        # take the next app and are called with ``(scope, receive, send)``,
+        # with no ``Request``, ``Response`` or background task constructed on
+        # their behalf. Neither reads the body or rewrites the response on the
+        # way out — they only care about a request that raised — so paying for
+        # a dispatch bridge per layer per request bought nothing, and was the
+        # largest fixed cost in the request path.
+        #
+        # The exception middleware is rebound rather than rebuilt because it
+        # owns the handler registries, which outlive any single chain:
+        # `add_exception_handler` is called after the chain already exists.
+        self.exceptions_handler.app = app
+        app = self.exceptions_handler
+
+        for cls, args, kwargs in reversed(self.http_middleware):
             app = cls(app, *args, **kwargs)
+
+        app = ServerErrorMiddleware(
+            app, handler=self.server_error_handler, debug=self.debug
+        )
 
         self._request_chain = app
 

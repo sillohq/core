@@ -367,6 +367,14 @@ class ASGIRequestResponseBridge:
                 nonlocal app_exc
                 with send_stream:
                     try:
+                        # Everything downstream reads the body through this
+                        # callable, and it replays what ``_CachedRequest``
+                        # buffered rather than pulling from the wire.
+                        # Announcing it lets ``Request`` tell "the body is
+                        # gone" apart from "the body is being replayed" —
+                        # without it, a dispatch middleware peeking at the body
+                        # would leave the handler unable to read it.
+                        scope["_sillo_body_replay"] = receive_or_disconnect
                         await self.app(scope, receive_or_disconnect, send_no_error)
                     except Exception as exc:
                         app_exc = exc

@@ -16,10 +16,11 @@ from pydantic import ValidationError
 
 from sillo import logging
 from sillo.auth.exceptions import AuthenticationFailed, AuthErrorHandler
+from sillo.core.helpers.async_helpers import collapse_excgroups
 from sillo.core.http import Request, Response
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.handlers.not_found import handle_404_error
-from sillo.types import ExceptionHandlerType
+from sillo.types import ASGIApp, ExceptionHandlerType, Message, Receive, Scope, Send
 from sillo.validation import RequestValidationError, ResponseValidationError
 
 logger = logging.getLogger("sillo")
@@ -127,7 +128,7 @@ async def wrap_http_exceptions(
 
 
 class ExceptionMiddleware:
-    """Middleware that catches exceptions during request processing and returns error responses.
+    """Pure-ASGI middleware that maps exceptions onto registered handlers.
 
     This middleware sits in the ASGI middleware stack and intercepts exceptions
     raised by downstream handlers. It maintains two registries: one mapping
@@ -136,7 +137,20 @@ class ExceptionMiddleware:
     ``HTTPException``, ``AuthenticationFailed``, ``NotFoundException``, and
     Pydantic ``ValidationError``.
 
+    Like :class:`~sillo.core.error.handler.ServerErrorMiddleware` it is written
+    in the plain ASGI form — ``__init__(app)`` and ``__call__(scope, receive,
+    send)`` — rather than sillo's ``(request, response, call_next)`` dispatch
+    form. It has no interest in a request that succeeds, so building a
+    ``Request``, a ``Response`` and a background task for one is pure waste;
+    both objects are constructed inside the ``except`` clause and nowhere else.
+
+    An exception with no matching handler is re-raised unchanged, which is how
+    it reaches ``ServerErrorMiddleware`` and becomes a 500.
+
     Attributes:
+        app: The next ASGI application in the chain. Assigned by the
+            application when it assembles its chain, since the registries below
+            outlive any single chain and must not be rebuilt with it.
         debug: A boolean flag indicating whether debug mode is enabled. When
             True, additional error details may be included in responses.
             Defaults to False.
@@ -152,7 +166,7 @@ class ExceptionMiddleware:
         override the built-in defaults for their respective exception types.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, app: ASGIApp | None = None) -> None:
         """Initialize the ExceptionMiddleware with default exception handlers.
 
         Sets up the middleware with an empty status handler registry and
@@ -160,7 +174,9 @@ class ExceptionMiddleware:
         for common framework exception types.
 
         Args:
-            No arguments.
+            app: The next ASGI application to run. Optional because the
+                application constructs this middleware before it has a chain to
+                put it in, and assigns ``app`` when the chain is assembled.
 
         Returns:
             None. This is a constructor method.
@@ -172,6 +188,7 @@ class ExceptionMiddleware:
             - ``NotFoundException`` -> ``handle_404_error`` (404 page/response)
             - ``ValidationError`` -> ``pydantic_validation_error_handler`` (422 response)
         """
+        self.app = app
         self.debug = False
         self._status_handlers: dict[int, ExceptionHandlerType] = {}
         self._exception_handlers = {
@@ -222,43 +239,92 @@ class ExceptionMiddleware:
             assert issubclass(exc_class_or_status_code, Exception)
             self._exception_handlers[exc_class_or_status_code] = handler  # ty: ignore[invalid-assignment]
 
-    async def __call__(
-        self,
-        request: Request,
-        response: Response,
-        call_next: typing.Callable[[], typing.Awaitable[Response]],
-    ):
-        """Process the request through the exception handling pipeline.
+    @property
+    def has_handlers(self) -> bool:
+        """Whether either registry holds anything for this middleware to match.
 
-        This is the ASGI middleware entry point. If no handlers are registered,
-        it passes through to the next middleware directly. Otherwise, it
-        delegates to ``wrap_http_exceptions`` which provides the full exception
-        catching and handling logic.
+        With both empty there is no exception it could answer, so the request
+        goes straight to the inner application with no ``try`` around it. Read
+        per request rather than decided once, because handlers are registered
+        after the chain exists — ``setup_record`` and the admin panel both do
+        it while the application is still being configured.
+        """
+        return bool(self._exception_handlers or self._status_handlers)
+
+    def _handler_for(self, exc: Exception) -> ExceptionHandlerType | None:
+        """Find the handler registered for ``exc``, if any.
+
+        Status-code handlers are consulted first and only for ``HTTPException``,
+        since they key on ``status_code``, which nothing else carries. Anything
+        else is matched by walking the exception's MRO, so a handler registered
+        against a base class also catches its subclasses.
 
         Args:
-            request: The incoming HTTP request object.
-            response: The response builder object for constructing responses.
-            call_next: An async callable that continues processing to the next
-                middleware or route handler in the chain.
+            exc: The exception raised by the inner application.
 
         Returns:
-            The ``Response`` object from either the successful handler or an
-            exception handler.
-
-        Note:
-            The optimization of skipping ``wrap_http_exceptions`` when no
-            handlers are registered avoids the overhead of try/except blocks
-            in the common case where no custom exception handling is needed.
+            The matching handler, or ``None`` when nothing is registered for
+            this exception or any of its base classes.
         """
-        if len(self._exception_handlers) == 0 and len(self._status_handlers) == 0:
-            return await call_next()
-        return await wrap_http_exceptions(
-            request=request,
-            response=response,
-            call_next=call_next,
-            exception_handlers=self._exception_handlers,  # ty :ignore
-            status_handlers=self._status_handlers,
-        )
+        if isinstance(exc, HTTPException):
+            status_handler = self._status_handlers.get(exc.status_code)
+            if status_handler is not None:
+                return status_handler
+        return _lookup_exception_handler(self._exception_handlers, exc)  # ty: ignore[invalid-argument-type]
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Run the inner application, routing exceptions to registered handlers.
+
+        Args:
+            scope: The ASGI connection scope. Non-HTTP scopes are forwarded
+                untouched, as are all scopes when nothing is registered.
+            receive: The ASGI receive callable, passed straight through.
+            send: The ASGI send callable, wrapped only to notice whether the
+                response has already started.
+
+        Returns:
+            None.
+
+        Raises:
+            Exception: The original exception, re-raised unchanged when no
+                handler matches it, or when one does but the inner application
+                had already begun sending its response and there is nothing
+                left to replace. ``ServerErrorMiddleware`` sits above this one
+                and is what turns a re-raise into a 500.
+        """
+        if scope["type"] != "http" or not self.has_handlers:
+            await self.app(scope, receive, send)  # ty: ignore[not-callable]
+            return
+
+        response_started = False
+
+        async def send_watching_start(message: Message) -> None:
+            """Forward an ASGI message, noting when the response begins.
+
+            Args:
+                message: The ASGI message the inner application is sending.
+            """
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            with collapse_excgroups():
+                await self.app(scope, receive, send_watching_start)  # ty: ignore[not-callable]
+        except Exception as exc:
+            handler = self._handler_for(exc)
+            if handler is None or response_started:
+                logger.error(traceback.format_exc())
+                raise
+
+            # Constructed only now. Nothing above this line touches a request
+            # or a response, which is the entire reason this middleware is
+            # pure ASGI rather than a dispatch function.
+            request = Request(scope, receive)
+            response = Response(request)
+            result = await handler(request, response, exc)  # ty: ignore[invalid-await]
+            await result(scope, receive, send)
 
     async def http_exception(
         self, request: Request, response: Response, exc: HTTPException

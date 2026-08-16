@@ -686,7 +686,23 @@ class Request(HTTPConnection):
         assert scope["type"] == "http"
         self._receive = receive
         self._send = send
-        self._stream_consumed = False
+        # Seeded from the scope rather than always False, because a body can
+        # only be read once off the wire and more than one ``Request`` gets
+        # built for a single connection — the router builds one, and an
+        # exception handler running after the handler already drained it gets
+        # another. Without this the second one awaits a ``receive`` that will
+        # never produce another chunk and the request hangs until the client
+        # gives up. Starting out consumed turns that into the same immediate
+        # "Stream consumed" error a single request would have raised.
+        #
+        # The second half is the exception: ``_CachedRequest`` buffers the body
+        # so it can *replay* it downstream, and a request reading from that
+        # replay has a body waiting for it no matter what the wire has left.
+        # Identity is the test because the replay is a specific callable, so
+        # only the request actually holding it is excused.
+        self._stream_consumed = scope.get("_sillo_body_consumed", False) and (
+            receive is not scope.get("_sillo_body_replay")
+        )
         self._is_disconnected = False
         self._form: FormData | Any = None
         self._validated_data = None
@@ -779,6 +795,10 @@ class Request(HTTPConnection):
                 body = message.get("body", b"")
                 if not message.get("more_body", False):
                     self._stream_consumed = True
+                    # Recorded on the scope so a later ``Request`` built for
+                    # the same connection knows the body is gone rather than
+                    # blocking on a receive that can never return it.
+                    self.scope["_sillo_body_consumed"] = True
                 if body:
                     yield body
             elif message["type"] == "http.disconnect":
