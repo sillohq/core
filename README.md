@@ -8,9 +8,41 @@
   <strong>Python With the Pieces Already in Place.</strong>
 </p>
 
-Sillo is an async Python web framework for APIs, web applications, real-time systems, and business backends. The language does not change — you write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
+<p align="center">
+  <a href="https://github.com/sillohq/core/actions/workflows/run-tests.yaml"><img src="https://img.shields.io/github/actions/workflow/status/sillohq/core/run-tests.yaml?branch=main&label=tests&logo=pytest&logoColor=white" alt="Tests"></a>
+  <a href="https://codecov.io/gh/sillohq/core"><img src="https://img.shields.io/codecov/c/github/sillohq/core?label=coverage&logo=codecov&logoColor=white" alt="Coverage"></a>
+  <a href="https://github.com/sillohq/core/actions/workflows/type-check.yaml"><img src="https://img.shields.io/github/actions/workflow/status/sillohq/core/type-check.yaml?branch=main&label=types&logo=python&logoColor=white" alt="Type check"></a>
+  <a href="https://github.com/sillohq/core/actions/workflows/lint.yaml"><img src="https://img.shields.io/github/actions/workflow/status/sillohq/core/lint.yaml?branch=main&label=lint" alt="Lint"></a>
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/sillo-framework/"><img src="https://img.shields.io/pypi/v/sillo-framework?label=pypi&logo=pypi&logoColor=white" alt="PyPI"></a>
+  <a href="https://pypi.org/project/sillo-framework/"><img src="https://img.shields.io/pypi/pyversions/sillo-framework?logo=python&logoColor=white" alt="Python versions"></a>
+  <a href="https://peps.python.org/pep-0561/"><img src="https://img.shields.io/badge/typed-PEP%20561-blue" alt="PEP 561 typed"></a>
+  <a href="https://github.com/astral-sh/ruff"><img src="https://img.shields.io/badge/lint-ruff-261230?logo=ruff&logoColor=white" alt="Ruff"></a>
+  <a href="https://github.com/sillohq/core/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/sillo-framework?color=green" alt="License"></a>
+</p>
+
+Sillo is an async Python web framework for APIs, web applications, real-time systems, and business backends. The language does not change. You write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
 
 Each of those is a solved problem with good packages behind it. The work that remains is the fitting, and that is what Sillo does once so you do not do it per project. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI spec. The queue and the scheduler start with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
+
+## Project Health
+
+| | |
+|---|---|
+| Tests | 4,733 passing, on CPython 3.10 through 3.14. Python 3.15 runs too, and reports without gating the branch while it is a beta |
+| Coverage | 91%, with a 90% floor enforced in CI before anything is published |
+| Types | Ships `py.typed`, so your own checker sees Sillo's annotations rather than `Any` |
+| Type check | `ty` clean across the package |
+| Lint and format | `ruff` clean, checked on every push |
+| Dependencies | Seven at install time. The other 14 feature groups are opt-in extras |
+| License | BSD-3-Clause |
+
+None of this is aspirational. The coverage floor fails the build rather than
+printing a warning, the type check runs on every supported Python, and the
+badges above read from those same workflows rather than from a number written
+here by hand.
 
 ## Requirements
 
