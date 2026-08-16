@@ -45,25 +45,64 @@ def _read_pyproject_section(path: Path, section: str, key: str) -> str:
     raise KeyError(f"{key} not found in [{section}]")
 
 
+def _parse_value(value: str) -> str | list[str]:
+    value = value.strip()
+    if value.startswith('"') and value.endswith('"'):
+        return value[1:-1]
+    if value.startswith("[") and value.endswith("]"):
+        inner = value[1:-1].strip()
+        if not inner:
+            return []
+        return [v.strip().strip('"') for v in inner.split(",")]
+    return value
+
+
 def _metadata() -> dict:
     text = PYPROJECT.read_text(encoding="utf-8")
     result: dict = {}
     in_project = False
+    collecting_array = None
+
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith("[") and stripped.endswith("]"):
             in_project = stripped == "[project]"
+            collecting_array = None
             continue
-        if in_project and "=" in stripped:
+
+        if not in_project:
+            continue
+
+        if collecting_array is not None:
+            collecting_array.append(stripped)
+            if stripped == "]":
+                value = " ".join(collecting_array.lines)
+                result[collecting_array.key] = _parse_value(value)
+                collecting_array = None
+            continue
+
+        if "=" in stripped:
             key, _, value = stripped.partition("=")
             key = key.strip()
             value = value.strip()
-            if value.startswith('"') and value.endswith('"'):
-                value = value[1:-1]
-            elif value.startswith("[") and value.endswith("]"):
-                value = [v.strip().strip('"') for v in value[1:-1].split(",")]
-            result[key] = value
+            if value.startswith("["):
+                if value.endswith("]"):
+                    result[key] = _parse_value(value)
+                else:
+                    collecting_array = _ArrayCollector(key, [value])
+            else:
+                result[key] = _parse_value(value)
+
     return result
+
+
+class _ArrayCollector:
+    def __init__(self, key: str, lines: list[str]) -> None:
+        self.key = key
+        self.lines = lines
+
+    def append(self, line: str) -> None:
+        self.lines.append(line)
 
 
 def _matrix(workflow: str) -> list[str]:
