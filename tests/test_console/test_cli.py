@@ -841,3 +841,65 @@ def test_the_pyproject_parser_falls_back_when_tomllib_is_absent(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "configured:app"
+
+
+# -- the import string the server needs --------------------------------
+
+
+def test_no_import_string_is_found_in_an_ordinary_directory(elsewhere):
+    from sillo.__main__ import discover_application_string
+
+    assert discover_application_string() is None
+
+
+def test_a_conventional_module_is_found_as_a_string(elsewhere, monkeypatch):
+    """The regression this guards.
+
+    ``serve`` took ``DEFAULT_APPS[0]`` and nothing else, so its documented
+    "defaults to the app found" meant "assumes app.main:app". A project with
+    an ordinary ``main.py`` failed with a bare
+    ``ModuleNotFoundError: No module named 'app'`` raised from inside
+    importlib, naming a package the author had never mentioned.
+    """
+    from sillo.__main__ import discover_application_string
+
+    write_app(elsewhere, PLAIN_APP)
+    monkeypatch.syspath_prepend(str(elsewhere))
+
+    assert discover_application_string() == "main:app"
+
+
+def test_the_string_is_a_candidate_rather_than_the_first_one(elsewhere, monkeypatch):
+    """Whatever is returned has to be importable, not merely conventional."""
+    from sillo.__main__ import _import_string, discover_application_string
+
+    write_app(elsewhere, PLAIN_APP)
+    monkeypatch.syspath_prepend(str(elsewhere))
+
+    found = discover_application_string()
+
+    assert found in DEFAULT_APPS
+    assert _import_string(found) is not None
+
+
+def test_an_explicit_configuration_wins(elsewhere, monkeypatch):
+    from sillo.__main__ import discover_application_string
+
+    write_app(elsewhere, PLAIN_APP, name="other.py")
+    monkeypatch.syspath_prepend(str(elsewhere))
+    monkeypatch.setenv(APP_VARIABLE, "other:app")
+
+    assert discover_application_string() == "other:app"
+
+
+def test_the_configured_string_is_returned_without_being_verified(elsewhere, monkeypatch):
+    """A configured string is the author's instruction, so it is passed
+    through for the server to import and report on. Rejecting it here would
+    turn a typo into "no application found", which sends the reader looking
+    for the wrong thing.
+    """
+    from sillo.__main__ import discover_application_string
+
+    monkeypatch.setenv(APP_VARIABLE, "does.not:exist")
+
+    assert discover_application_string() == "does.not:exist"

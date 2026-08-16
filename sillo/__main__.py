@@ -129,6 +129,33 @@ def _configured_app() -> str | None:
     return app if isinstance(app, str) else None
 
 
+def discover_application_string() -> str | None:
+    """Find the import string naming the project's application.
+
+    The sibling of :func:`discover_application`, which returns the object. The
+    server needs the *string*: ``--reload`` and ``--workers`` re-import the
+    application in a fresh process, and an already-imported object cannot
+    survive that.
+
+    Returns:
+        The configured or discovered import string, or None when neither a
+        configuration nor any of :data:`DEFAULT_APPS` resolves.
+    """
+    configured = _configured_app()
+    if configured:
+        return configured
+
+    _ensure_cwd_importable()
+    for candidate in DEFAULT_APPS:
+        try:
+            _import_string(candidate)
+        except ValueError:
+            continue
+        return candidate
+
+    return None
+
+
 def discover_application() -> tuple[Any, str | None]:
     """Find the project's application.
 
@@ -240,7 +267,20 @@ class Serve(Command):
             An exit code, or None when the server stopped cleanly.
         """
         _ensure_cwd_importable()
-        target = self.argument("app") or _configured_app() or DEFAULT_APPS[0]
+        # `DEFAULT_APPS` is a list of candidates to try, and this used to take
+        # `DEFAULT_APPS[0]` and nothing else. So "Defaults to the app found"
+        # meant "assumes app.main:app", and the most ordinary layout of all,
+        # a `main.py` in the working directory, failed with a bare
+        # `ModuleNotFoundError: No module named 'app'` raised from inside
+        # importlib rather than anything naming the real problem.
+        target = self.argument("app") or discover_application_string()
+        if target is None:
+            self.fail(
+                "No application found. Looked for "
+                + ", ".join(DEFAULT_APPS)
+                + ". Name one as an argument (sillo serve main:app), set "
+                f"{APP_VARIABLE}, or add [tool.sillo] app to pyproject.toml."
+            )
 
         if self.flag("plain"):
             # An escape hatch, for anyone diagnosing a problem who needs to see
