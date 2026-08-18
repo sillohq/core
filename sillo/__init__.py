@@ -110,7 +110,7 @@ Common Patterns:
 
 from sillo.core.routing import Group, Route, Router, WebsocketRoute
 
-__version__: str = "0.1.0"
+__version__: str = "0.2.0"
 
 from sillo.core.dependencies import Depend
 

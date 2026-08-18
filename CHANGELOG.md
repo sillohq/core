@@ -7,23 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+## [0.2.0] - 2026-08-18
 
-- **The router decides "method not allowed" once.** `Route.match` and
-  `Route.handle` each compared the request's method against the route's set,
-  and spelled the comparison differently — `match` uppercased the method,
-  `handle` did not. A lowercase method matched fully and was then refused
-  405 by the route that had just matched it. The check now lives only in
-  `match`, which compares the token as sent (method tokens are case-sensitive
-  per RFC 9110 section 9.1), and the router builds the 405 itself.
-
-- **A 405's `Allow` header names every method the path supports.** The router
-  kept only the first partial match and asked that one route for the header,
-  so a path split across several routes — `@app.get("/items")` and
-  `@app.post("/items")` build two — reported `Allow: GET, HEAD` and left
-  `POST` unnamed. RFC 9110 requires `Allow` to describe the target resource,
-  so the methods are now collected across every route whose path matched.
-
+A minor release, not a patch: `sillo.env` is new public API, and `.env` now
+loads without an application asking it to — a change in behaviour for any
+project that already had one on disk.
 
 ### Added
 
@@ -62,6 +50,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`print(config)` no longer prints secrets.** `Config.__repr__` masked
   fields whose names look like secrets, but `print()` calls `__str__`, which
   Pydantic writes out in full. Both are masked now.
+
+- **The router decides "method not allowed" once.** `Route.match` and
+  `Route.handle` each compared the request's method against the route's set,
+  and spelled the comparison differently — `match` uppercased the method,
+  `handle` did not. A lowercase method matched fully and was then refused
+  405 by the route that had just matched it. The check now lives only in
+  `match`, which compares the token as sent (method tokens are case-sensitive
+  per RFC 9110 section 9.1), and the router builds the 405 itself.
+
+- **A 405's `Allow` header names every method the path supports.** The router
+  kept only the first partial match and asked that one route for the header,
+  so a path split across several routes — `@app.get("/items")` and
+  `@app.post("/items")` build two — reported `Allow: GET, HEAD` and left
+  `POST` unnamed. RFC 9110 requires `Allow` to describe the target resource,
+  so the methods are now collected across every route whose path matched.
 
 
 ## [0.1.0] - 2026-08-17

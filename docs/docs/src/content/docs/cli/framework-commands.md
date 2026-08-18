@@ -26,7 +26,7 @@ Aliased to `sillo about`. Reports the installed version, the Python running it,
 where the package lives, and which optional feature groups are installed:
 
 ```
-  sillo    0.1.0b1
+  sillo    0.2.0
   python   3.12.4
   path     /Users/you/project/.venv/lib/python3.12/site-packages/sillo
 
@@ -86,7 +86,7 @@ same reason.
 ### What you see
 
 ```
-  ● sillo 0.1.0
+  ● sillo 0.2.0
 
     app      app.main:app
     url      http://127.0.0.1:8000
