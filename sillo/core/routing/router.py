@@ -3190,7 +3190,8 @@ class Router(BaseRouter):
         match is stored and answered with a 405 Method Not Allowed if no full
         match is found later. The 405 is built here rather than delegated to
         the route, so the question "is this method allowed" is asked once per
-        request, in one place.
+        request, in one place, and its ``Allow`` header can name every method
+        the path supports rather than only the first route's.
 
         For HTTP requests that match no route, a ``NotFoundException`` is
         raised which results in a 404 response. For WebSocket connections
@@ -3218,6 +3219,10 @@ class Router(BaseRouter):
 
         path_match = None
         path_match_params: dict[str, Any] = {}
+        # Every method the path supports, not just the first route to claim
+        # it: `Allow` describes the resource, and one path is routinely split
+        # across several Route objects, one per method.
+        allowed: set[str] = set()
 
         for route in self.routes:
             match, matched_params = route.match(scope)
@@ -3225,16 +3230,18 @@ class Router(BaseRouter):
                 scope["route_params"] = RouteParam(matched_params)
                 await route.handle(scope, receive, send)
                 return
-            elif match == MatchStatus.PARTIAL and path_match is None:
-                path_match = route
-                path_match_params = matched_params
+            elif match == MatchStatus.PARTIAL:
+                allowed |= getattr(route, "methods", None) or set()
+                if path_match is None:
+                    path_match = route
+                    path_match_params = matched_params
 
         if path_match is not None:
             scope["route_params"] = RouteParam(path_match_params)
             response = JSONResponse(
                 {"detail": "Method Not Allowed"},
                 status_code=405,
-                headers={"Allow": ", ".join(sorted(path_match.methods))},
+                headers={"Allow": ", ".join(sorted(allowed))},
             )
             await response(scope, receive, send)
             return

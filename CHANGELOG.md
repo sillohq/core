@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The router decides "method not allowed" once.** `Route.match` and
+  `Route.handle` each compared the request's method against the route's set,
+  and spelled the comparison differently — `match` uppercased the method,
+  `handle` did not. A lowercase method matched fully and was then refused
+  405 by the route that had just matched it. The check now lives only in
+  `match`, which compares the token as sent (method tokens are case-sensitive
+  per RFC 9110 section 9.1), and the router builds the 405 itself.
+
+- **A 405's `Allow` header names every method the path supports.** The router
+  kept only the first partial match and asked that one route for the header,
+  so a path split across several routes — `@app.get("/items")` and
+  `@app.post("/items")` build two — reported `Allow: GET, HEAD` and left
+  `POST` unnamed. RFC 9110 requires `Allow` to describe the target resource,
+  so the methods are now collected across every route whose path matched.
+
+
 ### Added
 
 - **Sillo reads `.env` itself.** `sillo.env` is a `.env` parser written for

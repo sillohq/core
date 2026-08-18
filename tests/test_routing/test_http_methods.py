@@ -506,6 +506,94 @@ async def test_handle_does_not_re_check_the_method():
     assert status == 200
 
 
+async def test_allow_names_every_method_the_path_supports():
+    """RFC 9110: ``Allow`` describes the resource, not the matched route.
+
+    One path is routinely split across several Route objects — ``@app.get``
+    and ``@app.post`` on the same path build two. The router kept only the
+    first partial match and asked it for the header, so the other methods
+    went unnamed and a client was told the resource supports less than it
+    does.
+    """
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    router.add_route(Route("/items", handler, methods=["GET"]))
+    router.add_route(Route("/items", handler, methods=["POST"]))
+    router.add_route(Route("/items", handler, methods=["PATCH"]))
+
+    status, headers = await send_request(router, "DELETE", "/items")
+
+    assert status == 405
+    # HEAD comes along with GET, which the route adds for itself.
+    assert headers["allow"] == "GET, HEAD, PATCH, POST"
+
+
+async def test_allow_is_unchanged_for_a_single_route():
+    """The common case keeps the header it already had."""
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    router.add_route(Route("/only-get", handler, methods=["GET"]))
+
+    status, headers = await send_request(router, "POST", "/only-get")
+
+    assert status == 405
+    assert headers["allow"] == "GET, HEAD"
+
+
+async def test_allow_does_not_repeat_a_method():
+    """Two routes offering the same method name it once."""
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    router.add_route(Route("/items", handler, methods=["GET"]))
+    router.add_route(Route("/items", handler, methods=["GET", "PUT"]))
+
+    status, headers = await send_request(router, "DELETE", "/items")
+
+    assert status == 405
+    assert headers["allow"] == "GET, HEAD, PUT"
+
+
+async def test_allow_only_counts_routes_whose_path_matched():
+    """A method on a different path is not this resource's to offer."""
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    router.add_route(Route("/items", handler, methods=["GET"]))
+    router.add_route(Route("/other", handler, methods=["DELETE"]))
+
+    status, headers = await send_request(router, "POST", "/items")
+
+    assert status == 405
+    assert "DELETE" not in headers["allow"]
+
+
+async def test_allow_spans_routes_with_the_same_path_parameters():
+    """Parameterised paths are collected the same way."""
+    router = Router()
+
+    async def handler(request: Request, response: Response, item_id: str):
+        return response.text(item_id)
+
+    router.add_route(Route("/items/{item_id}", handler, methods=["GET"]))
+    router.add_route(Route("/items/{item_id}", handler, methods=["DELETE"]))
+
+    status, headers = await send_request(router, "POST", "/items/42")
+
+    assert status == 405
+    assert headers["allow"] == "DELETE, GET, HEAD"
+
+
 # ========== Router Method Decorators Tests ==========
 
 
