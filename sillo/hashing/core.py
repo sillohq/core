@@ -1,6 +1,12 @@
-"""Core password hashing operations using passlib."""
+"""Core password hashing operations.
 
-from passlib.context import CryptContext
+bcrypt is handled natively. Non-bcrypt schemes (argon2, scrypt, pbkdf2)
+require the optional ``passlib`` package.
+"""
+
+from __future__ import annotations
+
+from typing import Any
 
 from .config import (
     get_available_schemes,
@@ -10,15 +16,36 @@ from .config import (
 )
 from .exceptions import HashingError, InvalidSchemeError
 
-_context: CryptContext | None = None
+_context: Any | None = None
 _default_scheme: str = get_default_scheme()
 
+# Known scheme prefixes, used when passlib is not installed.
+_KNOWN_HASH_PREFIXES = (
+    "$2a$", "$2b$", "$2x$", "$2y$",  # bcrypt
+    "$argon2",  # argon2
+    "$scrypt$",  # scrypt
+    "$pbkdf2-sha256$",  # pbkdf2_sha256
+    "$pbkdf2-sha512$",  # pbkdf2_sha512
+)
 
-def _get_context() -> CryptContext:
-    """Get or create the passlib CryptContext."""
+
+def _get_context() -> Any:
+    """Get or create the passlib CryptContext.
+
+    Raises ``HashingError`` when passlib is not installed and a non-bcrypt
+    scheme is requested.
+    """
     global _context
 
     if _context is None:
+        try:
+            from passlib.context import CryptContext  # noqa: PLC0415
+        except ImportError as exc:
+            raise HashingError(
+                "passlib is required for non-bcrypt hashing schemes. "
+                "Install it with: pip install passlib"
+            ) from exc
+
         available_schemes = get_available_schemes()
 
         if not available_schemes:
@@ -184,10 +211,18 @@ def needs_update(hashed: str) -> bool:
             user.password_hash = hash_password(password)
             user.save()
     """
-    context = _get_context()
+    if not hashed:
+        return True
+
+    if hashed.startswith("$2"):
+        try:
+            current_rounds = int(hashed.split("$")[2])
+            return current_rounds < 12
+        except (IndexError, ValueError):
+            return True
 
     try:
-        return context.needs_update(hashed)
+        return _get_context().needs_update(hashed)
     except Exception:
         return False
 
@@ -195,10 +230,14 @@ def needs_update(hashed: str) -> bool:
 def is_hashed(value: str) -> bool:
     """Report whether a string is already a hash this application can verify.
 
-    Asks passlib to identify the scheme rather than matching a prefix. A
-    prefix test has to name every algorithm it accepts, and the one that
-    existed only knew bcrypt, so an argon2 or scrypt hash was treated as a
-    plaintext password and hashed a second time.
+    When passlib is installed, asks it to identify the scheme rather than
+    matching a prefix. A prefix test has to name every algorithm it accepts,
+    and the one that existed only knew bcrypt, so an argon2, scrypt or pbkdf2
+    hash was treated as a plaintext password and hashed a second time, and
+    every login against it then failed.
+
+    When passlib is not installed, falls back to a prefix check against the
+    known scheme identifiers.
 
     Args:
         value: The string to inspect. Usually a value on its way into a
@@ -215,13 +254,17 @@ def is_hashed(value: str) -> bool:
     """
     if not isinstance(value, str) or not value:
         return False
+
     try:
         return _get_context().identify(value) is not None
-    except Exception:
-        # An unrecognised string is plaintext as far as the caller is
-        # concerned. Reporting True here would let it reach the database
-        # unhashed, so the safe answer is False.
-        return False
+    except HashingError:
+        pass
+
+    for prefix in _KNOWN_HASH_PREFIXES:
+        if value.startswith(prefix):
+            return True
+
+    return False
 
 
 def set_default_scheme(scheme: str) -> None:

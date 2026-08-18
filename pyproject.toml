@@ -66,7 +66,6 @@ dependencies = [
     "python-multipart>=0.0.6",
     "pydantic>=2.0,<3.0",
     "typing-extensions>=4.12.2; python_version<'3.10'",
-    "passlib>=1.7.4",
     "python-dotenv>=1.0.0",
 ]
 
@@ -98,6 +97,7 @@ hashing-bcrypt = ["bcrypt>=4.0.0"]
 hashing-argon2 = ["argon2-cffi>=21.2.0"]
 hashing-scrypt = ["scrypt>=0.8.0"]
 hashing-all = [
+    "passlib>=1.7.4",
     "bcrypt>=4.0.0",
     "argon2-cffi>=21.2.0",
     "scrypt>=0.8.0",
@@ -126,6 +126,7 @@ granian = ["granian>=1.2.0"]
 all = [
     "pyjwt>=2.7.0",
     "tortoise-orm>=1.0",
+    "passlib>=1.7.4",
     "bcrypt>=4.0.0",
     "argon2-cffi>=21.2.0",
     "scrypt>=0.8.0",
@@ -356,6 +357,7 @@ dev = [
     # All optional features
     "pyjwt>=2.7.0",
     "tortoise-orm>=1.0",
+    "passlib>=1.7.4",
     "bcrypt>=4.0.0",
     "argon2-cffi>=21.2.0",
     "scrypt>=0.8.0",

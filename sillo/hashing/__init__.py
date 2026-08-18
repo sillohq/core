@@ -1,6 +1,7 @@
 """Password hashing with support for multiple algorithms (bcrypt, argon2, scrypt, pbkdf2).
 
-Powered by passlib, a battle-tested password hashing library.
+bcrypt is handled natively. Non-bcrypt schemes require the optional
+``passlib`` package: install ``sillo[hashing-all]`` or ``sillo[hashing-passlib]``.
 
 Quick Start:
 
@@ -18,16 +19,13 @@ Quick Start:
 
 Installation:
 
-    # Bcrypt (default, lightweight)
+    # Bcrypt (default, lightweight, no passlib needed)
     uv add bcrypt
 
-    # Argon2 (most secure, recommended)
-    uv add argon2-cffi
+    # Argon2 (most secure, requires passlib)
+    uv add "sillo[hashing-argon2]"
 
-    # Scrypt (memory-hard)
-    uv add scrypt
-
-    # Install all algorithms
+    # All algorithms
     uv add "sillo[hashing-all]"
 """
 
