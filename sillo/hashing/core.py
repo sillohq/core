@@ -21,7 +21,10 @@ _default_scheme: str = get_default_scheme()
 
 # Known scheme prefixes, used when passlib is not installed.
 _KNOWN_HASH_PREFIXES = (
-    "$2a$", "$2b$", "$2x$", "$2y$",  # bcrypt
+    "$2a$",
+    "$2b$",
+    "$2x$",
+    "$2y$",  # bcrypt
     "$argon2",  # argon2
     "$scrypt$",  # scrypt
     "$pbkdf2-sha256$",  # pbkdf2_sha256
