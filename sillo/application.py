@@ -28,6 +28,7 @@ from sillo.core.error import (
 from sillo.core.helpers.async_helpers import is_async_callable
 from sillo.core.routing import Route, Router, WebsocketRoute
 from sillo.core.routing.base import BaseRoute
+from sillo.env import autoload as _autoload_env
 from sillo.events import EventEmitter
 from sillo.exception_handler import ExceptionMiddleware
 from sillo.logging import create_logger
@@ -343,6 +344,11 @@ class SilloApp:
                 thing two ways.
             ValueError: If two documentation viewers claim the same path.
         """
+        # The project's .env, read once per process. An application that
+        # reads os.environ at import time has it already, and no project
+        # needs python-dotenv to make that true. SILLO_ENV_FILE="" opts out.
+        _autoload_env()
+
         # Assigned directly: the property setter rebuilds the chain, which
         # cannot happen before the rest of __init__ has run. The chain is
         # built once at the end, when everything it needs exists.

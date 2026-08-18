@@ -30,6 +30,8 @@ import sys
 from pathlib import Path
 from typing import Any, ClassVar
 
+from sillo.env import autoload
+
 from .console import Argument, Command, Console, Flag, Option
 
 __all__ = ["build_console", "discover_application", "main"]
@@ -492,6 +494,10 @@ def build_console() -> tuple[Console, str | None]:
         but could not be used.
     """
     import sillo
+
+    # Before the project is imported, so a module that reads os.environ at
+    # import time sees what .env says. Nothing has to install python-dotenv.
+    autoload()
 
     console = Console(
         prog="sillo",

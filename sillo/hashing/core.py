@@ -42,7 +42,7 @@ def _get_context() -> Any:
 
     if _context is None:
         try:
-            from passlib.context import CryptContext  # noqa: PLC0415
+            from passlib.context import CryptContext
         except ImportError as exc:
             raise HashingError(
                 "passlib is required for non-bcrypt hashing schemes. "

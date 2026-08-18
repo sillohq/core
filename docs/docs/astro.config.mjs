@@ -418,6 +418,7 @@ export default defineConfig({
                         { label: 'Introduction', link: '/guides/introduction/' },
                         { label: 'Installation', link: '/guides/installation/' },
                         { label: 'Configuration', link: '/guides/configuration/' },
+                        { label: 'Environment & .env', link: '/guides/environment/' },
                         { label: 'Request Lifecycle', link: '/guides/request-lifecycle/' },
                     ],
                 },

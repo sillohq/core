@@ -10,7 +10,7 @@ Sillo's configuration system provides:
 - **Validation** - Pydantic validates all values on load
 - **Environment-specific** - Different configs per environment
 - **Secret masking** - Automatically hides secrets in repr
-- **.env file support** - Load from `.env` files
+- **.env file support** - Read by sillo itself; `python-dotenv` is not needed
 - **Required vs optional** - Clear which fields are required
 - **Smart defaults** - Default values for optional fields
 
@@ -31,12 +31,8 @@ class AppConfig(Config):
     debug: bool = False
     log_level: Literal['debug', 'info', 'warning', 'error'] = 'info'
     port: int = 8000
-    
-    class Config:
-        env_file = '.env'
-        case_sensitive = False
 
-config = AppConfig()
+config = AppConfig()   # .env is found and read automatically
 ```
 
 ### 2. Create .env File
@@ -137,12 +133,23 @@ Use `Field()` to map environment variables:
 ```python
 from sillo.config import Config, Field
 
-class Config(Config):
-    # Map different env var name
-    database_url: str = Field(..., alias='DB_URL')
-    
+class AppConfig(Config):
+    # Reads DB_URL instead of DATABASE_URL
+    database_url: str = Field(..., alias='db_url')
+
     # Custom description for validation errors
     port: int = Field(default=8000, description='Server port')
+```
+
+Or prefix a whole class, so one .env can hold several subsystems:
+
+```python
+class DatabaseConfig(Config):
+    url: str              # DATABASE_URL
+    pool_size: int = 10   # DATABASE_POOL_SIZE
+
+    class Env:
+        env_prefix = 'DATABASE_'
 ```
 
 ## Environment-Specific Configs
@@ -288,15 +295,22 @@ class Config(Config):
 
 ### Multi-Environment Setup
 
+From the outside, so the code does not have to know:
+
+```bash
+SILLO_ENV_FILE=.env.production uv run uvicorn app:app
+```
+
+Or in the class:
+
 ```python
 import os
 
-environment = os.getenv('ENVIRONMENT', 'development')
-env_file = f'.env.{environment}'
+class AppConfig(Config):
+    database_url: str
 
-class Config(Config):
-    class Config:
-        env_file = env_file
+    class Env:
+        env_file = f".env.{os.getenv('ENVIRONMENT', 'development')}"
 ```
 
 ## Troubleshooting
@@ -347,7 +361,7 @@ database_password: str  # Appears as *** in repr
 
 ## See Also
 
-- [Environment Variables Guide](#) - .env file format
+- [Environment & .env](https://docs.sillo.build/guides/environment/) - .env file format, precedence, `sillo.env`
 - [Pydantic Documentation](https://docs.pydantic.dev/) - Full Pydantic reference
 - [Sillo Authentication](/guides/authentication) - Using config for auth
 - [Sillo Users](/guides/users) - Integrating with user system

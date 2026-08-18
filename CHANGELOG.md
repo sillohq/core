@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Sillo reads `.env` itself.** `sillo.env` is a `.env` parser written for
+  the framework: `python-dotenv` is not a dependency, is not installed as
+  one, and is not imported anywhere. The file supports quoting, escapes,
+  multi-line triple-quoted values (certificates and private keys), `export`
+  prefixes, inline comments, and `${REFERENCES}` with `${NAME:-fallback}`
+  defaults resolved against the file first and the surrounding environment
+  second.
+
+- **`.env` is loaded without being asked for.** `SilloApp(...)`, any
+  `sillo.config.Config` subclass, and the `sillo` command each load the
+  project's `.env` once per process. The file is found by searching upward
+  from the working directory and stopping at the project root, so a command
+  run from a subdirectory finds it and a `.env` in a home directory never
+  leaks in. Variables already exported win over the file; set
+  `SILLO_ENV_FILE` to name another file, or to the empty string to switch
+  automatic loading off.
+
+- **`sillo.env` public functions**: `load_env`, `find_env`, `parse_env` and
+  `env` — the last a typed single-variable read, where `cast=bool`
+  understands `true/yes/on/1` rather than Python's "any non-empty string".
+
+- **`Config` supports `env_prefix`**, so one `.env` can hold several
+  subsystems (`DATABASE_URL`, `DATABASE_POOL_SIZE`) without the field names
+  carrying the prefix. A field's Pydantic `alias` now also names the
+  environment variable it reads.
+
+- **`Config` options belong in an inner `Env` class.** An inner class named
+  `Config` still works, but Pydantic claims that name for its own deprecated
+  class-based settings and warns on every model that uses one.
+
+### Fixed
+
+- **`print(config)` no longer prints secrets.** `Config.__repr__` masked
+  fields whose names look like secrets, but `print()` calls `__str__`, which
+  Pydantic writes out in full. Both are masked now.
+
+
 ## [0.1.0] - 2026-08-17
 
 The first stable release. The API surface is now covered by semantic

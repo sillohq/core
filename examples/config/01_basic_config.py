@@ -1,11 +1,19 @@
 """Basic configuration example.
 
+A config class reads the project's .env on its own — sillo parses .env
+itself, so there is no python-dotenv to install and no load_dotenv() to
+call. This example names its file only because the file sits beside the
+script rather than at the project root, where it would be found without
+being named.
+
 Run with:
     uv run python examples/config/01_basic_config.py
 """
 
-from sillo.config import Config, Field
+from pathlib import Path
 from typing import Literal
+
+from sillo.config import Config
 
 
 class AppConfig(Config):
@@ -21,15 +29,16 @@ class AppConfig(Config):
     port: int = 8000
     host: str = '127.0.0.1'
 
-    class Config:
-        env_file = '.env'
-        case_sensitive = False
+    class Env:
+        # Left out, the project's .env is found by searching upward from
+        # the working directory.
+        env_file = str(Path(__file__).parent / '.env.development')
 
 
 def main():
     """Demonstrate basic config usage."""
 
-    # Load config from .env
+    # Load config from the .env file
     config = AppConfig()
 
     print("Configuration loaded successfully!")

@@ -4,10 +4,12 @@ Run with:
     uv run uvicorn examples/config/02_web_app:app --reload
 """
 
-from sillo import SilloApp, Query
+from pathlib import Path
+from typing import Literal, Optional
+
+from sillo import Query, SilloApp
 from sillo.config import Config, Field
 from sillo.core.http import Request, Response
-from typing import Literal, Optional
 
 
 class AppConfig(Config):
@@ -39,9 +41,10 @@ class AppConfig(Config):
     enable_cors: bool = True
     cors_origins: str = '*'
 
-    class Config:
-        env_file = '.env'
-        case_sensitive = False
+    class Env:
+        # A project keeps .env at its root, where it is found without being
+        # named. This example's file sits beside the script.
+        env_file = str(Path(__file__).parent / '.env.development')
 
 
 # Load config

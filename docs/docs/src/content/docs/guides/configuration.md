@@ -3,7 +3,8 @@ title: Configuration Management
 description: Type-safe configuration with Pydantic and environment variables
 ---
 
-Sillo provides type-safe configuration management using Pydantic, with automatic .env file loading, validation, and environment-specific settings.
+Sillo provides type-safe configuration management using Pydantic, with `.env`
+loading, validation, and environment-specific settings.
 
 ## Overview
 
@@ -19,12 +20,11 @@ The configuration system provides:
 
 ## Installation
 
-Configuration support is built-in. Just create a config class and .env file:
-
-```bash
-# No additional packages needed
-# Uses Pydantic (already a dependency)
-```
+Nothing to install. Sillo parses `.env` itself — `python-dotenv` is not a
+dependency, and there is no `load_dotenv()` call to remember. Constructing a
+config, or a `SilloApp`, loads the project's `.env` on its own. See
+[Environment & .env](/guides/environment/) for the file format and the
+precedence rules.
 
 ## Quick Start
 
@@ -45,12 +45,8 @@ class AppConfig(Config):
     debug: bool = False
     log_level: Literal['debug', 'info', 'warning', 'error'] = 'info'
     port: int = 8000
-    
-    class Config:
-        env_file = '.env'
-        case_sensitive = False
 
-# Load configuration
+# Load configuration — .env is found and read automatically
 config = AppConfig()
 ```
 
@@ -109,12 +105,32 @@ class AppConfig(Config):
     
     # Optional (can be None)
     cache_url: Optional[str] = None
-    
-    class Config:
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
-        case_sensitive = False
 ```
+
+### Adjusting the Defaults
+
+An inner `Env` class changes how the fields map onto the environment. Every
+setting is optional:
+
+```python
+class DatabaseConfig(Config):
+    url: str
+    pool_size: int = 10
+
+    class Env:
+        env_file = '.env.production'   # None loads no file at all
+        env_prefix = 'DATABASE_'       # DATABASE_URL, DATABASE_POOL_SIZE
+        case_sensitive = False         # the default: field names uppercased
+```
+
+`env_prefix` is what lets one `.env` serve several subsystems without the
+field names growing prefixes of their own.
+
+:::note
+An inner class named `Config` is read the same way — that is what earlier
+versions documented. Prefer `Env`: Pydantic claims the name `Config` for its
+own deprecated class-based settings and warns on every model that uses one.
+:::
 
 ### Type Support
 
@@ -159,11 +175,12 @@ timeout: float = 30.0   # Must be float
 # These work:
 PORT=8000           # Loaded as int
 DEBUG=true          # Converted to bool
+DEBUG=yes           # So are yes/no, on/off and 1/0
 TIMEOUT=30.5        # Loaded as float
 
 # These fail:
 PORT=eight          # ValidationError
-DEBUG=yes           # ValidationError (only true/false works)
+DEBUG=maybe         # ValidationError
 ```
 
 ## .env Files
@@ -176,19 +193,30 @@ DATABASE_URL=postgresql://localhost/db
 DEBUG=true
 PORT=8000
 
-# Multiline not directly supported, use single line
-LONG_VALUE=this_is_a_long_value_on_a_single_line
+# Spaces around = are fine
+KEY = value
+
+# Quotes keep whitespace; single quotes stop all expansion
+QUOTED="  spaces kept  "
+LITERAL='nothing $expands here'
+
+# Multi-line values, for keys and certificates
+PRIVATE_KEY="""-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkq...
+-----END PRIVATE KEY-----"""
+
+# References to earlier keys, and to the surrounding environment
+DB_HOST=db.internal
+DATABASE_URL=postgres://${DB_HOST}:5432/app
+PORT=${PORT:-8000}
 
 # Comments with #
 # This is a comment
-SECRET_KEY=...  # Inline comment
-
-# Empty lines are OK
-
-# No spaces around = (recommended)
-KEY=value        # OK
-KEY = value      # Also OK
+SECRET_KEY=abc123  # Inline comment — the space before # is what makes it one
+PASSWORD=pa#ssword # No space, so this hash is part of the password
 ```
+
+The full grammar is in [Environment & .env](/guides/environment/).
 
 ### File Locations
 
@@ -203,15 +231,31 @@ project/
 
 ### Environment-Specific Loading
 
+The usual way is from the outside, so the code does not have to know:
+
+```bash
+SILLO_ENV_FILE=.env.production sillo serve
+```
+
+Or decide in code:
+
 ```python
 import os
 
-environment = os.getenv('ENVIRONMENT', 'development')
-env_file = f'.env.{environment}'
-
 class AppConfig(Config):
-    class Config:
-        env_file = env_file  # Load .env.development or .env.production
+    database_url: str
+
+    class Env:
+        env_file = f".env.{os.getenv('ENVIRONMENT', 'development')}"
+```
+
+To layer a developer's overrides on top of a shared file:
+
+```python
+from sillo.env import load_env
+
+load_env()                              # .env
+load_env('.env.local', override=True)   # then whatever this machine changes
 ```
 
 ## Usage Patterns
@@ -609,20 +653,35 @@ PORT=8000   # Right
 
 ### Config not loading from .env
 
-**Problem:** File not found or wrong path
+**Problem:** The file is not where the search looks, or the variable is
+already set in the real environment (which wins).
+
+Check what the search finds, and what the file actually parses to:
 
 ```python
-class Config(Config):
-    class Config:
-        env_file = '.env'  # Must be in current directory
+from sillo.env import find_env, parse_env
 
-# OR with full path
+print(find_env())                     # the file being used, or None
+print(parse_env(open('.env').read())) # what it parses to
+```
+
+The search runs upward from the working directory and stops at the project
+root, so a `.env` above the project is deliberately ignored. Name the file
+outright when it lives somewhere else:
+
+```python
 from pathlib import Path
 
-class Config(Config):
-    class Config:
+class AppConfig(Config):
+    database_url: str
+
+    class Env:
         env_file = str(Path(__file__).parent / '.env')
 ```
+
+If the value is stale rather than missing, something exported it before the
+process started — `echo $DATABASE_URL` — and the real environment beats the
+file by design. Use `load_env(..., override=True)` to reverse that.
 
 ### Secrets appear in logs
 
@@ -640,7 +699,7 @@ access_token: str     # Appears as ***
 
 ## See Also
 
-- [Environment Variables](/guides/request-info) - Request environment access
+- [Environment & .env](/guides/environment/) - The file format, precedence, and `sillo.env`
 - [Security](/guides/security) - Security best practices
 - [Deployment](/guides/start/deployment/) - Deployment configuration
 - [Pydantic Docs](https://docs.pydantic.dev/) - Full Pydantic reference

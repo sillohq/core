@@ -116,5 +116,7 @@ project can decide what a good value looks like.
 ## See also
 
 - [Configuration](/guides/configuration/): how the application reads these.
+- [Environment & .env](/guides/environment/): the file format, and when sillo
+  reads it.
 - [Personalisation](/start/personalisation/): the other half of what happens
   after a fetch.
