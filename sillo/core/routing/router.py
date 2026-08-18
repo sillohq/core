@@ -564,8 +564,7 @@ class Route(BaseRoute):
             matched_params = match.groupdict()
             for key, value in matched_params.items():
                 matched_params[key] = self.route_info.convertor[key].convert(value)
-            is_method_allowed = method.upper() in self.methods
-            if not is_method_allowed:
+            if method not in self.methods:
                 return MatchStatus.PARTIAL, matched_params
 
             return MatchStatus.FULL, matched_params
@@ -727,11 +726,11 @@ class Route(BaseRoute):
 
         Dispatches the request through the route's ASGI application chain
         which includes all route-specific middleware and the request handler.
-        If the HTTP method is not in the allowed methods list, a 405 Method
-        Not Allowed JSON response is returned instead of invoking the handler.
 
-        This method is called by the router after a successful path match
-        has been confirmed via the ``match`` method.
+        The method has already been checked: the router only calls this after
+        :meth:`match` returned :attr:`MatchStatus.FULL`, which is the same
+        question. A disallowed method never reaches here — the router answers
+        it with a 405 of its own.
 
         Args:
             scope: ASGI scope containing request information including
@@ -741,14 +740,6 @@ class Route(BaseRoute):
             send: ASGI send callable for transmitting the response data
                 back to the client.
         """
-
-        if self.methods and scope["method"] not in self.methods:
-            response = JSONResponse(
-                {"detail": "Method Not Allowed"},
-                status_code=405,
-                headers={"Allow": ", ".join(sorted(self.methods))},
-            )
-            return await response(scope, receive, send)
 
         await self.app(scope, receive, send)
 
@@ -3196,8 +3187,11 @@ class Router(BaseRouter):
         full match is found (both path and HTTP method match), the request
         is dispatched to that route's handler immediately. If only a partial
         match is found (path matches but method does not), the first partial
-        match is stored and used if no full match is found later, enabling
-        proper 405 Method Not Allowed responses.
+        match is stored and answered with a 405 Method Not Allowed if no full
+        match is found later. The 405 is built here rather than delegated to
+        the route, so the question "is this method allowed" is asked once per
+        request, in one place, and its ``Allow`` header can name every method
+        the path supports rather than only the first route's.
 
         For HTTP requests that match no route, a ``NotFoundException`` is
         raised which results in a 404 response. For WebSocket connections
@@ -3225,6 +3219,10 @@ class Router(BaseRouter):
 
         path_match = None
         path_match_params: dict[str, Any] = {}
+        # Every method the path supports, not just the first route to claim
+        # it: `Allow` describes the resource, and one path is routinely split
+        # across several Route objects, one per method.
+        allowed: set[str] = set()
 
         for route in self.routes:
             match, matched_params = route.match(scope)
@@ -3232,13 +3230,20 @@ class Router(BaseRouter):
                 scope["route_params"] = RouteParam(matched_params)
                 await route.handle(scope, receive, send)
                 return
-            elif match == MatchStatus.PARTIAL and path_match is None:
-                path_match = route
-                path_match_params = matched_params
+            elif match == MatchStatus.PARTIAL:
+                allowed |= getattr(route, "methods", None) or set()
+                if path_match is None:
+                    path_match = route
+                    path_match_params = matched_params
 
         if path_match is not None:
             scope["route_params"] = RouteParam(path_match_params)
-            await path_match.handle(scope, receive, send)
+            response = JSONResponse(
+                {"detail": "Method Not Allowed"},
+                status_code=405,
+                headers={"Allow": ", ".join(sorted(allowed))},
+            )
+            await response(scope, receive, send)
             return
         if scope.get("type") == "http":
             raise NotFoundException

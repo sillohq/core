@@ -9,7 +9,44 @@ import pytest
 from sillo import SilloApp
 from sillo.core.http import Request, Response
 from sillo.core.routing import Route, Router
+from sillo.core.routing._utils import MatchStatus
 from sillo.testclient import TestClient
+
+
+async def send_request(router: Router, method: str, path: str):
+    """Drive *router* with one ASGI request, returning (status, headers).
+
+    A raw scope rather than the test client, because the cases here turn on
+    the exact method token — a client is free to normalise it.
+    """
+    sent = []
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        sent.append(message)
+
+    scope = {
+        "type": "http",
+        "method": method,
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "headers": [],
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("testclient", 50000),
+    }
+    await router(scope, receive, send)
+
+    start = next(
+        message for message in sent if message["type"] == "http.response.start"
+    )
+    headers = {
+        key.decode().lower(): value.decode() for key, value in start.get("headers", [])
+    }
+    return start["status"], headers
 
 # ========== GET Method Tests ==========
 
@@ -394,6 +431,167 @@ async def test_405_route_params_come_from_the_partial_match():
     )
     assert status == 405
     assert dict(scope["route_params"]) == {"x": "42"}  # ty: ignore[no-matching-overload]
+
+
+async def test_the_method_is_decided_once():
+    """``match`` decides; ``handle`` does not decide again.
+
+    The check lived in both places, and the two disagreed: ``match`` compared
+    ``method.upper()`` against the route's methods while ``handle`` compared
+    the method as sent. A lowercase method therefore matched fully and was
+    then refused 405 by the route it had just matched.
+    """
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    route = Route("/only-get", handler, methods=["GET"])
+    router.add_route(route)
+
+    # The method token is case-sensitive (RFC 9110 section 9.1), so "get" is
+    # not GET. Both halves must reach that same conclusion.
+    assert route.match({"type": "http", "method": "get", "path": "/only-get"})[0] is (
+        MatchStatus.PARTIAL
+    )
+    assert route.match({"type": "http", "method": "GET", "path": "/only-get"})[0] is (
+        MatchStatus.FULL
+    )
+
+    status, _ = await send_request(router, "get", "/only-get")
+    assert status == 405
+
+
+async def test_handle_does_not_re_check_the_method():
+    """A full match reaches the handler without a second lookup.
+
+    ``handle`` is only ever called after ``match`` returned FULL, so a method
+    check there could only ever be a no-op — except when it disagreed.
+    """
+    async def handler(request: Request, response: Response):
+        return response.text("reached")
+
+    route = Route("/x", handler, methods=["GET"])
+
+    sent = []
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        sent.append(message)
+
+    # A method the route does not allow, handed straight to handle(). The
+    # router never does this; the point is that handle() no longer owns the
+    # decision, so it runs the handler it was given.
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/x",
+        "raw_path": b"/x",
+        "query_string": b"",
+        "headers": [],
+        "scheme": "http",
+        "server": ("testserver", 80),
+        "client": ("testclient", 50000),
+        "route_params": {},
+    }
+    await route.handle(scope, receive, send)
+
+    status = next(
+        message["status"]
+        for message in sent
+        if message["type"] == "http.response.start"
+    )
+    assert status == 200
+
+
+async def test_allow_names_every_method_the_path_supports():
+    """RFC 9110: ``Allow`` describes the resource, not the matched route.
+
+    One path is routinely split across several Route objects — ``@app.get``
+    and ``@app.post`` on the same path build two. The router kept only the
+    first partial match and asked it for the header, so the other methods
+    went unnamed and a client was told the resource supports less than it
+    does.
+    """
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    router.add_route(Route("/items", handler, methods=["GET"]))
+    router.add_route(Route("/items", handler, methods=["POST"]))
+    router.add_route(Route("/items", handler, methods=["PATCH"]))
+
+    status, headers = await send_request(router, "DELETE", "/items")
+
+    assert status == 405
+    # HEAD comes along with GET, which the route adds for itself.
+    assert headers["allow"] == "GET, HEAD, PATCH, POST"
+
+
+async def test_allow_is_unchanged_for_a_single_route():
+    """The common case keeps the header it already had."""
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    router.add_route(Route("/only-get", handler, methods=["GET"]))
+
+    status, headers = await send_request(router, "POST", "/only-get")
+
+    assert status == 405
+    assert headers["allow"] == "GET, HEAD"
+
+
+async def test_allow_does_not_repeat_a_method():
+    """Two routes offering the same method name it once."""
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    router.add_route(Route("/items", handler, methods=["GET"]))
+    router.add_route(Route("/items", handler, methods=["GET", "PUT"]))
+
+    status, headers = await send_request(router, "DELETE", "/items")
+
+    assert status == 405
+    assert headers["allow"] == "GET, HEAD, PUT"
+
+
+async def test_allow_only_counts_routes_whose_path_matched():
+    """A method on a different path is not this resource's to offer."""
+    router = Router()
+
+    async def handler(request: Request, response: Response):
+        return response.text("ok")
+
+    router.add_route(Route("/items", handler, methods=["GET"]))
+    router.add_route(Route("/other", handler, methods=["DELETE"]))
+
+    status, headers = await send_request(router, "POST", "/items")
+
+    assert status == 405
+    assert "DELETE" not in headers["allow"]
+
+
+async def test_allow_spans_routes_with_the_same_path_parameters():
+    """Parameterised paths are collected the same way."""
+    router = Router()
+
+    async def handler(request: Request, response: Response, item_id: str):
+        return response.text(item_id)
+
+    router.add_route(Route("/items/{item_id}", handler, methods=["GET"]))
+    router.add_route(Route("/items/{item_id}", handler, methods=["DELETE"]))
+
+    status, headers = await send_request(router, "POST", "/items/42")
+
+    assert status == 405
+    assert headers["allow"] == "DELETE, GET, HEAD"
 
 
 # ========== Router Method Decorators Tests ==========
