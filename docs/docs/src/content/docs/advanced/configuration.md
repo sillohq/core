@@ -11,27 +11,37 @@ description: "Config class, .env loading, secret masking, environment variables"
 `BaseModel` with automatic `.env` file loading, environment variable mapping,
 and secret masking in `repr` output.
 
+The `.env` reading is Sillo's own — `sillo.env`, documented in
+[Environment & .env](/guides/environment/). `python-dotenv` is not a
+dependency of the framework and is not imported anywhere in it.
+
 ### Class Definition
 
 ```python
 class Config(BaseModel):
-    """Base configuration class with .env file support."""
+    """Base configuration class, loaded from the environment."""
 
     model_config = ConfigDict(extra="ignore")
 
     def __init__(
         self,
-        _env_file: str | None = None,
-        _case_sensitive: bool = False,
+        _env_file: str | None = _UNSET,
+        _case_sensitive: bool = _UNSET,
+        _env_prefix: str = _UNSET,
         **data
     ):
 ```
+
+`_UNSET` is a sentinel, not a default value: it separates "the subclass said
+nothing", which loads the project's `.env`, from an explicit `None`, which
+loads no file at all.
 
 ### Features
 
 | Feature | Description |
 |---------|-------------|
-| `.env` loading | Automatically loads environment variables from a `.env` file via `python-dotenv` |
+| `.env` loading | Finds and loads the project's `.env` through `sillo.env.autoload`, once per process. No third-party dependency |
+| Env prefix | `env_prefix` maps a whole class onto `PREFIX_*` variables |
 | Type validation | All fields are validated by Pydantic at construction time |
 | Env var mapping | Field names are mapped to uppercase environment variables by default |
 | Secret masking | Fields with names containing `secret`, `key`, `password`, `token`, etc. are masked in `repr()` |
@@ -41,29 +51,41 @@ class Config(BaseModel):
 ### Initialization Flow
 
 ```python
-def __init__(self, _env_file=None, _case_sensitive=False, **data):
-    # 1. Check subclass for env_file and case_sensitive config
-    config_dict = getattr(self.__class__.Config, "__dict__", {}) if hasattr(self.__class__, "Config") else {}
-    env_file = _env_file or config_dict.get("env_file")
-    case_sensitive = _case_sensitive or config_dict.get("case_sensitive", False)
+def __init__(self, _env_file=_UNSET, _case_sensitive=_UNSET, _env_prefix=_UNSET, **data):
+    # 1. Read the subclass's inner options class (Env, or the older Config)
+    options = self._options()
+    env_file = _env_file if _env_file is not _UNSET else options.get("env_file", _UNSET)
+    case_sensitive = ...
+    prefix = ...
 
-    # 2. Load .env file if specified
-    if env_file:
-        from dotenv import load_dotenv
-        load_dotenv(env_file)
+    # 2. Load the file: the project's .env when nothing was asked for,
+    #    the named file when one was, nothing at all when it is None.
+    if env_file is _UNSET:
+        autoload()
+    elif env_file is not None:
+        load_env(env_file)
 
-    # 3. Load from environment variables
-    import os
+    # 3. Map fields onto environment variables, alias first
     env_data = {}
-    for field_name in self.__class__.model_fields:
-        env_key = field_name if case_sensitive else field_name.upper()
-        if env_key in os.environ:
-            env_data[field_name] = os.environ[env_key]
+    for name, field in self.__class__.model_fields.items():
+        alias = field.alias if isinstance(field.alias, str) else None
+        for candidate in (alias, name):
+            if candidate is None:
+                continue
+            key = prefix + candidate
+            if not case_sensitive:
+                key = key.upper()
+            if key in os.environ:
+                env_data[alias or name] = os.environ[key]
+                break
 
     # 4. Merge with provided data (provided data takes precedence)
     env_data.update(data)
     super().__init__(**env_data)
 ```
+
+Three sources, most specific first: arguments beat the real environment, and
+the real environment beats the file.
 
 ### Environment Variable Mapping
 
@@ -118,23 +140,27 @@ print(repr(config))
 # <AppConfig {'database_url': 'postgres://localhost/mydb', 'jwt_secret': '***', 'api_key': '***'}>
 ```
 
-### Subclass Config Inner Class
+### Subclass Options Inner Class
 
 ```python
 class AppConfig(Config):
     database_url: str
     debug: bool = False
 
-    class Config:
-        env_file = ".env"
+    class Env:
+        env_file = ".env"          # None loads no file
+        env_prefix = ""
         case_sensitive = False
 ```
 
-The inner `Config` class is checked for `env_file` and `case_sensitive` settings.
-These can also be overridden at instantiation time:
+`Env` is checked first, then `Config` — the name earlier versions documented,
+kept working but no longer recommended, since Pydantic uses it for its own
+deprecated class-based settings and warns whenever it sees one.
+
+Each setting can be overridden at instantiation time:
 
 ```python
-config = AppConfig(_env_file=".env.production", _case_sensitive=True)
+config = AppConfig(_env_file=".env.production", _case_sensitive=True, _env_prefix="APP_")
 ```
 
 ### Re-exported Field
@@ -186,9 +212,8 @@ class DatabaseConfig(Config):
     # Migration
     migration_dir: str = Field(default="migrations", description="Migration scripts directory")
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    class Env:
+        env_prefix = "DATABASE_"
 ```
 
 ### Environment Variable Mapping
@@ -242,8 +267,8 @@ class SessionConfig(Config):
     # Database settings (when driver="database")
     table_name: str = Field(default="sessions", description="Sessions table name")
 
-    class Config:
-        env_file = ".env"
+    class Env:
+        env_prefix = "SESSION_"
 ```
 
 ### Environment Variable Mapping
@@ -284,8 +309,8 @@ class MailConfig(Config):
     retry_count: int = Field(default=3, description="Retry count for failed sends")
     retry_delay: int = Field(default=60, description="Retry delay in seconds")
 
-    class Config:
-        env_file = ".env"
+    class Env:
+        env_prefix = "MAIL_"
 ```
 
 ### Environment Variable Mapping
@@ -334,8 +359,8 @@ class CorsConfig(Config):
         description="Preflight cache duration in seconds"
     )
 
-    class Config:
-        env_file = ".env"
+    class Env:
+        env_prefix = "CORS_"
 ```
 
 ### Environment Variable Mapping
@@ -395,8 +420,8 @@ class CSRFConfig(Config):
         description="Paths exempt from CSRF checks"
     )
 
-    class Config:
-        env_file = ".env"
+    class Env:
+        env_prefix = "CSRF_"
 ```
 
 ### Environment Variable Mapping
@@ -447,8 +472,8 @@ class RateLimitConfig(Config):
         description="Error message for rate limited requests"
     )
 
-    class Config:
-        env_file = ".env"
+    class Env:
+        env_prefix = "RATE_LIMIT_"
 ```
 
 ### Environment Variable Mapping
@@ -512,8 +537,8 @@ class TemplateConfig(Config):
         description="Global variables available in all templates"
     )
 
-    class Config:
-        env_file = ".env"
+    class Env:
+        env_prefix = "TEMPLATE_"
 ```
 
 ### Environment Variable Mapping
@@ -580,8 +605,8 @@ class InertiaConfig(Config):
         description="Enable Inertia testing helpers"
     )
 
-    class Config:
-        env_file = ".env"
+    class Env:
+        env_prefix = "INERTIA_"
 ```
 
 ### Environment Variable Mapping
@@ -630,9 +655,8 @@ class AppConfig(Config):
     # Subsystem configs are declared as fields
     # They can be nested or flattened depending on preference
 
-    class Config:
+    class Env:
         env_file = ".env"
-        case_sensitive = False
 
 # Flat approach (all vars at top level)
 class FlatAppConfig(Config):
