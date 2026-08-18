@@ -45,7 +45,7 @@ graph TD
 
 - Path compilation is **pure**: no ASGI types leak into `route_builder.py`.
   This makes it independently testable.
-- `MatchStatus` is a tri-state enum (`NONE=0`, `PARTIAL=1`, `FULL=2`) that enables 405 Method Not Allowed without a second pass.
+- `MatchStatus` is a tri-state enum (`NONE=0`, `PARTIAL=1`, `FULL=2`) that enables 405 Method Not Allowed without a second pass. It is also the *only* place the method is examined: `match` decides, and nothing downstream asks again.
 - `Group` is a `BaseRoute`, not a `Router`. This lets it participate in the same linear scan as individual routes.
 - Dependency injection propagates **downward** through `mount_router` / `Group` hierarchies via `_set_inherited_dependencies`.
 
@@ -394,7 +394,7 @@ class BaseRoute(ABC):
 | Method | Responsibility |
 |--------|---------------|
 | `match()` | Return `(MatchStatus, params)` for a given request |
-| `handle()` | Execute the request: called only after a `FULL` match |
+| `handle()` | Execute the request: called only after a `FULL` match, so it does not re-check the method |
 | `url_path_for()` | Reverse URL generation for this route |
 | `__call__()` | Makes the route callable as an ASGI app; delegates to `handle` |
 
@@ -471,8 +471,7 @@ def match(self, scope: Scope) -> tuple[MatchStatus, Any]:
         for key, value in matched_params.items():
             matched_params[key] = self.route_info.convertor[key].convert(value)
 
-        is_method_allowed = method.upper() in self.methods
-        if not is_method_allowed:
+        if method not in self.methods:
             return MatchStatus.PARTIAL, matched_params
 
         return MatchStatus.FULL, matched_params
@@ -488,23 +487,31 @@ def match(self, scope: Scope) -> tuple[MatchStatus, Any]:
 4. Path matches but wrong method → `PARTIAL` (enables 405).
 5. `HEAD` is automatically added when `GET` is in `self.methods` (line 366 to
    367).
+6. The comparison is **case-sensitive**. Method tokens are case-sensitive per
+   RFC 9110 section 9.1, so `get` is not `GET` and produces a `PARTIAL` match.
+   Normalisation happens once, at construction (`{method.upper() for ...}`),
+   never per request.
+
+:::note[This used to be asked twice]
+`match` compared `method.upper()` while `handle` compared the method as sent.
+On a `FULL` match the second check could only ever be a no-op — except that
+the two spellings disagreed, so a lowercase method matched fully and was then
+refused 405 by the route that had just matched it. The check now exists only
+here.
+:::
 
 ### Handle method
 
 ```python
 async def handle(self, scope, receive, send):
-    if self.methods and scope["method"] not in self.methods:
-        response = JSONResponse(
-            {"detail": "Method Not Allowed"},
-            status_code=405,
-            headers={"Allow": ", ".join(sorted(self.methods))},
-        )
-        return await response(scope, receive, send)
-
     await self.app(scope, receive, send)
 ```
 
-The 405 response includes an `Allow` header listing the permitted methods, as required by RFC 7231.
+`handle` runs the route's ASGI chain and nothing else. It is reached only
+after `match` returned `FULL`, which already answered "is this method
+allowed" — so there is nothing left for it to decide. The 405 is built by the
+router (see [the dispatch pair](#the-__call__--app-dispatch-pair)), which is
+the only component that can see every route whose path matched.
 
 ### `get_route_handler`: the DI and auth pipeline
 
@@ -638,6 +645,7 @@ async def app(self, scope, receive, send):
     scope["app"] = self
     path_match = None
     path_match_params = {}
+    allowed: set[str] = set()
 
     for route in self.routes:
         match, matched_params = route.match(scope)
@@ -645,13 +653,20 @@ async def app(self, scope, receive, send):
             scope["route_params"] = RouteParam(matched_params)
             await route.handle(scope, receive, send)
             return
-        elif match == MatchStatus.PARTIAL and path_match is None:
-            path_match = route
-            path_match_params = matched_params
+        elif match == MatchStatus.PARTIAL:
+            allowed |= getattr(route, "methods", None) or set()
+            if path_match is None:
+                path_match = route
+                path_match_params = matched_params
 
     if path_match is not None:
         scope["route_params"] = RouteParam(path_match_params)
-        await path_match.handle(scope, receive, send)
+        response = JSONResponse(
+            {"detail": "Method Not Allowed"},
+            status_code=405,
+            headers={"Allow": ", ".join(sorted(allowed))},
+        )
+        await response(scope, receive, send)
         return
 
     if scope.get("type") == "http":
@@ -665,11 +680,33 @@ async def app(self, scope, receive, send):
 1. Build the middleware stack (outermost middleware first).
 2. Linear scan through `self.routes` in registration order.
 3. First `FULL` match → dispatch immediately (return).
-4. First `PARTIAL` match → record as fallback.
-5. If no `FULL` match found, use the `PARTIAL` fallback (triggers 405).
-6. If no match at all → `NotFoundException` (HTTP) or close frame 4404 (WebSocket).
+4. First `PARTIAL` match → record as the fallback, for its route params.
+5. **Every** `PARTIAL` match → union its methods into `allowed`.
+6. If no `FULL` match found, answer the fallback with a 405 built here.
+7. If no match at all → `NotFoundException` (HTTP) or close frame 4404 (WebSocket).
 
 > **Important**: Route registration order matters. More specific routes should be registered before catch-all routes.
+
+#### Why the 405 is built here
+
+`Allow` describes the **target resource**, not the route that happened to
+match first (RFC 9110 section 15.5.6). One path is routinely several `Route`
+objects — `@app.get("/items")` and `@app.post("/items")` build one each — so
+only the loop, which sees them all, can name the full set:
+
+```
+@app.get("/items") + @app.post("/items")
+
+DELETE /items -> 405 | Allow: GET, HEAD, POST
+```
+
+Delegating to `path_match.handle()` instead would report `Allow: GET, HEAD`,
+and *which* methods went missing would depend on the order the decorators
+were written in. Step 4 still keeps the first partial match, because the
+response carries that route's path params on `scope["route_params"]`.
+
+Route middleware does not run for a 405: the response is sent from the loop,
+before any route's ASGI chain is entered.
 
 ### `add_route`: the route registration gateway
 

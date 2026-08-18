@@ -32,6 +32,28 @@ graph TD
     K -->|No| M{Match status}
 ```
 
+### 1.0 Read the `Allow` Header First
+
+**Problem**: A 405 leaves you guessing which methods the path does accept.
+
+**Diagnosis**: The `Allow` header on the 405 names them, and it is collected
+across *every* route whose path matched — so a path split across several
+decorators reports all of its methods, not just the first route's:
+
+```bash
+curl -i -X DELETE localhost:8000/items | grep -i allow
+# Allow: GET, HEAD, POST
+```
+
+`HEAD` appearing next to `GET` is expected: `Route.__init__` adds it.
+
+If the header names the method you sent, the method is not the problem —
+the path is matching a *different* route than you think, and the rest of
+this chain applies. If the header is empty or absent, no route's path
+matched at all and you are looking at a 404 in disguise.
+
+**File**: `core/sillo/core/routing/router.py`, `Router.app`
+
 ### 1.1 Middleware Order
 
 **Problem**: Middleware is registered in the wrong order.
