@@ -65,7 +65,7 @@ dependencies = [
     "itsdangerous>=2.1.2",
     "python-multipart>=0.0.6",
     "pydantic>=2.0,<3.0",
-    "typing-extensions>=4.12.2; python_version<'3.10'",
+    "typing-extensions>=4.12.2; python_version<'3.13'",
 ]
 
 # CORE: Only includes what's required for any sillo app (HTTP routing, config, password hashing)
