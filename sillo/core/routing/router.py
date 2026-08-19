@@ -37,7 +37,6 @@ from sillo.core.http import Request, Response
 from sillo.core.http.response import BaseResponse, JSONResponse, Responder
 from sillo.events import EventEmitter
 from sillo.exceptions import HTTPException, NotFoundException
-from sillo.frontend import FrontendApp
 from sillo.objects import RouteParam, URLPath
 from sillo.openapi.models import Parameter
 from sillo.parameters import ParameterExtractor, SolvedParamDependency
@@ -3077,59 +3076,6 @@ class Router(BaseRouter):
         raise ValueError(
             f"Router '{current_part}' not found while building URL for '{full_name}'"
         )
-
-    def frontend(
-        self,
-        path: str = "/",
-        directory: str | Path = "dist",
-        fallback: str | bool | None = "auto",
-        name: str | None = None,
-        cache_control: str | None = None,
-    ) -> None:
-        """Mount a frontend SPA build directory with fallback routing.
-
-        Registers a :class:`FrontendApp` as a :class:`Group` at the given
-        path, so that static files from the build directory are served and
-        unknown paths fall back to a fallback HTML file (typically
-        ``index.html``). This enables single-page application hosting
-        alongside API routes within the same server instance.
-
-        Because this adds a route to the router's route list, any API routes
-        registered *before* calling ``frontend()`` are matched first. This
-        guarantees that API endpoints take precedence over the frontend
-        catch-all, preventing API paths from being shadowed by the SPA.
-
-        Args:
-            path: URL path prefix to mount the frontend at. Defaults to
-                ``"/"`` which catches all unmatched paths. Should start
-                with a forward slash.
-            directory: Path to the directory containing the built frontend
-                files. Can be an absolute or relative filesystem path.
-                Defaults to ``"dist"``.
-            fallback: Fallback behaviour for unmatched paths. ``"auto"``
-                (default) tries ``404.html`` then ``index.html``. Pass an
-                explicit filename string to use a specific fallback file,
-                or ``None``/``False`` to disable fallback entirely.
-            name: Optional name for the route group, used with ``url_for``
-                for reverse URL generation of the frontend mount point.
-            cache_control: Optional ``Cache-Control`` header value applied
-                to all static file responses served from this mount.
-
-        Returns:
-            None. A ``Group`` containing the ``FrontendApp`` is appended
-            to the router's internal route list.
-
-        Raises:
-            FileNotFoundError: If the specified directory does not exist
-                when the FrontendApp attempts to serve files.
-        """
-        frontend_app = FrontendApp(
-            directory=directory,
-            fallback=fallback,
-            cache_control=cache_control,
-        )
-        group = Group(path=path, app=frontend_app, name=name)
-        self.add_route(group)
 
     def __repr__(self) -> str:
         """Return a detailed string representation of this router.

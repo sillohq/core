@@ -1265,30 +1265,13 @@ Jinja2-based template engine.
 
 ---
 
-## Frontend & Static Files
-
-### FrontendApp
-
-**Module:** `sillo.frontend`
-
-SPA build directory serving with fallback routing.  Inherits `BaseRouter`.
-
-**Attributes:** `directory` (Path), `fallback` ("auto" | str | bool | None),
-`cache_control`.
-
-**Fallback behaviour:** `"auto"` tries `404.html` then `index.html`.
-
-**Related:** `StaticFiles`, `SilloApp.frontend()`
-
----
+## Static Files
 
 ### StaticFiles
 
 **Module:** `sillo.static`
 
 Static file serving middleware/router.
-
-**Related:** `FrontendApp`
 
 ---
 

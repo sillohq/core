@@ -131,7 +131,6 @@ from sillo.exceptions import HTTPException, NotFoundException, WebSocketExceptio
 from sillo.websockets import WebSocket, WebSocketDisconnect
 
 from .application import SilloApp
-from .frontend import FrontendApp
 from .validation import (
     Cookie,
     File,
@@ -149,7 +148,6 @@ __all__ = [
     "Depend",
     "File",
     "Form",
-    "FrontendApp",
     "Group",
     "HTTPException",
     "Header",
