@@ -348,14 +348,14 @@ class CSRFConfig:
 
 ### Token Generation
 
-The middleware uses `itsdangerous.URLSafeSerializer` to sign tokens:
+The middleware uses an internal `URLSafeSerializer` to sign tokens:
 
 ```python
 def _generate_csrf_token(self) -> str:
     return self.serializer.dumps(secrets.token_urlsafe(32))
 ```
 
-A random token is generated with `secrets.token_urlsafe(32)`, then signed with itsdangerous. The signed token is stored in a cookie and must be submitted back in the `X-CSRFToken` header.
+A random token is generated with `secrets.token_urlsafe(32)`, then signed with HMAC-SHA256. The signed token is stored in a cookie and must be submitted back in the `X-CSRFToken` header.
 
 ### Double-Submit Cookie Pattern
 

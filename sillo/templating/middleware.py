@@ -77,7 +77,10 @@ class TemplateContextMiddleware(BaseMiddleware):
             {
                 "request": request,
                 "url_for": request.base_app.url_for,
-                "csrf_token": request.state.csrf_token,
+                # Only present when CSRFMiddleware is installed. Reading it
+                # directly made every template render raise AttributeError in
+                # an application that had not turned CSRF on.
+                "csrf_token": getattr(request.state, "csrf_token", None),
             }
         )
 

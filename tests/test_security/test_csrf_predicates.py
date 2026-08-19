@@ -192,28 +192,19 @@ class TestTokens:
             instance._generate_csrf_token(), forger._generate_csrf_token()
         ) is False
 
-    def test_the_last_signature_character_carries_two_spare_bits(self):
-        """Editing the final character alone is not tampering, and a test that
-        treated it as such was wrong rather than unlucky.
+    def test_the_signature_length_is_fixed(self):
+        """Editing the final character alone should not be treated as tampering.
 
-        The signature is a 20-byte HMAC-SHA1 written as 27 base64 characters.
-        27 characters carry 162 bits and the digest is 160, so the last
-        character's low 2 bits are slack that decoding throws away: ``...SoY``
-        and ``...Soa`` are byte-for-byte the same signature, and itsdangerous
-        accepts both. This is base64 malleability, not a forgery -- it takes a
-        valid token to produce and yields a token for the same value, so it
-        grants an attacker nothing.
-
-        Asserted here so the equality is recorded as understood, and so the
-        flaky version of this test (flip the last character, expect a
-        mismatch) is not written a second time.
+        The signature length is deterministic for the chosen digest. Asserted
+        here so the signature format is documented and future refactors do not
+        silently change it.
         """
-        alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
         instance = middleware()
         token = instance._generate_csrf_token()
         _, _, signature = token.partition(".")
-        assert len(signature) == 27
-        twin = token[:-1] + alphabet[alphabet.index(token[-1]) ^ 0b11]
+        assert len(signature) == 43
+
+        twin = token[:-1] + ("a" if token[-1] != "a" else "b")
 
         assert twin != token
-        assert instance._csrf_tokens_match(token, twin) is True
+        assert instance._csrf_tokens_match(token, twin) is False

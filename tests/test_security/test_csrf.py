@@ -120,8 +120,8 @@ def test_csrf_custom_configuration(test_client_factory):
         cookie_name="custom_csrf",
         header_name="X-Custom-CSRF",
         cookie_path="/custom",
-        secure=True,
-        httponly=False,
+        cookie_secure=True,
+        cookie_httponly=False,
     )
     app = SilloApp()
     app.use(CSRFMiddleware(config=csrf_config))

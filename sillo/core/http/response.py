@@ -51,6 +51,37 @@ Send = typing.Callable[[Message], typing.Awaitable[None]]
 
 JSONType = Union[str, int, float, bool, None, dict[str, Any], list[Any]]
 
+#: The expiry :meth:`BaseResponse.delete_cookie` sends. A fixed instant in the
+#: past, so it does not depend on the client's clock agreeing with the
+#: server's.
+_EXPIRED = "Thu, 01 Jan 1970 00:00:00 GMT"
+
+#: Punctuation a cookie value may carry unescaped: ``http.cookies._LegalChars``
+#: — anything outside it makes ``SimpleCookie`` fall back to backslash-quoting
+#: the whole value — less ``%``, which is spent on being the escape character.
+#: Alphanumerics are always left alone by ``quote``. Base64url tokens are made
+#: of ``-``, ``_``, ``.`` and alphanumerics, so they pass through untouched.
+_COOKIE_SAFE = "!#$&'*+-.:^_`|~"
+
+
+def _encode_cookie_value(value: str) -> str:
+    """Percent-encode *value* so it survives a round trip through a browser.
+
+    Handed a value it considers illegal, ``SimpleCookie`` wraps it in double
+    quotes and escapes the awkward characters as backslash-octal. Nothing
+    undoes that:
+    :func:`~sillo.core.http.cookies.parse_cookies` percent-decodes, as browsers
+    and ``document.cookie`` do, so ``set_cookie("flash", "a=b/c%20d")`` came
+    back as ``'"a=b/c d"'`` — quotes still attached and the escape decoded
+    that nobody wrote.
+
+    Percent-encoding here instead makes writing and reading each other's
+    inverse, and matches what ``encodeURIComponent`` produces on the client.
+    Ordinary values — base64url tokens, identifiers, numbers — contain nothing
+    outside the safe set and pass through untouched.
+    """
+    return quote(value, safe=_COOKIE_SAFE)
+
 
 class MalformedRangeHeader(Exception):
     """Exception raised when a Range header cannot be parsed.
@@ -367,7 +398,7 @@ class BaseResponse:
                 or ``"none"`` (case-insensitive).
         """
         cookie: http.cookies.BaseCookie[str] = http.cookies.SimpleCookie()
-        cookie[key] = value
+        cookie[key] = _encode_cookie_value(value)
         if max_age is not None:
             cookie[key]["max-age"] = max_age
         if expires is not None:
@@ -389,6 +420,15 @@ class BaseResponse:
                 "lax",
                 "none",
             ], "samesite must be either 'strict', 'lax' or 'none'"
+            if samesite.lower() == "none" and not secure:
+                # Browsers reject SameSite=None without Secure and drop the
+                # cookie without telling anyone, so the setting that was meant
+                # to allow cross-site use instead switches the cookie off.
+                raise ValueError(
+                    f"Cookie {key!r} sets samesite='none' without secure=True. "
+                    f"Browsers reject that combination and drop the cookie "
+                    f"silently. Pass secure=True, or use samesite='lax'."
+                )
             cookie[key]["samesite"] = samesite
         cookie_val = cookie.output(header="").strip()
         self.set_header("set-cookie", cookie_val)
@@ -396,14 +436,20 @@ class BaseResponse:
         return cookie
 
     def delete_cookie(
-        self, key: str, path: str = "/", domain: str | None = None
+        self,
+        key: str,
+        path: str = "/",
+        domain: str | None = None,
+        secure: bool | None = False,
+        httponly: bool | None = False,
+        samesite: typing.Literal["lax", "strict", "none"] | None = "lax",
     ) -> Any:
         """Delete a cookie by setting its expiration to the past.
 
-        Sends a ``Set-Cookie`` header with an empty value and zero expiration,
-        instructing the client to remove the specified cookie.  The path and
-        domain must match those used when the cookie was originally set for
-        the deletion to take effect.
+        Sends a ``Set-Cookie`` header with an empty value and an expiry in the
+        past, instructing the client to remove the specified cookie.  The path
+        and domain must match those used when the cookie was originally set
+        for the deletion to take effect.
 
         Args:
             key: The name of the cookie to delete.
@@ -411,6 +457,13 @@ class BaseResponse:
                 match the original cookie's path.  Defaults to ``"/"``.
             domain: The domain where the cookie was originally set.  Must
                 match the original cookie's domain.  Defaults to ``None``.
+            secure: Whether to repeat the ``Secure`` attribute.  Needed to
+                delete a cookie whose name carries the ``__Secure-`` or
+                ``__Host-`` prefix, since browsers reject a ``Set-Cookie`` for
+                one of those names that is not marked ``Secure`` — so without
+                it the deletion is ignored and the user stays signed in.
+            httponly: Whether to repeat the ``HttpOnly`` attribute.
+            samesite: Whether to repeat the ``SameSite`` attribute.
 
         Returns:
             The underlying ``SimpleCookie`` object for advanced manipulation.
@@ -418,8 +471,21 @@ class BaseResponse:
         Raises:
             None: This method does not raise exceptions.
         """
+        # A fixed date in the past, not `expires=0`. `SimpleCookie` reads a
+        # numeric expires as an offset from now, so `0` rendered as the current
+        # time -- which is only in the past if the client's clock agrees with
+        # the server's, and a client running a few seconds behind kept the
+        # cookie.
         cookie = self.set_cookie(
-            key=key, value="", max_age=0, expires=0, path=path, domain=domain
+            key=key,
+            value="",
+            max_age=0,
+            expires=_EXPIRED,
+            path=path,
+            domain=domain,
+            secure=secure,
+            httponly=httponly,
+            samesite=samesite,
         )
 
         return cookie
@@ -1838,12 +1904,23 @@ class Responder:
         key: str,
         path: str = "/",
         domain: str | None = None,
+        secure: bool | None = False,
+        httponly: bool | None = False,
+        samesite: typing.Literal["lax", "strict", "none"] | None = "lax",
     ):
-        """Delete a response cookie."""
+        """Delete a response cookie.
+
+        The security attributes have to match the ones the cookie was set with
+        closely enough for the browser to accept the deletion — see
+        :meth:`BaseResponse.delete_cookie`.
+        """
         self._response.delete_cookie(
             key=key,
             path=path,
             domain=domain,
+            secure=secure,
+            httponly=httponly,
+            samesite=samesite,
         )
 
         return self

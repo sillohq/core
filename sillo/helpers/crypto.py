@@ -212,8 +212,13 @@ def unsign_value(
             match the secret used during signing.
         algorithm: The hash algorithm name used for HMAC. Must match the
             algorithm used during signing. Defaults to ``"sha256"``.
-        max_age: Optional maximum age in seconds for the signed value.
-            Reserved for future use; currently not enforced.
+        max_age: Not supported. ``sign_value`` puts no timestamp in the token,
+            so there is nothing here to measure an age against. Passing it
+            raises rather than being quietly ignored, which is what this did
+            before — a caller who set it believed they had bounded the
+            token's life and had not. Use
+            :class:`sillo.utils.signing.URLSafeTimedSerializer` when a signed
+            value needs to expire.
 
     Returns:
         The original plaintext string value that was signed.
@@ -221,7 +226,15 @@ def unsign_value(
     Raises:
         BadSignature: If the signature is invalid, the token format is
             malformed, or the secret does not match.
+        NotImplementedError: If *max_age* is given.
     """
+    if max_age is not None:
+        raise NotImplementedError(
+            "unsign_value() cannot enforce max_age: sign_value() writes no "
+            "timestamp into the token, so its age is unknowable. Use "
+            "sillo.utils.signing.URLSafeTimedSerializer for values that expire."
+        )
+
     secret_bytes: bytes
     if isinstance(secret, str):
         secret_bytes = secret.encode()
@@ -229,14 +242,23 @@ def unsign_value(
         secret_bytes = secret
 
     try:
-        payload_b64, _, signature = signed.rpartition(".")
-        value = base64.urlsafe_b64decode(payload_b64 + "==").decode()
+        payload_b64, separator, signature = signed.rpartition(".")
+        if not separator:
+            raise BadSignature("Invalid signed value")
+
+        # Restore exactly the padding that was stripped. Appending a fixed
+        # "==" happened to decode for the lengths tried, but it is not the
+        # inverse of `rstrip("=")` and leaves the format resting on how
+        # leniently `b64decode` treats over-padding.
+        value = base64.urlsafe_b64decode(
+            payload_b64 + "=" * (-len(payload_b64) % 4)
+        ).decode()
 
         expected = _hmac.new(secret_bytes, value.encode(), algorithm).hexdigest()
         if not _hmac.compare_digest(expected, signature):
             raise BadSignature("Invalid signature")
     except Exception:
-        raise BadSignature("Invalid signed value")
+        raise BadSignature("Invalid signed value") from None
 
     return value
 

@@ -200,3 +200,41 @@ class SessionConfig:
     def manager(self) -> Any | None:
         """A session backend instance, or ``None`` for the signed-cookie default."""
         return self._config.get("manager")
+
+
+def resolve_session_config(config: Any) -> "SessionConfig | None":
+    """Return the :class:`SessionConfig` reachable from *config*, if any.
+
+    A backend's ``config`` arrives in one of two shapes, and the difference
+    used to decide whether half the session settings did anything at all:
+
+    * a :class:`SessionConfig` itself, which is what
+      :class:`~sillo.session.middleware.SessionMiddleware` holds;
+    * an application config carrying one as ``.session``.
+
+    Everything read it only as ``config.session``, so a backend handed a
+    ``SessionConfig`` directly found no ``.session`` attribute, fell through to
+    a hardcoded default, and ``session_expiration_time``,
+    ``session_permanent`` and ``session_refresh_each_request`` silently did
+    nothing.
+
+    Args:
+        config: Either shape, or ``None``.
+
+    Returns:
+        The settings object, or ``None`` when *config* carries none.
+    """
+    if config is None:
+        return None
+
+    inner = getattr(config, "session", None)
+    if inner is not None:
+        return inner
+
+    # Not the wrapper shape, so it may be the settings themselves. Duck-typed
+    # rather than an isinstance check, so a project's own settings object
+    # works the same way.
+    if hasattr(config, "session_expiration_time"):
+        return config
+
+    return None

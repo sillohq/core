@@ -303,12 +303,28 @@ Three methods control when a session expires:
 
 - **`set_expiration_time(expiration: datetime)`** (line 200): Explicit
   override.
-- **`get_expiration_time()`** (line 209): Resolution order:
+- **`get_expiration_time()`**: Resolution order:
   1. Explicit override from `set_expiration_time`
-  2. If `session_permanent` is `False`: `now(utc) + session_expiration_time`
-  3. If `session_permanent` is `True`: `datetime.max` (effectively never)
-  4. Fallback: 7 days if config is unreachable
-- **`has_expired()`** (line 251): `now(utc) > get_expiration_time()`
+  2. If `session_permanent` is `True` (the default):
+     `now(utc) + session_expiration_time`
+  3. If `session_permanent` is `False`: `None` — the cookie goes out with no
+     `Expires` at all, so the browser drops it when it closes
+  4. Fallback: `session_expiration_time`'s default of 86400 if config is
+     unreachable
+- **`has_expired()`**: `now(utc) > get_expiration_time()`, and `False` for a
+  session with no expiry
+
+This used to be inverted — a permanent session got `datetime.max`, so the
+**default** configuration issued a cookie that never expired, and
+`session_expiration_time` applied only to the non-permanent case that did not
+need it.
+
+:::caution[The cookie's expiry is not what protects you]
+`Expires` is a request to the browser. Anyone replaying a captured cookie
+simply does not honour it. For the signed-cookie backend the real bound is
+`SignedSessionManager.max_age`, which is checked against a timestamp inside
+the signature and defaults to `session_expiration_time`.
+:::
 
 ### should_set_cookie
 
@@ -495,11 +511,11 @@ def __init__(self, config=None, secret_key: str | None = None):
     )
 ```
 
-Uses `itsdangerous.URLSafeTimedSerializer` which:
+Uses an internal `URLSafeTimedSerializer` which:
 - Serialises the payload to JSON, then base64url-encodes it.
 - Appends a timestamp.
 - Signs the whole thing with HMAC-SHA256 using the secret key and salt.
-- The salt prevents signature reuse across different itsdangerous contexts.
+- The salt prevents signature reuse across different signing contexts.
 
 ### Signing and Verification
 
@@ -813,7 +829,7 @@ app.use(SessionMiddleware(secret_key="your-secret-key"))
 config = SessionConfig(
     session_cookie_name="app_session",
     session_expiration_time=3600,       # 1 hour
-    session_permanent=False,            # expires with expiration_time
+    session_permanent=False,            # browser-session cookie, no Expires
     session_refresh_each_request=False, # don't refresh on each request
     session_cookie_secure=True,         # HTTPS only
     session_cookie_httponly=True,       # no JavaScript access

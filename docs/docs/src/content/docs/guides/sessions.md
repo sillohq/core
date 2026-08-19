@@ -112,11 +112,26 @@ because one of the two would otherwise have to win silently.
 | `session_cookie_secure`         | Send the cookie over HTTPS only                        | `True`                 |
 | `session_cookie_httponly`       | Keep the cookie out of reach of JavaScript             | `True`                 |
 | `session_cookie_samesite`       | SameSite attribute (`"lax"`, `"strict"`, or `"none"`)  | `"lax"`                |
-| `session_expiration_time`       | Session lifetime in seconds                            | `86400` (24 hours)     |
+| `session_expiration_time`       | Session lifetime in seconds, enforced in the signature  | `86400` (24 hours)     |
 | `session_permanent`             | Whether the cookie carries an expiry at all            | `True`                 |
 | `session_refresh_each_request`  | Re-send the cookie on every response, sliding expiry   | `True`                 |
 | `session_file_storage_path`     | Directory the file backend writes to                   | `None`                 |
 | `manager`                       | A session backend instance                             | `SignedSessionManager` |
+
+:::caution[The signed cookie is signed, not encrypted]
+With the default backend the session's contents travel in the cookie. Anyone
+holding it can base64-decode it and read every key — put identifiers in a
+session, not secrets.
+
+`session_expiration_time` is checked against a timestamp inside the signature,
+not just written to the cookie's `Expires`, so a captured cookie stops working
+once it lapses. Nothing else revokes one: there is no server-side record to
+delete, so signing out clears the browser's copy but cannot invalidate a copy
+someone else kept. Use a server-side backend where that matters.
+
+Browsers cap a cookie at about 4096 bytes and drop larger ones without saying
+so. Sillo warns when a session cookie crosses that line.
+:::
 
 :::caution
 **`session_cookie_secure` in local development.** It defaults to `True`, and a

@@ -3,17 +3,33 @@ import secrets
 import typing
 from typing import Any
 
-from itsdangerous import BadSignature, URLSafeSerializer
-
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
+from sillo.utils.signing import BadSignature, URLSafeSerializer
 
 from .config import CSRFConfig
+
+#: Body content types a token can be submitted in. ``multipart/form-data`` is
+#: here because file-upload forms cannot set a header, so leaving it out meant
+#: every upload form was a 403 with no way to pass.
+_FORM_CONTENT_TYPES = (
+    "application/x-www-form-urlencoded",
+    "multipart/form-data",
+)
 
 
 class CSRFMiddleware(BaseMiddleware):
     """
     Middleware to protect against Cross-Site Request Forgery (CSRF) attacks for sillo.
+
+    Uses the double-submit pattern: the same signed token is sent as a cookie
+    and echoed back in a header or form field. A cross-site attacker can make
+    the browser send the cookie but cannot read it, so cannot produce the copy.
+
+    That only works if the page can read the cookie, which is why
+    ``cookie_httponly`` defaults to ``False`` here — the token is not a
+    credential, and hiding it from the page hides it from the code that has to
+    send it back.
     """
 
     def __init__(
@@ -21,7 +37,15 @@ class CSRFMiddleware(BaseMiddleware):
         config: CSRFConfig | None = None,
         **kwargs: Any,
     ) -> None:
-        """Init"""
+        """Init
+
+        Raises:
+            TypeError: If *config* is not a :class:`CSRFConfig`.
+            ValueError: If CSRF is enabled with no ``secret_key``. Without one
+                there is nothing to sign with, and every request used to fail
+                with ``AttributeError: no attribute 'serializer'`` from inside
+                the request path rather than at startup.
+        """
         if config is not None:
             if not isinstance(config, CSRFConfig):
                 raise TypeError("config must be a CSRFConfig instance")
@@ -31,9 +55,18 @@ class CSRFMiddleware(BaseMiddleware):
 
         self.use_csrf = False
         self.secret = None
+        self.serializer: URLSafeSerializer | None = None
 
         if self.csrf_config:
             self._setup_csrf_config()
+
+            if self.use_csrf and not self.secret:
+                raise ValueError(
+                    "CSRFConfig(enabled=True) needs a secret_key: tokens are "
+                    "signed with it, and without one no token can be issued "
+                    "or checked."
+                )
+
             if self.secret:
                 self.serializer = URLSafeSerializer(self.secret, "csrftoken")
 
@@ -52,7 +85,11 @@ class CSRFMiddleware(BaseMiddleware):
         self.cookie_httponly = cfg.cookie_httponly  # ty:ignore[unresolved-attribute]
         self.cookie_samesite = cfg.cookie_samesite  # ty:ignore[unresolved-attribute]
         self.header_name = cfg.header_name  # ty:ignore[unresolved-attribute]
+        self.form_field = cfg.form_field  # ty:ignore[unresolved-attribute]
         self.secret = cfg.secret_key  # ty:ignore[unresolved-attribute]
+
+        if self.secret and self.serializer is None:
+            self.serializer = URLSafeSerializer(self.secret, "csrftoken")
 
     async def process_request(
         self,
@@ -64,37 +101,31 @@ class CSRFMiddleware(BaseMiddleware):
         if not self.csrf_config or not self.use_csrf:
             return await call_next()
 
-        if not self.use_csrf:
-            return await call_next()
-
-        csrf_token = self._generate_csrf_token()
-        request.state.csrf_token = csrf_token
         csrf_cookie = request.cookies.get(self.cookie_name)
+
+        # Keep the token the visitor already holds. Minting a new one on every
+        # request meant a second tab, a cached page or two requests in flight
+        # each invalidated the others' token, and the form that was rendered a
+        # moment ago answered 403.
+        request.state.csrf_token = (
+            csrf_cookie
+            if self._token_is_valid(csrf_cookie)
+            else self._generate_csrf_token()
+        )
+
         if request.method.upper() in self.safe_methods:
             return await call_next()
 
-        if self._url_is_required(request.url.path) or (
-            self._url_is_exempt(request.url.path)
-            and self._has_sensitive_cookies(request.cookies)
-        ):
-            submitted_csrf_token = request.headers.get(self.header_name)
-            if not submitted_csrf_token and request.headers.get(
-                "content-type", ""
-            ).startswith("application/x-www-form-urlencoded"):
-                form = await request.form
-                submitted_csrf_token = form.get("csrftoken")
+        if self._requires_validation(request):
+            submitted_csrf_token = await self._submitted_token(request)
+
             if not csrf_cookie:
-                return response.text(
-                    "CSRF token missing from cookies", status_code=403
-                ).delete_cookie(self.cookie_name, self.cookie_path, self.cookie_domain)
+                return response.text("CSRF token missing from cookies", status_code=403)
             if not submitted_csrf_token:
-                return response.text(
-                    "CSRF token missing from headers", status_code=403
-                ).delete_cookie(self.cookie_name, self.cookie_path, self.cookie_domain)
-            if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):  # ty:ignore[invalid-argument-type]
-                return response.text(
-                    "CSRF token incorrect", status_code=403
-                ).delete_cookie(self.cookie_name, self.cookie_path, self.cookie_domain)
+                return response.text("CSRF token missing from headers", status_code=403)
+            if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):
+                return response.text("CSRF token incorrect", status_code=403)
+
         return await call_next()
 
     async def process_response(self, request: Request, response: Response):
@@ -103,7 +134,10 @@ class CSRFMiddleware(BaseMiddleware):
         """
         if not self.use_csrf:
             return
-        csrf_token = request.state.csrf_token
+
+        csrf_token = getattr(request.state, "csrf_token", None)
+        if not csrf_token:
+            return
 
         response.set_cookie(
             key=self.cookie_name,
@@ -114,6 +148,49 @@ class CSRFMiddleware(BaseMiddleware):
             httponly=self.cookie_httponly,
             samesite=self.cookie_samesite,
         )
+
+    def _requires_validation(self, request: Request) -> bool:
+        """Whether this unsafe request has to carry a token.
+
+        An exempt URL is exempt. That reads as obvious and was not what the
+        code did: the test was ``required(url) or (exempt(url) and ...)``, and
+        since ``required_urls`` defaults to ``["*"]`` the first half was always
+        true, so ``exempt_urls`` never excused anything and the second half was
+        unreachable.
+
+        ``sensitive_cookies`` narrows it further, for APIs authenticated by a
+        header rather than by a cookie: name the cookies that carry ambient
+        authority and a request without any of them cannot be a CSRF, so it
+        does not need a token. Naming none keeps the safe default of treating
+        every request as sensitive.
+        """
+        if self._url_is_exempt(request.url.path):
+            return False
+
+        if not self._url_is_required(request.url.path):
+            return False
+
+        return self._has_sensitive_cookies(request.cookies)
+
+    async def _submitted_token(self, request: Request) -> str | None:
+        """Return the token the client echoed back, from header or form body."""
+        submitted = request.headers.get(self.header_name)
+        if submitted:
+            return submitted
+
+        content_type = request.headers.get("content-type", "")
+        if not content_type.startswith(_FORM_CONTENT_TYPES):
+            return None
+
+        try:
+            form = await request.form
+        except Exception:
+            # An unparseable body carries no token; that is a 403 below, not a
+            # 500 out of the middleware.
+            return None
+
+        value = form.get(self.form_field)
+        return value if isinstance(value, str) else None
 
     def _has_sensitive_cookies(self, cookies: dict[str, typing.Any]) -> bool:
         """Check if the request contains sensitive cookies."""
@@ -152,11 +229,25 @@ class CSRFMiddleware(BaseMiddleware):
         """Generate a secure CSRF token."""
         return self.serializer.dumps(secrets.token_urlsafe(32))  # ty: ignore[unresolved-attribute]
 
+    def _token_is_valid(self, token: str | None) -> bool:
+        """Whether *token* is one this application signed."""
+        if not token or self.serializer is None:
+            return False
+        try:
+            self.serializer.loads(token)
+        except BadSignature:
+            return False
+        return True
+
     def _csrf_tokens_match(self, token1: str, token2: str) -> bool:
         """Compare two CSRF tokens securely."""
         try:
             decoded1 = self.serializer.loads(token1)  # ty: ignore[unresolved-attribute]
             decoded2 = self.serializer.loads(token2)  # ty: ignore[unresolved-attribute]
-            return secrets.compare_digest(decoded1, decoded2)
         except BadSignature:
             return False
+
+        if not isinstance(decoded1, str) or not isinstance(decoded2, str):
+            return False
+
+        return secrets.compare_digest(decoded1, decoded2)

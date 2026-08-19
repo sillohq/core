@@ -68,9 +68,12 @@ sillo provides flexible configuration to customize CSRF protection for your appl
   - **Recommended**: `True` in production environments
   - Example: `CSRFConfig(enabled=True)`
 
-- **`secret_key`** (string, required)
+- **`secret_key`** (string, required when `enabled=True`)
   - Cryptographic key used to sign CSRF tokens
-  - **Security Note**: Keep this secret and consistent across application restarts
+  - **Security Note**: Keep this secret and consistent across application restarts.
+    Changing it invalidates every token in flight, so the next request from each
+    open page is a 403 until it reloads.
+  - Enabling CSRF without one raises `ValueError` at startup
   - Example: `CSRFConfig(secret_key="your-secure-key-123")`
 
 ###  URL Configuration
@@ -83,7 +86,16 @@ sillo provides flexible configuration to customize CSRF protection for your appl
 - **`exempt_urls`** (list of strings, default: `[]`)
   - URL patterns excluded from CSRF protection
   - Takes precedence over `required_urls`
-  - Example: `["/api/public/*", "/webhooks/stripe"]`
+  - Patterns are regular expressions and must match the **whole** path, so
+    `/webhooks` does not exempt `/webhooks/stripe` — write `/webhooks/.*`
+  - Example: `["/api/public/.*", "/webhooks/stripe"]`
+
+- **`sensitive_cookies`** (list of strings, default: `[]`)
+  - Cookies that carry ambient authority, typically your session cookie
+  - When set, only requests presenting one of them are checked — which is what
+    lets an API authenticated by an `Authorization` header skip the token
+  - Naming none keeps the safe default of treating every request as sensitive
+  - Example: `CSRFConfig(sensitive_cookies=["session_id"])`
 
 ###  HTTP Methods
 
@@ -104,9 +116,14 @@ sillo provides flexible configuration to customize CSRF protection for your appl
   - **Security Best Practice**: Set to `True` in production
   - Example: `CSRFConfig(cookie_secure=True)`
 
-- **`cookie_httponly`** (boolean, default: `True`)
+- **`cookie_httponly`** (boolean, default: `False`)
   - Prevents JavaScript from accessing the cookie
-  - **Security Best Practice**: Keep this as `True`
+  - **Leave this off.** The double-submit pattern requires the page to read
+    this cookie and echo it back in `header_name`, which `HttpOnly` makes
+    impossible — an `HttpOnly` CSRF cookie cannot be used by any JavaScript
+    client. The token is not a credential: it is only useful to someone who
+    can already read the page. Turn it on only if every form is server-rendered
+    with `{{ csrf_token }}` and nothing submits over AJAX.
   - Example: `CSRFConfig(cookie_httponly=True)`
 
 - **`cookie_samesite`** (string, default: `"lax"`)
@@ -121,9 +138,12 @@ sillo provides flexible configuration to customize CSRF protection for your appl
   - HTTP header name for sending CSRF tokens in AJAX requests
   - Example: `CSRFConfig(header_name="X-CSRF-TOKEN")`
 
-- **`form_field`** (string, default: `"csrf_token"`)
+- **`form_field`** (string, default: `"csrftoken"`)
   - Form field name for CSRF tokens in HTML forms
   - Must match your form field names
+  - Read for both `application/x-www-form-urlencoded` and
+    `multipart/form-data` bodies, so file-upload forms — which cannot set a
+    header — can submit a token too
   - Example: `CSRFConfig(form_field="_csrf_token")`
 
 - **`cookie_path`** (string, default: `"/"`)

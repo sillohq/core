@@ -2,6 +2,8 @@ from collections.abc import Iterator
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from .config import resolve_session_config
+
 
 class Session:
     """The per-request session, reached as ``request.session``.
@@ -215,47 +217,44 @@ class Session:
         """
         self._expiration_time = expiration
 
-    def get_expiration_time(self) -> datetime:
-        """Return when this session expires.
+    def get_expiration_time(self) -> datetime | None:
+        """Return when this session's cookie expires.
 
         Uses an explicit :meth:`set_expiration_time` if one was given.
-        Otherwise it comes from the configuration: a non-permanent session
-        expires ``session_expiration_time`` seconds from now, and a permanent
-        one does not expire. Without a reachable configuration it falls back
-        to seven days.
+        Otherwise it comes from the configuration:
+
+        * a permanent session — the default — expires
+          ``session_expiration_time`` seconds from now;
+        * a non-permanent one returns ``None``, so the cookie goes out with no
+          ``Expires`` at all and the browser drops it when it closes, which is
+          what "not permanent" says.
+
+        This used to be the other way round: a permanent session got
+        ``datetime.max``, so the default configuration issued a cookie that
+        never expired, and ``session_expiration_time`` only applied to the
+        non-permanent case that did not need it.
 
         Returns:
-            The expiry. A session that does not expire gets ``datetime.max``,
-            made timezone-aware: every other branch here returns an aware
-            datetime, and :meth:`has_expired` compares the result against an
-            aware ``now``. A naive ``datetime.max`` made that comparison raise
-            ``TypeError: can't compare offset-naive and offset-aware
-            datetimes``, so asking a permanent session whether it had expired
-            crashed instead of answering.
+            An aware ``datetime``, or ``None`` for a browser-session cookie.
+            Aware because :meth:`has_expired` compares against an aware
+            ``now``, and a naive value made that raise ``TypeError`` instead
+            of answering.
         """
         if self._expiration_time:
             return self._expiration_time
 
-        config = getattr(self.interface, "config", None)
+        settings = resolve_session_config(getattr(self.interface, "config", None))
 
-        if not config:
-            self._expiration_time = datetime.now(timezone.utc) + timedelta(days=7)
-            return self._expiration_time
+        permanent = getattr(settings, "session_permanent", True) if settings else True
+        seconds = (
+            getattr(settings, "session_expiration_time", None) if settings else None
+        ) or 86400
 
-        session_config = getattr(config, "session", None)
+        if not permanent:
+            return None
 
-        if not session_config:
-            self._expiration_time = datetime.now(timezone.utc) + timedelta(days=7)
-            return self._expiration_time
-
-        if not session_config.session_permanent:
-            seconds = session_config.session_expiration_time or 86400
-            self._expiration_time = datetime.now(timezone.utc) + timedelta(
-                seconds=seconds
-            )
-            return self._expiration_time
-
-        return datetime.max.replace(tzinfo=timezone.utc)
+        self._expiration_time = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+        return self._expiration_time
 
     def has_expired(self) -> bool:
         """Report whether this session's expiry has passed.
@@ -274,16 +273,13 @@ class Session:
         the session is permanent and ``session_refresh_each_request`` is set,
         which is what slides the expiry forward for an active visitor.
         """
-        config = getattr(self.interface, "config", None)
+        settings = resolve_session_config(getattr(self.interface, "config", None))
 
-        if not config or not getattr(config, "session", None):
+        if settings is None:
             return self.modified
 
-        session_config = config.session
-
         return self.modified or (
-            session_config.session_permanent
-            and session_config.session_refresh_each_request
+            settings.session_permanent and settings.session_refresh_each_request
         )
 
     async def load(self) -> None:
