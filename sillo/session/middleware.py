@@ -89,9 +89,7 @@ class SessionMiddleware(BaseMiddleware):
         self.session_interface = (
             chosen
             if chosen is not None
-            else SignedSessionManager(
-                config=self.session_config, secret_key=secret_key
-            )
+            else SignedSessionManager(config=self.session_config, secret_key=secret_key)
         )
 
         if getattr(self.session_interface, "config", None) is None:

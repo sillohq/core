@@ -53,8 +53,10 @@ class URLSafeSerializer:
 
     def _signature_for(self, payload_b64: bytes) -> str:
         """Return the base64url signature over *payload_b64*, unpadded."""
-        return base64.urlsafe_b64encode(self._sign(payload_b64)).rstrip(b"=").decode(
-            "ascii"
+        return (
+            base64.urlsafe_b64encode(self._sign(payload_b64))
+            .rstrip(b"=")
+            .decode("ascii")
         )
 
     def _verify(self, payload_b64: bytes, signature_b64: str) -> bool:
