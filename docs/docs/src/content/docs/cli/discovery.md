@@ -79,8 +79,8 @@ If that lists routes you do not recognise, one of the conventional paths
 matched something you did not intend, a stray `main.py` at the repository root,
 most often. Set `[tool.sillo] app` and the guessing stops.
 
-To bypass discovery entirely for one command, `serve` and `routes` both take
-the import string as their first argument:
+To bypass discovery entirely for one command, `routes` takes the import string
+as its first argument:
 
 ```bash
 sillo routes app.worker:app

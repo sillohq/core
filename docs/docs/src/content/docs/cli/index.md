@@ -24,8 +24,8 @@ sillo --help
 
 `sillo` is really two command sets stitched together at startup.
 
-The first half is the framework's own, and needs no project: `version`,
-`serve` and `routes`. Run `sillo` anywhere and those three are what you get.
+The first half is the framework's own, and needs no project: `version`
+and `routes`. Run `sillo` anywhere and those two are what you get.
 
 The second half is everything your application implies. When `sillo` can find
 and import your `SilloApp`, it reads what that application set up and registers
@@ -60,7 +60,6 @@ $ sillo --help
 
   COMMANDS
     routes         List the application's routes
-    serve          Run the application with uvicorn
     version        Show the installed version and available features
 
   DB
@@ -113,7 +112,7 @@ carry a copy of a starter it would then have to keep in step with.
 
 - [Finding your application](/cli/discovery/): the three places `sillo` looks,
   and what to do when it looks in the wrong one.
-- [Framework commands](/cli/framework-commands/): `version`, `serve`, `routes`.
+- [Framework commands](/cli/framework-commands/): `version` and `routes`.
 - [Database commands](/cli/database/): the migration workflow end to end.
 - [User commands](/cli/users/): creating and managing accounts.
 - [Queue](/cli/queues/) and [scheduler](/cli/scheduler/) commands.

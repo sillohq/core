@@ -130,8 +130,8 @@ def handle(self):         # runs with no loop in this thread
 ```
 
 Use `async def` unless your command hands the loop to something else. The
-framework's own `serve` is the exception. Uvicorn owns the loop, and starting
-it from inside one would nest two.
+console notices the difference and does not create a loop for synchronous
+commands.
 
 ## The `context` hook
 
