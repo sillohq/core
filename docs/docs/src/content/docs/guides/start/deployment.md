@@ -21,14 +21,14 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 Under a process manager, behind a reverse proxy. Everything else on this page
 is what to change before that is a good idea.
 
-:::caution[Not `sillo serve`]
-`sillo serve` is the **development** server. It is a single process by default,
+:::caution[Not `uvicorn app:app`]
+`uvicorn app:app` is the **development** server. It is a single process by default,
 its `--reload` restarts on any file change, and its access log is formatted for
 a person watching a terminal rather than for a log collector. It also supervises
 nothing: a worker that dies stays dead.
 
 Run `uvicorn` directly, as above, with systemd or your orchestrator restarting
-it. That is the same server `sillo serve` uses underneath — what changes is the
+it. That is the same server `uvicorn app:app` uses underneath — what changes is the
 configuration and who is watching it.
 :::
 
@@ -324,7 +324,7 @@ The starter's own CI runs weekly for the same reason.
 4. **Forgetting `X-Forwarded-Proto`** makes the application think it is
    on HTTP.
 
-5. **`sillo serve --reload` is not a production server.** It is one process with
+5. **`uvicorn app:app --reload` is not a production server.** It is one process with
    reload watching your files.
 
 6. **One scheduler per replica** means your nightly job runs four times.

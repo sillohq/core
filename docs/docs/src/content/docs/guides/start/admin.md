@@ -18,7 +18,7 @@ At `/admin/`. Note the trailing slash, the routes need it.
 
 ```bash
 sillo user:admin ada@example.com ada
-sillo serve --reload
+uvicorn app:app --reload
 ```
 
 Then sign in at <http://localhost:8000/admin/> with that email and

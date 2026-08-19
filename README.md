@@ -84,42 +84,22 @@ async def home(request, response):
     return response.json({"message": "Hello from Sillo"})
 ```
 
-Run it with Sillo's own server:
+Run it with uvicorn:
 
 ```bash
-uv run sillo serve --reload
+uv run uvicorn app:app --reload
 ```
 
-```
-  ● sillo 0.2.0
-
-    app       main:app
-    url       http://127.0.0.1:8000
-    routes    4
-    inspect   http://127.0.0.1:8000/__sillo/requests
-    mode      serving
-    pid       5716
-
-    ready in 7ms  ·  press ctrl-c to stop
-
-  22:48:04  GET     200  /                                      409us
-```
-
-No import string is needed. `sillo serve` looks for `app.main:app`, `main:app`
+No import string is needed. `uvicorn` looks for `app.main:app`, `main:app`
 and `app:app`, and you can pin it with the `SILLO_APP` environment variable or
 a `[tool.sillo] app` entry in `pyproject.toml`. Pass one explicitly when you
 want something else:
 
 ```bash
-uv run sillo serve api.main:app --port 9000 --workers 4
+uv run uvicorn api.main:app --port 9000 --workers 4
 ```
 
-Each request is logged with the time it took, and the address in the `inspect`
-line is a clickable request log you can open while developing. Add
-`--no-inspect` to leave it out, or `--plain` to see the underlying server's own
-output instead.
-
-`sillo serve` is built for development. For production, run the application
+`uvicorn` is built for development. For production, run the application
 under a process supervisor with a reverse proxy in front of it.
 
 ## Request Validation

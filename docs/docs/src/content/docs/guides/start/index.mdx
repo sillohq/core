@@ -89,7 +89,7 @@ Then install dependencies and set the database up:
     ```bash
     uv sync
     uv run sillo db:migrate
-    uv run sillo serve --reload
+    uv run uvicorn app:app --reload
     ```
 
   </TabItem>
@@ -101,7 +101,7 @@ Then install dependencies and set the database up:
     pip install -e ".[dev]"
 
     sillo db:migrate
-    sillo serve --reload
+    uvicorn app:app --reload
     ```
 
   </TabItem>
@@ -334,7 +334,7 @@ So everything a project needs after it exists comes from the framework's
 sillo db:migrate
 sillo user:admin ada@example.com ada
 sillo queue:work
-sillo serve --reload
+uvicorn app:app --reload
 ```
 
 `sillo` finds the application and derives those from what it set up. The
@@ -381,7 +381,7 @@ which you can fix by hand.
 ```bash
 sillo db:migrate                          # create the database
 sillo user:admin you@example.com you      # an account that can reach /admin/
-sillo serve --reload                      # http://localhost:8000
+uvicorn app:app --reload                      # http://localhost:8000
 ```
 
 `sillo` on its own lists every command this project has.

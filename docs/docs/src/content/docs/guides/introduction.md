@@ -306,7 +306,7 @@ async def index(request, response):
 ```
 
 ```bash
-sillo serve main:app --reload
+uvicorn main:app --reload
 ```
 
 That is a complete ASGI application. Everything else in these guides

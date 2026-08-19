@@ -109,7 +109,7 @@ itself. A feature flag it reads before doing any work.
 The scheduler is a process, like the worker. A typical deployment runs three:
 
 ```bash
-sillo serve --host 0.0.0.0 --port 8000   # or uvicorn/granian directly
+uvicorn app:app --host 0.0.0.0 --port 8000   # or uvicorn/granian directly
 sillo queue:work -q default
 sillo schedule:run
 ```

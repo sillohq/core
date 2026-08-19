@@ -190,9 +190,9 @@ Option("port", type=int, choices=[80, 443])
 ```
 
 ```
-$ sillo serve --port 22
+$ uvicorn app:app --port 22
 ✗ port: '22' is not one of 80, 443
-  Usage: sillo serve [options]
+  Usage: uvicorn app:app [options]
 ```
 
 ##  Output

@@ -24,7 +24,7 @@ filenames from it. `npm run build` must have run.
 
 ```bash
 npm run build                     # writes static/build
-VITE_DEV=false sillo serve
+VITE_DEV=false uvicorn app:app
 ```
 
 That is the whole difference. `{{ inertia_head }}` in `root.html` expands to
@@ -66,7 +66,7 @@ The directory served must be the `assets` folder **inside** the build output,
 not the output itself. Mount one level up and every script 404s against a
 manifest that is perfectly correct.
 
-The mount is skipped when nothing is built, so `pytest` and `sillo serve --reload` do
+The mount is skipped when nothing is built, so `pytest` and `uvicorn app:app --reload` do
 not require `npm run build` first.
 
 In production, put nginx or Caddy in front and let it serve
@@ -109,7 +109,7 @@ A release looks like:
 uv sync --no-dev
 npm ci && npm run build
 uv run sillo db:migrate
-VITE_DEV=false ASSET_VERSION=$(git rev-parse --short HEAD) sillo serve
+VITE_DEV=false ASSET_VERSION=$(git rev-parse --short HEAD) uvicorn app:app
 ```
 
 ##  Things that will bite you

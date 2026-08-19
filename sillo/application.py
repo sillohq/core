@@ -3032,8 +3032,7 @@ class SilloApp:
         """
         Run the application using uvicorn.
 
-        Note: For production, consider using the sillo CLI or ASGI servers directly:
-        - sillo run --host 0.0.0.0 --port 8000
+        Note: For production, consider using an ASGI server directly:
         - uvicorn app:app --host 0.0.0.0 --port 8000
         - granian app:app --host 0.0.0.0 --port 8000
 
@@ -3045,7 +3044,6 @@ class SilloApp:
         """
         warnings.warn(
             "app.run() is inefficient and only for testing. For development and production, use:\n"
-            "- sillo run --host 0.0.0.0 --port 8000\n"
             "- uvicorn app:app --host 0.0.0.0 --port 8000\n"
             "- granian app:app --host 0.0.0.0 --port 8000",
             UserWarning,
@@ -3055,7 +3053,7 @@ class SilloApp:
         if uvicorn is None:
             raise RuntimeError(
                 "uvicorn not found. Install it with: pip install uvicorn\n"
-                "Or use the sillo CLI: sillo run"
+                "Or use uvicorn directly: uvicorn app:app --host 0.0.0.0 --port 8000"
             )
         logger.info(f"Starting server with uvicorn: {host}:{port}")
         uvicorn.run(self, host=host, port=port, reload=reload)

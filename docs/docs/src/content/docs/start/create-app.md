@@ -130,7 +130,7 @@ Next steps
   cd myapp
   uv sync
   uv run sillo db:migrate
-  uv run sillo serve --reload
+  uv run uvicorn app:app --reload
 
   The starter's README covers configuration, migrations and deployment.
 ```

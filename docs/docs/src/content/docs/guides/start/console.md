@@ -284,8 +284,8 @@ no scheduler bound rather than reporting an empty one.
 ###  `serve` and `routes`
 
 ```bash
-uv run sillo serve --reload          # development
-uv run sillo serve -p 9000
+uv run uvicorn app:app --reload          # development
+uv run uvicorn app:app -p 9000
 uv run sillo routes                  # every route, method and handler
 uv run sillo routes -m post          # only POST
 ```

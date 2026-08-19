@@ -38,7 +38,7 @@ before your application module is imported — so a module that reads
 
 The file is found by searching upward from the working directory, stopping at
 the project root (the first directory holding `pyproject.toml`, `uv.lock`,
-`setup.py`, `setup.cfg` or `.git`). Running `sillo serve` from
+`setup.py`, `setup.cfg` or `.git`). Running `uvicorn app:app` from
 `myproject/app/handlers` finds `myproject/.env`; a stray `.env` in your home
 directory is never picked up.
 
@@ -121,7 +121,7 @@ Point `SILLO_ENV_FILE` at another path, and everything that loads
 automatically loads that instead:
 
 ```bash
-SILLO_ENV_FILE=.env.production sillo serve
+SILLO_ENV_FILE=.env.production uvicorn app:app
 ```
 
 Set it to the empty string to turn automatic loading off — useful in tests,

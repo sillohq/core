@@ -234,7 +234,7 @@ project/
 The usual way is from the outside, so the code does not have to know:
 
 ```bash
-SILLO_ENV_FILE=.env.production sillo serve
+SILLO_ENV_FILE=.env.production uvicorn app:app
 ```
 
 Or decide in code:

@@ -232,95 +232,6 @@ class Version(Command):
         return present, absent
 
 
-class Serve(Command):
-    """Run the application on the Sillo server."""
-
-    name = "serve"
-    help = "Run the application on the Sillo server"
-
-    arguments: ClassVar[list] = [
-        Argument("app", default=None, help="Import string. Defaults to the app found"),
-        Option("host", default="127.0.0.1", help="Interface to bind"),
-        Option("port", type=int, default=8000, short="p", help="Port to bind"),
-        Option("workers", type=int, default=1, short="w", help="Worker processes"),
-        Option(
-            "log-level",
-            default="info",
-            help="debug, info, warning or error",
-        ),
-        Flag("reload", short="r", help="Restart when the source changes"),
-        Flag("no-access-log", help="Do not log a line per request"),
-        Flag(
-            "no-inspect",
-            help="Do not mount the clickable request inspector",
-        ),
-        Flag(
-            "plain",
-            help="Use uvicorn's own output instead of Sillo's",
-        ),
-    ]
-
-    def handle(self) -> int | None:
-        """Run the server.
-
-        Synchronous: the server owns the event loop, and starting it from
-        inside one would nest two.
-
-        Returns:
-            An exit code, or None when the server stopped cleanly.
-        """
-        _ensure_cwd_importable()
-        # `DEFAULT_APPS` is a list of candidates to try, and this used to take
-        # `DEFAULT_APPS[0]` and nothing else. So "Defaults to the app found"
-        # meant "assumes app.main:app", and the most ordinary layout of all,
-        # a `main.py` in the working directory, failed with a bare
-        # `ModuleNotFoundError: No module named 'app'` raised from inside
-        # importlib rather than anything naming the real problem.
-        target = self.argument("app") or discover_application_string()
-        if target is None:
-            self.fail(
-                "No application found. Looked for "
-                + ", ".join(DEFAULT_APPS)
-                + ". Name one as an argument (sillo serve main:app), set "
-                f"{APP_VARIABLE}, or add [tool.sillo] app to pyproject.toml."
-            )
-
-        if self.flag("plain"):
-            # An escape hatch, for anyone diagnosing a problem who needs to see
-            # what uvicorn itself is saying rather than Sillo's rendering of it.
-            try:
-                import uvicorn
-            except ImportError:
-                self.fail("uvicorn is not installed. uv add uvicorn")
-
-            uvicorn.run(
-                target,
-                host=self.option("host"),
-                port=self.option("port"),
-                workers=self.option("workers"),
-                log_level=self.option("log-level"),
-                reload=self.flag("reload"),
-            )
-            return None
-
-        from sillo.server import run
-
-        try:
-            run(
-                target,
-                host=self.option("host"),
-                port=self.option("port"),
-                workers=self.option("workers"),
-                log_level=self.option("log-level"),
-                reload=self.flag("reload"),
-                access_log=not self.flag("no-access-log"),
-                inspect=not self.flag("no-inspect"),
-            )
-        except RuntimeError as error:
-            self.fail(str(error))
-        return None
-
-
 class Routes(Command):
     """List the routes the application registers."""
 
@@ -438,7 +349,7 @@ class Routes(Command):
 
 
 #: The commands that need no project.
-COMMANDS = [Version, Serve, Routes]
+COMMANDS = [Version, Routes]
 
 
 # -- assembling ---------------------------------------------------------

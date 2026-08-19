@@ -23,7 +23,7 @@ seamlessly.
 ##  How It Works
 
 1. You build your frontend (e.g. `npm run build`), which produces a directory of static files (typically `dist/`).
-2. sillo serves those files directly when the path matches an existing file.
+2. uvicorn app:apps those files directly when the path matches an existing file.
 3. For any other path (like `/dashboard` or `/settings`), sillo falls back to your `index.html` (or a custom fallback), letting your JavaScript router handle the routing.
 
 ##  Quick Start

@@ -72,14 +72,14 @@ This page covers what is different.
 This is the part that catches everyone once.
 
 ```bash
-sillo serve --reload     # the application, on :8000
+uvicorn app:app --reload     # the application, on :8000
 npm run dev              # the Vite dev server, on :5173 — second terminal
 ```
 
 Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 Both are required. The page is served by Sillo, but it loads its JavaScript
-from Vite, so with only `sillo serve` running you get a blank page and a
+from Vite, so with only `uvicorn app:app` running you get a blank page and a
 console full of failed module requests. With only `npm run dev` you get nothing
 at all. Vite serves modules, not your application.
 
@@ -99,7 +99,7 @@ Everything the project does is either the `sillo` command or an npm script.
 
 | | |
 | --- | --- |
-| `sillo serve --reload` | The application, with reload. Needs `npm run dev` alongside |
+| `uvicorn app:app --reload` | The application, with reload. Needs `npm run dev` alongside |
 | `npm run dev` | The Vite dev server |
 | `sillo db:migrate` | Apply every pending migration |
 | `sillo db:make add_posts --apply` | Write a migration and apply it |
@@ -110,7 +110,7 @@ Everything the project does is either the `sillo` command or an npm script.
 | `sillo queue:work` | Run the queue worker |
 | `npm run build` | Compile the front end into `static/build` |
 | `npm run typecheck` | Type-check the front end |
-| `sillo serve` | Run as production would. Needs `npm run build` and `VITE_DEV=false` |
+| `uvicorn app:app` | Run as production would. Needs `npm run build` and `VITE_DEV=false` |
 | `pytest` | The Python suite |
 | `ruff check .` / `ruff format .` | Lint, checking or fixing |
 
