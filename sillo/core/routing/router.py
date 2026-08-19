@@ -6,7 +6,6 @@ import inspect
 import re
 import warnings
 from collections.abc import Callable, Sequence
-from pathlib import Path
 from re import Pattern
 from typing import (
     TYPE_CHECKING,
@@ -37,6 +36,7 @@ from sillo.core.http import Request, Response
 from sillo.core.http.response import BaseResponse, JSONResponse, Responder
 from sillo.events import EventEmitter
 from sillo.exceptions import HTTPException, NotFoundException
+from sillo.helpers.concurrency import run_in_threadpool
 from sillo.objects import RouteParam, URLPath
 from sillo.openapi.models import Parameter
 from sillo.parameters import ParameterExtractor, SolvedParamDependency
@@ -50,7 +50,6 @@ from sillo.types import (
     Scope,
     Send,
 )
-from sillo.helpers.concurrency import run_in_threadpool
 from sillo.validation import (
     RequestValidationError,
     ResponseModelValidator,

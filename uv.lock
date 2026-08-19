@@ -641,15 +641,6 @@ wheels = [
 ]
 
 [[package]]
-name = "itsdangerous"
-version = "2.2.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/9c/cb/8ac0172223afbccb63986cc25049b154ecfb5e85932587206f42317be31d/itsdangerous-2.2.0.tar.gz", hash = "sha256:e0050c0b7da1eea53ffaf149c0cfbb5c6e2e2b69c4bef22c81fa6eb73e5f6173", size = 54410, upload-time = "2024-04-16T21:28:15.614Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl", hash = "sha256:c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef", size = 16234, upload-time = "2024-04-16T21:28:14.499Z" },
-]
-
-[[package]]
 name = "jinja2"
 version = "3.1.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1066,15 +1057,6 @@ wheels = [
 ]
 
 [[package]]
-name = "python-dotenv"
-version = "1.2.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/82/ed/0301aeeac3e5353ef3d94b6ec08bbcabd04a72018415dcb29e588514bba8/python_dotenv-1.2.2.tar.gz", hash = "sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3", size = 50135, upload-time = "2026-03-01T16:00:26.196Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/d7/1959b9648791274998a9c3526f6d0ec8fd2233e4d4acce81bbae76b44b2a/python_dotenv-1.2.2-py3-none-any.whl", hash = "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a", size = 22101, upload-time = "2026-03-01T16:00:25.09Z" },
-]
-
-[[package]]
 name = "python-multipart"
 version = "0.0.20"
 source = { registry = "https://pypi.org/simple" }
@@ -1165,16 +1147,13 @@ wheels = [
 
 [[package]]
 name = "sillo-framework"
-version = "0.1.0b1"
+version = "0.2.1"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
-    { name = "itsdangerous" },
-    { name = "passlib" },
     { name = "pydantic" },
-    { name = "python-dotenv" },
     { name = "python-multipart" },
-    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
     { name = "uvicorn" },
 ]
 
@@ -1186,6 +1165,7 @@ all = [
     { name = "email-validator" },
     { name = "granian" },
     { name = "jinja2" },
+    { name = "passlib" },
     { name = "pyjwt" },
     { name = "python-ulid" },
     { name = "redis" },
@@ -1195,6 +1175,9 @@ all = [
 ]
 cache = [
     { name = "redis" },
+]
+crypto = [
+    { name = "cryptography" },
 ]
 dev = [
     { name = "argon2-cffi" },
@@ -1232,6 +1215,7 @@ graphql = [
 hashing-all = [
     { name = "argon2-cffi" },
     { name = "bcrypt" },
+    { name = "passlib" },
     { name = "scrypt" },
 ]
 hashing-argon2 = [
@@ -1264,6 +1248,7 @@ dev = [
     { name = "httpx" },
     { name = "jinja2" },
     { name = "mypy" },
+    { name = "passlib" },
     { name = "pyjwt" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1290,6 +1275,7 @@ requires-dist = [
     { name = "bcrypt", marker = "extra == 'hashing-bcrypt'", specifier = ">=4.0.0" },
     { name = "coverage", marker = "extra == 'dev'", specifier = ">=6.3,<8.0" },
     { name = "cryptography", marker = "extra == 'all'", specifier = ">=41.0.0" },
+    { name = "cryptography", marker = "extra == 'crypto'", specifier = ">=41.0.0" },
     { name = "cryptography", marker = "extra == 'dev'", specifier = ">=41.0.0" },
     { name = "email-validator", marker = "extra == 'all'", specifier = ">=2.0.0" },
     { name = "email-validator", marker = "extra == 'dev'", specifier = ">=2.0.0" },
@@ -1299,19 +1285,18 @@ requires-dist = [
     { name = "granian", marker = "extra == 'dev'", specifier = ">=1.2.0" },
     { name = "granian", marker = "extra == 'granian'", specifier = ">=1.2.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.23.3,<0.29.0" },
-    { name = "itsdangerous", specifier = ">=2.1.2" },
     { name = "jinja2", marker = "extra == 'all'", specifier = ">=3.1.6" },
     { name = "jinja2", marker = "extra == 'dev'", specifier = ">=3.1.6" },
     { name = "jinja2", marker = "extra == 'templating'", specifier = ">=3.1.6" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15.0" },
-    { name = "passlib", specifier = ">=1.7.4" },
+    { name = "passlib", marker = "extra == 'all'", specifier = ">=1.7.4" },
+    { name = "passlib", marker = "extra == 'hashing-all'", specifier = ">=1.7.4" },
     { name = "pydantic", specifier = ">=2.0,<3.0" },
     { name = "pyjwt", marker = "extra == 'all'", specifier = ">=2.7.0" },
     { name = "pyjwt", marker = "extra == 'dev'", specifier = ">=2.7.0" },
     { name = "pyjwt", marker = "extra == 'jwt'", specifier = ">=2.7.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4,<9.1.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.25.3,<1.5.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "python-multipart", specifier = ">=0.0.6" },
     { name = "python-ulid", marker = "extra == 'all'", specifier = ">=2.0.0" },
     { name = "python-ulid", marker = "extra == 'dev'", specifier = ">=2.0.0" },
@@ -1327,16 +1312,15 @@ requires-dist = [
     { name = "strawberry-graphql", marker = "extra == 'all'", specifier = ">=0.219.0" },
     { name = "strawberry-graphql", marker = "extra == 'dev'", specifier = ">=0.219.0" },
     { name = "strawberry-graphql", marker = "extra == 'graphql'", specifier = ">=0.219.0" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0.1" },
     { name = "tortoise-orm", marker = "extra == 'all'", specifier = ">=1.0" },
     { name = "tortoise-orm", marker = "extra == 'dev'", specifier = ">=1.0" },
     { name = "tortoise-orm", marker = "extra == 'record'", specifier = ">=1.0" },
     { name = "ty", marker = "extra == 'dev'", specifier = ">=0.0.63,<0.1" },
-    { name = "typing-extensions", marker = "python_full_version < '3.10'", specifier = ">=4.12.2" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4.12.2" },
     { name = "typing-extensions", marker = "extra == 'dev'", specifier = "==4.16.0" },
     { name = "uvicorn", specifier = ">=0.27.0" },
 ]
-provides-extras = ["jwt", "record", "hashing-bcrypt", "hashing-argon2", "hashing-scrypt", "hashing-all", "cache", "events", "templating", "graphql", "granian", "all", "dev"]
+provides-extras = ["jwt", "record", "crypto", "hashing-bcrypt", "hashing-argon2", "hashing-scrypt", "hashing-all", "cache", "events", "templating", "graphql", "granian", "all", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1349,6 +1333,7 @@ dev = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "mypy", specifier = ">=1.15.0" },
+    { name = "passlib", specifier = ">=1.7.4" },
     { name = "pyjwt", specifier = ">=2.7.0" },
     { name = "pytest", specifier = ">=8.3.5" },
     { name = "pytest-asyncio", specifier = ">=0.25.3" },

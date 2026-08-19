@@ -10,8 +10,8 @@ from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
 from pydantic_core import core_schema
 from typing_extensions import Self
 
-from sillo.objects.datastructures import ImmutableMultiDict, MultiDict
 from sillo.helpers.concurrency import run_in_threadpool
+from sillo.objects.datastructures import ImmutableMultiDict, MultiDict
 
 
 class QueryParams(ImmutableMultiDict[str, str]):

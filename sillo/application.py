@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Sequence
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Annotated,

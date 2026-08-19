@@ -4,8 +4,8 @@ import typing
 from typing import Any
 
 from sillo.core.http import Request, Response
-from sillo.middleware.base import BaseMiddleware
 from sillo.helpers.signing import BadSignature, URLSafeSerializer
+from sillo.middleware.base import BaseMiddleware
 
 from .config import CSRFConfig
 

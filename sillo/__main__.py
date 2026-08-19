@@ -32,7 +32,7 @@ from typing import Any, ClassVar
 
 from sillo.env import autoload
 
-from .console import Argument, Command, Console, Flag, Option
+from .console import Argument, Command, Console, Option
 
 __all__ = ["build_console", "discover_application", "main"]
 
