@@ -14,7 +14,7 @@ head:
 
 #  Thread Pool
 
-`sillo.utils.concurrency` provides one utility: `run_in_threadpool`. It moves a synchronous function call to a shared thread pool so the event loop isn't blocked.
+`sillo.helpers.concurrency` provides one utility: `run_in_threadpool`. It moves a synchronous function call to a shared thread pool so the event loop isn't blocked.
 
 For all other async concurrency patterns (`asyncio.gather`,
 `asyncio.TaskGroup`, `asyncio.create_task`, `asyncio.Event`, `asyncio.Lock`)
@@ -26,7 +26,7 @@ already available.
 ##  run_in_threadpool
 
 ```python
-from sillo.utils.concurrency import run_in_threadpool
+from sillo.helpers.concurrency import run_in_threadpool
 ```
 
 Moves a blocking or CPU-intensive function to a background thread and returns the result as an awaitable. The thread pool is shared globally and reused across calls.
@@ -34,7 +34,7 @@ Moves a blocking or CPU-intensive function to a background thread and returns th
 ###  Basic usage
 
 ```python
-from sillo.utils.concurrency import run_in_threadpool
+from sillo.helpers.concurrency import run_in_threadpool
 
 def resize_image(image: bytes, width: int, height: int) -> bytes:
     # CPU-intensive work that would block the event loop
@@ -56,7 +56,7 @@ result = await run_in_threadpool(some_func, arg1, arg2, key="value")
 Exceptions from the sync function propagate normally:
 
 ```python
-from sillo.utils.concurrency import run_in_threadpool
+from sillo.helpers.concurrency import run_in_threadpool
 
 def risky() -> str:
     raise ValueError("boom")

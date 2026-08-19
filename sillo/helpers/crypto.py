@@ -217,7 +217,7 @@ def unsign_value(
             raises rather than being quietly ignored, which is what this did
             before — a caller who set it believed they had bounded the
             token's life and had not. Use
-            :class:`sillo.utils.signing.URLSafeTimedSerializer` when a signed
+            :class:`sillo.helpers.signing.URLSafeTimedSerializer` when a signed
             value needs to expire.
 
     Returns:
@@ -232,7 +232,7 @@ def unsign_value(
         raise NotImplementedError(
             "unsign_value() cannot enforce max_age: sign_value() writes no "
             "timestamp into the token, so its age is unknowable. Use "
-            "sillo.utils.signing.URLSafeTimedSerializer for values that expire."
+            "sillo.helpers.signing.URLSafeTimedSerializer for values that expire."
         )
 
     secret_bytes: bytes

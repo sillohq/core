@@ -1,6 +1,6 @@
 import typing
 
-from sillo.utils.signing import BadSignature, URLSafeTimedSerializer
+from sillo.helpers.signing import BadSignature, URLSafeTimedSerializer
 
 from .base import BaseSessionInterface
 from .config import resolve_session_config

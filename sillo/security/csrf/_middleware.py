@@ -5,7 +5,7 @@ from typing import Any
 
 from sillo.core.http import Request, Response
 from sillo.middleware.base import BaseMiddleware
-from sillo.utils.signing import BadSignature, URLSafeSerializer
+from sillo.helpers.signing import BadSignature, URLSafeSerializer
 
 from .config import CSRFConfig
 

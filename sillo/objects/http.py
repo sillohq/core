@@ -11,7 +11,7 @@ from pydantic_core import core_schema
 from typing_extensions import Self
 
 from sillo.objects.datastructures import ImmutableMultiDict, MultiDict
-from sillo.utils.concurrency import run_in_threadpool
+from sillo.helpers.concurrency import run_in_threadpool
 
 
 class QueryParams(ImmutableMultiDict[str, str]):

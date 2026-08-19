@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from sillo.utils.concurrency import run_in_threadpool
+from sillo.helpers.concurrency import run_in_threadpool
 
 
 async def test_run_in_threadpool():

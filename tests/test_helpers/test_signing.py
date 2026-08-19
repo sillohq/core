@@ -13,7 +13,7 @@ import time
 
 import pytest
 
-from sillo.utils.signing import (
+from sillo.helpers.signing import (
     BadSignature,
     SignatureExpired,
     URLSafeSerializer,

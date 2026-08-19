@@ -51,7 +51,7 @@ from sillo.types import (
     Scope,
     Send,
 )
-from sillo.utils.concurrency import run_in_threadpool
+from sillo.helpers.concurrency import run_in_threadpool
 from sillo.validation import (
     RequestValidationError,
     ResponseModelValidator,
