@@ -104,6 +104,12 @@ hashing-all = [
 # Caching (Redis, in-memory fallback available)
 cache = ["redis>=5.0.0"]
 
+# Object storage. The local and memory drivers need nothing; only the S3
+# driver has a dependency, and it is httpx rather than boto3 — the request
+# signing is a few dozen lines of HMAC, and boto3 is a very large synchronous
+# dependency to carry for it.
+storage-s3 = ["httpx>=0.23.3"]
+
 # Event Distribution (Redis, in-memory fallback available)
 events = ["redis>=5.0.0"]
 
