@@ -1,165 +1,253 @@
-"""Terminal capability detection and key decoding."""
+"""
+Terminal capability detection.
+
+All of it is decided from the environment and from whether a stream is a tty,
+which makes it unusually testable — and unusually worth testing, because the
+consequence of getting it wrong is escape sequences printed literally into
+somebody's CI log.
+"""
 
 from __future__ import annotations
 
 import io
+import os
+import sys
 
 import pytest
 
-from sillo.console import supports_color, supports_unicode, terminal_width
-from sillo.console.terminal import Key, is_interactive, read_key
+from sillo.console import terminal
 
 
-class FakeTTY(io.StringIO):
-    """A StringIO that claims to be a terminal.
-
-    ``encoding`` is a read-only descriptor on the C base class, so it is
-    shadowed with a property rather than assigned in ``__init__``.
-    """
-
-    def __init__(self, contents: str = "", encoding: str = "utf-8") -> None:
-        super().__init__(contents)
-        self._encoding = encoding
-
-    @property
-    def encoding(self) -> str:
-        return self._encoding
+class Tty(io.StringIO):
+    """A stream that claims to be a terminal."""
 
     def isatty(self) -> bool:
         return True
 
+    def fileno(self) -> int:
+        return 1
 
-@pytest.fixture(autouse=True)
-def _clear_colour_environment(monkeypatch):
-    """Start each test from an environment with no colour opinion."""
-    for name in ("NO_COLOR", "FORCE_COLOR", "TERM", "COLORTERM"):
+
+class Pipe(io.StringIO):
+    """A stream that does not."""
+
+    def isatty(self) -> bool:
+        return False
+
+
+@pytest.fixture
+def clean(monkeypatch):
+    """No terminal-related variables, so each test states its own world."""
+    for name in (
+        "TERM",
+        "TERM_PROGRAM",
+        "WT_SESSION",
+        "VTE_VERSION",
+        "COLORTERM",
+        "NO_COLOR",
+        "FORCE_COLOR",
+        "CI",
+        "SILLO_HYPERLINKS",
+        "COLUMNS",
+    ):
         monkeypatch.delenv(name, raising=False)
+    return monkeypatch
 
 
-# -- colour ------------------------------------------------------------
+class TestIsTty:
+    def test_a_terminal_is_one(self):
+        assert terminal._is_tty(Tty()) is True
+
+    def test_a_pipe_is_not(self):
+        assert terminal._is_tty(Pipe()) is False
+
+    def test_a_stream_that_cannot_say_is_not(self):
+        class Mute:
+            pass
+
+        assert terminal._is_tty(Mute()) is False
 
 
-def test_a_terminal_takes_colour():
-    assert supports_color(FakeTTY()) is True
+class TestHyperlinks:
+    def test_a_pipe_gets_no_hyperlinks(self, clean):
+        assert terminal.supports_hyperlinks(Pipe()) is False
+
+    def test_windows_terminal_gets_them(self, clean):
+        clean.setenv("WT_SESSION", "1")
+        assert terminal.supports_hyperlinks(Tty()) is True
+
+    def test_kitty_gets_them(self, clean):
+        clean.setenv("TERM", "xterm-kitty")
+        assert terminal.supports_hyperlinks(Tty()) is True
+
+    def test_a_recent_vte_gets_them(self, clean):
+        clean.setenv("VTE_VERSION", "6003")
+        assert terminal.supports_hyperlinks(Tty()) is True
+
+    def test_an_old_vte_does_not(self, clean):
+        clean.setenv("VTE_VERSION", "4000")
+        assert terminal.supports_hyperlinks(Tty()) is False
+
+    def test_a_nonsense_vte_version_does_not_raise(self, clean):
+        clean.setenv("VTE_VERSION", "not-a-number")
+        assert terminal.supports_hyperlinks(Tty()) is False
+
+    def test_an_unknown_terminal_does_not(self, clean):
+        clean.setenv("TERM", "dumb")
+        assert terminal.supports_hyperlinks(Tty()) is False
+
+    @pytest.mark.parametrize("value", ["1", "true", "yes", "on"])
+    def test_it_can_be_forced_on(self, clean, value):
+        clean.setenv("SILLO_HYPERLINKS", value)
+        assert terminal.supports_hyperlinks(Pipe()) is True
+
+    @pytest.mark.parametrize("value", ["0", "false", "no", "off"])
+    def test_it_can_be_forced_off(self, clean, value):
+        clean.setenv("SILLO_HYPERLINKS", value)
+        clean.setenv("WT_SESSION", "1")
+        assert terminal.supports_hyperlinks(Tty()) is False
+
+    def test_wrapping_produces_an_osc_8_sequence(self, clean):
+        clean.setenv("SILLO_HYPERLINKS", "1")
+        wrapped = terminal.hyperlink("https://sillo.build", "sillo")
+
+        assert wrapped.startswith("\x1b]8;;https://sillo.build\x1b\\")
+        assert wrapped.endswith("\x1b]8;;\x1b\\")
+        assert "sillo" in wrapped
+
+    def test_wrapping_is_a_no_op_where_it_would_not_work(self, clean):
+        clean.setenv("SILLO_HYPERLINKS", "0")
+        assert terminal.hyperlink("https://sillo.build", "sillo") == "sillo"
 
 
-def test_a_pipe_does_not():
-    assert supports_color(io.StringIO()) is False
+class TestWindowsVirtualTerminal:
+    def test_it_is_a_no_op_off_windows(self, monkeypatch):
+        monkeypatch.setattr(os, "name", "posix")
+        assert terminal._enable_windows_vt(sys.stdout) is True
+
+    def test_a_console_that_will_not_cooperate_is_reported(self, monkeypatch):
+        """Anything before Windows 10 1511. The caller falls back to plain
+        output rather than printing escape sequences literally."""
+        monkeypatch.setattr(os, "name", "nt")
+        assert terminal._enable_windows_vt(sys.stdout) is False
 
 
-def test_no_color_wins_over_everything(monkeypatch):
-    monkeypatch.setenv("NO_COLOR", "1")
-    monkeypatch.setenv("FORCE_COLOR", "1")
+class TestUnicode:
+    def test_a_utf8_stream_can_take_unicode(self, clean):
+        stream = Tty()
+        assert isinstance(terminal.supports_unicode(stream), bool)
 
-    assert supports_color(FakeTTY()) is False
+    def test_a_stream_with_no_encoding_is_handled(self, clean):
+        class Odd(Tty):
+            encoding = None
 
-
-def test_no_color_is_a_presence_check_not_a_value_check(monkeypatch):
-    # The specification says any value, including an empty one, disables it.
-    monkeypatch.setenv("NO_COLOR", "")
-
-    assert supports_color(FakeTTY()) is False
+        assert isinstance(terminal.supports_unicode(Odd()), bool)
 
 
-def test_force_color_overrides_a_pipe(monkeypatch):
-    monkeypatch.setenv("FORCE_COLOR", "1")
+class TestInteractive:
+    def test_two_terminals_are_interactive(self, clean):
+        assert terminal.is_interactive(Tty(), Tty()) is True
 
-    assert supports_color(io.StringIO()) is True
+    def test_a_piped_input_is_not(self, clean):
+        assert terminal.is_interactive(Pipe(), Tty()) is False
 
-
-def test_a_dumb_terminal_gets_none(monkeypatch):
-    monkeypatch.setenv("TERM", "dumb")
-
-    assert supports_color(FakeTTY()) is False
-
-
-def test_a_stream_that_raises_from_isatty_is_treated_as_a_pipe():
-    class Hostile(io.StringIO):
-        def isatty(self):
-            raise OSError("detached")
-
-    assert supports_color(Hostile()) is False
+    def test_a_piped_output_is_not(self, clean):
+        assert terminal.is_interactive(Tty(), Pipe()) is False
 
 
-# -- unicode -----------------------------------------------------------
+class TestWidth:
+    def test_the_environment_wins(self, clean):
+        clean.setenv("COLUMNS", "120")
+        assert terminal.terminal_width() == 120
+
+    def test_a_nonsense_width_falls_back(self, clean):
+        clean.setenv("COLUMNS", "wide")
+        assert terminal.terminal_width(default=77) > 0
+
+    def test_there_is_always_a_width(self, clean):
+        assert terminal.terminal_width() > 0
 
 
-def test_a_utf8_stream_takes_box_drawing():
-    assert supports_unicode(FakeTTY(encoding="utf-8")) is True
+class TestCursor:
+    def test_moving_up_produces_a_sequence(self):
+        assert terminal.cursor_up(3) == "\x1b[3A"
+
+    def test_moving_up_nothing_is_nothing(self):
+        assert terminal.cursor_up(0) == ""
 
 
-def test_an_ascii_stream_does_not():
-    assert supports_unicode(FakeTTY(encoding="ascii")) is False
+class TestKeyClassification:
+    @pytest.mark.parametrize(
+        "char,name",
+        [
+            ("\r", terminal.Key.ENTER),
+            ("\n", terminal.Key.ENTER),
+            ("\x03", terminal.Key.INTERRUPT),
+            ("\x04", terminal.Key.INTERRUPT),
+            ("\x7f", terminal.Key.BACKSPACE),
+            ("\b", terminal.Key.BACKSPACE),
+            ("\t", terminal.Key.TAB),
+            (" ", terminal.Key.SPACE),
+        ],
+    )
+    def test_the_control_keys_are_named(self, char, name):
+        assert terminal._classify(char) == name
+
+    def test_end_of_input_reads_as_an_interrupt(self):
+        """Ctrl-D on an empty line is the end of input, and a prompt should
+        treat it the way it treats Ctrl-C rather than as a character."""
+        assert terminal._classify("\x04") == terminal.Key.INTERRUPT
+
+    def test_every_csi_tail_maps_to_a_key(self):
+        assert set(terminal._CSI_KEYS.values()) <= {
+            terminal.Key.UP,
+            terminal.Key.DOWN,
+            terminal.Key.LEFT,
+            terminal.Key.RIGHT,
+            terminal.Key.HOME,
+            terminal.Key.END,
+            terminal.Key.DELETE,
+        }
+
+    def test_home_and_end_are_mapped_in_both_spellings(self):
+        """Terminals disagree, so mapping one spelling is being wrong on
+        somebody's terminal."""
+        assert terminal._CSI_KEYS["H"] == terminal._CSI_KEYS["1~"]
+        assert terminal._CSI_KEYS["F"] == terminal._CSI_KEYS["4~"]
+
+    def test_an_ordinary_character_is_itself(self):
+        assert terminal._classify("a") == "a"
 
 
-def test_a_stream_with_no_encoding_is_assumed_ascii():
-    assert supports_unicode(io.StringIO()) is False
+class TestWriting:
+    def test_parts_are_joined(self):
+        stream = io.StringIO()
+        terminal.write(stream, "a", "b", "c")
+        assert stream.getvalue() == "abc"
 
+    def test_it_flushes(self):
+        """Prompts redraw between keypresses, so an unflushed buffer shows the
+        user a stale frame."""
+        flushed = []
 
-# -- interactivity -----------------------------------------------------
+        class Watched(io.StringIO):
+            def flush(self):
+                flushed.append(True)
 
+        terminal.write(Watched(), "x")
+        assert flushed == [True]
 
-def test_both_ends_must_be_a_terminal():
-    assert is_interactive(FakeTTY(), FakeTTY()) is True
-    assert is_interactive(io.StringIO(), FakeTTY()) is False
-    assert is_interactive(FakeTTY(), io.StringIO()) is False
+    def test_a_closed_stream_propagates(self):
+        """Documenting rather than endorsing: `write` does not guard, so a
+        console piped into something that exits early — `sillo routes | head`
+        — surfaces the broken pipe to the caller."""
+        stream = io.StringIO()
+        stream.close()
 
+        with pytest.raises(ValueError):
+            terminal.write(stream, "anything")
 
-def test_the_width_never_collapses_below_twenty():
-    assert terminal_width() >= 20
-
-
-# -- keys --------------------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    "sequence,expected",
-    [
-        ("\x1b[A", Key.UP),
-        ("\x1b[B", Key.DOWN),
-        ("\x1b[C", Key.RIGHT),
-        ("\x1b[D", Key.LEFT),
-        ("\x1b[H", Key.HOME),
-        ("\x1b[F", Key.END),
-        ("\x1b[3~", Key.DELETE),
-        ("\x1b[1~", Key.HOME),
-        ("\x1b[4~", Key.END),
-    ],
-)
-def test_escape_sequences_decode_to_keys(sequence, expected):
-    assert read_key(io.StringIO(sequence)) == expected
-
-
-@pytest.mark.parametrize(
-    "character,expected",
-    [
-        ("\r", Key.ENTER),
-        ("\n", Key.ENTER),
-        (" ", Key.SPACE),
-        ("\t", Key.TAB),
-        ("\x7f", Key.BACKSPACE),
-        ("\b", Key.BACKSPACE),
-        ("\x03", Key.INTERRUPT),
-        ("\x04", Key.INTERRUPT),
-    ],
-)
-def test_control_characters_decode_to_keys(character, expected):
-    assert read_key(io.StringIO(character)) == expected
-
-
-def test_a_printable_character_comes_back_as_itself():
-    assert read_key(io.StringIO("q")) == "q"
-
-
-def test_a_bare_escape_is_the_escape_key():
-    # No '[' follows, so the user pressed Escape rather than starting a
-    # sequence.
-    assert read_key(io.StringIO("\x1bx")) == Key.ESCAPE
-
-
-def test_exhausted_input_reads_as_nothing():
-    assert read_key(io.StringIO("")) == ""
-
-
-def test_an_unrecognised_sequence_reads_as_nothing():
-    assert read_key(io.StringIO("\x1b[99Z")) == ""
+    def test_values_are_stringified(self):
+        stream = io.StringIO()
+        terminal.write(stream, 1, None, 2.5)
+        assert stream.getvalue() == "1None2.5"

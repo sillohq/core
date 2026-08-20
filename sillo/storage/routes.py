@@ -114,8 +114,11 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
         disposition = "inline" if info.content_type in INLINE else "attachment"
         filename = key.rsplit("/", 1)[-1]
 
+        # Not in `headers`: `Responder.stream` takes `content_type` as its own
+        # argument, defaults it to text/plain, and hands that to the response —
+        # so a content type set here is silently overridden, and every sniffed
+        # type was arriving as text/plain.
         headers = {
-            "content-type": info.content_type,
             "content-length": str(info.size),
             "etag": f'"{info.etag}"',
             "content-disposition": f'{disposition}; filename="{_quote(filename)}"',
@@ -124,22 +127,33 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
         }
 
         return response.stream(
-            held.get(key, user=_user(request), signed=signed), headers=headers
+            held.get(key, user=_user(request), signed=signed),
+            content_type=info.content_type,
+            headers=headers,
         )
 
     app.get(f"{route}/{{bucket}}/{{key:path}}", handler=serve, name="storage.serve")
 
 
 def _user(request: Any) -> Any:
-    """Who is asking.
+    """Who is asking, if anybody.
+
+    ``request.user`` is a property that *raises* when no authentication
+    middleware is installed, so ``getattr(request, "user", None)`` does not
+    protect against it — the default is never reached because the lookup does
+    not fail, it throws. An application serving a public bucket and running no
+    auth at all is entirely reasonable, and it was getting a 500.
 
     Args:
         request: The incoming request.
 
     Returns:
-        The authenticated user, or None.
+        The authenticated user, or None when there is no auth configured.
     """
-    return getattr(request, "user", None)
+    try:
+        return request.user
+    except (ValueError, AttributeError, AssertionError):
+        return None
 
 
 def _quote(filename: str) -> str:
