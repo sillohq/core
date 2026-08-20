@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `sillo.storage.current_storage()` and `sillo.storage.bucket(name)` — reach the `Storage` `setup_storage` registered, from a handler, a queue job, or a script, without the application object or a request.
+- `sillo.mail.current_mail()` and `sillo.mail.send_email(...)` — same shape, for the `MailClient` `setup_mail` registered.
+- `sillo._internals.registry.InstanceRegistry`, the shared internal mechanism behind both: a plain slot filled once at startup and read from anywhere, raising `NotConfiguredError` — not `None` — when asked before `setup_x` has run. Documented in [Instance Registry](https://sillo.build/advanced/context-binding/).
+
 ## [0.2.0] - 2026-08-18
 
 A minor release, not a patch: `sillo.env` is new public API, and `.env` now

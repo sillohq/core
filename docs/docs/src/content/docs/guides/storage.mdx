@@ -37,13 +37,12 @@ storage = setup_storage(app, StorageConfig(
 Then, in a handler:
 
 ```python
-from sillo.storage import stream_upload
+from sillo.storage import bucket, stream_upload
 
 async def upload_avatar(request, response):
     upload = (await request.files)["avatar"]
-    bucket = request.base_app.state["storage"].bucket("avatars")
 
-    stored = await bucket.put(
+    stored = await bucket("avatars").put(
         f"{request.user.identity}/face.png",
         stream_upload(upload),
         content_type=upload.content_type or "",
@@ -51,6 +50,21 @@ async def upload_avatar(request, response):
     )
 
     return response.json({"key": stored.key, "size": stored.size})
+```
+
+`bucket(name)` is shorthand for `current_storage().bucket(name)`: it reaches
+for the `Storage` `setup_storage` registered at startup, without needing the
+application object or a request in hand. That makes it work identically in a
+route handler, a queue job, or a script — see
+[Instance Registry](/advanced/context-binding/) for why it is not tied to the
+request. Holding the instance `setup_storage` returned works everywhere too,
+and is what a module doing nothing else with storage should probably do
+instead of importing `bucket` for one call:
+
+```python
+storage = setup_storage(app, StorageConfig(...))
+...
+await storage.bucket("avatars").put(...)
 ```
 
 ## What ships

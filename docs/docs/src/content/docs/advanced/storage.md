@@ -34,6 +34,7 @@ sillo/storage/
 ├── paths.py         Key normalisation and containment
 ├── routes.py        The serving route
 ├── errors.py        Five exceptions
+├── context.py       current_storage() — reaches the registered Storage
 └── drivers/
     ├── memory.py    Dictionary. The contract's definition, and the test double.
     └── local.py     Files, written atomically, contained by resolution.
@@ -57,6 +58,16 @@ graph TD
 ```
 
 Nothing below `Bucket` knows about users, policies or content types.
+
+### Reaching it from anywhere
+
+`setup_storage` puts `Storage` on `app.state["storage"]`, and also registers
+it with `sillo._internals.registry` — a plain slot filled once at startup, not
+scoped to a request. `sillo.storage.current_storage()` and
+`sillo.storage.bucket(name)` read it back, and work identically in a route
+handler, a queue job, or a script, because none of those are treated
+differently. See [Instance Registry](/advanced/context-binding/) for the
+mechanism and the trade it makes — one registered `Storage` at a time.
 
 ---
 

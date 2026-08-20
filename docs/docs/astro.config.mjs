@@ -296,6 +296,7 @@ export default defineConfig({
                         { label: 'Application Lifecycle', link: '/advanced/application-lifecycle/' },
                         { label: 'Configuration System', link: '/advanced/configuration/' },
                         { label: 'Type System & Encoding', link: '/advanced/types-and-encoding/' },
+                        { label: 'Instance Registry', link: '/advanced/context-binding/' },
                     ],
                 },
                 {

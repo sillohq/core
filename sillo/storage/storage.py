@@ -3,7 +3,8 @@ sillo.storage.storage — the object on ``app.state``, and how it gets there.
 
 ``setup_storage(app, config)`` follows ``setup_record``: build the thing, put it
 on ``app.state``, register the lifecycle hooks, return it.  A project holds the
-:class:`Storage` and asks it for buckets.
+:class:`Storage` and asks it for buckets — or, anywhere at all, calls
+``sillo.storage.bucket(...)`` and lets :mod:`.context` find it.
 """
 
 from __future__ import annotations
@@ -13,11 +14,12 @@ from typing import Any
 
 from .bucket import Bucket
 from .config import BucketConfig, StorageConfig
+from .context import current_storage, register
 from .drivers import LocalDriver, MemoryDriver
 from .policies import Private
 from .signing import Signer
 
-__all__ = ["Storage", "setup_storage"]
+__all__ = ["Storage", "bucket", "setup_storage"]
 
 logger = logging.getLogger("sillo.storage")
 
@@ -161,6 +163,7 @@ def setup_storage(app: Any, config: StorageConfig, *, secret: str = "") -> Stora
     storage = Storage(config, secret=secret or _app_secret(app))
     app.state["storage"] = storage
     app.on_shutdown(storage.close)
+    register(storage)
 
     if config.serve:
         from .routes import mount
@@ -169,6 +172,33 @@ def setup_storage(app: Any, config: StorageConfig, *, secret: str = "") -> Stora
 
     logger.debug("storage ready — %s", storage)
     return storage
+
+
+def bucket(name: str = "") -> Bucket:
+    """The named bucket of the storage :func:`setup_storage` registered.
+
+    Shorthand for ``current_storage().bucket(name)``, for code that has no
+    reason to hold the whole :class:`Storage` — a route handler, a queue job,
+    a script, anywhere after startup::
+
+        from sillo.storage import bucket
+
+        @app.post("/avatar")
+        async def upload_avatar(request, response):
+            stored = await bucket("avatars").put(key, upload, user=request.user)
+            ...
+
+    Args:
+        name: The bucket's name, or empty for the configuration's default.
+
+    Returns:
+        The bucket.
+
+    Raises:
+        NotConfiguredError: If ``setup_storage`` has not run yet.
+        KeyError: If no such bucket was declared.
+    """
+    return current_storage().bucket(name)
 
 
 def _app_secret(app: Any) -> str:
