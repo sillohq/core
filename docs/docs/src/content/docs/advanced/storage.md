@@ -61,13 +61,17 @@ Nothing below `Bucket` knows about users, policies or content types.
 
 ### Reaching it from anywhere
 
-`setup_storage` puts `Storage` on `app.state["storage"]`, and also registers
-it with `sillo._internals.registry` — a plain slot filled once at startup, not
-scoped to a request. `sillo.storage.current_storage()` and
-`sillo.storage.bucket(name)` read it back, and work identically in a route
-handler, a queue job, or a script, because none of those are treated
-differently. See [Instance Registry](/advanced/context-binding/) for the
-mechanism and the trade it makes — one registered `Storage` at a time.
+`sillo.storage.bucket(name)` works in a route handler, a queue job, or a
+script — nothing to fetch first, no request required. `current_storage()` is
+the `Storage` itself, for the handful of things `bucket()` doesn't cover
+(`.listen()`, building a bucket at runtime); most code never needs it.
+
+Both are registered by `setup_storage`, alongside the existing
+`app.state["storage"]`, with `sillo._internals.registry` — a plain slot filled
+once at startup, not scoped to a request, because storage is written to from
+queue jobs and scripts at least as often as from a handler. See
+[Instance Registry](/advanced/context-binding/) for the mechanism and the
+trade it makes — one registered `Storage` at a time.
 
 ---
 

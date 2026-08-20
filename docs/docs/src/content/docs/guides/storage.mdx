@@ -52,19 +52,19 @@ async def upload_avatar(request, response):
     return response.json({"key": stored.key, "size": stored.size})
 ```
 
-`bucket(name)` is shorthand for `current_storage().bucket(name)`: it reaches
-for the `Storage` `setup_storage` registered at startup, without needing the
-application object or a request in hand. That makes it work identically in a
-route handler, a queue job, or a script — see
-[Instance Registry](/advanced/context-binding/) for why it is not tied to the
-request. Holding the instance `setup_storage` returned works everywhere too,
-and is what a module doing nothing else with storage should probably do
-instead of importing `bucket` for one call:
+`bucket(name)` just works — in this handler, in a queue job, in a script —
+with nothing to set up beyond calling `setup_storage` once at startup. There
+is no object to fetch first and no request to have in hand; import it and
+call it. (If you're curious how, that's in
+[Instance Registry](/advanced/context-binding/) — nothing here depends on
+knowing.)
+
+The only reason to hold onto what `setup_storage` returns is for the handful
+of things `bucket()` doesn't cover — `.listen()` below, or building a second
+bucket at runtime:
 
 ```python
 storage = setup_storage(app, StorageConfig(...))
-...
-await storage.bucket("avatars").put(...)
 ```
 
 ## What ships
