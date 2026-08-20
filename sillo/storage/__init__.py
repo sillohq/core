@@ -49,6 +49,7 @@ from .paths import normalise
 from .policies import Owned, Private, Public, ReadOnly, Signed
 from .signing import SignedGrant, Signer
 from .storage import Storage, setup_storage
+from .uploads import stream_upload
 
 __all__ = [
     "Action",
@@ -79,4 +80,5 @@ __all__ = [
     "collect",
     "normalise",
     "setup_storage",
+    "stream_upload",
 ]
