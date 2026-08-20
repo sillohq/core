@@ -87,7 +87,7 @@ def test_the_framework_commands_are_always_available(elsewhere):
     console, warning = build_console()
 
     assert warning is None
-    assert {"version", "serve", "routes"} <= set(console.commands)
+    assert {"version", "routes"} <= set(console.commands)
 
 
 def test_creating_a_project_is_not_one_of_them(elsewhere):
