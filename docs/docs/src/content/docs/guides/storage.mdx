@@ -37,13 +37,12 @@ storage = setup_storage(app, StorageConfig(
 Then, in a handler:
 
 ```python
-from sillo.storage import stream_upload
+from sillo.storage import bucket, stream_upload
 
 async def upload_avatar(request, response):
     upload = (await request.files)["avatar"]
-    bucket = request.base_app.state["storage"].bucket("avatars")
 
-    stored = await bucket.put(
+    stored = await bucket("avatars").put(
         f"{request.user.identity}/face.png",
         stream_upload(upload),
         content_type=upload.content_type or "",
@@ -51,6 +50,21 @@ async def upload_avatar(request, response):
     )
 
     return response.json({"key": stored.key, "size": stored.size})
+```
+
+`bucket(name)` just works — in this handler, in a queue job, in a script —
+with nothing to set up beyond calling `setup_storage` once at startup. There
+is no object to fetch first and no request to have in hand; import it and
+call it. (If you're curious how, that's in
+[Instance Registry](/advanced/context-binding/) — nothing here depends on
+knowing.)
+
+The only reason to hold onto what `setup_storage` returns is for the handful
+of things `bucket()` doesn't cover — `.listen()` below, or building a second
+bucket at runtime:
+
+```python
+storage = setup_storage(app, StorageConfig(...))
 ```
 
 ## What ships

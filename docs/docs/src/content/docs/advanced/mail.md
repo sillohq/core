@@ -619,21 +619,53 @@ def get_mail_client(request) -> MailClient:
 ```
 
 Accesses the client stored in `app.state.mail_client` via the request's state
-proxy.
+proxy. Requires a request — `current_mail()` below does not.
+
+### `send_email(...)`
+
+**File:** `core/sillo/mail/client.py`
+
+The way to send mail from a handler, a queue job, or a script — nothing to
+fetch first, no request required:
+
+```python
+from sillo.mail import send_email
+
+async def process_signup(user):  # a queue job, not a handler
+    await send_email(user.email, "Welcome", body="...")
+```
+
+### `current_mail()`
+
+**File:** `core/sillo/mail/context.py`
+
+The client itself, for the two things `send_email(...)` doesn't cover:
+`send_message(message)` for a prebuilt `EmailMessage`, and
+`send_template_email(...)` when its distinct signature reads better than
+`send_email`'s `template_name=`/`template_context=` kwargs. Most code never
+needs this — `send_email(...)` already is `current_mail().send_email(...)`.
+
+`setup_mail` registers the client with `sillo._internals.registry`, the same
+[instance registry](/advanced/context-binding/) `sillo.storage` uses — a
+plain slot filled at startup, not scoped to a request, because mail is sent
+from queue jobs and scripts at least as often as from a handler. The trade
+that makes explicit: the registry holds one client at a time, whichever
+`setup_mail` call registered last. That is exactly the assumption
+`app.state.mail_client` already made — one mail client per application — made
+visible rather than implicit in a lookup key.
 
 ### Usage Pattern
 
 ```python
-from sillo.mail import setup_mail, get_mail_client, MailConfig
+from sillo.mail import setup_mail, send_email, MailConfig
 
 # At startup
 config = MailConfig.for_gmail("user@gmail.com", "app-password")
 setup_mail(app, config)
 
-# In handler
-async def send_welcome(request, response):
-    client = get_mail_client(request)
-    result = await client.send_template_email(
+# In handler, a queue job, or a script
+async def send_welcome(user):
+    result = await send_email(
         to="newuser@example.com",
         subject="Welcome!",
         template_name="welcome",

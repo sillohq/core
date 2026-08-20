@@ -37,6 +37,7 @@ from __future__ import annotations
 from .base import Action, Driver, FileInfo, Page, StorageEvent, Stored, chunks, collect
 from .bucket import Bucket
 from .config import BucketConfig, StorageConfig
+from .context import NotConfiguredError, current_storage
 from .drivers import LocalDriver, MemoryDriver
 from .errors import (
     FileNotFound,
@@ -48,7 +49,7 @@ from .errors import (
 from .paths import normalise
 from .policies import Owned, Private, Public, ReadOnly, Signed
 from .signing import SignedGrant, Signer
-from .storage import Storage, setup_storage
+from .storage import Storage, bucket, setup_storage
 from .uploads import stream_upload
 
 __all__ = [
@@ -60,6 +61,7 @@ __all__ = [
     "FileNotFound",
     "LocalDriver",
     "MemoryDriver",
+    "NotConfiguredError",
     "Owned",
     "Page",
     "PolicyRefused",
@@ -76,8 +78,10 @@ __all__ = [
     "StorageEvent",
     "Stored",
     "UnsafeKey",
+    "bucket",
     "chunks",
     "collect",
+    "current_storage",
     "normalise",
     "setup_storage",
     "stream_upload",

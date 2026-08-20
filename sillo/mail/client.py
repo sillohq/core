@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import MailConfig
+from .context import current_mail, register
 from .models import EmailMessage, EmailResult
 
 logger = logging.getLogger("sillo.mail")
@@ -246,6 +247,7 @@ def setup_mail(app, config: MailConfig | None = None) -> MailClient:
     app.state["mail_client"] = client
     app.on_startup(client.start)
     app.on_shutdown(client.stop)
+    register(client)
     return client
 
 
@@ -257,3 +259,38 @@ def get_mail_client(request) -> MailClient:
             "Mail client not initialized. Call setup_mail(app) during startup."
         )
     return client
+
+
+async def send_email(
+    to: str | list[str],
+    subject: str,
+    body: str | None = None,
+    **kwargs: Any,
+) -> EmailResult:
+    """Send an email through the client :func:`setup_mail` registered.
+
+    Shorthand for ``current_mail().send_email(...)``, for code that has no
+    reason to hold the whole :class:`MailClient` — a route handler, a queue
+    job, a script, anywhere after startup::
+
+        from sillo.mail import send_email
+
+        @app.post("/signup")
+        async def signup(request, response):
+            ...
+            await send_email(user.email, "Welcome", body="...")
+
+    Args:
+        to: One address or several.
+        subject: The subject line.
+        body: The plain-text body. See :meth:`MailClient.send_email` for the
+            rest — templates, attachments, HTML — all accepted here too.
+        **kwargs: Forwarded to :meth:`MailClient.send_email`.
+
+    Returns:
+        The result.
+
+    Raises:
+        NotConfiguredError: If ``setup_mail`` has not run yet.
+    """
+    return await current_mail().send_email(to, subject, body, **kwargs)
