@@ -231,6 +231,46 @@ async def on_401(request, response, exc):
 | Scope mismatch | 401 | `AuthenticationFailed` |
 | Permission denied | 403 | `PermissionDenied` |
 
+`add_exception_handler` is global — every route whose gate raises that exception
+goes through it. When one particular route needs to fail differently — a page
+that redirects to `/login` while your API returns JSON — give that gate its own
+`unauthorized`/`forbidden` hooks instead of routing failures through a shared
+handler that then has to branch:
+
+```python
+@app.get(
+    "/dashboard",
+    auth=useAuth(
+        unauthorized=lambda request, response: response.redirect("/login"),
+    ),
+)
+async def dashboard(request, response): ...
+
+@app.get(
+    "/api/orders",
+    auth=useAuth(
+        permissions=["orders:read"],
+        unauthorized=lambda request, response: response.json(
+            {"error": "sign_in_required"}, status_code=401
+        ),
+        forbidden=lambda request, response: response.json(
+            {"error": "not_allowed"}, status_code=403
+        ),
+    ),
+)
+async def orders(request, response): ...
+```
+
+Each hook is called as `hook(request, response)` — sync or async, your choice —
+and whatever it returns becomes the response; the route handler never runs.
+`unauthorized` answers the 401 a missing or mismatched scheme would have
+raised, `forbidden` answers the 403 a missing permission would have raised.
+Set one, both, or neither — a gate with no hooks behaves exactly as before, so
+existing routes are unaffected. This is the finer-grained sibling of
+`add_exception_handler`, not a replacement for it: reach for a gate-level hook
+when one route needs its own answer, and for the global handler when every
+route protected by a given exception type should agree.
+
 ##  How it all connects
 
 ```mermaid

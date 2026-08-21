@@ -22,6 +22,40 @@ methods::
     async def feed(request, response):
         user = request.user  # may be UnauthenticatedUser
 
+A failed gate normally raises ``AuthenticationFailed`` (401) or
+``PermissionDenied`` (403), which the framework turns into a generic JSON
+error. Pass ``unauthorized`` and/or ``forbidden`` to answer a specific route
+differently — a redirect to a login page, a shaped error body, whatever the
+route needs — without touching global exception handling::
+
+    @router.get(
+        "/dashboard",
+        auth=useAuth(
+            unauthorized=lambda request, response: response.redirect("/login"),
+        ),
+    )
+    async def dashboard(request, response): ...
+
+    @router.get(
+        "/api/orders",
+        auth=useAuth(
+            permissions=["orders:read"],
+            unauthorized=lambda request, response: response.json(
+                {"error": "sign_in_required"}, status_code=401
+            ),
+            forbidden=lambda request, response: response.json(
+                {"error": "not_allowed"}, status_code=403
+            ),
+        ),
+    )
+    async def orders(request, response): ...
+
+Both are optional and independent: set one, both, or neither. Either may be a
+plain function or a coroutine function, and each is called as
+``hook(request, response)``. Whatever it returns becomes the response for the
+request — the route handler never runs. Leaving a hook unset keeps the default
+exception for that failure mode, so existing routes are unaffected.
+
 Subclass to add custom logic::
 
     class OrgAuth(useAuth):
@@ -39,11 +73,13 @@ Subclass to add custom logic::
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from collections.abc import Awaitable, Callable, Sequence
+from typing import TYPE_CHECKING, Any, Union
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.exceptions import AuthenticationFailed, PermissionDenied
+from sillo.core.helpers.async_helpers import is_async_callable
+from sillo.helpers.concurrency import run_in_threadpool
 from sillo.users.simple import SimpleUser
 
 if TYPE_CHECKING:
@@ -51,8 +87,14 @@ if TYPE_CHECKING:
     # drags the ORM into `import sillo` and makes the package unimportable
     # without the `record` extra. Both names are only ever annotations here,
     # and `from __future__ import annotations` keeps those unevaluated.
-    from sillo.core.http import Request
+    from sillo.core.http import Request, Response
     from sillo.users.base import BaseUser, UserProtocol
+
+#: A per-gate failure hook: sync or async, called as ``hook(request, response)``
+#: when the gate refuses the request. Whatever it returns is sent back as the
+#: response in place of the default ``AuthenticationFailed``/``PermissionDenied``
+#: error — the route handler is never reached.
+FailureHook = Callable[["Request", "Response"], Union[Any, Awaitable[Any]]]
 
 
 #: What the shipped backends used to report as ``AuthResult.scope``, mapped to
@@ -159,6 +201,8 @@ class useAuth:
         required: bool = True,
         schemes: list[str] | dict[str, list[str]] | None = None,
         all_of: bool = False,
+        unauthorized: FailureHook | None = None,
+        forbidden: FailureHook | None = None,
     ) -> None:
         """Initialise the authentication gate with scheme, permission, and backend config.
 
@@ -189,6 +233,13 @@ class useAuth:
                 ``False`` (the default) means any one will do, which OpenAPI
                 writes as separate requirement objects; ``True`` means all of
                 them, which OpenAPI writes as one object with several keys.
+            unauthorized: Called as ``hook(request, response)`` in place of
+                the default 401 when authentication is missing or the scheme
+                does not match. Its return value becomes the response and the
+                route handler does not run. May be sync or async. ``None``
+                (the default) keeps raising ``AuthenticationFailed``.
+            forbidden: The same, for the 403 a missing permission raises.
+                ``None`` (the default) keeps raising ``PermissionDenied``.
 
         Returns:
             None. This is a constructor that initialises the gate state.
@@ -211,6 +262,57 @@ class useAuth:
             else {name: list(value or []) for name, value in schemes.items()}
         )
         self.all_of: bool = all_of
+        self.unauthorized: FailureHook | None = unauthorized
+        self.forbidden: FailureHook | None = forbidden
+
+    async def guard(self, request: Request, response: Response) -> Any | None:
+        """Run the gate, and turn a failure into a response if this gate says how to.
+
+        The entry point the router calls — in preference to ``authenticate``
+        directly — because answering a failure with a custom response needs
+        ``response``, which ``authenticate`` was never given and whose
+        signature stays untouched so existing subclasses keep working.
+
+        Args:
+            request: The incoming request.
+            response: The outgoing response, handed to whichever hook fires.
+
+        Returns:
+            The hook's return value if ``authenticate`` raised and this gate
+            has a matching hook — the caller should send that back as the
+            response instead of invoking the route handler. ``None`` if
+            authentication passed, meaning the caller should proceed as usual.
+
+        Raises:
+            AuthenticationFailed: Authentication failed and no ``unauthorized``
+                hook is set on this gate.
+            PermissionDenied: A permission was missing and no ``forbidden``
+                hook is set on this gate.
+        """
+        try:
+            await self.authenticate(request)
+        except PermissionDenied:
+            if self.forbidden is None:
+                raise
+            return await self._run_hook(self.forbidden, request, response)
+        except AuthenticationFailed:
+            if self.unauthorized is None:
+                raise
+            return await self._run_hook(self.unauthorized, request, response)
+        return None
+
+    @staticmethod
+    async def _run_hook(hook: FailureHook, request: Request, response: Response) -> Any:
+        """Call a failure hook, awaiting it only if it is itself async.
+
+        A sync hook runs in the thread pool rather than inline, on the same
+        reasoning the router applies to a sync route handler: it is allowed to
+        do blocking work, and inlining it would block the event loop for
+        everyone else's requests while it does.
+        """
+        if is_async_callable(hook):
+            return await hook(request, response)
+        return await run_in_threadpool(hook, request, response)
 
     async def authenticate(self, request: Request) -> bool:
         """Run the authentication and authorisation gate before the route handler.

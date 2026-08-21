@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sillo.storage.current_storage()` and `sillo.storage.bucket(name)` — reach the `Storage` `setup_storage` registered, from a handler, a queue job, or a script, without the application object or a request.
 - `sillo.mail.current_mail()` and `sillo.mail.send_email(...)` — same shape, for the `MailClient` `setup_mail` registered.
 - `sillo._internals.registry.InstanceRegistry`, the shared internal mechanism behind both: a plain slot filled once at startup and read from anywhere, raising `NotConfiguredError` — not `None` — when asked before `setup_x` has run. Documented in [Instance Registry](https://sillo.build/advanced/context-binding/).
+- `useAuth(unauthorized=..., forbidden=...)` — per-route hooks that answer a failed gate directly instead of raising `AuthenticationFailed`/`PermissionDenied` for the global exception handler to catch. Each is called as `hook(request, response)`, sync or async, and its return value is sent as the response with the route handler never reached. Unset, a gate behaves exactly as before.
 
 ## [0.2.0] - 2026-08-18
 
