@@ -5,15 +5,9 @@ All notable changes to Sillo are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.1] - 2026-08-19
-
-### Changed
-
-- Replaced `itsdangerous` with an internal `sillo.helpers.signing` implementation for CSRF tokens and signed session cookies.
-- Moved `sillo.utils` modules into `sillo.helpers`.
-- Fixed `typing-extensions` dependency marker to require the package on Python < 3.13.
-
 ## [Unreleased]
+
+## [0.3.0] - 2026-08-21
 
 ### Added
 
@@ -21,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sillo.mail.current_mail()` and `sillo.mail.send_email(...)` — same shape, for the `MailClient` `setup_mail` registered.
 - `sillo._internals.registry.InstanceRegistry`, the shared internal mechanism behind both: a plain slot filled once at startup and read from anywhere, raising `NotConfiguredError` — not `None` — when asked before `setup_x` has run. Documented in [Instance Registry](https://sillo.build/advanced/context-binding/).
 - `useAuth(unauthorized=..., forbidden=...)` — per-route hooks that answer a failed gate directly instead of raising `AuthenticationFailed`/`PermissionDenied` for the global exception handler to catch. Each is called as `hook(request, response)`, sync or async, and its return value is sent as the response with the route handler never reached. Unset, a gate behaves exactly as before.
+
+## [0.2.1] - 2026-08-19
+
+### Changed
+
+- Replaced `itsdangerous` with an internal `sillo.helpers.signing` implementation for CSRF tokens and signed session cookies.
+- Moved `sillo.utils` modules into `sillo.helpers`.
+- Fixed `typing-extensions` dependency marker to require the package on Python < 3.13.
 
 ## [0.2.0] - 2026-08-18
 
