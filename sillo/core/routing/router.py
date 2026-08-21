@@ -644,7 +644,24 @@ class Route(BaseRoute):
                 injected[self._validated_param_name] = validated
 
         if self.auth is not None:
-            await self.auth.authenticate(request)
+            # `guard`, when the gate has one, in preference to `authenticate`
+            # directly: it is what lets a `useAuth`'s `unauthorized`/
+            # `forbidden` hooks answer the request themselves. `authenticate`
+            # alone never gets `response`, which those hooks need.
+            #
+            # `auth` is duck-typed rather than required to be a `useAuth`
+            # (see its `Any | None` annotation above), so a hand-built gate
+            # that only ever implemented `authenticate` — the documented
+            # extension point before `guard` existed — is called the way it
+            # always was rather than breaking on a method it was never asked
+            # to define.
+            guard = getattr(self.auth, "guard", None)
+            if guard is not None:
+                early_response = await guard(request, response)
+                if early_response is not None:
+                    return early_response
+            else:
+                await self.auth.authenticate(request)
 
         # Path parameters reach the handler as **kwargs. When one is also
         # declared with a validation marker, the validated value supersedes the

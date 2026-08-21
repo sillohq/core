@@ -5,10 +5,11 @@ import pytest
 from sillo.application import SilloApp
 from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.backend import AuthenticationBackend
+from sillo.auth.exceptions import AuthenticationFailed
 from sillo.auth.model import AuthResult
-from sillo.users import SimpleUser, UnauthenticatedUser
 from sillo.core.http import Request, Response
 from sillo.testclient import AsyncTestClient
+from sillo.users import SimpleUser, UnauthenticatedUser
 
 
 class TestUser(BaseUser):
@@ -370,3 +371,279 @@ async def test_use_auth_subclass_custom_logic(test_client):
 
         res = await client.get("/custom", headers={"X-Auth": "valid", "X-Custom": "granted"})
         assert res.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# useAuth: unauthorized / forbidden hooks
+# ---------------------------------------------------------------------------
+#
+# `unauthorized` answers the 401 a missing/mismatched-scheme authentication
+# would have raised; `forbidden` answers the 403 a missing permission would
+# have raised. Both are optional, independent, and — unset — change nothing:
+# the gate keeps raising AuthenticationFailed/PermissionDenied exactly as it
+# always did, which the tests in this section confirm as much as the new
+# behaviour itself.
+
+
+async def test_unauthorized_hook_replaces_the_401(test_client):
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get(
+        "/protected",
+        auth=useAuth(unauthorized=lambda req, res: res.json({"custom": True}, status_code=401)),
+    )
+    async def protected(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/protected")
+        assert res.status_code == 401
+        assert res.json() == {"custom": True}
+
+
+async def test_unauthorized_hook_can_redirect(test_client):
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get(
+        "/dashboard",
+        auth=useAuth(unauthorized=lambda req, res: res.redirect("/login")),
+    )
+    async def dashboard(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/dashboard", follow_redirects=False)
+        assert res.status_code == 302
+        assert res.headers["location"] == "/login"
+
+
+async def test_unauthorized_hook_fires_on_scheme_mismatch_too(test_client):
+    """A wrong-scheme authentication is also `AuthenticationFailed` — the hook
+    has to cover that path, not only "no user at all"."""
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get(
+        "/scoped",
+        auth=useAuth(
+            schemes=["sessionCookie"],
+            unauthorized=lambda req, res: res.json({"reason": "wrong-scheme"}, status_code=401),
+        ),
+    )
+    async def scoped(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/scoped", headers={"X-Auth": "valid"})
+        assert res.status_code == 401
+        assert res.json() == {"reason": "wrong-scheme"}
+
+
+async def test_forbidden_hook_replaces_the_403(test_client):
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get(
+        "/admin-only",
+        auth=useAuth(
+            permissions=["admin"],
+            forbidden=lambda req, res: res.json({"custom": True}, status_code=403),
+        ),
+    )
+    async def admin_only(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/admin-only", headers={"X-Auth": "valid"})
+        assert res.status_code == 403
+        assert res.json() == {"custom": True}
+
+
+async def test_forbidden_hook_does_not_fire_on_401(test_client):
+    """An anonymous caller against a permission-gated route is still a 401,
+    not a 403 — `forbidden` must not be asked to answer for `unauthorized`."""
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get(
+        "/admin-only",
+        auth=useAuth(
+            permissions=["admin"],
+            forbidden=lambda req, res: res.json({"wrong_hook": True}, status_code=403),
+        ),
+    )
+    async def admin_only(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/admin-only")
+        assert res.status_code == 401
+        assert res.json() != {"wrong_hook": True}
+
+
+async def test_unauthorized_and_forbidden_are_independent(test_client):
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get(
+        "/both",
+        auth=useAuth(
+            permissions=["admin"],
+            unauthorized=lambda req, res: res.json({"which": "unauthorized"}, status_code=401),
+            forbidden=lambda req, res: res.json({"which": "forbidden"}, status_code=403),
+        ),
+    )
+    async def both(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        anon = await client.get("/both")
+        assert anon.status_code == 401 and anon.json() == {"which": "unauthorized"}
+
+        non_admin = await client.get("/both", headers={"X-Auth": "valid"})
+        assert non_admin.status_code == 403 and non_admin.json() == {"which": "forbidden"}
+
+
+async def test_an_async_hook_is_awaited(test_client):
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    async def hook(req: Request, res: Response):
+        return res.json({"async": True}, status_code=401)
+
+    @app.get("/protected", auth=useAuth(unauthorized=hook))
+    async def protected(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/protected")
+        assert res.status_code == 401
+        assert res.json() == {"async": True}
+
+
+async def test_a_sync_hook_still_runs_without_blocking_the_test(test_client):
+    """Exercises the thread-pool path `_run_hook` takes for a plain function."""
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    def hook(req: Request, res: Response):
+        return res.json({"sync": True}, status_code=401)
+
+    @app.get("/protected", auth=useAuth(unauthorized=hook))
+    async def protected(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/protected")
+        assert res.status_code == 401
+        assert res.json() == {"sync": True}
+
+
+async def test_the_route_handler_never_runs_when_a_hook_fires(test_client):
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+    handler_calls = []
+
+    @app.get(
+        "/protected",
+        auth=useAuth(unauthorized=lambda req, res: res.json({}, status_code=401)),
+    )
+    async def protected(req: Request, res: Response):
+        handler_calls.append(1)
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        await client.get("/protected")
+        assert handler_calls == []
+
+
+async def test_no_hooks_keeps_raising_authentication_failed(test_client):
+    """The default behaviour, unchanged, when neither hook is set."""
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get("/protected", auth=useAuth())
+    async def protected(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/protected")
+        assert res.status_code == 401
+        assert "Authentication failed" in res.text
+
+
+async def test_no_forbidden_hook_keeps_raising_permission_denied(test_client):
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get("/admin-only", auth=useAuth(permissions=["admin"]))
+    async def admin_only(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        res = await client.get("/admin-only", headers={"X-Auth": "valid"})
+        assert res.status_code == 403
+        assert "Permission denied" in res.text
+
+
+async def test_hooks_are_stored_on_the_instance():
+    """The plumbing `guard()` reads from — worth pinning directly, since a
+    typo in the attribute name would otherwise only show up as a hook that
+    silently never fires."""
+
+    def unauthorized_hook(req, res):
+        return None
+
+    def forbidden_hook(req, res):
+        return None
+
+    gate = useAuth(unauthorized=unauthorized_hook, forbidden=forbidden_hook)
+    assert gate.unauthorized is unauthorized_hook
+    assert gate.forbidden is forbidden_hook
+
+    bare = useAuth()
+    assert bare.unauthorized is None
+    assert bare.forbidden is None
+
+
+async def test_guard_returns_none_when_authentication_passes():
+    """`guard()` is what the router short-circuits on a non-None return —
+    confirm the success path gives it nothing to short-circuit on."""
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+    gate = useAuth(unauthorized=lambda req, res: res.json({}, status_code=401))
+
+    class FakeRequest:
+        def __init__(self):
+            self.scope = {"user": TestUser("1", "testuser"), "auth": None, "auth_scheme": None}
+
+    result = await gate.guard(FakeRequest(), response=None)
+    assert result is None
+
+
+async def test_a_custom_gate_without_guard_still_works(test_client):
+    """`auth=` is duck-typed (`Any | None`), so a hand-built gate that only
+    ever implemented `authenticate` — the extension point documented before
+    `guard` existed — must keep working through the router's fallback."""
+
+    class BareGate:
+        async def authenticate(self, request):
+            if request.headers.get("X-Auth") != "valid":
+                raise AuthenticationFailed
+            return True
+
+    app = SilloApp()
+    app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
+
+    @app.get("/bare", auth=BareGate())
+    async def bare(req: Request, res: Response):
+        return res.json({"ok": True})
+
+    async with test_client(app) as client:
+        denied = await client.get("/bare")
+        assert denied.status_code == 401
+
+        allowed = await client.get("/bare", headers={"X-Auth": "valid"})
+        assert allowed.status_code == 200
