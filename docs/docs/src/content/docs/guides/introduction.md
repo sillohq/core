@@ -1,20 +1,20 @@
 ---
 title: Introduction
-description: Sillo is an async Python web framework for APIs, real-time systems and production backends, with the ORM, authentication, admin, queues, scheduler and WebSockets already in place.
+description: Sillo is the buildsmith framework for APIs, real-time systems and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, admin, queues, scheduler and WebSockets already in place.
 head:
 - tag: meta
   attrs:
     property: og:title
-    content: "Sillo: Python With the Pieces Already in Place"
+    content: "Sillo: The Buildsmith Framework"
 - tag: meta
   attrs:
     property: og:description
-    content: The same Python you already write, with the ORM, auth, admin, queues, scheduler and WebSockets designed against each other and sharing one config model.
+    content: Fast, async, and built with everything you need to ship, with the ORM, auth, admin, queues, scheduler and WebSockets designed against each other and sharing one config model.
 ---
 
 #  Introduction
 
-Sillo is Python with the pieces already in place.
+Sillo is the buildsmith framework: fast, async, and built with everything you need to ship.
 
 The language does not change. You write the same Python, with the same type hints and the same `async`/`await` you already know. What changes is how much of the backend is waiting for you when you start: routing, validation, dependency injection, the ORM, authentication, sessions, background jobs, scheduling, caching, WebSockets, the admin, and the testing tools are all first-party modules that share one configuration model.
 
