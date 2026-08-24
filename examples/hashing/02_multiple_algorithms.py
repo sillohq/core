@@ -23,7 +23,7 @@ def example_bcrypt():
 
     password = "my_secure_password"
 
-    hashed = hash_password(password, algorithm="bcrypt")
+    hashed = hash_password(password, scheme="bcrypt")
     print(f"Password: {password}")
     print(f"Hash: {hashed}")
     print(f"Hash starts with: {hashed[:10]}")
@@ -42,7 +42,7 @@ def example_argon2():
     password = "my_secure_password"
 
     try:
-        hashed = hash_password(password, algorithm="argon2")
+        hashed = hash_password(password, scheme="argon2")
         print(f"Password: {password}")
         print(f"Hash: {hashed}")
         print(f"Hash starts with: {hashed[:10]}")
@@ -65,7 +65,7 @@ def example_scrypt():
     password = "my_secure_password"
 
     try:
-        hashed = hash_password(password, algorithm="scrypt")
+        hashed = hash_password(password, scheme="scrypt")
         print(f"Password: {password}")
         print(f"Hash: {hashed[:50]}...")
         print(f"Hash starts with: {hashed.split('$')[0]}")
@@ -87,7 +87,7 @@ def example_pbkdf2():
 
     password = "my_secure_password"
 
-    hashed = hash_password(password, algorithm="pbkdf2")
+    hashed = hash_password(password, scheme="pbkdf2")
     print(f"Password: {password}")
     print(f"Hash: {hashed[:60]}...")
     print(f"Hash starts with: {hashed.split('$')[0]}")
@@ -105,8 +105,8 @@ def example_auto_detection():
 
     password = "my_secure_password"
 
-    bcrypt_hash = hash_password(password, algorithm="bcrypt")
-    pbkdf2_hash = hash_password(password, algorithm="pbkdf2")
+    bcrypt_hash = hash_password(password, scheme="bcrypt")
+    pbkdf2_hash = hash_password(password, scheme="pbkdf2")
 
     print(f"Bcrypt hash: {bcrypt_hash[:30]}...")
     print(f"PBKDF2 hash: {pbkdf2_hash[:30]}...")
@@ -158,7 +158,7 @@ def example_comparison():
         ("pbkdf2", "PBKDF2 (600,000 iterations)"),
     ]:
         try:
-            hashed = hash_password(password, algorithm=algo)
+            hashed = hash_password(password, scheme=algo)
             verified = verify_password(password, hashed)
             print(f"✓ {algo:10s} - {desc:40s} - Verified: {verified}")
         except Exception as e:
