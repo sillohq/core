@@ -3,6 +3,7 @@ from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.middleware import AuthenticationMiddleware
 from sillo.users import BaseUser
 from sillo.users import UnauthenticatedUser
+from sillo.auth.backend import AuthResult
 from sillo.core.http import Request, Response
 
 
@@ -47,13 +48,13 @@ class CustomAuthBackend(AuthenticationBackend):
         custom_token = request.headers.get("X-Custom-Token")
 
         if not custom_token:
-            return UnauthenticatedUser(), "no-auth"
+            return AuthResult(success=False, identity="", scope="")
 
         # Validate token and return identity for middleware to load user
         if custom_token == "valid-token-123":
-            return "123", "custom-auth"  # Return identity, let middleware load user
+            return AuthResult(success=True, identity="123", scope="custom-auth")
 
-        return UnauthenticatedUser(), "no-auth"
+        return AuthResult(success=False, identity="", scope="")
 
 
 app = SilloApp()

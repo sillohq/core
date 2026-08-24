@@ -42,6 +42,7 @@ app = SilloApp()
 app.use(AuthenticationMiddleware(user_model=User, backend=jwt_backend))
 
 auth_router = Router()
+app.mount_router(auth_router)
 
 
 @auth_router.post("/login")

@@ -106,7 +106,7 @@ async def session_login(req: Request, res: Response):
     # Validate credentials (replace with your logic)
     if username == "admin" and password == "password":
 
-        login(req, User(id="123", username="user", password="password"))
+        login(req, User(id="123", username="user"))
         return res.redirect("/dashboard")
 
     return res.html("Invalid credentials", status_code=401)

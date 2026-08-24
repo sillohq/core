@@ -17,7 +17,7 @@ class ComplexMiddleware(BaseMiddleware):
         req.state.request_time = datetime.now()
 
         # Proceed to next middleware or handler
-        await cnext(req, res)
+        await cnext()
 
     async def process_response(self, req: Request, res: Response):
         # Post-processing: Add response headers

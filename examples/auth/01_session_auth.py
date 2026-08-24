@@ -58,7 +58,7 @@ app.use(AuthenticationMiddleware(user_model=User, backend=session_backend))
 
 
 @app.get("/login")
-async def login(req, res):
+async def login_form(req, res):
     return """
     <form action="/login" method="post">
         <label>Username: <input type="text" name="username"></label>
