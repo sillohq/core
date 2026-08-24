@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: Sillo is the buildsmith framework for APIs, real-time systems and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, admin, queues, scheduler and WebSockets already in place.
+description: "Sillo is the buildsmith framework for APIs, real-time systems and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, admin, queues, scheduler and WebSockets already in place."
 head:
 - tag: meta
   attrs:
