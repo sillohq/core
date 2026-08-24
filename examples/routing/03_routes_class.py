@@ -1,5 +1,5 @@
 from sillo import SilloApp
-from sillo.core.routing import Routes
+from sillo.core.routing import Route
 
 app = SilloApp()
 
@@ -29,8 +29,8 @@ async def delete_user(req, res, user_id):
     return res.json({"user_id": user_id})
 
 
-app.add_route(Routes("/users", get_users, methods=["GET"]))
-app.add_route(Routes("/users/{user_id}", get_user, methods=["GET"]))
-app.add_route(Routes("/users", create_user, methods=["POST"]))
-app.add_route(Routes("/users/{user_id}", update_user, methods=["PUT"]))
-app.add_route(Routes("/users/{user_id}", delete_user, methods=["DELETE"]))
+app.add_route(Route("/users", get_users, methods=["GET"]))
+app.add_route(Route("/users/{user_id}", get_user, methods=["GET"]))
+app.add_route(Route("/users", create_user, methods=["POST"]))
+app.add_route(Route("/users/{user_id}", update_user, methods=["PUT"]))
+app.add_route(Route("/users/{user_id}", delete_user, methods=["DELETE"]))

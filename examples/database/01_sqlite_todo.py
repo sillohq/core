@@ -3,7 +3,8 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
 
 from sillo import Depend, SilloApp
-from sillo.types import Request, Response, State
+from sillo.core.http import Request, Response
+from sillo.objects.common import State
 
 # Database setup
 DB_PATH = "example.db"

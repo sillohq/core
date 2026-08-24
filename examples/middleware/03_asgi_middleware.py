@@ -1,4 +1,5 @@
 from sillo import SilloApp
+from sillo.core.http import Request, Response
 
 
 # Define raw ASGI middleware

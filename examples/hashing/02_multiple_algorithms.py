@@ -12,7 +12,7 @@ Run with:
     uv run python 02_multiple_algorithms.py
 """
 
-from sillo.hashing import hash_password, verify_password, set_default_algorithm
+from sillo.hashing import hash_password, verify_password, set_default_scheme
 
 
 def example_bcrypt():
@@ -126,7 +126,7 @@ def example_set_default():
 
     password = "my_secure_password"
 
-    set_default_algorithm("pbkdf2")
+    set_default_scheme("pbkdf2")
 
     hashed = hash_password(password)
     print(f"Default algorithm set to: PBKDF2")

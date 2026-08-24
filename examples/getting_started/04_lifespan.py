@@ -15,8 +15,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from sillo import SilloApp
-from sillo.core.http.request import Request
-from sillo.core.http.response import Response
+from sillo.core.http import Request, Response
 
 # Configure logging
 logging.basicConfig(
@@ -101,28 +100,28 @@ async def lifespan_context(app):
 regular_app = SilloApp(title="Regular Handlers Example")
 
 
-@regular_app.on_startup()
+@regular_app.on_startup
 async def startup_handler1():
     """First startup handler"""
     logger.info("Regular startup handler 1 running")
     await db.connect()
 
 
-@regular_app.on_startup()
+@regular_app.on_startup
 async def startup_handler2():
     """Second startup handler that depends on the first"""
     logger.info("Regular startup handler 2 running")
     await db.set("startup_key", "initialized")
 
 
-@regular_app.on_shutdown()
+@regular_app.on_shutdown
 async def shutdown_handler1():
     """First shutdown handler"""
     logger.info("Regular shutdown handler 1 running")
     await db.set("shutdown_key", "cleaning_up")
 
 
-@regular_app.on_shutdown()
+@regular_app.on_shutdown
 async def shutdown_handler2():
     """Second shutdown handler that should run even if the first fails"""
     logger.info("Regular shutdown handler 2 running")
@@ -137,14 +136,14 @@ custom_app = SilloApp(title="Custom Lifespan Example", lifespan=lifespan_context
 error_app = SilloApp(title="Error Handling Example")
 
 
-@error_app.on_startup()
+@error_app.on_startup
 async def failing_startup():
     """Startup handler that intentionally raises an exception"""
     logger.info("Running startup handler that will fail")
     raise ValueError("Intentional startup error for demonstration")
 
 
-@error_app.on_shutdown()
+@error_app.on_shutdown
 async def error_cleanup():
     """Shutdown handler that should run despite startup failure"""
     logger.info("Running shutdown handler after startup error")
@@ -157,12 +156,12 @@ app = SilloApp(title="sillo Lifespan Demo", lifespan=lifespan_context)
 
 
 # Add some regular handlers too (these won't run when custom lifespan is used)
-@app.on_startup()
+@app.on_startup
 async def additional_startup():
     logger.info("Additional startup handler (won't run with custom lifespan)")
 
 
-@app.on_shutdown()
+@app.on_shutdown
 async def additional_shutdown():
     logger.info("Additional shutdown handler (won't run with custom lifespan)")
 

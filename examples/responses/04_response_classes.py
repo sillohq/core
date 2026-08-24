@@ -28,7 +28,7 @@ async def text_handler(req, res):
 @app.get("/file")
 async def file_handler(req, res):
     return FileResponse(
-        "examples/respons/example_004.py", content_disposition_type="attachment"
+        "examples/responses/04_response_classes.py", content_disposition_type="attachment"
     )
 
 

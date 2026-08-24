@@ -1,4 +1,5 @@
 from sillo import SilloApp
+from sillo.core.http import Request, Response
 from sillo.templating import TemplateConfig, TemplateEngine, render
 from sillo.templating.middleware import template_context
 

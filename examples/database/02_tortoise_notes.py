@@ -5,7 +5,8 @@ from typing import AsyncGenerator, List, Optional
 from tortoise import Tortoise, fields, models
 
 from sillo import SilloApp
-from sillo.types import Request, Response, State
+from sillo.core.http import Request, Response
+from sillo.objects.common import State
 
 # Database configuration
 DATABASE_URL = "sqlite://./example_tortoise.db"

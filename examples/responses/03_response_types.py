@@ -20,7 +20,7 @@ async def json_handler(req, res):
 
 @app.get("/file")
 async def file_handler(req, res):
-    return res.file("examples/respons/index.html")
+    return res.file("examples/responses/index.html")
 
 
 @app.get("/raw")
