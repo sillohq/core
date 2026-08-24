@@ -20,6 +20,6 @@ async def process_json(req: Request, res: Response) -> Response:
     try:
         data = await req.json
         user = User(**data)
-        return res.json({"status": "success", "user": user.dict()})
+        return res.json({"status": "success", "user": user.model_dump()})
     except ValidationError as e:
         return res.json({"error": str(e)}, status_code=422)
