@@ -187,6 +187,7 @@ addopts = "--ignore=benchmarks"
 # Only the framework is measured; dependencies and the test suite itself are
 # not part of the report.
 source = ["sillo"]
+relative_files = true
 
 [tool.coverage.report]
 show_missing = true

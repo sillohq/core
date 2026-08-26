@@ -1147,7 +1147,7 @@ wheels = [
 
 [[package]]
 name = "sillo-framework"
-version = "0.2.1"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
@@ -1233,6 +1233,9 @@ jwt = [
 record = [
     { name = "tortoise-orm" },
 ]
+storage-s3 = [
+    { name = "httpx" },
+]
 templating = [
     { name = "jinja2" },
 ]
@@ -1285,6 +1288,7 @@ requires-dist = [
     { name = "granian", marker = "extra == 'dev'", specifier = ">=1.2.0" },
     { name = "granian", marker = "extra == 'granian'", specifier = ">=1.2.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.23.3,<0.29.0" },
+    { name = "httpx", marker = "extra == 'storage-s3'", specifier = ">=0.23.3" },
     { name = "jinja2", marker = "extra == 'all'", specifier = ">=3.1.6" },
     { name = "jinja2", marker = "extra == 'dev'", specifier = ">=3.1.6" },
     { name = "jinja2", marker = "extra == 'templating'", specifier = ">=3.1.6" },
@@ -1320,7 +1324,7 @@ requires-dist = [
     { name = "typing-extensions", marker = "extra == 'dev'", specifier = "==4.16.0" },
     { name = "uvicorn", specifier = ">=0.27.0" },
 ]
-provides-extras = ["jwt", "record", "crypto", "hashing-bcrypt", "hashing-argon2", "hashing-scrypt", "hashing-all", "cache", "events", "templating", "graphql", "granian", "all", "dev"]
+provides-extras = ["jwt", "record", "crypto", "hashing-bcrypt", "hashing-argon2", "hashing-scrypt", "hashing-all", "cache", "storage-s3", "events", "templating", "graphql", "granian", "all", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
