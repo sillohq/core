@@ -1,14 +1,7 @@
 """Replacing headers rather than appending them.
 
-``set_header`` and ``set_headers`` shipped with the flag spelled ``overide``
--- one 'r' short -- on four response classes and throughout the published
-documentation. The correct spelling is now the real parameter and the
-misspelling is a deprecated keyword alias.
-
-The alias is not politeness. The flag exists to *replace* a header, and the
-failure mode of losing it is a duplicate ``Content-Type`` or two
-``Access-Control-Allow-Origin`` values, which no client reports and no test
-notices until something downstream picks the wrong one.
+``set_header`` and ``set_headers`` accept ``override`` and ``override_all``
+to replace existing headers instead of appending duplicates.
 """
 
 from __future__ import annotations
@@ -100,69 +93,6 @@ class TestPositionalCallersWereNeverAffected:
         assert header_keys(response) == ["x-two"]
 
 
-class TestTheDeprecatedSpelling:
-    def test_overide_still_replaces(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            response = BaseResponse()
-            response.set_header("x-thing", "first")
-            response.set_header("x-thing", "second", overide=True)
-
-        assert header_values(response, "x-thing") == ["second"]
-
-    def test_overide_all_still_replaces(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            response = BaseResponse()
-            response.set_header("x-one", "1")
-            response.set_headers({"x-two": "2"}, overide_all=True)
-
-        assert header_keys(response) == ["x-two"]
-
-    def test_overide_false_is_honoured_rather_than_ignored(self):
-        """``overide=False`` is a real answer, not an absent one.
-
-        Reading the alias as "unset when falsy" would silently upgrade an
-        explicit False to the correct parameter's default -- which happens to
-        be the same here, and would not be if the default ever changed.
-        """
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            response = BaseResponse()
-            response.set_header("x-thing", "first")
-            response.set_header("x-thing", "second", overide=False)
-
-        assert header_values(response, "x-thing") == ["first", "second"]
-
-    def test_using_it_warns(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            BaseResponse().set_header("x", "1", overide=True)
-
-        deprecations = [w for w in caught if w.category is DeprecationWarning]
-        assert len(deprecations) == 1
-
-    def test_the_warning_names_both_spellings(self):
-        """A deprecation that does not say what to write instead is a
-        nuisance rather than a migration path."""
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            BaseResponse().set_header("x", "1", overide=True)
-
-        message = str(caught[-1].message)
-        assert "overide" in message
-        assert "override" in message
-
-    def test_the_warning_points_at_the_caller(self):
-        """``stacklevel`` has to reach past the helper *and* the method, or
-        the warning names a line inside sillo and tells the user nothing."""
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            BaseResponse().set_header("x", "1", overide=True)
-
-        assert caught[-1].filename == __file__
-
-
 class TestResponder:
     """The Responder wrapper forwards to the underlying response, and used to
     drop the flag on the way."""
@@ -188,15 +118,6 @@ class TestResponder:
 
         assert header_keys(responder.get_response()) == ["x-three"]
 
-    def test_the_deprecated_spelling_works_through_the_responder(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            responder = make_responder()
-            responder.set_header("x-thing", "first")
-            responder.set_header("x-thing", "second", overide=True)
-
-        assert header_values(responder.get_response(), "x-thing") == ["second"]
-
     def test_without_override_all_the_responder_appends(self):
         responder = make_responder()
         responder.set_header("x-one", "1")
@@ -213,9 +134,7 @@ class TestTheSourceUsesTheCorrectSpelling:
     def test_no_internal_call_site_uses_the_misspelling(self):
         """Read the syntax, not the text.
 
-        A regex over lines also matches the shim's own docstring, which quotes
-        ``overide=True`` in order to explain it. Only an actual keyword
-        argument in a call counts.
+        Only an actual keyword argument in a call counts.
         """
         import ast
         from pathlib import Path

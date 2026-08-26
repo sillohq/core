@@ -1,5 +1,5 @@
 from .core import Event
-from .emitter import AsyncEventEmitter, EventEmitter, EventNamespace
+from .emitter import EventEmitter, EventNamespace
 from .enums import EventPhase, EventPriority
 from .exceptions import (
     EventCancelledError,
@@ -13,7 +13,6 @@ from .transports.base import BaseTransport, TransportError
 from .types import EventContext, EventProtocol, ListenerType
 
 __all__ = [
-    "AsyncEventEmitter",
     "BaseTransport",
     "Event",
     "EventCancelledError",
@@ -25,7 +24,6 @@ __all__ = [
     "EventPriority",
     "EventProtocol",
     "EventSerializationMixin",
-    "ListenerAlreadyRegisteredError",
     "ListenerType",
     "MaxListenersExceededError",
     "TransportError",

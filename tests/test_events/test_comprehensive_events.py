@@ -26,7 +26,6 @@ from unittest.mock import Mock, call, patch
 import pytest
 
 from sillo.events import (
-    AsyncEventEmitter,
     Event,
     EventCancelledError,
     EventContext,
@@ -49,16 +48,6 @@ def event_emitter():
     yield emitter
     # Clean up after test
     emitter.remove_all_events()
-
-
-@pytest.fixture
-def async_event_emitter():
-    """Create a fresh AsyncEventEmitter for each test"""
-    emitter = AsyncEventEmitter()
-    yield emitter
-    # Clean up after test
-    emitter.remove_all_events()
-    emitter.shutdown()
 
 
 @pytest.fixture

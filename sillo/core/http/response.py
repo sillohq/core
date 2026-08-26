@@ -149,38 +149,6 @@ class RangeNotSatisfiable(Exception):
         self.max_size = max_size
 
 
-def _resolve_override(
-    correct: bool,
-    misspelled: bool | None,
-    method: str,
-    correct_name: str,
-    misspelled_name: str,
-) -> bool:
-    """Accept the misspelled keyword, and say so once.
-
-    ``set_header`` and ``set_headers`` shipped with ``overide`` and
-    ``overide_all`` -- one 'r' short -- so that spelling is in working code
-    and in the published documentation. Renaming outright would break it
-    silently in the worst way: ``overide=True`` would land in ``**kwargs`` or
-    raise ``TypeError`` at the one moment a caller is trying to *replace* a
-    header, and a duplicate header is not an error anyone notices quickly.
-
-    The correct spelling is a normal positional parameter, so callers passing
-    it positionally were never affected. The misspelling survives as a
-    keyword-only alias that warns.
-    """
-    if misspelled is None:
-        return correct
-
-    warnings.warn(
-        f"{method}({misspelled_name}=...) is a misspelling of "
-        f"{method}({correct_name}=...) and will be removed in Sillo 0.2.0.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
-    return misspelled
-
-
 class BaseResponse:
     """Base ASGI-compatible Response class for the sillo framework.
 
@@ -585,8 +553,6 @@ class BaseResponse:
         key: str,
         value: str,
         override: bool = False,
-        *,
-        overide: bool | None = None,
     ) -> BaseResponse:
         """Set a response header.
 
@@ -594,12 +560,7 @@ class BaseResponse:
             key: Header name.
             value: Header value.
             override: If True, replace any existing header with the same name.
-            overide: Deprecated misspelling of ``override``.
         """
-        override = _resolve_override(
-            override, overide, "set_header", "override", "overide"
-        )
-
         key_bytes = key.lower().encode(
             "latin-1"
         )  # Normalize key to lowercase for case-insensitive comparison
@@ -622,20 +583,13 @@ class BaseResponse:
         self,
         headers: dict[str, str],
         override_all: bool = False,
-        *,
-        overide_all: bool | None = None,
     ):
         """Set multiple headers at once.
 
         Args:
             headers: Dict of header name to value.
             override_all: If True, replace all existing headers.
-            overide_all: Deprecated misspelling of ``override_all``.
         """
-        override_all = _resolve_override(
-            override_all, overide_all, "set_headers", "override_all", "overide_all"
-        )
-
         if override_all:
             self.raw_headers[:] = [
                 (k.lower().encode("latin-1"), v.encode("latin-1"))
@@ -1737,8 +1691,6 @@ class Responder:
         key: str,
         value: str,
         override: bool = False,
-        *,
-        overide: bool | None = None,
     ):
         """Set a response header.
 
@@ -1746,11 +1698,7 @@ class Responder:
             key: Header name.
             value: Header value.
             override: If True, replace any existing header with the same name.
-            overide: Deprecated misspelling of ``override``.
         """
-        override = _resolve_override(
-            override, overide, "set_header", "override", "overide"
-        )
         self._response.set_header(key, value, override)
         return self
 
@@ -1964,20 +1912,13 @@ class Responder:
         self,
         headers: dict[str, str],
         override_all: bool = False,
-        *,
-        overide_all: bool | None = None,
     ):
         """Set multiple headers at once.
 
         Args:
             headers: Dict of header name to value.
             override_all: If True, replace all existing headers.
-            overide_all: Deprecated misspelling of ``override_all``.
         """
-        override_all = _resolve_override(
-            override_all, overide_all, "set_headers", "override_all", "overide_all"
-        )
-
         if override_all:
             # The flag has to be forwarded. Calling `set_headers(headers)`
             # here dropped it, so the underlying response took its *appending*

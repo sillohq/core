@@ -43,25 +43,24 @@ WS_1013_TRY_AGAIN_LATER = 1013
 WS_1014_BAD_GATEWAY = 1014
 WS_1015_TLS_HANDSHAKE = 1015
 
-__deprecated__ = {"WS_1004_NO_STATUS_RCVD": 1004, "WS_1005_ABNORMAL_CLOSURE": 1005}
-
-
-def __getattr__(name: str) -> int:
-    deprecation_changes = {
-        "WS_1004_NO_STATUS_RCVD": "WS_1005_NO_STATUS_RCVD",
-        "WS_1005_ABNORMAL_CLOSURE": "WS_1006_ABNORMAL_CLOSURE",
-    }
-    deprecated = __deprecated__.get(name)
-    if deprecated:
-        warnings.warn(
-            f"'{name}' is deprecated and will be removed in Sillo 0.2.0. "
-            f"Use '{deprecation_changes[name]}' instead.",
-            category=DeprecationWarning,
-            stacklevel=3,
-        )
-        return deprecated
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+__all__ = (
+    "WS_1000_NORMAL_CLOSURE",
+    "WS_1001_GOING_AWAY",
+    "WS_1002_PROTOCOL_ERROR",
+    "WS_1003_UNSUPPORTED_DATA",
+    "WS_1005_NO_STATUS_RCVD",
+    "WS_1006_ABNORMAL_CLOSURE",
+    "WS_1007_INVALID_FRAME_PAYLOAD_DATA",
+    "WS_1008_POLICY_VIOLATION",
+    "WS_1009_MESSAGE_TOO_BIG",
+    "WS_1010_MANDATORY_EXT",
+    "WS_1011_INTERNAL_ERROR",
+    "WS_1012_SERVICE_RESTART",
+    "WS_1013_TRY_AGAIN_LATER",
+    "WS_1014_BAD_GATEWAY",
+    "WS_1015_TLS_HANDSHAKE",
+)
 
 
 def __dir__() -> list[str]:
-    return sorted(list(__all__) + list(__deprecated__.keys()))
+    return sorted(list(__all__))

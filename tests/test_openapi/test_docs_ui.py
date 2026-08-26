@@ -381,40 +381,6 @@ class TestValidation:
             SilloApp(docs=[NoRender()])
 
 
-class TestLegacyArguments:
-    def test_swagger_docs_still_moves_the_page(self):
-        client = TestClient(SilloApp(swagger_docs="/api-docs"))
-
-        assert client.get("/api-docs").status_code == 200
-        assert client.get("/docs").status_code == 404
-
-    def test_redoc_docs_still_moves_the_page(self):
-        client = TestClient(SilloApp(redoc_docs="/api-redoc"))
-
-        assert client.get("/api-redoc").status_code == 200
-        assert client.get("/redoc").status_code == 404
-
-    def test_both_legacy_paths_together(self):
-        app = SilloApp(swagger_docs="/s", redoc_docs="/r")
-
-        assert [ui.path for ui in app.docs] == ["/s", "/r"]
-
-    def test_docs_with_moved_swagger_path_is_refused(self):
-        # The two say the same thing; silently preferring one hides a typo.
-        with pytest.raises(TypeError, match="swagger_docs"):
-            SilloApp(swagger_docs="/api-docs", docs=[Scalar()])
-
-    def test_docs_with_moved_redoc_path_is_refused(self):
-        with pytest.raises(TypeError, match="redoc_docs"):
-            SilloApp(redoc_docs="/api-redoc", docs=[Scalar()])
-
-    def test_docs_with_default_legacy_paths_is_fine(self):
-        # Passing the defaults explicitly is not a conflict.
-        app = SilloApp(swagger_docs="/docs", redoc_docs="/redoc", docs=[Scalar()])
-
-        assert [ui.name for ui in app.docs] == ["scalar"]
-
-
 class TestLookup:
     def test_a_mounted_presenter_is_found_by_name(self):
         app = SilloApp(docs=[Swagger(path="/docs")])

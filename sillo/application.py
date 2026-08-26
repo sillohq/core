@@ -415,14 +415,10 @@ class SilloApp:
 
         self.openapi = APIDocumentation(
             config=self.openapi_config,
-            swagger_url=swagger_docs,
-            redoc_url=redoc_docs,
             openapi_url=openapi_url,
         )
 
-        self.docs: list[DocsUI] = self._resolve_docs(
-            docs, swagger_docs=swagger_docs, redoc_docs=redoc_docs
-        )
+        self.docs: list[DocsUI] = self._resolve_docs(docs)
 
         self.events = EventEmitter()
         self.title = title or "sillo API"
@@ -498,46 +494,25 @@ class SilloApp:
     @staticmethod
     def _resolve_docs(
         docs: Sequence[DocsUI] | None,
-        *,
-        swagger_docs: str,
-        redoc_docs: str,
     ) -> list[DocsUI]:
         """Decide which documentation viewers to mount.
 
-        Reconciles the ``docs`` list with the older ``swagger_docs`` and
-        ``redoc_docs`` path arguments. Omitting ``docs`` reproduces the
-        historical behavior exactly, including a moved Swagger or ReDoc path.
+        If ``docs`` is ``None``, mount the default pair (Atlas and ReDoc).
+        Otherwise validate and return the provided list.
 
         Args:
             docs: The presenters given by the caller, or ``None``.
-            swagger_docs: The legacy Swagger path argument.
-            redoc_docs: The legacy ReDoc path argument.
 
         Returns:
             The presenters to mount, as a new list.
 
         Raises:
-            TypeError: If ``docs`` is combined with a moved legacy path, or
-                if any entry is not a documentation presenter.
+            TypeError: If ``docs`` contains entries that are not documentation
+                presenters.
             ValueError: If two presenters claim the same path.
         """
         if docs is None:
-            return default_docs(swagger_url=swagger_docs, redoc_url=redoc_docs)
-
-        legacy = [
-            name
-            for name, value, default in (
-                ("swagger_docs", swagger_docs, "/docs"),
-                ("redoc_docs", redoc_docs, "/redoc"),
-            )
-            if value != default
-        ]
-        if legacy:
-            raise TypeError(
-                f"docs= cannot be combined with {' and '.join(legacy)}; "
-                f"set the path on the presenter instead, e.g. "
-                f"docs=[Swagger(path={swagger_docs!r})]"
-            )
+            return default_docs()
 
         resolved = list(docs)
         for entry in resolved:

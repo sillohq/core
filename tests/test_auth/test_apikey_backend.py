@@ -13,7 +13,7 @@ import pytest
 
 from sillo.application import SilloApp
 from sillo.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, useAuth
-from sillo.auth.apikey import create_api_key, verify_key
+from sillo.auth.apikey import generate_api_key, verify_key
 from sillo.auth.model import AuthResult
 from sillo.users import SimpleUser
 from sillo.core.http import Request, Response
@@ -27,7 +27,7 @@ def test_client():
 
 @pytest.fixture
 def api_key_data():
-    api_key, hashed_key = create_api_key()
+    api_key, _, hashed_key = generate_api_key(prefix="key")
     return {"api_key": api_key, "hashed_key": hashed_key}
 
 

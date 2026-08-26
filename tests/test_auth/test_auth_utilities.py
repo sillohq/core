@@ -14,7 +14,7 @@ import pytest
 
 from sillo.application import SilloApp
 from sillo.auth import create_jwt, decode_jwt
-from sillo.auth.apikey import create_api_key, verify_key
+from sillo.auth.apikey import generate_api_key, verify_key
 from sillo.auth.session_auth import login, logout
 from sillo.users import SimpleUser
 from sillo.session.middleware import SessionMiddleware
@@ -84,7 +84,7 @@ def test_decode_jwt_malformed():
 
 def test_create_api_key():
     """Test API key creation."""
-    api_key, hashed_key = create_api_key()
+    api_key, _, hashed_key = generate_api_key(prefix="key")
 
     assert isinstance(api_key, str)
     assert isinstance(hashed_key, str)
@@ -95,14 +95,14 @@ def test_create_api_key():
 
 def test_verify_key_valid():
     """Test API key verification with valid key."""
-    api_key, hashed_key = create_api_key()
+    api_key, _, hashed_key = generate_api_key(prefix="key")
 
     assert verify_key(api_key, hashed_key) is True
 
 
 def test_verify_key_invalid():
     """Test API key verification with invalid key."""
-    _, hashed_key = create_api_key()
+    _, _, hashed_key = generate_api_key(prefix="key")
     invalid_key = "key_invalidtoken"
 
     assert verify_key(invalid_key, hashed_key) is False
@@ -110,7 +110,7 @@ def test_verify_key_invalid():
 
 def test_verify_key_timing_attack_protection():
     """Test that verify_key uses constant time comparison."""
-    api_key, hashed_key = create_api_key()
+    api_key, _, hashed_key = generate_api_key(prefix="key")
 
     # This should take the same amount of time regardless of correctness
     start = time.time()
