@@ -27,7 +27,6 @@ from sillo.auth.apikey.models import (
     verify_api_key,
 )
 
-
 verify_key = verify_api_key
 
 __all__ = [

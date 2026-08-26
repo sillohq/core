@@ -7,8 +7,6 @@ https://www.iana.org/assignments/websocket/websocket.xml#close-code-number
 
 from __future__ import annotations
 
-import warnings
-
 __all__ = (
     "WS_1000_NORMAL_CLOSURE",
     "WS_1001_GOING_AWAY",
@@ -63,4 +61,4 @@ __all__ = (
 
 
 def __dir__() -> list[str]:
-    return sorted(list(__all__))
+    return sorted(__all__)

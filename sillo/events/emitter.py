@@ -1,8 +1,6 @@
 import asyncio
 import threading
-import warnings
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from .core import Event

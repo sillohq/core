@@ -7,7 +7,6 @@ import mimetypes
 import os
 import stat
 import typing
-import warnings
 from base64 import b64encode
 from collections.abc import AsyncIterable, AsyncIterator, Callable
 from datetime import datetime, timedelta, timezone
