@@ -2935,35 +2935,6 @@ class SilloApp:
             handler=handler,
         )
 
-    def register(
-        self,
-        app: ASGIApp,
-        prefix: str = "",
-    ) -> None:
-        """
-        Register an external ASGI application under an optional URL prefix.
-
-        Delegates to the root router's ``register`` method to mount a
-        sub-application or external ASGI app at a given prefix path. This
-        is useful for integrating third-party ASGI components or mounting
-        independent sub-applications within the main sillo application.
-
-        Args:
-            app: An ASGI application callable conforming to the standard
-                ``(scope, receive, send)`` interface that will handle
-                requests matching the specified prefix.
-            prefix: An optional URL path prefix under which the sub-application
-                is mounted. Defaults to an empty string, meaning the app
-                handles requests at the root level.
-
-        Returns:
-            None
-
-        Raises:
-            None
-        """
-        self.router.register(app, prefix)
-
     def __str__(self) -> str:
         """
         Return a human-readable string representation of the application.

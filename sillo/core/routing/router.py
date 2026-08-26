@@ -3284,42 +3284,6 @@ class Router(BaseRouter):
 
         return all_routes
 
-    def register(
-        self,
-        app: ASGIApp,
-        prefix: str = "",
-    ):
-        """Register an ASGI application under a specific path prefix.
-
-        Wraps the provided ASGI application in a ``Group`` and adds it to
-        this router's route list at the given prefix. This method is
-        deprecated in favor of using ``Group`` directly or
-        ``mount_router`` for sub-router mounting.
-
-        A ``DeprecationWarning`` is issued when this method is called,
-        directing users to the preferred alternatives for sub-application
-        mounting.
-
-        Args:
-            app: The ASGI application to register. Can be another Router
-                instance or any ASGI-compatible callable.
-            prefix: The URL path prefix under which the application will
-                be registered. Defaults to an empty string for root-level
-                mounting.
-
-        Returns:
-            None. A ``Group`` containing the application is appended to
-            this router's internal route list.
-        """
-
-        warnings.warn(
-            "Router.register(...) is deprecated and will be removed in Sillo 0.2.0. "
-            "Please mount sub-apps using Group directly (Group(path=..., app=...)) or use Router.mount_router(...) for sub-routers.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        self.add_route(Group(app=app, path=prefix))
-
     def wrap_asgi(
         self,
         middleware_cls: Annotated[
