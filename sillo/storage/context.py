@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 
 from .._internals.registry import InstanceRegistry, NotConfiguredError
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from .storage import Storage
 
 __all__ = ["NotConfiguredError", "current_storage", "register"]

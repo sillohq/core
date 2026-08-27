@@ -103,6 +103,18 @@ class Supervisor:
                     or self.policy == RestartPolicy.ON_FAILURE
                 ):
                     break
+                # ALWAYS / EXPONENTIAL_BACKOFF restart after a clean exit too.
+                # Skipping the max_restarts check here (as the code used to)
+                # meant a task that kept succeeding restarted forever, with
+                # no way for max_restarts to ever stop it.
+                if not self._should_restart():
+                    logger.info(
+                        "Supervised task %s reached max_restarts (%d) after success",
+                        self.name,
+                        self.max_restarts,
+                    )
+                    break
+                self._restarts += 1
 
         self._stopped.set()
 
@@ -124,7 +136,7 @@ class Supervisor:
             return self.max_restarts == 0 or self._restarts < self.max_restarts
         if self.policy in (RestartPolicy.ON_FAILURE, RestartPolicy.EXPONENTIAL_BACKOFF):
             return self.max_restarts == 0 or self._restarts < self.max_restarts
-        return False
+        return False  # pragma: no cover - every RestartPolicy value is handled above
 
     def to_dict(self) -> dict[str, Any]:
         """To Dict"""

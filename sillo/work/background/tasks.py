@@ -213,7 +213,11 @@ class BackgroundTask:
 
         return {
             "total": len(instances),
-            "completed": len(done) - cancelled,
+            # `done` and `pending` are already disjoint (asyncio.wait's own
+            # contract), so `done` never includes what was just cancelled
+            # out of `pending` — subtracting `cancelled` here double-counted
+            # it and could send `completed` negative.
+            "completed": len(done),
             "cancelled": cancelled,
         }
 

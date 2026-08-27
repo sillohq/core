@@ -201,6 +201,20 @@ class DriverContract:
         )
         assert heard and heard[0].key == "a.txt"
 
+    async def test_an_async_listener_is_awaited(self, driver):
+        from sillo.storage.base import Action, StorageEvent
+
+        heard = []
+
+        async def async_listener(event):
+            heard.append(event)
+
+        driver.listen(async_listener)
+        await driver.emit(
+            StorageEvent(bucket="b", key="a.txt", action=Action.WRITE, driver=driver.name)
+        )
+        assert heard and heard[0].key == "a.txt"
+
     async def test_a_listener_that_raises_cannot_break_anything(self, driver):
         """An observer must not be able to fail a write."""
         from sillo.storage.base import Action, StorageEvent

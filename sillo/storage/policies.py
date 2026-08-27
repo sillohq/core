@@ -42,7 +42,7 @@ class BucketPolicy(Protocol):
         Returns:
             True to permit.
         """
-        ...
+        ...  # pragma: no cover - Protocol stub, never called directly
 
     def signable(self, action: Action) -> bool:
         """Whether a signed URL may grant *action* without a user.
@@ -57,7 +57,7 @@ class BucketPolicy(Protocol):
         Returns:
             True when a signature is enough on its own.
         """
-        ...
+        ...  # pragma: no cover - Protocol stub, never called directly
 
 
 class Private:

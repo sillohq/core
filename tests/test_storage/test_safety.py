@@ -113,6 +113,19 @@ class TestSniffing:
         assert sniff(b"name,email\na,b", declared="text/csv") == "text/csv"
         assert sniff(b"name,email\na,b", declared="text/html") == "text/plain"
 
+    def test_a_control_character_without_a_null_byte_is_still_binary(self):
+        """`\\x00` alone short-circuits the check in sniff(); a control
+        character without one is what actually exercises _has_binary()'s own
+        detection."""
+        assert sniff(b"\x01\x02\x03garbage") == "application/octet-stream"
+
+    def test_looks_textual(self):
+        from sillo.storage.sniff import looks_textual
+
+        assert looks_textual("text/plain") is True
+        assert looks_textual("application/json") is True
+        assert looks_textual("application/octet-stream") is False
+
 
 class TestSigning:
     @pytest.fixture
@@ -186,6 +199,14 @@ class TestSigning:
                 messages.add(str(error))
 
         assert len(messages) == 1
+
+    def test_signer_repr_omits_the_secret(self, signer):
+        assert repr(signer) == "Signer(namespace='avatars')"
+
+    def test_signed_grant_repr(self):
+        grant = SignedGrant("a.png", "GET", time.time() + 300)
+        text = repr(grant)
+        assert text.startswith("SignedGrant(GET 'a.png', expires_in=")
 
     def test_the_grant_carries_its_limits(self, signer):
         grant = SignedGrant("a.png", "PUT", time.time() + 300, "image/png", 1024)

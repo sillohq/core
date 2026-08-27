@@ -216,6 +216,59 @@ def test_static_file_custom_404_handler():
         assert "text/html" in resp.headers.get("content-type", "")
 
 
+def test_static_file_404_handler_that_mutates_response_in_place():
+    """A handler that returns None (mutates `response` directly rather than
+    returning something new) exercises __call__'s "no handler_result"
+    fallback path, which builds the response from `response.get_response()`
+    instead."""
+
+    def custom_404(request: Request, response: Response) -> None:
+        response.status(404)
+        response.set_body(b"mutated in place")
+        # Deliberately returns None: __call__ falls back to
+        # response.get_response() instead of treating this as the result.
+
+    app = SilloApp()
+    static_dir = Path(__file__).parent.parent / "static"
+    static_files = StaticFiles(directory=static_dir, custom_404_handler=custom_404)
+    static_group = Group(path="/static", app=static_files)
+    app.add_route(static_group)
+
+    with TestClient(app) as client:
+        resp = client.get("/static/nonexistent.txt")
+        assert resp.status_code == 404
+        assert resp.content == b"mutated in place"
+
+
+def test_static_file_404_handler_returning_a_bare_asgi_callable():
+    """A handler returning something directly callable as ASGI (no
+    `get_response()`) exercises __call__'s other branch."""
+
+    async def bare_asgi_response(scope, receive, send):
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 404,
+                "headers": [(b"content-type", b"text/plain")],
+            }
+        )
+        await send({"type": "http.response.body", "body": b"bare asgi"})
+
+    def custom_404(request: Request, response: Response):
+        return bare_asgi_response
+
+    app = SilloApp()
+    static_dir = Path(__file__).parent.parent / "static"
+    static_files = StaticFiles(directory=static_dir, custom_404_handler=custom_404)
+    static_group = Group(path="/static", app=static_files)
+    app.add_route(static_group)
+
+    with TestClient(app) as client:
+        resp = client.get("/static/nonexistent.txt")
+        assert resp.status_code == 404
+        assert resp.content == b"bare asgi"
+
+
 def test_static_file_cache_control():
     """Test cache control headers"""
     app = SilloApp()

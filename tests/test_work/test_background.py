@@ -152,6 +152,83 @@ async def test_count_reflects_tracked_tasks():
     await BackgroundTask.drain(timeout=3.0, cancel_remaining=False)
 
 
+async def test_cancel_after_completion_returns_false():
+    async def quick():
+        return 1
+
+    bt = BackgroundTask.run(quick)
+    await bt.wait(timeout=2)
+    assert bt.cancel() is False
+
+
+async def test_properties_before_and_after_completion():
+    async def add(a, b):
+        return a + b
+
+    bt = BackgroundTask.run(add, 2, 3)
+
+    assert isinstance(bt.id, str) and bt.id
+    assert bt.name == "add"
+    assert bt.elapsed >= 0
+    assert bt.result is None  # not finished yet
+
+    await bt.wait(timeout=2)
+
+    assert bt.result is not None
+    assert bt.result.result == 5
+
+
+async def test_to_dict_before_and_after_completion():
+    async def add(a, b):
+        return a + b
+
+    bt = BackgroundTask.run(add, 2, 3)
+    pending = bt.to_dict()
+    assert pending["result"] is None
+
+    await bt.wait(timeout=2)
+    finished = bt.to_dict()
+    assert finished["done"] is True
+    # TaskResult.to_dict() serialises `result` to its str() form.
+    assert finished["result"]["result"] == "5"
+
+
+async def test_run_sync_passes_through_an_already_async_function():
+    async def already_async(x):
+        return x * 3
+
+    bt = BackgroundTask.run_sync(already_async, 7)
+    assert await bt.wait(timeout=2) == 21
+
+
+async def test_drain_with_no_tracked_tasks():
+    BackgroundTask._instances.clear()
+    summary = await BackgroundTask.drain()
+    assert summary == {"total": 0, "completed": 0, "cancelled": 0}
+
+
+async def test_drain_cancels_tasks_that_do_not_finish_in_time():
+    BackgroundTask._instances.clear()
+
+    async def slow():
+        await asyncio.sleep(5)
+
+    BackgroundTask.run(slow)
+    summary = await BackgroundTask.drain(timeout=0.05, cancel_remaining=True)
+
+    assert summary["total"] == 1
+    assert summary["cancelled"] == 1
+    assert summary["completed"] == 0
+
+
+async def test_repr_includes_name_and_done_state():
+    async def add(a, b):
+        return a + b
+
+    bt = BackgroundTask.run(add, 2, 3)
+    assert repr(bt) == f"BackgroundTask(add, done={bt.done})"
+
+
 async def test_supervisor_on_failure_restarts_until_exhausted():
     runs = []
 
@@ -175,3 +252,66 @@ async def test_supervisor_never_policy_stops_on_success():
     sup = Supervisor(ok, RestartPolicy.NEVER, max_restarts=5, base_delay=0.01)
     await sup.start()
     assert len(runs) == 1  # ran once, not restarted
+
+
+async def test_supervisor_never_policy_does_not_restart_on_failure():
+    runs = []
+
+    async def flaky():
+        runs.append(1)
+        raise RuntimeError("nope")
+
+    sup = Supervisor(flaky, RestartPolicy.NEVER, max_restarts=5, base_delay=0.01)
+    await sup.start()
+    assert len(runs) == 1  # failed once, never restarted
+
+
+async def test_supervisor_always_policy_restarts_a_successful_task_too():
+    runs = []
+
+    async def ok():
+        runs.append(1)
+
+    sup = Supervisor(ok, RestartPolicy.ALWAYS, max_restarts=2, base_delay=0.01)
+    await sup.start()
+    # initial + 2 restarts, even though every run succeeded
+    assert len(runs) == 3
+    assert sup.to_dict()["restarts"] == 2
+
+
+async def test_supervisor_start_stops_cleanly_when_its_own_task_is_cancelled():
+    started = asyncio.Event()
+
+    async def forever():
+        started.set()
+        await asyncio.sleep(30)
+
+    sup = Supervisor(forever, RestartPolicy.NEVER)
+    run_task = asyncio.ensure_future(sup.start())
+    await started.wait()
+
+    # Cancel the supervisor's own coroutine directly, rather than going
+    # through stop() — this is what exercises start()'s own
+    # `except asyncio.CancelledError: break`. start() catches it and
+    # returns normally rather than propagating it.
+    run_task.cancel()
+    await run_task
+    assert sup._stopped.is_set()
+
+
+async def test_supervisor_stop_cancels_the_current_task():
+    started = asyncio.Event()
+
+    async def forever():
+        started.set()
+        await asyncio.sleep(30)
+
+    sup = Supervisor(forever, RestartPolicy.NEVER)
+    run_task = asyncio.ensure_future(sup.start())
+    await started.wait()
+
+    sup.stop()
+    await sup.wait(timeout=2)
+
+    assert sup._running is False
+    await run_task

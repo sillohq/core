@@ -56,6 +56,20 @@ async def test_sync_connection_empty_pop_returns_none():
     assert await conn.pop("default", timeout=0.01) is None
 
 
+async def test_sync_connection_delayed_job_becomes_available_once_due():
+    conn = SyncConnection()
+    await conn.push("default", "future-payload", delay=3600)
+    assert await conn.pop("default", timeout=0.01) is None  # not due yet
+
+    # Directly place a job past its due time, since actually sleeping out a
+    # real delay would make this test slow for no extra coverage.
+    conn._ensure("default")
+    conn._delayed["default"].append((0.0, "already-due", "due-payload"))
+
+    popped = await conn.pop("default")
+    assert popped == ("already-due", "due-payload")
+
+
 async def test_connection_manager_routes_by_name():
     mgr = ConnectionManager()
     mgr.add("default", SyncConnection()).add("emails", SyncConnection())

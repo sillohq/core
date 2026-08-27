@@ -294,3 +294,34 @@ class TestStreaming:
 
         await bucket.put("a.bin", counted(), signed=True)
         assert reads == 4
+
+
+async def test_page_lists_objects_and_records_the_event(bucket):
+    heard = []
+    bucket.driver.listen(heard.append)
+
+    await bucket.put("a.txt", chunks(b"1"), signed=True)
+    await bucket.put("b.txt", chunks(b"2"), signed=True)
+
+    page = await bucket.page(user=User())
+
+    assert {f.key for f in page.files} == {"a.txt", "b.txt"}
+    assert any(event.action == Action.LIST for event in heard)
+
+
+async def test_page_is_refused_by_policy(bucket):
+    private = Bucket("secret", MemoryDriver(), policy=Private())
+    with pytest.raises(PolicyRefused):
+        await private.page(user=User())
+
+
+async def test_signed_url_is_refused_when_the_policy_will_not_sign_it():
+    """ReadOnly signs reads only; a write URL must be refused."""
+    held = Bucket("exports", MemoryDriver(), policy=ReadOnly())
+    with pytest.raises(PolicyRefused):
+        held.signed_url("a.txt", method="PUT")
+
+
+def test_bucket_repr(bucket):
+    text = repr(bucket)
+    assert text.startswith("Bucket('attachments', driver=memory, policy=")

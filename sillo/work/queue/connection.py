@@ -22,7 +22,7 @@ logger = logging.getLogger("sillo.work.queue.connection")
 
 try:
     import redis.asyncio as aioredis  # type: ignore[import-untyped]
-except ImportError:
+except ImportError:  # pragma: no cover - exercised only without redis installed
     aioredis = None  # ty: ignore[invalid-assignment]
 
 
@@ -38,7 +38,7 @@ class QueueConnection(ABC):
         delay: Annotated[int, Doc("Seconds to delay before the job is available.")] = 0,
     ) -> str:
         """Push a job onto the queue. Returns a job ID."""
-        ...
+        ...  # pragma: no cover - abstract method
 
     @abstractmethod
     async def pop(
@@ -48,12 +48,12 @@ class QueueConnection(ABC):
         timeout: Annotated[float, Doc("Seconds to block waiting for a job.")] = 0,
     ) -> tuple[str, str] | None:
         """Pop the next available job. Returns (job_id, payload) or None."""
-        ...
+        ...  # pragma: no cover - abstract method
 
     @abstractmethod
     async def size(self, queue_name: Annotated[str, Doc("Queue name.")]) -> int:
         """Number of pending jobs."""
-        ...
+        ...  # pragma: no cover - abstract method
 
     async def clear(self, queue_name: Annotated[str, Doc("Queue name.")]) -> None:
         """Remove all pending jobs from *queue_name*."""
