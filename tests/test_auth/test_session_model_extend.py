@@ -83,3 +83,56 @@ class TestExtend:
         session = await make_session()
         await session.extend(-3600)
         assert (await Session.get(id=session.id)).is_expired is True
+
+
+class TestMarkActivity:
+    async def test_updates_last_activity(self):
+        session = await make_session()
+        before = session.last_activity
+        await session.mark_activity()
+        reloaded = await Session.get(id=session.id)
+        assert reloaded.last_activity >= before
+
+
+class TestTerminate:
+    async def test_marks_the_session_inactive(self):
+        session = await make_session()
+        assert session.is_active is True
+        await session.terminate()
+        reloaded = await Session.get(id=session.id)
+        assert reloaded.is_active is False
+
+
+class TestTerminateAllForUser:
+    async def test_deactivates_only_that_users_active_sessions(self):
+        mine_a = await make_session(user_id=1, session_key="a")
+        mine_b = await make_session(user_id=1, session_key="b")
+        already_off = await make_session(user_id=1, session_key="c", is_active=False)
+        theirs = await make_session(user_id=2, session_key="d")
+
+        count = await Session.terminate_all_for_user(1)
+
+        assert count == 2  # a and b were active; already_off was not
+        for s in (mine_a, mine_b, already_off):
+            reloaded = await Session.get(id=s.id)
+            assert reloaded.is_active is False
+        assert (await Session.get(id=theirs.id)).is_active is True
+
+
+class TestCleanupExpired:
+    async def test_deactivates_only_expired_active_sessions(self):
+        past = datetime.now(timezone.utc) - timedelta(hours=1)
+        future = datetime.now(timezone.utc) + timedelta(hours=1)
+
+        expired = await make_session(session_key="expired", expires_at=past)
+        still_valid = await make_session(session_key="valid", expires_at=future)
+        already_inactive = await make_session(
+            session_key="inactive", expires_at=past, is_active=False
+        )
+
+        count = await Session.cleanup_expired()
+
+        assert count == 1  # only the active-and-expired one
+        assert (await Session.get(id=expired.id)).is_active is False
+        assert (await Session.get(id=still_valid.id)).is_active is True
+        assert (await Session.get(id=already_inactive.id)).is_active is False

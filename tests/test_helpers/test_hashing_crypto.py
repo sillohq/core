@@ -199,6 +199,19 @@ class TestSigning:
         with pytest.raises(Exception):
             unsign_value("not-signed-at-all", "secret")
 
+    def test_sign_value_accepts_bytes_secret_and_value(self):
+        from sillo.helpers.crypto import sign_value, unsign_value
+
+        signed = sign_value(b"payload", b"secret")
+        assert unsign_value(signed, b"secret") == "payload"
+
+    def test_unsign_value_max_age_is_not_supported(self):
+        from sillo.helpers.crypto import sign_value, unsign_value
+
+        signed = sign_value("payload", "secret")
+        with pytest.raises(NotImplementedError, match="max_age"):
+            unsign_value(signed, "secret", max_age=60)
+
 
 class TestEncryption:
     """Symmetric encryption requires the optional cryptography package."""
@@ -256,6 +269,13 @@ class TestEncryption:
         key_a, _ = derive_key("password-a", salt=salt)
         key_b, _ = derive_key("password-b", salt=salt)
         assert key_a != key_b
+
+    def test_ensure_crypto_raises_import_error_without_cryptography(self, monkeypatch):
+        import sillo.helpers.crypto as crypto_helpers
+
+        monkeypatch.setattr(crypto_helpers, "_crypto_available", False)
+        with pytest.raises(ImportError, match="cryptography is required"):
+            crypto_helpers._ensure_crypto()
 
     def test_unicode_survives_encryption(self):
         from sillo.helpers.crypto import decrypt, encrypt, generate_key

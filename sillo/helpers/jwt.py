@@ -13,7 +13,7 @@ try:
     )
 
     _jwt_available = True
-except ImportError:
+except ImportError:  # pragma: no cover - exercised only without PyJWT installed
     _jwt_available = False
     pyjwt = None  # type: ignore
     ExpiredSignatureError = Exception  # ty: ignore[invalid-assignment]

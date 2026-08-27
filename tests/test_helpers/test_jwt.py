@@ -220,3 +220,51 @@ def test_specific_errors_derive_from_tokenerror():
     """One except clause should be able to catch every token problem."""
     assert issubclass(ExpiredTokenError, TokenError)
     assert issubclass(InvalidTokenError_, TokenError)
+
+
+def test_ensure_jwt_raises_import_error_without_pyjwt(monkeypatch):
+    import sillo.helpers.jwt as jwt_helpers
+
+    monkeypatch.setattr(jwt_helpers, "_jwt_available", False)
+    with pytest.raises(ImportError, match="PyJWT is required"):
+        jwt_helpers._ensure_jwt()
+
+
+def test_access_token_carries_the_issuer_claim():
+    token = create_access_token({"sub": "1"}, SECRET, issuer="my-issuer")
+    payload = decode(token, SECRET)
+    assert payload["iss"] == "my-issuer"
+
+
+def test_refresh_token_expiry_is_configurable():
+    token = create_refresh_token(
+        {"sub": "1"}, SECRET, expires_delta=timedelta(minutes=5)
+    )
+    payload = decode(token, SECRET)
+    lifetime = payload["exp"] - payload["iat"]
+    assert 290 <= lifetime <= 300
+
+
+def test_decode_without_verification_rejects_unparseable_garbage():
+    with pytest.raises(InvalidTokenError_, match="Cannot decode token"):
+        decode_without_verification("not-a-real-token-at-all")
+
+
+def test_validate_claims_accepts_a_datetime_expiry():
+    future = datetime.now(timezone.utc) + timedelta(hours=1)
+    assert validate_claims({"sub": "1", "exp": future}) is True
+
+
+def test_validate_claims_rejects_a_past_datetime_expiry():
+    past = datetime.now(timezone.utc) - timedelta(hours=1)
+    assert validate_claims({"sub": "1", "exp": past}) is False
+
+
+def test_validate_claims_rejects_a_not_yet_valid_token():
+    future_nbf = datetime.now(timezone.utc) + timedelta(hours=1)
+    assert validate_claims({"sub": "1", "nbf": future_nbf.timestamp()}) is False
+
+
+def test_validate_claims_accepts_a_datetime_nbf_already_valid():
+    past_nbf = datetime.now(timezone.utc) - timedelta(hours=1)
+    assert validate_claims({"sub": "1", "nbf": past_nbf}) is True
