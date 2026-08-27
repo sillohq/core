@@ -173,7 +173,9 @@ class FormParser:
         self.stream = stream
         self.messages: list[tuple[FormMessage, bytes]] = []
 
-    def on_field_start(self) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
+    def on_field_start(
+        self,
+    ) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle the start of a new form field during URL-encoded parsing.
 
         Appends a ``FIELD_START`` message to the internal messages list to
@@ -187,7 +189,9 @@ class FormParser:
         message = (FormMessage.FIELD_START, b"")
         self.messages.append(message)
 
-    def on_field_name(self, data: bytes, start: int, end: int) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
+    def on_field_name(
+        self, data: bytes, start: int, end: int
+    ) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle a chunk of field name data during URL-encoded parsing.
 
         Extracts the relevant slice of the incoming data buffer and appends
@@ -208,7 +212,9 @@ class FormParser:
         message = (FormMessage.FIELD_NAME, data[start:end])
         self.messages.append(message)
 
-    def on_field_data(self, data: bytes, start: int, end: int) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
+    def on_field_data(
+        self, data: bytes, start: int, end: int
+    ) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle a chunk of field value data during URL-encoded parsing.
 
         Extracts the relevant slice of the incoming data buffer and appends
@@ -229,7 +235,9 @@ class FormParser:
         message = (FormMessage.FIELD_DATA, data[start:end])
         self.messages.append(message)
 
-    def on_field_end(self) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
+    def on_field_end(
+        self,
+    ) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle the end of a form field during URL-encoded parsing.
 
         Appends a ``FIELD_END`` message to the internal messages list to
@@ -243,7 +251,9 @@ class FormParser:
         message = (FormMessage.FIELD_END, b"")
         self.messages.append(message)
 
-    def on_end(self) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
+    def on_end(
+        self,
+    ) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle the completion of the entire form parsing process.
 
         Appends an ``END`` message to the internal messages list to signal

@@ -43,7 +43,9 @@ class BaseRouter(ABC):
         Raises:
             NotImplementedError: If a subclass does not override this method.
         """
-        raise NotImplementedError("Subclasses must implement this method")  # pragma: no cover - abstract base method
+        raise NotImplementedError(
+            "Subclasses must implement this method"
+        )  # pragma: no cover - abstract base method
 
     def use(self, middleware: Any) -> None:
         """Add middleware to the router for processing incoming requests.
@@ -64,7 +66,9 @@ class BaseRouter(ABC):
         Raises:
             NotImplementedError: If a subclass does not override this method.
         """
-        raise NotImplementedError("Subclasses must implement this method")  # pragma: no cover - abstract base method
+        raise NotImplementedError(
+            "Subclasses must implement this method"
+        )  # pragma: no cover - abstract base method
 
     def build_middleware_stack(self, app: ASGIApp) -> ASGIApp:
         """Build the middleware stack for the given ASGI application.
@@ -89,7 +93,9 @@ class BaseRouter(ABC):
         Raises:
             NotImplementedError: If a subclass does not override this method.
         """
-        raise NotImplementedError("Subclasses must implement this method")  # pragma: no cover - abstract base method
+        raise NotImplementedError(
+            "Subclasses must implement this method"
+        )  # pragma: no cover - abstract base method
 
     def mount_router(self, app: Any):
         """Mount another ASGI application or router onto this router.
@@ -184,7 +190,9 @@ class BaseRoute(ABC):
         Raises:
             NotImplementedError: If a subclass does not override this method.
         """
-        raise NotImplementedError("Subclasses must implement this method")  # pragma: no cover - abstract base method
+        raise NotImplementedError(
+            "Subclasses must implement this method"
+        )  # pragma: no cover - abstract base method
 
     @abstractmethod
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -210,7 +218,9 @@ class BaseRoute(ABC):
         Raises:
             NotImplementedError: If a subclass does not override this method.
         """
-        raise NotImplementedError("Subclasses must implement this method")  # pragma: no cover - abstract base method
+        raise NotImplementedError(
+            "Subclasses must implement this method"
+        )  # pragma: no cover - abstract base method
 
     @abstractmethod
     def url_path_for(self, name: str, **path_params: dict[str, Any]) -> URLPath:
@@ -238,7 +248,9 @@ class BaseRoute(ABC):
         Raises:
             NotImplementedError: If a subclass does not override this method.
         """
-        raise NotImplementedError("Subclasses must implement this method")  # pragma: no cover - abstract base method
+        raise NotImplementedError(
+            "Subclasses must implement this method"
+        )  # pragma: no cover - abstract base method
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Handle the request by delegating to the handle method.
@@ -262,4 +274,6 @@ class BaseRoute(ABC):
         Raises:
             NotImplementedError: If a subclass does not override this method.
         """
-        raise NotImplementedError("Subclasses must implement this method")  # pragma: no cover - abstract base method
+        raise NotImplementedError(
+            "Subclasses must implement this method"
+        )  # pragma: no cover - abstract base method

@@ -43,7 +43,9 @@ def _get_context() -> Any:
     if _context is None:
         try:
             from passlib.context import CryptContext
-        except ImportError as exc:  # pragma: no cover - exercised only without passlib installed
+        except (
+            ImportError
+        ) as exc:  # pragma: no cover - exercised only without passlib installed
             raise HashingError(
                 "passlib is required for non-bcrypt hashing schemes. "
                 "Install it with: pip install passlib"
