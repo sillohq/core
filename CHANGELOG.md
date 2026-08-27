@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-27
+
+A test-coverage push that took the suite from 91.58% to over 95%. Each of the
+fixes below was found the same way: writing the first test that actually
+reached the code.
+
+### Fixed
+
+- **CORS `custom_error_messages` was silently discarded.** `CorsConfig.__init__`
+  built its settings dict with the argument's slot hardcoded to `None`
+  regardless of what was passed in, so every custom error message a project
+  configured was replaced with the generic `"CORS request denied."` default.
+
+- **`send_email(attachments=[...])` crashed on an `EmailAttachment` object.**
+  Passing a dict worked; passing an already-built `EmailAttachment` did not —
+  the non-dict branch called `message.add_attachment(att)`, treating the
+  whole attachment object as if it were a filename string, which raised
+  `TypeError: missing 1 required positional argument: 'content'` on every
+  call.
+
+- **`BackgroundTask.drain()` could report a negative `completed` count.**
+  `asyncio.wait()` already returns `done` and `pending` as disjoint sets, but
+  `drain()` subtracted the cancelled count from `len(done)` a second time,
+  so cancelling any pending task on timeout sent `completed` negative.
+
+- **A `Supervisor` on `RestartPolicy.ALWAYS` (or `EXPONENTIAL_BACKOFF`)
+  restarted a successful task forever.** `max_restarts` was only checked on
+  the failure path; a supervised task that kept succeeding was relaunched
+  immediately, with nothing incrementing the restart counter or checking the
+  limit, in a busy loop with no way to stop it short of `stop()`.
+
+- **`ListenerRegistry.once()` never actually unsubscribed a typed-event
+  listener.** It registered a wrapper closure with the dispatcher, then
+  called `dispatcher.forget(event, callback)` with the *original* callback —
+  `forget()` matches by identity, so it never found the wrapper it needed to
+  remove, and the listener kept firing on every dispatch instead of just the
+  first.
+
+- **The sync `@cache()` decorator deadlocked when called from inside a
+  running event loop.** The "run on a private loop in a thread" comment
+  described what should happen; the code scheduled the lookup coroutine onto
+  a brand-new `asyncio` loop via `run_coroutine_threadsafe` without ever
+  starting that loop running anywhere, so `fut.result()` waited on a
+  computation that could never occur. The private loop now actually runs in
+  a background thread for the duration of the call.
+
 ## [0.3.0] - 2026-08-21
 
 ### Added
