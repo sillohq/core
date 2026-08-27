@@ -243,3 +243,50 @@ def test_start_and_stop_are_safe_to_call(client):
 
 def test_client_without_a_config_uses_defaults():
     assert MailClient().config.smtp_host == "localhost"
+
+
+def test_send_email_accepts_dict_form_attachments(client):
+    result = _run(
+        client.send_email(
+            to="a@example.com",
+            subject="s",
+            body="b",
+            attachments=[
+                {"filename": "note.txt", "content": b"hi", "content_type": "text/plain"}
+            ],
+        )
+    )
+    assert result.success is True
+
+
+def test_send_email_accepts_object_form_attachments(client):
+    result = _run(
+        client.send_email(
+            to="a@example.com",
+            subject="s",
+            body="b",
+            attachments=[
+                EmailAttachment(
+                    filename="note.txt", content=b"hi", content_type="text/plain"
+                )
+            ],
+        )
+    )
+    assert result.success is True
+
+
+def test_ensure_connected_is_a_noop_when_sending_is_suppressed(client):
+    _run(client._ensure_connected())
+    assert client._smtp is None
+
+
+def test_send_mime_raises_when_not_connected(client):
+    with pytest.raises(RuntimeError, match="SMTP not connected"):
+        client._send_mime(mime_message=None, recipients=[])
+
+
+def test_render_template_is_a_noop_without_a_template_env(client):
+    msg = EmailMessage(to=["a@example.com"], subject="s", body="b")
+    # client has no template_directory configured, so _template_env is None.
+    client._render_template(msg)
+    assert msg.html_body is None

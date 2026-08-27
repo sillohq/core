@@ -470,6 +470,20 @@ def test_a_missing_template_is_reported_as_a_failure(template_dir):
     assert result.success is False
 
 
+def test_a_malformed_template_is_reported_as_a_failure(template_dir):
+    """A jinja2.TemplateError (e.g. bad syntax) must fail the send, not raise
+    out of send_message()."""
+    (template_dir / "broken.html").write_text("{% if %}")
+    client = _client(template_directory=str(template_dir))
+    _run(client.start())
+    result = _run(
+        client.send_template_email(
+            to="a@example.com", subject="X", template_name="broken"
+        )
+    )
+    assert result.success is False
+
+
 def test_autoescaping_is_on_by_default(template_dir):
     (template_dir / "escaped.html").write_text("<p>{{ value }}</p>")
     client = MailClient(

@@ -334,3 +334,172 @@ class TestCORSErrorHandling:
         )
 
         assert response.status_code == 400
+
+    async def test_strict_origin_checking_rejects_a_missing_origin(self):
+        """A falsy ``request.origin`` is refused when strict checking is on.
+
+        ``Request.origin`` always synthesizes a value from the URL when no
+        ``Origin`` header is sent, so a real request never reaches this
+        branch through the public API; it is exercised directly here with a
+        double that returns an empty origin.
+        """
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            strict_origin_checking=True,
+            debug=True,
+        )
+        middleware = CORSMiddleware(config=cors_config)
+
+        class FakeRequest:
+            origin = ""
+            scope = {"method": "GET"}
+            headers = {}
+
+        response_calls = {}
+
+        class FakeResponse:
+            def json(self, body, status_code=200):
+                response_calls["body"] = body
+                response_calls["status_code"] = status_code
+                return "denied"
+
+        async def call_next():
+            raise AssertionError("should not reach the route handler")
+
+        result = await middleware.process_request(
+            FakeRequest(), FakeResponse(), call_next
+        )
+
+        assert result == "denied"
+        assert response_calls["status_code"] == 400
+
+    def test_a_blacklisted_origin_is_denied_on_a_simple_request(self):
+        cors_config = CorsConfig(
+            allow_origins=["*"],
+            blacklist_origins=["http://evil.example.com"],
+            allow_methods=["GET"],
+            debug=True,
+        )
+
+        app = SilloApp()
+
+        @app.get("/blacklist-simple")
+        async def route(request: Request, response: Response):
+            return response.json({"message": "OK"})
+
+        app.use(CORSMiddleware(config=cors_config))
+        client = TestClient(app)
+
+        response = client.get(
+            "/blacklist-simple", headers={"Origin": "http://evil.example.com"}
+        )
+
+        assert response.status_code == 200
+        assert "Access-Control-Allow-Origin" not in response.headers
+
+    def test_wildcard_method_allows_anything(self):
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["*"],
+        )
+
+        app = SilloApp()
+
+        @app.get("/wildcard-method")
+        async def route(request: Request, response: Response):
+            return response.json({"message": "OK"})
+
+        app.use(CORSMiddleware(config=cors_config))
+        client = TestClient(app)
+
+        response = client.options(
+            "/wildcard-method",
+            headers={
+                "Origin": "http://example.com",
+                "Access-Control-Request-Method": "PATCH",
+            },
+        )
+
+        assert response.status_code == 201
+
+    def test_custom_error_message_is_used_for_a_known_error_type(self):
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            custom_error_messages={"disallowed_origin": "nope, not you"},
+        )
+
+        app = SilloApp()
+
+        @app.get("/custom-message")
+        async def route(request: Request, response: Response):
+            return response.json({"message": "OK"})
+
+        app.use(CORSMiddleware(config=cors_config))
+        client = TestClient(app)
+
+        response = client.options(
+            "/custom-message",
+            headers={
+                "Origin": "http://not-allowed.example.com",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json() == "nope, not you"
+
+    def test_regex_match_error_is_treated_as_not_allowed(self):
+        """A regex engine failure at match time must deny, not raise."""
+        import re
+
+        from sillo.security.cors._middleware import CORSMiddleware
+
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            allow_origin_regex=r"http://.*\.example\.com",
+        )
+        middleware = CORSMiddleware(config=cors_config)
+
+        class ExplodingPattern:
+            def fullmatch(self, value):
+                raise re.error("simulated regex engine failure")
+
+        middleware.allow_origin_regex = ExplodingPattern()
+
+        assert middleware.is_allowed_origin("http://sub.example.com") is False
+
+    def test_cors_config_getattr_falls_back_to_config_dict(self):
+        cors_config = CorsConfig(allow_origins=["http://example.com"])
+        assert cors_config.not_a_real_setting is None
+
+    def test_cors_config_getattr_of_config_itself_raises(self):
+        cors_config = CorsConfig(allow_origins=["http://example.com"])
+        with pytest.raises(AttributeError):
+            cors_config.__getattr__("_config")
+
+    def test_cors_config_to_dict(self):
+        cors_config = CorsConfig(allow_origins=["http://example.com"])
+        data = cors_config.to_dict()
+        assert data["allow_origins"] == ["http://example.com"]
+
+    async def test_process_request_without_a_config_passes_through(self):
+        """Defensive guard: a middleware instance with no config just delegates."""
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"], allow_methods=["GET"]
+        )
+        middleware = CORSMiddleware(config=cors_config)
+        middleware.config = None
+
+        called = {"next": False}
+
+        async def call_next():
+            called["next"] = True
+            return "ok"
+
+        result = await middleware.process_request(None, None, call_next)
+
+        assert result == "ok"
+        assert called["next"] is True

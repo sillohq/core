@@ -46,7 +46,7 @@ class CorsConfig:
             "dynamic_origin_validator": dynamic_origin_validator,
             "debug": debug,
             "custom_error_status": custom_error_status,
-            "custom_error_messages": None,
+            "custom_error_messages": custom_error_messages,
         }
         config.update(kwargs)
         self._config: dict[str, Any] = config

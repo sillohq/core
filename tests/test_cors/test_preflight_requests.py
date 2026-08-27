@@ -127,6 +127,37 @@ class TestPreflightRequests:
             == "x-custom-header, x-another-header, x-third-header"
         )
 
+    def test_preflight_wildcard_headers_still_honors_blacklist(self):
+        """A blacklisted header must be rejected even under a wildcard."""
+        cors_config = CorsConfig(
+            allow_origins=["http://example.com"],
+            allow_methods=["GET"],
+            allow_headers=["*"],
+            blacklist_headers=["x-blacklisted"],
+            debug=True,
+        )
+
+        app = SilloApp()
+
+        @app.get("/wildcard-blacklist")
+        async def route(request: Request, response: Response):
+            return response.json({"message": "OK"})
+
+        app.use(CORSMiddleware(config=cors_config))
+        wildcard_client = TestClient(app)
+
+        response = wildcard_client.options(
+            "/wildcard-blacklist",
+            headers={
+                "Origin": "http://example.com",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "X-Blacklisted",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "CORS request denied" in response.json()
+
     def test_preflight_disallowed_origin(self, client):
         """Test OPTIONS request with disallowed origin"""
         response = client.options(

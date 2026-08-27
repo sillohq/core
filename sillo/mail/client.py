@@ -16,7 +16,7 @@ try:
     import jinja2
 
     _JINJA2 = True
-except ImportError:
+except ImportError:  # pragma: no cover - exercised only without jinja2 installed
     _JINJA2 = False
 
 
@@ -142,7 +142,7 @@ class MailClient:
                 if isinstance(att, dict):
                     message.add_attachment(**att)
                 else:
-                    message.add_attachment(att)  # ty: ignore[missing-argument]
+                    message.attachments.append(att)  # ty: ignore[unresolved-attribute]
         return await self.send_message(message)
 
     async def send_template_email(
