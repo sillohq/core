@@ -310,6 +310,26 @@ class TestBaseSessionInterface:
         assert session.interface.get_cookie_secure() is False
         assert session.interface.get_cookie_samesite() == "lax"
 
+    def test_session_cookie_properties_read_from_config(self):
+        """Cookie getters fall back to config attributes when config is set"""
+
+        class Config:
+            session_cookie_name = "custom_id"
+            session_cookie_domain = "example.com"
+            session_cookie_path = "/app"
+            session_cookie_httponly = False
+            session_cookie_secure = True
+            session_cookie_samesite = "strict"
+
+        manager = MockSessionManager(config=Config())
+
+        assert manager.get_cookie_name() == "custom_id"
+        assert manager.get_cookie_domain() == "example.com"
+        assert manager.get_cookie_path() == "/app"
+        assert manager.get_cookie_httponly() is False
+        assert manager.get_cookie_secure() is True
+        assert manager.get_cookie_samesite() == "strict"
+
     def test_session_clear_sets_deleted_flag(self):
         """Test that clear() sets the deleted flag"""
         manager = MockSessionManager()

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     # A type checker sees only the real models. At runtime either branch can
     # be taken, and checking both leaves every `.filter`/`.create` call
     # resolving against the import-error stub as well as the ORM model.
@@ -19,7 +19,7 @@ else:
         from sillo.record import Model, TimestampsMixin
 
         HAS_TORTOISE = True
-    except ImportError:
+    except ImportError:  # pragma: no cover - exercised only when tortoise-orm is absent
         HAS_TORTOISE = False
 
 if HAS_TORTOISE:
@@ -256,7 +256,7 @@ if HAS_TORTOISE:
                 await entry.delete()
             return count
 
-else:
+else:  # pragma: no cover - exercised only when tortoise-orm is absent
 
     class JWTToken:
         """Stub: tortoise-orm not installed. Install with: pip install tortoise-orm"""

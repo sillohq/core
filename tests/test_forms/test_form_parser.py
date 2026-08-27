@@ -532,3 +532,78 @@ async def test_binary_file_upload(client):
     # Note: The test expects the binary content to be decoded as utf-8 with replacement
     # characters for invalid sequences - this is just for the test's sake
     # In a real app, you might want to handle binary data differently
+
+
+async def test_max_file_count_limit():
+    boundary = b"boundary123"
+    parts = []
+    for i in range(3):
+        parts.append(
+            b"--"
+            + boundary
+            + b"\r\n"
+            + f'Content-Disposition: form-data; name="file{i}"; filename="f{i}.txt"\r\n'.encode()
+            + b"Content-Type: text/plain\r\n\r\n"
+            + f"content{i}\r\n".encode()
+        )
+    parts.append(b"--" + boundary + b"--\r\n")
+    form_data = b"".join(parts)
+
+    headers = Headers(
+        [
+            (b"content-type", b"multipart/form-data; boundary=" + boundary),
+            (b"content-length", str(len(form_data)).encode()),
+        ]
+    )
+
+    parser = MultiPartParser(headers, create_form_stream(form_data), max_files=1)
+
+    with pytest.raises(MultiPartException, match="Too many files"):
+        await parser.parse()
+
+
+async def test_form_parser_dispatches_multipart_bodies_to_multipart_parser():
+    boundary = b"boundary123"
+    form_data = (
+        b"--" + boundary + b"\r\n"
+        b'Content-Disposition: form-data; name="text"\r\n\r\n'
+        b"hello\r\n"
+        b"--" + boundary + b"--\r\n"
+    )
+    headers = Headers(
+        [(b"content-type", b"multipart/form-data; boundary=" + boundary)]
+    )
+    form = await FormParser(headers, create_form_stream(form_data)).parse()
+    assert dict(form.items()) == {"text": "hello"}
+
+
+async def test_multipart_parser_direct_call_with_non_multipart_content_type():
+    headers = Headers([(b"content-type", b"application/json")])
+    parser = MultiPartParser(headers, create_form_stream(b"{}"))
+    form = await parser.parse()
+    assert dict(form.items()) == {}
+
+
+async def test_multipart_parser_direct_call_without_boundary():
+    headers = Headers([(b"content-type", b"multipart/form-data")])
+    parser = MultiPartParser(headers, create_form_stream(b""))
+    form = await parser.parse()
+    assert dict(form.items()) == {}
+
+
+async def test_user_safe_decode_falls_back_to_latin1():
+    from sillo.formparser import _user_safe_decode
+
+    invalid_utf8 = b"\xff\xfe"
+    # utf-8 decoding fails, so it should fall back to latin-1 rather than raise.
+    assert _user_safe_decode(invalid_utf8, "utf-8") == invalid_utf8.decode("latin-1")
+
+
+async def test_urlencoded_body_falls_back_to_latin1_on_bad_utf8():
+    headers = Headers([(b"content-type", b"application/x-www-form-urlencoded")])
+    # A raw 0xff byte is invalid UTF-8, forcing the latin-1 fallback path in
+    # FormParser.parse().
+    body = b"key=\xff"
+    parser = FormParser(headers, create_form_stream(body))
+    form = await parser.parse()
+    assert dict(form.items()) == {"key": "\xff"}

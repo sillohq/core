@@ -343,7 +343,11 @@ class TestClient(httpx.Client):
         except UpgradeException as exc:
             session = exc.session
         else:
-            raise RuntimeError("Expected WebSocket upgrade")
+            # The transport always raises UpgradeException for a ws(s) scheme
+            # request before dispatching to the app, so this branch guards a
+            # transport contract violation rather than any reachable app
+            # behavior.
+            raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
 
         return session
 

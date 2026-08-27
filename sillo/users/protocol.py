@@ -100,7 +100,10 @@ def check_password(raw_password: str, encoded: str) -> bool:
         return False
     try:
         return verify_password(raw_password, encoded)
-    except Exception:
+    except Exception:  # pragma: no cover
+        # verify_password() already catches every error internally and
+        # returns False, so this never actually fires; kept as a guard in
+        # case that internal contract ever changes.
         return False
 
 

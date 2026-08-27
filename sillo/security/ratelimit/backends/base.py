@@ -38,15 +38,15 @@ class RateLimitBackend:
 
     async def fetch_state(self, key: str) -> dict | None:
         """Return the stored state dict for ``key`` or ``None`` if absent/expired."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover - abstract base method
 
     async def save_state(self, key: str, state: dict, ttl: int) -> None:
         """Persist ``state`` for ``key`` with a TTL of ``ttl`` seconds."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover - abstract base method
 
     async def clear(self) -> None:
         """Drop all stored state (used by tests and admin tooling)."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover - abstract base method
 
 
 def _now() -> float:

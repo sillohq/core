@@ -126,7 +126,7 @@ class SessionAuth(AuthBackend):
         session = getattr(request, "session", None)
         if session:
             return session.get("admin_user") or session.get("user")
-        return None
+        return None  # pragma: no cover - current_user() above already required a truthy session
 
     async def login(self, request, username: str, password: str) -> bool:
         """Authenticate against ``user_model`` via the shared user contract.

@@ -319,15 +319,19 @@ class TestClientTransport(httpx.BaseTransport):
                 return {"type": "http.disconnect"}
 
             body = request.read()
-            if isinstance(body, str):
+            # httpx.Request.read() is typed and implemented to always return
+            # bytes (never str, None, or a generator), so these branches are
+            # unreachable through any real httpx.Request and are kept only as
+            # defensive handling for hypothetical duck-typed request objects.
+            if isinstance(body, str):  # pragma: no cover
                 if self.check_asgi_conformance:
                     raise ASGISpecViolation(
                         "ASGI Spec violation: body must be a bytes string"
                     )
                 body_bytes = body.encode("utf-8")
-            elif body is None:
+            elif body is None:  # pragma: no cover
                 body_bytes = b""
-            elif isinstance(body, GeneratorType):
+            elif isinstance(body, GeneratorType):  # pragma: no cover
                 try:
                     chunk = body.send(None)
                     if isinstance(chunk, str):
@@ -610,15 +614,17 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
 
             body = request.read()
 
-            if isinstance(body, str):  # type: ignore[unreachable]
+            # See the sync transport's receive() for why these branches are
+            # unreachable: httpx.Request.read() always returns bytes.
+            if isinstance(body, str):  # type: ignore[unreachable]  # pragma: no cover
                 if self.check_asgi_conformance:  # type: ignore[unreachable]
                     raise ASGISpecViolation("ASGI Spec violation: body must be bytes")
                 body_bytes = body.encode("utf-8")
 
-            elif body is None:
+            elif body is None:  # pragma: no cover
                 body_bytes = b""
 
-            elif isinstance(body, GeneratorType):  # type: ignore[unreachable]
+            elif isinstance(body, GeneratorType):  # type: ignore[unreachable]  # pragma: no cover
                 try:  # type: ignore[unreachable]
                     chunk = next(body)
                     if isinstance(chunk, str):

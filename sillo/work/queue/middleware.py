@@ -70,7 +70,10 @@ class RetryMiddleware:
                         "Retry %d/%d in %.1fs: %s", attempt, max_attempts, delay, exc
                     )
                     await asyncio.sleep(delay)
-            raise last_exc or RuntimeError("RetryMiddleware: unreachable")
+            # The last loop iteration always either returns or raises (its
+            # `attempt >= max_attempts` check guarantees that), so the loop
+            # never completes normally and this line is unreachable.
+            raise last_exc or RuntimeError("RetryMiddleware: unreachable")  # pragma: no cover
 
         return wrapper
 

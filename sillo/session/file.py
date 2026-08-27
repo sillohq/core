@@ -68,7 +68,11 @@ class FileSessionManager(BaseSessionInterface):
         root = os.path.realpath(self.storage_path)
         resolved = os.path.realpath(path)
 
-        if os.path.dirname(resolved) != root:
+        if os.path.dirname(resolved) != root:  # pragma: no cover
+            # Defense in depth: _SAFE_SESSION_KEY already rejects any key
+            # that could contain a path separator, so this only guards
+            # against something the pattern did not anticipate (e.g. a
+            # symlinked storage directory), not a reachable input.
             raise ValueError("Session key escapes the session directory")
 
         return path

@@ -234,7 +234,7 @@ class Job(Dispatchable):
 
     async def handle(self) -> Any:
         """Override this method with the job's core logic."""
-        raise NotImplementedError("Subclasses must implement handle()")
+        raise NotImplementedError("Subclasses must implement handle()")  # pragma: no cover - abstract base method
 
     async def failed(self, exception: Exception) -> None:
         """Called when the job has permanently failed. Override for custom handling."""

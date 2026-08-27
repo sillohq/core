@@ -43,7 +43,7 @@ def _get_context() -> Any:
     if _context is None:
         try:
             from passlib.context import CryptContext
-        except ImportError as exc:
+        except ImportError as exc:  # pragma: no cover - exercised only without passlib installed
             raise HashingError(
                 "passlib is required for non-bcrypt hashing schemes. "
                 "Install it with: pip install passlib"
@@ -333,7 +333,10 @@ def needs_rehash(hashed: str, rounds: int = 12) -> bool:
         try:
             current_rounds = int(hashed.split("$")[2])
             return current_rounds < rounds
-        except (IndexError, ValueError):
+        except (IndexError, ValueError):  # pragma: no cover
+            # needs_update() above already parsed this same "$2..." string's
+            # rounds segment via an identical split and did not return early,
+            # so this split cannot fail here where that one did not.
             return True
 
     return False

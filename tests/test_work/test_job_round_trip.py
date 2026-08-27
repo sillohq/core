@@ -161,3 +161,9 @@ class TestArgumentsSurvive:
         job = worker._build_job(Echo, {"args": ["carol"], "kwargs": {}})
 
         assert job.name == "carol"
+
+    def test_retry_after_and_display_name(self):
+        job = Echo(name="dave", loud=False)
+
+        assert job.retry_after() == Echo.backoff
+        assert job.display_name() == "Echo"

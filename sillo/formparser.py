@@ -8,7 +8,7 @@ from tempfile import SpooledTemporaryFile
 
 from sillo.objects import FormData, Headers, UploadedFile
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     import multipart
     from multipart.multipart import (
         parse_options_header,
@@ -18,10 +18,15 @@ else:
         try:
             import python_multipart as multipart
             from python_multipart.multipart import parse_options_header
-        except ModuleNotFoundError:
+        except ModuleNotFoundError:  # pragma: no cover
+            # Fallback for the old `multipart` package name; only exercised
+            # when python_multipart is absent but the legacy package is
+            # installed instead, which is not a supported combination here.
             import multipart
             from multipart.multipart import parse_options_header
-    except ModuleNotFoundError:
+    except ModuleNotFoundError:  # pragma: no cover
+        # Only reached if neither python-multipart nor the legacy multipart
+        # package is installed at all.
         multipart = None
         parse_options_header = None
 
@@ -168,7 +173,7 @@ class FormParser:
         self.stream = stream
         self.messages: list[tuple[FormMessage, bytes]] = []
 
-    def on_field_start(self) -> None:
+    def on_field_start(self) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle the start of a new form field during URL-encoded parsing.
 
         Appends a ``FIELD_START`` message to the internal messages list to
@@ -182,7 +187,7 @@ class FormParser:
         message = (FormMessage.FIELD_START, b"")
         self.messages.append(message)
 
-    def on_field_name(self, data: bytes, start: int, end: int) -> None:
+    def on_field_name(self, data: bytes, start: int, end: int) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle a chunk of field name data during URL-encoded parsing.
 
         Extracts the relevant slice of the incoming data buffer and appends
@@ -203,7 +208,7 @@ class FormParser:
         message = (FormMessage.FIELD_NAME, data[start:end])
         self.messages.append(message)
 
-    def on_field_data(self, data: bytes, start: int, end: int) -> None:
+    def on_field_data(self, data: bytes, start: int, end: int) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle a chunk of field value data during URL-encoded parsing.
 
         Extracts the relevant slice of the incoming data buffer and appends
@@ -224,7 +229,7 @@ class FormParser:
         message = (FormMessage.FIELD_DATA, data[start:end])
         self.messages.append(message)
 
-    def on_field_end(self) -> None:
+    def on_field_end(self) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle the end of a form field during URL-encoded parsing.
 
         Appends a ``FIELD_END`` message to the internal messages list to
@@ -238,7 +243,7 @@ class FormParser:
         message = (FormMessage.FIELD_END, b"")
         self.messages.append(message)
 
-    def on_end(self) -> None:
+    def on_end(self) -> None:  # pragma: no cover - dead callback, unused by FormParser.parse()
         """Handle the completion of the entire form parsing process.
 
         Appends an ``END`` message to the internal messages list to signal
@@ -306,8 +311,11 @@ class FormParser:
                     for key, value in field_items:
                         decoded_value = urllib.parse.unquote(value)
                         form.append(key, decoded_value)
-                except Exception:
-                    # If still can't parse, return empty form
+                except Exception:  # pragma: no cover
+                    # Defensive: latin-1 decoding never raises and parse_qsl
+                    # is lenient by default, so this is not reachable in
+                    # practice; kept as a last-resort guard against an empty
+                    # form rather than a hard failure.
                     pass
 
         return form

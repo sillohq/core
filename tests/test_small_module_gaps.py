@@ -158,6 +158,18 @@ class TestHashingSchemeSelection:
 
         assert config.get_default_scheme() == "pbkdf2_sha256"
 
+    def test_a_scheme_whose_module_cannot_be_imported_is_unavailable(
+        self, monkeypatch
+    ):
+        import sillo.hashing.config as config
+
+        fake = config.SchemeConfig(
+            name="fake", package="fake-pkg", module="definitely_not_a_real_module_xyz"
+        )
+        monkeypatch.setitem(config.SCHEMES, "fake", fake)
+
+        assert config.is_scheme_available("fake") is False
+
 
 class TestAdminActivityRepr:
     def test_it_summarises_the_entry(self):

@@ -176,7 +176,11 @@ class AsyncTestClient(httpx.AsyncClient):
         except UpgradeException as exc:
             return exc.session
         else:
-            raise RuntimeError("Expected WebSocket upgrade")
+            # The transport always raises UpgradeException for a ws(s) scheme
+            # request before dispatching to the app, so this branch guards a
+            # transport contract violation rather than any reachable app
+            # behavior.
+            raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
 
     def _prepare_websocket_headers(
         self,

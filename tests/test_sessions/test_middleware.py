@@ -277,3 +277,49 @@ class TestSessionMiddleware:
 
         response = client.get("/delete-test")
         assert response.status_code == 200
+
+    async def test_process_response_without_a_session_is_a_noop(self):
+        """process_response() is a no-op if process_request() never ran."""
+        middleware = SessionMiddleware(
+            config=SessionConfig(), secret_key="test-secret-key"
+        )
+
+        class DummyRequest:
+            def __init__(self):
+                self.scope: dict = {}
+
+        result = await middleware.process_response(DummyRequest(), None)
+        assert result is None
+
+    def test_manager_given_as_class_raises_type_error(self):
+        """Passing the manager class itself (not an instance) is rejected."""
+        with pytest.raises(TypeError, match="manager must be an instance"):
+            SessionMiddleware(
+                config=SessionConfig(),
+                manager=FileSessionManager,
+                secret_key="test-secret-key",
+            )
+
+    def test_manager_without_settable_config_is_left_alone(self):
+        """A manager whose class refuses a `.config` attribute is tolerated."""
+        from sillo.session.base import BaseSessionInterface
+
+        class ManagerWithReadonlyConfig(BaseSessionInterface):
+            def __init__(self):
+                pass  # deliberately skip setting self.config
+
+            @property
+            def config(self):
+                return None
+
+            async def load(self, session):
+                pass
+
+            async def save(self, session):
+                pass
+
+        manager = ManagerWithReadonlyConfig()
+        middleware = SessionMiddleware(
+            config=SessionConfig(), manager=manager, secret_key="test-secret-key"
+        )
+        assert middleware.session_interface is manager

@@ -56,3 +56,14 @@ def test_get_backend_unknown_raises():
 
 def test_inmemory_is_rate_limit_backend_subclass():
     assert isinstance(InMemoryBackend(), RateLimitBackend)
+
+
+def test_now_helper_returns_current_time():
+    import time
+
+    from sillo.security.ratelimit.backends.base import _now
+
+    before = time.time()
+    value = _now()
+    after = time.time()
+    assert before <= value <= after

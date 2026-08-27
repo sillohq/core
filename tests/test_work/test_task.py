@@ -174,3 +174,114 @@ def test_task_decorator_tags_function():
     assert echo._work_priority == TaskPriority.HIGH
     assert echo._work_max_attempts == 3
     assert echo._work_queue == "emails"
+
+
+async def test_is_running_reflects_status():
+    t = Task(_add, 1, 2, name="r")
+    assert t.is_running is False
+    await t.run()
+    assert t.is_running is False  # completed, not running anymore
+
+
+def test_then_chains_next_task_metadata():
+    first = Task(_add, 1, 2, name="first")
+    second = Task(_add, 3, 4, name="second")
+
+    result = first.then(second)
+
+    assert result is first
+    assert "_chain" in first.metadata
+    assert first._hooks["success"]
+
+
+def test_catch_registers_fallback_metadata():
+    main = Task(_boom, name="main")
+    fallback = Task(_add, 1, 2, name="fallback")
+
+    result = main.catch(fallback)
+
+    assert result is main
+    assert "_fallback" in main.metadata
+    assert main._hooks["failure"]
+
+
+async def test_hook_exceptions_are_logged_not_raised():
+    async def bad_hook(t):
+        raise RuntimeError("hook exploded")
+
+    t = Task(_add, 1, 2, name="hooked")
+    t.before(bad_hook)
+    # Should not raise despite the before-hook failing.
+    assert await t.run() == 3
+
+
+async def test_wait_returns_immediately_when_result_already_set():
+    t = Task(_add, 1, 2, name="already-done")
+    await t.run()
+    # result is already populated, so wait() takes the fast path.
+    assert await t.wait() == 3
+
+
+async def test_unwrap_result_returns_none_when_no_result():
+    t = Task(_add, 1, 2, name="empty")
+    assert t._unwrap_result() is None
+
+
+async def test_complete_cancelled_sets_status_and_raises():
+    t = Task(_add, 1, 2, name="cancel-me")
+    t.status = TaskStatus.RUNNING
+    with pytest.raises(asyncio.CancelledError):
+        t._complete_cancelled()
+    assert t.status == TaskStatus.CANCELLED
+    assert t.result.status == TaskStatus.CANCELLED
+
+
+async def test_unwrap_result_raises_task_cancelled():
+    t = Task(_add, 1, 2, name="cancel-me")
+    t.status = TaskStatus.RUNNING
+    with pytest.raises(asyncio.CancelledError):
+        t._complete_cancelled()
+
+    with pytest.raises(TaskCancelled):
+        t._unwrap_result()
+
+
+def test_cancel_returns_false_without_an_underlying_asyncio_task():
+    t = Task(_add, 1, 2, name="uncancellable")
+    assert t.cancel() is False
+
+
+async def test_run_handles_cancelled_error_from_the_wrapped_function():
+    async def _cancels():
+        raise asyncio.CancelledError()
+
+    t = Task(_cancels, name="cancel-in-run")
+    with pytest.raises(asyncio.CancelledError):
+        await t.run()
+    assert t.status == TaskStatus.CANCELLED
+
+
+def test_repr_contains_name_status_and_attempt():
+    t = Task(_add, 1, 2, name="reprable")
+    text = repr(t)
+    assert "reprable" in text
+    assert t.status.value in text
+
+
+def test_cancel_delegates_to_underlying_asyncio_task():
+    class FakeAsyncioTask:
+        def __init__(self):
+            self.cancelled = False
+
+        def done(self):
+            return False
+
+        def cancel(self):
+            self.cancelled = True
+            return True
+
+    t = Task(_add, 1, 2, name="cancellable")
+    fake = FakeAsyncioTask()
+    t._task = fake
+    assert t.cancel() is True
+    assert fake.cancelled is True

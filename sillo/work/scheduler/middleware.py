@@ -92,6 +92,9 @@ async def retry_middleware(
                     exc,
                 )
                 await asyncio.sleep(delay)
-        return None
+        # The last loop iteration always either returns or raises (its
+        # `attempt >= max_attempts` check guarantees that), so the loop
+        # never completes normally and this line is unreachable.
+        return None  # pragma: no cover
 
     return wrapper

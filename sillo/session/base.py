@@ -20,11 +20,11 @@ class BaseSessionInterface:
 
     async def load(self, session):
         """Load"""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover - abstract base method
 
     async def save(self, session):
         """Save"""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover - abstract base method
 
     async def delete_key(self, session_key: str) -> None:
         """Purge a stored session by key, if this backend stores anything.
