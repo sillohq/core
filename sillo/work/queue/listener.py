@@ -103,7 +103,10 @@ class ListenerRegistry:
 
             async def _once(evt):
                 """Once"""
-                self.dispatcher.forget(event, callback)
+                # `_once`, not `callback`, is what dispatcher.register() below
+                # actually stored — forget() matches by identity, so passing
+                # `callback` here silently failed to find anything to remove.
+                self.dispatcher.forget(event, _once)
                 await callback(evt)
 
             self.dispatcher.register(event, _once)

@@ -45,7 +45,7 @@ class FailedJobRepository(ABC):
         exception: Annotated[str, Doc("Traceback string.")],
     ) -> None:
         """Persist a failed job record."""
-        ...
+        ...  # pragma: no cover - abstract method
 
     @abstractmethod
     async def all(
@@ -54,24 +54,24 @@ class FailedJobRepository(ABC):
         offset: Annotated[int, Doc("Skip this many.")] = 0,
     ) -> list[FailedJob]:
         """List all failed jobs, newest first."""
-        ...
+        ...  # pragma: no cover - abstract method
 
     @abstractmethod
     async def find(
         self, job_id: Annotated[str, Doc("Job ID to look up.")]
     ) -> FailedJob | None:
         """Find a specific failed job by ID."""
-        ...
+        ...  # pragma: no cover - abstract method
 
     @abstractmethod
     async def forget(self, job_id: Annotated[str, Doc("Job ID to remove.")]) -> bool:
         """Remove a failed job record. Returns True if found."""
-        ...
+        ...  # pragma: no cover - abstract method
 
     @abstractmethod
     async def flush(self) -> None:
         """Remove all failed job records."""
-        ...
+        ...  # pragma: no cover - abstract method
 
 
 class MemoryFailedRepository(FailedJobRepository):

@@ -107,6 +107,47 @@ async def test_has_listeners():
     assert disp.has_listeners(OrderShipped) is True
 
 
+async def test_forget_on_an_unregistered_event_type_returns_false():
+    disp = EventDispatcher()
+
+    async def h(ev):
+        pass
+
+    assert disp.forget(OrderShipped, h) is False
+
+
+async def test_stop_propagation_blocks_later_wildcard_listeners():
+    disp = EventDispatcher()
+    order = []
+
+    async def first(ev):
+        order.append("first")
+        ev.stop_propagation()
+
+    async def second(ev):
+        order.append("second")
+
+    disp.register_wildcard(first)
+    disp.register_wildcard(second)
+    await disp.dispatch(OrderShipped(order_id="1", tracking="t"))
+    assert order == ["first"]
+
+
+async def test_dispatcher_clear_removes_everything():
+    disp = EventDispatcher()
+    seen = []
+
+    async def h(ev):
+        seen.append(1)
+
+    disp.register(OrderShipped, h)
+    disp.register_wildcard(h)
+    disp.clear()
+
+    await disp.dispatch(OrderShipped(order_id="1", tracking="t"))
+    assert seen == []
+
+
 async def test_listener_registry_wildcard_glob():
     disp = EventDispatcher()
     reg = ListenerRegistry(disp)
@@ -159,6 +200,51 @@ async def test_listener_registry_guard():
     await disp.dispatch(ev)
     await reg.dispatch_wildcards(ev)
     assert seen == []
+
+
+async def test_listener_registry_once_with_a_typed_event():
+    disp = EventDispatcher()
+    reg = ListenerRegistry(disp)
+    seen = []
+
+    async def h(ev):
+        seen.append(1)
+
+    reg.once(OrderShipped, h)
+    await disp.dispatch(OrderShipped(order_id="1", tracking="t"))
+    await disp.dispatch(OrderShipped(order_id="2", tracking="t"))
+    assert len(seen) == 1  # unsubscribed after the first dispatch
+
+
+async def test_wildcard_listener_handle_is_a_noop_once_already_fired():
+    seen = []
+
+    async def h(ev):
+        seen.append(1)
+
+    wl = WildcardListener("OrderShipped", h, once=True)
+    ev = OrderShipped(order_id="1", tracking="t")
+    await wl.handle(ev)
+    await wl.handle(ev)  # calling handle() again directly, bypassing the registry
+    assert len(seen) == 1
+
+
+async def test_listener_registry_clear_removes_everything():
+    disp = EventDispatcher()
+    reg = ListenerRegistry(disp)
+    seen = []
+
+    async def h(ev):
+        seen.append(1)
+
+    reg.on("OrderShipped", h)
+    reg.clear()
+
+    ev = OrderShipped(order_id="1", tracking="t")
+    await disp.dispatch(ev)
+    await reg.dispatch_wildcards(ev)
+    assert seen == []
+    assert reg._wildcards == []
 
 
 async def test_event_listener_high_level():

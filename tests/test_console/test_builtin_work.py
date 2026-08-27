@@ -2,12 +2,31 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
+import signal
 
 import pytest
 
 from sillo.console import Console, strip_ansi
 from sillo.work.console import work_commands
+
+
+@pytest.fixture(autouse=True)
+def _restore_signal_handlers():
+    """`queue:work` installs real SIGINT/SIGTERM handlers (via run_worker's
+    default handle_signals=True); this removes them afterward so one
+    (by-then-cancelled) test's handler doesn't leak into later tests."""
+    yield
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.remove_signal_handler(sig)
+        except (NotImplementedError, RuntimeError):
+            pass
 
 
 @pytest.fixture
@@ -102,6 +121,25 @@ async def test_a_queue_reports_the_work_waiting_on_it():
 
 
 # -- the in-process warning --------------------------------------------
+
+
+async def test_a_broken_connection_fails_cleanly_instead_of_a_traceback(
+    monkeypatch,
+):
+    console, stream = build()
+
+    class BrokenConnection:
+        async def size(self, name):
+            raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(
+        "sillo.work.console.WorkCommand.connection", lambda self: BrokenConnection()
+    )
+
+    code = await console.run_async(["queue:list"])
+
+    assert code != 0
+    assert "Could not reach the queue backend" in written(stream)
 
 
 async def test_an_in_process_queue_says_it_is_not_shared():
@@ -237,6 +275,39 @@ async def test_the_trigger_is_shown_for_each_task(scheduler):
     assert "0 3 * * *" in text or "3600" in text
 
 
+def test_trigger_description_with_no_trigger_at_all():
+    from sillo.work.console import ScheduleRun
+
+    class Job:
+        trigger = None
+
+    assert ScheduleRun._trigger(Job()) == "—"
+
+
+def test_trigger_description_for_a_one_shot_date_trigger():
+    from sillo.work.console import ScheduleRun
+
+    class DateTrigger:
+        at = "2030-01-01T00:00:00"
+
+    class Job:
+        trigger = DateTrigger()
+
+    assert ScheduleRun._trigger(Job()) == "once at 2030-01-01T00:00:00"
+
+
+def test_trigger_description_falls_back_to_the_class_name():
+    from sillo.work.console import ScheduleRun
+
+    class MysteryTrigger:
+        pass
+
+    class Job:
+        trigger = MysteryTrigger()
+
+    assert ScheduleRun._trigger(Job()) == "MysteryTrigger"
+
+
 async def test_an_empty_scheduler_says_so():
     from sillo.work.scheduler.manager import SchedulerManager
 
@@ -259,6 +330,13 @@ async def test_pausing_an_unknown_task_fails(scheduler):
     console, stream = build(scheduler=scheduler)
 
     assert await console.run_async(["schedule:pause", "nope"]) == 1
+    assert "No scheduled task with id 'nope'" in written(stream)
+
+
+async def test_resuming_an_unknown_task_fails(scheduler):
+    console, stream = build(scheduler=scheduler)
+
+    assert await console.run_async(["schedule:resume", "nope"]) == 1
     assert "No scheduled task with id 'nope'" in written(stream)
 
 
@@ -296,6 +374,22 @@ def test_the_worker_declares_the_options_a_worker_needs():
     names = {parameter.name for parameter in console.resolve("queue:work").arguments}
 
     assert names == {"queue", "concurrency", "timeout", "max-jobs"}
+
+
+async def test_the_worker_command_runs_until_cancelled():
+    console, stream = build()
+
+    task = asyncio.ensure_future(
+        console.run_async(["queue:work", "--concurrency", "1"])
+    )
+    await asyncio.sleep(0.3)
+
+    assert not task.done()
+    assert "Waiting for jobs" in written(stream)
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
 
 
 # -- binding -----------------------------------------------------------

@@ -243,6 +243,16 @@ class TestFailedJobs:
             assert len(await repo.all()) == 0
         asyncio.run(main())
 
+    def test_failed_job_to_dict(self):
+        async def main():
+            repo = MemoryFailedRepository()
+            await repo.log("emails", "j1", "SendEmail", "{}", "traceback")
+            found = await repo.find("j1")
+            data = found.to_dict()
+            assert data["id"] == "j1"
+            assert data["job_class"] == "SendEmail"
+        asyncio.run(main())
+
 
 # ═════════════════════════════════════════════════════════════════
 # Payloads
@@ -278,6 +288,52 @@ class TestBatches:
             await asyncio.sleep(0.05)
             assert len(completed) == 1
             assert batch.is_done
+        asyncio.run(main())
+
+    def test_batch_properties(self):
+        batch = Batch("test")
+        batch.add("job-1")
+        batch.add("job-2")
+        batch.add("job-3")
+        batch.mark_complete("job-1")
+        batch.mark_failed("job-2", "boom")
+
+        assert batch.total == 3
+        assert batch.completed_count == 1
+        assert batch.failed_count == 1
+        assert batch.is_done is True  # a failure without allow_failures ends it
+
+    def test_batch_allows_failures_and_waits_for_every_job(self):
+        async def main():
+            batch = Batch("test", allow_failures=True)
+            batch.add("job-1")
+            batch.add("job-2")
+
+            batch.mark_failed("job-1", "boom")
+            assert not batch.is_done  # one job still outstanding
+
+            batch.mark_complete("job-2")
+            await batch.wait(timeout=1)
+            assert batch.is_done
+            assert batch.failed_count == 1
+            assert batch.completed_count == 1
+
+        asyncio.run(main())
+
+    def test_finish_is_idempotent(self):
+        async def main():
+            calls = []
+
+            async def on_done(b):
+                calls.append(1)
+
+            batch = Batch("test", on_complete=on_done)
+            batch.add("job-1")
+            batch.mark_complete("job-1")
+            batch.mark_failed("job-1", "late failure after already finished")
+            await asyncio.sleep(0.05)
+            assert calls == [1]  # on_complete only fired once
+
         asyncio.run(main())
 
     def test_job_chain(self):

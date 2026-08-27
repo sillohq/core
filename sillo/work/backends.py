@@ -27,7 +27,7 @@ from typing import Any
 
 try:
     import redis.asyncio as aioredis  # type: ignore[import-untyped]
-except ImportError:
+except ImportError:  # pragma: no cover - exercised only without redis installed
     aioredis = None  # ty: ignore[invalid-assignment]
 
 from .task import Task
@@ -117,7 +117,11 @@ class MemoryBackend:
             if deadline is not None and time.monotonic() >= deadline:
                 return None
             remaining = None if deadline is None else deadline - time.monotonic()
-            if remaining is not None and remaining <= 0:
+            if remaining is not None and remaining <= 0:  # pragma: no cover
+                # The `deadline is not None and time.monotonic() >= deadline`
+                # check just above already covers a deadline reached by this
+                # point; reaching here instead requires the deadline to pass
+                # in the instant between these two time.monotonic() calls.
                 return None
 
             try:

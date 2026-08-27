@@ -94,6 +94,23 @@ class TestMemoryQueueing:
         await memory.enqueue(make_task())
         assert await memory.queue_size("default") == 1
 
+    async def test_dequeue_deadline_already_passed_by_the_time_the_lock_is_free(
+        self, memory
+    ):
+        """A deadline can elapse before dequeue() ever gets the lock, if
+        something else holds it — exercising the immediate-deadline-check
+        fast path rather than the asyncio.wait_for() timeout below it."""
+        memory._ensure("default")
+
+        async with memory._locks["default"]:
+            # Hold the lock past the deadline before dequeue() can even start
+            # its first iteration.
+            hold = asyncio.ensure_future(memory.dequeue("default", timeout=0.01))
+            await asyncio.sleep(0.05)
+
+        result = await hold
+        assert result is None
+
 
 class TestMemoryResults:
     async def test_a_result_round_trips(self, memory):
@@ -255,3 +272,62 @@ class TestRedisUnavailable:
 
         with pytest.raises(BackendUnavailable):
             await redis_backend.dequeue("default", timeout=1)
+
+    async def test_r_raises_import_error_without_the_redis_package(self, monkeypatch):
+        import sillo.work.backends as backends_module
+
+        monkeypatch.setattr(backends_module, "aioredis", None)
+        backend = RedisBackend()
+
+        with pytest.raises(ImportError, match="redis is required"):
+            await backend._r()
+
+    async def test_r_connects_and_caches_the_client(self, monkeypatch):
+        import sillo.work.backends as backends_module
+
+        fake_server = fakeredis.aioredis.FakeRedis(decode_responses=True)
+
+        class FakeAioredisModule:
+            @staticmethod
+            def from_url(url, decode_responses=True, socket_timeout=None):
+                return fake_server
+
+        monkeypatch.setattr(backends_module, "aioredis", FakeAioredisModule)
+        backend = RedisBackend()
+
+        r = await backend._r()
+        assert r is fake_server
+        assert await backend._r() is fake_server  # cached on the second call
+
+    async def test_dequeue_times_out_when_the_command_itself_hangs(self):
+        backend = RedisBackend()
+
+        class HangingRedis:
+            async def bzpopmin(self, *a, **k):
+                await asyncio.sleep(10)
+
+        backend._redis = HangingRedis()
+
+        result = await backend.dequeue("default", timeout=0.01)
+        assert result is None
+
+    async def test_dequeue_drops_a_corrupt_payload(self, redis_backend):
+        key = f"{redis_backend.prefix}q:default"
+        await redis_backend._redis.zadd(key, {"not-valid-json{{{": 0})
+
+        assert await redis_backend.dequeue("default", timeout=1) is None
+
+    async def test_dequeue_drops_a_payload_for_an_unregistered_task_name(
+        self, redis_backend
+    ):
+        task = make_task(name="not-in-registry")
+        # Bypass register(): this name was never added to the fixture's registry.
+        del redis_backend._registry["job"], redis_backend._registry["low"]
+        del redis_backend._registry["high"]
+        await redis_backend.enqueue(task)
+
+        assert await redis_backend.dequeue("default", timeout=1) is None
+
+    async def test_ping_reports_false_when_the_server_is_unreachable(self):
+        backend = RedisBackend(url="redis://127.0.0.1:1/0")
+        assert await backend.ping() is False

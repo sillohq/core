@@ -8,11 +8,36 @@ processes at all.
 """
 
 import asyncio
+import signal
 
 import pytest
 
-from sillo.work.commands import build_worker, connection_for, run_scheduler, run_worker
+from sillo.work.commands import (
+    _install_stop_handler,
+    build_worker,
+    connection_for,
+    run_scheduler,
+    run_worker,
+)
 from sillo.work.queue import QueueWorker, RedisConnection, SyncConnection
+
+
+@pytest.fixture(autouse=True)
+def _restore_signal_handlers():
+    """Tests below install real SIGINT/SIGTERM handlers on the running loop
+    to exercise that code path; this restores the defaults afterward so a
+    handler bound to one test's (by-then-cancelled) task doesn't leak into
+    later tests or the pytest process itself."""
+    yield
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return  # a sync test with no running loop; nothing to remove
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.remove_signal_handler(sig)
+        except (NotImplementedError, RuntimeError):
+            pass
 
 
 class TestConnectionChoice:
@@ -89,3 +114,47 @@ class TestRunning:
 
         with pytest.raises(RuntimeError, match="bad task definition"):
             await run_scheduler(register, handle_signals=False)
+
+    async def test_run_scheduler_awaits_an_async_register_callback(self):
+        registered = []
+
+        async def register(manager):
+            manager.every(60, name="heartbeat")(lambda: None)
+            registered.append(manager)
+
+        task = asyncio.create_task(run_scheduler(register, handle_signals=False))
+        await asyncio.sleep(0.3)
+
+        assert registered, "async register was never awaited"
+
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    async def test_run_worker_installs_signal_handlers_when_asked(self):
+        task = asyncio.create_task(run_worker(concurrency=1, handle_signals=True))
+        await asyncio.sleep(0.3)
+
+        assert not task.done()
+
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    async def test_run_scheduler_installs_signal_handlers_when_asked(self):
+        task = asyncio.create_task(run_scheduler(handle_signals=True))
+        await asyncio.sleep(0.3)
+
+        assert not task.done()
+
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+
+class TestInstallStopHandler:
+    async def test_installs_without_raising(self):
+        called = []
+        _install_stop_handler(lambda: called.append(1))
+        # Nothing to assert about signal delivery here — just that
+        # installation itself doesn't raise on this platform.
