@@ -105,6 +105,25 @@ async def test_clear_namespace_only():
     assert await ns2.exists(k2) is True  # other namespace untouched
 
 
+async def test_clear_without_a_namespace_flushes_everything():
+    c = MemoryCache()
+    await c.set("a", 1)
+    await c.set("b", 2)
+    await c.clear()
+    assert await c.exists("a") is False
+    assert await c.exists("b") is False
+
+
+async def test_len_and_size():
+    c = MemoryCache()
+    assert len(c) == 0
+    assert c.size() == 0
+    await c.set("a", 1)
+    await c.set("b", 2)
+    assert len(c) == 2
+    assert c.size() == 2
+
+
 async def test_version_invalidation_via_keys(cache):
     v1 = MemoryCache(namespace="ns", default_ttl=100)
     v2 = MemoryCache(namespace="ns", default_ttl=100)
@@ -123,6 +142,22 @@ async def test_touch_extends_ttl(cache):
     assert await cache.touch("k", ttl=5) is True
     await asyncio.sleep(0.6)
     assert await cache.get("k") == 1  # survived original 1s window
+
+
+async def test_exists_evicts_an_expired_entry(cache):
+    await cache.set("k", 1, ttl=1)
+    await asyncio.sleep(1.1)
+    assert await cache.exists("k") is False
+
+
+async def test_touch_returns_false_for_an_expired_entry(cache):
+    await cache.set("k", 1, ttl=1)
+    await asyncio.sleep(1.1)
+    assert await cache.touch("k", ttl=5) is False
+
+
+async def test_touch_returns_false_for_a_missing_key(cache):
+    assert await cache.touch("never-set", ttl=5) is False
 
 
 async def test_stats_counts(cache):

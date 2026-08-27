@@ -133,6 +133,21 @@ class TestDeletionAndExistence:
         assert await cache.get("a") is _MISSING
         assert await cache.get("b") is _MISSING
 
+    async def test_clear_with_a_namespace_only_scans_that_namespace(self):
+        ns_cache = RedisCache(
+            client=fakeredis.aioredis.FakeRedis(decode_responses=False),
+            namespace="ns",
+        )
+        other_cache = RedisCache(client=ns_cache._client)  # shares the store
+
+        await ns_cache.set(ns_cache.make_key("a"), 1)
+        await other_cache.set("outside", 2)
+
+        await ns_cache.clear()
+
+        assert await ns_cache.get(ns_cache.make_key("a")) is _MISSING
+        assert await other_cache.get("outside") == 2
+
 
 class TestTags:
     async def test_invalidating_a_tag_drops_the_tagged_entries(self, cache):
@@ -207,3 +222,99 @@ class TestConstruction:
 
     def test_a_password_is_accepted(self):
         assert RedisCache(host="localhost", password="secret") is not None
+
+    async def test_redis_raises_cache_error_without_the_redis_package(
+        self, monkeypatch
+    ):
+        import sillo.cache.backends as backends_module
+        from sillo.cache.base import CacheError
+
+        monkeypatch.setattr(backends_module, "aioredis", None)
+        cache = RedisCache(url="redis://localhost:6379/0")
+
+        with pytest.raises(CacheError, match="redis.*package is required"):
+            await cache._redis()
+
+    async def test_redis_connects_lazily_via_url(self, monkeypatch):
+        import sillo.cache.backends as backends_module
+
+        fake_server = fakeredis.aioredis.FakeRedis(decode_responses=False)
+
+        class FakeAioredisModule:
+            @staticmethod
+            def from_url(url, db=0, password=None, decode_responses=False):
+                return fake_server
+
+        monkeypatch.setattr(backends_module, "aioredis", FakeAioredisModule)
+        cache = RedisCache(url="redis://localhost:6379/0")
+
+        client = await cache._redis()
+        assert client is fake_server
+        assert await cache._redis() is fake_server  # cached
+
+    async def test_redis_connects_lazily_via_host_and_port(self, monkeypatch):
+        import sillo.cache.backends as backends_module
+
+        fake_server = fakeredis.aioredis.FakeRedis(decode_responses=False)
+        captured = {}
+
+        class FakeAioredisModule:
+            @staticmethod
+            def Redis(host, port, db, password, decode_responses):
+                captured.update(host=host, port=port, db=db, password=password)
+                return fake_server
+
+        monkeypatch.setattr(backends_module, "aioredis", FakeAioredisModule)
+        cache = RedisCache(host="cache.example.com", port=6380, db=2)
+
+        client = await cache._redis()
+        assert client is fake_server
+        assert captured == {
+            "host": "cache.example.com",
+            "port": 6380,
+            "db": 2,
+            "password": None,
+        }
+
+    async def test_close_actually_closes_a_client_the_backend_owns(
+        self, monkeypatch
+    ):
+        import sillo.cache.backends as backends_module
+
+        closed = []
+
+        class FakeClient:
+            async def aclose(self):
+                closed.append(1)
+
+        fake_client = FakeClient()
+
+        class FakeAioredisModule:
+            @staticmethod
+            def from_url(url, db=0, password=None, decode_responses=False):
+                return fake_client
+
+        monkeypatch.setattr(backends_module, "aioredis", FakeAioredisModule)
+        cache = RedisCache(url="redis://localhost:6379/0")
+        await cache._redis()  # establishes the owned client
+
+        await cache.close()
+        assert closed == [1]
+
+    async def test_close_swallows_errors(self, monkeypatch):
+        import sillo.cache.backends as backends_module
+
+        class BrokenClient:
+            async def aclose(self):
+                raise RuntimeError("already gone")
+
+        class FakeAioredisModule:
+            @staticmethod
+            def from_url(url, db=0, password=None, decode_responses=False):
+                return BrokenClient()
+
+        monkeypatch.setattr(backends_module, "aioredis", FakeAioredisModule)
+        cache = RedisCache(url="redis://localhost:6379/0")
+        await cache._redis()
+
+        await cache.close()  # must not raise

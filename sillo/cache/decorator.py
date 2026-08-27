@@ -26,6 +26,7 @@ from __future__ import annotations
 import asyncio
 import functools
 import inspect
+import threading
 from collections.abc import Callable
 from typing import Any
 
@@ -306,10 +307,23 @@ def cache(
                 running = False
             if running:
                 # Inside a running loop: run on a private loop in a thread.
-                fut = asyncio.run_coroutine_threadsafe(
-                    _lookup(*args, **kwargs), asyncio.new_event_loop()
-                )
-                return fut.result()
+                # `run_coroutine_threadsafe` only *schedules* work onto a
+                # loop — it does nothing unless that loop is actually
+                # running somewhere. A freshly constructed loop that never
+                # gets `run_forever()` called on it just sits there, and
+                # `fut.result()` blocks forever waiting on it.
+                private_loop = asyncio.new_event_loop()
+                thread = threading.Thread(target=private_loop.run_forever, daemon=True)
+                thread.start()
+                try:
+                    fut = asyncio.run_coroutine_threadsafe(
+                        _lookup(*args, **kwargs), private_loop
+                    )
+                    return fut.result()
+                finally:
+                    private_loop.call_soon_threadsafe(private_loop.stop)
+                    thread.join()
+                    private_loop.close()
             if loop is None:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)

@@ -30,7 +30,7 @@ from .base import (
 
 try:
     import redis.asyncio as aioredis  # type: ignore[import-untyped]
-except ImportError:
+except ImportError:  # pragma: no cover - exercised only without redis installed
     aioredis = None  # ty: ignore[invalid-assignment]
 
 
