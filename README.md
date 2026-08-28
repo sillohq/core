@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Python With the Pieces Already in Place.</strong>
+  <strong>The Buildsmith Framework.</strong>
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
   <a href="https://github.com/sillohq/core/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/sillo-framework?color=green" alt="License"></a>
 </p>
 
-Sillo is an async Python web framework for APIs, web applications, real-time systems, and business backends. The language does not change. You write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
+Sillo is the buildsmith framework for APIs, real-time systems, and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, admin, queues, scheduler, and WebSockets already in place. The language does not change. You write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
 
 Each of those is a solved problem with good packages behind it. The work that remains is the fitting, and that is what Sillo does once so you do not do it per project. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI spec. The queue and the scheduler start with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
 
