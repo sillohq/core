@@ -127,6 +127,8 @@ from sillo.core.dependencies import Depend
 #
 # The deep paths continue to work. These are aliases, not a move.
 from sillo.core.http import Request, Response
+from sillo.core.http import BaseContext, HttpContext, WebSocketContext
+from sillo.core.http import file, html, json, redirect, stream, text
 from sillo.exceptions import HTTPException, NotFoundException, WebSocketException
 from sillo.websockets import WebSocket, WebSocketDisconnect
 
@@ -144,6 +146,7 @@ from .validation import (
 )
 
 __all__ = [
+    "BaseContext",
     "Cookie",
     "Depend",
     "File",
@@ -151,6 +154,7 @@ __all__ = [
     "Group",
     "HTTPException",
     "Header",
+    "HttpContext",
     "NotFoundException",
     "Path",
     "Query",
@@ -163,7 +167,14 @@ __all__ = [
     "SilloApp",
     "UploadFile",
     "WebSocket",
+    "WebSocketContext",
     "WebSocketDisconnect",
     "WebSocketException",
     "WebsocketRoute",
+    "file",
+    "html",
+    "json",
+    "redirect",
+    "stream",
+    "text",
 ]
