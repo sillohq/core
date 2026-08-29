@@ -483,10 +483,11 @@ def test_path_parameters_are_available(
     seen = []
 
     @app.ws_route("/ws/{room_id}")
-    async def endpoint(websocket: WebSocketContext):
-        # WebSocketContext handlers take only the connection; path parameters are
-        # read off it rather than injected as arguments.
-        seen.append(websocket.path_params["room_id"])
+    async def endpoint(websocket: WebSocketContext, room_id: str):
+        # Path parameters bind as keyword arguments after the context, exactly
+        # as on an HTTP route, and are still on the context as well.
+        assert room_id == websocket.path_params["room_id"]
+        seen.append(room_id)
         await websocket.accept()
         await websocket.close()
 

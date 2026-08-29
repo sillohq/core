@@ -1,0 +1,374 @@
+---
+title: Text Helpers
+description: "Truncation, search excerpts, pluralization, word counting, wrapping, and URL/email extraction: the presentation layer for prose, with the Unicode and safety caveats."
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Text Helpers
+  - tag: meta
+    attrs:
+      property: og:description
+      content: "Truncation, search excerpts, pluralization, word counting, wrapping, and URL/email extraction: the presentation layer for prose, with the Unicode and safety caveats."
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+#  Text (`sillo.helpers.text`)
+
+[Strings](/v1.0/guides/helpers/strings/) handles identifiers: slugs, tokens, case
+conversion. This module handles *prose*. The paragraphs a person wrote and
+another person will read.
+
+The work is presentation. A card layout needs a title that fits in two lines. A search results page needs the snippet around the matched word. A notification needs "3 items" rather than "3 item". A meta description needs 160 characters of plain text out of a rich-text body.
+
+```python
+from sillo.helpers import text
+```
+
+Stdlib-only.
+
+##  Truncation
+
+###  `truncate(text, max_length, suffix="...") -> str`
+
+Cuts text to a maximum length, appending a suffix when it actually cuts:
+
+```python
+text.truncate("hello world", 8)          # 'hello...'
+text.truncate("short", 100)              # 'short'      — untouched
+text.truncate("abcde", 5)                # 'abcde'      — exactly at the limit
+text.truncate("", 10)                    # ''
+text.truncate("a" * 50, 20, suffix="…")  # ends with the ellipsis character
+```
+
+The suffix counts toward the limit, so the result never exceeds `max_length`. That is what makes it safe for a fixed-width column or a `meta` tag with a hard character budget.
+
+```python title="Meta descriptions from article bodies"
+from sillo.helpers.text import truncate, strip_html
+from sillo.templating import render
+from sillo import HttpContext
+
+@app.get("/articles/{slug}")
+async def article(ctx: HttpContext, slug: str):
+    art = await Article.get(slug=slug)
+    return await render("article.html", {
+        "article": art,
+        "meta_description": truncate(strip_html(art.body_html), 160),
+    }, request=ctx)
+```
+
+<Aside type="caution" title="Truncation counts code points, not visible characters">
+
+Python string length is code points. Several things a user sees as one character are more than one code point, and cutting between them produces mojibake.
+
+Emoji with modifiers are the common case: a family emoji or a flag is a
+sequence joined by zero-width joiners, and slicing mid-sequence leaves
+fragments. Combining accents behave the same way, `e` plus a combining acute is
+two code points that render as `é`, and cutting between them orphans the accent
+onto whatever follows.
+
+For text that is mostly Latin prose this never comes up. For user-generated content with emoji, use a grapheme-aware library such as `regex` with `\X`, or truncate on a word boundary well short of the limit so a cut never lands mid-cluster.
+
+</Aside>
+
+###  `ellipsis(text, max_lines) -> str`
+
+Truncation by line rather than by character:
+
+```python
+text.ellipsis("line1\nline2\nline3\nline4", 2)
+# 'line1\nline2\n...'
+
+text.ellipsis("one\ntwo", 5)   # unchanged, fewer lines than the limit
+```
+
+The right tool for log previews, stack-trace summaries, and code snippets, where cutting mid-line destroys the structure that makes the content readable.
+
+###  `wrap_text(text, width=80) -> str`
+
+Hard-wraps at word boundaries:
+
+```python
+text.wrap_text("word " * 10, width=20)
+# 'word word word word\nword word word word\nword word'
+
+text.wrap_text("short", width=80)   # unchanged
+text.wrap_text("")                  # ''
+```
+
+Every output line is at most `width` characters. Use it for plain-text email
+bodies, terminal output, and fixed-width reports. Anywhere the renderer will
+not wrap for you.
+
+Do not use it for HTML. Browsers wrap according to the layout, and baked-in newlines fight the CSS. The exception is `<pre>`, where the newlines are the point.
+
+##  Search excerpts
+
+###  `excerpt(text, query, radius=50) -> str`
+
+Returns the region of text surrounding a match, with ellipses marking the trim:
+
+```python
+text.excerpt("x" * 100 + "needle" + "y" * 100, "needle", radius=10)
+# '...xxxxxxxxxxneedleyyyyyyyyyy...'
+```
+
+When the query is absent, the text is returned rather than an error or an empty string:
+
+```python
+text.excerpt("hello world", "missing")   # 'hello world'
+```
+
+That fallback matters. A search engine can match on a stemmed or fuzzy form
+that does not appear literally in the body (searching "running" matches a
+document containing "run") and the excerpt still needs to render something.
+
+```python title="Search results with context"
+from sillo.helpers.text import excerpt, strip_html
+from sillo.helpers.html import escape_html
+from sillo import HttpContext, json
+
+@app.get("/search")
+async def search(ctx: HttpContext):
+    query = ctx.query_params.get("q", "")
+    articles = await Article.filter(body__icontains=query).limit(20)
+    return json([
+        {
+            "title": a.title,
+            "snippet": escape_html(excerpt(strip_html(a.body_html), query, radius=80)),
+        }
+        for a in articles
+    ])
+```
+
+Note the ordering: strip the markup, take the excerpt, then escape. Excerpting raw HTML cuts mid-tag and produces broken markup; escaping before excerpting means the entity text counts toward the radius.
+
+<Aside type="caution" title="Matching is literal and case-sensitive">
+
+`excerpt` finds the exact substring. A query of `"Needle"` does not match text containing `"needle"`, and the function falls back to returning the whole text.
+
+Lowercase both sides if you want case-insensitive behaviour, and be aware that doing so changes what you display. To highlight in the original case, find the offset on the lowercased copy and slice the original.
+
+</Aside>
+
+##  Pluralization
+
+###  `pluralize(word, count) -> str`
+
+Returns the correct form for a count:
+
+```python
+text.pluralize("item", 1)    # 'item'
+text.pluralize("item", 0)    # 'items'   — zero is plural in English
+text.pluralize("item", 2)    # 'items'
+text.pluralize("bus", 2)     # 'buses'
+text.pluralize("city", 2)    # 'cities'
+text.pluralize("child", 2)   # 'children'
+```
+
+It handles the regular English rules (`-s`, `-es` after a sibilant, `y` to `ies`) and a table of common irregulars.
+
+```python
+f"{count} {text.pluralize('result', count)} found"
+# "1 result found" / "0 results found" / "12 results found"
+```
+
+<Aside type="caution" title="This is English-only, and English is the easy case">
+
+`pluralize` encodes English grammar. It has no concept of locale.
+
+Many languages have more than two plural forms. Russian has three, selected by
+the last digit of the number. Arabic has six. Japanese and Chinese have none.
+The noun does not change. Feeding any of them through an English pluralizer
+produces text that is wrong in a way native speakers find jarring.
+
+Worse, the pattern `f"{n} {pluralize(word, n)}"` bakes English word order into your code. Languages that put the number after the noun, or that inflect the noun by case, cannot be expressed by string concatenation at all.
+
+If you plan to translate, use a proper i18n library with ICU plural rules and full message strings from the start:
+
+```
+{count, plural, =0 {No results} one {# result} other {# results}}
+```
+
+Retrofitting that after you have `pluralize` calls scattered through the codebase is a large, tedious change.
+
+</Aside>
+
+The irregular table is finite. Domain-specific words fall back to the regular rule, which is sometimes wrong (`"analysis"` should be `"analyses"`, `"index"` is arguably `"indices"`). Check your vocabulary and special-case what matters.
+
+##  Counting
+
+###  `word_count(text) -> int`
+
+Counts whitespace-separated tokens:
+
+```python
+text.word_count("one two three")    # 3
+text.word_count("")                 # 0
+text.word_count("  one   two  ")    # 2  — runs of whitespace collapse
+text.word_count("one\ntwo\nthree")  # 3  — newlines count as whitespace
+```
+
+Useful for reading-time estimates, editor limits, and content-quality checks:
+
+```python title="Reading time"
+WORDS_PER_MINUTE = 220
+
+def reading_time(body: str) -> str:
+    minutes = max(1, round(text.word_count(body) / WORDS_PER_MINUTE))
+    return f"{minutes} min read"
+```
+
+<Aside type="caution" title="Whitespace splitting is not word counting for every language">
+
+The function splits on whitespace. That is a reasonable approximation for languages that put spaces between words and completely wrong for those that do not.
+
+Chinese, Japanese, and Thai are written without spaces. A 2,000-character Japanese article counts as a handful of "words", so a reading-time estimate reads "1 min read" for a twenty-minute article, and a word-count limit lets through arbitrarily long submissions.
+
+Hyphenated compounds count as one, contractions count as one, and an em-dash
+between words with no spaces counts the pair as one. For a reading-time
+estimate these are noise. For a hard limit you enforce against users, count
+characters instead. It is unambiguous and works in every script.
+
+</Aside>
+
+##  Stripping markup
+
+###  `strip_html(text) -> str`
+
+Removes tags and returns the text:
+
+```python
+text.strip_html("<p>Hello <b>world</b></p>")   # 'Hello world'
+text.strip_html("plain")                       # 'plain'
+text.strip_html("")                            # ''
+```
+
+This overlaps with `strip_tags` in [HTML helpers](/v1.0/guides/helpers/html/). Use whichever is already imported; for anything security-sensitive, read the caveats on that page.
+
+<Aside type="danger" title="Script bodies survive as text">
+
+Removing a tag does not remove what was inside it:
+
+```python
+text.strip_html("<script>alert(1)</script>")   # 'alert(1)'
+```
+
+The result is not executable (it is text now) but the raw payload appears in
+your output. If that output is a search index or a meta description, the
+attacker's string is on your page, in a search result, or in a link preview.
+
+Strip scripts and styles before stripping tags, or use a parser that discards those elements' contents.
+
+</Aside>
+
+`strip_html` output is plain text, not escaped HTML. Putting it back into a page requires `escape_html`. See the ordering note in the excerpt example above.
+
+##  Extraction
+
+###  `extract_urls(text)` and `extract_emails(text)`
+
+Pull structured values out of prose:
+
+```python
+text.extract_urls("See https://example.com and http://other.org/x")
+# ['https://example.com', 'http://other.org/x']
+
+text.extract_emails("Contact ada@example.com or bob@test.org")
+# ['ada@example.com', 'bob@test.org']
+
+text.extract_urls("no links here")     # []
+text.extract_emails("https://example.com")   # []  — a URL is not an address
+```
+
+Both return a list in the order encountered, empty when nothing matches. They do not confuse each other, which naive regexes commonly do.
+
+The obvious uses are spam scoring, link previews, and auto-linking:
+
+```python title="Rejecting comments that are pure link spam"
+from sillo.helpers.text import extract_urls, word_count
+from sillo import HttpContext, json
+
+@app.post("/comments")
+async def create_comment(ctx: HttpContext):
+    body = (await ctx.json)["body"]
+    links = extract_urls(body)
+
+    if len(links) > 3 or (links and word_count(body) < 10):
+        return json({"error": "Comment looks like spam"}, status_code=400)
+
+    comment = await Comment.create(body=body)
+    return json({"id": comment.id}, status_code=201)
+```
+
+<Aside type="caution" title="Extraction is regex-based, so both false positives and misses happen">
+
+URL matching stops at characters that usually end a URL, which means a trailing parenthesis or a period at the end of a sentence can be swallowed or dropped: `"see https://example.com/a_(b)."` may not extract the way you expect. Bare `example.com` with no scheme is not matched at all.
+
+Email matching accepts the common shape and does not implement RFC 5322, which permits quoted local parts and other constructs no regex handles. It also cannot tell a real address from a syntactically valid one.
+
+**Never use `extract_emails` as validation.** It tells you a string looks like an address. Confirming that an address exists and belongs to the person means sending mail to it and having them click a link. See [Mail](/v1.0/guides/services/mail/).
+
+For anti-abuse work, treat both functions as a signal to score rather than a rule to enforce. A determined spammer writes `example dot com` and defeats extraction entirely.
+
+</Aside>
+
+##  What not to do
+
+**Do not `excerpt` raw HTML.** Strip first, or you cut mid-tag.
+
+**Do not escape before excerpting.** Entity text inflates the radius. Strip, excerpt, then escape.
+
+**Do not use `pluralize` in a translated interface.** Use ICU plural rules.
+
+**Do not use `word_count` for CJK text.** Count characters instead.
+
+**Do not treat `strip_html` output as safe HTML.** It is plain text and needs escaping to go back into a page.
+
+**Do not use `extract_emails` to validate an address.** Send a confirmation link.
+
+**Do not `wrap_text` for HTML.** The browser wraps; your newlines fight the layout.
+
+**Do not truncate user-generated content at a hard code-point boundary.** Emoji and combining marks break.
+
+**Do not truncate before the database.** Store the full text; truncate at render time so a different surface can show a different length.
+
+##  Performance
+
+Everything here is a single pass over the input with no I/O. `word_count`, `truncate`, and `ellipsis` are plain string operations.
+
+`strip_html`, `extract_urls`, and `extract_emails` run precompiled module-level regexes, so there is no per-call compilation cost, but they still scan the whole input. On a large document that is milliseconds rather than microseconds.
+
+The thing to avoid is recomputing per request. A reading time, a word count, a stripped body, and a meta description are all deterministic functions of content that changes rarely. Compute them on write and store them:
+
+```python
+article.search_text = strip_html(article.body_html)
+article.word_total = word_count(article.search_text)
+article.preview = truncate(article.search_text, 160)
+```
+
+That turns a per-request scan of a 50 KB document into a column read.
+
+##  Function reference
+
+| Function | Signature | Returns |
+|---|---|---|
+| `truncate` | `(text: str, max_length: int, suffix: str = "...")` | Text at most `max_length` long |
+| `excerpt` | `(text: str, query: str, radius: int = 50)` | Region around the match, or the whole text |
+| `strip_html` | `(text: str)` | Text with tags removed |
+| `pluralize` | `(word: str, count: int)` | English singular or plural |
+| `word_count` | `(text: str)` | Whitespace-separated token count |
+| `ellipsis` | `(text: str, max_lines: int)` | Text limited to `max_lines` |
+| `wrap_text` | `(text: str, width: int = 80)` | Hard-wrapped at word boundaries |
+| `extract_urls` | `(text: str)` | `list[str]` of URLs |
+| `extract_emails` | `(text: str)` | `list[str]` of addresses |
+
+##  Related
+
+- [Strings](/v1.0/guides/helpers/strings/): identifiers, slugs, and tokens
+- [HTML](/v1.0/guides/helpers/html/): escaping and sanitizing, and the other
+  `strip_tags`
+- [Templating](/v1.0/guides/templating/): where truncation and wrapping usually get
+  applied
+- [Mail](/v1.0/guides/services/mail/): confirming that an extracted address is real

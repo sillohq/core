@@ -1,0 +1,424 @@
+---
+title: Sending Responses
+description: "Every response builder in sillo.responses: JSON, text, HTML, XML, files, redirects, streaming, SSE, pagination, and the two that raise instead of returning."
+head:
+- tag: meta
+  attrs:
+    property: og:title
+    content: Sending Responses
+- tag: meta
+  attrs:
+    property: og:description
+    content: "Every response builder in sillo.responses: JSON, text, HTML, XML, files, redirects, streaming, SSE, pagination, and the two that raise instead of returning."
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+#  Sending Responses
+
+A response in sillo is a value. You build one with a function, set whatever you
+need on it, and return it. There is no response object handed to your handler
+and nothing to configure before you have a body.
+
+Every builder lives in `sillo.responses` and is re-exported from the root
+package, so these two imports are the same function:
+
+```python
+from sillo import json
+from sillo.responses import json
+```
+
+Import the module — `from sillo import responses`, then `responses.json(...)` —
+in a file that also needs the standard library's `json` or `html`, or the `file`
+builtin.
+
+##  Returning data directly
+
+The simplest handler returns a plain value, and sillo encodes it as JSON with a
+`200`:
+
+```py
+from sillo import HttpContext
+
+@app.get("/users")
+async def get_users(ctx: HttpContext):
+    return ["John Doe", "Jane Smith"]
+```
+
+Dicts, lists, strings, numbers and most types the encoder knows about all work
+this way:
+
+```py title="the shapes that need no builder"
+return {"name": "John Doe", "age": 30}
+return "Hello World"
+return 200
+```
+
+This is the right form for an endpoint with one outcome. The moment you need a
+status other than 200, a header, or a cookie, reach for a builder.
+
+##  The builders
+
+Each one returns a response object. Nothing is sent until you return it.
+
+###  Bodies
+
+| | |
+|---|---|
+| `json(data)` | `application/json`, using the framework encoder |
+| `text(body)` | `text/plain` |
+| `html(body)` | `text/html` |
+| `xml(body)` | `application/xml`, or pass `content_type=` for a narrower one |
+| `raw(body, content_type=...)` | bytes under whatever type you name |
+| `empty()` | a `204` with no body |
+
+```py
+from sillo import HttpContext, json, text, html, xml, raw, empty
+
+@app.get("/users")
+async def users(ctx: HttpContext):
+    return json(["John Doe", "Jane Smith"])
+
+@app.get("/status")
+async def status(ctx: HttpContext):
+    return text("Service is running.")
+
+@app.get("/welcome")
+async def welcome(ctx: HttpContext):
+    return html("<h1>Welcome</h1>")
+
+@app.get("/feed")
+async def feed(ctx: HttpContext):
+    return xml("<feed/>", content_type="application/atom+xml")
+
+@app.get("/thumb")
+async def thumb(ctx: HttpContext):
+    return raw(png_bytes, content_type="image/png")
+```
+
+`json` takes the usual encoder knobs — `indent` to pretty-print, `ensure_ascii`,
+and `custom_encoder` for a type it does not know:
+
+```py
+from sillo import json
+
+return json(payload, indent=2)
+```
+
+###  Status shorthands
+
+The three status codes worth their own name, because getting them wrong changes
+what clients do:
+
+```py
+from sillo import created, accepted, no_content
+
+created({"id": 7}, location="/items/7")   # 201, with the Location header
+accepted({"job": "j-1"})                  # 202: taken, not finished
+no_content()                              # 204: nothing to parse
+```
+
+`created` and `accepted` both work with no body at all — `created(location=...)`
+is a valid 201.
+
+###  Redirects
+
+```py
+from sillo import redirect, permanent_redirect, see_other, temporary_redirect
+
+redirect("/new-path")             # 302
+permanent_redirect("/new-path")   # 301 — moved for good
+see_other("/thanks")              # 303 — post/redirect/get
+temporary_redirect("/new-path")   # 307 — method and body preserved
+```
+
+`permanent_redirect` is a 301 by default, which lets a client turn the repeated
+request into a `GET`. Pass `preserve_method=True` for a 308, which repeats the
+method and body as-is.
+
+To redirect to a named route, ask the context for the URL:
+
+```py
+from sillo import HttpContext, json, redirect
+
+@app.get("/user/{user_id}", name="user_profile")
+async def get_user(ctx: HttpContext, user_id: int):
+    return json({"user_id": user_id})
+
+@app.get("/users")
+async def list_users(ctx: HttpContext):
+    return redirect(ctx.url_for("user_profile", user_id=42))
+```
+
+###  Files
+
+```py
+from sillo import file, download
+
+file("path/to/report.pdf")                    # rendered inline if the browser can
+download("path/to/report.pdf")                # always saved, never rendered
+download("exports/2026-01.csv", "january.csv")  # under a different name
+```
+
+`download` is `file` with the attachment disposition already set, which is the
+one you want for anything user-supplied — it stops an uploaded HTML file
+executing against your origin.
+
+###  Streaming
+
+```py
+from sillo import HttpContext, stream, ndjson, sse
+
+@app.get("/numbers")
+async def numbers(ctx: HttpContext):
+    async def source():
+        for i in range(10):
+            yield f"{i}\n"
+    return stream(source())
+```
+
+`ndjson` takes an async iterable of objects and writes one JSON document per
+line, encoding each with the framework encoder — so a `datetime` in the stream
+does not raise:
+
+```py
+from sillo import HttpContext, ndjson
+
+@app.get("/export")
+async def export(ctx: HttpContext):
+    async def rows():
+        async for row in db.stream("select * from events"):
+            yield row
+    return ndjson(rows())
+```
+
+`sse` writes the same iterable as Server-Sent Events, with a keepalive comment
+every 15 seconds by default so an idle connection is not dropped by a proxy:
+
+```py
+from sillo import HttpContext, sse
+
+@app.get("/events")
+async def events(ctx: HttpContext):
+    async def source():
+        async for event in bus.subscribe():
+            yield event
+    return sse(source(), retry=3000)
+```
+
+Pass `keepalive=None` to switch the ping off, and `encoder=` to control how each
+item becomes a `data:` line.
+
+###  Pagination
+
+`paginate` and `apaginate` build a paged JSON response. They take the context
+first, because they read the current page off its query string and build the
+next and previous links from its URL:
+
+```py
+from sillo import HttpContext, paginate
+
+@app.get("/products")
+async def products(ctx: HttpContext):
+    return paginate(ctx, all_products, strategy="page_number")
+```
+
+Strategies are `page_number`, `limit_offset` and `cursor`. Use `apaginate` when
+the data handler is async. See [Pagination](/v1.0/guides/pagination/) for the
+full reference.
+
+###  Stopping early
+
+Two builders **raise** instead of returning, so the framework's error handling
+formats the result — the same envelope, the configured 404 page, and the
+centralised logging every other error goes through:
+
+```py
+from sillo import HttpContext, json, abort, not_found
+
+@app.get("/admin")
+async def admin(ctx: HttpContext):
+    if not ctx.user.is_admin:
+        abort(403, detail="Admins only")
+    return json({"ok": True})
+
+@app.get("/items/{item_id:int}")
+async def get_item(ctx: HttpContext, item_id: int):
+    item = await db.get(item_id)
+    if item is None:
+        not_found(detail=f"Item {item_id} not found")
+    return json(item)
+```
+
+`abort` raises `HTTPException`; `not_found` raises `NotFoundException`. Both
+accept `headers=`, which is how a `401` carries its `WWW-Authenticate`:
+
+```py
+from sillo import abort
+
+abort(401, detail="Invalid credentials", headers={"WWW-Authenticate": "Bearer"})
+```
+
+<Aside type="caution" title="These do not return">
+
+`abort` and `not_found` raise. There is nothing to `return` and nothing to
+chain, and any code after them in the handler does not run. Build a response
+yourself — `json(...).status(404)` — when you want a body that bypasses the
+exception handlers entirely.
+
+</Aside>
+
+##  Shaping the response
+
+Every builder returns a response object, and the setters are methods on it.
+Each returns the response, so they chain:
+
+```python
+from sillo import HttpContext, json
+
+@app.get("/api/data")
+async def get_data(ctx: HttpContext):
+    return (
+        json({"data": "success"})
+        .status(200)
+        .set_cookie("session", "abc123")
+        .set_header("X-API-Version", "1.0")
+    )
+```
+
+The body comes first. That is not a rule to remember so much as the shape of
+the thing — there is no response to set a header on until a builder has made
+one.
+
+| | |
+|---|---|
+| `.status(code)` | override the status |
+| `.set_header(key, value)` / `.set_headers(dict)` | add or replace headers |
+| `.remove_header(key)` / `.remove_headers(keys)` | drop them again |
+| `.set_cookie(key, value, **opts)` / `.set_cookies(list)` | set cookies |
+| `.set_permanent_cookie(key, value)` | a cookie with a ten-year expiry |
+| `.delete_cookie(key)` | expire one |
+| `.cache(max_age=3600, private=True)` / `.no_cache()` | `Cache-Control` |
+| `.add_csp_header(policy)` | a Content-Security-Policy |
+| `.set_body(body)` | replace the body |
+| `.has_header(key)` / `.content_length` | read what is there |
+
+```python
+from sillo import HttpContext, json
+
+@app.post("/login")
+async def login(ctx: HttpContext):
+    return json({"message": "Logged in"}).set_cookie(
+        key="user_token",
+        value="secret-token",
+        httponly=True,
+        max_age=3600,
+    )
+```
+
+Most builders also take `status_code=` and `headers=` directly, which is
+shorter when that is all you need:
+
+```python
+from sillo import json
+
+return json({"error": "not allowed"}, status_code=403)
+```
+
+##  Response classes
+
+The classes behind the builders are exported from the same module, for a
+handler that wants to construct one directly or subclass it:
+
+```python
+from sillo import HttpContext
+from sillo.responses import (
+    BaseResponse,
+    JSONResponse,
+    HTMLResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    FileResponse,
+    StreamingResponse,
+)
+
+@app.get("/users-json")
+async def get_users_json(ctx: HttpContext):
+    return JSONResponse([{"id": 1, "name": "Alice"}], status_code=200)
+```
+
+###  Writing your own
+
+Subclass `BaseResponse` when you need a format the framework does not ship —
+the pattern is to encode in `__init__` and hand the parent the finished bytes
+and a content type:
+
+```python
+from sillo.responses import BaseResponse
+from dicttoxml import dicttoxml
+from sillo import HttpContext
+
+class XMLResponse(BaseResponse):
+    def __init__(self, content, *args, **kwargs):
+        super().__init__(
+            body=dicttoxml(content),
+            content_type="application/xml",
+            *args,
+            **kwargs,
+        )
+
+@app.get("/data.xml")
+async def get_xml_data(ctx: HttpContext):
+    return XMLResponse({"user": {"name": "John Doe", "id": "123"}})
+```
+
+For one-off XML the `xml` builder is enough; a class earns its place when the
+encoding is shared across handlers, or when you want the type name to appear in
+your own code.
+
+##  Choosing a status code
+
+The code is the part of a response that clients branch on, and a handful
+of distinctions carry most of the weight.
+
+**201 versus 200.** A created resource is a 201 with a `Location` header
+pointing at it. Returning 200 loses the client's ability to follow the
+new resource without constructing the URL themselves.
+
+**202 versus 200.** Work that has been accepted but not finished is a
+202. Returning 200 tells the client the work is done, and they will
+believe you.
+
+**204 versus 200 with an empty body.** A 204 says "no content, do not
+parse". Some clients will attempt to parse an empty 200 body and throw.
+
+**404 versus 403.** A 404 for a resource that exists but is not yours hides its
+existence, which is sometimes what you want; a 403 confirms it exists. Pick
+deliberately. The choice is an information-disclosure decision, not a cosmetic
+one.
+
+**409 versus 422.** A conflict with current state is a 409; an
+unacceptable value is a 422. Returning 422 for "email already taken"
+tells a client to fix a correctly-formatted email.
+
+**500 versus 503.** A 500 is your bug and retrying will not help. A 503
+is temporary and retryable, and pairs with `Retry-After`. Clients back
+off on 503 and give up on 500, which is exactly the behaviour you want
+from each.
+
+##  Headers worth setting deliberately
+
+`Cache-Control` decides whether anything between you and the client keeps a
+copy. Its absence is not "no caching", intermediaries apply heuristics. Say
+what you mean, especially `no-store` on anything authenticated.
+
+`Content-Disposition` decides whether a browser renders or downloads.
+`attachment` on user-supplied files prevents an uploaded HTML file
+executing with your origin's cookies.
+
+`X-Content-Type-Options: nosniff` stops browsers second-guessing your
+content type, which is what turns a mislabeled upload into script
+execution.
+
+`Location` on 201 and on redirects. Relative is fine and avoids leaking
+your internal hostname.

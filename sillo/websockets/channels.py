@@ -257,7 +257,7 @@ class ChannelBox:
     @classmethod
     async def close_all_connections(cls) -> None:
         """
-        Close all WebSocketContext connections in all groups.
+        Close all WebSocket connections in all groups.
         """
         for group_name, channels in cls.CHANNEL_GROUPS.items():
             for channel in list(

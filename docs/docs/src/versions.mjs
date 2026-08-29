@@ -1,0 +1,78 @@
+/**
+ * The versioned docs, in one place.
+ *
+ * Every manual — Guides, Sillo Start, CLI, ORM & Admin, Pydantic, Advanced —
+ * exists once per version, under `src/content/docs/<slug>/`. So a page's URL
+ * is `/<version>/<manual>/<page>/` and its first two segments are what decide
+ * both the version switcher's current entry and which sidebar groups are
+ * visible.
+ *
+ * This module is imported by `astro.config.mjs` (to generate one sidebar per
+ * version) and by the `Sidebar` and `SectionNav` components (to read the
+ * version back off the URL). Keeping the list here rather than in the config
+ * is what stops the three from disagreeing about which versions exist.
+ *
+ * The theme docs under `/showcase/` and `/reference/` are deliberately not
+ * versioned: they document lucode-starlight, not Sillo, and there is one of
+ * them.
+ */
+
+/**
+ * @typedef {object} DocsVersion
+ * @property {string} slug   First URL segment, and the content directory name.
+ * @property {string} label  What the switcher shows.
+ * @property {string} [note] A short qualifier beside the label in the menu.
+ * @property {boolean} [preview] Renders the "in development" treatment and
+ *   puts a banner at the top of every page in the version.
+ */
+
+/** @type {DocsVersion[]} */
+export const VERSIONS = [
+    { slug: 'v0.x', label: 'v0.x', note: 'current release' },
+    { slug: 'v1.0', label: 'v1.0', note: 'in development', preview: true },
+];
+
+/**
+ * The version an unversioned URL lands on.
+ *
+ * This is the released one, not the newest one: `/guides/routing/` is what is
+ * linked from the marketing site and indexed by search engines, and someone
+ * following one of those has `pip install sillo` installed, which is 0.x. The
+ * v1.0 manual is reachable from the switcher and says at the top of every page
+ * that it describes an unreleased version.
+ */
+export const DEFAULT_VERSION = 'v0.x';
+
+/** Every manual, in section-bar order. `segment` is the second URL segment. */
+export const MANUALS = [
+    { segment: 'guides', label: 'Guides', home: 'guides/introduction/', icon: 'book' },
+    { segment: 'start', label: 'Sillo Start', home: 'start/', icon: 'spark' },
+    { segment: 'cli', label: 'CLI', home: 'cli/', icon: 'terminal' },
+    { segment: 'orm', label: 'ORM & Admin', home: 'orm/', icon: 'database' },
+    { segment: 'pydantic', label: 'Pydantic', home: 'pydantic/', icon: 'shield' },
+    { segment: 'advanced', label: 'Advanced', home: 'advanced/', icon: 'layers' },
+];
+
+const BY_SLUG = new Map(VERSIONS.map((version) => [version.slug, version]));
+
+/**
+ * Split a base-stripped pathname into the version and manual it names.
+ *
+ * Both come back `undefined` for a path that is not versioned — the theme docs,
+ * the 404 page, the root redirect — which is what callers check to decide
+ * whether to render the version switcher at all.
+ *
+ * @param {string} pathname A pathname with Astro's `base` already removed.
+ * @returns {{ version?: DocsVersion, manual?: string, rest: string }}
+ */
+export function routeParts(pathname) {
+    const [first, second, ...tail] = pathname.split('/').filter(Boolean);
+    const version = first ? BY_SLUG.get(first) : undefined;
+    if (!version) return { rest: pathname };
+    return {
+        version,
+        manual: second,
+        // Trailing slash included, so callers can concatenate without one.
+        rest: [second, ...tail].filter(Boolean).join('/') + (second ? '/' : ''),
+    };
+}

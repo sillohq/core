@@ -122,14 +122,14 @@ class BaseContext:
     """Base class for incoming HTTP connections in the ASGI protocol.
 
     Provides common functionality shared by both the :class:`HttpContext` class
-    and WebSocketContext connection handlers.  Wraps the raw ASGI scope dictionary
+    and WebSocket connection handlers.  Wraps the raw ASGI scope dictionary
     and exposes convenient properties for accessing URL components, headers,
     query parameters, path parameters, cookies, client information, and
     request-scoped state.
 
     Instances of this class are not created directly; instead, the framework
     instantiates the appropriate subclass (:class:`HttpContext` for HTTP or a
-    WebSocketContext wrapper for upgrade connections) and passes the ASGI scope
+    WebSocket wrapper for upgrade connections) and passes the ASGI scope
     and receive callable through to this base constructor.
 
     The class implements the mapping protocol for direct scope access,
@@ -172,7 +172,7 @@ class BaseContext:
         # so `send_push_promise` could never fire, because the
         # `http.response.push` key it looks for was erased by the constructor
         # of the very request it was about to push from. Any middleware
-        # reading `scope["extensions"]` after a HttpContext was built was also
+        # reading `scope["extensions"]` after a Request was built was also
         # being told the server supports one extension and no others.
         extensions = self.scope.setdefault("extensions", {})
         extensions.setdefault("websocket.http.response", {})

@@ -118,7 +118,7 @@ class TestWebSocketErrorMiddleware:
             # Verify error was logged
             mock_logger.error.assert_called_once()
             log_call = mock_logger.error.call_args[0][0]
-            assert "WebSocketContext error:" in log_call
+            assert "WebSocket error:" in log_call
 
     def test_logging_on_general_exception(self):
         """Test that general exceptions are logged"""

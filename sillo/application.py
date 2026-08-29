@@ -80,7 +80,7 @@ class SilloApp:
     This class serves as the central entry point for building asynchronous
     web applications and APIs. It integrates routing, middleware, dependency
     injection, OpenAPI documentation generation, lifespan management, and
-    WebSocketContext support into a single cohesive interface.
+    WebSocket support into a single cohesive interface.
 
     The application follows the ASGI specification and can be served by any
     compliant ASGI server such as uvicorn, granian, or daphne. It provides
@@ -1037,19 +1037,19 @@ class SilloApp:
         self,
         route: Annotated[
             WebsocketRoute,
-            Doc("An instance of the Route class representing a WebSocketContext route."),
+            Doc("An instance of the Route class representing a WebSocket route."),
         ]
         | None = None,
         path: str | None = None,
         handler: WsHandlerType | None = None,
     ) -> None:
         """
-        Adds a WebSocketContext route to the application.
+        Adds a WebSocket route to the application.
 
-        This method registers a WebSocketContext route, allowing the application to handle WebSocketContext connections.
+        This method registers a WebSocket route, allowing the application to handle WebSocket connections.
 
         Args:
-            route (Route): The WebSocketContext route configuration.
+            route (Route): The WebSocket route configuration.
 
         Returns:
             None
@@ -1284,7 +1284,7 @@ class SilloApp:
         global state dictionary into the ASGI scope for downstream access.
         Dispatches the connection to the appropriate handler based on the
         scope type: lifespan connections are routed to ``handle_lifespan``,
-        while HTTP and WebSocketContext connections are routed to ``handle_request``.
+        while HTTP and WebSocket connections are routed to ``handle_request``.
 
         Args:
             scope: The ASGI connection scope dictionary containing metadata
@@ -1976,7 +1976,7 @@ class SilloApp:
                 "multipart/form-data",
             ],
             Doc("""
-                HttpContext content type.
+                Request content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2165,7 +2165,7 @@ class SilloApp:
                 "multipart/form-data",
             ],
             Doc("""
-                HttpContext content type.
+                Request content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2648,7 +2648,7 @@ class SilloApp:
                 "multipart/form-data",
             ],
             Doc("""
-                HttpContext content type.
+                Request content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2860,7 +2860,7 @@ class SilloApp:
         """
         Returns all routes registered in the application.
 
-        This method retrieves a list of all HTTP and WebSocketContext routes defined in the application.
+        This method retrieves a list of all HTTP and WebSocket routes defined in the application.
 
         Returns:
             List[Route]: A list of all registered routes.
@@ -2879,14 +2879,14 @@ class SilloApp:
         path: Annotated[
             str,
             Doc("""
-                URL path pattern for the WebSocketContext route.
+                URL path pattern for the WebSocket route.
                 Example: '/ws/chat/{room_id}'
             """),
         ],
         handler: Annotated[
             WsHandlerType | None,
             Doc("""
-                Async handler function for WebSocketContext connections.
+                Async handler function for WebSocket connections.
                 Example:
                 async def chat_handler(websocket, path):
                     await websocket.send("Welcome to the chat!")
@@ -2894,15 +2894,15 @@ class SilloApp:
         ] = None,
     ):
         """
-        Register a WebSocketContext route with the application.
+        Register a WebSocket route with the application.
 
         Args:
-            path (str): URL path pattern for the WebSocketContext route.
-            handler (Callable): Async handler function for WebSocketContext connections.
+            path (str): URL path pattern for the WebSocket route.
+            handler (Callable): Async handler function for WebSocket connections.
                 Example: async def chat_handler(websocket, path): pass
 
         Returns:
-            Callable: A decorator to register the WebSocketContext route.
+            Callable: A decorator to register the WebSocket route.
         """
         return self.router.ws_route(
             path=path,

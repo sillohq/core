@@ -10,12 +10,17 @@
     "redirects": [
         {
             "source": "/",
-            "destination": "/guides/introduction/",
+            "destination": "/v0.x/guides/introduction/",
             "permanent": false
         },
         {
             "source": "/guides/getting-started/",
-            "destination": "/guides/introduction/",
+            "destination": "/v0.x/guides/introduction/",
+            "permanent": false
+        },
+        {
+            "source": "/:manual(guides|start|cli|orm|pydantic|advanced)/:path*",
+            "destination": "/v0.x/:manual/:path*",
             "permanent": false
         }
     ]

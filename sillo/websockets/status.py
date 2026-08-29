@@ -1,7 +1,7 @@
 """
-WebSocketContext close status codes.
+WebSocket close status codes.
 
-See the IANA WebSocketContext close-code registry:
+See the IANA WebSocket close-code registry:
 https://www.iana.org/assignments/websocket/websocket.xml#close-code-number
 """
 

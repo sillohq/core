@@ -771,10 +771,10 @@ TEMPLATE = """
                 </div>
             </div>
 
-            <!-- HttpContext Information Section -->
+            <!-- Request Information Section -->
             <div class="section">
                 <div class="section-title" onclick="toggleSection('request-section')">
-                    <span> HttpContext Information</span>
+                    <span> Request Information</span>
                     <button class="collapse-btn" data-section="request-section" onclick="event.stopPropagation(); toggleSection('request-section')">+</button>
                 </div>
                 <div id="request-section" class="section-content">

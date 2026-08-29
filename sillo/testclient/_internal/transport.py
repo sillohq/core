@@ -158,7 +158,7 @@ class TestClientTransport(httpx.BaseTransport):
         port: int,
     ) -> WebSocketTestSession:
         """
-        Handles a WebSocketContext request and returns a WebSocketTestSession.
+        Handles a WebSocket request and returns a WebSocketTestSession.
 
         Args:
             request (httpx.Request): The HTTP request object.
@@ -562,7 +562,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
             "state": self.app_state.copy(),
             "extensions": {"websocket.http.response": {}},
         }
-        # WebSocketContext handling should still use the same test session abstraction
+        # WebSocket handling should still use the same test session abstraction
         return WebSocketTestSession(self.app, scope, portal_factory=None)
 
     def _build_http_scope(

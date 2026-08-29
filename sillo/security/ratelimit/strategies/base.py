@@ -51,7 +51,7 @@ class RateLimitStrategy(abc.ABC):
                 (typically an IP or user ID).
             limit: Maximum number of requests allowed within the window.
             window: Time window in seconds.
-            cost: HttpContext cost in tokens (default 1). Set >1 for heavy
+            cost: Request cost in tokens (default 1). Set >1 for heavy
                 endpoints.
             now: Current timestamp as ``time.time()``. Passed explicitly
                 for testability — defaults to ``time.time()`` when

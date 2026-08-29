@@ -1,9 +1,9 @@
-"""HTTP and WebSocketContext exception classes for the sillo framework.
+"""HTTP and WebSocket exception classes for the sillo framework.
 
 This module defines the exception hierarchy used throughout sillo for signaling
-HTTP error responses and WebSocketContext close events. These exceptions can be raised
+HTTP error responses and WebSocket close events. These exceptions can be raised
 from any handler or middleware, and are caught by the exception middleware to
-produce appropriate HTTP responses or WebSocketContext close frames.
+produce appropriate HTTP responses or WebSocket close frames.
 """
 
 from __future__ import annotations
@@ -160,21 +160,21 @@ class NotFoundException(HTTPException):
 
 
 class WebSocketException(Exception):
-    """Exception representing a WebSocketContext close event with a code and reason.
+    """Exception representing a WebSocket close event with a code and reason.
 
-    This exception is used to signal that a WebSocketContext connection should be
+    This exception is used to signal that a WebSocket connection should be
     closed with a specific close code and optional reason string. When raised
-    from a WebSocketContext handler, the framework catches it and sends a WebSocketContext
+    from a WebSocket handler, the framework catches it and sends a WebSocketContext
     close frame with the specified code and reason.
 
     Attributes:
-        code: The WebSocketContext close code (e.g., 1000 for normal closure, 1008
-            for policy violation). Must be a valid WebSocketContext close code.
+        code: The WebSocket close code (e.g., 1000 for normal closure, 1008
+            for policy violation). Must be a valid WebSocket close code.
         reason: An optional human-readable string explaining why the connection
-            is being closed. Limited in length by the WebSocketContext protocol.
+            is being closed. Limited in length by the WebSocket protocol.
 
     Note:
-        WebSocketContext close codes are defined in RFC 6455 and the IANA WebSocketContext
+        WebSocket close codes are defined in RFC 6455 and the IANA WebSocketContext
         registry. Common codes include 1000 (normal), 1001 (going away), 1008
         (policy violation), and 1011 (internal error).
     """
@@ -182,11 +182,11 @@ class WebSocketException(Exception):
     def __init__(self, code: int, reason: str | None = None) -> None:
         """Initialize a WebSocketException with a close code and reason.
 
-        Constructs a WebSocketContext exception that will result in a close frame
+        Constructs a WebSocket exception that will result in a close frame
         being sent to the client with the specified code and reason.
 
         Args:
-            code: The WebSocketContext close code. Must be a valid close code as
+            code: The WebSocket close code. Must be a valid close code as
                 defined in RFC 6455 (e.g., 1000-1015 range).
             reason: An optional human-readable string explaining the close
                 reason. If None, defaults to an empty string.
@@ -195,16 +195,16 @@ class WebSocketException(Exception):
             None. This is a constructor method.
 
         Note:
-            The close code is sent as part of the WebSocketContext close frame and
+            The close code is sent as part of the WebSocket close frame and
             determines how the client interprets the disconnection. The reason
-            string is limited to 123 bytes by the WebSocketContext protocol.
+            string is limited to 123 bytes by the WebSocket protocol.
         """
         super().__init__(reason or "")
         self.code = code
         self.reason = self.args[0]
 
     def __str__(self) -> str:
-        """Return a human-readable string representation of the WebSocketContext exception.
+        """Return a human-readable string representation of the WebSocket exception.
 
         Formats the exception as ``"WebSocketContext {code}: {reason}"`` for display
         in logs, tracebacks, and debugging output.
@@ -213,7 +213,7 @@ class WebSocketException(Exception):
             No arguments beyond ``self``.
 
         Returns:
-            A formatted string containing the WebSocketContext close code and reason,
+            A formatted string containing the WebSocket close code and reason,
             e.g., ``"WebSocketContext 1008: Policy violation"``.
 
         Note:
@@ -223,7 +223,7 @@ class WebSocketException(Exception):
         return f"WebSocketContext {self.code}: {self.reason}"
 
     def __repr__(self) -> str:
-        """Return a developer-oriented representation of the WebSocketContext exception.
+        """Return a developer-oriented representation of the WebSocket exception.
 
         Formats the exception as a constructor-like string for debugging and
         development purposes.

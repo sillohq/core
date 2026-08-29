@@ -2,45 +2,36 @@
 /**
  * The section bar — the second row of the sticky header.
  *
- * The docs are five separate manuals rather than one long book, and
- * lucode-starlight's Sidebar already scopes itself to the first segment of the
- * URL: on `/orm/anything` it keeps only the sidebar groups whose links start
- * `/orm/`. That gives every section its own sidebar for free, but nothing in
- * the layout tells you the other four exist. This bar is that missing piece —
- * it is the only way to cross between manuals.
+ * The docs are six separate manuals rather than one long book, and the Sidebar
+ * override scopes itself to the manual you are in: on `/v1.0/orm/anything` it
+ * keeps only the sidebar groups whose links start `/v1.0/orm/`. That gives
+ * every manual its own sidebar for free, but nothing in the layout tells you
+ * the other five exist. This bar is that missing piece — it is the only way to
+ * cross between manuals.
  *
  * Which is why it lives in the header rather than at the top of the sidebar:
  * it has to stay reachable from every page, including the ones where the
  * sidebar is scrolled away or collapsed into the drawer.
+ *
+ * Crossing manuals keeps the version you are in; changing the version is the
+ * switcher at the foot of the sidebar.
  */
+import { MANUALS, VERSIONS, routeParts } from '../versions.mjs';
+
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-type Section = {
-    /** First URL segment. This is what the sidebar filters on. */
-    segment: string;
-    label: string;
-    /** Where the tab points — the section's landing page. */
-    href: string;
-    icon: string;
-};
-
-const sections: Section[] = [
-    { segment: 'guides', label: 'Guides', href: '/guides/introduction/', icon: 'book' },
-    { segment: 'start', label: 'Sillo Start', href: '/start/', icon: 'spark' },
-    { segment: 'cli', label: 'CLI', href: '/cli/', icon: 'terminal' },
-    { segment: 'orm', label: 'ORM & Admin', href: '/orm/', icon: 'database' },
-    { segment: 'pydantic', label: 'Pydantic', href: '/pydantic/', icon: 'shield' },
-    { segment: 'advanced', label: 'Advanced', href: '/advanced/', icon: 'layers' },
-];
-
 /*
- * The active tab is decided by the first path segment, the same value the
- * theme's Sidebar filters on — so the highlighted tab and the visible sidebar
- * can never disagree about which section you are in.
+ * The active tab is decided by the manual segment, the same value the Sidebar
+ * filters on — so the highlighted tab and the visible sidebar can never
+ * disagree about which manual you are in. The version comes off the segment
+ * before it, and every tab keeps it: crossing from the v1.0 guides to the v1.0
+ * ORM manual should not quietly drop you back into v0.x.
  */
 const pathname = Astro.url.pathname;
 const withoutBase = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
-const current = withoutBase.split('/').filter(Boolean)[0] ?? '';
+const { version, manual } = routeParts(withoutBase);
+const current = manual ?? '';
+const versionSlug = version?.slug ?? VERSIONS[0].slug;
 
 /*
  * Five 16px stroke icons, inlined. An icon package for five glyphs would be
@@ -63,13 +54,13 @@ const icons: Record<string, string> = {
     <div class="rail">
         <ul>
             {
-                sections.map((section) => {
+                MANUALS.map((section) => {
                     const active = section.segment === current;
                     return (
                         <li>
                             <a
                                 class="tab"
-                                href={`${BASE}${section.href}`}
+                                href={`${BASE}/${versionSlug}/${section.home}`}
                                 aria-current={active ? 'page' : undefined}
                             >
                                 <span class="ico" aria-hidden="true" set:html={icons[section.icon]} />
@@ -83,6 +74,7 @@ const icons: Record<string, string> = {
         {/* Decoration: the tabs themselves carry `aria-current`. */}
         <span class="marker" aria-hidden="true"></span>
     </div>
+
 </nav>
 
 <style>
@@ -264,6 +256,7 @@ const icons: Record<string, string> = {
             transition: none;
         }
     }
+
 </style>
 
 <script>

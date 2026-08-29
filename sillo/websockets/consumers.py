@@ -47,9 +47,16 @@ class WebSocketConsumer:
         async def handler(
             websocket: WebSocketContext, **kwargs: dict[str, typing.Any]
         ) -> None:
-            """Handler"""
+            """Run one connection through a fresh consumer instance.
+
+            Path parameters arrive here as keyword arguments, the same as on any
+            other route, and are deliberately not forwarded: a consumer's hooks
+            take ``(websocket, ...)`` fixed by the base class, so there is no
+            parameter for them to bind to. They stay reachable the way every
+            hook reads them, off ``websocket.path_params``.
+            """
             instance = cls()
-            await instance(websocket, **kwargs)
+            await instance(websocket)
 
         return WebsocketRoute(path, handler)
 
@@ -122,7 +129,7 @@ class WebSocketConsumer:
         """Override to handle an incoming websocket connection"""
         await websocket.accept()
         if self.logging_enabled:
-            self.logger.info("New WebSocketContext connection established")
+            self.logger.info("New WebSocket connection established")
 
     async def on_receive(self, websocket: WebSocketContext, data: typing.Any) -> None:
         """Override to handle an incoming websocket message"""
@@ -132,7 +139,7 @@ class WebSocketConsumer:
     async def on_disconnect(self, websocket: WebSocketContext, close_code: int) -> None:
         """Override to handle a disconnecting websocket"""
         if self.logging_enabled:
-            self.logger.info(f"WebSocketContext disconnected with code: {close_code}")
+            self.logger.info(f"WebSocket disconnected with code: {close_code}")
 
     # New Methods for Channel and Group Management
     async def broadcast(

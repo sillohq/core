@@ -1,0 +1,377 @@
+---
+title: Deprecation Helpers
+description: "Marking functions and parameters as deprecated with version metadata: running a removal cycle that does not break your users without warning."
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Deprecation Helpers
+  - tag: meta
+    attrs:
+      property: og:description
+      content: "Marking functions and parameters as deprecated with version metadata: running a removal cycle that does not break your users without warning."
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+#  Deprecation (`sillo.core.helpers.deprecation`)
+
+Deleting a public function is easy. Deleting it without breaking somebody is the hard part.
+
+If you maintain anything other people import (a library, an internal shared
+package, a plugin API, an SDK used by another team) you eventually need to
+remove something. Removing it in one release means every caller breaks on
+upgrade with a bare `AttributeError` and no hint about what to use instead.
+
+A deprecation cycle replaces that cliff with a ramp. The old code keeps working, and every call emits a warning naming the replacement and the release in which it disappears. Users migrate on their own schedule, and when removal day arrives nobody is surprised.
+
+```python
+from sillo.core.helpers.deprecation import (
+    deprecated,
+    deprecate_parameter,
+    warn_deprecated,
+    DeprecatedError,
+)
+```
+
+<Aside type="caution" title="Import from sillo.core.helpers, not sillo.helpers">
+
+This module lives under `sillo.core.helpers`. The shorter `sillo.helpers.deprecation` path does not exist and raises `ModuleNotFoundError`:
+
+```python
+from sillo.helpers import deprecation      # ModuleNotFoundError
+from sillo.core.helpers import deprecation # correct
+```
+
+The same applies to [Async Helpers](/v0.x/guides/helpers/async/). Every other module in this section is under `sillo.helpers`.
+
+</Aside>
+
+Stdlib-only, built on `warnings` and `functools`.
+
+##  The warning class
+
+`DeprecatedError` is the category everything here emits. Despite the name it is
+a **warning, not an exception**. It subclasses `FutureWarning`:
+
+```python
+issubclass(DeprecatedError, FutureWarning)   # True
+```
+
+That choice is deliberate. Python hides `DeprecationWarning` by default outside `__main__`, on the theory that library-internal deprecations are noise for end users. `FutureWarning` is shown by default, because it is meant for things *application authors* must act on.
+
+Since the audience is the developer importing your code, `FutureWarning` is right. The tradeoff is that your warnings are visible, so emit them accurately and sparingly.
+
+##  Deprecating a function
+
+###  `@deprecated(since, removed_in, message="", replacement="")`
+
+Wraps a callable so every call warns before running:
+
+```python
+from sillo.core.helpers.deprecation import deprecated
+
+@deprecated(since="0.5.0", removed_in="1.0.0", replacement="fetch_user_v2")
+def fetch_user(user_id: int):
+    return db.query(user_id)
+```
+
+The call still works and returns the same value. The caller also gets:
+
+```
+FutureWarning: [sillo 0.5.0] `fetch_user` is deprecated. Use `fetch_user_v2` instead. (will be removed in 1.0.0)
+```
+
+Three pieces of information in one line: when it was deprecated, what to use instead, and when it goes away. A user seeing that can act without opening your changelog.
+
+Each argument shapes the message:
+
+```python
+# Default message, generated from the function name.
+@deprecated(since="0.5.0", removed_in="1.0.0")
+def old_helper(): ...
+# -> "`old_helper` is deprecated"
+
+# Custom message, when the reason is not obvious from the name.
+@deprecated(since="0.5.0", removed_in="1.0.0",
+            message="Sync database access is unsupported in async handlers")
+def query_sync(): ...
+
+# Both: your reason plus the replacement pointer.
+@deprecated(since="0.5.0", removed_in="1.0.0",
+            message="Renamed for consistency with the rest of the API",
+            replacement="fetch_user")
+def get_user(): ...
+```
+
+The decorator handles sync and async functions, inspecting the target at decoration time and returning the matching wrapper:
+
+```python
+@deprecated(since="0.5.0", removed_in="1.0.0", replacement="fetch_async")
+async def fetch(user_id: int):
+    return await db.fetch(user_id)
+
+import inspect
+inspect.iscoroutinefunction(fetch)   # True — still awaited normally
+```
+
+It works on methods too:
+
+```python
+class UserService:
+    @deprecated(since="0.5.0", removed_in="1.0.0", replacement="get_by_id")
+    def find(self, user_id: int):
+        return self.get_by_id(user_id)
+```
+
+`functools.wraps` preserves the name, docstring, and signature, so `help()`,
+IDE autocomplete, and introspection keep working. Exceptions from the wrapped
+function propagate unchanged. The warning does not swallow anything.
+
+##  Deprecating a parameter
+
+###  `@deprecate_parameter(param_name, since, removed_in, replacement="")`
+
+Sometimes the function stays and one argument is going away. Deprecating the whole function would warn users who never touched it:
+
+```python
+from sillo.core.helpers.deprecation import deprecate_parameter
+
+@deprecate_parameter("timeout_ms", since="0.5.0", removed_in="1.0.0",
+                     replacement="timeout")
+def connect(host: str, timeout: float = 30.0, timeout_ms: int | None = None):
+    if timeout_ms is not None:
+        timeout = timeout_ms / 1000
+    return _connect(host, timeout)
+```
+
+The warning fires only when that argument is actually passed:
+
+```python
+connect("db.example.com")                      # silent
+connect("db.example.com", timeout=30)          # silent
+connect("db.example.com", timeout_ms=30000)    # warns
+```
+
+<Aside type="caution" title="Only keyword arguments are detected">
+
+The check looks in `**kwargs`. A value passed positionally lands in `*args` and is invisible to it:
+
+```python
+@deprecate_parameter("old_flag", since="0.5.0", removed_in="1.0.0")
+def handler(value, old_flag=None):
+    return old_flag
+
+handler("x", True)             # no warning — positional
+handler("x", old_flag=True)    # warns
+```
+
+Users passing the argument positionally get no warning at all and are broken by the removal without notice.
+
+Make the parameter keyword-only when you deprecate it, which forces every caller onto the path the check can see:
+
+```python
+def connect(host: str, timeout: float = 30.0, *, timeout_ms: int | None = None):
+```
+
+Adding `*` is itself a breaking change for positional callers, so do it in the release that introduces the deprecation and say so in the notes.
+
+</Aside>
+
+##  Warning manually
+
+###  `warn_deprecated(message, version, removed_in, stacklevel=3)`
+
+For cases a decorator cannot express: a deprecated branch inside a live
+function, a config key, a value that is no longer supported:
+
+```python
+from sillo.core.helpers.deprecation import warn_deprecated
+
+def configure(backend: str):
+    if backend == "legacy":
+        warn_deprecated(
+            "The 'legacy' backend is deprecated; use 'redis'",
+            version="0.5.0",
+            removed_in="1.0.0",
+        )
+    return _build(backend)
+```
+
+`stacklevel` controls which frame the warning is attributed to. The default of 3 accounts for the decorator wrappers, so the warning points at the user's calling line rather than at framework internals. Calling `warn_deprecated` directly means one fewer frame, so pass `stacklevel=2`:
+
+```python
+warn_deprecated("...", version="0.5.0", removed_in="1.0.0", stacklevel=2)
+```
+
+Getting this wrong is cosmetic but genuinely annoying: the warning names a file inside your library instead of the line the user has to change, and they cannot find what to fix.
+
+##  Running a deprecation cycle
+
+The decorators are the easy part. The process around them is what makes deprecation work.
+
+**1. Ship the replacement first.** Users cannot migrate to something that does not exist. The new API lands in the same release the warning appears, or earlier.
+
+**2. Set a removal version you mean.** "Deprecated since 0.3", still present four years later, trains users to ignore warnings.
+
+**3. Give at least one minor release of overlap,** and more for anything widely used. Under semantic versioning, removal happens in a major release: deprecate in 1.4, remove in 2.0, not in 1.5.
+
+**4. Keep the old code correct.** A deprecated function returning wrong results is worse than a removed one, because the failure is silent. Delegate rather than maintaining two implementations:
+
+```python
+@deprecated(since="0.5.0", removed_in="1.0.0", replacement="fetch_user")
+def get_user(user_id: int):
+    return fetch_user(user_id)   # one implementation, no drift
+```
+
+**5. Document it where users read.** Changelog, migration guide, and the docstring. The runtime warning catches people who run the code; the changelog catches people who read before upgrading.
+
+**6. Actually remove it,** on the announced version. A cycle that never completes is a maintenance burden you carry forever and a promise you taught users to disbelieve.
+
+<Aside type="caution" title="Warnings are easy to miss in production">
+
+Python deduplicates warnings: the same warning from the same location fires **once per process**, not once per call. A deprecated function called ten thousand times in a long-running server warns once, probably during startup, into a log nobody reads.
+
+If you are consuming a library and want to find every deprecation before upgrading, turn them into errors in CI:
+
+```bash
+python -W error::FutureWarning -m pytest
+```
+
+Or scope it to specific tests:
+
+```python
+import warnings
+from sillo.core.helpers.deprecation import DeprecatedError
+
+def test_no_deprecated_calls():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecatedError)
+        run_application_paths()
+```
+
+That turns a silent warning into a failing test, which is the only reliable way to catch these before your users do.
+
+</Aside>
+
+##  A worked migration
+
+Renaming a function and changing its return type at the same time, over three releases.
+
+**Release 0.5.0, introduce and deprecate.** The new function ships, the old one
+delegates to it and adapts the return value:
+
+```python title="0.5.0"
+from sillo.core.helpers.deprecation import deprecated
+
+def fetch_user(user_id: int) -> User:
+    """The replacement. Returns a User model."""
+    return _load(user_id)
+
+@deprecated(
+    since="0.5.0",
+    removed_in="1.0.0",
+    message="`get_user` returned a dict; `fetch_user` returns a User model",
+    replacement="fetch_user",
+)
+def get_user(user_id: int) -> dict:
+    return fetch_user(user_id).to_dict()   # adapts, does not duplicate
+```
+
+The message earns its place here. `replacement="fetch_user"` alone would tell a user what to call and not that the return type changed, so their code breaks in a new way after they migrate. Say what actually differs.
+
+**Releases 0.6 through 0.9. Leave it alone.** Do not tighten the warning, do
+not change the behaviour, do not shorten the window. Users are upgrading on
+their own timelines and the deprecated path must stay boring.
+
+**Release 1.0.0, remove.** Delete `get_user` and its test. Add a changelog
+entry naming it explicitly:
+
+```markdown
+### Removed
+- `get_user()`, deprecated since 0.5.0. Use `fetch_user()`, which returns a
+  `User` model rather than a dict. Call `.to_dict()` if you need the old shape.
+```
+
+Someone upgrading from 0.4 straight to 1.0 never saw a runtime warning, because they skipped every release that emitted one. The changelog entry is the only thing that reaches them, which is why step 5 above is not optional.
+
+##  Versions and compatibility
+
+The `since` and `removed_in` strings are free-form, and the decorator does no
+parsing or comparison. They are documentation for humans, not enforced
+constraints. That means nothing stops you writing `removed_in="2.0.0"` and
+shipping the removal in `1.6.0`. Only your own discipline prevents it.
+
+If you follow semantic versioning, the rule is simple: a deprecation may appear in any minor release, and the removal happens only in a major one. Under calendar versioning, pick a fixed window (two releases, or six months) and apply it consistently so users can plan.
+
+Either way, write the policy down where users can find it. A deprecation warning that says "removed in 2.0" is only useful if the reader knows roughly when 2.0 arrives.
+
+##  Testing your own deprecations
+
+Assert that the warning fires, that the message is useful, and that the function still works:
+
+```python title="Testing a deprecation"
+import pytest
+import warnings
+from sillo.core.helpers.deprecation import DeprecatedError
+
+def test_old_helper_warns_and_still_works():
+    with pytest.warns(DeprecatedError, match="fetch_user"):
+        assert get_user(42) == expected
+
+def test_parameter_deprecation_is_silent_when_unused():
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        connect("db.example.com", timeout=30)
+    assert caught == []
+```
+
+The second test matters more than it looks. A parameter deprecation that warns unconditionally trains every user to ignore your warnings, including the ones that apply to them.
+
+##  What not to do
+
+**Do not deprecate without shipping the replacement.** Users need somewhere to go.
+
+**Do not leave `removed_in` open-ended.** A deprecation with no end date gets ignored.
+
+**Do not remove before the announced version.** That is the breakage the cycle exists to prevent.
+
+**Do not let deprecated code drift from its replacement.** Delegate to it.
+
+**Do not deprecate a positional parameter without making it keyword-only.** The check cannot see positional arguments.
+
+**Do not use `DeprecationWarning` instead.** Python hides it by default and your users never see it.
+
+**Do not warn on every call in a hot path.** Python deduplicates, but the check still runs. Prefer one warning at import or construction for something used per request.
+
+**Do not deprecate purely for style.** Every deprecation is work for every user. Renaming for tidiness is rarely worth their migration cost.
+
+**Do not use these for application code.** If you own every call site, use your editor's rename and delete the old thing. Deprecation is for code other people import.
+
+##  Performance
+
+The decorators add one function call and one `warnings.warn` per invocation.
+`warnings.warn` is not free (it walks the stack to find the calling frame) but
+Python's dedupe registry means the expensive path runs once per location.
+
+For anything called at request rate, prefer a single warning when the module is imported or the deprecated object is constructed, rather than one per call.
+
+`functools.wraps` copies metadata at decoration time only, so there is no per-call cost from it.
+
+##  Function reference
+
+| Name | Signature | Notes |
+|---|---|---|
+| `DeprecatedError` | Warning class | Subclasses `FutureWarning`, shown by default |
+| `warn_deprecated` | `(message, version, removed_in, stacklevel=3)` | Manual warning; use `stacklevel=2` when called directly |
+| `deprecated` | `(since, removed_in, message="", replacement="")` | Decorator; handles sync and async |
+| `deprecate_parameter` | `(param_name, since, removed_in, replacement="")` | Warns only on keyword use |
+
+##  Related
+
+- [Async Helpers](/v0.x/guides/helpers/async/): the coroutine detection these
+  decorators use
+- [Plugin API](/reference/plugin-api/): the surface most likely to need a
+  deprecation cycle
+- [CHANGELOG](https://github.com/sillohq/core/blob/main/CHANGELOG.md): what
+  sillo itself has deprecated, and when it was removed

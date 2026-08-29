@@ -1,0 +1,441 @@
+---
+title: Work Overview
+description: "Choosing between background tasks, the queue, and the scheduler: durability guarantees, what setup_work actually wires up, and how the pieces fit together."
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Work Overview
+  - tag: meta
+    attrs:
+      property: og:description
+      content: "Choosing between background tasks, the queue, and the scheduler: durability guarantees, what setup_work actually wires up, and how the pieces fit together."
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+#  Work (`sillo.work`)
+
+`sillo.work` is where everything that should not happen inside a request lives.
+Sending email, generating reports, calling slow third-party APIs, running
+nightly cleanups, reacting to domain events, all of it.
+
+The package has three independent layers with genuinely different
+guarantees, and picking the wrong one is the most expensive mistake you
+can make here. This page is mostly about that choice.
+
+##  The three layers
+
+| Layer | Runs where | Survives a restart | Retries | Guide |
+|---|---|---|---|---|
+| `BackgroundTask` | Web process, same event loop | **No** | No | [Background Tasks](/v0.x/guides/work/background/) |
+| Queue + `QueueWorker` | Separate worker process | Yes, with a durable connection | Yes | [Queue](/v0.x/guides/work/queue/) |
+| `SchedulerManager` | Whichever process started it | No. Schedules are in memory | Per job | [Scheduler](/v0.x/guides/work/scheduler/) |
+
+Two supporting pieces sit alongside them: [Jobs](/v0.x/guides/work/jobs/), the
+class-based unit the queue moves around, and
+[Events](/v0.x/guides/work/events/), an in-process dispatcher for decoupling
+side effects from the code that triggers them.
+
+##  Choosing a layer
+
+Ask one question: **what happens if this work silently never runs?**
+
+If the answer is "nothing much" (a cache stays cold, an analytics row is
+missing, a nice-to-have notification is skipped) a `BackgroundTask` is right.
+It is one line, it needs no infrastructure, and losing the occasional task on
+deploy is acceptable.
+
+If the answer is "a customer is affected" (an order confirmation never sends, a
+webhook is never delivered, a payment is never captured) you need the queue. A
+background task will lose that work on every deploy, and deploys are routine.
+
+If the work is time-based rather than event-based (a nightly report, an hourly
+sync, a five-minute health check) that is the scheduler. Note that the
+scheduler decides *when*; for anything that must not be lost, it should enqueue
+a job rather than doing the work inline.
+
+```python title="the pattern that combines them"
+@scheduler.cron("0 2 * * *")
+async def nightly_billing():
+    # The scheduler decides when. The queue guarantees the work happens.
+    connection = app.state["queue_connection"]
+    for account in await Account.filter(billing_due=True):
+        await connection.push(
+            "billing",
+            json.dumps({"job": "ChargeAccount", "args": [account.id], "kwargs": {}}),
+        )
+```
+
+If the scheduler process dies at 02:00:30, a job already on the queue is
+still processed. A scheduler that did the charging inline would simply
+skip those accounts until tomorrow.
+
+##  Setting it up
+
+```python title="wiring the work subsystem"
+from sillo import SilloApp
+from sillo.work import setup_work
+
+app = SilloApp()
+work = setup_work(app)
+```
+
+`setup_work` populates `app.state` and registers lifecycle hooks:
+
+| Key | Object |
+|---|---|
+| `app.state["work"]` | `{"connection": SyncConnection, "scheduler": SchedulerManager}` |
+| `app.state["scheduler"]` | the `SchedulerManager` |
+| `app.state["queue_connection"]` | the queue connection |
+| `app.state["events"]` | an `EventDispatcher` |
+
+It also calls `app.on_startup(scheduler.start)` and
+`app.on_shutdown(scheduler.stop)`, so the scheduler loop follows the
+application lifecycle.
+
+Like `setup_record`, it is idempotent. A second call returns the existing dict
+and ignores its arguments.
+
+<Aside type="caution" title="The default queue connection is in-memory">
+
+`setup_work` creates a `SyncConnection`, which holds jobs in a Python
+data structure in the current process. It is the right default for tests
+and local development and it provides **none** of the durability that
+motivated using a queue in the first place.
+
+A job pushed to a `SyncConnection` disappears on restart exactly like a
+background task, and is invisible to a worker running in another process, which
+means the worker you deployed is idle while your web process quietly
+accumulates jobs it will lose.
+
+For anything real, use `RedisConnection`. See
+[Queue](/v0.x/guides/work/queue/) for the configuration and for what changes
+about failure handling once jobs are durable.
+
+</Aside>
+
+Reach the wired objects from a handler through `app.state`:
+
+```python title="using them from a handler"
+@app.post("/reports")
+async def create_report(request, response):
+    scheduler = request.app.state["scheduler"]
+    events = request.app.state["events"]
+    ...
+```
+
+##  A tour of the pieces
+
+###  Background tasks
+
+Fire-and-forget on the current event loop. One line, no infrastructure,
+no durability.
+
+```python
+from sillo.work.background import BackgroundTask
+
+BackgroundTask.run(send_welcome_email, user.email)
+```
+
+Read [Background Tasks](/v0.x/guides/work/background/) before using this in
+production, in particular the section on the task registry, which retains every
+task object for the life of the process.
+
+###  Tasks and the `@task` decorator
+
+`Task` is the internal unit the background layer and the queue both wrap.
+The `@task` decorator does not schedule anything; it attaches metadata to
+a function so that the queue can read defaults from it later.
+
+```python title="what @task actually does"
+from sillo.work import TaskPriority, task
+
+
+@task(name="send-welcome", priority=TaskPriority.HIGH, max_attempts=3, timeout=30)
+async def send_welcome(email: str):
+    ...
+
+send_welcome._work_name         # 'send-welcome'
+send_welcome._work_priority     # TaskPriority.HIGH
+send_welcome._work_max_attempts # 3
+await send_welcome("a@b.com")   # still an ordinary async function
+```
+
+The decorator returns the function unchanged apart from those attributes.
+Calling it runs it immediately, in the caller's context. Decorating a function
+does not make it asynchronous, deferred, retried, or durable. Only enqueuing it
+does.
+
+###  Queue and workers
+
+Durable, cross-process work with retries, middleware, batches, chains,
+and a failed-job store.
+
+```python
+connection = app.state["queue_connection"]
+await connection.push("invoices", payload)
+```
+
+Note that `Job.dispatch()` and the `dispatch()` helper cannot be called from an
+async context. See [Jobs](/v0.x/guides/work/jobs/). Push through the connection
+instead.
+
+###  Scheduler
+
+Interval and cron triggers, managed by a loop that runs inside your
+application process.
+
+```python
+@scheduler.every(300)          # seconds, positional
+async def poll_upstream():
+    ...
+
+
+@scheduler.cron("0 9 * * 1-5")
+async def weekday_digest():
+    ...
+```
+
+###  Events
+
+An in-process dispatcher with priorities and wildcards, for keeping
+domain code unaware of its side effects.
+
+```python
+from dataclasses import dataclass
+
+from sillo.work.queue import Event
+
+
+@dataclass
+class OrderPlaced(Event):
+    order_id: int
+
+
+await events.dispatch(OrderPlaced(order_id=order.id))
+```
+
+Events are dataclass instances, not string names. `dispatch` takes the object.
+
+##  Known rough edges
+
+Three defects in this package change how you write code against it, so
+they belong on the overview rather than buried in a subpage.
+
+<Aside type="danger" title="Job.dispatch() cannot be called from an async context">
+
+`Dispatchable.dispatch_after` (which `dispatch()`, `dispatch_after()`, and the
+module-level `dispatch()` helper all route through) calls
+`asyncio.get_event_loop().run_until_complete(...)`.
+
+Inside a running loop, that raises:
+
+```
+RuntimeError: This event loop is already running
+```
+
+From synchronous code with no loop, it raises the other half of the same
+problem:
+
+```
+RuntimeError: There is no current event loop in thread 'MainThread'
+```
+
+So there is no context in which the documented dispatch API works. Push
+through the connection instead, which is a normal coroutine:
+
+```python
+await connection.push(
+    "billing",
+    json.dumps({"job": "ChargeCard", "args": [order.id], "kwargs": {}}),
+)
+```
+
+`dispatch_sync()` has the same defect. The error message it raises when no
+connection is set also names a method that does not exist.
+`Job.set_connection()`; the real one is `Job.on_connection()`.
+
+</Aside>
+
+The `BackgroundTask` registry retains every task object for the life of the
+process. See [Background Tasks](/v0.x/guides/work/background/).
+
+`Supervisor.start()` blocks rather than returning, so it must be wrapped
+in `asyncio.create_task`.
+
+##  Durability, honestly
+
+The single most useful thing to internalise about this package is which
+parts are durable and which only look durable.
+
+**Nothing is durable by default.** `setup_work` gives you an in-memory
+queue connection and an in-memory schedule registry. Out of the box,
+every layer loses its state on restart.
+
+**Durability comes from the connection, not from the API.** The same
+`dispatch(SendInvoice, order.id)` call is fire-and-forget-and-lose-it
+against `SyncConnection` and genuinely durable against
+`RedisConnection`. The call site cannot tell you which you have.
+
+**The scheduler's schedule is never durable.** Jobs registered with
+`@scheduler.every` and `@scheduler.cron` live in the manager's memory and are
+rebuilt from your code at every startup. That is fine (your code is the source
+of truth) but it means a job that was due while the process was down is simply
+missed, not caught up. If missed runs matter, record the last successful run
+and reconcile on startup.
+
+**Multi-process scheduling double-runs.** Every process that calls
+`setup_work` starts its own scheduler loop, so with four workers your
+"nightly" job runs four times. Elect a leader, use a lock, or run the
+scheduler in a dedicated process that serves no traffic.
+
+##  A worked example
+
+An application that uses all three layers appropriately.
+
+```python title="app.py"
+from sillo import SilloApp
+from sillo.work import setup_work
+from sillo.work.background import BackgroundTask
+from sillo.work.queue import dispatch
+
+app = SilloApp()
+work = setup_work(app)
+scheduler = app.state["scheduler"]
+
+
+@app.post("/orders")
+async def place_order(request, response):
+    order = await Order.create(**request.validated_data.model_dump())
+
+    # Must happen: durable, retried, survives deploys.
+    await request.app.state["queue_connection"].push(
+        "billing", json.dumps({"job": "ChargeCard", "args": [order.id], "kwargs": {}})
+    )
+
+    # Nice to have: lost on restart, and that is acceptable.
+    BackgroundTask.run(warm_recommendations_cache, request.user.id)
+
+    return response.json({"id": order.id}, status_code=201)
+
+
+# Time-based: decides when, delegates the doing.
+@scheduler.cron("*/10 * * * *")
+async def retry_stuck_orders():
+    connection = app.state["queue_connection"]
+    stuck = await Order.filter(status="charging", updated_at__lt=ten_minutes_ago())
+    for order in stuck:
+        await connection.push(
+            "billing",
+            json.dumps({"job": "ChargeCard", "args": [order.id], "kwargs": {}}),
+        )
+
+
+@app.on_shutdown
+async def drain_background_work():
+    await BackgroundTask.drain(timeout=10)
+```
+
+The division is deliberate. Charging a card is durable. Cache warming is not.
+And the scheduled job exists precisely because neither layer is perfect. It is
+the reconciliation loop that catches whatever fell through.
+
+##  What not to do
+
+**Do not use `BackgroundTask` for work that must happen.** Deploys lose
+it.
+
+**Do not ship with the default `SyncConnection`.** It is an in-memory
+queue with no durability and no cross-process visibility.
+
+**Do not call `Job.dispatch()` from a handler.** It raises
+`RuntimeError: This event loop is already running`.
+
+**Do not assume `@task` schedules anything.** It attaches metadata;
+calling the function still runs it inline.
+
+**Do not run the scheduler in every worker process.** The job runs once
+per process.
+
+**Do not expect the scheduler to catch up missed runs.** A job due during
+downtime is skipped.
+
+**Do not do heavy CPU work in the web process**, through any of these
+layers. Use a worker process.
+
+**Do not call `setup_work` twice expecting reconfiguration.** It is
+idempotent and ignores the second call's arguments.
+
+##  Testing work code
+
+Background work is where tests quietly stop asserting anything, because
+the assertion runs before the work does. Three habits keep that honest.
+
+**Test the function, not the launch.** `send_welcome_email` is an
+ordinary coroutine; call and await it directly in a unit test. Testing
+that `BackgroundTask.run` was called is a test of the framework, not of
+your code.
+
+**Await the handle when you need the effect.** In an integration test,
+capture the `BackgroundTask` and await it before asserting:
+
+```python title="making the async work synchronous for a test"
+bt = BackgroundTask.run(send_welcome_email, "a@b.com")
+await bt.wait(timeout=5)
+assert outbox.messages == [...]
+```
+
+**Run jobs inline.** A job's `handle()` is just a method, construct the class
+and await it, skipping the queue entirely:
+
+```python
+await ChargeCard(order_id=order.id).handle()
+```
+
+That tests the logic. Test the *queueing* separately by asserting on
+`await connection.size("billing")` after the endpoint runs, which is fast
+and does not depend on a worker being up.
+
+For the scheduler, call the decorated function directly rather than
+waiting for a trigger to fire. Testing that cron parsing works is the
+framework's job; testing that your report is correct is yours.
+
+##  Performance notes
+
+Background tasks and the scheduler share the web process's event loop. Anything
+slow or CPU-bound there costs you request throughput directly, measure p99
+latency before and after adding one.
+
+Queue workers are separate processes and scale independently. That is the
+entire point: web processes stay small and responsive, workers absorb the
+variance.
+
+The event dispatcher is in-process and synchronous with respect to the
+loop. A listener that awaits a network call adds its latency to whatever
+dispatched the event, unless you dispatch without awaiting.
+
+##  API reference
+
+| Name | Signature | Notes |
+|---|---|---|
+| `setup_work` | `(app, *, queue_backend=None, queue_name="default") -> dict` | Idempotent; creates a `SyncConnection` |
+| `task` | `(name=None, *, priority=NORMAL, max_attempts=1, queue="default", timeout=None)` | Attaches metadata only |
+| `TaskPriority` | enum | `LOW`, `NORMAL`, `HIGH`, `CRITICAL` |
+| `TaskStatus` | enum | `PENDING`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELLED` |
+| `TaskResult` | dataclass | `id`, `name`, `status`, `result`, `error`, `attempt`, `duration_ms` |
+| `MemoryBackend` / `RedisBackend` | | Task storage backends |
+| `TimeoutMiddleware` / `RateLimitMiddleware` / `LoggingMiddleware` | | Task middleware |
+
+##  Related
+
+- [Background Tasks](/v0.x/guides/work/background/): fire-and-forget, supervision,
+  drain
+- [Queue System](/v0.x/guides/work/queue/): connections, workers, middleware,
+  batches, failures
+- [Jobs](/v0.x/guides/work/jobs/): the dispatchable job class
+- [Scheduler](/v0.x/guides/work/scheduler/): interval and cron triggers
+- [Events](/v0.x/guides/work/events/): in-process pub/sub for side effects
+- [Concurrency](/v0.x/guides/concurrency/): the event loop these layers share
+- [Startup & Shutdown](/v0.x/guides/startups-and-shutdowns/): where the scheduler
+  hooks attach

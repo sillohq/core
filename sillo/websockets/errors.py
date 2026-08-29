@@ -13,7 +13,7 @@ async def websocket_exception_handler(
 ) -> None:
     """Websocket Exception Handler"""
     error = traceback.format_exc()
-    logger.error(f"WebSocketContext error: {error}")
+    logger.error(f"WebSocket error: {error}")
     await websocket.close(code=exc.code, reason=str(exc))
 
 

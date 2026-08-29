@@ -1,0 +1,460 @@
+---
+title: Mail Service
+description: "Sending email over SMTP: configuration, templates, attachments, the silent-failure return contract, and the single shared connection you must not send through concurrently."
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Mail Service
+  - tag: meta
+    attrs:
+      property: og:description
+      content: "Sending email over SMTP: configuration, templates, attachments, the silent-failure return contract, and the single shared connection you must not send through concurrently."
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+#  Mail (`sillo.mail`)
+
+`sillo.mail` sends email over SMTP. It wraps Python's `smtplib` in an
+async-friendly client, adds Jinja2 templating and attachments, and hooks
+connection setup and teardown into the application lifecycle.
+
+```python title="the minimum"
+from sillo import SilloApp
+from sillo.mail import MailConfig, setup_mail
+
+app = SilloApp()
+mail = setup_mail(app, MailConfig.for_gmail("you@gmail.com", "app-password"))
+
+
+@app.post("/signup")
+async def signup(request, response):
+    user = await create_user(request.validated_data)
+    result = await mail.send_email(
+        to=user.email,
+        subject="Welcome",
+        body="Thanks for signing up.",
+        html_body="<h1>Welcome</h1><p>Thanks for signing up.</p>",
+    )
+    if not result.success:
+        logger.error("welcome email failed: %s", result.error)
+    return response.json({"id": user.id}, status_code=201)
+```
+
+That `if not result.success` is not defensive padding. It is the only way you
+will ever learn that the email did not send. See below.
+
+##  When to reach for this
+
+Use `sillo.mail` for transactional email in an application that already
+talks SMTP: password resets, receipts, notifications, alerts to your own
+team.
+
+Do not use it for bulk sending. There is no batching, no rate limiting,
+no bounce handling, no suppression list, and no delivery tracking beyond
+"SMTP accepted it". Marketing sends and anything over a few hundred
+recipients belong with a provider whose API does those things.
+
+Do not send email inline in a request handler for anything that matters. SMTP
+handshakes take hundreds of milliseconds to seconds, and a slow mail server
+becomes a slow endpoint. Hand it to the [queue](/v0.x/guides/work/queue/) and let a
+worker do it, where the retry also lives.
+
+##  Setup
+
+```python title="setup_mail"
+from sillo.mail import MailConfig, setup_mail
+
+mail = setup_mail(app, MailConfig())     # every field reads an env var
+```
+
+`setup_mail` stores the client in `app.state["mail_client"]`, registers
+`client.start` on startup and `client.stop` on shutdown, and returns the
+client. Like the other `setup_*` helpers it is idempotent. A second call
+returns the existing client and ignores the new config.
+
+Inside a handler, either close over the client or pull it out of state:
+
+```python title="reaching the client"
+from sillo.mail import get_mail_client
+
+
+@app.post("/notify")
+async def notify(request, response):
+    mail = get_mail_client(request)
+    ...
+```
+
+`get_mail_client` raises `RuntimeError` with a clear message if
+`setup_mail` was never called, which is friendlier than a `KeyError` at
+send time.
+
+##  Configuration
+
+Every field reads an environment variable, so deployment configuration
+needs no code changes.
+
+| Field | Env var | Default |
+|---|---|---|
+| `smtp_host` | `SMTP_HOST` | `localhost` |
+| `smtp_port` | `SMTP_PORT` | `587` |
+| `smtp_username` | `SMTP_USERNAME` | `None` |
+| `smtp_password` | `SMTP_PASSWORD` | `None` |
+| `use_tls` | `SMTP_USE_TLS` | `true` |
+| `use_ssl` | `SMTP_USE_SSL` | `false` |
+| `default_from` | `MAIL_DEFAULT_FROM` | `None` |
+| `default_reply_to` | `MAIL_DEFAULT_REPLY_TO` | `None` |
+| `smtp_timeout` | `SMTP_TIMEOUT` | `30` |
+| `template_directory` | `MAIL_TEMPLATE_DIR` | `None` |
+| `debug` | `MAIL_DEBUG` | `false` |
+| `suppress_send` | `MAIL_SUPPRESS_SEND` | `false` |
+
+`__post_init__` reconciles the port with the encryption settings:
+
+```python title="port-driven encryption"
+MailConfig(smtp_port=465)              # forces use_ssl=True, use_tls=False
+MailConfig(smtp_port=587)              # forces use_tls=True, use_ssl=False
+MailConfig(use_ssl=True, use_tls=True) # ValueError: Cannot use both SSL and TLS
+```
+
+Port 465 is implicit TLS (the connection is encrypted from the first byte. Port
+587 is STARTTLS) the connection opens in the clear and upgrades. Both are fine;
+setting the port correctly is enough, and fighting the defaults usually means
+the port is wrong.
+
+`to_dict()` masks `smtp_password` as `***`, so it is safe to log a config
+while debugging.
+
+###  Provider shortcuts
+
+```python title="preset configurations"
+MailConfig.for_gmail("you@gmail.com", "app-password")
+MailConfig.for_outlook("you@outlook.com", "password")
+MailConfig.for_sendgrid("SG.your-api-key")
+```
+
+Gmail requires an app password, not your account password, and only
+issues one when two-factor authentication is enabled. Each shortcut
+accepts `**kwargs` forwarded to the constructor, so you can layer on
+`default_from` or `template_directory`.
+
+<Aside type="caution" title="max_connections does nothing">
+
+`MailConfig.max_connections` is declared, reads `SMTP_MAX_CONNECTIONS`,
+and is never read by any code in the package. There is no connection
+pool. Setting it to 50 does not give you fifty connections; it gives you
+one, with an unused integer beside it.
+
+</Aside>
+
+##  Sending
+
+Three entry points, from most convenient to most flexible.
+
+```python title="send_email"
+result = await mail.send_email(
+    to="user@example.com",             # str or list[str]
+    subject="Your receipt",
+    body="Plain text version",
+    html_body="<p>HTML version</p>",
+    from_email="billing@example.com",  # falls back to config.default_from
+)
+```
+
+```python title="send_template_email"
+result = await mail.send_template_email(
+    to="user@example.com",
+    subject="Welcome",
+    template_name="welcome",
+    context={"user_name": "Alice"},
+)
+```
+
+```python title="send_message"
+from sillo.mail import EmailMessage
+
+message = EmailMessage(to=["a@example.com"], cc=["b@example.com"], subject="Report")
+message.add_attachment("report.pdf", "/path/to/report.pdf")
+message.add_header("X-Campaign", "q3-report")
+result = await mail.send_message(message)
+```
+
+All three route through `send_message`, and all three return an
+`EmailResult`.
+
+<Aside type="danger" title="Sending never raises. It returns success=False">
+
+`send_message` wraps its entire body in `try/except Exception`. Every failure
+(no `from` address, authentication rejected, connection refused, DNS failure, a
+recipient the server rejects, a template that does not exist) is caught, logged
+at ERROR, and returned as:
+
+```python
+EmailResult(success=False, error="...", message_id=..., to=[...], subject=...)
+```
+
+Code that ignores the return value cannot tell a delivered email from a
+completely broken mail configuration. This is the single most important
+thing to know about this module:
+
+```python
+await mail.send_email(to=user.email, subject="Reset your password", body=...)
+# looks fine; may have done nothing at all
+```
+
+Always check:
+
+```python
+result = await mail.send_email(...)
+if not result.success:
+    logger.error("mail failed for %s: %s", user.email, result.error)
+    raise MailDeliveryError(result.error)     # or enqueue a retry
+```
+
+The upside of the design is that a mail outage cannot 500 your signup
+endpoint. The cost is that it cannot alert you either, unless you make it.
+
+</Aside>
+
+`EmailResult` carries `success`, `message_id`, `to`, `subject`,
+`sent_at`, `error`, and `provider_response`, with a `to_dict()` for
+logging or returning to a client.
+
+##  Templates
+
+Set `template_directory` and the client builds a Jinja2 environment over
+it. `jinja2` must be installed; without it, templating is silently
+unavailable and `send_template_email` falls through without rendering.
+
+```python title="template setup"
+config = MailConfig(template_directory="templates/mail")
+mail = setup_mail(app, config)
+```
+
+```text title="the directory"
+templates/mail/
+  welcome.html
+  welcome.txt
+```
+
+`template_name="welcome"` resolves both extensions. The HTML file becomes
+`html_body` and the text file becomes `body`. Ship both. Text-only clients and
+many spam filters treat an HTML-only message as a signal, and a plain-text
+alternative costs one extra file.
+
+`template_auto_escape` defaults to `True`, which escapes variables in the
+HTML template. Keep it on. A user-supplied display name rendered into an
+HTML email is exactly the injection vector it looks like, and email
+clients render enough HTML for it to matter.
+
+##  Attachments
+
+```python title="two forms"
+message.add_attachment("report.pdf", "/path/to/report.pdf")
+message.add_attachment("logo.png", png_bytes, content_type="image/png")
+```
+
+A string is treated as a filesystem path and read; bytes are used
+directly. When `content_type` is omitted it is guessed from the filename.
+
+Two limits worth respecting. Attachments are base64-encoded into the message,
+which inflates them by about a third, and most providers reject messages over
+20 to 25 MB total. And reading a file happens synchronously inside the
+coroutine: a large attachment blocks the event loop. For anything sizeable,
+upload the file to object storage and email a link, which is also what
+recipients prefer.
+
+##  Concurrency
+
+<Aside type="danger" title="One shared connection, no locking">
+
+`MailClient` holds a single `self._smtp` object. Every send runs
+`self._smtp.sendmail(...)` in the default thread pool executor.
+
+`smtplib.SMTP` is not thread-safe. Two concurrent sends put two threads
+into the same socket, interleaving SMTP commands. The failure modes are
+ugly and non-deterministic: `SMTPServerDisconnected`, replies matched to
+the wrong command, a message delivered to another message's recipients.
+
+This is reachable from ordinary code, two requests sending email at the same
+time is not an edge case.
+
+Serialize sends with a lock:
+
+```python title="one send at a time"
+import asyncio
+
+_mail_lock = asyncio.Lock()
+
+
+async def send_safely(**kwargs):
+    async with _mail_lock:
+        return await mail.send_email(**kwargs)
+```
+
+Or, better, send from a single queue worker with a concurrency of one, so
+the serialization is structural rather than remembered. That also gives
+you retries, which the client does not have.
+
+</Aside>
+
+`_ensure_connected` sends a `NOOP` before each message and reconnects if it
+fails, so a connection dropped by an idle timeout heals itself. That reconnect
+is not free (it is a full handshake and login) so a low-traffic application
+pays connection setup on most sends.
+
+##  Testing
+
+`suppress_send=True` makes every send a no-op that returns
+`success=True` with `provider_response={"suppressed": True}`.
+
+```python title="test configuration"
+config = MailConfig(suppress_send=True, default_from="test@example.com")
+```
+
+Set `MAIL_SUPPRESS_SEND=true` in your test environment and no test can
+accidentally email a real person. The mistake everyone makes exactly once.
+
+Because suppressed sends report success, assert on `provider_response` if
+you need to distinguish them:
+
+```python
+assert result.provider_response == {"suppressed": True}
+```
+
+For asserting on content, point `template_directory` at your real
+templates and inspect the rendered `EmailMessage`, or run a local capture
+server such as MailHog on port 1025 with `use_tls=False` and read what
+arrives.
+
+##  A worked example
+
+Email that is durable, retried, and observable, the shape worth copying for
+anything a user is waiting on.
+
+```python title="sending through the queue"
+class SendPasswordReset(Job):
+    queue = "email"
+    tries = 5
+    backoff = 30
+    timeout = 20
+
+    def __init__(self, user_id: int, token: str):
+        super().__init__()
+        self.user_id = user_id
+        self.token = token
+
+    async def handle(self):
+        user = await User.get(id=self.user_id)
+        mail = app.state["mail_client"]
+
+        result = await mail.send_template_email(
+            to=user.email,
+            subject="Reset your password",
+            template_name="password_reset",
+            context={"name": user.name, "token": self.token},
+        )
+        if not result.success:
+            # Raise so the queue retries; returning would mark the job done.
+            raise RuntimeError(f"mail failed: {result.error}")
+
+    async def failed(self, exception: Exception) -> None:
+        await alert_ops(f"password reset email permanently failed for {self.user_id}")
+```
+
+The `raise` is the important line. Because `send_email` swallows
+failures, a job that does not check `result.success` reports success to
+the queue and the retry never happens.
+
+##  What not to do
+
+**Do not ignore the return value.** Failures are returned, not raised.
+
+**Do not send concurrently through one client.** `smtplib` is not
+thread-safe.
+
+**Do not send email inline in a request handler** for anything that
+matters. Use the queue.
+
+**Do not set `max_connections` expecting a pool.** Nothing reads it.
+
+**Do not send HTML-only.** Provide a text alternative.
+
+**Do not disable `template_auto_escape`.** Email clients render enough
+HTML for injection to matter.
+
+**Do not attach large files.** Base64 inflates them and the read blocks
+the loop.
+
+**Do not put credentials in code.** Every field has an environment
+variable.
+
+**Do not run tests without `suppress_send`.** You will email a customer.
+
+##  Deliverability
+
+Code that sends correctly still lands in spam if the domain is not set
+up. Three DNS records do most of the work, and none of them are
+configured in Python.
+
+**SPF** lists the servers allowed to send for your domain. Without it,
+receiving servers have no way to tell your mail from a forgery.
+
+**DKIM** signs outgoing messages with a private key whose public half
+lives in DNS, so a receiver can verify the message was not altered and
+did come from you. Your SMTP provider signs on your behalf once you add
+their key.
+
+**DMARC** tells receivers what to do when SPF and DKIM disagree, and asks
+them to send you reports. Start at `p=none` to observe, then tighten.
+
+Beyond DNS: send from a subdomain you use only for transactional mail, so a
+marketing reputation problem cannot take down password resets. Set a reachable
+`Reply-To`. Include a plain-text alternative. And never put user-supplied text
+in the subject without stripping newlines. A `\n` in a subject is a
+header-injection vector that lets a caller add arbitrary headers, including
+extra recipients.
+
+```python title="the one sanitization that matters"
+subject = " ".join(user_supplied.splitlines())[:200]
+```
+
+##  Performance notes
+
+Every send is a blocking `smtplib` call dispatched to the default thread
+pool. That pool is shared with every other `run_in_executor` user in the
+process, so a burst of email can starve other offloaded work.
+
+The `NOOP` check before each send is a network round trip. On a
+high-latency link that is a meaningful fraction of total send time, and
+it happens even when the connection is definitely alive.
+
+Template rendering is Jinja2 and is fast, but the environment is built once at
+client start, changing a template file requires a restart, since there is no
+auto-reload.
+
+##  API reference
+
+| Name | Signature | Notes |
+|---|---|---|
+| `setup_mail` | `(app, config=None) -> MailClient` | Idempotent; stores in `app.state["mail_client"]` |
+| `get_mail_client` | `(request) -> MailClient` | Raises `RuntimeError` if unconfigured |
+| `MailClient.send_email` | `(to, subject, body=None, html_body=None, from_email=None, ...)` | Returns `EmailResult` |
+| `MailClient.send_template_email` | `(to, subject, template_name, context, ...)` | Needs `jinja2` |
+| `MailClient.send_message` | `(message: EmailMessage)` | Never raises |
+| `MailClient.start` / `.stop` | `()` | Wired by `setup_mail` |
+| `EmailMessage` | `(to, subject, body=None, html_body=None, cc=None, bcc=None, ...)` | `.add_attachment()`, `.add_header()`, `.to_mime_message()` |
+| `EmailAttachment` | `(filename, content, content_type=None)` | |
+| `EmailResult` | dataclass | `success`, `error`, `message_id`, `to`, `subject`, `sent_at`, `to_dict()` |
+| `MailConfig` | dataclass | `.for_gmail()`, `.for_outlook()`, `.for_sendgrid()`, `.to_dict()` |
+
+##  Related
+
+- [Queue System](/v0.x/guides/work/queue/): where email sending belongs
+- [Jobs](/v0.x/guides/work/jobs/): retry and failure handling for delivery
+- [Background Tasks](/v0.x/guides/work/background/): the non-durable alternative
+- [Templating](/v0.x/guides/templating/): the Jinja2 environment used for HTML
+  bodies
+- [Startup & Shutdown](/v0.x/guides/startups-and-shutdowns/): the hooks `setup_mail`
+  registers

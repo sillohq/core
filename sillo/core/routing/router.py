@@ -126,7 +126,7 @@ class Route(BaseRoute):
         pattern: Compiled regex pattern for path matching.
         handler: Callable that processes incoming requests.
         methods: List of allowed HTTP methods for this endpoint.
-        validator: HttpContext parameter validation rules.
+        validator: Request parameter validation rules.
         request_schema: Schema for request body documentation.
         response_schema: Schema for response documentation.
         deprecated: Deprecation status indicator.
@@ -768,7 +768,7 @@ class Router(BaseRouter):
     """Main router implementation for the sillo ASGI framework.
 
     The Router is the central component for organizing and dispatching HTTP
-    and WebSocketContext requests. It maintains a collection of routes, manages
+    and WebSocket requests. It maintains a collection of routes, manages
     middleware stacks, supports nested sub-routers, and provides decorator
     methods for convenient route registration.
 
@@ -1929,7 +1929,7 @@ class Router(BaseRouter):
                 "multipart/form-data",
             ],
             Doc("""
-                HttpContext content type.
+                Request content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2138,7 +2138,7 @@ class Router(BaseRouter):
                 "multipart/form-data",
             ],
             Doc("""
-                HttpContext content type.
+                Request content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2845,18 +2845,18 @@ class Router(BaseRouter):
         self,
         route: Annotated[
             WebsocketRoute,
-            Doc("An instance of the Route class representing a WebSocketContext route."),
+            Doc("An instance of the Route class representing a WebSocket route."),
         ]
         | None = None,
         path: str | None = None,
         handler: WsHandlerType | None = None,
     ) -> None:
-        """Add a WebSocketContext route to the application router.
+        """Add a WebSocket route to the application router.
 
-        Registers a WebSocketContext route either from a pre-constructed
+        Registers a WebSocket route either from a pre-constructed
         ``WebsocketRoute`` instance or by creating one from the provided
         path and handler arguments. This enables the application to handle
-        persistent WebSocketContext connections for real-time bidirectional
+        persistent WebSocket connections for real-time bidirectional
         communication between clients and the server.
 
         Exactly one of ``route`` or both ``path`` and ``handler`` must be
@@ -2866,10 +2866,10 @@ class Router(BaseRouter):
         Args:
             route: A pre-constructed ``WebsocketRoute`` instance to register.
                 When provided, ``path`` and ``handler`` are ignored.
-            path: The URL path pattern for the WebSocketContext endpoint. Required
+            path: The URL path pattern for the WebSocket endpoint. Required
                 when ``route`` is not provided. Supports dynamic parameters
                 using curly brace syntax.
-            handler: The async WebSocketContext handler function. Required when
+            handler: The async WebSocket handler function. Required when
                 ``route`` is not provided. Must accept a single
                 ``WebSocketContext`` argument.
 
@@ -2890,19 +2890,19 @@ class Router(BaseRouter):
     def ws_route(
         self,
         path: Annotated[
-            str, Doc("The WebSocketContext route path. Must be a valid URL pattern.")
+            str, Doc("The WebSocket route path. Must be a valid URL pattern.")
         ],
         handler: Annotated[
             WsHandlerType | None,
-            Doc("The WebSocketContext handler function. Must be an async function."),
+            Doc("The WebSocket handler function. Must be an async function."),
         ] = None,
     ) -> Any:
-        """Register a WebSocketContext route as a decorator or direct call.
+        """Register a WebSocket route as a decorator or direct call.
 
         Creates and registers a ``WebsocketRoute`` for handling persistent
-        WebSocketContext connections at the given path. Can be used as a decorator
+        WebSocket connections at the given path. Can be used as a decorator
         with or without the handler argument, enabling flexible registration
-        patterns for WebSocketContext endpoints.
+        patterns for WebSocket endpoints.
 
         When a handler is provided directly the route is registered
         immediately and the result of ``add_ws_route`` is returned. When
@@ -2910,10 +2910,10 @@ class Router(BaseRouter):
         and registers the route upon decoration.
 
         Args:
-            path: The WebSocketContext route path pattern. Must be a valid URL
+            path: The WebSocket route path pattern. Must be a valid URL
                 pattern supporting dynamic parameters via curly brace syntax
                 such as ``/ws/chat/{room_id}``.
-            handler: Optional async WebSocketContext handler function. Must be a
+            handler: Optional async WebSocket handler function. Must be a
                 coroutine function accepting a single ``WebSocketContext`` argument.
                 If provided the route is registered immediately.
 
@@ -2931,7 +2931,7 @@ class Router(BaseRouter):
             return self.add_ws_route(WebsocketRoute(path, handler))
 
         def decorator(handler: WsHandlerType) -> WsHandlerType:
-            """Create a WebSocketContext route from the handler and register it.
+            """Create a WebSocket route from the handler and register it.
 
             Constructs a new ``WebsocketRoute`` instance from the captured
             path and the provided handler, then registers it with this
@@ -2940,8 +2940,8 @@ class Router(BaseRouter):
             context.
 
             Args:
-                handler: The async WebSocketContext handler function to wrap as
-                    a WebSocketContext route at the configured path.
+                handler: The async WebSocket handler function to wrap as
+                    a WebSocket route at the configured path.
 
             Returns:
                 The original handler function, unmodified, allowing it to
@@ -3146,7 +3146,7 @@ class Router(BaseRouter):
         the path supports rather than only the first route's.
 
         For HTTP requests that match no route, a ``NotFoundException`` is
-        raised which results in a 404 response. For WebSocketContext connections
+        raised which results in a 404 response. For WebSocket connections
         that match no route, a close frame with code 4404 is sent to the
         client instead of raising an exception.
 

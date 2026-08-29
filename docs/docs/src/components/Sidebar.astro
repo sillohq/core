@@ -1,0 +1,85 @@
+---
+/**
+ * Narrows the sidebar to one manual of one version, and hangs the version
+ * switcher off the bottom of it.
+ *
+ * `astro.config.mjs` generates every manual once per version, so the flat
+ * sidebar array Starlight builds holds both `/v0.x/guides/routing/` and
+ * `/v1.0/guides/routing/` — twelve manuals' worth of groups on every page.
+ * lucode-starlight's Sidebar does narrow that array, but on the *first* URL
+ * segment only, which used to be `guides` and is now `v0.x`: left to itself it
+ * matches every group in the version and renders all six manuals at once.
+ *
+ * So the narrowing happens here instead, against both segments. What reaches
+ * the theme component is one manual, and its own filter — looking for the
+ * `/v0.x/` prefix it reads off the same URL — then keeps all of it.
+ *
+ * The mobile drawer carries a second copy of that same one-segment filter and
+ * reads `starlightRoute` directly, so it would have had the same problem. It
+ * does not, because PageFrame renders this slot before it renders the drawer,
+ * and what is being narrowed is the route data both of them share.
+ *
+ * A wrapper rather than a fork: the theme's Sidebar carries the sliding marker,
+ * the scroll-into-view behaviour and the social/theme footer, none of which
+ * versioning touches.
+ */
+import ThemeSidebar from 'lucode-starlight/components/overrides/Sidebar.astro';
+import VersionSwitcher from './VersionSwitcher.astro';
+import { routeParts } from '../versions.mjs';
+
+const base = import.meta.env.BASE_URL;
+const pathname = Astro.url.pathname;
+const withoutBase = pathname.startsWith(base) ? pathname.slice(base.length) : pathname;
+
+const { version, manual } = routeParts(withoutBase);
+
+/*
+ * Unversioned pages — the theme docs under /showcase/ and /reference/ — have no
+ * version to narrow to, and are left exactly as Starlight built them.
+ */
+if (version && manual) {
+    // Sidebar hrefs carry Astro's `base`; the pathname above had it stripped.
+    const prefix = `${base.replace(/\/$/, '')}/${version.slug}/${manual}/`;
+    const route = Astro.locals.starlightRoute;
+    route.sidebar = route.sidebar.filter((entry) =>
+        entry.type === 'link'
+            ? entry.href.startsWith(prefix)
+            : entry.entries.some((link) => link.type === 'link' && link.href.startsWith(prefix))
+    );
+}
+---
+
+<div class="sidebar-shell">
+    <ThemeSidebar />
+    {version && <VersionSwitcher />}
+</div>
+
+<style>
+    /*
+     * The theme's `.sidebar` is `height: 100%` inside an `overflow: hidden`
+     * aside exactly one viewport tall. Adding a sibling under it needs that
+     * height split rather than shared, or the switcher lands past the clip and
+     * is never seen: the column owns the height, the sidebar takes what is
+     * left, and the switcher keeps its own.
+     */
+    .sidebar-shell {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+    }
+
+    .sidebar-shell :global(.sidebar) {
+        flex: 1;
+        min-height: 0;
+    }
+
+    /*
+     * Separates it from the theme's own footer (social icons, theme select),
+     * which sits directly above and already has a rule of its own on top.
+     */
+    .sidebar-shell :global(.sidebar) + * {
+        flex-shrink: 0;
+        border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent);
+    }
+</style>

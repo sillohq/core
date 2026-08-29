@@ -1,0 +1,183 @@
+---
+/**
+ * Picks which version of the docs you are reading.
+ *
+ * A native `<details>` rather than a scripted menu: it opens without
+ * JavaScript, closes on Escape and on an outside click for free, and the whole
+ * control is two links.
+ *
+ * Each entry points at the *same page* in the other version rather than that
+ * version's front door, so switching keeps your place. Where a page exists in
+ * one version and not the other — a guide added for v1.0, one dropped from it —
+ * that link 404s. It is the right failure: quietly landing on an index instead
+ * is indistinguishable from a switcher that worked, and the 404 names the page
+ * that is missing.
+ */
+import { VERSIONS, routeParts } from '../versions.mjs';
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const pathname = Astro.url.pathname;
+const withoutBase = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
+const { version, rest } = routeParts(withoutBase);
+
+const current = version ?? VERSIONS[0];
+const targets = VERSIONS.map((entry) => ({
+    ...entry,
+    href: `${BASE}/${entry.slug}/${rest || 'guides/introduction/'}`,
+    active: entry.slug === current.slug,
+}));
+---
+
+<details class="switcher">
+    <summary>
+        <span class="cap">Version</span>
+        <span class="now">
+            {current.label}
+            {current.preview && <span class="flag">dev</span>}
+        </span>
+        <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"
+            ><path d="m4.5 6.5 3.5 3.5 3.5-3.5"></path></svg
+        >
+    </summary>
+    <ul>
+        {
+            targets.map((entry) => (
+                <li>
+                    <a href={entry.href} aria-current={entry.active ? 'true' : undefined}>
+                        <span class="name">{entry.label}</span>
+                        <span class="note">{entry.note}</span>
+                    </a>
+                </li>
+            ))
+        }
+    </ul>
+</details>
+
+<style>
+    .switcher {
+        position: relative;
+        margin: 0 2rem;
+        padding: calc(var(--spacing) * 3) 0;
+    }
+
+    summary {
+        display: flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 2);
+        padding: calc(var(--spacing) * 2) calc(var(--spacing) * 2.5);
+        border: 1px solid var(--border);
+        border-radius: calc(var(--spacing) * 2);
+        font-size: 0.75rem;
+        cursor: pointer;
+        list-style: none;
+        transition:
+            border-color 0.18s ease,
+            background 0.18s ease;
+    }
+
+    /* Safari draws its own disclosure triangle through a pseudo-element. */
+    summary::-webkit-details-marker {
+        display: none;
+    }
+
+    summary:hover {
+        border-color: color-mix(in oklab, var(--foreground) 30%, var(--border));
+        background: color-mix(in oklab, var(--foreground) 4%, transparent);
+    }
+
+    .cap {
+        color: var(--muted-foreground);
+    }
+
+    .now {
+        display: inline-flex;
+        align-items: center;
+        gap: calc(var(--spacing) * 1.5);
+        /* Pushes the chevron to the far edge, so the control reads as a field. */
+        margin-inline-end: auto;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--foreground);
+    }
+
+    /* Marks a version with no release yet — see `preview` in src/versions.mjs. */
+    .flag {
+        padding-inline: calc(var(--spacing) * 1);
+        border-radius: calc(var(--spacing) * 0.75);
+        background: color-mix(in oklab, var(--foreground) 10%, transparent);
+        font-size: 0.5625rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted-foreground);
+    }
+
+    .chev {
+        width: 0.75rem;
+        height: 0.75rem;
+        flex-shrink: 0;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        color: var(--muted-foreground);
+        transition: transform 0.18s ease;
+    }
+
+    .switcher[open] .chev {
+        transform: rotate(180deg);
+    }
+
+    /*
+     * Opens upward. The switcher sits at the bottom of a sidebar that is
+     * `overflow: hidden` and exactly one viewport tall, so a menu dropped
+     * downward would be clipped away entirely.
+     */
+    ul {
+        position: absolute;
+        bottom: calc(100% - var(--spacing) * 2);
+        left: 0;
+        right: 0;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        padding: calc(var(--spacing) * 1);
+        border: 1px solid var(--border);
+        border-radius: calc(var(--spacing) * 2);
+        background: var(--background);
+        box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.35);
+        list-style: none;
+        margin: 0;
+    }
+
+    ul a {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing) * 0.5);
+        padding: calc(var(--spacing) * 2);
+        border-radius: calc(var(--spacing) * 1.5);
+        font-size: 0.8125rem;
+        text-decoration: none;
+        color: var(--muted-foreground);
+    }
+
+    ul a:hover {
+        background: color-mix(in oklab, var(--foreground) 6%, transparent);
+    }
+
+    ul a[aria-current] {
+        color: var(--foreground);
+        font-weight: 600;
+    }
+
+    .name {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .note {
+        font-size: 0.6875rem;
+        color: var(--muted-foreground);
+    }
+</style>

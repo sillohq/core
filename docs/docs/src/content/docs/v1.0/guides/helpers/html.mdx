@@ -1,0 +1,400 @@
+---
+title: HTML Helpers
+description: "Escaping, tag stripping, safe attribute rendering, and linkification: plus a frank account of what sillo's sanitizer does not protect against."
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: HTML Helpers
+  - tag: meta
+    attrs:
+      property: og:description
+      content: "Escaping, tag stripping, safe attribute rendering, and linkification: plus a frank account of what sillo's sanitizer does not protect against."
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+#  HTML (`sillo.helpers.html`)
+
+Cross-site scripting is the vulnerability class that turns "a user can type text" into "a user can run code in every other user's browser". It happens when data crosses from a place where it is inert into a place where it is executable, without changing form on the way.
+
+This module gives you the tools for that boundary: escaping (make it inert), stripping (remove markup entirely), sanitizing (keep some markup, drop the dangerous parts), and safe attribute rendering.
+
+One of those four is weaker than it looks. Read the sanitizer section before you use `sanitize_html` on anything a stranger typed.
+
+```python
+from sillo.helpers import html
+```
+
+Stdlib-only. No installation step.
+
+##  Pick the right tool
+
+Almost every XSS bug comes from reaching for the wrong one of these. The decision is about what you want the output to *be*, not how much protection you want.
+
+| You have | You want the output to be | Use |
+|---|---|---|
+| A username, a comment, any plain text | Text. Tags shown literally, never rendered. | `escape_html` |
+| HTML from an editor, and you want no markup | Plain text with tags removed | `strip_tags` |
+| HTML from a trusted admin, and you want formatting | HTML with only safe tags | `sanitize_html` |
+| A dict of attribute values | An attribute string inside a tag | `safe_attrs` |
+| Plain text with URLs in it | Text with clickable links | `linkify` |
+
+The overwhelmingly common case is the first one. If a user typed it and you are putting it in a page, you want `escape_html`. Reach for the sanitizer only when you have decided that users may submit *formatting*, which is a much bigger commitment than it sounds.
+
+##  Escaping
+
+###  `escape_html(text) -> str`
+
+Converts the five characters that carry meaning in HTML into entities:
+
+```python
+html.escape_html('<script>alert("xss")</script>')
+# '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+
+html.escape_html("a & b")              # 'a &amp; b'
+html.escape_html('say "hi"')           # 'say &quot;hi&quot;'
+html.escape_html("plain text")         # 'plain text'
+html.escape_html("")                   # ''
+```
+
+`<` becomes `&lt;`, `>` becomes `&gt;`, `&` becomes `&amp;`, `"` becomes `&quot;`, `'` becomes `&#x27;`. The browser renders each entity as the original character but never treats it as markup. A `<script>` tag arrives at the browser as visible text reading `<script>`, which is exactly what you want.
+
+Quotes matter as much as angle brackets. Without escaping them, a value interpolated into an attribute can break out of it:
+
+```python
+# Attacker submits:  " onmouseover="steal()
+f'<div title="{user_input}">'
+# Renders as:  <div title="" onmouseover="steal()">
+```
+
+Escaping the quote prevents the breakout. This is why `escape_html` handles both quote styles rather than only the double quote.
+
+###  `unescape_html(text) -> str`
+
+The inverse. Named entities and numeric references become characters again:
+
+```python
+html.unescape_html("&lt;b&gt;")   # '<b>'
+html.unescape_html(html.escape_html('<a href="x">&</a>'))  # round-trips exactly
+```
+
+<Aside type="danger" title="Unescaping user input re-arms it">
+
+`unescape_html` turns inert text back into live markup. Running it on anything a user supplied undoes your protection completely.
+
+Use it for reading data that was escaped by a system you control (importing an
+old export, parsing a feed that double-encoded) and never as a step on the way
+to rendering. If you find yourself escaping and then unescaping in the same
+code path, one of the two is a bug.
+
+</Aside>
+
+<Aside type="caution" title="Escape once, at the boundary">
+
+Escaping twice produces visible garbage: `escape_html(escape_html("a & b"))` gives `a &amp;amp; b`, which renders on the page as the literal text `a &amp; b`.
+
+Most template engines, including the Jinja2 setup behind [Templating](/v1.0/guides/templating/), escape automatically. If you escape in Python and the template escapes again, users see mangled text. Pass raw values to auto-escaping templates and let the template do it. Use `escape_html` when you are building a string by hand, or writing into a context the template will not escape.
+
+</Aside>
+
+##  Stripping tags
+
+###  `strip_tags(html) -> str`
+
+Removes all markup, keeps the text:
+
+```python
+html.strip_tags("<p>Hello <b>world</b></p>")   # 'Hello world'
+html.strip_tags("plain")                       # 'plain'
+html.strip_tags("<p>unclosed")                 # 'unclosed'
+html.strip_tags("")                            # ''
+```
+
+This is the right function for generating a plain-text representation of rich content: a search index, a meta description, an email preview, a notification summary.
+
+```python title="A plain-text excerpt for a search index"
+from sillo.helpers.html import strip_tags
+from sillo.helpers.text import truncate
+from sillo import HttpContext, json
+
+@app.post("/articles")
+async def create_article(ctx: HttpContext):
+    body = await ctx.json
+    article = await Article.create(
+        body_html=body["html"],
+        search_text=strip_tags(body["html"]),               # indexable
+        preview=truncate(strip_tags(body["html"]), 160),    # meta description
+    )
+    return json({"id": article.id}, status_code=201)
+```
+
+<Aside type="caution" title="strip_tags output still needs escaping">
+
+Removing tags is not escaping. Text between tags can itself contain characters that mean something in HTML, and entity text survives the strip. If the stripped output goes back into an HTML page, escape it. If it goes into a database column, a JSON response, or a plain-text email, you are fine.
+
+</Aside>
+
+##  Sanitizing
+
+###  `sanitize_html(html, allowed_tags=None, allowed_attrs=None, strip=True)`
+
+Keeps an allowlist of tags and attributes, removes the rest.
+
+```python
+html.sanitize_html("<p>ok</p><script>alert(1)</script>")
+# '<p>ok'
+
+html.sanitize_html("<p>hello</p>", allowed_tags={"p"})
+# '<p>hello'
+
+html.sanitize_html('<img src="x" onerror="alert(1)">')
+# ''
+```
+
+The defaults allow thirteen tags and six attributes:
+
+```
+tags:  a b br code em i li ol p pre span strong ul
+attrs: class href id rel target title
+```
+
+<Aside type="danger" title="Do not use sanitize_html on untrusted input">
+
+This is a regex-and-string-scanner sanitizer, not an HTML parser. That design cannot be made reliably safe, and this implementation has bypasses today. Each of the following was run against the current version:
+
+**An entity-encoded scheme survives intact.**
+
+```python
+html.sanitize_html('<a href="jav&#x61;script:alert(1)">x</a>')
+# '<a href="jav&#x61;script:alert(1)">x'
+```
+
+The sanitizer looks for the literal text `javascript:`. It does not decode
+`&#x61;` to `a` first. The browser does. It decodes entities in attribute
+values before resolving the URL scheme. The link executes when clicked.
+
+**Whitespace inside the scheme survives.**
+
+```python
+html.sanitize_html('<a href="java\tscript:alert(1)">x</a>')
+# '<a href="java\tscript:alert(1)">x'
+```
+
+The pattern is `javascript\s*:`, which allows whitespace *between* the word and the colon but not inside the word. Browsers strip tab, newline, and carriage return from URLs before parsing the scheme, so this executes too. The newline variant behaves identically.
+
+**Nested tags reassemble after stripping.**
+
+```python
+html.sanitize_html('<<script>script>alert(1)<</script>/script>')
+# 'script>alert(1)/script>'
+```
+
+Removing the inner tag leaves fragments an error-tolerant browser parser can recombine.
+
+Use a real HTML parser instead. [`nh3`](https://pypi.org/project/nh3/) (Rust `ammonia` bindings) and [`bleach`](https://pypi.org/project/bleach/) both parse the document into a tree, apply the allowlist to that tree, and re-serialize, which closes this entire class of bypass:
+
+```bash
+uv add nh3
+```
+
+```python
+import nh3
+
+safe = nh3.clean(
+    user_html,
+    tags={"p", "b", "i", "em", "strong", "a", "ul", "ol", "li", "code", "pre"},
+    attributes={"a": {"href", "title"}},
+)
+```
+
+</Aside>
+
+Three further behaviours matter even for trusted input.
+
+**Closing tags are removed.** Every tag is matched against the allowlist by name, and `</p>` is read as the name `/p`, which is never in the allowlist:
+
+```python
+html.sanitize_html("<p>a</p><p>b</p>")   # '<p>a<p>b'
+html.sanitize_html("<b>bold</b>")        # '<b>bold'
+```
+
+The output is unbalanced HTML. Browsers patch it, but the resulting DOM is not the one you wrote, and content from two paragraphs can end up nested rather than adjacent.
+
+**Script bodies are kept as text.** The tag goes, its contents stay:
+
+```python
+html.sanitize_html("<script>alert(1)</script>tail")   # 'alert(1)tail'
+```
+
+Not executable, but users see the raw source of the attempted payload printed in the page.
+
+**Patterns are stripped from text nodes too.** The XSS patterns run over the whole document, not just attribute values, so legitimate prose gets mangled:
+
+```python
+html.sanitize_html('Read "JavaScript: The Good Parts"')
+# 'Read " The Good Parts"'
+
+html.sanitize_html("The data: prefix is used for inline images")
+# 'The  prefix is used for inline images'
+```
+
+A technical blog cannot use this sanitizer without corrupting its own articles.
+
+So: `sanitize_html` works as a defence-in-depth pass over content from your own admin users, where the threat model is "a trusted author pasted something odd out of Word" and you accept the text corruption. It is not the boundary between the public internet and your rendered pages.
+
+##  Safe attributes
+
+###  `safe_attrs(attrs) -> str`
+
+Renders a dict as an escaped attribute string:
+
+```python
+html.safe_attrs({"href": "https://example.com", "class": "btn"})
+# 'href="https://example.com" class="btn"'
+
+html.safe_attrs({})   # ''
+```
+
+Both keys and values are escaped, so a value cannot break out of its quotes and introduce a new attribute:
+
+```python
+html.safe_attrs({"title": '" onload="alert(1)'})
+# 'title="&quot; onload=&quot;alert(1)"'
+```
+
+The attacker's quote became `&quot;`, so the payload stays inside the `title` value where it is inert. The f-string version of the same code produces a live `onload` handler.
+
+```python title="Building a tag from dynamic attributes"
+from sillo.helpers.html import safe_attrs, escape_html
+
+def render_link(url: str, label: str, css_class: str) -> str:
+    attrs = safe_attrs({
+        "href": url,
+        "class": css_class,
+        "rel": "noopener noreferrer",
+    })
+    return f"<a {attrs}>{escape_html(label)}</a>"
+```
+
+The label is escaped separately. `safe_attrs` handles the attribute region only; text content is your responsibility.
+
+<Aside type="caution" title="safe_attrs escapes values, it does not validate URLs">
+
+An escaped `javascript:` URL is still a `javascript:` URL. Escaping stops a *breakout* from the attribute; it does not stop a dangerous value that was legal syntax all along.
+
+If the URL came from a user, check the scheme:
+
+```python
+from urllib.parse import urlparse
+
+def is_safe_url(url: str) -> bool:
+    scheme = urlparse(url).scheme.lower()
+    return scheme in {"http", "https", ""}   # "" allows relative URLs
+```
+
+Use an allowlist, never a blocklist. There are more dangerous schemes than you will remember to ban.
+
+</Aside>
+
+##  IDs and links
+
+###  `generate_safe_id(text) -> str`
+
+Produces a string usable as an HTML `id` or fragment anchor:
+
+```python
+html.generate_safe_id("Hello World")              # 'hello-world'
+html.generate_safe_id("Hello, World! #1")         # punctuation removed
+html.generate_safe_id("123 starts with a digit")  # 'id-123-starts-with-a-digit'
+html.generate_safe_id("")                         # 'id-'
+```
+
+An `id` beginning with a digit cannot be targeted by a plain CSS selector, so a leading digit gets an `id-` prefix. The function is deterministic, which is what makes it usable for a table of contents: generate the same anchor from the same heading in both the heading and the link.
+
+IDs must be unique within a document. Two headings called "Overview" produce the same ID and `document.getElementById` returns only the first. Track generated IDs and add a numeric suffix on collision.
+
+###  `linkify(text) -> str`
+
+Wraps bare URLs in anchor tags:
+
+```python
+html.linkify("Visit https://example.com now")
+# 'Visit <a href="https://example.com" rel="noopener noreferrer" target="_blank">https://example.com</a> now'
+
+html.linkify("no links here")     # unchanged
+html.linkify("")                  # ''
+```
+
+Every generated link carries `rel="noopener noreferrer"` and `target="_blank"`. The `noopener` part matters: without it, the page you link to can reach back through `window.opener` and navigate your tab to a phishing page. Hand-written link building forgets this constantly, which is the main reason to use the helper.
+
+<Aside type="danger" title="linkify outputs HTML, so escape before calling it">
+
+The function inserts tags. Its output is markup and must not be escaped afterwards, which means anything unsafe in the input is already live by the time you get the result.
+
+Order matters and only one order is correct:
+
+```python
+# Correct: neutralise the input, then add links.
+safe = html.linkify(html.escape_html(user_comment))
+
+# Wrong: the anchor tags get escaped and users see raw <a href=...> text.
+safe = html.escape_html(html.linkify(user_comment))
+
+# Wrong: any markup the user typed is now live in your page.
+safe = html.linkify(user_comment)
+```
+
+In a Jinja2 template the result must be marked safe, and that is exactly the moment to be certain the escape step ran first.
+
+</Aside>
+
+##  What not to do
+
+**Do not interpolate user input into HTML with an f-string.** This is the root cause of nearly every XSS bug. Escape it.
+
+**Do not use `sanitize_html` as your defence against untrusted HTML.** It has live bypasses. Use `nh3` or `bleach`.
+
+**Do not unescape user input.** It re-arms whatever you neutralised.
+
+**Do not escape twice.** Auto-escaping templates already escape. Doing it again shows users `&amp;amp;`.
+
+**Do not `linkify` before escaping.** That order leaves user markup live.
+
+**Do not assume `strip_tags` output is safe for HTML.** It removes tags, not entity text.
+
+**Do not trust a URL because you escaped it.** Escaping prevents breakout, not a `javascript:` scheme. Validate the scheme against an allowlist.
+
+**Do not put user input in a `<script>` block, a `style` attribute, or an event handler.** HTML escaping does not make a value safe in JavaScript or CSS context. Pass data through `JSON.stringify` into a `data-` attribute and read it from your script instead.
+
+##  Performance
+
+All seven functions are single-pass string operations, O(n) in input length, with no I/O.
+
+`sanitize_html` is the slowest: four regex passes over the whole document, then a character-by-character scan in Python. On a large document that is meaningfully slow, and it runs per request if you sanitize at render time. Sanitize once on write and store the result.
+
+`linkify` and `generate_safe_id` use precompiled module-level regexes. `escape_html` and `unescape_html` delegate to the stdlib `html` module and are fast enough to ignore.
+
+##  Function reference
+
+| Function | Signature | Returns |
+|---|---|---|
+| `escape_html` | `(text: str)` | Text with `< > & " '` as entities |
+| `unescape_html` | `(text: str)` | Entities decoded back to characters |
+| `strip_tags` | `(html: str)` | Text content with all tags removed |
+| `sanitize_html` | `(html: str, allowed_tags=None, allowed_attrs=None, strip: bool = True)` | Filtered HTML. **Not safe for untrusted input.** |
+| `safe_attrs` | `(attrs: dict[str, str])` | Escaped `key="value"` pairs |
+| `generate_safe_id` | `(text: str)` | Deterministic HTML-safe identifier |
+| `linkify` | `(text: str)` | Text with URLs wrapped in anchors |
+
+##  Related
+
+- [Templating](/v1.0/guides/templating/): Jinja2 auto-escaping, the default
+  protection for rendered pages
+- [Text](/v1.0/guides/helpers/text/): truncation and excerpts for the stripped
+  output
+- [Strings](/v1.0/guides/helpers/strings/): slugs, which overlap with
+  `generate_safe_id`
+- [Security](/v1.0/guides/security/): CSP and the other headers that limit XSS
+  impact
+- [CSRF](/v1.0/guides/csrf/): the other half of the request-forgery story

@@ -175,7 +175,7 @@ class BaseRoute(ABC):
         Subclasses can implement this method with any signature that makes
         sense for the route type. The base implementation does not enforce
         any specific signature to allow for flexibility across HTTP routes,
-        WebSocketContext routes, and route groups.
+        WebSocket routes, and route groups.
 
         Args:
             *args: Positional arguments passed by the router during the

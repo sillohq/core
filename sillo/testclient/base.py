@@ -325,15 +325,15 @@ class TestClient(httpx.Client):
         **kwargs: Any,
     ) -> WebSocketTestSession:
         """
-        Establishes a WebSocketContext connection.
+        Establishes a WebSocket connection.
 
         Args:
-            url (str): The WebSocketContext URL.
-            subprotocols (Sequence[str] | None, optional): The WebSocketContext subprotocols. Defaults to None.
+            url (str): The WebSocket URL.
+            subprotocols (Sequence[str] | None, optional): The WebSocket subprotocols. Defaults to None.
             **kwargs (Any): Additional keyword arguments.
 
         Returns:
-            WebSocketTestSession: The WebSocketContext session.
+            WebSocketTestSession: The WebSocket session.
         """
         url = urljoin("ws://testserver", url)
         headers = self._prepare_websocket_headers(subprotocols, **kwargs)
@@ -347,7 +347,7 @@ class TestClient(httpx.Client):
             # request before dispatching to the app, so this branch guards a
             # transport contract violation rather than any reachable app
             # behavior.
-            raise RuntimeError("Expected WebSocketContext upgrade")  # pragma: no cover
+            raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
 
         return session
 
@@ -357,10 +357,10 @@ class TestClient(httpx.Client):
         **kwargs: dict[str, Any],
     ) -> dict[str, str]:
         """
-        Prepare the headers for a WebSocketContext connection.
+        Prepare the headers for a WebSocket connection.
 
         Args:
-            subprotocols (Sequence[str] | None, optional): The WebSocketContext subprotocols. Defaults to None.
+            subprotocols (Sequence[str] | None, optional): The WebSocket subprotocols. Defaults to None.
             **kwargs (dict[str, Any]): Additional keyword arguments.
 
         Returns:

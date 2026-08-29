@@ -1,0 +1,159 @@
+---
+title: Installing Sillo Start
+description: "Installing sillo-start as a standalone command with uv, pip or your own tooling environment, and running it without installing at all."
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: Installing Sillo Start
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Install sillo-start once, with uv or pip, and use it for every project after that.
+---
+
+import { TabItem, Tabs } from '@astrojs/starlight/components';
+
+`sillo-start` is a command-line tool, not a dependency of anything you build.
+Install it **globally**, once, and use it for every project after that.
+
+<Tabs syncKey="tool">
+  <TabItem label="uv (recommended)">
+
+    ```bash
+    uv tool install sillo-start
+    ```
+
+    Installs it as a standalone command on your `PATH`, in its own isolated
+    environment. Nothing is added to any project, and no virtual environment
+    has to be active for it to work.
+
+    To upgrade later:
+
+    ```bash
+    uv tool upgrade sillo-start
+    ```
+
+  </TabItem>
+  <TabItem label="pip">
+
+    ```bash
+    pip install sillo-start
+    ```
+
+    Install it into whichever environment you keep your tooling in, a dedicated
+    one, or your user site with `pip install --user sillo-start`.
+
+    It is a small command-line tool with two dependencies (`typer` and `rich`),
+    not something your application imports, so it does not belong in a
+    project's environment.
+
+  </TabItem>
+</Tabs>
+
+Then check it is there:
+
+```bash
+sillo-start --help
+```
+
+## Without installing anything
+
+`uv` can run it directly, which is useful for a one-off:
+
+```bash
+uvx sillo-start create-app myapp
+```
+
+That downloads the tool into a temporary environment, runs it, and throws the
+environment away. Convenient for trying it; slower than an install if you do
+this often.
+
+:::note[Why uv is recommended]
+`uv tool install` puts the command on your `PATH` in an environment of its
+own. That is the behaviour you want for developer tooling: no interaction with
+whatever virtual environment happens to be active, and no chance of a tool's
+dependencies colliding with an application's.
+
+`pip` can do the same thing if you keep a dedicated environment for tools, but
+you have to arrange that yourself. Nothing here requires `uv`.
+:::
+
+## Global flags
+
+Every invocation accepts these before the command:
+
+| Flag | Meaning |
+| --- | --- |
+| `-V`, `--version` | Print the version and exit |
+| `-v`, `--verbose` | Show debug output and full tracebacks |
+| `-q`, `--quiet` | Suppress non-essential output |
+| `-h`, `--help` | Show help. Works on the tool and on each command |
+
+```bash
+sillo-start --version
+sillo-start create-app --help
+```
+
+Shell completion is available through Typer's built-in support:
+
+```bash
+sillo-start --install-completion
+```
+
+## Python version
+
+3.11 or newer. Older versions are not supported, and neither is the framework
+below that line.
+
+```bash
+python --version
+```
+
+## Upgrading
+
+The tool and the starter release independently, which is the point of [fetching
+a repository rather than rendering templates](/v0.x/start/). A fix to the
+application you get does not need a new version of `sillo-start`. The next
+`create-app` picks it up, because it fetches `main` unless you [pin a
+ref](/v0.x/start/custom-starters/#pinning-a-revision).
+
+Upgrade the tool when its own behaviour changes:
+
+<Tabs syncKey="tool">
+  <TabItem label="uv (recommended)">
+
+    ```bash
+    uv tool upgrade sillo-start
+    ```
+
+  </TabItem>
+  <TabItem label="pip">
+
+    ```bash
+    pip install --upgrade sillo-start
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Removing it
+
+Nothing you created depends on it, so removing it breaks nothing:
+
+<Tabs syncKey="tool">
+  <TabItem label="uv (recommended)">
+
+    ```bash
+    uv tool uninstall sillo-start
+    ```
+
+  </TabItem>
+  <TabItem label="pip">
+
+    ```bash
+    pip uninstall sillo-start
+    ```
+
+  </TabItem>
+</Tabs>

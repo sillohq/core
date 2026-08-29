@@ -41,7 +41,7 @@ class WebSocketDenialResponse(  # ty: ignore[invalid-method-override]
 
 class WebSocketTestSession:
     """
-    Represents a test session for a WebSocketContext connection.
+    Represents a test session for a WebSocket connection.
     """
 
     def __init__(
@@ -120,7 +120,7 @@ class WebSocketTestSession:
 
     async def _run(self) -> None:
         """
-        Run the WebSocketContext session in a sub-thread.
+        Run the WebSocket session in a sub-thread.
         """
 
         async def run_app(tg: TaskGroup) -> None:

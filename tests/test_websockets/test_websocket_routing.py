@@ -79,8 +79,7 @@ def test_websocket_with_path_parameters(
     app = SilloApp()
 
     @app.ws_route("/ws/room/{room_id}")
-    async def websocket_room(websocket: WebSocketContext):
-        room_id = websocket.path_params["room_id"]
+    async def websocket_room(websocket: WebSocketContext, room_id: str):
         await websocket.accept()
         await websocket.send_json({"room": room_id, "status": "connected"})
         await websocket.close()

@@ -1,0 +1,85 @@
+---
+/**
+ * Puts the unreleased-version notice above the prose, then hands off to the
+ * theme's own MarkdownContent.
+ *
+ * A version marked `preview` in src/versions.mjs documents code that is not on
+ * PyPI yet, so every page in it has to say so — someone arriving from a search
+ * result has no other signal that the snippet in front of them will not run
+ * against their install. Doing it here rather than in each page's frontmatter
+ * means it cannot be forgotten on a new page, and it comes back off on its own
+ * the day the version stops being a preview.
+ *
+ * It sits inside MarkdownContent rather than above the title because this is
+ * the one wrapper that renders exactly once per page, on every template.
+ */
+import ThemeMarkdownContent from 'lucode-starlight/components/overrides/MarkdownContent.astro';
+import { VERSIONS, DEFAULT_VERSION, routeParts } from '../versions.mjs';
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const pathname = Astro.url.pathname;
+const withoutBase = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
+const { version, rest } = routeParts(withoutBase);
+
+const stable = VERSIONS.find((entry) => entry.slug === DEFAULT_VERSION);
+/* The same page in the released version, which is what someone who landed here
+   by accident actually wanted. */
+const stableHref = `${BASE}/${DEFAULT_VERSION}/${rest || 'guides/introduction/'}`;
+---
+
+<ThemeMarkdownContent>
+    {
+        version?.preview && (
+            <aside class="version-notice" aria-label="Version notice">
+                <p>
+                    This is the <strong>{version.label}</strong> documentation, for a release that
+                    is still in development. The API it describes is not on PyPI and can still
+                    change.
+                </p>
+                <p>
+                    Reading about the version you have installed?{' '}
+                    <a href={stableHref}>Switch to {stable?.label}</a>.
+                </p>
+            </aside>
+        )
+    }
+    <slot />
+</ThemeMarkdownContent>
+
+<style>
+    .version-notice {
+        margin-bottom: calc(var(--spacing) * 8);
+        padding: calc(var(--spacing) * 4);
+        border: 1px solid color-mix(in oklab, var(--sillo-border) 100%, transparent);
+        /*
+         * A left rule rather than a tinted panel: the notice repeats on every
+         * page in the version, and a full-colour box that loud would compete
+         * with the page's own callouts every time.
+         */
+        border-left: 2px solid color-mix(in oklab, var(--foreground) 45%, transparent);
+        border-radius: calc(var(--spacing) * 1.5);
+        background: color-mix(in oklab, var(--foreground) 3%, transparent);
+        font-size: 0.875rem;
+        line-height: 1.6;
+        color: var(--muted-foreground);
+    }
+
+    .version-notice p {
+        margin: 0;
+    }
+
+    .version-notice p + p {
+        margin-top: calc(var(--spacing) * 2);
+    }
+
+    .version-notice strong {
+        color: var(--foreground);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .version-notice a {
+        color: var(--foreground);
+        text-underline-offset: 0.2em;
+    }
+</style>

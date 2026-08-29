@@ -1,0 +1,145 @@
+---
+title: After Creating
+description: "The first ten minutes of a new Sillo project: installing dependencies, running migrations, creating an administrator, starting the server and running the tests."
+head:
+  - tag: meta
+    attrs:
+      property: og:title
+      content: After Creating a Sillo Project
+  - tag: meta
+    attrs:
+      property: og:description
+      content: Install, migrate, create an admin, run the server, run the tests.
+---
+
+import { TabItem, Tabs } from '@astrojs/starlight/components';
+
+`sillo-start` has finished. Everything from here is the
+[`sillo` command](/v1.0/cli/), which the project has as soon as its dependencies
+are installed.
+
+## Install
+
+<Tabs syncKey="pkg">
+  <TabItem label="uv (recommended)">
+
+    ```bash
+    cd myapp
+    uv sync
+    ```
+
+    Reads `pyproject.toml` and `uv.lock`, creates `.venv`, and installs exactly
+    the locked versions. Add `--all-extras` to include the dev tools (pytest,
+    ruff, httpx) which is what you want in a project you are working on:
+
+    ```bash
+    uv sync --all-extras
+    ```
+
+  </TabItem>
+  <TabItem label="venv + pip">
+
+    ```bash
+    cd myapp
+    python -m venv .venv
+    source .venv/bin/activate        # Windows: .venv\Scripts\activate
+    pip install -e ".[dev]"
+    ```
+
+    `-e` installs the project itself in editable mode, so `app` and `routes`
+    are importable without reinstalling after every change. `[dev]` adds the
+    test and lint tools.
+
+  </TabItem>
+</Tabs>
+
+Everything below assumes the environment is active. With `uv`, prefix each
+command with `uv run` instead, `uv run sillo db:migrate`.
+
+## Set the database up
+
+```bash
+sillo db:migrate
+```
+
+The starter commits its initial migration, so this produces a working schema
+rather than an empty database. SQLite by default, at `storage/myapp.db`.
+
+Check it worked:
+
+```bash
+sillo db:status
+```
+
+## Create an administrator
+
+```bash
+sillo user:admin you@example.com
+```
+
+Prompts for a password, twice, without echoing. This is the account you sign
+in to `/admin/` with.
+
+## Run it
+
+```bash
+uvicorn app:app --reload
+```
+
+Then open [http://localhost:8000](http://localhost:8000), and the admin panel
+at [http://localhost:8000/admin/](http://localhost:8000/admin/).
+
+`--reload` restarts on source changes. It is for development only. See
+[Deployment](/v1.0/guides/start/deployment/) for the production shape.
+
+## Run the tests
+
+```bash
+pytest
+```
+
+The starter ships a working suite with fixtures for an authenticated client. It
+is worth running once before you change anything, so you know the baseline is
+green on your machine and not only in CI.
+
+## See what this project can do
+
+```bash
+sillo
+```
+
+Lists every command, including the ones your application's own setup brought
+in. That listing is derived from the application. A project with a scheduler
+shows the `schedule:*` commands, one without does not.
+
+```bash
+sillo routes
+```
+
+Every route the application registers, with its methods and name. The quickest
+way to get oriented in a codebase you have just met.
+
+## Then
+
+- **Read `app/bootstrap.py`.** It is where the application is assembled, and it
+  is the shortest path to understanding what is switched on.
+- **Look at `database/models/user.py`.** Your models go beside it.
+- **Add a route** in `routes/web.py` or `routes/api.py`.
+
+[Project structure](/v1.0/guides/start/structure/) walks the layout in detail, and
+[Configuration](/v1.0/guides/configuration/) covers `.env` and `app/config.py`.
+
+## Common first problems
+
+**`sillo: command not found`**. The environment is not active, or dependencies
+are not installed. With `uv`, use `uv run sillo` or activate `.venv`.
+
+**`No application found`**. You are not in the project directory. `sillo` looks
+for the application relative to the working directory. See [Finding your
+application](/v1.0/cli/discovery/).
+
+**Migrations do nothing**. Check `DATABASE_URL` in `.env` points where you
+think. `sillo db:status` prints what it is working against.
+
+**The admin panel 404s**, `ADMIN_ENABLED` in `.env`, and the account needs
+admin access. `sillo user:staff you@example.com` grants it.
