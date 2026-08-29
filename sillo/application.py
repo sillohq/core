@@ -13,11 +13,6 @@ from typing import (
 
 from typing_extensions import Doc
 
-from sillo._internals._middleware import (
-    ASGIRequestResponseBridge,
-    MiddlewareFactory,
-)
-from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo.core.dependencies import Depend
 from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder
 from sillo.core.error import (
@@ -31,6 +26,9 @@ from sillo.env import autoload as _autoload_env
 from sillo.events import EventEmitter
 from sillo.exception_handler import ExceptionMiddleware
 from sillo.logging import create_logger
+from sillo.middleware.bridge import ASGIRequestResponseBridge
+from sillo.middleware.define import DefineMiddleware as Middleware
+from sillo.middleware.define import MiddlewareFactory
 from sillo.objects import URLPath
 from sillo.openapi import Contact, License
 from sillo.openapi._builder import APIDocumentation

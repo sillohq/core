@@ -2,8 +2,8 @@ import re
 import typing
 from typing import Any
 
-from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo.exceptions import NotFoundException
+from sillo.middleware.define import DefineMiddleware as Middleware
 from sillo.objects import URLPath
 from sillo.route_builder import RouteBuilder
 from sillo.types import ASGIApp, Receive, Scope, Send

@@ -1,4 +1,4 @@
-"""``sillo._internals._middleware`` — the bridge and its cached request.
+"""``sillo.middleware.bridge`` — the bridge and its cached request.
 
 Most of this module is a state machine that only runs on the awkward paths: a
 client that disconnects mid-body, a middleware that reads the body and then
@@ -12,11 +12,8 @@ import pytest
 
 from sillo import SilloApp
 from sillo import json
-from sillo._internals._middleware import (
-    ASGIRequestResponseBridge,
-    DefineMiddleware,
-    _CachedRequest,
-)
+from sillo.middleware.bridge import ASGIRequestResponseBridge, _CachedRequest
+from sillo.middleware.define import DefineMiddleware
 from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
 from sillo.testclient import TestClient

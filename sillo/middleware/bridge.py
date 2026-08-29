@@ -1,95 +1,50 @@
+"""Running a ``(ctx, call_next)`` middleware inside an ASGI chain.
+
+A dispatch middleware wants an awaitable that hands back a response object.
+What sits below it in the chain is an ASGI application, which does not return
+one -- it writes to ``send``. :class:`ASGIRequestResponseBridge` is the adapter
+between the two: it runs the inner application in a task group, pipes what that
+application sends through a memory object stream, and replays it as a
+:class:`_StreamingResponse` the middleware can inspect, mutate or replace.
+
+That adaptation is what lets ``app.use(some_middleware)`` compose with the raw
+ASGI layers around it -- the exception middleware, mounted sub-applications,
+static files, and any third-party ASGI middleware.
+
+:class:`_CachedRequest` is the other half. The bridge builds a context of its
+own alongside the one the route builds, so two objects end up reading a single
+body stream; caching at the receive callable is what lets both of them succeed.
+
+Nothing here is part of the public API. Application code declares middleware
+with :class:`~sillo.middleware.base.BaseMiddleware` or a plain
+``async def (ctx, call_next)``; this module is how the framework mounts it.
+"""
+
 from __future__ import annotations
 
 import typing
-from collections.abc import AsyncIterable, Callable, Iterator, Mapping, MutableMapping
+from collections.abc import AsyncIterable, Mapping, MutableMapping
 from typing import Any
 
 import anyio
 
 from sillo.core.helpers.async_helpers import collapse_excgroups
 from sillo.core.http.context import ClientDisconnect, HttpContext
-from sillo.core.http.response import (
-    BaseResponse,
-)
+from sillo.core.http.response import BaseResponse
 from sillo.types import ASGIApp, Message, MiddlewareType, Receive, Scope, Send
 from sillo.websockets import WebSocketContext
 
+#: Awaits the rest of the chain and hands back the response it produced.
 RequestResponseEndpoint = typing.Callable[[], typing.Awaitable[BaseResponse]]
 
 T = typing.TypeVar("T")
 
 AsyncContentStream = AsyncIterable[str | bytes | memoryview | MutableMapping[str, Any]]
 
-MiddlewareFactory = Callable[..., ASGIApp]
-
-
-class DefineMiddleware:
-    """Container that pairs a middleware factory with its positional and keyword arguments.
-
-    This class acts as a deferred middleware descriptor. It stores the middleware
-    class (or factory callable) together with the arguments that should be passed
-    when the middleware is instantiated. The application iterates over a list of
-    ``DefineMiddleware`` instances to build the middleware stack at startup.
-
-    Attributes:
-        cls: The middleware factory or class to be instantiated.
-        args: Positional arguments forwarded to the middleware constructor.
-        kwargs: Keyword arguments forwarded to the middleware constructor.
-    """
-
-    def __init__(
-        self,
-        cls: MiddlewareFactory,
-        *args: Any,
-        **kwargs: Any,
-    ) -> None:
-        """Initialise the descriptor with a middleware factory and its arguments.
-
-        Stores the middleware class together with any positional and keyword
-        arguments that should be forwarded when the middleware is later
-        instantiated by the application stack builder.
-
-        Args:
-            cls: A callable that produces an ASGI application when invoked with
-                the remaining arguments. Typically a middleware class.
-            *args: Positional arguments forwarded to ``cls`` at instantiation.
-            **kwargs: Keyword arguments forwarded to ``cls`` at instantiation.
-        """
-        self.cls = cls
-        self.args = args
-        self.kwargs = kwargs
-
-    def __iter__(self) -> Iterator[Any]:
-        """Yield the middleware components as a three-element tuple.
-
-        Allows the instance to be unpacked into ``(cls, args, kwargs)``, which
-        is the format expected by the application's middleware stack builder.
-
-        Returns:
-            An iterator over ``(cls, args, kwargs)`` where ``cls`` is the
-            middleware factory, ``args`` is a tuple of positional arguments,
-            and ``kwargs`` is a dictionary of keyword arguments.
-        """
-        as_tuple = (self.cls, self.args, self.kwargs)
-        return iter(as_tuple)
-
-    def __repr__(self) -> str:
-        """Return a developer-friendly string representation of this descriptor.
-
-        The representation includes the middleware class name, all positional
-        arguments, and all keyword arguments so that the descriptor can be
-        identified at a glance during debugging or logging.
-
-        Returns:
-            A string in the form ``DefineMiddleware(MiddlewareName, arg1, ...,
-            key=value, ...)`` suitable for debugging output.
-        """
-        class_name = self.__class__.__name__
-        args_strings = [f"{value!r}" for value in self.args]
-        option_strings = [f"{key}={value!r}" for key, value in self.kwargs.items()]
-        name = getattr(self.cls, "__name__", "")
-        args_repr = ", ".join([name] + args_strings + option_strings)
-        return f"{class_name}({args_repr})"
+WebSocketDispatchFunction = typing.Callable[
+    ["WebSocketContext", typing.Coroutine[None, None, typing.Any]],
+    typing.Awaitable[None],
+]
 
 
 class _CachedRequest(HttpContext):
@@ -521,29 +476,3 @@ class _StreamingResponse(BaseResponse):
 
         if should_close_body:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
-
-
-WebSocketDispatchFunction = typing.Callable[
-    ["WebSocketContext", typing.Coroutine[None, None, typing.Any]], typing.Awaitable[None]
-]
-
-
-def wrap_middleware(middleware_function: MiddlewareType) -> DefineMiddleware:
-    """Wrap a dispatch-style middleware function into a ``DefineMiddleware`` instance.
-
-    Creates a ``DefineMiddleware`` descriptor that pairs the
-    ``ASGIRequestResponseBridge`` class with the given dispatch middleware
-    function. This allows the middleware to be added to the application's
-    middleware stack in the standard format expected by the framework.
-
-    Args:
-        middleware_function: A dispatch-style middleware callable that accepts
-            ``(ctx, call_next)`` and returns an awaitable
-            response object.
-
-    Returns:
-        A ``DefineMiddleware`` instance wrapping the
-        ``ASGIRequestResponseBridge`` with the provided dispatch function
-        bound as the ``dispatch`` keyword argument.
-    """
-    return DefineMiddleware(ASGIRequestResponseBridge, dispatch=middleware_function)

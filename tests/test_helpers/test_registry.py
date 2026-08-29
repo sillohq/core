@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from sillo._internals.registry import InstanceRegistry, NotConfiguredError
+from sillo.helpers.registry import InstanceRegistry, NotConfiguredError
 
 
 @pytest.fixture

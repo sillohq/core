@@ -26,7 +26,7 @@ Attributes:
     SimpleUser: Lightweight user representation for common use cases.
 """
 
-from sillo._internals.lazy import deferred
+from sillo.helpers.lazy import deferred
 from sillo.users import BaseUser, SimpleUser
 
 from .backend import AuthenticationBackend

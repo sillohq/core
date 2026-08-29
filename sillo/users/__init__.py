@@ -11,13 +11,13 @@ The public names are unchanged. ``from sillo.users import User`` still works,
 and raises the ORM's own ImportError when the extra is missing.
 """
 
-from sillo._internals.lazy import deferred
 from sillo.hashing import (
     is_password_usable,
     needs_update,
     password_strength,
     validate_password,
 )
+from sillo.helpers.lazy import deferred
 from sillo.users.managers import UserManager
 from sillo.users.protocol import (
     AnonymousUser,

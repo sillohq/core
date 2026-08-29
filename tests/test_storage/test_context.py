@@ -1,7 +1,7 @@
 """
 sillo.storage.context, wired through setup_storage.
 
-test_internals/test_registry.py already proves the primitive is sound on its
+test_helpers/test_registry.py already proves the primitive is sound on its
 own; what is worth proving here is the wiring itself — that setup_storage
 actually registers the instance, that bucket()/current_storage() reach it with
 no request or app in hand, and that the last application to call setup_storage
@@ -69,7 +69,7 @@ def test_bucket_is_reachable_from_a_plain_function_no_request_involved(tmp_path)
 
 def test_current_storage_before_setup_storage_raises(monkeypatch, tmp_path):
     """A fresh registry, so this does not depend on test order."""
-    from sillo._internals.registry import InstanceRegistry
+    from sillo.helpers.registry import InstanceRegistry
     from sillo.storage import context as storage_context
 
     monkeypatch.setattr(storage_context, "_registry", InstanceRegistry("storage"))

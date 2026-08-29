@@ -12,7 +12,7 @@ from __future__ import annotations
 import typing
 from typing import Any, Optional
 
-from sillo._internals.lazy import deferred
+from sillo.helpers.lazy import deferred
 
 from ._middleware import RateLimitMiddleware
 from .backends import (

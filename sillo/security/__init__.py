@@ -21,7 +21,7 @@ Usage::
     app.use(RateLimit(limit=100, window=60))
 """
 
-from sillo._internals.lazy import deferred
+from sillo.helpers.lazy import deferred
 
 from .cors import CorsConfig, CORSMiddleware
 from .csrf import CSRFConfig, CSRFMiddleware

@@ -1,5 +1,5 @@
 """
-sillo._internals.registry — the instance a setup function just built, reachable
+sillo.helpers.registry — the instance a setup function just built, reachable
 from anywhere.
 
 Several subsystems work the same way: ``setup_x(app, config)`` builds one

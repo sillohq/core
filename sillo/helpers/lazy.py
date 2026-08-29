@@ -1,5 +1,5 @@
 """
-sillo._internals.lazy — re-export a name without importing it yet.
+sillo.helpers.lazy — re-export a name without importing it yet.
 
 sillo's optional features are optional at install time but not, historically, at
 import time: a package that re-exported ``RecordBackend`` for convenience pulled
@@ -10,7 +10,7 @@ that wanted a database.
 The fix is a module-level ``__getattr__`` (PEP 562) that imports on first
 access. This builds one::
 
-    from sillo._internals.lazy import deferred
+    from sillo.helpers.lazy import deferred
 
     __getattr__ = deferred(__name__, {"RecordBackend": ".backends"})
 

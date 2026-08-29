@@ -21,7 +21,7 @@ import pytest
 
 from sillo import SilloApp
 from sillo import json
-from sillo._internals._middleware import ASGIRequestResponseBridge
+from sillo.middleware.bridge import ASGIRequestResponseBridge
 from sillo.core.error.handler import ServerErrorMiddleware
 from sillo.core.http import HttpContext
 from sillo.exception_handler import ExceptionMiddleware

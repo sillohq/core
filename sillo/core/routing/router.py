@@ -18,11 +18,6 @@ from typing import (
 from pydantic import BaseModel, ValidationError
 from typing_extensions import Doc
 
-from sillo._internals._middleware import (
-    ASGIRequestResponseBridge,
-    wrap_middleware,
-)
-from sillo._internals._middleware import DefineMiddleware as Middleware
 from sillo.core.dependencies import (
     Depend,
     Dependant,
@@ -37,6 +32,9 @@ from sillo.core.http.response import BaseResponse, JSONResponse
 from sillo.events import EventEmitter
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.helpers.concurrency import run_in_threadpool
+from sillo.middleware.bridge import ASGIRequestResponseBridge
+from sillo.middleware.define import DefineMiddleware as Middleware
+from sillo.middleware.define import wrap_middleware
 from sillo.objects import RouteParam, URLPath
 from sillo.openapi.models import Parameter
 from sillo.parameters import ParameterExtractor, SolvedParamDependency

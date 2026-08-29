@@ -2,7 +2,7 @@
 sillo.mail.context, wired through setup_mail.
 
 Same shape as tests/test_storage/test_context.py — the primitive itself is
-covered in test_internals/test_registry.py; this proves setup_mail actually
+covered in test_helpers/test_registry.py; this proves setup_mail actually
 registers the client and that send_email()/current_mail() reach it with no
 request in hand, which matters more here than for storage: mail is sent from
 queue jobs at least as often as from a request handler.
@@ -15,7 +15,7 @@ import asyncio
 import pytest
 
 from sillo import SilloApp
-from sillo._internals.registry import InstanceRegistry
+from sillo.helpers.registry import InstanceRegistry
 from sillo.mail import (
     MailConfig,
     NotConfiguredError,

@@ -11,7 +11,7 @@ into queue jobs and scripts, where there is no request to thread it from.
 
 :func:`current_storage` is the other way in: it reads the instance
 ``setup_storage`` registered at startup, using the shared
-:class:`~sillo._internals.registry.InstanceRegistry`. It has nothing to do
+:class:`~sillo.helpers.registry.InstanceRegistry`. It has nothing to do
 with the request lifecycle — a background job or a script reaches for it
 exactly the way a handler does.
 """
@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .._internals.registry import InstanceRegistry, NotConfiguredError
+from ..helpers.registry import InstanceRegistry, NotConfiguredError
 
 if TYPE_CHECKING:  # pragma: no cover
     from .storage import Storage

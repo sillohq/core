@@ -3,7 +3,7 @@ sillo.mail.context — the mail client :func:`~sillo.mail.client.setup_mail`
 built, reachable from anywhere.
 
 The same shape as :mod:`sillo.storage.context`, sharing the same
-:class:`~sillo._internals.registry.InstanceRegistry`. See that module's
+:class:`~sillo.helpers.registry.InstanceRegistry`. See that module's
 docstring for why this exists rather than a lookup through ``app.state``, and
 why it has nothing to do with the request lifecycle — mail is sent from queue
 jobs and scripts at least as often as from a request handler.
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .._internals.registry import InstanceRegistry, NotConfiguredError
+from ..helpers.registry import InstanceRegistry, NotConfiguredError
 
 if TYPE_CHECKING:
     from .client import MailClient

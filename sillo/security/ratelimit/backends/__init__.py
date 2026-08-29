@@ -11,7 +11,7 @@ from __future__ import annotations
 import typing
 from typing import Any, Union
 
-from sillo._internals.lazy import deferred
+from sillo.helpers.lazy import deferred
 
 from .base import RateLimitBackend, RateLimitResult
 from .memory import InMemoryBackend
