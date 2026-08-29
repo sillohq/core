@@ -13,9 +13,9 @@ from typing import cast
 from sillo import __version__ as sillo_version
 from sillo.core.helpers.async_helpers import collapse_excgroups
 from sillo.core.http import HttpContext
-from sillo.core.http import html as html_response
-from sillo.core.http import text as text_response
 from sillo.logging import DEBUG, create_logger
+from sillo.responses import html as html_response
+from sillo.responses import text as text_response
 from sillo.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = create_logger(__name__, log_level=DEBUG)

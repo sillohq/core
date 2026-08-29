@@ -3,9 +3,10 @@ import secrets
 import typing
 from typing import Any
 
-from sillo.core.http import HttpContext, text
+from sillo.core.http import HttpContext
 from sillo.helpers.signing import BadSignature, URLSafeSerializer
 from sillo.middleware.base import BaseMiddleware
+from sillo.responses import text
 
 from .config import CSRFConfig
 

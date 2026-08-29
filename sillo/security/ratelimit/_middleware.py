@@ -11,8 +11,9 @@ from __future__ import annotations
 import typing
 from typing import Any
 
-from sillo.core.http import HttpContext, json
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
+from sillo.responses import json
 
 from .backends import RateLimitBackend, get_backend
 from .config import RateLimitConfig

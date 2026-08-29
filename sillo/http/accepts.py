@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from sillo.core.http import HttpContext, json
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
+from sillo.responses import json
 
 
 class AcceptItem:

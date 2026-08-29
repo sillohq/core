@@ -1,7 +1,8 @@
 from typing import Any
 
-from sillo.core.http import HttpContext, json
+from sillo.core.http import HttpContext
 from sillo.exceptions import HTTPException
+from sillo.responses import json
 
 HeadersType = dict[str, Any]  # Alias for better readability
 """Type alias for HTTP header dictionaries used in auth exception responses.

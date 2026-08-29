@@ -5,8 +5,8 @@ from typing import Any
 from urllib.parse import urlunparse
 
 from sillo.core.http import HttpContext
-from sillo.core.http import redirect as _redirect
 from sillo.middleware.base import BaseMiddleware
+from sillo.responses import redirect as _redirect
 
 
 class SlashAction(Enum):

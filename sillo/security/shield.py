@@ -11,8 +11,8 @@ Usage::
     app.use(Shield())
 """
 
-from sillo.core.http import redirect as _redirect
 from sillo.middleware.base import BaseMiddleware
+from sillo.responses import redirect as _redirect
 from sillo.types import HttpContext
 
 

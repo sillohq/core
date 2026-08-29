@@ -34,14 +34,10 @@ from tortoise.fields.relational import (
     OneToOneFieldInstance,
 )
 
-from sillo.core.http import (
-    html,
-    redirect,
-    text,
-)
 from sillo.helpers.hashing import hash_password
 from sillo.pagination import AsyncDataHandler, AsyncPaginator, PageNumberPagination
 from sillo.record.fields import PasswordField
+from sillo.responses import html, redirect, text
 
 from .models import AdminActivity
 from .templating import render as _render

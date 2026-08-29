@@ -30,10 +30,7 @@ import logging
 from typing import Any
 from urllib.parse import unquote
 
-from sillo.core.http import (
-    json,
-    stream,
-)
+from sillo.responses import json, stream
 
 from .config import StorageConfig
 from .errors import FileNotFound, PolicyRefused, SignatureInvalid, UnsafeKey

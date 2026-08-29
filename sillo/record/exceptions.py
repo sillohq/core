@@ -14,7 +14,7 @@ from tortoise.exceptions import (
     ValidationError,
 )
 
-from sillo.core.http import json
+from sillo.responses import json
 
 
 async def handle_does_not_exist(ctx, exc: DoesNotExist):

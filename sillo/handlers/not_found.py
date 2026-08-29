@@ -2,9 +2,10 @@ import http
 import traceback
 import typing
 
-from sillo.core.http import HttpContext, html, json, text
+from sillo.core.http import HttpContext
 from sillo.core.http.response import BaseResponse
 from sillo.exceptions import NotFoundException
+from sillo.responses import html, json, text
 
 #: Body text used when debug is off, so nothing internal is disclosed.
 GENERIC_MESSAGE = "The page you are looking for does not exist."

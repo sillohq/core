@@ -17,10 +17,11 @@ from pydantic import ValidationError
 from sillo import logging
 from sillo.auth.exceptions import AuthenticationFailed, AuthErrorHandler
 from sillo.core.helpers.async_helpers import collapse_excgroups
-from sillo.core.http import HttpContext, json
+from sillo.core.http import HttpContext
 from sillo.core.http.response import BaseResponse
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.handlers.not_found import handle_404_error
+from sillo.responses import json
 from sillo.types import (
     ASGIApp,
     ExceptionHandlerFor,

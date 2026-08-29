@@ -25,7 +25,6 @@ from sillo.core.error import (
     ServerErrorMiddleware,
 )
 from sillo.core.helpers.async_helpers import is_async_callable
-from sillo.core.http import html
 from sillo.core.routing import Route, Router, WebsocketRoute
 from sillo.core.routing.base import BaseRoute
 from sillo.env import autoload as _autoload_env
@@ -38,6 +37,7 @@ from sillo.openapi._builder import APIDocumentation
 from sillo.openapi.config import OpenAPIConfig
 from sillo.openapi.models import HTTPBearer, Parameter, Server
 from sillo.openapi.ui import DocsContext, DocsUI, default_docs
+from sillo.responses import html
 
 from .types import (
     ArgsType,

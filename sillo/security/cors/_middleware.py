@@ -3,11 +3,12 @@ import typing
 from collections.abc import Callable
 from typing import Any
 
-from sillo.core.http import HttpContext, json
+from sillo.core.http import HttpContext
 from sillo.logging import getLogger
 
 # from typing_extensions import Annotated, Doc
 from sillo.middleware.base import BaseMiddleware
+from sillo.responses import json
 from sillo.security.cors.config import CorsConfig
 
 logger = getLogger()

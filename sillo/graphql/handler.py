@@ -18,8 +18,9 @@ else:
         ExecutionResult = None
 
 from sillo.application import SilloApp
-from sillo.core.http import HttpContext, html, json, text
+from sillo.core.http import HttpContext
 from sillo.core.routing import Route
+from sillo.responses import html, json, text
 
 
 class GraphQL:

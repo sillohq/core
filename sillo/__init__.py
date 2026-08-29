@@ -124,24 +124,32 @@ from sillo.core.dependencies import Depend
 # `sillo.record`, `sillo.testclient` and the other subsystems are *not*
 # imported by default — several need optional extras — and pulling them in here
 # would make `import sillo` fail without them. They keep their own namespaces.
-from sillo.core.http import (
-    BaseContext,
-    HttpContext,
+from sillo.core.http import BaseContext, HttpContext
+from sillo.exceptions import HTTPException, NotFoundException, WebSocketException
+from sillo.responses import (
     abort,
+    accepted,
     apaginate,
+    created,
     download,
     empty,
     file,
     html,
     json,
+    ndjson,
+    no_content,
     not_found,
     paginate,
+    permanent_redirect,
+    raw,
     redirect,
+    see_other,
     sse,
     stream,
+    temporary_redirect,
     text,
+    xml,
 )
-from sillo.exceptions import HTTPException, NotFoundException, WebSocketException
 from sillo.websockets import WebSocketContext, WebSocketDisconnect
 
 from .application import SilloApp
@@ -181,16 +189,25 @@ __all__ = [
     "WebSocketException",
     "WebsocketRoute",
     "abort",
+    "accepted",
     "apaginate",
+    "created",
     "download",
     "empty",
     "file",
     "html",
     "json",
+    "ndjson",
+    "no_content",
     "not_found",
     "paginate",
+    "permanent_redirect",
+    "raw",
     "redirect",
+    "see_other",
     "sse",
     "stream",
+    "temporary_redirect",
     "text",
+    "xml",
 ]
