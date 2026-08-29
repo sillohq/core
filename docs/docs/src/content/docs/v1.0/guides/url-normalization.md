@@ -40,11 +40,11 @@ With the default `REDIRECT_REMOVE`, a request to `/users/` is answered with a **
    these are never rewritten.
 2. **Collapse double slashes** when `auto_remove_double_slashes=True` (the default).
 3. **Lowercase** the path when `normalize_case=True`.
-4. **Apply the slash action.** Either mutate `request.scope["path"]` in place
+4. **Apply the slash action.** Either mutate `ctx.scope["path"]` in place
    (silent modes) or return a `301`/`302` redirect (redirect modes).
 5. Otherwise call `await call_next()` unchanged.
 
-Because silent modes rewrite `request.scope["path"]`, the router matches the cleaned path with no extra round trip. Redirect modes send the client to the canonical URL and stop there.
+Because silent modes rewrite `ctx.scope["path"]`, the router matches the cleaned path with no extra round trip. Redirect modes send the client to the canonical URL and stop there.
 
 ##  Slash actions
 

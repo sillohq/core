@@ -247,7 +247,7 @@ A few things recur in every guide and are worth knowing once.
 **Handlers take `request, response`.** Everything after those two is injected:
 validated parameters, dependencies, the request body.
 
-**`app.state` is process-wide, `request.state` is per-request.** The
+**`app.state` is process-wide, `ctx.state` is per-request.** The
 first is written by lifespan hooks; the second by middleware.
 
 **`setup_*` functions are idempotent.** `setup_record`, `setup_work`, and

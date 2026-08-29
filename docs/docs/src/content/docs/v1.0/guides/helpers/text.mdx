@@ -55,7 +55,7 @@ async def article(ctx: HttpContext, slug: str):
     return await render("article.html", {
         "article": art,
         "meta_description": truncate(strip_html(art.body_html), 160),
-    }, request=ctx)
+    }, ctx=ctx)
 ```
 
 <Aside type="caution" title="Truncation counts code points, not visible characters">

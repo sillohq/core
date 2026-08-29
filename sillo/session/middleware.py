@@ -106,17 +106,16 @@ class SessionMiddleware(BaseMiddleware):
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
         """Load the session, run the chain, then persist it onto the reply."""
-        request = ctx
         cookie_name = self.session_config.session_cookie_name or "session_id"
-        session_key = request.cookies.get(cookie_name)
+        session_key = ctx.cookies.get(cookie_name)
 
         session = self.session_interface.create_session(session_key)
         await session.load()
 
-        request.scope["session"] = session
+        ctx.scope["session"] = session
 
         response = await call_next()
-        await self._persist(request, response)
+        await self._persist(ctx, response)
         return response
 
     async def _persist(self, request: HttpContext, response) -> None:

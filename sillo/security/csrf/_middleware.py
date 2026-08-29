@@ -101,23 +101,22 @@ class CSRFMiddleware(BaseMiddleware):
         if not self.csrf_config or not self.use_csrf:
             return await call_next()
 
-        request = ctx
-        csrf_cookie = request.cookies.get(self.cookie_name)
+        csrf_cookie = ctx.cookies.get(self.cookie_name)
 
         # Keep the token the visitor already holds. Minting a new one on every
-        # request meant a second tab, a cached page or two requests in flight
+        # ctx meant a second tab, a cached page or two requests in flight
         # each invalidated the others' token, and the form that was rendered a
         # moment ago answered 403.
-        request.state.csrf_token = (
+        ctx.state.csrf_token = (
             csrf_cookie
             if self._token_is_valid(csrf_cookie)
             else self._generate_csrf_token()
         )
 
-        if request.method.upper() not in self.safe_methods and self._requires_validation(
-            request
+        if ctx.method.upper() not in self.safe_methods and self._requires_validation(
+            ctx
         ):
-            submitted_csrf_token = await self._submitted_token(request)
+            submitted_csrf_token = await self._submitted_token(ctx)
 
             if not csrf_cookie:
                 return text("CSRF token missing from cookies", status_code=403)
@@ -127,7 +126,7 @@ class CSRFMiddleware(BaseMiddleware):
                 return text("CSRF token incorrect", status_code=403)
 
         response = await call_next()
-        self._set_token_cookie(request, response)
+        self._set_token_cookie(ctx, response)
         return response
 
     def _set_token_cookie(self, request: HttpContext, response) -> None:

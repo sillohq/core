@@ -310,7 +310,7 @@ def _extract_from(self, source: Any, ctx: HttpContext | None) -> Any:
 
 This shared implementation handles Query, Header, and Cookie extraction in
 legacy mode. The `source` is the relevant request mapping
-(`request.query_params`, `request.headers`, or `request.cookies`).
+(`ctx.query_params`, `ctx.headers`, or `ctx.cookies`).
 
 ---
 
@@ -983,7 +983,7 @@ sequenceDiagram
     Validator->>Validator: passthrough: avatar → UploadedFile
     Validator-->>Handler: {name: "photo", avatar: UploadedFile}
 
-    Handler->>Handler: body = TeamMeta(request.json())
+    Handler->>Handler: body = TeamMeta(ctx.json())
 
     Note over Handler: All kwargs assembled
     Handler-->>Client: 200 UploadResult

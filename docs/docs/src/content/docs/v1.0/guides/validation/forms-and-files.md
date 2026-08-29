@@ -272,7 +272,7 @@ async def upload(ctx: HttpContext, caption=Form("", type=str)):
     return {"fields": list(form), "files": list(files)}
 ```
 
-`request.form` returns a `FormData` multidict containing both text fields and files; `request.files` returns just the uploads.
+`ctx.form` returns a `FormData` multidict containing both text fields and files; `ctx.files` returns just the uploads.
 
 ##  Two more limits
 
@@ -400,7 +400,7 @@ CORS will refuse. A form endpoint accepting
 If your form endpoints authenticate with cookies, they need CSRF tokens. See
 [CSRF](/v1.0/guides/csrf/) for the middleware and the template integration. The
 token is available as `csrf_token` in any template rendered with
-`request=request`.
+`ctx=ctx`.
 
 
 ##  A complete upload endpoint

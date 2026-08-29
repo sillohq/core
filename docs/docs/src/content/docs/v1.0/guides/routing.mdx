@@ -22,7 +22,7 @@ sillo provides a powerful and flexible routing system that supports using decora
 
 When a path contains a `{name}` segment, the matched value is **bound to a
 handler parameter of the same name**. This is the recommended way to read path
-parameters. The same values are also available on `request.path_params` if you
+parameters. The same values are also available on `ctx.path_params` if you
 prefer to read them imperatively. Both styles work; binding by name keeps the
 handler signature explicit.
 

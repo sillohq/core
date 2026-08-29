@@ -380,7 +380,7 @@ expected.
 Four consequences worth internalising.
 
 **Middleware sees raw values.** It runs before validation, so
-`request.query_params["page"]` is the string `"2"`, not the integer `2`.
+`ctx.query_params["page"]` is the string `"2"`, not the integer `2`.
 
 **A validation failure skips your handler entirely.** Nothing in it runs,
 so logging rejected requests belongs in an exception handler.
@@ -502,7 +502,7 @@ seeing unvalidated values, or per-process state being built per request.
 Anything you launch with [`BackgroundTask`](/v1.0/guides/work/background/) runs
 after the response has been sent, on the same event loop. Two consequences: the
 client is not waiting for it, which is the point; and it is not covered by any
-middleware, so request-scoped context (`request.state`, a correlation id, an
+middleware, so request-scoped context (`ctx.state`, a correlation id, an
 open transaction) is gone unless you captured what you need before launching.
 
 Capture values, not the request. A closure holding the request object

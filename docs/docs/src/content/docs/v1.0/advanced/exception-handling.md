@@ -1074,7 +1074,7 @@ content negotiation. All other handlers return JSON unconditionally.
 
 1. Read the `Accept` header from the request.
 2. If it contains `text/html` or `application/xhtml+xml` → return an HTML page.
-3. If `request.accepts_json` is True → return JSON.
+3. If `ctx.accepts_json` is True → return JSON.
 4. Otherwise → return plain text.
 
 ### HTML Error Page Generation

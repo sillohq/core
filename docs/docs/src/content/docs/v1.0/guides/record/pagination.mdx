@@ -165,7 +165,7 @@ the full query dict rather than just the pagination keys.
 <Aside type="caution" title="Pass a base_url without a query string">
 
 `LinkBuilder` appends `?` unconditionally. If `base_url` already contains a
-query string (which `str(request.url)` does) you get two:
+query string (which `str(ctx.url)` does) you get two:
 
 ```
 https://api.example.com/posts?tag=news?page=2&page_size=5

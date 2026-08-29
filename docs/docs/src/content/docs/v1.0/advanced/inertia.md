@@ -374,7 +374,7 @@ Registered via `app.use(self.handle_request)`. Either automatically in
 graph TD
     A[Request arrives] --> B["bind(self, request): store in ContextVar"]
     B --> C{GET + Inertia request + version mismatch?}
-    C -->|Yes| D["Return location(request.url): 409 + X-Inertia-Location"]
+    C -->|Yes| D["Return location(ctx.url): 409 + X-Inertia-Location"]
     C -->|No| E["await call_next(): proceed to handler"]
     E --> F["unbind(token): restore previous ContextVar"]
     D --> F

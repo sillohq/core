@@ -39,7 +39,7 @@ engine.setup_environment()
 
 @app.get("/")
 async def home(ctx: HttpContext):
-    return await render("home.html", {"title": "Welcome"}, request=ctx)
+    return await render("home.html", {"title": "Welcome"}, ctx=ctx)
 ```
 
 <Aside type="tip">
@@ -215,7 +215,7 @@ async def render(
     context: Dict[str, Any] = None,
     status_code: int = 200,
     headers: Dict[str, str] = None,
-    request: Request = None,
+    ctx: HttpContext = None,
     **kwargs
 ) -> Response
 ```
@@ -565,16 +565,16 @@ the [HTML helpers guide](/v1.0/guides/helpers/html/) for why the built-in
 
 ##  Context injection
 
-`render(..., request=request)` populates three variables automatically,
+`render(..., ctx=ctx)` populates three variables automatically,
 each with `setdefault` so your own value always wins:
 
 | Variable | Source | Present when |
 |---|---|---|
-| `request` | the request object | `request=` is passed |
-| `url_for` | `request.base_app.url_for` | the app exposes it |
-| `csrf_token` | `request.state.csrf_token` | CSRF middleware has run |
+| `ctx` | the request's context | `ctx=` is passed |
+| `url_for` | `ctx.base_app.url_for` | the app exposes it |
+| `csrf_token` | `ctx.state.csrf_token` | CSRF middleware has run |
 
-It then merges `request.state.template_context`, which is what
+It then merges `ctx.state.template_context`, which is what
 `TemplateContextMiddleware` populates. The merge happens **after**
 `setdefault`, so middleware context overwrites the per-call context, worth
 knowing if a variable is mysteriously not what you passed.
@@ -600,7 +600,7 @@ nothing. Keep it cheap: a database query in a context processor is a
 query added to every static-file request that passes through the
 middleware stack.
 
-Forgetting `request=request` is the single most common templating bug.
+Forgetting `ctx=ctx` is the single most common templating bug.
 Without it there is no `csrf_token`, so form posts start failing CSRF
 validation, and no `url_for`, so link generation raises `UndefinedError`.
 
@@ -651,7 +651,7 @@ selected by suffix.
 
 **Do not use `|safe` on user-influenced values.** That is the XSS.
 
-**Do not forget `request=request`.** You lose `csrf_token` and
+**Do not forget `ctx=ctx`.** You lose `csrf_token` and
 `url_for`.
 
 **Do not query the database in a context processor** without checking

@@ -286,8 +286,8 @@ behaviours.
 7. `response_model` validates what you returned
 
 Two consequences. Middleware runs **before** validation, so a middleware
-reading `request.query_params` sees raw strings, not coerced values.
-`request.query_params["page"]` is `"2"`, not `2`. And a validation failure
+reading `ctx.query_params` sees raw strings, not coerced values.
+`ctx.query_params["page"]` is `"2"`, not `2`. And a validation failure
 happens before your handler, so nothing in the handler runs; if you need to log
 rejected requests, do it in a `RequestValidationError` handler, not in the
 endpoint.

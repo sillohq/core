@@ -120,9 +120,8 @@ class ETagMiddleware(BaseMiddleware):
     async def dispatch(self, ctx: HttpContext, call_next: Any) -> Any:
         """Run the chain, then attach an ETag and honour ``If-None-Match``."""
         response = await call_next()
-        request = ctx
 
-        if response is None or request.method.upper() not in self.methods:
+        if response is None or ctx.method.upper() not in self.methods:
             return response
 
         has_existing = bool(response.headers.get("etag"))
@@ -131,7 +130,7 @@ class ETagMiddleware(BaseMiddleware):
             if body is not None:
                 compute_and_set_etag(response, body, weak=self.weak, override=True)
 
-        if is_fresh(request, response, weak_compare=True):
+        if is_fresh(ctx, response, weak_compare=True):
             return _not_modified(response)
 
         return response

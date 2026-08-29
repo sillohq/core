@@ -181,7 +181,7 @@ Common issues and solutions:
 
 2. **Memory errors**:
    - Process files in chunks
-   - Use `request.stream()` for direct access to the upload stream
+   - Use `ctx.stream()` for direct access to the upload stream
 
 3. **File validation failures**:
    - Always check both filename extension and MIME type

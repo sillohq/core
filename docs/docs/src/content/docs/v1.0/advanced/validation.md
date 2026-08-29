@@ -74,7 +74,7 @@ class LocationSpec:
 | `markers`          | `dict[str, ParameterExtractor]`           | Handler parameter name → marker mapping. |
 | `list_aliases`     | `frozenset`                               | Wire names that must be gathered with `getlist`. |
 | `passthrough`      | `dict[str, str]`                          | Handler param name → wire name for `File` markers that bypass Pydantic. |
-| `source_getter`    | `Callable \| None`                        | C-level `attrgetter` for the request attribute (e.g., `request.query_params`). |
+| `source_getter`    | `Callable \| None`                        | C-level `attrgetter` for the request attribute (e.g., `ctx.query_params`). |
 | `scalar_aliases`   | `tuple[str, ...]`                         | Wire names for scalar (non-list) fields. |
 | `list_plan`        | `tuple[str, ...]`                         | Wire names for sequence fields (need `getlist`). |
 | `passthrough_plan` | `tuple[tuple[str, str, Any, bool], ...]`  | `(param_name, alias, default, is_required)` for file passthrough. |
@@ -641,14 +641,14 @@ sequenceDiagram
     Note over DI: For each validator in _validator_plan:
 
     DI->>CV: validate_sync(request)
-    CV->>LS: validate(request.query_params)
+    CV->>LS: validate(ctx.query_params)
     LS->>LS: gather(source)
     LS->>Pydantic: model.model_validate(data)
     Pydantic-->>LS: validated / ValidationError
     LS-->>CV: (values, errors)
-    CV->>LS: validate(request.headers)
+    CV->>LS: validate(ctx.headers)
     LS-->>CV: (values, errors)
-    CV->>LS: validate(request.path_params)
+    CV->>LS: validate(ctx.path_params)
     LS-->>CV: (values, errors)
     CV-->>DI: (all_values, all_errors)
 

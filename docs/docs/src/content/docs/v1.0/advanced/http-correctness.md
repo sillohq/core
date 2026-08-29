@@ -88,7 +88,7 @@ class AcceptItem:
 ```
 
 `AcceptsInfo` wraps a request and **lazily** parses all four Accept-family headers
-on first property access. It checks `request.state.accepts_parsed` (set by
+on first property access. It checks `ctx.state.accepts_parsed` (set by
 `AcceptsMiddleware`) before falling back to raw header parsing:
 
 ```python
@@ -103,12 +103,12 @@ class AcceptsInfo:
     @property
     def accept(self) -> list[AcceptItem]:
         if self._parsed_accept is None:
-            cached = getattr(self.request.state, "accepts_parsed", {})
+            cached = getattr(self.ctx.state, "accepts_parsed", {})
             if cached:
                 self._parsed_accept = cached.get("accept", [])
             else:
                 self._parsed_accept = parse_accept_header(
-                    self.request.headers.get("Accept", "")
+                    self.ctx.headers.get("Accept", "")
                 )
         return self._parsed_accept
 ```
@@ -377,7 +377,7 @@ flowchart TD
     B -- Yes --> C{Best type in available_types?}
     C -- Yes --> E
     C -- No --> D["Return 406 JSON:<br/>{error, message, available_types}"]
-    E --> F["Set request.negotiated_content_type<br/>Set request.negotiated_language"]
+    E --> F["Set ctx.negotiated_content_type<br/>Set ctx.negotiated_language"]
     F --> G[call_next → route handler]
 
     style D fill:#f96,stroke:#c00
@@ -1319,11 +1319,11 @@ handler that built its own response.
 | Function | Purpose |
 |----------|---------|
 | `generate_request_id()` | `uuid.uuid4()` → lowercase string |
-| `get_request_id_from_header()` | Read from `request.headers` |
+| `get_request_id_from_header()` | Read from `ctx.headers` |
 | `get_or_generate_request_id()` | Read or fallback to UUID4 |
 | `set_request_id_header()` | Write to `response.headers` |
-| `store_request_id_in_request()` | Write to `request.state` |
-| `get_request_id_from_request()` | Read from `request.state` |
+| `store_request_id_in_request()` | Write to `ctx.state` |
+| `get_request_id_from_request()` | Read from `ctx.state` |
 | `validate_request_id()` | Check UUID format |
 
 **Factory function**:

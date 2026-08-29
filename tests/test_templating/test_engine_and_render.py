@@ -1,9 +1,9 @@
 """Coverage for sillo.templating.__init__ paths the integration test in
 test_templates.py doesn't reach: custom_globals, the sync (non-async)
 render path, render()'s NotImplementedError when no engine has been set up,
-and render()'s request-context branches (url_for, csrf_token, and merging
+and render()'s context branches (url_for, csrf_token, and merging
 middleware-supplied template_context) — none of which are exercised there
-since its route never passes ``request=`` to ``render()``.
+since its route never passes ``ctx=`` to ``render()``.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ async def test_render_without_an_engine_raises():
         await render("welcome.html", {"name": "x", "message": "y"})
 
 
-async def test_render_injects_request_and_url_for(monkeypatch):
+async def test_render_injects_the_context_and_url_for(monkeypatch):
     config = TemplateConfig(template_dir=Path("tests/templates"))
     engine = TemplateEngine()
     engine.setup_environment(config)
@@ -65,7 +65,7 @@ async def test_render_injects_request_and_url_for(monkeypatch):
         csrf_token = "tok-123"
         template_context = {"extra": "value"}
 
-    class FakeRequest:
+    class FakeContext:
         base_app = FakeBaseApp()
         state = FakeState()
 
@@ -83,10 +83,10 @@ async def test_render_injects_request_and_url_for(monkeypatch):
     await render(
         "welcome.html",
         {"name": "User", "message": "hi"},
-        request=FakeRequest(),
+        ctx=FakeContext(),
     )
 
-    assert captured["request"].__class__.__name__ == "FakeRequest"
+    assert captured["ctx"].__class__.__name__ == "FakeContext"
     assert captured["url_for"] is fake_url_for
     assert captured["csrf_token"] == "tok-123"
     assert captured["extra"] == "value"
@@ -97,7 +97,7 @@ async def test_template_context_middleware_accepts_a_sync_processor():
     from sillo.templating.middleware import TemplateContextMiddleware
     from sillo.testclient import TestClient
 
-    def sync_processor(request):
+    def sync_processor(ctx):
         return {"greeting": "hi"}
 
     app = SilloApp()
@@ -106,8 +106,8 @@ async def test_template_context_middleware_accepts_a_sync_processor():
     captured = {}
 
     @app.get("/")
-    async def home(request):
-        captured["context"] = request.state.template_context
+    async def home(ctx):
+        captured["context"] = ctx.state.template_context
         return json({"ok": True})
 
     with TestClient(app) as client:
@@ -125,16 +125,16 @@ def test_template_context_factory_returns_a_configured_middleware():
     assert middleware.default_context == {"a": 1}
 
 
-async def test_render_tolerates_a_request_without_state_or_base_app():
+async def test_render_tolerates_a_context_without_state_or_base_app():
     config = TemplateConfig(template_dir=Path("tests/templates"))
     engine = TemplateEngine()
     engine.setup_environment(config)
     templating_module.engine = engine
 
-    class BareRequest:
+    class BareContext:
         pass
 
     response = await render(
-        "welcome.html", {"name": "User", "message": "hi"}, request=BareRequest()
+        "welcome.html", {"name": "User", "message": "hi"}, ctx=BareContext()
     )
     assert response.status_code == 200

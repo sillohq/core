@@ -392,7 +392,7 @@ Recorded because each is a class of mistake rather than a one-off.
 | The content-type sidecar named for the staging file, losing every type on rename | The contract suite, running `LocalDriver` through the same assertion `MemoryDriver` passed |
 | `tuple(await x for ...)` — an async generator handed to `tuple()` | The same |
 | Textuality decided by a control-character set, so random bytes served as `text/plain` | A safety test asserting unknown binary downloads |
-| `request.user` **raises** without auth middleware, so `getattr(..., None)` never reaches its default | The serving route's first test |
+| `ctx.user` **raises** without auth middleware, so `getattr(..., None)` never reaches its default | The serving route's first test |
 | `stream()` overriding the content type with its `text/plain` default | The same |
 
 The last two were in code already merged. The route had never been called by a

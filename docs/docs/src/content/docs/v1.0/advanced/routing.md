@@ -1050,9 +1050,9 @@ if security is None and auth is not None:
 
 When `request_model` is set on a `Route`:
 
-1. The body is read via `await request.json`.
+1. The body is read via `await ctx.json`.
 2. If `request_model` is a Pydantic `BaseModel` subclass, it's validated with `model_validate(payload)`.
-3. The validated instance is stored at `request._validated_data`.
+3. The validated instance is stored at `ctx._validated_data`.
 4. If `_validated_param_name` was resolved, the validated instance is also injected into the handler's keyword arguments.
 
 **Two error modes**:

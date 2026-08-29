@@ -293,8 +293,8 @@ async def webhook(ctx: HttpContext): ...
 1. `AuthenticationMiddleware` iterates registered backends **in order**.
 2. For each backend, calls `await backend.authenticate(request)`.
 3. The **first** backend that returns `AuthResult(success=True)` wins.
-4. Sets: `request.scope["user"]`, `request.scope["auth"]` (scope string),
-   `request.scope["auth_scheme"]` (backend name).
+4. Sets: `ctx.scope["user"]`, `ctx.scope["auth"]` (scope string),
+   `ctx.scope["auth_scheme"]` (backend name).
 5. If no backend succeeds and a route requires auth (`useAuth(required=True)`),
    raises `AuthenticationFailed`.
 

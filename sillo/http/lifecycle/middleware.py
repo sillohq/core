@@ -102,18 +102,17 @@ class RequestIdMiddleware(BaseMiddleware):
         Raises:
             None.
         """
-        request = ctx
         if self.force_generate:
             request_id = generate_request_id()
         else:
-            request_id = get_request_id_from_header(request, self.header_name)
+            request_id = get_request_id_from_header(ctx, self.header_name)
             if not request_id:
-                request_id = get_or_generate_request_id(request, self.header_name)
+                request_id = get_or_generate_request_id(ctx, self.header_name)
         self.request_id = request_id
 
         if self.store_in_request:
             store_request_id_in_request(
-                request, request_id, self.request_attribute_name
+                ctx, request_id, self.request_attribute_name
             )
 
         response = await call_next()

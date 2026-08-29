@@ -1,6 +1,6 @@
 ---
 title: Users & User Models
-description: "How sillo turns an auth identity into a request.user: the simplest integration first, then the UserProtocol contract, the UserBaseModel abstract model, the built-in Record-backed User, UserManager, password hashing, and building custom user classes."
+description: "How sillo turns an auth identity into a ctx.user: the simplest integration first, then the UserProtocol contract, the UserBaseModel abstract model, the built-in Record-backed User, UserManager, password hashing, and building custom user classes."
 head:
 - tag: meta
   attrs:
@@ -14,11 +14,11 @@ head:
 
 #  Users & User Models
 
-Every authenticated request in sillo ends with one thing: a `request.user` object. This page shows the simplest way to get there, then goes deep on the contract that makes it work, the built-in `User` model, and how to build your own.
+Every authenticated request in sillo ends with one thing: a `ctx.user` object. This page shows the simplest way to get there, then goes deep on the contract that makes it work, the built-in `User` model, and how to build your own.
 
 ##  The simplest integration
 
-You don't need to understand the whole contract to get a working user. sillo ships a `User` model and a `UserManager`; you connect the database, hand `User` to the auth middleware, and `request.user` appears.
+You don't need to understand the whole contract to get a working user. sillo ships a `User` model and a `UserManager`; you connect the database, hand `User` to the auth middleware, and `ctx.user` appears.
 
 ```python
 # app.py
@@ -59,7 +59,7 @@ user = await User.objects.create_user(
 )
 ```
 
-Now any request carrying a valid bearer token for that user hits `/me` with `request.user.identity == "1"`, `request.user.email == "alice@example.com"`, and `request.user.is_authenticated == True`.
+Now any request carrying a valid bearer token for that user hits `/me` with `ctx.user.identity == "1"`, `ctx.user.email == "alice@example.com"`, and `ctx.user.is_authenticated == True`.
 
 <aside type="tip" title="Pass the class, not an instance">
 `user_model=User` is the **class**. The middleware calls
@@ -78,12 +78,12 @@ to turn that string into a real object via your user class's
 ```
 backend resolves identity "1"
   → user = await User.load_user("1")      # your classmethod
-  → request.scope["user"] = user          # becomes request.user
+  → ctx.scope["user"] = user              # becomes ctx.user
 ```
 
-- If `load_user` returns a user, that's `request.user`.
+- If `load_user` returns a user, that's `ctx.user`.
 - If it returns `None`, the middleware tries the next backend.
-- If every backend fails (or there are none), sillo attaches `AnonymousUser` and `request.scope["auth"]` is `None`.
+- If every backend fails (or there are none), sillo attaches `AnonymousUser` and `ctx.scope["auth"]` is `None`.
 
 So a user class only has to do two things: describe itself through a few properties, and know how to load one of itself from an identity string. That contract is `UserProtocol`.
 
@@ -416,7 +416,7 @@ a.is_authenticated   # False
 a.has_permission("x") # False
 ```
 
-You'll rarely construct these yourself. They're what `request.user` *is* on an
+You'll rarely construct these yourself. They're what `ctx.user` *is* on an
 unauthenticated call (when `useAuth(required=False)` lets it through, or when
 there's no auth gate at all).
 
@@ -466,11 +466,11 @@ graph TD
     REQ --> AM["AuthenticationMiddleware"]
     AM --> BR["backend resolves identity '1'"]
     BR --> LU["User.load_user('1')<br/><i>loads active User</i>"]
-    LU --> RU["request.user"]
+    LU --> RU["ctx.user"]
     RU --> UA["useAuth()<br/><i>checks is_authenticated, scopes, permissions</i>"]
 ```
 
-If you internalize that arrow (*identity → `load_user` → `request.user`*) every
+If you internalize that arrow (*identity → `load_user` → `ctx.user`*) every
 other auth feature in sillo is just a different way of producing the identity
 on the left.
 

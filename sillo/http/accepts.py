@@ -66,23 +66,23 @@ class AcceptsInfo:
     """Provides parsed access to all Accept-family headers on a request.
 
     Lazily parses the ``Accept``, ``Accept-Language``, ``Accept-Charset``,
-    and ``Accept-Encoding`` headers from the given request object. Parsed
-    results are cached per-instance and can also leverage pre-parsed data
-    stored on ``request.state`` by upstream middleware.
+    and ``Accept-Encoding`` headers from the given context. Parsed results
+    are cached per-instance and can also leverage pre-parsed data stored on
+    ``ctx.state`` by upstream middleware.
 
     Attributes:
-        request: The HTTP request object whose headers are being inspected.
+        ctx: The context whose headers are being inspected.
     """
 
-    def __init__(self, request: HttpContext):
+    def __init__(self, ctx: HttpContext):
         """Initialize AcceptsInfo by binding it to a specific HTTP request.
 
         Sets up internal caches for the four Accept-family header categories
         and stores a reference to the request for lazy header parsing.
 
         Args:
-            request: The HTTP :class:`~sillo.http.HttpContext` instance whose
-                Accept-family headers will be inspected and parsed on demand.
+            ctx: The context whose Accept-family headers will be inspected and
+                parsed on demand.
 
         Returns:
             None. This is a constructor and does not return a value.
@@ -90,7 +90,7 @@ class AcceptsInfo:
         Raises:
             No exceptions are raised during initialization.
         """
-        self.request = request
+        self.ctx = ctx
         self._parsed_accept = None
         self._parsed_accept_language = None
         self._parsed_accept_charset = None
@@ -100,7 +100,7 @@ class AcceptsInfo:
     def accept(self) -> list[AcceptItem]:
         """Return the parsed list of Accept header items from the request.
 
-        Checks ``request.state.accepts_parsed`` first for pre-parsed data
+        Checks ``ctx.state.accepts_parsed`` first for pre-parsed data
         set by middleware, then falls back to parsing the raw ``Accept``
         header directly. Results are cached on first access.
 
@@ -115,12 +115,12 @@ class AcceptsInfo:
             No exceptions are raised under normal operation.
         """
         if self._parsed_accept is None:
-            cached = getattr(self.request.state, "accepts_parsed", {})
+            cached = getattr(self.ctx.state, "accepts_parsed", {})
             if cached:
                 self._parsed_accept = cached.get("accept", [])
             else:
                 self._parsed_accept = parse_accept_header(
-                    self.request.headers.get("Accept", "")
+                    self.ctx.headers.get("Accept", "")
                 )
         return self._parsed_accept
 
@@ -128,7 +128,7 @@ class AcceptsInfo:
     def accept_language(self) -> list[AcceptItem]:
         """Return the parsed list of Accept-Language header items.
 
-        Checks ``request.state.accepts_parsed`` first for pre-parsed data
+        Checks ``ctx.state.accepts_parsed`` first for pre-parsed data
         set by middleware, then falls back to parsing the raw
         ``Accept-Language`` header directly. Results are cached on first
         access to avoid redundant parsing.
@@ -144,12 +144,12 @@ class AcceptsInfo:
             No exceptions are raised under normal operation.
         """
         if self._parsed_accept_language is None:
-            cached = getattr(self.request.state, "accepts_parsed", {})
+            cached = getattr(self.ctx.state, "accepts_parsed", {})
             if cached:
                 self._parsed_accept_language = cached.get("accept_language", [])
             else:
                 self._parsed_accept_language = parse_accept_language(
-                    self.request.headers.get("Accept-Language", "")
+                    self.ctx.headers.get("Accept-Language", "")
                 )
         return self._parsed_accept_language
 
@@ -157,7 +157,7 @@ class AcceptsInfo:
     def accept_charset(self) -> list[AcceptItem]:
         """Return the parsed list of Accept-Charset header items.
 
-        Checks ``request.state.accepts_parsed`` first for pre-parsed data
+        Checks ``ctx.state.accepts_parsed`` first for pre-parsed data
         set by middleware, then falls back to parsing the raw
         ``Accept-Charset`` header directly. Results are cached on first
         access for performance.
@@ -173,12 +173,12 @@ class AcceptsInfo:
             No exceptions are raised under normal operation.
         """
         if self._parsed_accept_charset is None:
-            cached = getattr(self.request.state, "accepts_parsed", {})
+            cached = getattr(self.ctx.state, "accepts_parsed", {})
             if cached:
                 self._parsed_accept_charset = cached.get("accept_charset", [])
             else:
                 self._parsed_accept_charset = parse_accept_charset(
-                    self.request.headers.get("Accept-Charset", "")
+                    self.ctx.headers.get("Accept-Charset", "")
                 )
         return self._parsed_accept_charset
 
@@ -186,7 +186,7 @@ class AcceptsInfo:
     def accept_encoding(self) -> list[AcceptItem]:
         """Return the parsed list of Accept-Encoding header items.
 
-        Checks ``request.state.accepts_parsed`` first for pre-parsed data
+        Checks ``ctx.state.accepts_parsed`` first for pre-parsed data
         set by middleware, then falls back to parsing the raw
         ``Accept-Encoding`` header directly. Results are cached on first
         access for performance.
@@ -202,12 +202,12 @@ class AcceptsInfo:
             No exceptions are raised under normal operation.
         """
         if self._parsed_accept_encoding is None:
-            cached = getattr(self.request.state, "accepts_parsed", {})
+            cached = getattr(self.ctx.state, "accepts_parsed", {})
             if cached:
                 self._parsed_accept_encoding = cached.get("accept_encoding", [])
             else:
                 self._parsed_accept_encoding = parse_accept_encoding(
-                    self.request.headers.get("Accept-Encoding", "")
+                    self.ctx.headers.get("Accept-Encoding", "")
                 )
         return self._parsed_accept_encoding
 
@@ -1009,34 +1009,33 @@ class AcceptsMiddleware(BaseMiddleware):
             No exceptions are raised directly; any exceptions from the
             downstream handler are propagated unchanged.
         """
-        request = ctx
         if self.store_accepts_info:
-            accepts_info = get_accepts_info(request)
-            request.state.accepts = accepts_info
-            request.state.accepts_parsed = {
-                "accept": parse_accept_header(request.headers.get("Accept", "")),
+            accepts_info = get_accepts_info(ctx)
+            ctx.state.accepts = accepts_info
+            ctx.state.accepts_parsed = {
+                "accept": parse_accept_header(ctx.headers.get("Accept", "")),
                 "accept_language": parse_accept_language(
-                    request.headers.get("Accept-Language", "")
+                    ctx.headers.get("Accept-Language", "")
                 ),
                 "accept_charset": parse_accept_charset(
-                    request.headers.get("Accept-Charset", "")
+                    ctx.headers.get("Accept-Charset", "")
                 ),
                 "accept_encoding": parse_accept_encoding(
-                    request.headers.get("Accept-Encoding", "")
+                    ctx.headers.get("Accept-Encoding", "")
                 ),
             }
         if self.set_vary_header:
-            if request.headers.get("Accept"):
+            if ctx.headers.get("Accept"):
                 self.vary.append("Accept")
-            if request.headers.get("Accept-Language"):
+            if ctx.headers.get("Accept-Language"):
                 self.vary.append("Accept-Language")
-            if request.headers.get("Accept-Charset"):
+            if ctx.headers.get("Accept-Charset"):
                 self.vary.append("Accept-Charset")
-            if request.headers.get("Accept-Encoding"):
+            if ctx.headers.get("Accept-Encoding"):
                 self.vary.append("Accept-Encoding")
 
         response = await call_next()
-        return self._decorate(request, response)
+        return self._decorate(ctx, response)
 
     def _decorate(self, request: HttpContext, response: Any) -> Any:
         """Set the Vary and Content-Type headers on the outgoing response.
@@ -1281,11 +1280,10 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
             No exceptions are raised directly; any exceptions from the
             downstream handler are propagated unchanged.
         """
-        request = ctx
         best_type = self.negotiate_content_type(
-            request, self.available_types, self.default_content_type
+            ctx, self.available_types, self.default_content_type
         )
-        accept_header = request.headers.get("Accept")
+        accept_header = ctx.headers.get("Accept")
         if accept_header and best_type not in self.available_types:
             # The status must be passed to json() rather than set beforehand:
             # json() builds a fresh response, so an earlier status(406) was
@@ -1303,9 +1301,9 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
         # Attached dynamically for downstream handlers to read. These were
         # written with setattr(), which only had the effect of hiding them from
         # the type checker — they are not declared on HttpContext either way.
-        request.negotiated_content_type = best_type  # ty: ignore[unresolved-attribute]
+        ctx.negotiated_content_type = best_type  # ty: ignore[unresolved-attribute]
         best_language = self.negotiate_language(
-            request, self.available_languages, self.default_language
+            ctx, self.available_languages, self.default_language
         )
-        request.negotiated_language = best_language  # ty: ignore[unresolved-attribute]
+        ctx.negotiated_language = best_language  # ty: ignore[unresolved-attribute]
         return await call_next()

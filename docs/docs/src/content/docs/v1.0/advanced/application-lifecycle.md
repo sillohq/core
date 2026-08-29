@@ -154,7 +154,7 @@ as `scope["global_state"]`. Used for:
 - Configuration values
 - Shared resources
 
-### 3.2 Request State (`request.state`)
+### 3.2 Request State (`ctx.state`)
 
 ```python
 # Created per-request by the HttpContext class
@@ -394,7 +394,7 @@ if returned_state:
     self.state.update(returned_state)
 ```
 
-This means lifespan state is available to all handlers via `request.scope["global_state"]`.
+This means lifespan state is available to all handlers via `ctx.scope["global_state"]`.
 
 ### Sync Context Manager Support
 

@@ -16,7 +16,7 @@ head:
 
 sillo authentication has a clean two-layer shape:
 
-1. **`AuthenticationMiddleware`** runs once per request and answers *who is this caller?* It attaches a user object to `request.user`. It never rejects a request.
+1. **`AuthenticationMiddleware`** runs once per request and answers *who is this caller?* It attaches a user object to `ctx.user`. It never rejects a request.
 2. **`useAuth`** is a per-route gate that answers *is this user allowed to call this handler?* It runs just before your handler and raises 401/403 on failure.
 
 The middleware is **backend-driven**: each backend knows how to read exactly
@@ -25,7 +25,7 @@ backends to support several auth strategies in one app.
 
 ##  The smallest working integration
 
-This is the whole thing: a JWT backend that resolves `request.user`, and a protected `/me` route.
+This is the whole thing: a JWT backend that resolves `ctx.user`, and a protected `/me` route.
 
 ```python
 # app.py
@@ -92,7 +92,7 @@ Two things to internalize from this snippet:
   named by `identifier`. The backend defaults to `identifier="id"`, which won't
   match, leaving you with an empty identity and an unauthenticated user. Always
   pin `identifier="sub"` unless you issue tokens with a different claim.
-- **`useAuth()` with no args means "any authenticated user."** Without it, the handler runs even for anonymous callers (with `AnonymousUser` as `request.user`). The middleware resolves; the gate enforces.
+- **`useAuth()` with no args means "any authenticated user."** Without it, the handler runs even for anonymous callers (with `AnonymousUser` as `ctx.user`). The middleware resolves; the gate enforces.
 
 ##  The two layers, in detail
 
@@ -108,16 +108,16 @@ graph TD
     B1 -->|"no match"| B2["backend 2<br/><i>e.g. session</i>"]
     B2 -->|"succeeded"| U
     B2 -->|"no match"| BN["..."]
-    BN -->|"none succeed"| AN["request.user = AnonymousUser"]
+    BN -->|"none succeed"| AN["ctx.user = AnonymousUser"]
 ```
 
-On success a backend returns an `AuthResult(identity, scope)`. The middleware then calls `user_model.load_user(identity)` to build the full user object and stores it on `request.scope["user"]`. It also stores the backend's `scope` string (e.g. `"jwt"`, `"session"`, `"apikey"`) on `request.scope["auth"]`.
+On success a backend returns an `AuthResult(identity, scope)`. The middleware then calls `user_model.load_user(identity)` to build the full user object and stores it on `ctx.scope["user"]`. It also stores the backend's `scope` string (e.g. `"jwt"`, `"session"`, `"apikey"`) on `ctx.scope["auth"]`.
 
-So the central arrow in sillo auth is: **credential → identity string → `load_user` → `request.user`**. Everything else is a way of producing that identity.
+So the central arrow in sillo auth is: **credential → identity string → `load_user` → `ctx.user`**. Everything else is a way of producing that identity.
 
 ###  Layer 2: useAuth enforces policy
 
-`useAuth` runs *after* the middleware, right before your handler. It inspects `request.user` and `request.scope["auth"]` and decides yes/no:
+`useAuth` runs *after* the middleware, right before your handler. It inspects `ctx.user` and `ctx.scope["auth"]` and decides yes/no:
 
 ```python
 from sillo import HttpContext
@@ -134,17 +134,17 @@ On failure it raises `AuthenticationFailed` (401) or `PermissionDenied` (403). S
 <aside type="caution" title="The middleware sets the user; the gate enforces it">
 `AuthenticationMiddleware` only *resolves* the user. It deliberately never
 rejects a request. An anonymous caller still reaches your handler with
-`request.user.is_authenticated == False`. Rejecting unauthorized callers is the
+`ctx.user.is_authenticated == False`. Rejecting unauthorized callers is the
 job of `useAuth`. Put `auth=useAuth()` (or a stricter variant) on every
-protected route rather than hand-checking `request.user` inside the handler,
+protected route rather than hand-checking `ctx.user` inside the handler,
 it's the single, testable boundary.
 </aside>
 
 ##  Scope strings
 
-Each backend stamps its scheme name on `request.scope["auth"]` and `["auth_scheme"]`. That string is what `useAuth(schemes=[...])` checks against:
+Each backend stamps its scheme name on `ctx.scope["auth"]` and `["auth_scheme"]`. That string is what `useAuth(schemes=[...])` checks against:
 
-| Backend | `request.scope["auth"]` |
+| Backend | `ctx.scope["auth"]` |
 | --- | --- |
 | `JWTAuthBackend` | `"jwt"` |
 | `SessionAuthBackend` | `"session"` |
@@ -170,7 +170,7 @@ app.use(AuthenticationMiddleware(
 ))
 ```
 
-A request with a valid bearer token authenticates as `"jwt"`; one with only a session cookie as `"session"`; one with neither gets `AnonymousUser` and `request.scope["auth"]` is `None`. Combining JWT + session is common for an app that serves both a browser UI and a JSON API.
+A request with a valid bearer token authenticates as `"jwt"`; one with only a session cookie as `"session"`; one with neither gets `AnonymousUser` and `ctx.scope["auth"]` is `None`. Combining JWT + session is common for an app that serves both a browser UI and a JSON API.
 
 ##  Choosing a strategy
 
@@ -287,7 +287,7 @@ graph TD
     C --> M["AuthenticationMiddleware"]
     M --> B["backend resolves identity '1'<br/><i>scope: jwt, session or apikey</i>"]
     B --> L["user_model.load_user('1')"]
-    L --> RU["request.user<br/><i>loaded User</i>"]
+    L --> RU["ctx.user<br/><i>loaded User</i>"]
     RU --> UA["useAuth()<br/><i>checks is_authenticated, scope, permissions</i>"]
     UA --> OUT["401 / 403 / handler"]
 ```

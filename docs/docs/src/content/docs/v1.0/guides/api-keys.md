@@ -53,7 +53,7 @@ hashes the presented key and matches it to an `ApiKey` row, honoring
 `is_active`, `expires_at`, and `scopes`.
 </aside>
 
-On success, `request.scope["auth"]` becomes `"apikey"`.
+On success, `ctx.scope["auth"]` becomes `"apikey"`.
 
 ##  2. Storing keys: ApiKey & ApiKeyManager
 

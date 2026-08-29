@@ -85,7 +85,7 @@ route.
 ##  Injecting the raw request
 
 Sometimes a dependency needs the whole request object, to read a header that
-has no extractor, to touch `request.state`, or to read the client IP. Use
+has no extractor, to touch `ctx.state`, or to read the client IP. Use
 `Depend(get_request=True)`:
 
 ```python
@@ -218,7 +218,7 @@ A cleanup dependency must `yield` exactly once. If you `return` instead, the tea
 
 Two different mechanisms feed a handler:
 
-- **`request_model`** (set on the route) validates the JSON body and exposes it as `request.validated_data`, optionally injected by name.
+- **`request_model`** (set on the route) validates the JSON body and exposes it as `ctx.validated_data`, optionally injected by name.
 - **`Depend` / extractors** feed *other* parameters.
 
 They compose cleanly:
@@ -336,8 +336,8 @@ Resolution for `POST /notes`:
 1. `db_session` runs → yields a session, kept open.
 2. `get_token` runs (request injected) → returns the bearer string.
 3. `auth_user` runs with `token` → returns the user dict (or raises 401).
-4. The route's `request_model=NoteIn` validates the body → `request.validated_data`.
-5. The `note` dependency reads `request.validated_data` → the `NoteIn` instance.
+4. The route's `request_model=NoteIn` validates the body → `ctx.validated_data`.
+5. The `note` dependency reads `ctx.validated_data` → the `NoteIn` instance.
 6. `echo` is read from the query string.
 7. Handler runs. When the response is sent, `db_session`'s `finally` closes the session.
 

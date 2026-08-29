@@ -483,7 +483,7 @@ async def wizard_step1(ctx: HttpContext):
     # Initialize or get form data
     form_data = ctx.session.get("wizard_data", {})
     
-    return await render("wizard/step1.html", form_data=form_data, request=ctx)
+    return await render("wizard/step1.html", form_data=form_data, ctx=ctx)
 
 @app.post("/wizard/step1")
 async def wizard_step1_post(ctx: HttpContext):

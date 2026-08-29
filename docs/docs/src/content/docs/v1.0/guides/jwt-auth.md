@@ -18,7 +18,7 @@ JWTs give you **stateless** auth: a signed token carries the user identity, and 
 
 | Layer | Class | Use when |
 | --- | --- | --- |
-| Read bearer tokens | `JWTAuthBackend` | You want `Authorization: Bearer <token>` → `request.user` |
+| Read bearer tokens | `JWTAuthBackend` | You want `Authorization: Bearer <token>` → `ctx.user` |
 | Mint tokens | `TokenForUser` | You issue tokens in a login handler (no DB needed) |
 | DB-backed lifecycle | `JWTUserMixin` | You want refresh chains, revocation, and blacklisting |
 
@@ -40,7 +40,7 @@ async def me(ctx: HttpContext):
     return {"id": ctx.user.identity}
 ```
 
-The backend reads the `Authorization: Bearer <token>` header, decodes with `secret_key`, and sets `request.scope["auth"] = "jwt"`.
+The backend reads the `Authorization: Bearer <token>` header, decodes with `secret_key`, and sets `ctx.scope["auth"] = "jwt"`.
 
 <aside type="caution" title="You must set identifier='sub'">
 `JWTAuthBackend` defaults to `identifier="id"`, but sillo's token builder writes the user id into the **`sub`** claim (never `id`). With the default, `payload.get("id", "")` is empty, so `identity` is `""` and the user fails to load. **Always pass `identifier="sub"`** when using `TokenForUser`/`JWTUserMixin` to issue tokens.

@@ -211,15 +211,15 @@ async def process_request(ctx: HttpContext):
 
 | Property | Description | Example |
 |----------|-------------|---------|
-| `request.is_json` | True if Content-Type is `application/json` | JSON API requests |
-| `request.is_form` | True if Content-Type is form data (URL-encoded or multipart) | HTML forms |
-| `request.is_multipart` | True if Content-Type is `multipart/form-data` | File uploads |
-| `request.is_urlencoded` | True if Content-Type is `application/x-www-form-urlencoded` | Simple forms |
-| `request.has_cookie` | True if request contains cookies | Session management |
-| `request.has_files` | True if request contains uploaded files | File upload detection |
-| `request.has_body` | True if request has a body | POST/PUT/PATCH requests |
-| `request.is_authenticated` | True if user is authenticated | Authenticated requests |
-| `request.has_session` | True if session middleware is available | Session-enabled requests |
+| `ctx.is_json` | True if Content-Type is `application/json` | JSON API requests |
+| `ctx.is_form` | True if Content-Type is form data (URL-encoded or multipart) | HTML forms |
+| `ctx.is_multipart` | True if Content-Type is `multipart/form-data` | File uploads |
+| `ctx.is_urlencoded` | True if Content-Type is `application/x-www-form-urlencoded` | Simple forms |
+| `ctx.has_cookie` | True if request contains cookies | Session management |
+| `ctx.has_files` | True if request contains uploaded files | File upload detection |
+| `ctx.has_body` | True if request has a body | POST/PUT/PATCH requests |
+| `ctx.is_authenticated` | True if user is authenticated | Authenticated requests |
+| `ctx.has_session` | True if session middleware is available | Session-enabled requests |
 
 ###  Existing Request Flags
 
@@ -265,12 +265,12 @@ async def header_handler(ctx: HttpContext):
 
 | Method/Property | Description | Example |
 |----------------|-------------|---------|
-| `request.has_header(name)` | Check if header exists (case-insensitive) | `request.has_header("content-type")` |
-| `request.get_header(name, default)` | Get header value with default | `request.get_header("x-api-key", "none")` |
-| `request.is_ajax` | True if X-Requested-With is XMLHttpRequest | AJAX requests |
-| `request.is_secure` | True if request uses HTTPS | Secure connections |
-| `request.accepts_json` | True if client accepts JSON | API responses |
-| `request.accepts_html` | True if client accepts HTML | Web page responses |
+| `ctx.has_header(name)` | Check if header exists (case-insensitive) | `ctx.has_header("content-type")` |
+| `ctx.get_header(name, default)` | Get header value with default | `ctx.get_header("x-api-key", "none")` |
+| `ctx.is_ajax` | True if X-Requested-With is XMLHttpRequest | AJAX requests |
+| `ctx.is_secure` | True if request uses HTTPS | Secure connections |
+| `ctx.accepts_json` | True if client accepts JSON | API responses |
+| `ctx.accepts_html` | True if client accepts HTML | Web page responses |
 
 ##  Advanced Features
 
@@ -344,7 +344,7 @@ who the caller is, it depends on authentication.
 
 A request id threaded through logs is the difference between debugging a
 production issue in minutes and in hours. Accept one from the caller if
-present, generate one if not, put it in `request.state`, log it
+present, generate one if not, put it in `ctx.state`, log it
 everywhere, and return it in the response.
 
 ```python title="request correlation"
@@ -392,12 +392,12 @@ attacker chose.
 
 ##  Reading the body
 
-`request.body`, `request.json`, `request.form`, and `request.files` each
+`ctx.body`, `ctx.json`, `ctx.form`, and `ctx.files` each
 consume the request stream. Reading one and then another may give you
 nothing, because the bytes are gone.
 
 Where middleware needs the body (logging, signature verification) read it once,
-cache it on `request.state`, and have downstream code use the cached copy. And
+cache it on `ctx.state`, and have downstream code use the cached copy. And
 bound it: a body read into memory is memory a client chose the size of, which
 is why the size limit belongs at the proxy as well as in your code.
 
@@ -489,10 +489,10 @@ production.
 
 | Value | Source | Trust |
 |---|---|---|
-| `request.method` / `request.url` | Request line | Validated by routing |
-| `request.path_params` | Route match | Validated by convertors |
-| `request.query_params` | Query string | Client-controlled |
-| `request.headers` | Headers | Client-controlled |
-| `request.cookies` | `Cookie` header | Client-controlled |
-| `request.client` | Transport peer | The proxy, behind one |
-| `request.state` | Middleware | Yours |
+| `ctx.method` / `ctx.url` | Request line | Validated by routing |
+| `ctx.path_params` | Route match | Validated by convertors |
+| `ctx.query_params` | Query string | Client-controlled |
+| `ctx.headers` | Headers | Client-controlled |
+| `ctx.cookies` | `Cookie` header | Client-controlled |
+| `ctx.client` | Transport peer | The proxy, behind one |
+| `ctx.state` | Middleware | Yours |

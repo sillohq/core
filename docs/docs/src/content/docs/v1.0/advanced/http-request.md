@@ -621,7 +621,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    A["request.form_data / request.form accessed"] --> B["_get_form() called"]
+    A["ctx.form_data / ctx.form accessed"] --> B["_get_form() called"]
     B --> C{"self._form is None?"}
     C -->|No| Z["Return cached self._form"]
     C -->|Yes| D["Parse Content-Type header"]
@@ -1074,7 +1074,7 @@ class Address(typing.NamedTuple):
 **Source**: `core/sillo/objects/common.py`, line 102
 
 Dictionary-backed attribute-style storage. Missing attributes return `None`
-instead of raising `AttributeError`. Used for `request.state` and `app.state`.
+instead of raising `AttributeError`. Used for `ctx.state` and `app.state`.
 
 ---
 

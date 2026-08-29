@@ -613,7 +613,7 @@ must be written as ASGI-native middleware.
 **File:** `core/sillo/middleware/bridge.py`
 
 `_CachedRequest` is a `HttpContext` subclass that solves a fundamental problem: the dispatch
-middleware may read the request body (via `request.body()` or `request.stream()`), but
+middleware may read the request body (via `ctx.body()` or `ctx.stream()`), but
 the inner ASGI app also needs to read the body via the `receive` callable. The body can
 only be consumed once from the network, so `_CachedRequest` caches and replays it.
 
@@ -699,7 +699,7 @@ async def wrapped_receive(self) -> Message:
 
 ### 9.3 Why This Matters
 
-Without `_CachedRequest`, if a dispatch middleware calls `await request.body()` to
+Without `_CachedRequest`, if a dispatch middleware calls `await ctx.body()` to
 inspect the payload (e.g., for request signing verification), the inner ASGI app would
 get an empty body because the network stream was already consumed. `_CachedRequest`
 ensures:
@@ -1641,7 +1641,7 @@ where GZip framing overhead negates the compression benefit.
 
 `_CachedRequest` caches the request body in memory when `body()` is called. For
 large file uploads, this can be significant. If your middleware only needs
-headers, avoid calling `body()`. Use `request.headers` or `request.stream()`
+headers, avoid calling `body()`. Use `ctx.headers` or `ctx.stream()`
 instead.
 
 ### 21.4 Streaming vs Single-Shot

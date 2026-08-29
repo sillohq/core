@@ -173,16 +173,15 @@ class _AuthMiddleware:
 
     async def __call__(self, ctx, call_next):
         """Send an unauthenticated visitor to the login page."""
-        request = ctx
         path = (
-            request.url.path
-            if hasattr(request.url, "path")
-            else request.scope.get("path", "")
+            ctx.url.path
+            if hasattr(ctx.url, "path")
+            else ctx.scope.get("path", "")
         )
         if not path.startswith("/admin"):
             return await call_next()
         if path.startswith(("/admin/login", "/admin/static")):
             return await call_next()
-        if not await self.backend.authenticate(request):
+        if not await self.backend.authenticate(ctx):
             return redirect("/admin/login/", status_code=302)
         return await call_next()

@@ -191,10 +191,10 @@ Keyed by IP, the limit applies across every login attempt from that address. Swa
   order them so rate limiting runs early (cheap to reject) and CSRF validation
   runs only on accepted requests.
 - **Authentication / sessions**: pass `key_func` that reads the authenticated
-  identity (`request.state.user.id`) to rate-limit *per account* rather than
+  identity (`ctx.state.user.id`) to rate-limit *per account* rather than
   per IP, which is harder for an attacker to rotate.
 - **Dependency injection.** A dependency can compute the identity and stash it
-  on `request.state` for `key_func` to read, keeping route handlers free of
+  on `ctx.state` for `key_func` to read, keeping route handlers free of
   limiting logic.
 - **`sillo.record`**: the `"record"` backend persists counters as
   `sillo_ratelimit_counters` rows; no Redis required, at the cost of DB

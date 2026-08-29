@@ -197,7 +197,7 @@ from sillo import HttpContext
 @app.get("/login")
 async def login_get(ctx: HttpContext):
     # The CSRF token is automatically available in the template context
-    return await render("login.html", request=ctx)
+    return await render("login.html", ctx=ctx)
 
 @app.post("/login")
 async def login_post(ctx: HttpContext):
@@ -339,7 +339,7 @@ async function submitForm() {
 
 `CSRFMiddleware.dispatch` runs this sequence before `call_next`, for every request (only when `enabled=True`):
 
-1. Generate a fresh signed token and stash it on `request.state.csrf_token`.
+1. Generate a fresh signed token and stash it on `ctx.state.csrf_token`.
 2. If the method is in `safe_methods` (`GET`, `HEAD`, `OPTIONS` by default), allow the request through.
 3. Otherwise, if the path matches `required_urls`, or matches `exempt_urls`
    **and** carries a sensitive cookie, validation runs:

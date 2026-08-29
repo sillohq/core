@@ -37,7 +37,7 @@ from sillo.users import User
 app = SilloApp()
 
 app.use(SessionMiddleware(
-    SessionConfig(secret_key="change-me"),   # signs the cookie
+    secret_key="change-me",                  # signs the cookie
 ))
 app.use(AuthenticationMiddleware(
     user_model=User,
@@ -154,7 +154,18 @@ There are two distinct "session" things in sillo:
 | `session_refresh_each_request` | `True` | Sliding expiry. |
 
 ```python
-SessionConfig(
+SessionMiddleware(
+    secret_key="change-me",
+    config=SessionConfig(
+        session_cookie_name="sid",
+        session_expiration_time=3600,    # 1 hour
+        session_cookie_secure=True,
+        session_cookie_samesite="strict",
+    ),
+)
+
+# Or, shorter — the settings go straight to the middleware:
+SessionMiddleware(
     secret_key="change-me",
     session_cookie_name="sid",
     session_expiration_time=3600,        # 1 hour

@@ -244,7 +244,7 @@ class UnauthenticatedUser(UserProtocol):
         return cls()
 ```
 
-Placed on `request.scope["user"]` by `AuthenticationMiddleware` when no backend succeeds. All permission checks return `False`. The `load_user` classmethod always returns a new instance (ignoring the identity).
+Placed on `ctx.scope["user"]` by `AuthenticationMiddleware` when no backend succeeds. All permission checks return `False`. The `load_user` classmethod always returns a new instance (ignoring the identity).
 
 ---
 
@@ -533,7 +533,7 @@ The authentication contract (`UserProtocol`) has no database dependency. This le
 
 ### Why `UnauthenticatedUser` instead of `None`?
 
-Setting `request.scope["user"]` to `None` would require every handler to null-check before accessing `user.is_authenticated`. `UnauthenticatedUser` satisfies the protocol with `is_authenticated = False`, so handlers can always call `request.user.is_authenticated` safely.
+Setting `ctx.scope["user"]` to `None` would require every handler to null-check before accessing `user.is_authenticated`. `UnauthenticatedUser` satisfies the protocol with `is_authenticated = False`, so handlers can always call `ctx.user.is_authenticated` safely.
 
 ### Why `SimpleUser` as the default?
 

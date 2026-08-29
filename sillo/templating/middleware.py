@@ -14,8 +14,8 @@ class TemplateContextMiddleware(BaseMiddleware):
     """Middleware that injects template context into every request.
 
     Merges a static default context with an optional async context
-    processor, then adds request-specific variables (``request``,
-    ``url_for``, ``csrf_token``) into ``request.state.template_context``
+    processor, then adds context-derived variables (``ctx``,
+    ``url_for``, ``csrf_token``) into ``ctx.state.template_context``
     for downstream templates to consume.
 
     Args:
@@ -52,8 +52,8 @@ class TemplateContextMiddleware(BaseMiddleware):
         """Intercept every request, inject template context, and continue.
 
         Builds the full template context by merging default context,
-        the processor's output, and request-level variables, then stores
-        the result in ``request.state.template_context``.
+        the processor's output, and context-derived variables, then stores
+        the result in ``ctx.state.template_context``.
 
         Args:
             ctx: The context for the request being handled.
@@ -62,28 +62,27 @@ class TemplateContextMiddleware(BaseMiddleware):
         Returns:
             The response from the downstream handler.
         """
-        request = ctx
         context = self.default_context.copy()
 
         if self.context_processor:
             if not is_async_callable(self.context_processor):
-                request_context = self.context_processor(request)
+                per_request = self.context_processor(ctx)
             else:
-                request_context = await self.context_processor(request)
-            context.update(request_context)  # ty :ignore[no-matching-overload]
+                per_request = await self.context_processor(ctx)
+            context.update(per_request)  # ty :ignore[no-matching-overload]
 
         context.update(
             {
-                "request": request,
-                "url_for": request.base_app.url_for,
+                "ctx": ctx,
+                "url_for": ctx.base_app.url_for,
                 # Only present when CSRFMiddleware is installed. Reading it
                 # directly made every template render raise AttributeError in
                 # an application that had not turned CSRF on.
-                "csrf_token": getattr(request.state, "csrf_token", None),
+                "csrf_token": getattr(ctx.state, "csrf_token", None),
             }
         )
 
-        request.state.template_context = context
+        ctx.state.template_context = context
         return await call_next()
 
 

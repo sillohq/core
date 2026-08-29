@@ -46,8 +46,7 @@ class RateLimitMiddleware(BaseMiddleware):
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
         """Count the hit, deny or continue, then stamp the limit headers."""
-        request = ctx
-        key = self.config._key_func(request)
+        key = self.config._key_func(ctx)
         if key is None:
             return await call_next()
 
@@ -68,7 +67,7 @@ class RateLimitMiddleware(BaseMiddleware):
 
         self._last_result = result
         if not result.allowed:
-            return self._deny(request, result)
+            return self._deny(ctx, result)
 
         response = await call_next()
         self._set_limit_headers(response)

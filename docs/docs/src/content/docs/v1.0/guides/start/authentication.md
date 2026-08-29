@@ -195,7 +195,7 @@ user = ctx.user
 ```
 
 :::caution
-**`request.user` raises when no authentication middleware is installed.**
+**`ctx.user` raises when no authentication middleware is installed.**
 It does not return `None`. Guard it if the route might run without one:
 
 ```python
@@ -326,14 +326,14 @@ an account precisely because it was disabled.
 
 ##  Things that will bite you
 
-1. **`request.user` raises without auth middleware.** It does not return
+1. **`ctx.user` raises without auth middleware.** It does not return
    `None`.
 
 2. **The admin's login form field is `email`.** It accepts an email or a
    username as the *value*, but the field is named `email`. Posting
    `username=` silently fails the form.
 
-3. **`await request.form`, not `await request.form()`.** It is an async
+3. **`await ctx.form`, not `await ctx.form()`.** It is an async
    property. Calling it gives `'coroutine' object is not callable`.
 
 4. **Redeclaring `display_name`, `identity` or `is_authenticated`** as

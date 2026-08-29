@@ -33,10 +33,10 @@ sequenceDiagram
 
     Note over MW,Handler: Per Request
     MW->>MW: Build context (default + processor + request vars)
-    MW->>MW: Store in request.state.template_context
+    MW->>MW: Store in ctx.state.template_context
     MW->>Handler: call_next()
 
-    Handler->>Render: await render("page.html", {"title": "Home"}, request=request)
+    Handler->>Render: await render("page.html", {"title": "Home"}, ctx=ctx)
     Render->>Render: Merge context + kwargs
     Render->>Render: Inject request, url_for, csrf_token
     Render->>Render: Merge middleware context
@@ -310,7 +310,7 @@ flowchart TD
     E --> F
     B -->|No| G["Add request-specific vars"]
     F --> G
-    G --> H["Store in request.state.template_context"]
+    G --> H["Store in ctx.state.template_context"]
     H --> I["await call_next()"]
 ```
 
@@ -319,8 +319,8 @@ flowchart TD
 | Variable | Source | Purpose |
 |----------|--------|---------|
 | `request` | The request object | Access to request data in templates |
-| `url_for` | `request.base_app.url_for` | URL generation helper |
-| `csrf_token` | `request.state.csrf_token` | CSRF protection token |
+| `url_for` | `ctx.base_app.url_for` | URL generation helper |
+| `csrf_token` | `ctx.state.csrf_token` | CSRF protection token |
 
 ### Factory Function
 
@@ -484,7 +484,7 @@ app.use(template_context(
 
 # In route handler
 async def home(ctx: HttpContext):
-    return await render("home.html", {"title": "Welcome"}, request=ctx)
+    return await render("home.html", {"title": "Welcome"}, ctx=ctx)
 ```
 
 ### Dynamic Context Processor

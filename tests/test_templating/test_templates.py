@@ -23,7 +23,7 @@ def template_engine():
 def app():
     app = SilloApp()
 
-    async def user_context(request):
+    async def user_context(ctx):
         return {"user": {"name": "Test User"}}
 
     app.use(
@@ -33,7 +33,7 @@ def app():
     )
 
     @app.get("/")
-    async def home(request):
+    async def home(ctx):
         return await render(
             "welcome.html", {"name": "Test User", "message": "Welcome to our test app!"}
         )

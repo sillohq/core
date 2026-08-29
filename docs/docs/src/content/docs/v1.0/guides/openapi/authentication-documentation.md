@@ -107,7 +107,7 @@ document says is impossible.
 There used to be two identifiers for one fact: a backend reported a *method
 label* on `AuthResult.scope` (`"jwt"`), while the document named a *scheme*
 (`"bearerAuth"`), and a route had to know both. They are now one. A backend
-reports its own scheme name, and `request.scope["auth"]` and `["auth_scheme"]`
+reports its own scheme name, and `ctx.scope["auth"]` and `["auth_scheme"]`
 carry the same value.
 
 The old `scopes=` parameter, which matched the method label, has been removed.

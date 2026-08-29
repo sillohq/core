@@ -139,7 +139,7 @@ graph TD
 **Problem**: Auth middleware is registered but `useAuth` gate still fails.
 
 **Diagnosis**: The `useAuth` gate and the middleware are separate systems.
-The middleware sets `request.user` from the backend.  The gate checks
+The middleware sets `ctx.user` from the backend.  The gate checks
 permissions on the already-set user.
 
 ```python
@@ -250,8 +250,8 @@ graph TD
     E -->|No| F[Check secure/samesite settings]
     E -->|Yes| G{Session middleware order?}
     G -->|Wrong| H[SessionMiddleware must be AFTER AuthenticationMiddleware]
-    B -->|No| I{request.app vs base_app?}
-    I --> J[Use request.app for app state]
+    B -->|No| I{ctx.app vs base_app?}
+    I --> J[Use ctx.app for app state]
 ```
 
 ### 4.1 Middleware Order
@@ -283,12 +283,12 @@ SessionMiddleware(config=SessionConfig(secure=False))
 
 **File**: `core/sillo/session/config.py`, `SessionConfig`
 
-### 4.3 request.app vs base_app
+### 4.3 ctx.app vs base_app
 
-**Problem**: Accessing app state fails because `request.app` is the
+**Problem**: Accessing app state fails because `ctx.app` is the
 middleware-wrapped app, not the root app.
 
-**Diagnosis**: Use `request.base_app` to access the unwrapped root app.
+**Diagnosis**: Use `ctx.base_app` to access the unwrapped root app.
 
 ```python
 # WRONG: ctx.app is the middleware stack

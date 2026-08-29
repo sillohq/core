@@ -14,7 +14,7 @@ description: "SessionMiddleware, cookie/file backends, Session object, config"
 The session subsystem provides per-request key-value storage persisted across HTTP
 round-trips.  It follows the classic **middleware-interceptor** pattern: one
 middleware reads a cookie on the way in and writes a cookie on the way out; the
-handler sees a plain dict-like object (`request.session`) and never touches
+handler sees a plain dict-like object (`ctx.session`) and never touches
 cookies, backends, or signing directly.
 
 ### Architecture Diagram
@@ -241,7 +241,7 @@ useful for logging or debugging.
 
 **File:** `core/sillo/session/session_objects.py`, line 6
 
-`Session` is the per-request session object stored at `request.session`.  It
+`Session` is the per-request session object stored at `ctx.session`.  It
 behaves like a dictionary but tracks three boolean flags that determine how the
 middleware handles it in the response phase.
 
@@ -845,7 +845,7 @@ config = SessionConfig(
     session_cookie_name="app_session",
     session_expiration_time=3600,       # 1 hour
     session_permanent=False,            # browser-session cookie, no Expires
-    session_refresh_each_request=False, # don't refresh on each ctx
+    session_refresh_each_request=False, # don't refresh on each request
     session_cookie_secure=True,         # HTTPS only
     session_cookie_httponly=True,       # no JavaScript access
     session_cookie_samesite="strict",   # strict CSRF protection

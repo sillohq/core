@@ -20,12 +20,12 @@ Two middleware pieces are involved:
 
 | Middleware | Job |
 | --- | --- |
-| `SessionMiddleware` | Reads/writes the signed session cookie; gives you `request.session` |
-| `AuthenticationMiddleware` + `SessionAuthBackend` | Turns the session into `request.user` |
+| `SessionMiddleware` | Reads/writes the signed session cookie; gives you `ctx.session` |
+| `AuthenticationMiddleware` + `SessionAuthBackend` | Turns the session into `ctx.user` |
 
 ##  1. Minimal setup
 
-`SessionMiddleware` **must** run before `AuthenticationMiddleware` (the auth backend reads `request.session`):
+`SessionMiddleware` **must** run before `AuthenticationMiddleware` (the auth backend reads `ctx.session`):
 
 ```python
 from sillo import SilloApp
@@ -37,7 +37,7 @@ from sillo.users import User
 app = SilloApp()
 
 app.use(SessionMiddleware(
-    SessionConfig(secret_key="change-me"),   # signs the cookie
+    secret_key="change-me",                  # signs the cookie
 ))
 app.use(AuthenticationMiddleware(
     user_model=User,
@@ -45,10 +45,10 @@ app.use(AuthenticationMiddleware(
 ))
 ```
 
-`SessionAuthBackend` reads `request.session["user"]["id"]` (defaults: key `"user"`, identifier `"id"`). On success `request.scope["auth"]` becomes `"session"`.
+`SessionAuthBackend` reads `ctx.session["user"]["id"]` (defaults: key `"user"`, identifier `"id"`). On success `ctx.scope["auth"]` becomes `"session"`.
 
 <aside type="caution" title="Order matters">
-`SessionAuthBackend.authenticate` asserts `"session" in request.scope`. If you forget `SessionMiddleware` (or put it after auth), every request fails with `"No Session Middleware Installed"`. Always mount `SessionMiddleware` first.
+`SessionAuthBackend.authenticate` asserts `"session" in ctx.scope`. If you forget `SessionMiddleware` (or put it after auth), every request fails with `"No Session Middleware Installed"`. Always mount `SessionMiddleware` first.
 </aside>
 
 ##  2. Logging a user in
@@ -72,7 +72,7 @@ async def login(ctx: HttpContext):
     return {"ok": True}
 ```
 
-`attempt(request, email=, password=)` returns `True` on success and writes the session (it also calls `user.set_last_login()` if available). The next request arrives with `request.user` populated.
+`attempt(request, email=, password=)` returns `True` on success and writes the session (it also calls `user.set_last_login()` if available). The next request arrives with `ctx.user` populated.
 
 ###  Guard API
 
@@ -84,7 +84,7 @@ async def login(ctx: HttpContext):
 | `user(request)` | `User \| None` | Loads the user via `user_model.objects.get_by_id`. |
 | `id(request)` | `str \| None` | The stored identity. |
 | `check(request)` | `bool` | `True` if a session key is present. |
-| `validate(request, {email,password})` | `bool` | Like `attempt` but stores the user on `request.scope["_validated_user"]` instead of logging in. |
+| `validate(request, {email,password})` | `bool` | Like `attempt` but stores the user on `ctx.scope["_validated_user"]` instead of logging in. |
 
 ##  3. Logout and protecting routes
 
@@ -134,7 +134,7 @@ These mixin methods use `int(str(self.identity))` as the `user_id`, matching how
 
 <aside type="note" title="Two session concepts">
 There are two distinct "session" things in sillo:
-- **`request.session`**: the cookie-backed key/value store from
+- **`ctx.session`**: the cookie-backed key/value store from
   `SessionMiddleware` (config in `SessionConfig`).
 - **`Session` model**: the DB row created by `SessionUserMixin.create_session`
   for device tracking.
@@ -157,7 +157,18 @@ There are two distinct "session" things in sillo:
 | `session_refresh_each_request` | `True` | Sliding expiry. |
 
 ```python
-SessionConfig(
+SessionMiddleware(
+    secret_key="change-me",
+    config=SessionConfig(
+        session_cookie_name="sid",
+        session_expiration_time=3600,    # 1 hour
+        session_cookie_secure=True,
+        session_cookie_samesite="strict",
+    ),
+)
+
+# Or, shorter — the settings go straight to the middleware:
+SessionMiddleware(
     secret_key="change-me",
     session_cookie_name="sid",
     session_expiration_time=3600,        # 1 hour
@@ -322,7 +333,7 @@ than leaving a key that anyone holding the old cookie could still present.
 
 <aside type="caution" title="clear() ends a session; it does not recycle one">
 `deleted` is not reset by writing new keys, so `clear()` followed by
-`request.session["user_id"] = ...` in the same request saves an **empty**
+`ctx.session["user_id"] = ...` in the same request saves an **empty**
 cookie value. Clear on logout; do not clear and then re-populate.
 </aside>
 

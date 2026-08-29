@@ -204,8 +204,7 @@ class NormalizeMiddleware(BaseMiddleware):
             Any: Either a redirect response if the path requires canonicalization
             via redirect, or the result of calling the next handler in the chain.
         """
-        request = ctx
-        original_path = request.url.path
+        original_path = ctx.url.path
 
         if self._should_skip_processing(original_path):
             return await call_next()
@@ -217,15 +216,15 @@ class NormalizeMiddleware(BaseMiddleware):
             SlashAction.ADD,
             SlashAction.REMOVE,
         ):
-            request.scope["path"] = normalized_path
+            ctx.scope["path"] = normalized_path
 
         if self.slash_action == SlashAction.ADD:
             if not self._has_trailing_slash(normalized_path):
-                request.scope["path"] = self._add_trailing_slash(normalized_path)
+                ctx.scope["path"] = self._add_trailing_slash(normalized_path)
 
         elif self.slash_action == SlashAction.REMOVE:
             if self._has_trailing_slash(normalized_path):
-                request.scope["path"] = self._remove_trailing_slash(normalized_path)
+                ctx.scope["path"] = self._remove_trailing_slash(normalized_path)
 
         elif self.slash_action in (
             SlashAction.REDIRECT_ADD,
@@ -246,18 +245,18 @@ class NormalizeMiddleware(BaseMiddleware):
             if should_redirect:
                 redirect_url = urlunparse(
                     (
-                        request.url.scheme,
-                        request.url.netloc,
+                        ctx.url.scheme,
+                        ctx.url.netloc,
                         redirect_path,
                         # The `params` slot is a URL path's `;key=value`
                         # segment, not the route's captured parameters.
-                        # `request.path_params` is a dict, and passing a
+                        # `ctx.path_params` is a dict, and passing a
                         # populated one raises "Cannot mix str and non-str
                         # arguments". It is empty here only because this
                         # middleware runs before routing fills it in.
                         "",
-                        request.url.query,
-                        request.url.fragment,
+                        ctx.url.query,
+                        ctx.url.fragment,
                     )
                 )
                 return _redirect(

@@ -88,8 +88,7 @@ async def handle_404_error(
         A response with status code 404, formatted as JSON, HTML, or plain
         text according to what the client asked for.
     """
-    request = ctx
-    debug = _debug_enabled(request)
+    debug = _debug_enabled(ctx)
 
     if debug:
         error_message = exception.detail
@@ -100,12 +99,12 @@ async def handle_404_error(
         error_message = GENERIC_MESSAGE
         traceback_info = None
 
-    if _prefers_html(request):
+    if _prefers_html(ctx):
         return html(
             generate_html_page("404 - Not Found", error_message), status_code=404
         )
 
-    if request.accepts_json:
+    if ctx.accepts_json:
         error_details: dict[str, typing.Any] = {
             "status": 404,
             "error": http.HTTPStatus(404).phrase,

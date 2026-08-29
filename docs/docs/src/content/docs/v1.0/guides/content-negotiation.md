@@ -438,7 +438,7 @@ def test_strict_returns_406():
     assert resp.status_code == 406
 ```
 
-For handlers that read `request.state.accepts`, assert the parsed structure rather than the raw header:
+For handlers that read `ctx.state.accepts`, assert the parsed structure rather than the raw header:
 
 ```python
 from sillo import HttpContext

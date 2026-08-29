@@ -118,7 +118,7 @@ registration *outermost*, so whatever registers **last runs first** at
 request time.
 
 `AdminSite.mount()` attaches its own auth middleware through `app.use()`, and
-that middleware reads `request.session`. So the admin has to be registered
+that middleware reads `ctx.session`. So the admin has to be registered
 **before** the middleware block, which is what leaves the session middleware
 outside, and therefore ahead of it. Register the admin after, and every admin
 page 500s with "No Session Middleware Installed" while the session middleware

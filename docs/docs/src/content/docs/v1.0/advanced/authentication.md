@@ -15,7 +15,7 @@ Sillo's authentication system is split into three layers that compose cleanly:
 
 1. **Backends.** Read a credential from the request and return an `AuthResult`.
 2. **Middleware**: iterates backends on every request, sets
-   `request.scope["user"]`.
+   `ctx.scope["user"]`.
 3. **Route gate (`useAuth`)**: per-route enforcement of scheme restrictions,
    permissions, and optional authentication.
 
@@ -157,7 +157,7 @@ This is a critical distinction:
   request. For shipped backends, this equals `self.name`. For custom backends,
   it can be any string.
 
-The middleware sets both `request.scope["auth_scheme"]` (= `backend.name`) and `request.scope["auth"]` (= `auth_result.scope`). The gate checks both.
+The middleware sets both `ctx.scope["auth_scheme"]` (= `backend.name`) and `ctx.scope["auth"]` (= `auth_result.scope`). The gate checks both.
 
 ### `describe()`
 
@@ -334,11 +334,11 @@ def _check_schemes(self, ctx: HttpContext) -> None:
         raise AuthenticationFailed
 ```
 
-Both `request.scope["auth_scheme"]` and `request.scope["auth"]` are consulted. For shipped backends these are always equal; they differ only for custom backends that report a scope but never set a name.
+Both `ctx.scope["auth_scheme"]` and `ctx.scope["auth"]` are consulted. For shipped backends these are always equal; they differ only for custom backends that report a scope but never set a name.
 
 ### `_authenticate_with_backends`
 
-When the gate has its own `backends` list, it iterates them in order (same pattern as the middleware) and overrides `request.scope["user"]`, `["auth"]`, and `["auth_scheme"]` on success. Backend exceptions are silently caught so the next backend gets a chance. If all fail and `required` is `True`, raises `AuthenticationFailed`.
+When the gate has its own `backends` list, it iterates them in order (same pattern as the middleware) and overrides `ctx.scope["user"]`, `["auth"]`, and `["auth_scheme"]` on success. Backend exceptions are silently caught so the next backend gets a chance. If all fail and `required` is `True`, raises `AuthenticationFailed`.
 
 ### `security_requirements`
 
@@ -487,7 +487,7 @@ def request_identifiers(ctx: HttpContext):
 
 ## Request Scope Keys
 
-The authentication system sets three keys in `request.scope`:
+The authentication system sets three keys in `ctx.scope`:
 
 | Key | Set By | Type | Meaning |
 |-----|--------|------|---------|
@@ -507,7 +507,7 @@ The middleware always calls `call_next()`, even when no backend succeeds. This i
 
 ### Why `UnauthenticatedUser` instead of `None`
 
-Setting `request.scope["user"]` to `None` would require every handler to check for `None` before accessing `user.is_authenticated`. `UnauthenticatedUser` satisfies the `UserProtocol` interface with `is_authenticated = False`, so handlers can always call `request.user.is_authenticated` without null checks.
+Setting `ctx.scope["user"]` to `None` would require every handler to check for `None` before accessing `user.is_authenticated`. `UnauthenticatedUser` satisfies the `UserProtocol` interface with `is_authenticated = False`, so handlers can always call `ctx.user.is_authenticated` without null checks.
 
 ### Why backends catch exceptions silently
 

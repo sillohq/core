@@ -105,10 +105,32 @@ async def render(
     context: dict[str, Any] | None = None,
     status_code: int = 200,
     headers: dict[str, str] | None = None,
-    request: HttpContext | None = None,
+    ctx: HttpContext | None = None,
     **kwargs,
 ) -> HTMLResponse:
-    """Render template to response."""
+    """Render a template to an HTML response.
+
+    Pass ``ctx`` to make the context, ``url_for`` and ``csrf_token`` available
+    to the template. Without it the template still renders, but any expression
+    referring to those raises.
+
+    Args:
+        template_name: The template to render, relative to the engine's
+            search path.
+        context: Variables to render with.
+        status_code: Status for the response.
+        headers: Extra response headers.
+        ctx: The request's context. Supplies ``ctx``, ``url_for`` and
+            ``csrf_token`` to the template, and merges in whatever
+            ``TemplateContextMiddleware`` put on ``ctx.state``.
+        **kwargs: More template variables, merged over ``context``.
+
+    Returns:
+        The rendered HTML response.
+
+    Raises:
+        NotImplementedError: If no template engine has been set up.
+    """
     if not engine:
         raise NotImplementedError("Template Engine Has not been set")
 
@@ -116,18 +138,19 @@ async def render(
     final_context = context or {}
     final_context.update(kwargs)
 
-    # Provide core request-related utilities if request is available
-    if request:
-        final_context.setdefault("request", request)
-        if hasattr(request, "base_app"):
-            final_context.setdefault("url_for", request.base_app.url_for)
-        if hasattr(request, "state"):
+    # Context-derived template variables, when there is a context to derive
+    # them from.
+    if ctx:
+        final_context.setdefault("ctx", ctx)
+        if hasattr(ctx, "base_app"):
+            final_context.setdefault("url_for", ctx.base_app.url_for)
+        if hasattr(ctx, "state"):
             final_context.setdefault(
-                "csrf_token", getattr(request.state, "csrf_token", None)
+                "csrf_token", getattr(ctx.state, "csrf_token", None)
             )
 
             # Merge with existing template context from middleware if available
-            middleware_context = getattr(request.state, "template_context", None)
+            middleware_context = getattr(ctx.state, "template_context", None)
             if middleware_context:
                 final_context.update(middleware_context)
 

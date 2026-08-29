@@ -32,13 +32,13 @@ async def submit_data(ctx: HttpContext):
     return {"received": data}
 ```
 
-`request.json` is an **awaitable property**, `await` it once and the body is
+`ctx.json` is an **awaitable property**, `await` it once and the body is
 cached for the rest of the request. It runs `json.loads` on the raw bytes, so
 it works for any body that is valid JSON regardless of the `Content-Type`
 header.
 
 <aside type="tip" title="Content-Type is not enforced">
-Unlike some frameworks, `request.json` does not check the `Content-Type`
+Unlike some frameworks, `ctx.json` does not check the `Content-Type`
 header. It just parses the bytes as JSON. If the body isn't valid JSON you'll
 get a `json.JSONDecodeError`. For typed, validated input, prefer Pydantic (see
 below).
@@ -58,15 +58,15 @@ async def submit_data(ctx: HttpContext):
 
 Common accessors:
 
-- `await request.json`: parsed JSON as a `dict`/`list` (raises on invalid
+- `await ctx.json`: parsed JSON as a `dict`/`list` (raises on invalid
   JSON).
-- `await request.text`: the raw body decoded as text (UTF-8, falling back to
+- `await ctx.text`: the raw body decoded as text (UTF-8, falling back to
   latin-1).
-- `await request.body`: the raw body as `bytes`.
+- `await ctx.body`: the raw body as `bytes`.
 
 ##  Form data
 
-sillo parses both `application/x-www-form-urlencoded` and `multipart/form-data` into a `FormData` object, accessible via `request.form` (awaitable property) or the `request.form_data` context manager.
+sillo parses both `application/x-www-form-urlencoded` and `multipart/form-data` into a `FormData` object, accessible via `ctx.form` (awaitable property) or the `ctx.form_data` context manager.
 
 ```python
 from sillo import HttpContext
@@ -78,11 +78,11 @@ async def submit_form(ctx: HttpContext):
     return {"received": username}
 ```
 
-For forms, use `request.form`. For multipart uploads (files), read on below.
+For forms, use `ctx.form`. For multipart uploads (files), read on below.
 
 ##  File uploads
 
-Uploaded files ride along inside `multipart/form-data`. Access them through `request.files` (awaitable property), which returns a dict of `UploadedFile` objects keyed by field name.
+Uploaded files ride along inside `multipart/form-data`. Access them through `ctx.files` (awaitable property), which returns a dict of `UploadedFile` objects keyed by field name.
 
 ```python
 from sillo import HttpContext, json
@@ -100,12 +100,12 @@ async def upload_file(ctx: HttpContext):
 ```
 
 `UploadedFile` exposes `filename`, `content_type`, and an async `read()`
-coroutine. Always `await` `request.files` (and `document.read()`). Both are
+coroutine. Always `await` `ctx.files` (and `document.read()`). Both are
 async.
 
 ##  Streaming request bodies
 
-For very large uploads you can consume the body in chunks instead of buffering it all. `request.stream` is an async generator of `bytes`:
+For very large uploads you can consume the body in chunks instead of buffering it all. `ctx.stream` is an async generator of `bytes`:
 
 ```python
 from sillo import HttpContext
@@ -119,7 +119,7 @@ async def stream_data(ctx: HttpContext):
 ```
 
 Because the body is consumed as you iterate, you cannot also call `await
-request.json` or `await request.form` on the same request afterward. Pick one
+ctx.json` or `await ctx.form` on the same request afterward. Pick one
 strategy per request.
 
 ##  Validating inputs with Pydantic

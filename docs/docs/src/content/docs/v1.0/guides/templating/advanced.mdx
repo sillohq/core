@@ -340,7 +340,7 @@ allowed to see something.
 
 ```python title="the same thing, testable"
 visible = [i for i in items if i.owner_id == user.id or user.is_admin]
-return await render("items.html", {"items": visible}, request=ctx)
+return await render("items.html", {"items": visible}, ctx=ctx)
 ```
 
 The second version can be unit tested, reviewed as code, and reused by the JSON
@@ -359,7 +359,7 @@ directory. A partial in `templates/partials/nav.html` is `{% include
 "partials/nav.html" %}`.
 
 `UndefinedError: 'x' is undefined` means the variable was never in the
-context. Most often the cause is a missing `request=request`, which
+context. Most often the cause is a missing `ctx=ctx`, which
 removes `url_for` and `csrf_token`, or a context processor that returned
 early.
 

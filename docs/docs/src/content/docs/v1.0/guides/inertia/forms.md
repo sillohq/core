@@ -129,7 +129,7 @@ return {key: form.get(key) for key in form}
 
 :::caution
 `json` and `form` are async **properties**, not methods, awaited without
-parentheses. `await request.json()` calls the coroutine the property returns,
+parentheses. `await ctx.json()` calls the coroutine the property returns,
 which raises `TypeError` and leaves a "coroutine was never awaited" warning as
 the only clue.
 :::

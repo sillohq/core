@@ -18,7 +18,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 #  Headers
 
-Access incoming request headers through the `request.headers` property, which provides a case-insensitive dictionary-like interface:
+Access incoming request headers through the `ctx.headers` property, which provides a case-insensitive dictionary-like interface:
 
 ```python {5,6}
 from sillo import SilloApp, HttpContext
@@ -46,7 +46,7 @@ async def show_headers(ctx: HttpContext):
 
 <Aside type="tip">
 
-sillo normalizes header names to lowercase, so `request.headers.get("User-Agent")` and `request.headers.get("user-agent")` are equivalent.
+sillo normalizes header names to lowercase, so `ctx.headers.get("User-Agent")` and `ctx.headers.get("user-agent")` are equivalent.
 
 </Aside>
 
@@ -163,10 +163,10 @@ Use `set_header()` primarily in middleware where you need to modify responses af
 sillo provides several methods for working with headers:
 
 ###  Request Header Methods
-- `request.headers.get(key, default=None)` - Get a header value
-- `request.headers.items()` - Get all headers as key-value pairs
-- `request.headers.keys()` - Get all header names
-- `request.headers.values()` - Get all header values
+- `ctx.headers.get(key, default=None)` - Get a header value
+- `ctx.headers.items()` - Get all headers as key-value pairs
+- `ctx.headers.keys()` - Get all header names
+- `ctx.headers.values()` - Get all header values
 
 ###  Response Header Methods
 - `response.set_header(key, value, override=False)` - Set a header
@@ -271,7 +271,7 @@ Two properties of HTTP headers cause most of the surprises.
 
 **Case does not matter.** `Content-Type`, `content-type`, and
 `CONTENT-TYPE` are the same header. sillo's header mapping handles this,
-so `request.headers["content-type"]` works regardless of what the client
+so `ctx.headers["content-type"]` works regardless of what the client
 sent. Code that iterates raw ASGI headers and compares with `==` does not.
 
 **A header may appear more than once.** `Set-Cookie`, `Accept`, `Via`,

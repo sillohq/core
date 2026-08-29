@@ -20,7 +20,7 @@ Cookies are an essential part of web development, allowing you to store small pi
 
 ##  Receiving Cookies
 
-When a client makes a request to your sillo application, any cookies sent by the browser are automatically parsed and made available through the `request.cookies` property.
+When a client makes a request to your sillo application, any cookies sent by the browser are automatically parsed and made available through the `ctx.cookies` property.
 
 ```python
 from sillo import SilloApp, HttpContext
@@ -35,7 +35,7 @@ async def read_cookie(ctx: HttpContext):
 
 <Aside type="tip">
 
-The `request.cookies` property returns a dictionary where keys are cookie names and values are the corresponding cookie values.
+The `ctx.cookies` property returns a dictionary where keys are cookie names and values are the corresponding cookie values.
 
 </Aside>
 

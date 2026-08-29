@@ -127,34 +127,33 @@ class AuthenticationMiddleware(BaseMiddleware):
                 caught and handled internally. Exceptions from ``call_next``
                 propagate normally to the caller.
         """
-        request = ctx
         # Try each backend until one successfully authenticates the user
         for backend in self.backends:
             try:
                 auth_result = await backend.authenticate(  # ty: ignore[unresolved-attribute]
-                    request
+                    ctx
                 )
 
                 if auth_result.success:
                     # Authentication successful, store user and auth type
-                    request.scope["user"] = await self.user_model.load_user(
+                    ctx.scope["user"] = await self.user_model.load_user(
                         auth_result.identity
                     )
-                    request.scope["auth"] = auth_result.scope
+                    ctx.scope["auth"] = auth_result.scope
                     # Which *scheme* answered, alongside which *method*. A
                     # route gated on schemes matches this; `auth` keeps its
                     # existing meaning for gates written against it.
-                    request.scope["auth_scheme"] = backend.name
+                    ctx.scope["auth_scheme"] = backend.name
                     break
 
             except Exception as e:
                 # Log the error but continue to the next backend
-                backend.handle_exception(request, e)  # ty: ignore
+                backend.handle_exception(ctx, e)  # ty: ignore
                 continue
         else:
             # No backend authenticated the user
-            request.scope["user"] = UnauthenticatedUser()
-            request.scope["auth"] = None
-            request.scope["auth_scheme"] = None
+            ctx.scope["user"] = UnauthenticatedUser()
+            ctx.scope["auth"] = None
+            ctx.scope["auth_scheme"] = None
 
         return await call_next()

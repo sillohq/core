@@ -316,7 +316,7 @@ read-mostly: mutating shared state from a handler is a data race across
 concurrent requests, and the failure is intermittent and extremely hard to
 reproduce.
 
-For per-request state, use `request.state` instead. It is created fresh
+For per-request state, use `ctx.state` instead. It is created fresh
 per request and discarded after, which is what request-scoped data
 actually wants.
 

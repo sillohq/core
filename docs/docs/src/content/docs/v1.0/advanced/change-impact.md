@@ -120,7 +120,7 @@ Legend:
 | `url_for()` logic | All `url_for()` calls return wrong URLs |
 | `build_openapi()` output | Client generation breaks |
 | Lifecycle hook ordering | Startup/shutdown side effects change |
-| `state` attribute type/semantics | All `request.app.state` access breaks |
+| `state` attribute type/semantics | All `ctx.app.state` access breaks |
 
 ### Tests that could fail
 
@@ -287,10 +287,10 @@ signature is the interface.
 
 | Change | Impact |
 |--------|--------|
-| `request.body` caching/async | Double-read semantics change |
-| `request.json()` parsing | All JSON API handlers affected |
-| `request.form()` parsing | All form handlers affected |
-| `request.user` property | Auth integration breaks |
+| `ctx.body` caching/async | Double-read semantics change |
+| `ctx.json()` parsing | All JSON API handlers affected |
+| `ctx.form()` parsing | All form handlers affected |
+| `ctx.user` property | Auth integration breaks |
 | `Response.set_cookie()` params | Session cookies break |
 | `Response.status_code` type | Test assertions fail |
 | `sillo.responses` builders | Every `json()` / `text()` / `html()` call site breaks |
@@ -486,7 +486,7 @@ as optional instead.
 
 ### What indirectly depends on it
 
-- All authenticated routes (via `request.user`)
+- All authenticated routes (via `ctx.user`)
 - All permission checks
 - Admin panel access
 - Password hashing/verification
@@ -762,7 +762,7 @@ format and support old formats during migration.
 
 | Dependent | How |
 |-----------|-----|
-| `request.session` | Accessed in handlers |
+| `ctx.session` | Accessed in handlers |
 | `SessionAuthBackend` | Reads session for auth |
 | CSRF middleware | Stores/reads CSRF token |
 | Admin panel | Session-based admin auth |

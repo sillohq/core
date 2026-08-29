@@ -154,10 +154,9 @@ class Shield(BaseMiddleware):
 
     async def dispatch(self, ctx: HttpContext, call_next):
         """Redirect to HTTPS if configured, then stamp the security headers."""
-        request = ctx
-        if self.ssl_redirect and request.url.scheme != "https":
+        if self.ssl_redirect and ctx.url.scheme != "https":
             redirect_url = (
-                f"https://{self.ssl_host or request.url.hostname}{request.url.path}"
+                f"https://{self.ssl_host or ctx.url.hostname}{ctx.url.path}"
             )
             return _redirect(
                 redirect_url, status_code=301 if self.ssl_permanent else 302

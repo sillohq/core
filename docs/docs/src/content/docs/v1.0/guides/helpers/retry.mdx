@@ -252,7 +252,7 @@ async def dashboard(ctx: HttpContext):
         )
     except RetryError:
         stats = None   # degrade, do not hang
-    return await render("dashboard.html", {"stats": stats}, request=ctx)
+    return await render("dashboard.html", {"stats": stats}, ctx=ctx)
 ```
 
 Long, patient retries belong in [Background Tasks](/v1.0/guides/work/background/) and the [Job Queue](/v1.0/guides/work/queue/), where nobody is waiting on the socket. If an operation can afford a minute of retries, it can afford to be a job.

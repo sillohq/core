@@ -15,11 +15,11 @@ head:
 #  Protecting Routes
 
 `useAuth` is the gate you put on a route to decide whether the already-resolved
-`request.user` is allowed to call the handler. Pass it as the `auth=` argument
+`ctx.user` is allowed to call the handler. Pass it as the `auth=` argument
 to any route registration: decorators (`@app.get`), `app.route`, `Route(...)`,
 and router decorators all accept it.
 
-It runs after `AuthenticationMiddleware` has set `request.user`, but before your handler body. If the check fails it raises `AuthenticationFailed` (401) or `PermissionDenied` (403) and the handler never executes.
+It runs after `AuthenticationMiddleware` has set `ctx.user`, but before your handler body. If the check fails it raises `AuthenticationFailed` (401) or `PermissionDenied` (403) and the handler never executes.
 
 ##  Quick reference
 
@@ -44,7 +44,7 @@ async def handler(ctx: HttpContext): ...
 | --- | --- | --- | --- |
 | `scopes` | `list[str]` | `[]` | **Deprecated**. The old spelling of `schemes`. Translated and merged into it, with a warning naming the replacement. |
 | `permissions` | `list[str]` | `[]` | Every string must pass `user.has_permission(perm)`. |
-| `schemes` | `list[str]` \| `dict[str, list[str]]` | `{}` | OpenAPI scheme names accepted. Matches `request.scope["auth_scheme"]`, **and** becomes the route's documented `security`. |
+| `schemes` | `list[str]` \| `dict[str, list[str]]` | `{}` | OpenAPI scheme names accepted. Matches `ctx.scope["auth_scheme"]`, **and** becomes the route's documented `security`. |
 | `all_of` | `bool` | `False` | Whether every entry in `schemes` is required together rather than any one. |
 | `backends` | `list[AuthenticationBackend]` | `None` | Replace the global middleware backends for this route only. |
 | `user_model` | `type[BaseUser]` | `SimpleUser` | User class used when `backends` is set. |
@@ -60,11 +60,11 @@ async def profile(ctx: HttpContext):
     return {"username": ctx.user.display_name}
 ```
 
-Unauthenticated → 401. Authenticated → handler runs with `request.user` fully loaded.
+Unauthenticated → 401. Authenticated → handler runs with `ctx.user` fully loaded.
 
 ##  Scope restriction
 
-Each backend stamps its scheme name on `request.scope["auth"]` and `["auth_scheme"]` (`"bearerAuth"`, `"sessionCookie"`, `"apiKeyHeader"`). `schemes=[...]` requires at least one match, and becomes the route's documented `security`:
+Each backend stamps its scheme name on `ctx.scope["auth"]` and `["auth_scheme"]` (`"bearerAuth"`, `"sessionCookie"`, `"apiKeyHeader"`). `schemes=[...]` requires at least one match, and becomes the route's documented `security`:
 
 ```python
 from sillo import HttpContext
@@ -140,7 +140,7 @@ async def feed(ctx: HttpContext):
 
 ##  Per-route backend override
 
-Replace the globally configured backends for one route. On success, `request.scope["user"]` and `request.scope["auth"]` are overwritten:
+Replace the globally configured backends for one route. On success, `ctx.scope["user"]` and `ctx.scope["auth"]` are overwritten:
 
 ```python
 from sillo.auth.apikey import APIKeyAuthBackend
@@ -213,7 +213,7 @@ app.mount_router(api)
 ##  Best practices
 
 - Put `auth=useAuth()` on every protected route. Don't re-check
-  `request.user.is_authenticated` by hand inside handlers. The gate is the
+  `ctx.user.is_authenticated` by hand inside handlers. The gate is the
   single, testable boundary.
 - Be specific with `scopes` when you know the expected method; it's self-documenting and blocks the wrong credential type.
 - Express business rules as `permissions` strings (`read:users`, `admin:settings`) rather than ad-hoc checks.

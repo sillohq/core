@@ -1435,7 +1435,7 @@ and client identification.
 
 ### State
 
-Request/app state storage with attribute-style access.  `request.state` and
+Request/app state storage with attribute-style access.  `ctx.state` and
 `app.state` are both `State` instances (or dict-like objects).
 
 ---

@@ -433,7 +433,7 @@ async def __call__(self, scope, receive, send):
     scope["global_state"] = self.state  # app-level shared state dict
 ```
 
-Downstream middleware and handlers access these via `request.scope`:
+Downstream middleware and handlers access these via `ctx.scope`:
 
 ```python
 ctx.scope["app"]           # SilloApp instance
@@ -476,7 +476,7 @@ ASGIApp = Callable[[Scope, Receive, Send], Awaitable[Any]]
 
 The ASGI scope dict is the primary per-request communication bus. It flows
 through every middleware layer and is accessible from any handler via
-`request.scope`.
+`ctx.scope`.
 
 **Keys injected by SilloApp.__call__:**
 
@@ -530,7 +530,7 @@ class State:
             return None  # Never raises AttributeError
 ```
 
-### 5.3 request.scope
+### 5.3 ctx.scope
 
 `HttpContext` objects wrap the ASGI scope and provide typed accessors:
 
@@ -622,7 +622,7 @@ graph LR
 Security-related middleware is applied via `app.use()`:
 
 - **AuthenticationMiddleware** (`auth/middleware.py`): Validates credentials and
-  populates `request.user`. Configured via `SilloApp(auth=[...])`.
+  populates `ctx.user`. Configured via `SilloApp(auth=[...])`.
 - **CORSMiddleware** (`middleware/security.py`): CORS headers.
 - **CSRFMiddleware** (configurable): CSRF token validation.
 - **RateLimitMiddleware** (configurable): Request rate limiting.

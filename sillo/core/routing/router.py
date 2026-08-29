@@ -610,14 +610,13 @@ class Route(BaseRoute):
         Returns:
             Any: The response from the handler.
         """
-        request = ctx
         cleanup_callbacks: list[Callable[[], Any]] = []
         injected: dict[str, Any] = {}
         dependency_cache: dict[Any, Any] = {}
 
         for rd in self._router_dependants:
             sub_values = await solve_dependencies(
-                rd, request, dependency_cache, cleanup_callbacks
+                rd, ctx, dependency_cache, cleanup_callbacks
             )
             if rd.call is not None:
                 result = await _execute_dependency(rd, sub_values, cleanup_callbacks)
@@ -625,20 +624,20 @@ class Route(BaseRoute):
                     dependency_cache[rd.cache_key] = result
 
         handler_values = await solve_dependencies(
-            self.dependant, request, dependency_cache, cleanup_callbacks
+            self.dependant, ctx, dependency_cache, cleanup_callbacks
         )
         injected.update(handler_values)
 
         if self.request_model is not None:
-            validated = await self._validate_body(request)
-            request._validated_data = validated
+            validated = await self._validate_body(ctx)
+            ctx._validated_data = validated
             if self._validated_param_name:
                 injected[self._validated_param_name] = validated
 
         if self.auth is not None:
             # `guard`, when the gate has one, in preference to `authenticate`
             # directly: it is what lets a `useAuth`'s `unauthorized`/
-            # `forbidden` hooks answer the request themselves, by returning a
+            # `forbidden` hooks answer the ctx themselves, by returning a
             # response of their own.
             #
             # `auth` is duck-typed rather than required to be a `useAuth`

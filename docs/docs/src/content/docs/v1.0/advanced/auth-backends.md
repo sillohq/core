@@ -110,7 +110,7 @@ def logout(ctx: HttpContext, session_key="user"):
 `login()` writes the user's identity and display name into the session dictionary. It removes any existing entry first to ensure a clean state. `logout()` deletes the session entry.
 
 Both require the session middleware to be installed. They assert on
-`request.scope["session"]`.
+`ctx.scope["session"]`.
 
 ### SessionAuthBackend
 
@@ -138,7 +138,7 @@ class SessionAuthBackend(AuthenticationBackend):
 ```
 
 **Key behaviors:**
-- Reads user data from `request.session[session_key]`
+- Reads user data from `ctx.session[session_key]`
 - Returns `self.name` (`"sessionCookie"`) as the scope, not the legacy `"session"` label
 - The `cookie_name` parameter must match `SessionConfig.session_cookie_name` or the OpenAPI document names a cookie the application never sets
 - The `name` parameter allows per-instance scheme naming (e.g. two session backends for different cookie names)
@@ -200,7 +200,7 @@ High-level auth guard that wraps the session backend:
 | `user(request)` | Loads full user record from session. |
 | `check(request)` | Lightweight session existence check. |
 | `id(request)` | Returns raw user ID from session. |
-| `validate(request, credentials)` | Validates credentials without creating a session. Stashes user on `request.scope["_validated_user"]`. |
+| `validate(request, credentials)` | Validates credentials without creating a session. Stashes user on `ctx.scope["_validated_user"]`. |
 
 ```mermaid
 sequenceDiagram

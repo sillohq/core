@@ -18,7 +18,7 @@ return it. `setup_record`, `setup_work`, `setup_mail`, `setup_storage` all do
 exactly this.
 
 Getting the instance back is where they used to diverge. A handler could hold
-a closure over it, or reach through `request.base_app.state["storage"]` — both
+a closure over it, or reach through `ctx.base_app.state["storage"]` — both
 fine when there is a request in hand and the code holding it does not mind an
 import shaped by that. Neither works well for the routes module that wants to
 call `bucket(...)` without importing the application that built it (a

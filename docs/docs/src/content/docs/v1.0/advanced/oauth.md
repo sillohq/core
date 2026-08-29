@@ -524,7 +524,7 @@ async def exchange(
 ) -> OAuthProfile
 ```
 
-Reads `code`, `state`, `error`, `error_description` from `request.query_params`.
+Reads `code`, `state`, `error`, `error_description` from `ctx.query_params`.
 Reads stored state from cookie (via `cookie_name`) or the `state_value`
 parameter.  Delegates to `complete()`.
 
