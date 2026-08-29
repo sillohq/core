@@ -4,7 +4,7 @@ Tests for Query parameter extractor.
 
 import pytest
 from sillo import SilloApp, Query
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 
@@ -22,7 +22,7 @@ def test_query_with_defaults(app, client):
     """Test Query extractor returns defaults when no params provided."""
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, page: int = Query(1)):
+    async def handler(request: HttpContext, page: int = Query(1)):
         return {"page": page}
 
     response = client.get("/test")
@@ -34,7 +34,7 @@ def test_query_override(app, client):
     """Test Query extractor uses provided value."""
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, page: int = Query(1)):
+    async def handler(request: HttpContext, page: int = Query(1)):
         return {"page": page}
 
     response = client.get("/test?page=5")
@@ -47,8 +47,7 @@ def test_query_multiple_params(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request,
-        response: Response,
+        request: HttpContext,
         page: int = Query(1),
         limit: int = Query(10),
         search: str = Query(""),
@@ -68,7 +67,7 @@ def test_query_with_string_default(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, name: str = Query("anonymous")
+        request: HttpContext, name: str = Query("anonymous")
     ):
         return {"name": name}
 
@@ -85,7 +84,7 @@ def test_query_no_default(app, client):
     """Test Query with no default returns None."""
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, q: str = Query()):
+    async def handler(request: HttpContext, q: str = Query()):
         return {"q": q}
 
     response = client.get("/test")
@@ -97,7 +96,7 @@ def test_query_type_conversion_int(app, client):
     """Test Query converts string to int."""
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, count: int = Query(0)):
+    async def handler(request: HttpContext, count: int = Query(0)):
         return {"count": count, "type": type(count).__name__}
 
     response = client.get("/test?count=42")
@@ -111,7 +110,7 @@ def test_query_type_conversion_float(app, client):
     """Test Query converts string to float."""
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, price: float = Query(0.0)):
+    async def handler(request: HttpContext, price: float = Query(0.0)):
         return {"price": price, "type": type(price).__name__}
 
     response = client.get("/test?price=19.99")
@@ -126,7 +125,7 @@ def test_query_type_conversion_bool(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, active: bool = Query(False)
+        request: HttpContext, active: bool = Query(False)
     ):
         return {"active": active, "type": type(active).__name__}
 
@@ -146,7 +145,7 @@ def test_query_list_type(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, tags: list[str] = Query([])
+        request: HttpContext, tags: list[str] = Query([])
     ):
         return {"tags": tags}
 
@@ -159,7 +158,7 @@ def test_query_list_int_type(app, client):
     """Test Query with list - note: type inference from empty list is limited."""
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, ids: list[str] = Query([])):
+    async def handler(request: HttpContext, ids: list[str] = Query([])):
         return {"ids": ids}
 
     response = client.get("/test?ids=1,2,3")
@@ -172,7 +171,7 @@ def test_query_alias(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, page_num: int = Query(1, alias="page")
+        request: HttpContext, page_num: int = Query(1, alias="page")
     ):
         return {"page": page_num}
 
@@ -186,7 +185,7 @@ def test_query_required(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, q: str = Query(required=True)
+        request: HttpContext, q: str = Query(required=True)
     ):
         return {"q": q}
 
@@ -199,8 +198,7 @@ def test_query_partial_override(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request,
-        response: Response,
+        request: HttpContext,
         page: int = Query(1),
         limit: int = Query(10),
     ):

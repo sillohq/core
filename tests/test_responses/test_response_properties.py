@@ -7,7 +7,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import empty, html, json, text
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 # ========== Response Body Tests ==========
@@ -18,8 +19,8 @@ def test_response_body_property(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/body")
-    async def get_body(request: Request, response: Response):
-        response.text("Test body content")
+    async def get_body(request: HttpContext):
+        response = text("Test body content")
         body = response.body
         # Body should be bytes
         assert isinstance(body, (bytes, memoryview))
@@ -35,9 +36,9 @@ def test_set_body_method(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/set-body")
-    async def set_body(request: Request, response: Response):
+    async def set_body(request: HttpContext):
         response.set_body(b"Custom body content")
-        return response.text("This will be overridden")
+        return text("This will be overridden")
 
     with test_client_factory(app) as client:
         resp = client.get("/set-body")
@@ -56,8 +57,8 @@ def test_response_status_codes(test_client_factory: Callable[[SilloApp], TestCli
     for code in status_codes:
 
         @app.get(f"/status-{code}")
-        async def handler(request: Request, response: Response, status_code=code):
-            return response.text(f"Status {status_code}").status(status_code)
+        async def handler(request: HttpContext, status_code=code):
+            return text(f"Status {status_code}").status(status_code)
 
     with test_client_factory(app) as client:
         for code in status_codes:
@@ -75,8 +76,8 @@ def test_response_content_type_property(
     app = SilloApp()
 
     @app.get("/content-type-check")
-    async def check_content_type(request: Request, response: Response):
-        response.json({"test": "data"})
+    async def check_content_type(request: HttpContext):
+        response = json({"test": "data"})
         content_type = response.content_type
         return response
 
@@ -92,8 +93,8 @@ def test_response_content_length_property(
     app = SilloApp()
 
     @app.get("/content-length-check")
-    async def check_content_length(request: Request, response: Response):
-        response.text("Test content")
+    async def check_content_length(request: HttpContext):
+        response = text("Test content")
         length = response.content_length
         # Length should be a string or number
         assert length is not None
@@ -115,9 +116,9 @@ def test_method_chaining_all_methods(
     app = SilloApp()
 
     @app.get("/chain-all")
-    async def chain_all(request: Request, response: Response):
+    async def chain_all(request: HttpContext):
         return (
-            response.json({"chained": True})
+            json({"chained": True})
             .set_header("X-Custom-1", "value1")
             .set_header("X-Custom-2", "value2")
             .set_cookie("session", "abc123")
@@ -141,12 +142,12 @@ def test_method_chaining_order_independence(
     app = SilloApp()
 
     @app.get("/chain-order-1")
-    async def chain_order_1(request: Request, response: Response):
-        return response.json({"test": 1}).status(201).set_header("X-Test", "1")
+    async def chain_order_1(request: HttpContext):
+        return json({"test": 1}).status(201).set_header("X-Test", "1")
 
     @app.get("/chain-order-2")
-    async def chain_order_2(request: Request, response: Response):
-        return response.json({"test": 2}).set_header("X-Test", "2").status(201)
+    async def chain_order_2(request: HttpContext):
+        return json({"test": 2}).set_header("X-Test", "2").status(201)
 
     with test_client_factory(app) as client:
         resp1 = client.get("/chain-order-1")
@@ -168,19 +169,19 @@ def test_response_type_switching(
     app = SilloApp()
 
     @app.get("/switch-type")
-    async def switch_type(request: Request, response: Response):
+    async def switch_type(request: HttpContext):
         format_param = request.query_params.get("format", "json")
 
         data = {"message": "Hello", "value": 42}
 
         if format_param == "json":
-            return response.json(data)
+            return json(data)
         elif format_param == "text":
-            return response.text(str(data))
+            return text(str(data))
         elif format_param == "html":
-            return response.html(f"<pre>{data}</pre>")
+            return html(f"<pre>{data}</pre>")
         else:
-            return response.empty(status_code=400)
+            return empty(status_code=400)
 
     with test_client_factory(app) as client:
         # Test JSON
@@ -204,7 +205,7 @@ def test_response_resp_method(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/base-resp")
-    async def base_resp(request: Request, response: Response):
+    async def base_resp(request: HttpContext):
         return response.resp(
             body="Custom response",
             status_code=200,
@@ -226,9 +227,9 @@ def test_response_get_response_method(
     app = SilloApp()
 
     @app.get("/get-response")
-    async def get_response_obj(request: Request, response: Response):
-        response.json({"test": "data"})
-        base_response = response.get_response()
+    async def get_response_obj(request: HttpContext):
+        response = json({"test": "data"})
+        base_response = response
         # Should return a BaseResponse object
         assert base_response is not None
         return response
@@ -248,24 +249,24 @@ def test_response_with_error_status(
     app = SilloApp()
 
     @app.get("/bad-request")
-    async def bad_request(request: Request, response: Response):
-        response = response.json({"error": "Bad request"})
-        return response.status(400)
+    async def bad_request(request: HttpContext):
+        response = json({"error": "Bad request"})
+        return empty(400)
 
     @app.get("/unauthorized")
-    async def unauthorized(request: Request, response: Response):
-        response = response.json({"error": "Unauthorized"})
-        return response.status(401)
+    async def unauthorized(request: HttpContext):
+        response = json({"error": "Unauthorized"})
+        return empty(401)
 
     @app.get("/not-found")
-    async def not_found(request: Request, response: Response):
-        response = response.json({"error": "Not found"})
-        return response.status(404)
+    async def not_found(request: HttpContext):
+        response = json({"error": "Not found"})
+        return empty(404)
 
     @app.get("/server-error")
-    async def server_error(request: Request, response: Response):
-        response = response.json({"error": "Internal server error"})
-        return response.status(500)
+    async def server_error(request: HttpContext):
+        response = json({"error": "Internal server error"})
+        return empty(500)
 
     with test_client_factory(app) as client:
         resp400 = client.get("/bad-request")

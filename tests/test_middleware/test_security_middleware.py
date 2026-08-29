@@ -3,7 +3,8 @@ Tests for Shield (security headers middleware)
 """
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.security import Shield
 from sillo.testclient import TestClient
 
@@ -13,12 +14,12 @@ def create_app():
     app.use(Shield(csp_enabled=True))
 
     @app.get("/test")
-    async def test_route(request: Request, response: Response):
-        return response.json({"message": "OK"})
+    async def test_route(request: HttpContext):
+        return json({"message": "OK"})
 
     @app.post("/data")
-    async def data_route(request: Request, response: Response):
-        return response.json({"received": True})
+    async def data_route(request: HttpContext):
+        return json({"received": True})
 
     return app
 

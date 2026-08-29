@@ -1,5 +1,5 @@
 """
-The WebSocket ASGI state machine, driven directly.
+The WebSocketContext ASGI state machine, driven directly.
 
 A server that speaks the protocol correctly never produces these sequences,
 so they are exercised by feeding the connection object raw ASGI messages. The
@@ -11,7 +11,7 @@ import asyncio
 
 import pytest
 
-from sillo.websockets.base import WebSocket, WebSocketState
+from sillo.websockets.base import WebSocketContext, WebSocketState
 
 
 def _run(coro):
@@ -31,7 +31,7 @@ def _socket(incoming=(), on_send=None):
             on_send(message)
         sent.append(message)
 
-    socket = WebSocket(
+    socket = WebSocketContext(
         {"type": "websocket", "path": "/ws", "headers": [], "query_string": b""},
         receive,
         send,
@@ -215,4 +215,4 @@ def test_a_non_websocket_scope_is_rejected():
         return None
 
     with pytest.raises(AssertionError):
-        WebSocket({"type": "http", "headers": [], "query_string": b""}, receive, send)
+        WebSocketContext({"type": "http", "headers": [], "query_string": b""}, receive, send)

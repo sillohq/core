@@ -10,6 +10,7 @@ every 404 in every deployment answered as though debug were on.
 import pytest
 
 from sillo import SilloApp
+from sillo import text
 from sillo.handlers.not_found import GENERIC_MESSAGE
 from sillo.testclient import TestClient
 
@@ -106,11 +107,11 @@ def test_the_flag_is_read_from_the_application_not_assumed():
 
 def test_debug_is_off_when_there_is_no_application_to_ask():
     """A bare scope should say less, not more."""
-    from sillo.core.http import Request
+    from sillo.core.http import HttpContext
     from sillo.handlers.not_found import _debug_enabled
 
     scope = {"type": "http", "method": "GET", "path": "/x", "headers": []}
-    assert _debug_enabled(Request(scope, None)) is False
+    assert _debug_enabled(HttpContext(scope, None)) is False
 
 
 # ── the handler only applies to misses ───────────────────────────────────
@@ -120,7 +121,7 @@ def test_a_matched_route_is_untouched(production):
     app = SilloApp(debug=False)
 
     @app.get("/exists")
-    async def handler(request, response):
-        return response.text("here")
+    async def handler(request):
+        return text("here")
 
     assert TestClient(app).get("/exists").status_code == 200

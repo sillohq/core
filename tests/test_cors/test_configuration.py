@@ -7,7 +7,8 @@ import warnings
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
 
@@ -26,8 +27,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/wildcard")
-        async def wildcard_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def wildcard_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -55,8 +56,8 @@ class TestCORSConfiguration:
         app.use(CORSMiddleware(config=cors_config))
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def test_route(request: HttpContext):
+            return json({"message": "OK"})
 
         client = TestClient(app)
         response = client.get("/test", headers={"Origin": "http://example.com"})
@@ -73,8 +74,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/regex-test")
-        async def regex_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def regex_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -115,8 +116,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/regex-case-test")
-        async def regex_case_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def regex_case_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -149,8 +150,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/regex-port-test")
-        async def regex_port_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def regex_port_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -191,8 +192,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/dynamic-test")
-        async def dynamic_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def dynamic_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -227,8 +228,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/blacklist-test")
-        async def blacklist_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def blacklist_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -260,8 +261,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/blacklist-regex-test")
-        async def blacklist_regex_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def blacklist_regex_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -296,8 +297,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/no-creds-test")
-        async def no_creds_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def no_creds_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -329,8 +330,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/expose-headers-test")
-        async def expose_headers_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def expose_headers_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -360,8 +361,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/empty-expose-test")
-        async def empty_expose_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def empty_expose_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -388,8 +389,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/max-age-test")
-        async def max_age_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def max_age_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -422,8 +423,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/non-strict-test")
-        async def non_strict_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def non_strict_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -445,8 +446,8 @@ class TestCORSConfiguration:
         app = SilloApp()
 
         @app.get("/debug-test")
-        async def debug_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def debug_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 

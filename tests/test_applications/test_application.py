@@ -4,10 +4,11 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json, text
+from sillo.core.http import HttpContext
 from sillo.core.routing import Group, Route, Router
 from sillo.testclient import TestClient
-from sillo.websockets import WebSocket
+from sillo.websockets import WebSocketContext
 
 app = SilloApp()
 nested_app = SilloApp()
@@ -16,37 +17,37 @@ ws_router = Router(prefix="/ws_router")
 
 
 @app.get("/")
-def index(request: Request, response: Response):
+def index(request: HttpContext):
     return "hello world"
 
 
 @app.post("/")
-def post_index(request: Request, response: Response):
+def post_index(request: HttpContext):
     return "post hello world"
 
 
 @app.put("/")
-def put_index(request: Request, response: Response):
+def put_index(request: HttpContext):
     return "put hello world"
 
 
 @app.delete("/")
-def delete_index(request: Request, response: Response):
+def delete_index(request: HttpContext):
     return "delete hello world"
 
 
 @app.head("/")
-def head_index(request: Request, response: Response):
+def head_index(request: HttpContext):
     return ""  # return empty response
 
 
 @app.options("/")
-def options_index(request: Request, response: Response):
+def options_index(request: HttpContext):
     return ""  # return empty response
 
 
 @app.patch("/")
-def patch_index(request: Request, response: Response):
+def patch_index(request: HttpContext):
     return "patch hello world"
 
 
@@ -54,15 +55,15 @@ def patch_index(request: Request, response: Response):
     "/multiple_methods",
     methods=["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"],
 )
-def multiple_methods(request: Request, response: Response):
+def multiple_methods(request: HttpContext):
     return "multiple methods"
 
 
-async def add_route_with_method_handler(request: Request, response: Response):
+async def add_route_with_method_handler(request: HttpContext):
     return "hello world"
 
 
-async def add_route_with_route_object(request: Request, response: Response):
+async def add_route_with_route_object(request: HttpContext):
     return "hello world"
 
 
@@ -82,28 +83,28 @@ app.add_route(
 
 
 @mounted_router.get("/")
-def mounted_index(request: Request, response: Response):
+def mounted_index(request: HttpContext):
     return "mounted hello world"
 
 
 @app.post("/route-with-name", name="route-with-name")
-def mounted_post_index(request: Request, response: Response):
+def mounted_post_index(request: HttpContext):
     return "mounted post hello world"
 
 
 @app.post("/route-with-name-and-param/{param}", name="route-with-name-and-param")
-def mounted_post_index_with_param(request: Request, response: Response, param: str):
+def mounted_post_index_with_param(request: HttpContext, param: str):
 
     return "mounted post hello world with param: " + param
 
 
 @nested_app.get("/")
-async def get_nested_index(request, response):
+async def get_nested_index(request):
     return "this is nested app"
 
 
 @app.ws_route("/")
-async def websocket_index(websocket: WebSocket):
+async def websocket_index(websocket: WebSocketContext):
     await websocket.accept()
     while True:
         data = await websocket.receive_text()
@@ -111,7 +112,7 @@ async def websocket_index(websocket: WebSocket):
 
 
 @ws_router.ws_route("/")
-async def websocket_index2(websocket: WebSocket):
+async def websocket_index2(websocket: WebSocketContext):
     await websocket.accept()
     while True:
         data = await websocket.receive_text()
@@ -227,10 +228,10 @@ def test_register_nested_app(client: TestClient):
 
 def test_app_init():
 
-    async def index1(request: Request, response: Response):
+    async def index1(request: HttpContext):
         return "hello world"
 
-    async def index2(request: Request, response: Response):
+    async def index2(request: HttpContext):
         return "hello world"
 
     routes = [
@@ -258,8 +259,8 @@ def test_on_startup_handler():
         startup_called["value"] = True
 
     @test_app.get("/test")
-    async def test_route(request: Request, response: Response):
-        return response.json({"startup": startup_called["value"]})
+    async def test_route(request: HttpContext):
+        return json({"startup": startup_called["value"]})
 
     with TestClient(test_app) as client:
         # After entering context, startup should have been called
@@ -282,8 +283,8 @@ def test_on_shutdown_handler():
         shutdown_called["value"] = True
 
     @test_app.get("/test")
-    async def test_route(request: Request, response: Response):
-        return response.text("ok")
+    async def test_route(request: HttpContext):
+        return text("ok")
 
     with TestClient(test_app) as client:
         # Shutdown should not have been called yet
@@ -360,8 +361,8 @@ def test_startup_and_shutdown_together():
         state["counter"] = 0
 
     @test_app.get("/state")
-    async def get_state(request: Request, response: Response):
-        return response.json(state)
+    async def get_state(request: HttpContext):
+        return json(state)
 
     with TestClient(test_app) as client:
         assert state["started"] is True
@@ -396,8 +397,8 @@ def test_lifespan_context_manager():
     test_app = SilloApp(lifespan=lifespan)
 
     @test_app.get("/status")
-    async def status(request: Request, response: Response):
-        return response.json(
+    async def status(request: HttpContext):
+        return json(
             {
                 "db": state["db_connected"],
                 "cache": state["cache_loaded"],
@@ -439,9 +440,9 @@ def test_lifespan_with_state():
     test_app = SilloApp(lifespan=lifespan)
 
     @test_app.get("/config")
-    async def get_config(request: Request, response: Response):
+    async def get_config(request: HttpContext):
         global_state = request.scope.get("global_state", {})
-        return response.json(
+        return json(
             {
                 "database": global_state.get("database"),
                 "api_key": global_state.get("api_key"),
@@ -512,9 +513,9 @@ def test_lifespan_with_routes():
     test_app = SilloApp(lifespan=lifespan)
 
     @test_app.get("/increment")
-    async def increment(request: Request, response: Response):
+    async def increment(request: HttpContext):
         request_count["value"] += 1
-        return response.json(
+        return json(
             {
                 "count": request_count["value"],
                 "service": request.scope.get("global_state", {}).get("service"),
@@ -543,11 +544,11 @@ def test_app_state_persistence():
     test_app = SilloApp(lifespan=lifespan)
 
     @test_app.post("/track")
-    async def track(request: Request, response: Response):
+    async def track(request: HttpContext):
         global_state = request.scope.get("global_state", {})
         global_state["counter"] = global_state.get("counter", 0) + 1
         global_state["requests"].append(request.url.path)
-        return response.json(
+        return json(
             {
                 "counter": global_state["counter"],
                 "total_requests": len(global_state["requests"]),
@@ -585,8 +586,8 @@ def test_sync_lifespan_context_manager():
     test_app = SilloApp(lifespan=lifespan)
 
     @test_app.get("/status")
-    async def status(request: Request, response: Response):
-        return response.json(
+    async def status(request: HttpContext):
+        return json(
             {
                 "data": request.scope.get("global_state", {}).get("data"),
                 "initialized": request.scope.get("global_state", {}).get("initialized"),
@@ -616,10 +617,10 @@ def test_sync_lifespan_state_persistence():
     test_app = SilloApp(lifespan=lifespan)
 
     @test_app.post("/inc")
-    async def increment(request: Request, response: Response):
+    async def increment(request: HttpContext):
         global_state = request.scope.get("global_state", {})
         global_state["counter"] = global_state.get("counter", 0) + 1
-        return response.json({"counter": global_state["counter"]})
+        return json({"counter": global_state["counter"]})
 
     with TestClient(test_app) as client:
         resp1 = client.post("/inc")
@@ -639,9 +640,9 @@ def test_sync_lifespan_with_yield_value():
     test_app = SilloApp(lifespan=lifespan)
 
     @test_app.get("/state")
-    async def get_state(request: Request, response: Response):
+    async def get_state(request: HttpContext):
         gs = request.scope.get("global_state", {})
-        return response.json(gs)
+        return json(gs)
 
     with TestClient(test_app) as client:
         resp = client.get("/state")

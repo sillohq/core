@@ -3,7 +3,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, file as file_response, json
 from sillo.core.routing import BaseRouter
 from sillo.types import Receive, Scope, Send
 
@@ -36,7 +36,7 @@ class StaticFiles(BaseRouter):
         directory: str | Path | None = None,
         directories: list[str | Path] | None = None,
         allowed_extensions: list[str] | None = None,
-        custom_404_handler: Callable[[Request, Response], Any] | None = None,
+        custom_404_handler: Callable[[HttpContext], Any] | None = None,
         cache_control: str | None = None,
     ):
         """
@@ -161,7 +161,7 @@ class StaticFiles(BaseRouter):
             return True
         return file_path.suffix.lower().lstrip(".") in self.allowed_extensions
 
-    async def _handle(self, request: Request, response: Response):
+    async def _handle(self, request: HttpContext):
         """
         Handle an incoming static file request by locating and serving the file.
 
@@ -173,20 +173,18 @@ class StaticFiles(BaseRouter):
         or a default JSON 404 response if no file is found.
 
         Args:
-            request: The incoming HTTP ``Request`` object. The request path
-                is extracted from ``request.scope["path"]`` and the method
-                is checked to ensure only GET requests are served.
-            response: The ``Response`` object used to construct the file
-                response or error response.
+            request: The context for the request. The path is extracted from
+                ``request.scope["path"]`` and the method is checked to ensure
+                only GET requests are served.
 
         Returns:
-            A ``Response`` object containing either the served file with
+            A response containing either the served file with
             appropriate headers, a 405 error for non-GET methods, a 404
             error from the custom handler, or a default JSON 404 response.
         """
         path = request.scope.get("path", "").lstrip("/")
         if request.method != "GET":
-            return response.json("Method not allowed", status_code=405)
+            return json("Method not allowed", status_code=405)
         for directory in self.directories:
             try:
                 file_path = (directory / path).resolve()
@@ -195,7 +193,9 @@ class StaticFiles(BaseRouter):
                     and file_path.is_file()
                     and self._is_extension_allowed(file_path)
                 ):
-                    response.file(str(file_path), content_disposition_type="inline")
+                    response = file_response(
+                        str(file_path), content_disposition_type="inline"
+                    )
                     if self.cache_control:
                         response.set_header("cache-control", self.cache_control)
                     return response
@@ -204,19 +204,16 @@ class StaticFiles(BaseRouter):
 
         # Use custom 404 handler if provided, otherwise use default
         if self.custom_404_handler:
-            return self.custom_404_handler(request, response)
-        else:
-            return response.json("Resource not found", status_code=404)
+            return self.custom_404_handler(request)
+        return json("Resource not found", status_code=404)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         """
         ASGI application entry point for serving static file requests.
 
-        Creates ``Request`` and ``Response`` objects from the raw ASGI scope,
-        delegates to ``_handle`` for file resolution and serving, then sends
-        the final response through the ASGI send channel. Handles both
-        ``Responder`` objects (which wrap a ``BaseResponse``) and direct
-        ``BaseResponse`` instances returned by the handler.
+        Creates the ``HttpContext`` from the raw ASGI scope, delegates to
+        ``_handle`` for file resolution and serving, then sends the resulting
+        response through the ASGI send channel.
 
         Args:
             scope: The ASGI connection scope dictionary containing request
@@ -230,24 +227,7 @@ class StaticFiles(BaseRouter):
             None. The response is sent asynchronously through the ``send``
             callable as per the ASGI specification.
         """
-        request = Request(scope, receive)
-        response = Response(request)
-
-        # Call the handler and get the result
-        handler_result = await self._handle(request, response)
-
-        # If handler returned a custom response, use it directly
-        if handler_result is not None:
-            if hasattr(handler_result, "get_response"):
-                # It's a Responder, get the BaseResponse
-                final_response = handler_result.get_response()
-                await final_response(scope, receive, send)
-            else:
-                # It's already a BaseResponse
-                await handler_result(scope, receive, send)
-        else:
-            # Use the original response flow
-            result = response.get_response()
-            if result is not None:
-                response = result
+        request = HttpContext(scope, receive)
+        response = await self._handle(request)
+        if response is not None:
             await response(scope, receive, send)

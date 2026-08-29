@@ -255,7 +255,7 @@ async def test_middleware_bypasses_non_admin_paths():
     backend = AuthBackend()
     middleware = _AuthMiddleware(backend)
 
-    class Request:
+    class HttpContext:
         class url:
             path = "/api/widgets"
 
@@ -265,7 +265,7 @@ async def test_middleware_bypasses_non_admin_paths():
         called["next"] = True
         return "ok"
 
-    result = await middleware(Request(), FakeResponse(), call_next)
+    result = await middleware(HttpContext(), FakeResponse(), call_next)
     assert result == "ok"
     assert called["next"] is True
 
@@ -278,16 +278,16 @@ async def test_middleware_bypasses_login_and_static_paths(path):
 
     middleware = _AuthMiddleware(NeverAuthenticate())
 
-    class Request:
+    class HttpContext:
         class url:
             pass
 
-    Request.url.path = path
+    HttpContext.url.path = path
 
     async def call_next():
         return "ok"
 
-    assert await middleware(Request(), FakeResponse(), call_next) == "ok"
+    assert await middleware(HttpContext(), FakeResponse(), call_next) == "ok"
 
 
 async def test_middleware_redirects_when_not_authenticated():
@@ -297,7 +297,7 @@ async def test_middleware_redirects_when_not_authenticated():
 
     middleware = _AuthMiddleware(NeverAuthenticate())
 
-    class Request:
+    class HttpContext:
         class url:
             path = "/admin/dashboard"
 
@@ -306,7 +306,7 @@ async def test_middleware_redirects_when_not_authenticated():
     async def call_next():
         raise AssertionError("should not reach the handler")
 
-    result = await middleware(Request(), FakeResponse(), call_next)
+    result = await middleware(HttpContext(), FakeResponse(), call_next)
     assert result == ("redirect", "/admin/login/", 302)
 
 
@@ -318,11 +318,11 @@ async def test_middleware_uses_scope_path_when_url_has_no_path_attr():
 
     middleware = _AuthMiddleware(AlwaysAuthenticate())
 
-    class Request:
+    class HttpContext:
         url = object()  # no `.path` attribute
         scope = {"path": "/admin/dashboard"}
 
     async def call_next():
         return "ok"
 
-    assert await middleware(Request(), FakeResponse(), call_next) == "ok"
+    assert await middleware(HttpContext(), FakeResponse(), call_next) == "ok"

@@ -8,7 +8,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import html, json, text
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 # ========== Header Tests ==========
@@ -19,8 +20,8 @@ def test_set_header(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/headers")
-    async def with_headers(request: Request, response: Response):
-        return response.text("ok", headers={"X-Custom-Header": "custom-value"})
+    async def with_headers(request: HttpContext):
+        return text("ok", headers={"X-Custom-Header": "custom-value"})
 
     with test_client_factory(app) as client:
         resp = client.get("/headers")
@@ -33,8 +34,8 @@ def test_set_multiple_headers(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/multi-headers")
-    async def multi_headers(request: Request, response: Response):
-        return response.json(
+    async def multi_headers(request: HttpContext):
+        return json(
             {"status": "ok"},
             headers={
                 "X-Header-1": "value1",
@@ -55,13 +56,13 @@ def test_set_headers_method(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.get("/batch-headers")
-    async def batch_headers(request: Request, response: Response):
+    async def batch_headers(request: HttpContext):
         headers = {
             "X-API-Version": "1.0",
             "X-Request-ID": "abc123",
             "X-Rate-Limit": "100",
         }
-        return response.json({"status": "ok"}, headers=headers)
+        return json({"status": "ok"}, headers=headers)
 
     with test_client_factory(app) as client:
         resp = client.get("/batch-headers")
@@ -75,8 +76,8 @@ def test_override_header(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/override")
-    async def override_header(request: Request, response: Response):
-        return response.text("ok", headers={"X-Value": "second"})
+    async def override_header(request: HttpContext):
+        return text("ok", headers={"X-Value": "second"})
 
     with test_client_factory(app) as client:
         resp = client.get("/override")
@@ -88,14 +89,14 @@ def test_has_header(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/check-header")
-    async def check_header(request: Request, response: Response):
+    async def check_header(request: HttpContext):
         # Initialize response first
-        response.text("initial")
+        response = text("initial")
         # Now check headers
         response.set_header("X-Test", "value")
         has_test = response.has_header("X-Test")
         has_missing = response.has_header("X-Missing")
-        return response.json({"has_test": has_test, "has_missing": has_missing})
+        return json({"has_test": has_test, "has_missing": has_missing})
 
     with test_client_factory(app) as client:
         resp = client.get("/check-header")
@@ -109,9 +110,9 @@ def test_remove_header(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/remove-header")
-    async def remove_header(request: Request, response: Response):
+    async def remove_header(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Set and remove header
         response.set_header("X-Temporary", "value")
         response.remove_header("X-Temporary")
@@ -130,9 +131,9 @@ def test_set_cookie(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/set-cookie")
-    async def set_cookie(request: Request, response: Response):
+    async def set_cookie(request: HttpContext):
         # Initialize response first
-        response.text("Cookie set")
+        response = text("Cookie set")
         # Then set cookie
         response.set_cookie("session_id", "abc123")
         return response
@@ -152,9 +153,9 @@ def test_set_cookie_with_max_age(
     app = SilloApp()
 
     @app.get("/cookie-max-age")
-    async def cookie_max_age(request: Request, response: Response):
+    async def cookie_max_age(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set cookie
         response.set_cookie("token", "xyz789", max_age=3600)
         return response
@@ -169,9 +170,9 @@ def test_set_cookie_with_path(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/cookie-path")
-    async def cookie_path(request: Request, response: Response):
+    async def cookie_path(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set cookie
         response.set_cookie("user", "alice", path="/api")
         return response
@@ -186,9 +187,9 @@ def test_set_cookie_with_domain(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/cookie-domain")
-    async def cookie_domain(request: Request, response: Response):
+    async def cookie_domain(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set cookie
         response.set_cookie("tracking", "123", domain="example.com")
         return response
@@ -203,9 +204,9 @@ def test_set_cookie_secure(test_client_factory: Callable[[SilloApp], TestClient]
     app = SilloApp()
 
     @app.get("/cookie-secure")
-    async def cookie_secure(request: Request, response: Response):
+    async def cookie_secure(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set cookie
         response.set_cookie("secure_token", "secret", secure=True)
         return response
@@ -220,9 +221,9 @@ def test_set_cookie_httponly(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.get("/cookie-httponly")
-    async def cookie_httponly(request: Request, response: Response):
+    async def cookie_httponly(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set cookie
         response.set_cookie("session", "data", httponly=True)
         return response
@@ -237,9 +238,9 @@ def test_set_cookie_samesite(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.get("/cookie-samesite")
-    async def cookie_samesite(request: Request, response: Response):
+    async def cookie_samesite(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set cookie
         response.set_cookie("csrf", "token", samesite="strict")
         return response
@@ -254,9 +255,9 @@ def test_set_multiple_cookies(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/multi-cookies")
-    async def multi_cookies(request: Request, response: Response):
+    async def multi_cookies(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set multiple cookies
         response.set_cookie("cookie1", "value1")
         response.set_cookie("cookie2", "value2")
@@ -276,9 +277,9 @@ def test_set_cookies_batch(test_client_factory: Callable[[SilloApp], TestClient]
     app = SilloApp()
 
     @app.get("/batch-cookies")
-    async def batch_cookies(request: Request, response: Response):
+    async def batch_cookies(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set cookies in batch
         cookies = [
             {"key": "user_id", "value": "123"},
@@ -301,9 +302,9 @@ def test_delete_cookie(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/delete-cookie")
-    async def delete_cookie(request: Request, response: Response):
+    async def delete_cookie(request: HttpContext):
         # Initialize response first
-        response.text("Cookie deleted")
+        response = text("Cookie deleted")
         # Then delete cookie
         response.delete_cookie("old_session")
         return response
@@ -318,9 +319,9 @@ def test_set_permanent_cookie(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/permanent-cookie")
-    async def permanent_cookie(request: Request, response: Response):
+    async def permanent_cookie(request: HttpContext):
         # Initialize response first
-        response.text("ok")
+        response = text("ok")
         # Then set permanent cookie
         response.set_permanent_cookie("remember_me", "true")
         return response
@@ -338,9 +339,9 @@ def test_enable_caching(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/cached")
-    async def cached_response(request: Request, response: Response):
+    async def cached_response(request: HttpContext):
         # Initialize response first
-        response.json({"data": "cached"})
+        response = json({"data": "cached"})
         # Then add caching
         response.cache(max_age=3600)
         return response
@@ -356,9 +357,9 @@ def test_enable_caching_private(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/private-cache")
-    async def private_cache(request: Request, response: Response):
+    async def private_cache(request: HttpContext):
         # Initialize response first
-        response.json({"data": "private"})
+        response = json({"data": "private"})
         # Then add caching
         response.cache(max_age=1800, private=True)
         return response
@@ -375,9 +376,9 @@ def test_disable_caching(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/no-cache")
-    async def no_cache_response(request: Request, response: Response):
+    async def no_cache_response(request: HttpContext):
         # Initialize response first
-        response.json({"data": "fresh"})
+        response = json({"data": "fresh"})
         # Then disable caching
         response.no_cache()
         return response
@@ -396,9 +397,9 @@ def test_add_csp_header(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/csp")
-    async def with_csp(request: Request, response: Response):
+    async def with_csp(request: HttpContext):
         # Initialize response first
-        response.html("<h1>Secure Page</h1>")
+        response = html("<h1>Secure Page</h1>")
         # Then add CSP header
         policy = "default-src 'self'; script-src 'self' 'unsafe-inline'"
         response.add_csp_header(policy)
@@ -421,9 +422,9 @@ def test_headers_and_cookies_together(
     app = SilloApp()
 
     @app.get("/combined")
-    async def combined(request: Request, response: Response):
+    async def combined(request: HttpContext):
         # Initialize response first
-        response.json({"status": "ok"})
+        response = json({"status": "ok"})
         # Then add header and cookie
         response.set_header("X-API-Version", "2.0")
         response.set_cookie("session", "xyz")
@@ -440,9 +441,9 @@ def test_complex_response_chain(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/complex")
-    async def complex_response(request: Request, response: Response):
+    async def complex_response(request: HttpContext):
         # Initialize response first
-        response.json({"created": True})
+        response = json({"created": True})
         # Then add all other operations
         response.set_header("X-Custom", "value")
         response.set_cookie("user", "alice")

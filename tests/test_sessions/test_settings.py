@@ -12,7 +12,8 @@ in local development — with no error anywhere to explain why.
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
 from sillo.testclient import TestClient
@@ -86,9 +87,9 @@ class TestSettingsOnTheMiddlewareTakeEffect:
         app.use(SessionMiddleware(secret_key=SECRET, **settings))
 
         @app.get("/set")
-        async def set_value(request: Request, response: Response):
+        async def set_value(request: HttpContext):
             request.session["user_id"] = 7
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         return app
 
@@ -132,14 +133,14 @@ class TestSessionsSurviveOverPlainHttp:
         app.use(SessionMiddleware(secret_key=SECRET, session_cookie_secure=False))
 
         @app.get("/login")
-        async def login(request: Request, response: Response):
+        async def login(request: HttpContext):
             request.session["user_id"] = 7
             request.session["cart"] = "abc"
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         @app.get("/whoami")
-        async def whoami(request: Request, response: Response):
-            return response.json(
+        async def whoami(request: HttpContext):
+            return json(
                 {
                     "user_id": request.session.get("user_id"),
                     "cart": request.session.get("cart"),
@@ -147,9 +148,9 @@ class TestSessionsSurviveOverPlainHttp:
             )
 
         @app.get("/drop-cart")
-        async def drop_cart(request: Request, response: Response):
+        async def drop_cart(request: HttpContext):
             del request.session["cart"]
-            return response.json({"dropped": True})
+            return json({"dropped": True})
 
         with TestClient(app) as client:
             client.get("/login")

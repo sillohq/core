@@ -1,5 +1,6 @@
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.http.accepts import (
     AcceptItem,
     AcceptsInfo,
@@ -127,8 +128,8 @@ class TestAcceptsMiddleware:
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"ok": True})
+        async def test_route(request: HttpContext):
+            return json({"ok": True})
 
         client = TestClient(app)
         response = client.get("/test")
@@ -139,8 +140,8 @@ class TestAcceptsMiddleware:
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"ok": True})
+        async def test_route(request: HttpContext):
+            return json({"ok": True})
 
         client = TestClient(app)
         response = client.get("/test", headers={"Accept": "application/json"})
@@ -156,9 +157,9 @@ class TestAcceptsMiddleware:
         app.use(AcceptsMiddleware(store_accepts_info=True))
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
+        async def test_route(request: HttpContext):
             info = getattr(request.state, "accepts_parsed", None)
-            return response.json({"has_accepts": info is not None})
+            return json({"has_accepts": info is not None})
 
         client = TestClient(app)
         response = client.get("/test", headers={"Accept": "text/html"})
@@ -171,9 +172,9 @@ class TestAcceptsInfo:
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
+        async def test_route(request: HttpContext):
             info = AcceptsInfo(request)
-            return response.json({"types": info.get_accepted_types()})
+            return json({"types": info.get_accepted_types()})
 
         client = TestClient(app)
         response = client.get("/test", headers={"Accept": "text/html, application/json"})
@@ -185,8 +186,8 @@ class TestContentNegotiationMiddleware:
         app = SilloApp()
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"ok": True})
+        async def test_route(request: HttpContext):
+            return json({"ok": True})
 
         client = TestClient(app)
         response = client.get(

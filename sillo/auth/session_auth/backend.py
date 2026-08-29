@@ -13,14 +13,14 @@ from typing import Any
 
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
-from sillo.core.http import Request
+from sillo.core.http import HttpContext
 
 DEFAULT_SESSION_KEY = "user"
 DEFAULT_IDENTIFIER = "id"
 
 
 def login(
-    request: Request,
+    request: HttpContext,
     user,
     session_key: str = DEFAULT_SESSION_KEY,
     identifier: str = DEFAULT_IDENTIFIER,
@@ -77,7 +77,7 @@ def login(
     }
 
 
-def logout(request: Request, session_key: str = DEFAULT_SESSION_KEY):
+def logout(request: HttpContext, session_key: str = DEFAULT_SESSION_KEY):
     """Terminate a user's session, emptying it.
 
     The whole session goes, not only the entry *session_key* names: a
@@ -179,7 +179,7 @@ class SessionAuthBackend(AuthenticationBackend):
             self.name = name
         self.description = description
 
-    async def authenticate(self, request: Request) -> Any:
+    async def authenticate(self, request: HttpContext) -> Any:
         """Authenticate the current request by checking session data.
 
         Reads the user data from the request's session using the configured

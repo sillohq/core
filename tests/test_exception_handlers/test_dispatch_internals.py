@@ -13,8 +13,7 @@ from __future__ import annotations
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from sillo.core.http import Request
-from sillo.core.http.response import Responder
+from sillo.core.http import HttpContext
 from sillo.exception_handler import (
     ExceptionMiddleware,
     pydantic_validation_error_handler,
@@ -23,7 +22,7 @@ from sillo.exception_handler import (
 from sillo.exceptions import HTTPException
 
 
-def make_pair() -> tuple[Request, Responder]:
+def make_pair() -> tuple[HttpContext, Responder]:
     scope = {
         "type": "http",
         "method": "GET",
@@ -31,7 +30,7 @@ def make_pair() -> tuple[Request, Responder]:
         "headers": [],
         "query_string": b"",
     }
-    request = Request(scope, None)
+    request = HttpContext(scope, None)
     return request, Responder(request)
 
 
@@ -56,7 +55,7 @@ class TestWrapHttpExceptions:
         async def call_next():
             raise HTTPException(status_code=418, detail="teapot")
 
-        async def on_418(req, res, exc):
+        async def on_418(req, exc):
             seen["exc"] = exc
             return "handled-by-status"
 
@@ -76,7 +75,7 @@ class TestWrapHttpExceptions:
         async def call_next():
             raise HTTPException(status_code=404, detail="nope")
 
-        async def on_class(req, res, exc):
+        async def on_class(req, exc):
             return "handled-by-class"
 
         result = await wrap_http_exceptions(
@@ -98,7 +97,7 @@ class TestWrapHttpExceptions:
         async def call_next():
             raise Boom("bang")
 
-        async def on_boom(req, res, exc):
+        async def on_boom(req, exc):
             return f"handled {exc}"
 
         result = await wrap_http_exceptions(
@@ -121,7 +120,7 @@ class TestWrapHttpExceptions:
         async def call_next():
             raise Derived("derived")
 
-        async def on_base(req, res, exc):
+        async def on_base(req, exc):
             return "handled-by-base"
 
         result = await wrap_http_exceptions(
@@ -189,7 +188,7 @@ class TestStatusesThatMayNotCarryABody:
             request, response, HTTPException(status_code=status, detail="ignored")
         )
 
-        built = result.get_response()
+        built = result
         assert built.status_code == status
         assert built.body == b""
 
@@ -206,7 +205,7 @@ class TestStatusesThatMayNotCarryABody:
             ),
         )
 
-        keys = [k.decode("latin-1") for k, _ in result.get_response().raw_headers]
+        keys = [k.decode("latin-1") for k, _ in result.raw_headers]
         assert "x-marker" in keys
 
     async def test_an_ordinary_status_still_carries_its_detail(self):
@@ -217,7 +216,7 @@ class TestStatusesThatMayNotCarryABody:
             request, response, HTTPException(status_code=400, detail="bad input")
         )
 
-        built = result.get_response()
+        built = result
         assert built.status_code == 400
         assert b"bad input" in built.body
 
@@ -240,7 +239,7 @@ class TestValidationErrorFlattening:
         exc = self._error(User, {})
 
         result = await pydantic_validation_error_handler(request, response, exc)
-        body = result.get_response().body.decode()
+        body = result.body.decode()
 
         assert '"name"' in body
         assert "Validation Error" in body
@@ -256,7 +255,7 @@ class TestValidationErrorFlattening:
         exc = self._error(User, {"address": {}})
 
         result = await pydantic_validation_error_handler(request, response, exc)
-        body = result.get_response().body.decode()
+        body = result.body.decode()
 
         # {"address": {"city": ...}} rather than a flattened "address.city".
         assert '"address"' in body
@@ -277,7 +276,7 @@ class TestValidationErrorFlattening:
         exc = self._error(User, {"address": {"street": {}}})
 
         result = await pydantic_validation_error_handler(request, response, exc)
-        body = result.get_response().body.decode()
+        body = result.body.decode()
 
         assert "address.street.number" in body
 
@@ -309,7 +308,7 @@ class TestValidationErrorFlattening:
         finally:
             exc.errors = original  # type: ignore[method-assign]
 
-        body = result.get_response().body.decode()
+        body = result.body.decode()
         assert '"inner"' in body
         assert "then nested" in body
 
@@ -322,7 +321,7 @@ class TestValidationErrorFlattening:
 
         result = await pydantic_validation_error_handler(request, response, exc)
 
-        assert result.get_response().status_code == 422
+        assert result.status_code == 422
 
 
 class TestTheMiddlewareGuards:
@@ -379,7 +378,7 @@ class TestTheRequestAndResponseValidationHandlers:
         exc = RequestValidationError([{"loc": ("body", "name"), "msg": "required"}])
 
         result = await request_validation_error_handler(request, response, exc)
-        built = result.get_response()
+        built = result
 
         assert built.status_code == 422
         assert b"required" in built.body
@@ -394,7 +393,7 @@ class TestTheRequestAndResponseValidationHandlers:
         exc = ResponseValidationError([{"loc": ("response",), "msg": "wrong shape"}])
 
         result = await response_validation_error_handler(request, response, exc)
-        built = result.get_response()
+        built = result
 
         assert built.status_code == 500
         assert b"wrong shape" not in built.body

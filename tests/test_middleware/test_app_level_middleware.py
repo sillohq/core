@@ -7,7 +7,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
 from sillo.testclient import TestClient
 
@@ -22,18 +23,18 @@ def test_app_level_middleware_basic(
 
     executed = []
 
-    async def logging_middleware(request: Request, response: Response, call_next):
+    async def logging_middleware(request: HttpContext, call_next):
         executed.append("before")
-        await call_next()
+        response = await call_next()
         executed.append("after")
         return response
 
     app.use(logging_middleware)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         executed.append("handler")
-        return response.json({"message": "ok"})
+        return json({"message": "ok"})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -48,18 +49,18 @@ def test_app_level_middleware_modifies_request(
     app = SilloApp()
 
     async def add_custom_header_middleware(
-        request: Request, response: Response, call_next
+        request: HttpContext, call_next
     ):
         request.scope["custom_data"] = "middleware_value"
-        await call_next()
+        response = await call_next()
         return response
 
     app.use(add_custom_header_middleware)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         custom_data = request.scope.get("custom_data")
-        return response.json({"custom_data": custom_data})
+        return json({"custom_data": custom_data})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -73,17 +74,17 @@ def test_app_level_middleware_modifies_response(
     app = SilloApp()
 
     async def add_response_header_middleware(
-        request: Request, response: Response, call_next
+        request: HttpContext, call_next
     ):
-        await call_next()
+        response = await call_next()
         response.set_header("X-Custom-Header", "middleware-added")
         return response
 
     app.use(add_response_header_middleware)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "ok"})
+    async def handler(request: HttpContext):
+        return json({"message": "ok"})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -98,21 +99,21 @@ def test_app_level_middleware_multiple(
 
     execution_order = []
 
-    async def middleware_1(request: Request, response: Response, call_next):
+    async def middleware_1(request: HttpContext, call_next):
         execution_order.append("m1_before")
-        await call_next()
+        response = await call_next()
         execution_order.append("m1_after")
         return response
 
-    async def middleware_2(request: Request, response: Response, call_next):
+    async def middleware_2(request: HttpContext, call_next):
         execution_order.append("m2_before")
-        await call_next()
+        response = await call_next()
         execution_order.append("m2_after")
         return response
 
-    async def middleware_3(request: Request, response: Response, call_next):
+    async def middleware_3(request: HttpContext, call_next):
         execution_order.append("m3_before")
-        await call_next()
+        response = await call_next()
         execution_order.append("m3_after")
         return response
 
@@ -121,9 +122,9 @@ def test_app_level_middleware_multiple(
     app.use(middleware_3)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         execution_order.append("handler")
-        return response.json({"message": "ok"})
+        return json({"message": "ok"})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -145,18 +146,18 @@ def test_app_level_middleware_early_return(
     """Test middleware that returns early without calling next"""
     app = SilloApp()
 
-    async def auth_middleware(request: Request, response: Response, call_next):
+    async def auth_middleware(request: HttpContext, call_next):
         token = request.headers.get("Authorization")
         if not token:
-            return response.json({"error": "Unauthorized"}).status(401)
-        await call_next()
+            return json({"error": "Unauthorized"}).status(401)
+        response = await call_next()
         return response
 
     app.use(auth_middleware)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "authenticated"})
+    async def handler(request: HttpContext):
+        return json({"message": "authenticated"})
 
     with test_client_factory(app) as client:
         # Without token
@@ -176,17 +177,17 @@ def test_app_level_middleware_exception_handling(
     """Test middleware handling exceptions"""
     app = SilloApp()
 
-    async def error_handler_middleware(request: Request, response: Response, call_next):
+    async def error_handler_middleware(request: HttpContext, call_next):
         try:
-            await call_next()
+            response = await call_next()
         except ValueError as e:
-            return response.json({"error": str(e)}).status(400)
+            return json({"error": str(e)}).status(400)
         return response
 
     app.use(error_handler_middleware)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise ValueError("Something went wrong")
 
     with test_client_factory(app) as client:
@@ -203,24 +204,24 @@ def test_app_level_middleware_applies_to_all_routes(
 
     request_count = {"count": 0}
 
-    async def counter_middleware(request: Request, response: Response, call_next):
+    async def counter_middleware(request: HttpContext, call_next):
         request_count["count"] += 1
-        await call_next()
+        response = await call_next()
         return response
 
     app.use(counter_middleware)
 
     @app.get("/route1")
-    async def handler1(request: Request, response: Response):
-        return response.json({"route": "1"})
+    async def handler1(request: HttpContext):
+        return json({"route": "1"})
 
     @app.get("/route2")
-    async def handler2(request: Request, response: Response):
-        return response.json({"route": "2"})
+    async def handler2(request: HttpContext):
+        return json({"route": "2"})
 
     @app.post("/route3")
-    async def handler3(request: Request, response: Response):
-        return response.json({"route": "3"})
+    async def handler3(request: HttpContext):
+        return json({"route": "3"})
 
     with test_client_factory(app) as client:
         client.get("/route1")
@@ -237,13 +238,13 @@ def test_base_middleware_class(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     class CustomMiddleware(BaseMiddleware):
-        async def process_request(
-            self, request: Request, response: Response, call_next
+        async def dispatch(
+            self, request: HttpContext, call_next
         ):
             request.scope["processed"] = True
             return await call_next()
 
-        async def process_response(self, request: Request, response: Response):
+        async def process_response(self, request: HttpContext):
             response.set_header("X-Processed", "true")
             return response
 
@@ -251,9 +252,9 @@ def test_base_middleware_class(test_client_factory: Callable[[SilloApp], TestCli
     app.use(middleware_instance)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         processed = request.scope.get("processed", False)
-        return response.json({"processed": processed})
+        return json({"processed": processed})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -272,12 +273,12 @@ def test_base_middleware_with_config(
             super().__init__(**kwargs)
             self.prefix = prefix
 
-        async def process_request(
-            self, request: Request, response: Response, call_next
+        async def dispatch(
+            self, request: HttpContext, call_next
         ):
             return await call_next()
 
-        async def process_response(self, request: Request, response: Response):
+        async def process_response(self, request: HttpContext):
             response.set_header(f"{self.prefix}Custom", "value")
             return response
 
@@ -285,8 +286,8 @@ def test_base_middleware_with_config(
     app.use(middleware_instance)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "ok"})
+    async def handler(request: HttpContext):
+        return json({"message": "ok"})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -302,17 +303,17 @@ def test_middleware_request_state(
     """Test middleware using request state"""
     app = SilloApp()
 
-    async def state_middleware(request: Request, response: Response, call_next):
+    async def state_middleware(request: HttpContext, call_next):
         request.state.user_id = "12345"
         request.state.role = "admin"
-        await call_next()
+        response = await call_next()
         return response
 
     app.use(state_middleware)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json(
+    async def handler(request: HttpContext):
+        return json(
             {"user_id": request.state.user_id, "role": request.state.role}
         )
 
@@ -329,9 +330,9 @@ def test_middleware_timing(test_client_factory: Callable[[SilloApp], TestClient]
 
     import time
 
-    async def timing_middleware(request: Request, response: Response, call_next):
+    async def timing_middleware(request: HttpContext, call_next):
         start_time = time.time()
-        await call_next()
+        response = await call_next()
         process_time = time.time() - start_time
         response.set_header("X-Process-Time", str(process_time))
         return response
@@ -339,8 +340,8 @@ def test_middleware_timing(test_client_factory: Callable[[SilloApp], TestClient]
     app.use(timing_middleware)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "ok"})
+    async def handler(request: HttpContext):
+        return json({"message": "ok"})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -355,19 +356,19 @@ def test_middleware_request_id(test_client_factory: Callable[[SilloApp], TestCli
 
     import uuid
 
-    async def request_id_middleware(request: Request, response: Response, call_next):
+    async def request_id_middleware(request: HttpContext, call_next):
         request_id = str(uuid.uuid4())
         request.scope["request_id"] = request_id
-        await call_next()
+        response = await call_next()
         response.set_header("X-Request-ID", request_id)
         return response
 
     app.use(request_id_middleware)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         request_id = request.scope.get("request_id")
-        return response.json({"request_id": request_id})
+        return json({"request_id": request_id})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")

@@ -184,7 +184,7 @@ def bucket(name: str = "") -> Bucket:
         from sillo.storage import bucket
 
         @app.post("/avatar")
-        async def upload_avatar(request, response):
+        async def upload_avatar(ctx):
             stored = await bucket("avatars").put(key, upload, user=request.user)
             ...
 

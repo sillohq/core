@@ -12,7 +12,7 @@ import jinja2
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from sillo.core.http.response import HTMLResponse
-from sillo.types import Request
+from sillo.types import HttpContext
 
 from .middleware import template_context
 
@@ -105,7 +105,7 @@ async def render(
     context: dict[str, Any] | None = None,
     status_code: int = 200,
     headers: dict[str, str] | None = None,
-    request: Request | None = None,
+    request: HttpContext | None = None,
     **kwargs,
 ) -> HTMLResponse:
     """Render template to response."""

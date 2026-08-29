@@ -12,11 +12,12 @@ from functools import partial
 import pytest
 
 from sillo.application import SilloApp
+from sillo import json
 from sillo.auth import APIKeyAuthBackend, AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.apikey import generate_api_key, verify_key
 from sillo.auth.model import AuthResult
 from sillo.users import SimpleUser
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import AsyncTestClient
 
 
@@ -39,7 +40,7 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
         def __init__(self):
             super().__init__(header_name="X-API-Key")
 
-        async def authenticate(self, request: Request):
+        async def authenticate(self, request: HttpContext):
             raw_token = request.headers.get(self.header_name)
             if not raw_token:
                 return AuthResult(success=False, identity="", scope="")
@@ -54,8 +55,8 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apikey"]))
-    async def protected_route(req: Request, res: Response):
-        return res.json(
+    async def protected_route(req: HttpContext):
+        return json(
             {"user_id": req.user.identity, "username": req.user.display_name}
         )
 
@@ -74,7 +75,7 @@ async def test_apikey_auth_backend_missing_header(test_client):
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):
-        async def authenticate(self, request: Request):
+        async def authenticate(self, request: HttpContext):
             raw_token = request.headers.get("X-API-Key")
             if not raw_token:
                 return AuthResult(success=False, identity="", scope="")
@@ -83,8 +84,8 @@ async def test_apikey_auth_backend_missing_header(test_client):
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apikey"]))
-    async def protected_route(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected_route(req: HttpContext):
+        return json({"user": req.user})
 
     async with client:
         response = await client.get("/protected")
@@ -108,8 +109,8 @@ async def test_apikey_auth_backend_invalid_key(test_client):
     app.use(AuthenticationMiddleware(Store, APIKeyAuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apikey"]))
-    async def protected_route(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected_route(req: HttpContext):
+        return json({"user": req.user})
 
     async with client:
         response = await client.get("/protected", headers={"X-API-Key": "invalid_key"})
@@ -124,7 +125,7 @@ async def test_apikey_auth_backend_custom_header(test_client):
         def __init__(self):
             super().__init__(header_name="X-Custom-API-Key")
 
-        async def authenticate(self, request: Request):
+        async def authenticate(self, request: HttpContext):
             raw_token = request.headers.get(self.header_name)
             if not raw_token:
                 return AuthResult(success=False, identity="", scope="")
@@ -135,8 +136,8 @@ async def test_apikey_auth_backend_custom_header(test_client):
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apikey"]))
-    async def protected_route(req: Request, res: Response):
-        return res.json({"user_id": req.user.identity})
+    async def protected_route(req: HttpContext):
+        return json({"user_id": req.user.identity})
 
     async with client:
         response = await client.get(

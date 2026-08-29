@@ -32,8 +32,8 @@ from sillo.core.dependencies import (
 )
 from sillo.core.encoding import jsonable_encoder
 from sillo.core.helpers.async_helpers import is_async_callable
-from sillo.core.http import Request, Response
-from sillo.core.http.response import BaseResponse, JSONResponse, Responder
+from sillo.core.http import HttpContext
+from sillo.core.http.response import BaseResponse, JSONResponse
 from sillo.events import EventEmitter
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.helpers.concurrency import run_in_threadpool
@@ -128,7 +128,7 @@ class Route(BaseRoute):
         pattern: Compiled regex pattern for path matching.
         handler: Callable that processes incoming requests.
         methods: List of allowed HTTP methods for this endpoint.
-        validator: Request parameter validation rules.
+        validator: HttpContext parameter validation rules.
         request_schema: Schema for request body documentation.
         response_schema: Schema for response documentation.
         deprecated: Deprecation status indicator.
@@ -159,7 +159,7 @@ class Route(BaseRoute):
             - Any object implementing __call__
 
             The handler should accept a request object and return a response object.
-            Example: def user_handler(request: Request) -> Response: ...
+            Example: def user_handler(request: HttpContext) -> Response: ...
             """),
         ],
         methods: Annotated[
@@ -369,10 +369,10 @@ class Route(BaseRoute):
         async def _route_asgi_app(scope: Scope, receive: Receive, send: Send) -> None:
             """Serve as the base ASGI application for this route.
 
-            Creates a Request and Response pair from the raw ASGI connection
-            triple, invokes the route handler through the full dependency
-            injection pipeline, serializes the handler's return value into
-            an HTTP response, and sends it back to the client.
+            Creates the :class:`HttpContext` for the connection, invokes the
+            route handler through the full dependency injection pipeline,
+            serializes the handler's return value into an HTTP response, and
+            sends it back to the client.
 
             This function is wrapped by route-level middleware before being
             assigned as the route's ``app`` attribute.
@@ -385,12 +385,9 @@ class Route(BaseRoute):
             Returns:
                 None. The response is sent directly through ``send``.
             """
-            request = Request(scope, receive, send)
-            response_manager = Response(request)
-            func_result = await self.get_route_handler(
-                request, response_manager, **request.path_params
-            )
-            if isinstance(func_result, (BaseResponse, Responder)):
+            ctx = HttpContext(scope, receive, send)
+            func_result = await self.get_route_handler(ctx, **ctx.path_params)
+            if isinstance(func_result, BaseResponse):
                 # The handler built its own response — status, headers, and
                 # body are its business, so the response model is not applied.
                 response = func_result
@@ -450,22 +447,21 @@ class Route(BaseRoute):
         decide which parameter receives it. The rule is name-agnostic and
         composes with everything else a handler can declare:
 
-        A candidate is any parameter after ``request`` and ``response`` that is
-        not filled by some other mechanism — so ``Depend`` and parameter
-        markers are skipped because dependency injection fills them, and path
-        parameter names are skipped because the router already passes those in
-        as keyword arguments. Of the remaining candidates the **first parameter
-        with no default** wins: Python requires such parameters to come first,
-        and nothing else in the framework would ever fill one, so binding it is
+        A candidate is any parameter after the context that is not filled by
+        some other mechanism — so ``Depend`` and parameter markers are skipped
+        because dependency injection fills them, and path parameter names are
+        skipped because the router already passes those in as keyword
+        arguments. Of the remaining candidates the **first parameter with no
+        default** wins: Python requires such parameters to come first, and
+        nothing else in the framework would ever fill one, so binding it is
         unambiguous.
 
-        Failing that, a parameter sitting immediately after ``response`` and
-        carrying a plain default is accepted, which preserves the behavior of
-        handlers written against the original positional rule.
+        Failing that, a parameter sitting immediately after the context and
+        carrying a plain default is accepted.
 
         Returns:
             The parameter name to inject the validated body into, or ``None``
-            when the handler takes the body off ``request.validated_data``
+            when the handler takes the body off ``ctx.validated_data``
             instead.
         """
         if self.request_model is None:
@@ -473,7 +469,7 @@ class Route(BaseRoute):
 
         candidates = [
             param
-            for param in list(self.handler_signature.parameters.values())[2:]
+            for param in list(self.handler_signature.parameters.values())[1:]
             if param.kind
             not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
             and param.name not in self.param_names
@@ -484,21 +480,21 @@ class Route(BaseRoute):
             if param.default is inspect.Parameter.empty:
                 return param.name
 
-        if candidates and candidates[0].name == self._third_param_name():
+        if candidates and candidates[0].name == self._second_param_name():
             return candidates[0].name
         return None
 
-    def _third_param_name(self) -> str | None:
-        """Return the name of the handler's third parameter, if it has one.
+    def _second_param_name(self) -> str | None:
+        """Return the name of the handler's second parameter, if it has one.
 
-        Used only to preserve the original positional binding rule for
-        handlers that declare the body parameter with a default.
+        The first is the context; the second is the positional slot the body
+        falls into when it is declared with a plain default.
 
         Returns:
-            The third parameter's name, or ``None`` for shorter signatures.
+            The second parameter's name, or ``None`` for shorter signatures.
         """
         names = list(self.handler_signature.parameters.keys())
-        return names[2] if len(names) >= 3 else None
+        return names[1] if len(names) >= 2 else None
 
     @property
     def resolved_params(self) -> list[SolvedParamDependency]:
@@ -604,21 +600,19 @@ class Route(BaseRoute):
 
         return URLPath(path=path, protocol="http")
 
-    async def get_route_handler(
-        self, request: Request, response: Response, **kwargs: Any
-    ) -> Any:
+    async def get_route_handler(self, ctx: HttpContext, **kwargs: Any) -> Any:
         """
         The main hook for handling the request. This can be overridden in subclasses
         to modify how the handler is invoked.
 
         Args:
-            request: The incoming HTTP request.
-            response: The outgoing HTTP response.
+            ctx: The context for this request.
             **kwargs: Captured path parameters.
 
         Returns:
             Any: The response from the handler.
         """
+        request = ctx
         cleanup_callbacks: list[Callable[[], Any]] = []
         injected: dict[str, Any] = {}
         dependency_cache: dict[Any, Any] = {}
@@ -646,8 +640,8 @@ class Route(BaseRoute):
         if self.auth is not None:
             # `guard`, when the gate has one, in preference to `authenticate`
             # directly: it is what lets a `useAuth`'s `unauthorized`/
-            # `forbidden` hooks answer the request themselves. `authenticate`
-            # alone never gets `response`, which those hooks need.
+            # `forbidden` hooks answer the request themselves, by returning a
+            # response of their own.
             #
             # `auth` is duck-typed rather than required to be a `useAuth`
             # (see its `Any | None` annotation above), so a hand-built gate
@@ -657,11 +651,11 @@ class Route(BaseRoute):
             # to define.
             guard = getattr(self.auth, "guard", None)
             if guard is not None:
-                early_response = await guard(request, response)
+                early_response = await guard(ctx)
                 if early_response is not None:
                     return early_response
             else:
-                await self.auth.authenticate(request)
+                await self.auth.authenticate(ctx)
 
         # Path parameters reach the handler as **kwargs. When one is also
         # declared with a validation marker, the validated value supersedes the
@@ -672,17 +666,15 @@ class Route(BaseRoute):
 
         try:
             if is_async_callable(self.handler):
-                return await self.handler(request, response, **kwargs, **injected)
-            return await run_in_threadpool(
-                self.handler, request, response, **kwargs, **injected
-            )
+                return await self.handler(ctx, **kwargs, **injected)
+            return await run_in_threadpool(self.handler, ctx, **kwargs, **injected)
         finally:
             for cleanup in reversed(cleanup_callbacks):
                 result = cleanup()
                 if inspect.isawaitable(result):
                     await result
 
-    async def _validate_body(self, request: Request) -> Any:
+    async def _validate_body(self, request: HttpContext) -> Any:
         """Read and validate the JSON request body against ``request_model``.
 
         Args:
@@ -778,7 +770,7 @@ class Router(BaseRouter):
     """Main router implementation for the sillo ASGI framework.
 
     The Router is the central component for organizing and dispatching HTTP
-    and WebSocket requests. It maintains a collection of routes, manages
+    and WebSocketContext requests. It maintains a collection of routes, manages
     middleware stacks, supports nested sub-routers, and provides decorator
     methods for convenient route registration.
 
@@ -966,7 +958,7 @@ class Router(BaseRouter):
             Doc("""
                 Async handler function for HEAD requests.
                 Example:
-                async def check_resource(request, response):
+                async def check_resource(ctx):
                     exists = await Resource.exists(request.path_params['id'])
                     return response.status(200 if exists else 404)
             """),
@@ -1210,9 +1202,9 @@ class Router(BaseRouter):
                 Receives (request, response) and returns response or raw data.
                 
                 Example:
-                async def get_user(request, response, user_id: str):
+                async def get_user(ctx, user_id: str):
                     user = await get_user_from_db(user_id)
-                    return response.json(user)
+                    return json(user)
             """),
         ] = None,
         name: Annotated[
@@ -1430,9 +1422,9 @@ class Router(BaseRouter):
             Doc("""
                 Async handler function for POST requests.
                 Example:
-                async def create_user(request, response):
+                async def create_user(ctx):
                     user_data = request.json
-                    return response.json(user_data, status=201)
+                    return json(user_data, status=201)
             """),
         ] = None,
         name: Annotated[
@@ -1638,9 +1630,9 @@ class Router(BaseRouter):
             Doc("""
                 Async handler function for DELETE requests.
                 Example:
-                async def delete_user(request, response):
+                async def delete_user(ctx):
                     user_id = request.path_params['id']
-                    return response.json({"deleted": user_id})
+                    return json({"deleted": user_id})
             """),
         ] = None,
         name: Annotated[
@@ -1832,9 +1824,9 @@ class Router(BaseRouter):
             Doc("""
                 Async handler function for PUT requests.
                 Example:
-                async def update_user(request, response):
+                async def update_user(ctx):
                     user_id = request.path_params['id']
-                    return response.json({"updated": user_id})
+                    return json({"updated": user_id})
             """),
         ] = None,
         name: Annotated[
@@ -1939,7 +1931,7 @@ class Router(BaseRouter):
                 "multipart/form-data",
             ],
             Doc("""
-                Request content type.
+                HttpContext content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2041,9 +2033,9 @@ class Router(BaseRouter):
             Doc("""
                 Async handler function for PATCH requests.
                 Example:
-                async def partial_update_user(request, response):
+                async def partial_update_user(ctx):
                     user_id = request.path_params['id']
-                    return response.json({"updated": user_id})
+                    return json({"updated": user_id})
             """),
         ] = None,
         name: Annotated[
@@ -2148,7 +2140,7 @@ class Router(BaseRouter):
                 "multipart/form-data",
             ],
             Doc("""
-                Request content type.
+                HttpContext content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2249,7 +2241,7 @@ class Router(BaseRouter):
             Doc("""
                 Async handler function for OPTIONS requests.
                 Example:
-                async def user_options(request, response):
+                async def user_options(ctx):
                     response.headers['Allow'] = 'GET, POST, OPTIONS'
                     return response
             """),
@@ -2444,7 +2436,7 @@ class Router(BaseRouter):
             Doc("""
                 Async handler function for HEAD requests.
                 Example:
-                async def check_resource(request, response):
+                async def check_resource(ctx):
                     exists = await Resource.exists(request.path_params['id'])
                     return response.status(200 if exists else 404)
             """),
@@ -2647,7 +2639,7 @@ class Router(BaseRouter):
             HandlerType | None,
             Doc("""
                 The async handler function for this route. Must accept:
-                - request: Request object
+                - request: HttpContext object
                 - response: Response object
                 And return either a Response object or raw data (dict, list, str)
             """),
@@ -2855,18 +2847,18 @@ class Router(BaseRouter):
         self,
         route: Annotated[
             WebsocketRoute,
-            Doc("An instance of the Route class representing a WebSocket route."),
+            Doc("An instance of the Route class representing a WebSocketContext route."),
         ]
         | None = None,
         path: str | None = None,
         handler: WsHandlerType | None = None,
     ) -> None:
-        """Add a WebSocket route to the application router.
+        """Add a WebSocketContext route to the application router.
 
-        Registers a WebSocket route either from a pre-constructed
+        Registers a WebSocketContext route either from a pre-constructed
         ``WebsocketRoute`` instance or by creating one from the provided
         path and handler arguments. This enables the application to handle
-        persistent WebSocket connections for real-time bidirectional
+        persistent WebSocketContext connections for real-time bidirectional
         communication between clients and the server.
 
         Exactly one of ``route`` or both ``path`` and ``handler`` must be
@@ -2876,12 +2868,12 @@ class Router(BaseRouter):
         Args:
             route: A pre-constructed ``WebsocketRoute`` instance to register.
                 When provided, ``path`` and ``handler`` are ignored.
-            path: The URL path pattern for the WebSocket endpoint. Required
+            path: The URL path pattern for the WebSocketContext endpoint. Required
                 when ``route`` is not provided. Supports dynamic parameters
                 using curly brace syntax.
-            handler: The async WebSocket handler function. Required when
+            handler: The async WebSocketContext handler function. Required when
                 ``route`` is not provided. Must accept a single
-                ``WebSocket`` argument.
+                ``WebSocketContext`` argument.
 
         Returns:
             None. The route is appended to the router's internal route list.
@@ -2900,19 +2892,19 @@ class Router(BaseRouter):
     def ws_route(
         self,
         path: Annotated[
-            str, Doc("The WebSocket route path. Must be a valid URL pattern.")
+            str, Doc("The WebSocketContext route path. Must be a valid URL pattern.")
         ],
         handler: Annotated[
             WsHandlerType | None,
-            Doc("The WebSocket handler function. Must be an async function."),
+            Doc("The WebSocketContext handler function. Must be an async function."),
         ] = None,
     ) -> Any:
-        """Register a WebSocket route as a decorator or direct call.
+        """Register a WebSocketContext route as a decorator or direct call.
 
         Creates and registers a ``WebsocketRoute`` for handling persistent
-        WebSocket connections at the given path. Can be used as a decorator
+        WebSocketContext connections at the given path. Can be used as a decorator
         with or without the handler argument, enabling flexible registration
-        patterns for WebSocket endpoints.
+        patterns for WebSocketContext endpoints.
 
         When a handler is provided directly the route is registered
         immediately and the result of ``add_ws_route`` is returned. When
@@ -2920,16 +2912,16 @@ class Router(BaseRouter):
         and registers the route upon decoration.
 
         Args:
-            path: The WebSocket route path pattern. Must be a valid URL
+            path: The WebSocketContext route path pattern. Must be a valid URL
                 pattern supporting dynamic parameters via curly brace syntax
                 such as ``/ws/chat/{room_id}``.
-            handler: Optional async WebSocket handler function. Must be a
-                coroutine function accepting a single ``WebSocket`` argument.
+            handler: Optional async WebSocketContext handler function. Must be a
+                coroutine function accepting a single ``WebSocketContext`` argument.
                 If provided the route is registered immediately.
 
         Returns:
             The original handler function if handler was provided directly,
-            or a decorator function that registers the handler as a WebSocket
+            or a decorator function that registers the handler as a WebSocketContext
             route and returns the original handler.
 
         Raises:
@@ -2941,7 +2933,7 @@ class Router(BaseRouter):
             return self.add_ws_route(WebsocketRoute(path, handler))
 
         def decorator(handler: WsHandlerType) -> WsHandlerType:
-            """Create a WebSocket route from the handler and register it.
+            """Create a WebSocketContext route from the handler and register it.
 
             Constructs a new ``WebsocketRoute`` instance from the captured
             path and the provided handler, then registers it with this
@@ -2950,8 +2942,8 @@ class Router(BaseRouter):
             context.
 
             Args:
-                handler: The async WebSocket handler function to wrap as
-                    a WebSocket route at the configured path.
+                handler: The async WebSocketContext handler function to wrap as
+                    a WebSocketContext route at the configured path.
 
             Returns:
                 The original handler function, unmodified, allowing it to
@@ -3156,7 +3148,7 @@ class Router(BaseRouter):
         the path supports rather than only the first route's.
 
         For HTTP requests that match no route, a ``NotFoundException`` is
-        raised which results in a 404 response. For WebSocket connections
+        raised which results in a 404 response. For WebSocketContext connections
         that match no route, a close frame with code 4404 is sent to the
         client instead of raising an exception.
 
@@ -3297,7 +3289,7 @@ class Router(BaseRouter):
         """Wrap the entire router with an ASGI-level middleware.
 
         Applies an ASGI middleware around the router's internal dispatch
-        application, intercepting all requests (both HTTP and WebSocket)
+        application, intercepting all requests (both HTTP and WebSocketContext)
         before they reach the route matching and handling pipeline. This
         operates at a lower level than router-level middleware added via
         ``use``, wrapping the entire dispatch application rather than

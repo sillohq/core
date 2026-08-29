@@ -1,7 +1,8 @@
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.pagination import (
     AsyncListDataHandler,
     AsyncPaginator,
@@ -32,7 +33,7 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/items")
-        async def get_items(req: Request, res: Response):
+        async def get_items(req: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = PageNumberPagination()
             base_url = str(req.url)
@@ -42,9 +43,9 @@ class TestPaginationIntegration:
                     handler, pagination, base_url, dict(req.query_params)
                 )
                 result = await paginator.paginate()
-                return res.json(result)
+                return json(result)
             except PaginationError as e:
-                return res.json({"error": str(e)}, status_code=400)
+                return json({"error": str(e)}, status_code=400)
 
         # Test basic pagination
         response = client.get("/items?page=2&page_size=10")
@@ -65,7 +66,7 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/items-limit-offset")
-        async def get_items(req: Request, res: Response):
+        async def get_items(req: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = LimitOffsetPagination()
             base_url = str(req.url)
@@ -75,9 +76,9 @@ class TestPaginationIntegration:
                     handler, pagination, base_url, dict(req.query_params)
                 )
                 result = await paginator.paginate()
-                return res.json(result)
+                return json(result)
             except PaginationError as e:
-                return res.json({"error": str(e)}, status_code=400)
+                return json({"error": str(e)}, status_code=400)
 
         # Test basic pagination
         response = client.get("/items-limit-offset?limit=15&offset=30")
@@ -97,7 +98,7 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/items-cursor")
-        async def get_items(req: Request, res: Response):
+        async def get_items(req: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = CursorPagination()
             base_url = str(req.url)
@@ -107,9 +108,9 @@ class TestPaginationIntegration:
                     handler, pagination, base_url, dict(req.query_params)
                 )
                 result = await paginator.paginate()
-                return res.json(result)
+                return json(result)
             except PaginationError as e:
-                return res.json({"error": str(e)}, status_code=400)
+                return json({"error": str(e)}, status_code=400)
 
         # Test initial request
         response = client.get("/items-cursor?page_size=10")
@@ -150,7 +151,7 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/filtered-items")
-        async def get_filtered_items(req: Request, res: Response):
+        async def get_filtered_items(req: HttpContext):
             handler = FilteredDataHandler(test_data)
             pagination = PageNumberPagination()
             base_url = str(req.url)
@@ -160,9 +161,9 @@ class TestPaginationIntegration:
                     handler, pagination, base_url, dict(req.query_params)
                 )
                 result = await paginator.paginate()
-                return res.json(result)
+                return json(result)
             except PaginationError as e:
-                return res.json({"error": str(e)}, status_code=400)
+                return json({"error": str(e)}, status_code=400)
 
         response = client.get("/filtered-items?page=2&page_size=10&filter=even")
         assert response.status_code == 200
@@ -181,7 +182,7 @@ class TestPaginationIntegration:
         client, app = test_client
 
         @app.get("/error-test")
-        async def error_test(req: Request, res: Response):
+        async def error_test(req: HttpContext):
             handler = AsyncListDataHandler([])
             pagination = PageNumberPagination()
             base_url = str(req.url)
@@ -195,9 +196,9 @@ class TestPaginationIntegration:
                     validate_total_items=False,
                 )
                 result = await paginator.paginate()
-                return res.json(result)
+                return json(result)
             except PaginationError as e:
-                return res.json({"error": str(e)}, status_code=400)
+                return json({"error": str(e)}, status_code=400)
 
         # Test invalid page
         response = client.get("/error-test?page=0")
@@ -225,7 +226,7 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/custom-metadata")
-        async def custom_metadata(req: Request, res: Response):
+        async def custom_metadata(req: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = CustomPagination()
             base_url = str(req.url)
@@ -234,7 +235,7 @@ class TestPaginationIntegration:
                 handler, pagination, base_url, dict(req.query_params)
             )
             result = await paginator.paginate()
-            return res.json(result)
+            return json(result)
 
         response = client.get("/custom-metadata?page=1&request_id=123")
         assert response.status_code == 200
@@ -250,7 +251,7 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/items-page")
-        async def get_items_page(req: Request, res: Response):
+        async def get_items_page(req: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = PageNumberPagination()
             base_url = str(req.url)
@@ -259,10 +260,10 @@ class TestPaginationIntegration:
                 handler, pagination, base_url, dict(req.query_params)
             )
             result = await paginator.paginate()
-            return res.json(result)
+            return json(result)
 
         @app.get("/items-limit")
-        async def get_items_limit(req: Request, res: Response):
+        async def get_items_limit(req: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = LimitOffsetPagination()
             base_url = str(req.url)
@@ -271,10 +272,10 @@ class TestPaginationIntegration:
                 handler, pagination, base_url, dict(req.query_params)
             )
             result = await paginator.paginate()
-            return res.json(result)
+            return json(result)
 
         @app.get("/items-cursor")
-        async def get_items_cursor(req: Request, res: Response):
+        async def get_items_cursor(req: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = CursorPagination()
             base_url = str(req.url)
@@ -283,7 +284,7 @@ class TestPaginationIntegration:
                 handler, pagination, base_url, dict(req.query_params)
             )
             result = await paginator.paginate()
-            return res.json(result)
+            return json(result)
 
         # Test page number pagination
         response = client.get("/items-page?page=2&page_size=5")
@@ -316,7 +317,7 @@ class TestPaginationIntegration:
         ]
 
         @app.get("/complex-items")
-        async def get_complex_items(req: Request, res: Response):
+        async def get_complex_items(req: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = PageNumberPagination()
             base_url = str(req.url)
@@ -325,7 +326,7 @@ class TestPaginationIntegration:
                 handler, pagination, base_url, dict(req.query_params)
             )
             result = await paginator.paginate()
-            return res.json(result)
+            return json(result)
 
         # Test with multiple query parameters
         response = client.get(

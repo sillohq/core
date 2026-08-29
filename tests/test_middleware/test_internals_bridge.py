@@ -11,12 +11,13 @@ import anyio
 import pytest
 
 from sillo import SilloApp
+from sillo import json
 from sillo._internals._middleware import (
     ASGIRequestResponseBridge,
     DefineMiddleware,
     _CachedRequest,
 )
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
 from sillo.testclient import TestClient
 
@@ -159,7 +160,7 @@ class TestBridgeRepr:
         async def inner(scope, receive, send):
             return None
 
-        async def dispatch(request, response, call_next):
+        async def dispatch(request, call_next):
             return await call_next()
 
         # The bridge formats itself through __str__, not __repr__.
@@ -175,7 +176,7 @@ class TestBridgePassthrough:
         async def inner(scope, receive, send):
             seen["type"] = scope["type"]
 
-        async def dispatch(request, response, call_next):  # pragma: no cover
+        async def dispatch(request, call_next):  # pragma: no cover
             raise AssertionError("dispatch must not run for a lifespan scope")
 
         bridge = ASGIRequestResponseBridge(inner, dispatch)
@@ -196,11 +197,11 @@ class TestExceptionsThroughTheBridge:
         app = SilloApp(debug=False)
 
         @app.get("/boom")
-        async def boom(request: Request, response: Response):
+        async def boom(request: HttpContext):
             raise RuntimeError("inner failure")
 
         class Passthrough(BaseMiddleware):
-            async def process_request(self, request, response, call_next):
+            async def dispatch(self, request, call_next):
                 return await call_next()
 
         app.use(Passthrough())
@@ -212,12 +213,12 @@ class TestExceptionsThroughTheBridge:
         app = SilloApp(debug=False)
 
         @app.get("/never")
-        async def never(request: Request, response: Response):  # pragma: no cover
+        async def never(request: HttpContext):  # pragma: no cover
             raise AssertionError("the handler must not run")
 
         class Blocker(BaseMiddleware):
-            async def process_request(self, request, response, call_next):
-                return response.json({"blocked": True}, status_code=403)
+            async def dispatch(self, request, call_next):
+                return json({"blocked": True}, status_code=403)
 
         app.use(Blocker())
 
@@ -231,11 +232,11 @@ class TestExceptionsThroughTheBridge:
         app = SilloApp(debug=False)
 
         @app.post("/echo")
-        async def echo(request: Request, response: Response):
-            return response.json({"seen": await request.json})
+        async def echo(request: HttpContext):
+            return json({"seen": await request.json})
 
         class Peeker(BaseMiddleware):
-            async def process_request(self, request, response, call_next):
+            async def dispatch(self, request, call_next):
                 await request.body
                 return await call_next()
 

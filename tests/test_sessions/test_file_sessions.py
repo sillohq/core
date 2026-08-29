@@ -2,8 +2,8 @@
 Tests for file-based session manager
 """
 
-from sillo.core.http import Response
-from sillo.core.http import Request
+from sillo import json
+from sillo.core.http import HttpContext
 import json
 import os
 import shutil
@@ -208,11 +208,11 @@ class TestFileSessionIntegration:
         app = SilloApp()
 
         @app.get("/file-session-test")
-        async def file_session_test(request: Request, response: Response):
+        async def file_session_test(request: HttpContext):
             counter = request.session.get("counter", 0)
             counter += 1
             request.session["counter"] = counter
-            return response.json({"counter": request.session["counter"]})
+            return json({"counter": request.session["counter"]})
 
         file_manager = FileSessionManager(
             SessionConfig(session_file_storage_path=self.temp_dir)

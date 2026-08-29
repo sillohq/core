@@ -8,12 +8,13 @@ carry a ``routes`` attribute without being any of the known types.
 """
 
 from sillo.core.routing import Route, Router
+from sillo import json
 from sillo.core.routing.grouping import Group
 from sillo.openapi.utils import get_openapi
 
 
-async def handler(request, response):
-    return response.json({})
+async def handler(request):
+    return json({})
 
 
 def _route(path: str) -> Route:
@@ -136,17 +137,17 @@ def test_a_container_with_an_empty_routes_attribute():
 
 def test_flattening_a_real_application_router():
     from sillo import SilloApp
-    from sillo.core.http import Request, Response
+    from sillo.core.http import HttpContext
 
     app = SilloApp()
 
     @app.get("/users")
-    async def users(request: Request, response: Response):
-        return response.json([])
+    async def users(request: HttpContext):
+        return json([])
 
     @app.post("/users")
-    async def create(request: Request, response: Response):
-        return response.json({})
+    async def create(request: HttpContext):
+        return json({})
 
     assert "/users" in _paths(get_openapi(app.router))
 

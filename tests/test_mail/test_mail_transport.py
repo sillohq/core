@@ -12,7 +12,8 @@ import smtplib
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.mail import MailClient, MailConfig
 from sillo.mail.client import get_mail_client, setup_mail
 from sillo.testclient import TestClient
@@ -534,10 +535,10 @@ def test_a_handler_can_reach_the_client(test_client_factory):
     setup_mail(app, MailConfig(default_from="a@example.com", suppress_send=True))
 
     @app.get("/send")
-    async def send(request: Request, response: Response):
+    async def send(request: HttpContext):
         client = get_mail_client(request)
         result = await client.send_email(to="b@example.com", subject="Hi", body="x")
-        return response.json({"sent": result.success})
+        return json({"sent": result.success})
 
     with test_client_factory(app) as http:
         assert http.get("/send").json() == {"sent": True}
@@ -547,9 +548,9 @@ def test_asking_for_an_unconfigured_client_is_an_explicit_error(test_client_fact
     app = SilloApp()
 
     @app.get("/send")
-    async def send(request: Request, response: Response):
+    async def send(request: HttpContext):
         get_mail_client(request)
-        return response.json({})
+        return json({})
 
     with test_client_factory(app, raise_server_exceptions=False) as http:
         assert http.get("/send").status_code == 500

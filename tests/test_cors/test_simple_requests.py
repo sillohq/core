@@ -5,7 +5,8 @@ Tests for simple CORS requests (GET, POST, PUT, DELETE)
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
 
@@ -27,20 +28,20 @@ def cors_app():
 
     # Add test routes
     @app.get("/test")
-    async def test_route(request: Request, response: Response):
-        return response.json({"message": "OK"})
+    async def test_route(request: HttpContext):
+        return json({"message": "OK"})
 
     @app.post("/data")
-    async def data_route(request: Request, response: Response):
-        return response.json({"received": True})
+    async def data_route(request: HttpContext):
+        return json({"received": True})
 
     @app.put("/update")
-    async def update_route(request: Request, response: Response):
-        return response.json({"updated": True})
+    async def update_route(request: HttpContext):
+        return json({"updated": True})
 
     @app.delete("/delete")
-    async def delete_route(request: Request, response: Response):
-        return response.json({"deleted": True})
+    async def delete_route(request: HttpContext):
+        return json({"deleted": True})
 
     app.use(CORSMiddleware(config=cors_config))
     return app
@@ -170,8 +171,8 @@ class TestSimpleRequests:
         app = SilloApp()
 
         @app.get("/port-test")
-        async def port_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def port_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 

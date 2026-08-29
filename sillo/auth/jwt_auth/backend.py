@@ -5,7 +5,7 @@ from typing import Any
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.jwt_auth.models import TokenBlacklist
 from sillo.auth.model import AuthResult
-from sillo.core.http import Request
+from sillo.core.http import HttpContext
 from sillo.helpers import jwt as jwt_helpers
 
 
@@ -101,7 +101,7 @@ class JWTAuthBackend(AuthenticationBackend):
             self.name = name
         self.description = description
 
-    async def authenticate(self, request: Request) -> Any:
+    async def authenticate(self, request: HttpContext) -> Any:
         """Authenticate an incoming HTTP request using a Bearer JWT token.
 
         Extracts the token from the ``Authorization`` header, optionally

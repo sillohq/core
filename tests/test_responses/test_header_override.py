@@ -10,8 +10,8 @@ import warnings
 
 import pytest
 
-from sillo.core.http import Request
-from sillo.core.http.response import BaseResponse, Responder
+from sillo.core.http import HttpContext
+from sillo.core.http.response import BaseResponse
 
 
 def header_keys(response: BaseResponse) -> list[str]:
@@ -34,7 +34,7 @@ def make_responder() -> Responder:
         "headers": [],
         "query_string": b"",
     }
-    responder = Responder(Request(scope, None))
+    responder = Responder(HttpContext(scope, None))
     responder.empty()
     return responder
 
@@ -102,7 +102,7 @@ class TestResponder:
         responder.set_header("x-thing", "first")
         responder.set_header("x-thing", "second", override=True)
 
-        assert header_values(responder.get_response(), "x-thing") == ["second"]
+        assert header_values(responder, "x-thing") == ["second"]
 
     def test_override_all_replaces_through_the_responder(self):
         """The bug this covers: ``set_headers(headers, override_all=True)``
@@ -116,14 +116,14 @@ class TestResponder:
         responder.set_header("x-two", "2")
         responder.set_headers({"x-three": "3"}, override_all=True)
 
-        assert header_keys(responder.get_response()) == ["x-three"]
+        assert header_keys(responder) == ["x-three"]
 
     def test_without_override_all_the_responder_appends(self):
         responder = make_responder()
         responder.set_header("x-one", "1")
         responder.set_headers({"x-two": "2"})
 
-        keys = header_keys(responder.get_response())
+        keys = header_keys(responder)
         assert "x-one" in keys
         assert "x-two" in keys
 

@@ -1,7 +1,8 @@
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.core.routing import Router
 from sillo.testclient import TestClient
 from sillo.types import ASGIApp, Receive, Scope, Send
@@ -23,9 +24,9 @@ def test_router_wrap_asgi_basic(test_client_factory):
             await self.app(scope, receive, send)
 
     @router.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         executed.append("handler")
-        return response.json({"message": "ok"})
+        return json({"message": "ok"})
 
     # Use wrap_asgi on the router
     router.wrap_asgi(SimpleMiddleware)

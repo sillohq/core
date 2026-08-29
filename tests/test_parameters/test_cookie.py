@@ -4,7 +4,7 @@ Tests for Cookie parameter extractor.
 
 import pytest
 from sillo import SilloApp, Cookie
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 
@@ -22,7 +22,7 @@ def test_cookie_with_value(app, client):
     """Test Cookie extractor returns provided value."""
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, user_id: str = Cookie()):
+    async def handler(request: HttpContext, user_id: str = Cookie()):
         return {"user_id": user_id}
 
     response = client.get("/test", cookies={"user_id": "user123"})
@@ -35,7 +35,7 @@ def test_cookie_with_default(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, theme: str = Cookie("light")
+        request: HttpContext, theme: str = Cookie("light")
     ):
         return {"theme": theme}
 
@@ -48,7 +48,7 @@ def test_cookie_no_default(app, client):
     """Test Cookie with no default returns None."""
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, session: str = Cookie()):
+    async def handler(request: HttpContext, session: str = Cookie()):
         return {"session": session}
 
     response = client.get("/test")
@@ -61,7 +61,7 @@ def test_cookie_override_default(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, theme: str = Cookie("light")
+        request: HttpContext, theme: str = Cookie("light")
     ):
         return {"theme": theme}
 
@@ -75,8 +75,7 @@ def test_cookie_multiple(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request,
-        response: Response,
+        request: HttpContext,
         user_id: str = Cookie(),
         theme: str = Cookie("light"),
         lang: str = Cookie("en"),
@@ -96,8 +95,7 @@ def test_cookie_alias(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request,
-        response: Response,
+        request: HttpContext,
         session_id: str = Cookie(alias="session_id"),
     ):
         return {"session": session_id}

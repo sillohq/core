@@ -11,6 +11,7 @@ import gzip
 import pytest
 
 from sillo import SilloApp
+from sillo import json, stream, text
 from sillo.middleware.gzip import GZipMiddleware
 from sillo.testclient import TestClient
 
@@ -23,24 +24,24 @@ def client():
     app = SilloApp()
 
     @app.get("/big")
-    async def big(request, response):
-        return response.text(BIG)
+    async def big(request):
+        return text(BIG)
 
     @app.get("/small")
-    async def small(request, response):
-        return response.text(SMALL)
+    async def small(request):
+        return text(SMALL)
 
     @app.get("/json")
-    async def as_json(request, response):
-        return response.json({"data": [{"i": i} for i in range(400)]})
+    async def as_json(request):
+        return json({"data": [{"i": i} for i in range(400)]})
 
     @app.get("/stream")
-    async def stream(request, response):
+    async def stream(request):
         async def gen():
             for i in range(50):
                 yield f"chunk-{i}\n".encode()
 
-        return response.stream(gen(), content_type="text/plain")
+        return stream(gen(), content_type="text/plain")
 
     return TestClient(GZipMiddleware(app, minimum_size=500))
 
@@ -105,8 +106,8 @@ def test_the_threshold_is_configurable():
     app = SilloApp()
 
     @app.get("/medium")
-    async def medium(request, response):
-        return response.text("y" * 200)
+    async def medium(request):
+        return text("y" * 200)
 
     resp = TestClient(GZipMiddleware(app, minimum_size=100)).get("/medium", headers={"Accept-Encoding": "gzip"})
     assert resp.headers.get("content-encoding") == "gzip"
@@ -116,8 +117,8 @@ def test_a_high_threshold_disables_compression_in_practice():
     app = SilloApp()
 
     @app.get("/big")
-    async def big(request, response):
-        return response.text(BIG)
+    async def big(request):
+        return text(BIG)
 
     resp = TestClient(GZipMiddleware(app, minimum_size=1_000_000)).get("/big", headers={"Accept-Encoding": "gzip"})
     assert resp.headers.get("content-encoding") != "gzip"
@@ -128,8 +129,8 @@ def test_every_compression_level_round_trips(level):
     app = SilloApp()
 
     @app.get("/big")
-    async def big(request, response):
-        return response.text(BIG)
+    async def big(request):
+        return text(BIG)
 
     resp = TestClient(GZipMiddleware(app, minimum_size=100, compresslevel=level)).get("/big", headers={"Accept-Encoding": "gzip"})
     assert resp.text == BIG
@@ -140,8 +141,8 @@ def test_compression_actually_reduces_the_payload():
     app = SilloApp()
 
     @app.get("/big")
-    async def big(request, response):
-        return response.text(BIG)
+    async def big(request):
+        return text(BIG)
 
     client = TestClient(GZipMiddleware(app, minimum_size=100))
 

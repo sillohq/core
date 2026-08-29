@@ -19,7 +19,7 @@ from .fields import (
 )
 
 if typing.TYPE_CHECKING:
-    from sillo.core.http import Request
+    from sillo.core.http import HttpContext
 
 __all__ = [
     "CompiledValidator",
@@ -252,7 +252,7 @@ class CompiledValidator:
         return bool(self.specs) or self.needs_form
 
     def validate_sync(
-        self, request: Request
+        self, request: HttpContext
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """Validate every location available without awaiting the body.
 

@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from sillo import logging
 from sillo.auth.exceptions import AuthenticationFailed, AuthErrorHandler
 from sillo.core.helpers.async_helpers import collapse_excgroups
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, json
 from sillo.exceptions import HTTPException, NotFoundException
 from sillo.handlers.not_found import handle_404_error
 from sillo.types import (
@@ -71,9 +71,8 @@ def _lookup_exception_handler(
 
 
 async def wrap_http_exceptions(
-    request: Request,
-    response: Response,
-    call_next: typing.Callable[..., typing.Awaitable[Response]],
+    ctx: HttpContext,
+    call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     exception_handlers: dict[int | type[Exception], ExceptionHandlerType],
     status_handlers: dict[int, ExceptionHandlerType],
 ):
@@ -85,10 +84,7 @@ async def wrap_http_exceptions(
     handler lookup via MRO traversal. Unhandled exceptions are logged and re-raised.
 
     Args:
-        request: The incoming HTTP request object containing scope, headers,
-            and other request metadata.
-        response: The response object used to construct the HTTP response.
-            Handlers receive this to build their response output.
+        ctx: The context for the request being handled.
         call_next: An async callable representing the next middleware or
             handler in the processing chain. Calling it continues request
             processing.
@@ -99,7 +95,7 @@ async def wrap_http_exceptions(
             instances to match on their ``status_code`` attribute.
 
     Returns:
-        The ``Response`` object returned by either the successful ``call_next``
+        The response returned by either the successful ``call_next``
         invocation or by an exception handler.
 
     Raises:
@@ -125,7 +121,7 @@ async def wrap_http_exceptions(
         if isinstance(exc, HTTPException):
             handler: ExceptionHandlerType | None = status_handlers.get(exc.status_code)
             if handler:
-                return await handler(request, response, exc)
+                return await handler(ctx, exc)
 
         if handler is None:
             handler = _lookup_exception_handler(exception_handlers, exc)
@@ -133,7 +129,7 @@ async def wrap_http_exceptions(
                 error = traceback.format_exc()
                 logger.error(error)
                 raise
-            return await handler(request, response, exc)
+            return await handler(ctx, exc)
 
 
 class ExceptionMiddleware:
@@ -150,7 +146,7 @@ class ExceptionMiddleware:
     in the plain ASGI form — ``__init__(app)`` and ``__call__(scope, receive,
     send)`` — rather than sillo's ``(request, response, call_next)`` dispatch
     form. It has no interest in a request that succeeds, so building a
-    ``Request``, a ``Response`` and a background task for one is pure waste;
+    an ``HttpContext`` and a background task for one is pure waste;
     both objects are constructed inside the ``except`` clause and nowhere else.
 
     An exception with no matching handler is re-raised unchanged, which is how
@@ -242,7 +238,7 @@ class ExceptionMiddleware:
                 ``HTTPException``). Determines which internal registry the
                 handler is added to.
             handler: An async callable with signature
-                ``async (request, response, exc) -> Response`` that handles
+                ``async (ctx, exc) -> BaseResponse`` that handles
                 the exception and produces an HTTP response.
 
         Returns:
@@ -357,17 +353,16 @@ class ExceptionMiddleware:
                 logger.error(traceback.format_exc())
                 raise
 
-            # Constructed only now. Nothing above this line touches a request
-            # or a response, which is the entire reason this middleware is
-            # pure ASGI rather than a dispatch function.
-            request = Request(scope, receive)
-            response = Response(request)
-            result = await handler(request, response, exc)  # ty: ignore[invalid-await]
+            # Constructed only now. Nothing above this line touches a
+            # context, which is the entire reason this middleware is pure ASGI
+            # rather than a dispatch function.
+            ctx = HttpContext(scope, receive)
+            result = await handler(ctx, exc)  # ty: ignore[invalid-await]
             await result(scope, receive, send)
 
     async def http_exception(
-        self, request: Request, response: Response, exc: HTTPException
-    ) -> Response:
+        self, ctx: HttpContext, exc: HTTPException
+    ) -> BaseResponse:
         """Handle an HTTPException by producing an appropriate error response.
 
         Converts an ``HTTPException`` into an HTTP response. For status codes
@@ -376,14 +371,12 @@ class ExceptionMiddleware:
         detail message is returned.
 
         Args:
-            request: The incoming HTTP request that triggered the exception.
-            response: The response builder object used to construct the error
-                response.
+            ctx: The context for the request that triggered the exception.
             exc: The ``HTTPException`` instance to handle. Contains the status
                 code, detail message, and optional headers.
 
         Returns:
-            A ``Response`` object with the appropriate status code, headers,
+            A response with the appropriate status code, headers,
             and body. Either an empty response (for 204/304) or a JSON response
             containing the exception detail.
 
@@ -395,15 +388,13 @@ class ExceptionMiddleware:
         """
         assert isinstance(exc, HTTPException)
         if exc.status_code in {204, 304}:
-            return response.empty(status_code=exc.status_code, headers=exc.headers)
-        return response.json(
-            exc.detail, status_code=exc.status_code, headers=exc.headers
-        )
+            return BaseResponse(
+                body=b"", status_code=exc.status_code, headers=exc.headers
+            )
+        return json(exc.detail, status_code=exc.status_code, headers=exc.headers)
 
 
-async def request_validation_error_handler(
-    request: Request, response: Response, exc: RequestValidationError
-) -> Response:
+async def request_validation_error_handler(ctx: HttpContext, exc: RequestValidationError) -> BaseResponse:
     """Handle a request validation failure with a 422 response.
 
     This is the unified error contract for parameters declared with sillo's
@@ -418,19 +409,16 @@ async def request_validation_error_handler(
 
     Args:
         request: The incoming request whose data failed validation.
-        response: The response builder used to construct the error response.
         exc: The ``RequestValidationError`` carrying the location-prefixed
             error dictionaries.
 
     Returns:
-        A ``Response`` with status 422 and a ``detail`` list of errors.
+        A response with status 422 and a ``detail`` list of errors.
     """
-    return response.json({"detail": exc.errors}, status_code=422)
+    return json({"detail": exc.errors}, status_code=422)
 
 
-async def response_validation_error_handler(
-    request: Request, response: Response, exc: ResponseValidationError
-) -> Response:
+async def response_validation_error_handler(ctx: HttpContext, exc: ResponseValidationError) -> BaseResponse:
     """Handle a response validation failure with a 500 response.
 
     A handler returned something its declared ``response_model`` does not
@@ -443,11 +431,10 @@ async def response_validation_error_handler(
 
     Args:
         request: The incoming request being served.
-        response: The response builder used to construct the error response.
         exc: The ``ResponseValidationError`` describing the contract violation.
 
     Returns:
-        A ``Response`` with status 500 and a generic error body.
+        A response with status 500 and a generic error body.
     """
     logger.error(
         "Response validation failed for %s %s: %s",
@@ -455,15 +442,13 @@ async def response_validation_error_handler(
         request.url.path,
         exc.errors,
     )
-    return response.json(
+    return json(
         {"error": "Internal Server Error", "detail": "Response validation failed"},
         status_code=500,
     )
 
 
-async def pydantic_validation_error_handler(
-    request: Request, response: Response, exc: ValidationError
-) -> Response:
+async def pydantic_validation_error_handler(ctx: HttpContext, exc: ValidationError) -> BaseResponse:
     """Handle a Pydantic ValidationError by producing a structured 422 error response.
 
     Converts a Pydantic ``ValidationError`` into a JSON response with HTTP
@@ -479,7 +464,7 @@ async def pydantic_validation_error_handler(
             field-level validation errors with location tuples and messages.
 
     Returns:
-        A ``Response`` object with status 422 and a JSON body containing:
+        A response with status 422 and a JSON body containing:
         - ``"error"``: The string ``"Validation Error"``.
         - ``"errors"``: A dictionary mapping field paths to error messages.
           Single-level fields map directly (e.g., ``{"name": "required"}``).
@@ -506,7 +491,7 @@ async def pydantic_validation_error_handler(
             nested[loc[1]] = msg
         else:
             error_dict[".".join(map(str, loc))] = msg
-    return response.json(
+    return json(
         {"error": "Validation Error", "errors": error_dict},
         status_code=422,
     )

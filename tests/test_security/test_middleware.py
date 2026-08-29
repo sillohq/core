@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from sillo import SilloApp
-from sillo.core.http import Request
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.security import RateLimit, RateLimitConfig, RateLimitMiddleware
 from sillo.testclient import TestClient
 
@@ -14,7 +15,7 @@ def make_app(limit=3, window=60, key="client-a", **kw):
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request, response):
+    async def home(request):
         return {"ok": True}
 
     return app
@@ -66,7 +67,7 @@ def test_skip_when_key_none():
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request, response):
+    async def home(request):
         return {"ok": True}
 
     client = TestClient(app)
@@ -80,7 +81,7 @@ def test_rate_limit_convenience_class():
     app.use(RateLimit(limit=1, window=60, key_func=lambda r: "x"))
 
     @app.get("/")
-    async def home(request, response):
+    async def home(request):
         return {"ok": True}
 
     client = TestClient(app)
@@ -96,16 +97,16 @@ def test_custom_on_exceed_callable():
         key_func=lambda r: "z",
     )
 
-    # on_exceed callable receives (request, response, result) and must
+    # on_exceed callable receives (request, result) and must
     # return a response built from the responder.
-    def handler(request, response, result):
-        return response.json({"custom": "blocked"}, status_code=429)
+    def handler(request, result):
+        return json({"custom": "blocked"}, status_code=429)
 
     cfg.on_exceed = handler
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request, response):
+    async def home(request):
         return {"ok": True}
 
     client = TestClient(app)
@@ -135,7 +136,7 @@ def test_fail_open_allows_on_backend_error():
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request, response):
+    async def home(request):
         return {"ok": True}
 
     client = TestClient(app)
@@ -168,7 +169,7 @@ def test_fail_closed_raises_on_backend_error():
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request, response):
+    async def home(request):
         return {"ok": True}
 
     client = TestClient(app)

@@ -23,7 +23,7 @@ def _app():
     app = SilloApp(debug=True)
 
     @app.get("/boom")
-    async def boom(request, response):
+    async def boom(request):
         # The await is the point: it is a suspension, and a suspension is all
         # another request needs to overwrite shared state.
         await asyncio.sleep(float(request.query_params.get("delay", 0)))

@@ -7,7 +7,8 @@ import warnings
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.security.csrf import CSRFConfig, CSRFMiddleware
 
 
@@ -18,8 +19,8 @@ def test_protected_request_missing_token(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.post("/protected")
-    async def protected(request: Request, response: Response):
-        return response.json({"status": "protected"})
+    async def protected(request: HttpContext):
+        return json({"status": "protected"})
 
     with test_client_factory(app) as client:
         res = client.post("/protected", data={"field": "x"})
@@ -34,13 +35,13 @@ def test_protected_request_valid_token(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
-    async def get_token(request: Request, response: Response):
+    async def get_token(request: HttpContext):
         token = getattr(request.state, "csrf_token", None)
-        return response.json({"token": token})
+        return json({"token": token})
 
     @app.post("/protected")
-    async def protected(request: Request, response: Response):
-        return response.json({"status": "protected"})
+    async def protected(request: HttpContext):
+        return json({"status": "protected"})
 
     with test_client_factory(app) as client:
         token_resp = client.get("/csrf-token")
@@ -67,13 +68,13 @@ def test_protected_request_invalid_token(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
-    async def get_token(request: Request, response: Response):
+    async def get_token(request: HttpContext):
         token = getattr(request.state, "csrf_token", None)
-        return response.json({"token": token})
+        return json({"token": token})
 
     @app.post("/protected")
-    async def protected(request: Request, response: Response):
-        return response.json({"status": "protected"})
+    async def protected(request: HttpContext):
+        return json({"status": "protected"})
 
     with test_client_factory(app) as client:
         token_resp = client.get("/csrf-token")
@@ -98,9 +99,9 @@ def test_cookie_is_reset_on_response(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
-    async def get_token(request: Request, response: Response):
+    async def get_token(request: HttpContext):
         token = getattr(request.state, "csrf_token", None)
-        return response.json({"token": token})
+        return json({"token": token})
 
     with test_client_factory(app) as client:
         first = client.get("/csrf-token")
@@ -127,9 +128,9 @@ def test_csrf_custom_configuration(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
-    async def get_token(request: Request, response: Response):
+    async def get_token(request: HttpContext):
         token = getattr(request.state, "csrf_token", None)
-        return response.json({"token": token})
+        return json({"token": token})
 
     with test_client_factory(app) as client:
         res = client.get("/csrf-token")

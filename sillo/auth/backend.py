@@ -6,7 +6,7 @@ from sillo import logging
 from sillo.auth.model import AuthResult
 
 if TYPE_CHECKING:
-    from sillo.core.http import Request, Response
+    from sillo.core.http import HttpContext
     from sillo.openapi.models import SecurityScheme
 
 logger = logging.create_logger(__name__)
@@ -71,7 +71,7 @@ class AuthenticationBackend:
         """
         return None
 
-    async def authenticate(self, request: Request) -> AuthResult:
+    async def authenticate(self, request: HttpContext) -> AuthResult:
         """Resolve the caller's identity from the incoming HTTP request.
 
         Subclasses must override this method to extract credentials from the
@@ -111,7 +111,7 @@ class AuthenticationBackend:
             f"{type(self).__name__} must implement authenticate()"
         )
 
-    def handle_exception(self, response: Response, exc: Exception) -> None:
+    def handle_exception(self, ctx: HttpContext, exc: Exception) -> None:
         """Handle exceptions raised during the authenticate phase.
 
         Called by the middleware or route gate when :meth:`authenticate` raises
@@ -121,9 +121,9 @@ class AuthenticationBackend:
         with a 401 response, emit metrics, or notify an operations channel.
 
         Args:
-            response: The outgoing HTTP response object. Implementations may
-                write directly to the response to short-circuit the request
-                pipeline (e.g. setting status codes or JSON error bodies).
+            ctx: The context for the request being authenticated.
+                Implementations may inspect it, or raise to short-circuit the
+                pipeline with an error response.
             exc: The exception instance that was raised during authentication.
                 Inspect ``type(exc)`` or ``str(exc)`` to decide how to react.
 

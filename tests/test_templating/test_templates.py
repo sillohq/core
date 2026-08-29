@@ -33,7 +33,7 @@ def app():
     )
 
     @app.get("/")
-    async def home(request, response):
+    async def home(request):
         return await render(
             "welcome.html", {"name": "Test User", "message": "Welcome to our test app!"}
         )

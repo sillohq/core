@@ -14,6 +14,7 @@ import pytest
 
 import sillo.templating as templating_module
 from sillo.templating import TemplateConfig, TemplateEngine, render
+from sillo import json
 
 
 @pytest.fixture(autouse=True)
@@ -105,9 +106,9 @@ async def test_template_context_middleware_accepts_a_sync_processor():
     captured = {}
 
     @app.get("/")
-    async def home(request, response):
+    async def home(request):
         captured["context"] = request.state.template_context
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     with TestClient(app) as client:
         client.get("/")

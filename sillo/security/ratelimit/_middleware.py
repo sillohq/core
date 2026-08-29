@@ -11,7 +11,7 @@ from __future__ import annotations
 import typing
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, json
 from sillo.middleware.base import BaseMiddleware
 
 from .backends import RateLimitBackend, get_backend
@@ -39,13 +39,13 @@ class RateLimitMiddleware(BaseMiddleware):
         self._backend: RateLimitBackend = get_backend(self.config.backend)
         self._last_result = None  # type: ignore[var-annotated]
 
-    async def process_request(
+    async def dispatch(
         self,
-        request: Request,
-        response: Response,
+        ctx: HttpContext,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
-        """Process Request"""
+        """Count the hit, deny or continue, then stamp the limit headers."""
+        request = ctx
         key = self.config._key_func(request)
         if key is None:
             return await call_next()
@@ -67,24 +67,27 @@ class RateLimitMiddleware(BaseMiddleware):
 
         self._last_result = result
         if not result.allowed:
-            return self._deny(request, response, result)
-        return await call_next()
+            return self._deny(request, result)
 
-    async def process_response(self, request: Request, response: Response):
-        """Process Response"""
+        response = await call_next()
+        self._set_limit_headers(response)
+        return response
+
+    def _set_limit_headers(self, response) -> None:
+        """Write the ``X-RateLimit-*`` headers onto the outgoing response."""
         result = self._last_result
-        if result is None or not self.config.include_headers:
+        if response is None or result is None or not self.config.include_headers:
             return
         response.set_header(_HEADER_LIMIT, str(result.limit), override=True)
         response.set_header(_HEADER_REMAINING, str(result.remaining), override=True)
         response.set_header(_HEADER_RESET, str(int(result.reset_at)), override=True)
 
-    def _deny(self, request: Request, response: Response, result: Any):
-        """Deny"""
+    def _deny(self, ctx: HttpContext, result: Any):
+        """Build the 429, or hand off to a configured ``on_exceed``."""
         if callable(self.config.on_exceed):
-            return self.config.on_exceed(request, response, result)  # ty: ignore[call-top-callable, too-many-positional-arguments]
+            return self.config.on_exceed(ctx, result)  # ty: ignore[call-top-callable]
         retry_after = max(int(result.retry_after), 1)
-        return response.json(
+        return json(
             {
                 "error": "rate_limit_exceeded",
                 "message": "Too many requests. Slow down and retry later.",

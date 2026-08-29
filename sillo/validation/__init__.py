@@ -14,7 +14,7 @@ marker — type annotations are never required and are never read::
     @app.post("/teams/{team_id}/users",
               request_model=UserCreate,
               response_model=UserOut)
-    async def create_user(request, response, user,
+    async def create_user(ctx, user,
                           team_id=Path(type=int),
                           notify=Query(False, type=bool)):
         ...

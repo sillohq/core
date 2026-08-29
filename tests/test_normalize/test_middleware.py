@@ -1,5 +1,6 @@
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json, text
+from sillo.core.http import HttpContext
 from sillo.normalize import NormalizeMiddleware, SlashAction, Normalize
 from sillo.testclient import TestClient
 
@@ -10,8 +11,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.REMOVE))
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"path": request.url.path})
+        async def test_route(request: HttpContext):
+            return json({"path": request.url.path})
 
         client = TestClient(app)
         response = client.get("/test/")
@@ -23,8 +24,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.ADD))
 
         @app.get("/test/")
-        async def test_route(request: Request, response: Response):
-            return response.json({"path": request.url.path})
+        async def test_route(request: HttpContext):
+            return json({"path": request.url.path})
 
         client = TestClient(app)
         response = client.get("/test")
@@ -36,8 +37,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE))
 
         @app.get("/api/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"path": request.url.path})
+        async def test_route(request: HttpContext):
+            return json({"path": request.url.path})
 
         client = TestClient(app)
         response = client.get("/api/test")
@@ -48,8 +49,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE))
 
         @app.get("/style.css")
-        async def css_route(request: Request, response: Response):
-            return response.text("body{}")
+        async def css_route(request: HttpContext):
+            return text("body{}")
 
         client = TestClient(app)
         response = client.get("/style.css")
@@ -66,8 +67,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE, normalize_case=True))
 
         @app.get("/api/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"path": request.url.path})
+        async def test_route(request: HttpContext):
+            return json({"path": request.url.path})
 
         client = TestClient(app)
         response = client.get("/API/TEST")

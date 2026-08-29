@@ -243,7 +243,7 @@ class URL:
         Determine whether the URL uses a secure transport scheme.
 
         Checks if the URL scheme is one of the recognized secure protocols,
-        specifically 'https' for HTTP over TLS or 'wss' for WebSocket
+        specifically 'https' for HTTP over TLS or 'wss' for WebSocketContext
         over TLS. This is useful for conditional logic based on transport
         security such as setting secure cookies.
 

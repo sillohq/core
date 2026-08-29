@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
 
 from .helpers import (
@@ -76,13 +76,12 @@ class RequestIdMiddleware(BaseMiddleware):
         self.request_attribute_name = request_attribute_name
         self.include_in_response = include_in_response
 
-    async def process_request(
+    async def dispatch(
         self,
-        request: Request,
-        response: Response,
+        ctx: HttpContext,
         call_next: Any,
     ) -> Any:
-        """Process the incoming request to assign and propagate a request ID.
+        """Assign a request ID, then guarantee it on the outgoing response.
 
         Determines the request ID by either forcing a fresh UUID4
         generation or extracting/generating one from the request
@@ -91,10 +90,8 @@ class RequestIdMiddleware(BaseMiddleware):
         middleware or handler in the chain.
 
         Args:
-            request (Request): The incoming HTTP request object to
-                inspect and annotate with a request ID.
-            response (Response): The HTTP response object on which
-                to set the request ID header if configured.
+            ctx (HttpContext): The context to inspect and annotate with a
+                request ID.
             call_next (Any): An awaitable callable representing the
                 next middleware or route handler in the pipeline.
 
@@ -105,7 +102,7 @@ class RequestIdMiddleware(BaseMiddleware):
         Raises:
             None.
         """
-        response.empty()
+        request = ctx
         if self.force_generate:
             request_id = generate_request_id()
         else:
@@ -119,41 +116,10 @@ class RequestIdMiddleware(BaseMiddleware):
                 request, request_id, self.request_attribute_name
             )
 
-        if self.include_in_response:
-            set_request_id_header(response, request_id, self.header_name)
+        response = await call_next()
 
-        return await call_next()
-
-    async def process_response(
-        self,
-        request: Request,
-        response: Response,
-    ) -> Any:
-        """Ensure the request ID header is present on the outgoing response.
-
-        Runs after downstream handlers have produced a response. If the
-        response does not already carry the request ID header (e.g. it
-        was cleared or overwritten), this method re-applies it to
-        guarantee the client always receives the correlation ID.
-
-        Args:
-            request (Request): The original HTTP request object
-                associated with this response.
-            response (Response): The outgoing HTTP response object
-                that may need the request ID header set.
-
-        Returns:
-            Any: The response object, with the request ID header
-                ensured if ``include_in_response`` is enabled.
-
-        Raises:
-            None.
-        """
-        request_id = self.request_id
-
-        if request_id and self.include_in_response:
-            existing_header = response.headers.get(self.header_name)
-            if not existing_header:
+        if response is not None and request_id and self.include_in_response:
+            if not response.headers.get(self.header_name):
                 set_request_id_header(response, request_id, self.header_name)
 
         return response

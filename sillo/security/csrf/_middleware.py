@@ -3,7 +3,7 @@ import secrets
 import typing
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, text
 from sillo.helpers.signing import BadSignature, URLSafeSerializer
 from sillo.middleware.base import BaseMiddleware
 
@@ -20,7 +20,7 @@ _FORM_CONTENT_TYPES = (
 
 class CSRFMiddleware(BaseMiddleware):
     """
-    Middleware to protect against Cross-Site Request Forgery (CSRF) attacks for sillo.
+    Middleware to protect against Cross-Site HttpContext Forgery (CSRF) attacks for sillo.
 
     Uses the double-submit pattern: the same signed token is sent as a cookie
     and echoed back in a header or form field. A cross-site attacker can make
@@ -91,16 +91,16 @@ class CSRFMiddleware(BaseMiddleware):
         if self.secret and self.serializer is None:
             self.serializer = URLSafeSerializer(self.secret, "csrftoken")
 
-    async def process_request(
+    async def dispatch(
         self,
-        request: Request,
-        response: Response,
+        ctx: HttpContext,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
-        """Process Request"""
+        """Validate the CSRF token, then stamp it onto the reply."""
         if not self.csrf_config or not self.use_csrf:
             return await call_next()
 
+        request = ctx
         csrf_cookie = request.cookies.get(self.cookie_name)
 
         # Keep the token the visitor already holds. Minting a new one on every
@@ -113,26 +113,25 @@ class CSRFMiddleware(BaseMiddleware):
             else self._generate_csrf_token()
         )
 
-        if request.method.upper() in self.safe_methods:
-            return await call_next()
-
-        if self._requires_validation(request):
+        if request.method.upper() not in self.safe_methods and self._requires_validation(
+            request
+        ):
             submitted_csrf_token = await self._submitted_token(request)
 
             if not csrf_cookie:
-                return response.text("CSRF token missing from cookies", status_code=403)
+                return text("CSRF token missing from cookies", status_code=403)
             if not submitted_csrf_token:
-                return response.text("CSRF token missing from headers", status_code=403)
+                return text("CSRF token missing from headers", status_code=403)
             if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):
-                return response.text("CSRF token incorrect", status_code=403)
+                return text("CSRF token incorrect", status_code=403)
 
-        return await call_next()
+        response = await call_next()
+        self._set_token_cookie(request, response)
+        return response
 
-    async def process_response(self, request: Request, response: Response):
-        """
-        Inject the CSRF token into the response for client-side usage if not already set.
-        """
-        if not self.use_csrf:
+    def _set_token_cookie(self, request: HttpContext, response) -> None:
+        """Put the CSRF token on the outgoing response for the client to read."""
+        if response is None:
             return
 
         csrf_token = getattr(request.state, "csrf_token", None)
@@ -149,7 +148,7 @@ class CSRFMiddleware(BaseMiddleware):
             samesite=self.cookie_samesite,
         )
 
-    def _requires_validation(self, request: Request) -> bool:
+    def _requires_validation(self, request: HttpContext) -> bool:
         """Whether this unsafe request has to carry a token.
 
         An exempt URL is exempt. That reads as obvious and was not what the
@@ -172,7 +171,7 @@ class CSRFMiddleware(BaseMiddleware):
 
         return self._has_sensitive_cookies(request.cookies)
 
-    async def _submitted_token(self, request: Request) -> str | None:
+    async def _submitted_token(self, request: HttpContext) -> str | None:
         """Return the token the client echoed back, from header or form body."""
         submitted = request.headers.get(self.header_name)
         if submitted:

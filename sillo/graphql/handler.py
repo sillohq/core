@@ -18,7 +18,7 @@ else:
         ExecutionResult = None
 
 from sillo.application import SilloApp
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, html, json, text
 from sillo.core.routing import Route
 
 
@@ -99,7 +99,7 @@ class GraphQL:
             Route(self.path, self.handle_request, methods=["GET", "POST"])
         )
 
-    async def handle_request(self, req: Request, res: Response):
+    async def handle_request(self, ctx: HttpContext):
         """Handle an incoming HTTP request to the GraphQL endpoint.
 
         Routes the request based on HTTP method. GET requests return the GraphiQL
@@ -110,35 +110,34 @@ class GraphQL:
         receive a 400 error response.
 
         Args:
-            req: The incoming HTTP Request object. For POST requests, its JSON body
+            ctx: The context for the request. For POST requests, its JSON body
                 must contain a ``"query"`` field and optionally ``"variables"`` and
                 ``"operationName"`` fields conforming to the GraphQL over HTTP spec.
-            res: The HTTP Response object used to construct the appropriate response
-                with the correct content type and status code.
 
         Returns:
-            A Response object containing either the GraphiQL HTML page (GET), a JSON
+            A response containing either the GraphiQL HTML page (GET), a JSON
             GraphQL execution result (POST), or a JSON error message for invalid input.
 
         Raises:
             None. JSON parsing errors are caught and converted into a 400 response
             with an appropriate error message.
         """
+        req = ctx
         if req.method == "GET":
             if self.graphiql:
-                return res.html(self._get_graphiql_html())
-            return res.text("Not Found", status_code=404)
+                return html(self._get_graphiql_html())
+            return text("Not Found", status_code=404)
 
         if req.method == "POST":
             try:
                 data = await req.json
             except Exception:
-                return res.json(
+                return json(
                     {"errors": [{"message": "Invalid JSON body"}]}, status_code=400
                 )
 
             if not isinstance(data, dict):
-                return res.json(
+                return json(
                     {"errors": [{"message": "JSON body must be an object"}]},
                     status_code=400,
                 )
@@ -147,7 +146,9 @@ class GraphQL:
             variables = data.get("variables")
             operation_name = data.get("operationName")
 
-            context = {"request": req, "response": res}
+            # The resolver context. `request` is kept as the historical key
+            # alongside `ctx`, which is the name the rest of the framework uses.
+            context = {"ctx": req, "request": req}
 
             result: ExecutionResult = await self.schema.execute(
                 cast(str, query),
@@ -162,7 +163,7 @@ class GraphQL:
             if result.errors:
                 response_data["errors"] = [err.formatted for err in result.errors]
 
-            return res.json(response_data)
+            return json(response_data)
 
     def _get_graphiql_html(self) -> str:
         """Generate the HTML page for the GraphiQL interactive query IDE.

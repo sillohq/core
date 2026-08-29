@@ -13,9 +13,10 @@ from functools import partial
 import pytest
 
 from sillo.application import SilloApp
+from sillo import json
 from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.session_auth import SessionAuthBackend, login, logout
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.session.middleware import SessionMiddleware
 from sillo.testclient import AsyncTestClient
 
@@ -71,14 +72,14 @@ async def test_session_auth_backend_success(test_client):
     app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
-    async def login_route(req: Request, res: Response):
+    async def login_route(req: HttpContext):
         user = TestUser("1", "testuser", ["read", "write"])
         login(req, user)
-        return res.json({"message": "logged in"})
+        return json({"message": "logged in"})
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: Request, res: Response):
-        return res.json(
+    async def protected(req: HttpContext):
+        return json(
             {"user_id": req.user.identity, "username": req.user.display_name}
         )
 
@@ -100,8 +101,8 @@ async def test_session_auth_backend_no_session(test_client):
     app.use(SessionMiddleware(secret_key="secret"))
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected(req: HttpContext):
+        return json({"user": req.user})
 
     client = test_client(app)
     async with client:
@@ -114,8 +115,8 @@ async def test_session_auth_backend_missing_session_middleware(test_client):
     app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected(req: HttpContext):
+        return json({"user": req.user})
 
     client = test_client(app)
     async with client:
@@ -129,19 +130,19 @@ async def test_session_auth_backend_logout(test_client):
     app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
-    async def login_route(req: Request, res: Response):
+    async def login_route(req: HttpContext):
         user = TestUser("1", "testuser", ["read", "write"])
         login(req, user)
-        return res.json({"message": "logged in"})
+        return json({"message": "logged in"})
 
     @app.post("/logout")
-    async def logout_route(req: Request, res: Response):
+    async def logout_route(req: HttpContext):
         logout(req)
-        return res.json({"message": "logged out"})
+        return json({"message": "logged out"})
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user_id": req.user.identity})
+    async def protected(req: HttpContext):
+        return json({"user_id": req.user.identity})
 
     client = test_client(app)
     async with client:
@@ -173,17 +174,17 @@ async def test_session_auth_backend_custom_session_key(test_client):
     app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
-    async def login_route(req: Request, res: Response):
+    async def login_route(req: HttpContext):
         user = TestUser("1", "testuser", ["read", "write"])
         req.session["custom_user"] = {
             "id": user.identity,
             "display_name": user.display_name,
         }
-        return res.json({"message": "logged in"})
+        return json({"message": "logged in"})
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user_id": req.user.identity})
+    async def protected(req: HttpContext):
+        return json({"user_id": req.user.identity})
 
     client = test_client(app)
     async with client:

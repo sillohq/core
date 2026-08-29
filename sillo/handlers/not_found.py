@@ -2,7 +2,8 @@ import http
 import traceback
 import typing
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, html, json, text
+from sillo.core.http.response import BaseResponse
 from sillo.exceptions import NotFoundException
 
 #: Body text used when debug is off, so nothing internal is disclosed.
@@ -60,10 +61,9 @@ def generate_html_page(title: str, message: str) -> str:
 
 
 async def handle_404_error(
-    request: Request,
-    response: Response,
+    ctx: HttpContext,
     exception: NotFoundException,
-) -> Response:
+) -> BaseResponse:
     """Handle 404 Not Found errors, negotiating the response format.
 
     The response format follows the client's ``Accept`` header rather than a
@@ -72,23 +72,22 @@ async def handle_404_error(
     the header expresses no preference, which is the right default for an API.
 
     How much detail the body carries depends on the application's ``debug``
-    flag, read from ``request.app``. With debug on, the exception's own
+    flag, read from ``ctx.app``. With debug on, the exception's own
     ``detail`` is returned along with a traceback; with debug off — and when
     the flag cannot be read at all — a generic message is returned instead, so
     a misconfigured application errs towards saying less rather than more.
 
     Args:
-        request: The incoming HTTP request, used for the application's debug
+        ctx: The context for the request, used for the application's debug
             flag and for ``Accept``-header negotiation.
-        response: A response factory object providing ``.json()``, ``.html()``,
-            and ``.text()`` methods for constructing typed HTTP responses.
         exception: The ``NotFoundException`` instance that triggered this
             handler, whose ``detail`` supplies the message in debug mode.
 
     Returns:
-        A ``Response`` with status code 404, formatted as JSON, HTML, or plain
+        A response with status code 404, formatted as JSON, HTML, or plain
         text according to what the client asked for.
     """
+    request = ctx
     debug = _debug_enabled(request)
 
     if debug:
@@ -101,7 +100,7 @@ async def handle_404_error(
         traceback_info = None
 
     if _prefers_html(request):
-        return response.html(
+        return html(
             generate_html_page("404 - Not Found", error_message), status_code=404
         )
 
@@ -113,12 +112,12 @@ async def handle_404_error(
         }
         if traceback_info:
             error_details["traceback"] = traceback_info
-        return response.json(error_details, status_code=404)
+        return json(error_details, status_code=404)
 
-    return response.text(f"404 - Not Found\n{error_message}", status_code=404)
+    return text(f"404 - Not Found\n{error_message}", status_code=404)
 
 
-def _debug_enabled(request: Request) -> bool:
+def _debug_enabled(request: HttpContext) -> bool:
     """Read the application's debug flag, defaulting to off.
 
     The flag lives on the application, which the scope stores under
@@ -144,7 +143,7 @@ def _debug_enabled(request: Request) -> bool:
     return False
 
 
-def _prefers_html(request: Request) -> bool:
+def _prefers_html(request: HttpContext) -> bool:
     """Decide whether the client would rather have the HTML page.
 
     A browser sends ``text/html`` ahead of anything else; an API client asks

@@ -7,7 +7,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json, text
+from sillo.core.http import HttpContext
 from sillo.core.routing import Group, Route, Router
 from sillo.testclient import TestClient
 
@@ -20,8 +21,8 @@ def test_mount_router_basic(test_client_factory: Callable[[SilloApp], TestClient
     router = Router(prefix="/api")
 
     @router.get("/hello")
-    async def hello(request: Request, response: Response):
-        return response.text("Hello from router")
+    async def hello(request: HttpContext):
+        return text("Hello from router")
 
     app.mount_router(router)
 
@@ -39,8 +40,8 @@ def test_mount_router_without_path(
     router = Router(prefix="/api")
 
     @router.get("/status")
-    async def status(request: Request, response: Response):
-        return response.json({"status": "ok"})
+    async def status(request: HttpContext):
+        return json({"status": "ok"})
 
     app.mount_router(router)
 
@@ -57,14 +58,14 @@ def test_mount_multiple_routers(test_client_factory: Callable[[SilloApp], TestCl
     users_router = Router(prefix="/users")
 
     @users_router.get("/list")
-    async def list_users(request: Request, response: Response):
-        return response.json({"users": []})
+    async def list_users(request: HttpContext):
+        return json({"users": []})
 
     products_router = Router(prefix="/products")
 
     @products_router.get("/list")
-    async def list_products(request: Request, response: Response):
-        return response.json({"products": []})
+    async def list_products(request: HttpContext):
+        return json({"products": []})
 
     app.mount_router(users_router)
     app.mount_router(products_router)
@@ -88,8 +89,8 @@ def test_nested_routers(test_client_factory: Callable[[SilloApp], TestClient]):
     inner_router = Router(prefix="/inner")
 
     @inner_router.get("/data")
-    async def get_data(request: Request, response: Response):
-        return response.json({"data": "nested"})
+    async def get_data(request: HttpContext):
+        return json({"data": "nested"})
 
     # Middle router
     middle_router = Router(prefix="/api")
@@ -112,8 +113,8 @@ def test_deeply_nested_routers(test_client_factory: Callable[[SilloApp], TestCli
     level3_router = Router(prefix="/level3")
 
     @level3_router.get("/endpoint")
-    async def endpoint(request: Request, response: Response):
-        return response.json({"level": 3})
+    async def endpoint(request: HttpContext):
+        return json({"level": 3})
 
     # Level 2
     level2_router = Router(prefix="/level2")
@@ -141,8 +142,8 @@ def test_router_prefix_basic(test_client_factory: Callable[[SilloApp], TestClien
     router = Router(prefix="/api/v1")
 
     @router.get("/users")
-    async def get_users(request: Request, response: Response):
-        return response.json({"users": []})
+    async def get_users(request: HttpContext):
+        return json({"users": []})
 
     app.mount_router(router)
 
@@ -161,8 +162,8 @@ def test_mount_sub_application(test_client_factory: Callable[[SilloApp], TestCli
     sub_app = SilloApp()
 
     @sub_app.get("/hello")
-    async def sub_hello(request: Request, response: Response):
-        return response.text("Hello from sub-app")
+    async def sub_hello(request: HttpContext):
+        return text("Hello from sub-app")
 
     sub_group = Group(path="/sub", app=sub_app)
     main_app.add_route(sub_group)
@@ -182,14 +183,14 @@ def test_multiple_sub_applications(
     admin_app = SilloApp()
 
     @admin_app.get("/dashboard")
-    async def admin_dashboard(request: Request, response: Response):
-        return response.json({"area": "admin"})
+    async def admin_dashboard(request: HttpContext):
+        return json({"area": "admin"})
 
     user_app = SilloApp()
 
     @user_app.get("/dashboard")
-    async def user_dashboard(request: Request, response: Response):
-        return response.json({"area": "user"})
+    async def user_dashboard(request: HttpContext):
+        return json({"area": "user"})
 
     admin_group = Group(path="/admin", app=admin_app)
     main_app.add_route(admin_group)
@@ -214,14 +215,14 @@ def test_router_isolation(test_client_factory: Callable[[SilloApp], TestClient])
     router1 = Router(prefix="/r1")
 
     @router1.get("/test")
-    async def test1(request: Request, response: Response):
-        return response.json({"router": 1})
+    async def test1(request: HttpContext):
+        return json({"router": 1})
 
     router2 = Router(prefix="/r2")
 
     @router2.get("/test")
-    async def test2(request: Request, response: Response):
-        return response.json({"router": 2})
+    async def test2(request: HttpContext):
+        return json({"router": 2})
 
     app.mount_router(router1)
     app.mount_router(router2)
@@ -243,14 +244,14 @@ def test_nested_router_route_priority(
     specific_router = Router(prefix="/items")
 
     @specific_router.get("/specific")
-    async def specific_route(request: Request, response: Response):
-        return response.json({"type": "specific"})
+    async def specific_route(request: HttpContext):
+        return json({"type": "specific"})
 
     general_router = Router(prefix="/api")
 
     @general_router.get("/{resource}")
-    async def general_route(request: Request, response: Response, resource: str):
-        return response.json({"type": "general", "resource": resource})
+    async def general_route(request: HttpContext, resource: str):
+        return json({"type": "general", "resource": resource})
 
     general_router.mount_router(specific_router)
     app.mount_router(general_router)

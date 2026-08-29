@@ -1,26 +1,46 @@
+"""The middleware contract: one context, one ``call_next``.
+
+A middleware is any object with::
+
+    async def __call__(self, ctx, call_next) -> Any
+
+:class:`BaseMiddleware` supplies that ``__call__`` and hands the work to
+:meth:`~BaseMiddleware.dispatch`, which subclasses override::
+
+    from sillo import BaseMiddleware, redirect
+
+    class RequireLogin(BaseMiddleware):
+        async def dispatch(self, ctx, call_next):
+            if ctx.user is None:
+                return redirect("/login")     # stop here, send this
+            response = await call_next()      # or continue down the chain
+            response.headers["x-checked"] = "1"
+            return response
+
+Returning a response object without awaiting ``call_next`` short-circuits the
+chain: nothing further down runs, and what was returned is what the client
+gets. Responses are built by the free helpers in ``sillo`` -- ``json``,
+``html``, ``text``, ``redirect``, ``file``, ``stream`` -- not by a response
+object handed in as an argument.
+"""
+
+from __future__ import annotations
+
 import typing
 from typing import Annotated
 
 from typing_extensions import Any, Doc
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
+
+CallNext = typing.Callable[[], typing.Awaitable[Any]]
 
 
 class BaseMiddleware:
-    """
-    Base middleware class for handling request-response processing in sillo.
+    """Base class for context middleware.
 
-    This class provides a structure for middleware in the sillo framework.
-    It allows child classes to intercept and modify HTTP requests before they
-    reach the main application logic and modify responses before they are returned
-    to the client.
-
-    Middleware classes inheriting from `BaseMiddleware` should implement:
-
-    - `process_request()`: To inspect, modify, or reject an incoming request.
-    - `process_response()`: To inspect or modify an outgoing response.
-
-    The user can decide when to call `next()` to proceed to the next middleware or handler.
+    Subclasses override :meth:`dispatch`. The default implementation simply
+    continues the chain, so a subclass that overrides nothing is a no-op.
     """
 
     def __init__(
@@ -30,139 +50,60 @@ class BaseMiddleware:
             Doc("Additional keyword arguments for middleware configuration."),
         ],
     ) -> None:
-        """
-        Initializes the base middleware instance with optional configuration.
+        """Initialise the middleware.
 
-        This constructor sets up the middleware with any keyword arguments that
-        may be required by subclasses. The kwargs pattern allows flexible
-        configuration without requiring each subclass to define its own
-        constructor signature explicitly.
+        Accepts arbitrary keyword arguments so subclasses can take configuration
+        without each having to define a constructor.
 
         Args:
-            **kwargs (dict): Arbitrary keyword arguments for middleware settings.
-                These are stored and made available to subclass implementations
-                for custom configuration and behavioral adjustments.
+            **kwargs: Arbitrary keyword arguments for middleware settings.
         """
 
     async def __call__(
         self,
-        request: Annotated[
-            Request,
-            Doc("The incoming HTTP request object representing the client request."),
-        ],
-        response: Annotated[
-            Response,
-            Doc("The HTTP response object that will be returned to the client."),
+        ctx: Annotated[
+            HttpContext,
+            Doc("The context for the connection being handled."),
         ],
         call_next: Annotated[
-            typing.Callable[..., typing.Awaitable[Any]],
-            Doc("The next middleware function in the processing chain."),
+            CallNext,
+            Doc("Awaits the rest of the chain and returns its response."),
         ],
     ) -> Any:
-        """
-        Handles the request-response cycle for the middleware.
-
-        This method does the following:
-        1. Calls `process_request()` to inspect or modify the request before passing it forward.
-        2. Allows the user to decide when to call `next_middleware()`.
-        3. Calls `process_response()` to modify the response after `next_middleware()` is called.
+        """Run this middleware for one request.
 
         Args:
-            request (Request): The incoming HTTP request object.
-            next_middleware (Callable[..., Awaitable[Response]]): A function representing the next middleware.
+            ctx: The context for the connection being handled.
+            call_next: Awaits the next middleware or the route handler.
 
         Returns:
-            Response: The final HTTP response object.
+            Whatever :meth:`dispatch` returns -- a response object to send, or
+            the value produced by ``call_next``.
         """
-        self._call_next = False
+        return await self.dispatch(ctx, call_next)
 
-        async def wrapped_call_next() -> Any:
-            """
-            Wraps the next middleware callable in the processing chain.
-
-            This inner async function serves as a controlled gateway to invoke
-            the subsequent middleware or route handler. It sets an internal flag
-            to indicate that the chain was actually advanced, which the outer
-            ``__call__`` method uses to determine whether response processing
-            should be triggered after the downstream handler completes.
-
-            Returns:
-                Any: The response object returned by the next middleware or handler.
-            """
-            self._call_next = True
-            return await call_next()
-
-        cnext = await self.process_request(request, response, wrapped_call_next)
-        if self._call_next:
-            returned_response = await self.process_response(request, response)
-            if returned_response:
-                return returned_response
-            return cnext
-        return cnext
-
-    async def process_request(
+    async def dispatch(
         self,
-        request: Annotated[
-            Request, Doc("The HTTP request object that needs to be processed.")
-        ],
-        response: Annotated[
-            Response,
-            Doc("The HTTP response object that will be returned to the client."),
+        ctx: Annotated[
+            HttpContext,
+            Doc("The context for the connection being handled."),
         ],
         call_next: Annotated[
-            typing.Callable[..., typing.Awaitable[Response]],
-            Doc("The next middleware or handler to call."),
+            CallNext,
+            Doc("Awaits the rest of the chain and returns its response."),
         ],
-    ) -> Annotated[
-        Any,
-        Doc("The HTTP response object returned by the next middleware or handler."),
-    ]:
-        """
-        Hook for processing an HTTP request before passing it forward.
+    ) -> Any:
+        """Handle one request. Override this.
 
-        Override this method in subclasses to inspect, modify, or reject requests before
-        they reach the next middleware or the application logic. The user can decide when
-        to call `next()` to proceed.
+        Return a response object to answer immediately without running the rest
+        of the chain, or ``await call_next()`` to continue and optionally act on
+        what comes back.
 
         Args:
-            request (Request): The incoming HTTP request object.
-            next (Callable[..., Awaitable[Response]]): The next middleware or handler to call.
+            ctx: The context for the connection being handled.
+            call_next: Awaits the next middleware or the route handler.
 
         Returns:
-            Response: The HTTP response object returned by the next middleware or handler.
+            A response object, or the result of ``call_next``.
         """
         return await call_next()
-
-    async def process_response(
-        self,
-        request: Annotated[
-            Request,
-            Doc(
-                "The original HTTP request object, available for context during response processing."
-            ),
-        ],
-        response: Annotated[
-            Response,
-            Doc(
-                "The HTTP response object that can be modified before sending to the client."
-            ),
-        ],
-    ) -> Annotated[
-        Any,
-        Doc("The modified HTTP response object to be returned to the client."),
-    ]:
-        """
-        Hook for processing an HTTP response before returning it to the client.
-
-        Override this method in subclasses to modify response headers, content, or status codes
-        before they are sent back to the client.
-
-        Args:
-            request (Request): The original HTTP request object.
-            response (Response): The outgoing HTTP response object.
-
-        Returns:
-            Response: The modified HTTP response object.
-        """
-        # Default behavior: Return the response as is
-        return response

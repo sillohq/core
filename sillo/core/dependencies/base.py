@@ -15,7 +15,7 @@ from sillo.validation import (
 )
 
 if TYPE_CHECKING:
-    from sillo.core.http import Request
+    from sillo.core.http import HttpContext
 
 # =============================================================================
 # User-facing API
@@ -38,10 +38,10 @@ class Depend:
 
     Attributes:
         dependency: The callable whose return value will be injected. If
-            ``None`` and ``get_request`` is ``True``, the raw ``Request``
+            ``None`` and ``get_request`` is ``True``, the raw ``HttpContext``
             object is injected instead.
         get_request: When ``True`` and ``dependency`` is ``None``, the
-            framework injects the current ``Request`` object directly
+            framework injects the current ``HttpContext`` object directly
             into the parameter.
     """
 
@@ -58,7 +58,7 @@ class Depend:
                 ``None``, the ``get_request`` flag must be ``True`` to inject
                 the raw request object.
             get_request: A keyword-only boolean flag indicating whether the
-                raw ``Request`` object should be injected directly. Defaults
+                raw ``HttpContext`` object should be injected directly. Defaults
                 to ``False``. Only effective when ``dependency`` is ``None``.
 
         Returns:
@@ -70,12 +70,12 @@ class Depend:
                 return await Database.connect()
 
             @app.get("/items")
-            async def list_items(request, response, db=Depend(get_db)):
-                return response.json(await db.query("SELECT * FROM items"))
+            async def list_items(ctx, db=Depend(get_db)):
+                return json(await db.query("SELECT * FROM items"))
 
             @app.get("/me")
-            async def get_me(request, response, req=Depend(get_request=True)):
-                return response.json({"user": req.user})
+            async def get_me(ctx, req=Depend(get_request=True)):
+                return json({"user": req.user})
         """
         self.dependency = dependency
         self.get_request = get_request
@@ -147,7 +147,7 @@ class Dependant:
         dependencies: A list of child ``Dependant`` nodes representing direct
             sub-dependencies declared via ``Depend()`` defaults.
         request_param_names: Parameter names that should receive the raw
-            ``Request`` object directly (declared via ``Depend(get_request=True)``).
+            ``HttpContext`` object directly (declared via ``Depend(get_request=True)``).
         param_extractors: A list of solved parameter extractor dependencies
             (e.g., ``Query``, ``Header``, ``Cookie``) that pull values from
             specific parts of the incoming request.
@@ -343,7 +343,7 @@ def _build_execution_plan(root: Dependant) -> list[ExecutionStep]:
 def _collect_kwargs(
     node: Dependant,
     values: dict[str, Any],
-    request: Request | None,
+    request: HttpContext | None,
     validated: dict[int, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """
@@ -359,7 +359,7 @@ def _collect_kwargs(
             ``request_param_names`` fields determine which values are gathered.
         values: A dictionary of already-resolved dependency results, keyed
             by dependency name. Sub-dependency values are looked up here.
-        request: The current ``Request`` object, or ``None`` if not available.
+        request: The current ``HttpContext`` object, or ``None`` if not available.
             Used to satisfy parameter extractors and raw request parameters.
         validated: Values produced by the Pydantic validators, keyed by the
             id of the ``Dependant`` they belong to. Resolved ahead of this
@@ -388,7 +388,7 @@ def _collect_kwargs(
 
 async def resolve_validated_params(
     dependant: Dependant,
-    request: Request | None,
+    request: HttpContext | None,
 ) -> dict[int, dict[str, Any]]:
     """
     Run every Pydantic validator in a dependency tree against the request.
@@ -407,7 +407,7 @@ async def resolve_validated_params(
     Args:
         dependant: The root ``Dependant`` whose execution plan should be
             walked. Nodes without a validator are skipped.
-        request: The current ``Request``. When ``None`` there is nothing to
+        request: The current ``HttpContext``. When ``None`` there is nothing to
             validate against and an empty mapping is returned.
 
     Returns:
@@ -457,7 +457,7 @@ _NO_VALIDATED: dict[int, dict[str, Any]] = {}
 
 async def solve_dependencies(
     dependant: Dependant,
-    request: Request | None = None,
+    request: HttpContext | None = None,
     dependency_cache: DependencyCache | None = None,
     cleanup_callbacks: list[Callable[[], Any]] | None = None,
 ) -> dict[str, Any]:
@@ -473,7 +473,7 @@ async def solve_dependencies(
         dependant: The root ``Dependant`` node whose execution plan should
             be resolved. The plan was built during route registration by
             ``get_dependant``.
-        request: The current ``Request`` object to pass to parameter
+        request: The current ``HttpContext`` object to pass to parameter
             extractors and ``Depend(get_request=True)`` dependencies.
             May be ``None`` for non-request contexts.
         dependency_cache: An optional dictionary for caching resolved

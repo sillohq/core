@@ -7,7 +7,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json, text
+from sillo.core.http import HttpContext
 from sillo.core.routing import Route, Router
 from sillo.testclient import TestClient
 
@@ -31,8 +32,8 @@ def test_router_with_prefix():
 def test_router_with_routes():
     """Test router initialization with routes"""
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     route = Route("/test", handler, methods=["GET"])
     router = Router(routes=[route])
@@ -60,8 +61,8 @@ def test_router_with_name():
 def test_route_initialization():
     """Test basic route initialization"""
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     route = Route("/test", handler, methods=["GET"])
 
@@ -73,8 +74,8 @@ def test_route_initialization():
 def test_route_with_name():
     """Test route initialization with name"""
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     route = Route("/test", handler, methods=["GET"], name="test-route")
     assert route.name == "test-route"
@@ -83,8 +84,8 @@ def test_route_with_name():
 def test_route_with_summary_and_description():
     """Test route with OpenAPI documentation"""
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     route = Route(
         "/test",
@@ -101,8 +102,8 @@ def test_route_with_summary_and_description():
 def test_route_with_tags():
     """Test route with tags"""
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     route = Route("/test", handler, methods=["GET"], tags=["test", "api"])
     assert "test" in route.tags
@@ -112,8 +113,8 @@ def test_route_with_tags():
 def test_route_deprecated_flag():
     """Test route deprecation flag"""
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     route = Route("/test", handler, methods=["GET"], deprecated=True)
     assert route.deprecated is True
@@ -122,8 +123,8 @@ def test_route_deprecated_flag():
 def test_route_exclude_from_schema():
     """Test route exclusion from OpenAPI schema"""
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     route = Route("/test", handler, methods=["GET"], exclude_from_schema=True)
     assert route.exclude_from_schema is True
@@ -136,8 +137,8 @@ def test_router_add_route_with_route_object():
     """Test adding route using Route object"""
     router = Router()
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     route = Route("/test", handler, methods=["GET"])
     router.add_route(route)
@@ -149,8 +150,8 @@ def test_router_add_route_with_parameters():
     """Test adding route using parameters"""
     router = Router()
 
-    async def handler(request: Request, response: Response):
-        return response.text("test")
+    async def handler(request: HttpContext):
+        return text("test")
 
     router.add_route(path="/test", handler=handler, methods=["GET"])
 
@@ -161,11 +162,11 @@ def test_router_add_multiple_routes():
     """Test adding multiple routes to router"""
     router = Router()
 
-    async def handler1(request: Request, response: Response):
-        return response.text("test1")
+    async def handler1(request: HttpContext):
+        return text("test1")
 
-    async def handler2(request: Request, response: Response):
-        return response.text("test2")
+    async def handler2(request: HttpContext):
+        return text("test2")
 
     route1 = Route("/test1", handler1, methods=["GET"])
     route2 = Route("/test2", handler2, methods=["POST"])
@@ -186,8 +187,8 @@ def test_basic_route_with_app(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/hello")
-    async def hello(request: Request, response: Response):
-        return response.text("Hello, World!")
+    async def hello(request: HttpContext):
+        return text("Hello, World!")
 
     with test_client_factory(app) as client:
         resp = client.get("/hello")
@@ -201,8 +202,8 @@ def test_router_mounted_to_app(test_client_factory: Callable[[SilloApp], TestCli
     router = Router(prefix="/api")
 
     @router.get("/users")
-    async def get_users(request: Request, response: Response):
-        return response.json({"users": ["Alice", "Bob"]})
+    async def get_users(request: HttpContext):
+        return json({"users": ["Alice", "Bob"]})
 
     app.mount_router(router)
 
@@ -215,8 +216,8 @@ def test_router_mounted_to_app(test_client_factory: Callable[[SilloApp], TestCli
 def test_empty_path_converts_to_slash():
     """Test that empty path is converted to /"""
 
-    async def handler(request: Request, response: Response):
-        return response.text("root")
+    async def handler(request: HttpContext):
+        return text("root")
 
     route = Route("", handler, methods=["GET"])
     assert route.raw_path == "/"
@@ -238,12 +239,12 @@ def test_router_with_multiple_prefixes(
     api_v2 = Router(prefix="/api/v2")
 
     @api_v1.get("/status")
-    async def status_v1(request: Request, response: Response):
-        return response.json({"version": "1.0"})
+    async def status_v1(request: HttpContext):
+        return json({"version": "1.0"})
 
     @api_v2.get("/status")
-    async def status_v2(request: Request, response: Response):
-        return response.json({"version": "2.0"})
+    async def status_v2(request: HttpContext):
+        return json({"version": "2.0"})
 
     app.mount_router(api_v1)
     app.mount_router(api_v2)

@@ -201,7 +201,7 @@ class TestClient(httpx.Client):
 
         if stream:
             # Return an open streaming response context.
-            # Open a streaming context and return the httpx.Response (not Request)
+            # Open a streaming context and return the httpx.Response (not HttpContext)
             return self.stream(
                 method=method,
                 url=url,
@@ -325,15 +325,15 @@ class TestClient(httpx.Client):
         **kwargs: Any,
     ) -> WebSocketTestSession:
         """
-        Establishes a WebSocket connection.
+        Establishes a WebSocketContext connection.
 
         Args:
-            url (str): The WebSocket URL.
-            subprotocols (Sequence[str] | None, optional): The WebSocket subprotocols. Defaults to None.
+            url (str): The WebSocketContext URL.
+            subprotocols (Sequence[str] | None, optional): The WebSocketContext subprotocols. Defaults to None.
             **kwargs (Any): Additional keyword arguments.
 
         Returns:
-            WebSocketTestSession: The WebSocket session.
+            WebSocketTestSession: The WebSocketContext session.
         """
         url = urljoin("ws://testserver", url)
         headers = self._prepare_websocket_headers(subprotocols, **kwargs)
@@ -347,7 +347,7 @@ class TestClient(httpx.Client):
             # request before dispatching to the app, so this branch guards a
             # transport contract violation rather than any reachable app
             # behavior.
-            raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
+            raise RuntimeError("Expected WebSocketContext upgrade")  # pragma: no cover
 
         return session
 
@@ -357,10 +357,10 @@ class TestClient(httpx.Client):
         **kwargs: dict[str, Any],
     ) -> dict[str, str]:
         """
-        Prepare the headers for a WebSocket connection.
+        Prepare the headers for a WebSocketContext connection.
 
         Args:
-            subprotocols (Sequence[str] | None, optional): The WebSocket subprotocols. Defaults to None.
+            subprotocols (Sequence[str] | None, optional): The WebSocketContext subprotocols. Defaults to None.
             **kwargs (dict[str, Any]): Additional keyword arguments.
 
         Returns:

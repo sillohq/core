@@ -15,12 +15,12 @@ those, and :meth:`sillo.core.http.Response.sse` wires it to a response.
 Typical use::
 
     @app.get("/events")
-    async def events(request: Request, response: Response):
+    async def events(ctx: HttpContext):
         async def source():
             while True:
                 yield {"price": await next_tick()}
 
-        return response.sse(source())
+        return sse(source())
 
 Yield whatever is convenient: a ``dict`` or list is JSON-encoded, a ``str`` is
 sent as-is, and a :class:`ServerSentEvent` gives control over the event name,

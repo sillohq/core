@@ -7,7 +7,8 @@ import time
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
 from sillo.testclient import TestClient
@@ -21,28 +22,28 @@ class TestSessionIntegration:
         app = SilloApp()
 
         @app.post("/login")
-        async def login(request: Request, response: Response):
+        async def login(request: HttpContext):
             user_data = await request.json
             user_id = user_data.get("user_id", 1)
             request.session["user_id"] = user_id
             request.session["login_time"] = time.time()
-            return response.json({"success": True, "user_id": user_id})
+            return json({"success": True, "user_id": user_id})
 
         @app.get("/profile")
-        async def profile(request: Request, response: Response):
+        async def profile(request: HttpContext):
             user_id = request.session.get("user_id")
             if not user_id:
-                return response.json({"error": "Not logged in"}, status_code=401)
+                return json({"error": "Not logged in"}, status_code=401)
 
             login_time = request.session.get("login_time", 0)
-            return response.json(
+            return json(
                 {"user_id": user_id, "login_time": login_time, "session_active": True}
             )
 
         @app.post("/logout")
-        async def logout(request: Request, response: Response):
+        async def logout(request: HttpContext):
             request.session.clear()
-            return response.json({"logged_out": True})
+            return json({"logged_out": True})
 
         app.use(
             SessionMiddleware(
@@ -83,16 +84,16 @@ class TestSessionIntegration:
         app = SilloApp()
 
         @app.get("/counter")
-        async def counter(request: Request, response: Response):
+        async def counter(request: HttpContext):
             count = request.session.get("count", 0)
             count += 1
             request.session["count"] = count
-            return response.json({"count": count})
+            return json({"count": count})
 
         @app.get("/reset")
-        async def reset(request: Request, response: Response):
+        async def reset(request: HttpContext):
             request.session.clear()
-            return response.json({"reset": True})
+            return json({"reset": True})
 
         app.use(
             SessionMiddleware(

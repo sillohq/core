@@ -9,6 +9,7 @@ rejects clients it cannot satisfy with a 406.
 import pytest
 
 from sillo import SilloApp
+from sillo import json
 from sillo.http.accepts import (
     Accepts,
     AcceptsInfo,
@@ -35,12 +36,12 @@ def client():
     app = SilloApp()
 
     @app.get("/info")
-    async def info(request, response):
-        return response.json(get_accepts_info(request))
+    async def info(request):
+        return json(get_accepts_info(request))
 
     @app.get("/types")
-    async def types(request, response):
-        return response.json(
+    async def types(request):
+        return json(
             {
                 "types": get_accepted_content_types(request),
                 "languages": get_accepted_languages(request),
@@ -50,8 +51,8 @@ def client():
         )
 
     @app.get("/best")
-    async def best(request, response):
-        return response.json(
+    async def best(request):
+        return json(
             {
                 "type": get_best_accepted_content_type(
                     request, ["application/json", "text/html"]
@@ -61,9 +62,9 @@ def client():
         )
 
     @app.get("/wrapper")
-    async def wrapper(request, response):
+    async def wrapper(request):
         accepts = get_accepts_from_request(request)
-        return response.json({"has_accepts": accepts is not None})
+        return json({"has_accepts": accepts is not None})
 
     # These helpers read state the middleware attaches to the request.
     app.use(AcceptsMiddleware())
@@ -117,7 +118,7 @@ def test_accepts_info_exposes_each_header():
     captured = {}
 
     @app.get("/x")
-    async def x(request, response):
+    async def x(request):
         info = AcceptsInfo(request)
         captured["accept"] = info.accept
         captured["language"] = info.accept_language
@@ -127,7 +128,7 @@ def test_accepts_info_exposes_each_header():
         captured["languages"] = info.get_accepted_languages()
         captured["charsets"] = info.get_accepted_charsets()
         captured["encodings"] = info.get_accepted_encodings()
-        return response.json({})
+        return json({})
 
     app.use(AcceptsMiddleware())
     TestClient(app).get(
@@ -156,8 +157,8 @@ def _app_with(middleware):
     app = SilloApp()
 
     @app.get("/x")
-    async def x(request, response):
-        return response.json({"ok": True})
+    async def x(request):
+        return json({"ok": True})
 
     app.use(middleware)
     return TestClient(app)

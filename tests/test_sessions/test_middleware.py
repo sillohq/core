@@ -7,7 +7,8 @@ import tempfile
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.session import SessionConfig
 from sillo.session.file import FileSessionManager
 from sillo.session.middleware import SessionMiddleware
@@ -55,10 +56,10 @@ class TestSessionMiddleware:
         )
 
         @app.get("/session-test")
-        async def session_test(request: Request, response: Response):
+        async def session_test(request: HttpContext):
             user_id = request.session.get("user_id", 0)
             request.session["user_id"] = user_id + 1
-            return response.json({"user_id": request.session["user_id"]})
+            return json({"user_id": request.session["user_id"]})
 
         client = TestClient(app)
 
@@ -97,10 +98,10 @@ class TestSessionMiddleware:
             )
 
             @app.get("/file-session-test")
-            async def file_session_test(request: Request, response: Response):
+            async def file_session_test(request: HttpContext):
                 counter = request.session.get("counter", 0)
                 request.session["counter"] = counter + 1
-                return response.json({"counter": request.session["counter"]})
+                return json({"counter": request.session["counter"]})
 
             client = TestClient(app)
 
@@ -132,9 +133,9 @@ class TestSessionMiddleware:
         )
 
         @app.get("/instance-test")
-        async def instance_test(request: Request, response: Response):
+        async def instance_test(request: HttpContext):
             request.session["data"] = "value"
-            return response.json({"data": request.session["data"]})
+            return json({"data": request.session["data"]})
 
         client = TestClient(app)
 
@@ -147,9 +148,9 @@ class TestSessionMiddleware:
         app = SilloApp()
 
         @app.get("/existing-cookie-test")
-        async def existing_cookie_test(request: Request, response: Response):
+        async def existing_cookie_test(request: HttpContext):
             request.session["existing"] = "data"
-            return response.json({"existing": request.session["existing"]})
+            return json({"existing": request.session["existing"]})
 
         app.use(
             SessionMiddleware(config=SessionConfig(), secret_key="test-secret-key")
@@ -172,14 +173,14 @@ class TestSessionMiddleware:
         app = SilloApp()
 
         @app.get("/clear-session-test")
-        async def clear_session_test(request: Request, response: Response):
+        async def clear_session_test(request: HttpContext):
             if request.session.get("clear"):
                 request.session.clear()
                 request.session["cleared"] = True
-                return response.json({"cleared": True})
+                return json({"cleared": True})
             else:
                 request.session["clear"] = True
-                return response.json({"set": True})
+                return json({"set": True})
 
         app.use(
             SessionMiddleware(
@@ -219,9 +220,9 @@ class TestSessionMiddleware:
         )
 
         @app.get("/config-test")
-        async def config_test(request: Request, response: Response):
+        async def config_test(request: HttpContext):
             request.session["test"] = "configured"
-            return response.json({"configured": True})
+            return json({"configured": True})
 
         client = TestClient(app)
 
@@ -241,12 +242,12 @@ class TestSessionMiddleware:
         app = SilloApp()
 
         @app.get("/error-test")
-        async def error_test(request: Request, response: Response):
+        async def error_test(request: HttpContext):
             try:
                 request.session["test"] = "value"
-                return response.json({"success": True})
+                return json({"success": True})
             except Exception as e:
-                return response.json({"error": str(e)})
+                return json({"error": str(e)})
 
         app.use(
             SessionMiddleware(config=SessionConfig(), secret_key="test-secret-key")
@@ -264,8 +265,8 @@ class TestSessionMiddleware:
         app = SilloApp()
 
         @app.get("/delete-test")
-        async def delete_test(request: Request, response: Response):
-            return response.json({"status": "ok"})
+        async def delete_test(request: HttpContext):
+            return json({"status": "ok"})
 
         app.use(
             SessionMiddleware(
@@ -278,8 +279,8 @@ class TestSessionMiddleware:
         response = client.get("/delete-test")
         assert response.status_code == 200
 
-    async def test_process_response_without_a_session_is_a_noop(self):
-        """process_response() is a no-op if process_request() never ran."""
+    async def test_persisting_without_a_session_is_a_noop(self):
+        """The post-phase is a no-op when dispatch never loaded a session."""
         middleware = SessionMiddleware(
             config=SessionConfig(), secret_key="test-secret-key"
         )
@@ -288,7 +289,7 @@ class TestSessionMiddleware:
             def __init__(self):
                 self.scope: dict = {}
 
-        result = await middleware.process_response(DummyRequest(), None)
+        result = await middleware._persist(DummyRequest(), None)
         assert result is None
 
     def test_manager_given_as_class_raises_type_error(self):

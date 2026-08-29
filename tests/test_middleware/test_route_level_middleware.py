@@ -7,7 +7,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.core.routing import Route, Router
 from sillo.testclient import TestClient
 
@@ -22,14 +23,14 @@ def test_route_level_middleware_basic(
 
     executed = []
 
-    async def route_middleware(request: Request, response: Response, call_next):
+    async def route_middleware(request: HttpContext, call_next):
         executed.append("route_middleware")
-        await call_next()
+        response = await call_next()
         return response
 
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         executed.append("handler")
-        return response.json({"message": "ok"})
+        return json({"message": "ok"})
 
     route = Route("/test", handler, middleware=[route_middleware])
     app.router.add_route(route)
@@ -49,16 +50,16 @@ def test_route_level_middleware_isolated(
 
     executed = []
 
-    async def route1_middleware(request: Request, response: Response, call_next):
+    async def route1_middleware(request: HttpContext, call_next):
         executed.append("route1_middleware")
-        await call_next()
+        response = await call_next()
         return response
 
-    async def handler1(request: Request, response: Response):
-        return response.json({"route": "1"})
+    async def handler1(request: HttpContext):
+        return json({"route": "1"})
 
-    async def handler2(request: Request, response: Response):
-        return response.json({"route": "2"})
+    async def handler2(request: HttpContext):
+        return json({"route": "2"})
 
     route1 = Route("/route1", handler1, middleware=[route1_middleware])
     route2 = Route("/route2", handler2)
@@ -88,21 +89,21 @@ def test_route_level_middleware_multiple(
 
     execution_order = []
 
-    async def middleware_1(request: Request, response: Response, call_next):
+    async def middleware_1(request: HttpContext, call_next):
         execution_order.append("m1_before")
-        await call_next()
+        response = await call_next()
         execution_order.append("m1_after")
         return response
 
-    async def middleware_2(request: Request, response: Response, call_next):
+    async def middleware_2(request: HttpContext, call_next):
         execution_order.append("m2_before")
-        await call_next()
+        response = await call_next()
         execution_order.append("m2_after")
         return response
 
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         execution_order.append("handler")
-        return response.json({"message": "ok"})
+        return json({"message": "ok"})
 
     route = Route("/test", handler, middleware=[middleware_1, middleware_2])
     app.router.add_route(route)
@@ -121,16 +122,16 @@ def test_route_level_middleware_with_decorator(
     """Test route-level middleware using decorator"""
     app = SilloApp()
 
-    async def auth_middleware(request: Request, response: Response, call_next):
+    async def auth_middleware(request: HttpContext, call_next):
         token = request.headers.get("Authorization")
         if not token:
-            return response.json({"error": "Unauthorized"}).status(401)
-        await call_next()
+            return json({"error": "Unauthorized"}).status(401)
+        response = await call_next()
         return response
 
     @app.route("/protected", methods=["GET"], middleware=[auth_middleware])
-    async def protected_handler(request: Request, response: Response):
-        return response.json({"message": "Protected"})
+    async def protected_handler(request: HttpContext):
+        return json({"message": "Protected"})
 
     with test_client_factory(app) as client:
         # Without auth
@@ -148,14 +149,14 @@ def test_route_level_middleware_modifies_request(
     """Test route middleware modifying request"""
     app = SilloApp()
 
-    async def add_user_middleware(request: Request, response: Response, call_next):
+    async def add_user_middleware(request: HttpContext, call_next):
         request.scope["user"] = {"id": 123, "name": "John"}
-        await call_next()
+        response = await call_next()
         return response
 
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         user = request.scope.get("user")
-        return response.json(user)
+        return json(user)
 
     route = Route("/test", handler, middleware=[add_user_middleware])
     app.router.add_route(route)
@@ -173,13 +174,13 @@ def test_route_level_middleware_modifies_response(
     """Test route middleware modifying response"""
     app = SilloApp()
 
-    async def add_header_middleware(request: Request, response: Response, call_next):
-        await call_next()
+    async def add_header_middleware(request: HttpContext, call_next):
+        response = await call_next()
         response.set_header("X-Route-Middleware", "applied")
         return response
 
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "ok"})
+    async def handler(request: HttpContext):
+        return json({"message": "ok"})
 
     route = Route("/test", handler, middleware=[add_header_middleware])
     app.router.add_route(route)
@@ -200,23 +201,23 @@ def test_route_with_app_middleware(
 
     execution_order = []
 
-    async def app_middleware(request: Request, response: Response, call_next):
+    async def app_middleware(request: HttpContext, call_next):
         execution_order.append("app_before")
-        await call_next()
+        response = await call_next()
         execution_order.append("app_after")
         return response
 
-    async def route_middleware(request: Request, response: Response, call_next):
+    async def route_middleware(request: HttpContext, call_next):
         execution_order.append("route_before")
-        await call_next()
+        response = await call_next()
         execution_order.append("route_after")
         return response
 
     app.use(app_middleware)
 
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         execution_order.append("handler")
-        return response.json({"message": "ok"})
+        return json({"message": "ok"})
 
     route = Route("/test", handler, middleware=[route_middleware])
     app.router.add_route(route)
@@ -240,27 +241,27 @@ def test_route_with_router_and_app_middleware(
 
     execution_order = []
 
-    async def app_middleware(request: Request, response: Response, call_next):
+    async def app_middleware(request: HttpContext, call_next):
         execution_order.append("app")
-        await call_next()
+        response = await call_next()
         return response
 
-    async def router_middleware(request: Request, response: Response, call_next):
+    async def router_middleware(request: HttpContext, call_next):
         execution_order.append("router")
-        await call_next()
+        response = await call_next()
         return response
 
-    async def route_middleware(request: Request, response: Response, call_next):
+    async def route_middleware(request: HttpContext, call_next):
         execution_order.append("route")
-        await call_next()
+        response = await call_next()
         return response
 
     app.use(app_middleware)
     router.use(router_middleware)
 
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         execution_order.append("handler")
-        return response.json({"message": "ok"})
+        return json({"message": "ok"})
 
     route = Route("/test", handler, middleware=[route_middleware])
     router.add_route(route)
@@ -285,17 +286,17 @@ def test_route_middleware_validation(
     app = SilloApp()
 
     async def validate_query_middleware(
-        request: Request, response: Response, call_next
+        request: HttpContext, call_next
     ):
         page = request.query_params.get("page")
         if page and not page.isdigit():
-            return response.json({"error": "Invalid page parameter"}).status(400)
-        await call_next()
+            return json({"error": "Invalid page parameter"}).status(400)
+        response = await call_next()
         return response
 
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         page = request.query_params.get("page", "1")
-        return response.json({"page": int(page)})
+        return json({"page": int(page)})
 
     route = Route("/items", handler, middleware=[validate_query_middleware])
     app.router.add_route(route)
@@ -319,19 +320,19 @@ def test_route_middleware_rate_limiting(
 
     request_counts = {}
 
-    async def rate_limit_middleware(request: Request, response: Response, call_next):
+    async def rate_limit_middleware(request: HttpContext, call_next):
         client_ip = request.get_client_ip()
         count = request_counts.get(client_ip, 0)
 
         if count >= 3:
-            return response.json({"error": "Rate limit exceeded"}).status(429)
+            return json({"error": "Rate limit exceeded"}).status(429)
 
         request_counts[client_ip] = count + 1
-        await call_next()
+        response = await call_next()
         return response
 
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "ok"})
+    async def handler(request: HttpContext):
+        return json({"message": "ok"})
 
     route = Route("/api/data", handler, middleware=[rate_limit_middleware])
     app.router.add_route(route)
@@ -356,19 +357,19 @@ def test_route_middleware_caching(
     cache = {}
     call_count = {"count": 0}
 
-    async def cache_middleware(request: Request, response: Response, call_next):
+    async def cache_middleware(request: HttpContext, call_next):
         cache_key = str(request.url)
 
         if cache_key in cache:
-            return response.json(cache[cache_key])
+            return json(cache[cache_key])
 
-        await call_next()
+        response = await call_next()
         cache[cache_key] = {"cached": True, "count": call_count["count"]}
         return response
 
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         call_count["count"] += 1
-        return response.json({"cached": False, "count": call_count["count"]})
+        return json({"cached": False, "count": call_count["count"]})
 
     route = Route("/data", handler, middleware=[cache_middleware])
     app.router.add_route(route)
@@ -393,15 +394,15 @@ def test_route_middleware_logging(
 
     logs = []
 
-    async def logging_middleware(request: Request, response: Response, call_next):
+    async def logging_middleware(request: HttpContext, call_next):
         logs.append(
             {"method": request.method, "path": request.path, "timestamp": "2024-01-01"}
         )
-        await call_next()
+        response = await call_next()
         return response
 
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "ok"})
+    async def handler(request: HttpContext):
+        return json({"message": "ok"})
 
     route = Route("/test", handler, middleware=[logging_middleware])
     app.router.add_route(route)
@@ -421,13 +422,13 @@ def test_route_middleware_different_methods(
 
     executed = []
 
-    async def method_logger_middleware(request: Request, response: Response, call_next):
+    async def method_logger_middleware(request: HttpContext, call_next):
         executed.append(request.method)
-        await call_next()
+        response = await call_next()
         return response
 
-    async def handler(request: Request, response: Response):
-        return response.json({"method": request.method})
+    async def handler(request: HttpContext):
+        return json({"method": request.method})
 
     route = Route(
         "/test",
@@ -453,14 +454,14 @@ def test_route_middleware_error_handling(
     """Test route middleware handling errors"""
     app = SilloApp()
 
-    async def error_handler_middleware(request: Request, response: Response, call_next):
+    async def error_handler_middleware(request: HttpContext, call_next):
         try:
-            await call_next()
+            response = await call_next()
         except ValueError as e:
-            return response.json({"error": str(e), "handled": True}).status(400)
+            return json({"error": str(e), "handled": True}).status(400)
         return response
 
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise ValueError("Route-specific error")
 
     route = Route("/test", handler, middleware=[error_handler_middleware])

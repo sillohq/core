@@ -34,7 +34,7 @@ def pydantic_model_from_tortoise(
             User, name="UserCreate", exclude=["id", "created_at"], optional_fields=["bio"],
         )
         @app.post("/users", request_model=UserCreate)
-        async def create_user(request, response):
+        async def create_user(ctx):
             user = await User.create(**request.validated_data.model_dump())
     """
     exclude = exclude or []

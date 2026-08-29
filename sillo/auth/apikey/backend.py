@@ -5,7 +5,7 @@ from typing import Any
 from sillo.auth.apikey.models import ApiKeyManager
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.model import AuthResult
-from sillo.core.http import Request
+from sillo.core.http import HttpContext
 
 
 class APIKeyAuthBackend(AuthenticationBackend):
@@ -81,7 +81,7 @@ class APIKeyAuthBackend(AuthenticationBackend):
             self.name = name
         self.description = description
 
-    async def authenticate(self, request: Request) -> Any:
+    async def authenticate(self, request: HttpContext) -> Any:
         """Authenticate an incoming request using an API key header.
 
         Reads the API key from the configured HTTP header on the

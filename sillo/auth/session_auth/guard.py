@@ -10,7 +10,7 @@ from sillo.auth.session_auth.backend import (
 from sillo.auth.session_auth.backend import (
     logout as _session_logout,
 )
-from sillo.core.http import Request
+from sillo.core.http import HttpContext
 
 
 class SessionGuard:
@@ -77,7 +77,7 @@ class SessionGuard:
         """
         return getattr(self.backend, "identifier", DEFAULT_IDENTIFIER)
 
-    async def attempt(self, request: Request, **credentials) -> bool:
+    async def attempt(self, request: HttpContext, **credentials) -> bool:
         """Attempt to authenticate a user with the given credentials.
 
         Extracts ``email`` and ``password`` from the supplied keyword
@@ -114,7 +114,7 @@ class SessionGuard:
         await self.login(request, user)
         return True
 
-    async def login(self, request: Request, user) -> None:
+    async def login(self, request: HttpContext, user) -> None:
         """Log the given user into the current request session.
 
         Delegates to the backend's ``login`` helper to write the user's
@@ -142,7 +142,7 @@ class SessionGuard:
         if hasattr(user, "set_last_login"):
             await user.set_last_login()
 
-    async def logout(self, request: Request) -> None:
+    async def logout(self, request: HttpContext) -> None:
         """Log the current user out by clearing the session data.
 
         Delegates to the backend's ``logout`` helper to remove the
@@ -162,7 +162,7 @@ class SessionGuard:
         """
         _session_logout(request, session_key=self._session_key)
 
-    async def user(self, request: Request):
+    async def user(self, request: HttpContext):
         """Retrieve the currently authenticated user from the request session.
 
         Reads the session store to obtain the stored user identifier,
@@ -198,7 +198,7 @@ class SessionGuard:
                 )
         return None
 
-    async def check(self, request: Request) -> bool:
+    async def check(self, request: HttpContext) -> bool:
         """Check whether the current request has an active session.
 
         Performs a lightweight check for the presence of session data
@@ -221,7 +221,7 @@ class SessionGuard:
             return False
         return bool(request.session.get(self._session_key))
 
-    async def id(self, request: Request) -> str | None:
+    async def id(self, request: HttpContext) -> str | None:
         """Return the raw user identifier stored in the current session.
 
         Reads the session store and extracts the identifier field value
@@ -247,7 +247,7 @@ class SessionGuard:
         )
         return str(session_user.get(self._identifier)) if session_user else None
 
-    async def validate(self, request: Request, credentials: dict) -> bool:
+    async def validate(self, request: HttpContext, credentials: dict) -> bool:
         """Validate credentials without logging the user in.
 
         Checks the supplied email and password against the user model

@@ -1,5 +1,5 @@
 """
-Tests for WebSocket groups and channels functionality
+Tests for WebSocketContext groups and channels functionality
 """
 
 import asyncio
@@ -10,7 +10,7 @@ import pytest
 from sillo import SilloApp
 from sillo.core.routing import Router
 from sillo.testclient import TestClient
-from sillo.websockets import WebSocket, WebSocketConsumer
+from sillo.websockets import WebSocketContext, WebSocketConsumer
 from sillo.websockets.channels import ChannelBox
 
 
@@ -19,13 +19,13 @@ class GroupChatConsumer(WebSocketConsumer):
 
     encoding = "json"
 
-    async def on_connect(self, websocket: WebSocket) -> None:
+    async def on_connect(self, websocket: WebSocketContext) -> None:
         await websocket.accept()
         # Join default group
         await self.join_group("chat")
         await websocket.send_json({"status": "connected", "group": "chat"})
 
-    async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
         action = data.get("action")
 
         if action == "join":
@@ -51,7 +51,7 @@ class GroupChatConsumer(WebSocketConsumer):
                 {"group": data.get("group", "chat"), "channel_count": len(channels)}
             )
 
-    async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
+    async def on_disconnect(self, websocket: WebSocketContext, close_code: int) -> None:
         # Leave all groups on disconnect
         await self.leave_group("chat")
 
@@ -61,13 +61,13 @@ class RoomConsumer(WebSocketConsumer):
 
     encoding = "json"
 
-    async def on_connect(self, websocket: WebSocket) -> None:
+    async def on_connect(self, websocket: WebSocketContext) -> None:
         await websocket.accept()
         room_id = websocket.path_params.get("room_id", "default")
         await self.join_group(f"room_{room_id}")
         await websocket.send_json({"status": "joined_room", "room": room_id})
 
-    async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
         room_id = websocket.path_params.get("room_id", "default")
 
         if data.get("action") == "message":
@@ -89,7 +89,7 @@ class RoomConsumer(WebSocketConsumer):
                 }
             )
 
-    async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
+    async def on_disconnect(self, websocket: WebSocketContext, close_code: int) -> None:
         room_id = websocket.path_params.get("room_id", "default")
         await self.leave_group(f"room_{room_id}")
 
@@ -103,11 +103,11 @@ class MultiGroupConsumer(WebSocketConsumer):
         super().__init__(*args, **kwargs)
         self.joined_groups: List[str] = []
 
-    async def on_connect(self, websocket: WebSocket) -> None:
+    async def on_connect(self, websocket: WebSocketContext) -> None:
         await websocket.accept()
         await websocket.send_json({"status": "ready"})
 
-    async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
         action = data.get("action")
 
         if action == "join":
@@ -146,7 +146,7 @@ class MultiGroupConsumer(WebSocketConsumer):
                 {"action": "broadcast_complete", "groups": len(self.joined_groups)}
             )
 
-    async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
+    async def on_disconnect(self, websocket: WebSocketContext, close_code: int) -> None:
         # Leave all groups
         for group in self.joined_groups:
             await self.leave_group(group)
@@ -345,12 +345,12 @@ def test_broadcast_with_history(test_client_factory: Callable[[SilloApp], TestCl
     class HistoryConsumer(WebSocketConsumer):
         encoding = "json"
 
-        async def on_connect(self, websocket: WebSocket) -> None:
+        async def on_connect(self, websocket: WebSocketContext) -> None:
             await websocket.accept()
             await self.join_group("history_group")
             await websocket.send_json({"status": "connected"})
 
-        async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+        async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
             if data.get("action") == "broadcast":
                 await self.broadcast(
                     payload={"message": data.get("message")},
@@ -358,7 +358,7 @@ def test_broadcast_with_history(test_client_factory: Callable[[SilloApp], TestCl
                     save_history=True,
                 )
 
-        async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
+        async def on_disconnect(self, websocket: WebSocketContext, close_code: int) -> None:
             await self.leave_group("history_group")
 
     route = HistoryConsumer.as_route("/ws/history")

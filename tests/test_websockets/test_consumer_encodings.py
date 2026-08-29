@@ -15,7 +15,7 @@ import pytest
 
 from sillo import SilloApp
 from sillo.testclient import TestClient
-from sillo.websockets import Channel, ChannelBox, WebSocket, WebSocketConsumer
+from sillo.websockets import Channel, ChannelBox, WebSocketContext, WebSocketConsumer
 from sillo.websockets import status
 from sillo.websockets.utils import PayloadTypeEnum
 

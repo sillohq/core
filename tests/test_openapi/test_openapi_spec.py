@@ -5,7 +5,8 @@ Tests the actual /openapi.json endpoint with various configurations.
 
 import pytest
 from sillo import SilloApp, Query, Header, Cookie, Depend, Router
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 
@@ -43,7 +44,7 @@ class TestOpenAPIEndpoint:
 
     def test_openapi_paths_exist(self, client, app):
         @app.get("/test")
-        async def test_handler(request: Request, response: Response):
+        async def test_handler(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -55,7 +56,7 @@ class TestOpenAPIEndpoint:
 class TestPathParametersOpenAPI:
     def test_path_params_extracted(self, client, app):
         @app.get("/users/{user_id}")
-        async def get_user(request: Request, response: Response, user_id: int):
+        async def get_user(request: HttpContext, user_id: int):
             return {"user_id": user_id}
 
         response = client.get("/openapi.json")
@@ -71,7 +72,7 @@ class TestPathParametersOpenAPI:
 class TestQueryParametersOpenAPI:
     def test_query_params_in_openapi(self, client, app):
         @app.get("/items")
-        async def get_items(request: Request, response: Response, page: int = Query(1)):
+        async def get_items(request: HttpContext, page: int = Query(1)):
             return {"page": page}
 
         response = client.get("/openapi.json")
@@ -88,8 +89,7 @@ class TestQueryParametersOpenAPI:
     def test_query_params_multiple(self, client, app):
         @app.get("/search")
         async def search(
-            request: Request,
-            response: Response,
+            request: HttpContext,
             q: str = Query(""),
             limit: int = Query(10),
         ):
@@ -108,7 +108,7 @@ class TestQueryParametersOpenAPI:
     def test_query_params_with_alias(self, client, app):
         @app.get("/alias-test")
         async def alias_test(
-            request: Request, response: Response, page_num: int = Query(1, alias="page")
+            request: HttpContext, page_num: int = Query(1, alias="page")
         ):
             return {"page": page_num}
 
@@ -124,7 +124,7 @@ class TestQueryParametersOpenAPI:
     def test_query_params_required(self, client, app):
         @app.get("/required")
         async def required(
-            request: Request, response: Response, q: str = Query(required=True)
+            request: HttpContext, q: str = Query(required=True)
         ):
             return {"q": q}
 
@@ -142,7 +142,7 @@ class TestHeaderParametersOpenAPI:
     def test_header_params_in_openapi(self, client, app):
         @app.get("/auth")
         async def auth(
-            request: Request, response: Response, authorization: str = Header()
+            request: HttpContext, authorization: str = Header()
         ):
             return {"auth": authorization}
 
@@ -159,8 +159,7 @@ class TestHeaderParametersOpenAPI:
     def test_header_name_conversion(self, client, app):
         @app.get("/headers")
         async def headers(
-            request: Request,
-            response: Response,
+            request: HttpContext,
             x_request_id: str = Header(),
             user_agent: str = Header(),
         ):
@@ -181,7 +180,7 @@ class TestCookieParametersOpenAPI:
     def test_cookie_params_in_openapi(self, client, app):
         @app.get("/settings")
         async def settings(
-            request: Request, response: Response, theme: str = Cookie("light")
+            request: HttpContext, theme: str = Cookie("light")
         ):
             return {"theme": theme}
 
@@ -200,7 +199,7 @@ class TestCookieParametersOpenAPI:
 class TestSummaryAndDescription:
     def test_default_summary(self, client, app):
         @app.get("/test")
-        async def test(request: Request, response: Response):
+        async def test(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -211,7 +210,7 @@ class TestSummaryAndDescription:
 
     def test_custom_summary(self, client, app):
         @app.get("/custom", summary="Get custom data")
-        async def custom(request: Request, response: Response):
+        async def custom(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -221,7 +220,7 @@ class TestSummaryAndDescription:
 
     def test_description(self, client, app):
         @app.get("/described", description="This endpoint returns custom data")
-        async def described(request: Request, response: Response):
+        async def described(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -236,7 +235,7 @@ class TestSummaryAndDescription:
 class TestTagsOpenAPI:
     def test_tags(self, client, app):
         @app.get("/tagged", tags=["users", "profile"])
-        async def tagged(request: Request, response: Response):
+        async def tagged(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -250,7 +249,7 @@ class TestTagsOpenAPI:
 class TestOperationId:
     def test_auto_operation_id(self, client, app):
         @app.get("/items")
-        async def items(request: Request, response: Response):
+        async def items(request: HttpContext):
             return {"items": []}
 
         response = client.get("/openapi.json")
@@ -261,7 +260,7 @@ class TestOperationId:
 
     def test_custom_operation_id(self, client, app):
         @app.get("/custom-id", operation_id="getCustomItems")
-        async def custom_id(request: Request, response: Response):
+        async def custom_id(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -273,7 +272,7 @@ class TestOperationId:
 class TestResponsesOpenAPI:
     def test_default_response(self, client, app):
         @app.get("/test")
-        async def test(request: Request, response: Response):
+        async def test(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -289,7 +288,7 @@ class TestRouterOpenAPI:
         router = Router(prefix="/api")
 
         @router.get("/items")
-        async def router_items(request: Request, response: Response):
+        async def router_items(request: HttpContext):
             return {"items": []}
 
         app.mount_router(router)
@@ -303,7 +302,7 @@ class TestRouterOpenAPI:
 class TestDeprecatedEndpoints:
     def test_deprecated_flag(self, client, app):
         @app.get("/old", deprecated=True)
-        async def old_endpoint(request: Request, response: Response):
+        async def old_endpoint(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -316,8 +315,7 @@ class TestMixedParameterTypes:
     def test_all_param_types(self, client, app):
         @app.get("/full")
         async def full(
-            request: Request,
-            response: Response,
+            request: HttpContext,
             page: int = Query(1),
             auth: str = Header(),
             session: str = Cookie(),
@@ -339,11 +337,11 @@ class TestMixedParameterTypes:
 class TestExcludedFromSchema:
     def test_excluded_endpoint_not_in_openapi(self, client, app):
         @app.get("/visible")
-        async def visible(request: Request, response: Response):
+        async def visible(request: HttpContext):
             return {"ok": True}
 
         @app.get("/hidden", exclude_from_schema=True)
-        async def hidden(request: Request, response: Response):
+        async def hidden(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -356,7 +354,7 @@ class TestExcludedFromSchema:
 class TestMultipleMethods:
     def test_get_and_head_methods(self, client, app):
         @app.get("/multi")
-        async def multi(request: Request, response: Response):
+        async def multi(request: HttpContext):
             return {"ok": True}
 
         response = client.get("/openapi.json")
@@ -377,8 +375,7 @@ class TestFullIntegration:
             operation_id="listUserPosts",
         )
         async def list_user_posts(
-            request: Request,
-            response: Response,
+            request: HttpContext,
             user_id: int,
             page: int = Query(1),
             limit: int = Query(10),
@@ -519,12 +516,12 @@ class TestNestedSchemaReferences:
         app = SilloApp()
 
         @app.get("/assemblies", responses={200: Assembly})
-        async def list_assemblies(request, response):
-            return response.json({})
+        async def list_assemblies(request):
+            return json({})
 
         @app.post("/assemblies", request_model=Assembly, responses={201: Assembly})
-        async def create_assembly(request, response):
-            return response.json({}, status_code=201)
+        async def create_assembly(request):
+            return json({}, status_code=201)
 
         return app
 
@@ -579,8 +576,8 @@ class TestSchemaExamples:
         app = SilloApp()
 
         @app.post("/prices", request_model=Money, responses={200: Money})
-        async def create_price(request, response):
-            return response.json({})
+        async def create_price(request):
+            return json({})
 
         response = TestClient(app).get("/openapi.json")
 
@@ -595,8 +592,8 @@ class TestSchemaExamples:
         app = SilloApp()
 
         @app.post("/prices", request_model=Money, responses={200: Money})
-        async def create_price(request, response):
-            return response.json({})
+        async def create_price(request):
+            return json({})
 
         spec = TestClient(app).get("/openapi.json").json()
         # A top-level request model is inlined rather than hoisted into
@@ -618,12 +615,12 @@ class TestSchemaExamples:
         app = SilloApp()
 
         @app.get("/unrelated")
-        async def unrelated(request, response):
-            return response.json({"ok": True})
+        async def unrelated(request):
+            return json({"ok": True})
 
         @app.post("/withexamples", request_model=WithExamples)
-        async def with_examples(request, response):
-            return response.json({})
+        async def with_examples(request):
+            return json({})
 
         spec = TestClient(app).get("/openapi.json").json()
 
@@ -662,8 +659,8 @@ class TestDiscriminatorMapping:
         app = SilloApp()
 
         @app.post("/send", request_model=Send, responses={200: Send})
-        async def send(request, response):
-            return response.json({})
+        async def send(request):
+            return json({})
 
         return app
 

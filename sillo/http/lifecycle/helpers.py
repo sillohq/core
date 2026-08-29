@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import uuid
 
-from sillo.core.http import Request, Response
+from typing import Any
+
+from sillo.core.http import HttpContext
 
 
 def generate_request_id() -> str:
@@ -27,7 +29,7 @@ def generate_request_id() -> str:
 
 
 def get_request_id_from_header(
-    request: Request, header_name: str = "X-Request-ID"
+    request: HttpContext, header_name: str = "X-Request-ID"
 ) -> str | None:
     """Extract a request ID from an incoming HTTP request header.
 
@@ -36,7 +38,7 @@ def get_request_id_from_header(
     to decide whether to generate a new ID or reject the request.
 
     Args:
-        request (Request): The incoming HTTP request object whose
+        request (HttpContext): The incoming HTTP request object whose
             headers should be inspected.
         header_name (str, optional): The case-sensitive header name
             to look up. Defaults to ``"X-Request-ID"``.
@@ -52,7 +54,7 @@ def get_request_id_from_header(
 
 
 def set_request_id_header(
-    response: Response, request_id: str, header_name: str = "X-Request-ID"
+    response: Any, request_id: str, header_name: str = "X-Request-ID"
 ) -> None:
     """Attach a request ID header to an outgoing HTTP response.
 
@@ -61,7 +63,7 @@ def set_request_id_header(
     request ID used for tracing and log correlation.
 
     Args:
-        response (Response): The outgoing HTTP response object on
+        response: The outgoing HTTP response object on
             which to set the header.
         request_id (str): The request identifier value to write into
             the response header.
@@ -78,7 +80,7 @@ def set_request_id_header(
 
 
 def get_or_generate_request_id(
-    request: Request, header_name: str = "X-Request-ID"
+    request: HttpContext, header_name: str = "X-Request-ID"
 ) -> str:
     """Return an existing request ID from headers or generate a new one.
 
@@ -88,7 +90,7 @@ def get_or_generate_request_id(
     always available for downstream processing.
 
     Args:
-        request (Request): The incoming HTTP request object to
+        request (HttpContext): The incoming HTTP request object to
             inspect for an existing request ID header.
         header_name (str, optional): The header name to check.
             Defaults to ``"X-Request-ID"``.
@@ -133,7 +135,7 @@ def validate_request_id(request_id: str) -> bool:
 
 
 def store_request_id_in_request(
-    request: Request, request_id: str, attribute_name: str = "request_id"
+    request: HttpContext, request_id: str, attribute_name: str = "request_id"
 ) -> None:
     """Persist a request ID onto the request's mutable state object.
 
@@ -142,7 +144,7 @@ def store_request_id_in_request(
     middleware without re-parsing headers.
 
     Args:
-        request (Request): The HTTP request object whose state
+        request (HttpContext): The HTTP request object whose state
             should be updated with the request ID.
         request_id (str): The request identifier value to store.
         attribute_name (str, optional): The attribute name to use on
@@ -158,7 +160,7 @@ def store_request_id_in_request(
 
 
 def get_request_id_from_request(
-    request: Request, attribute_name: str = "request_id"
+    request: HttpContext, attribute_name: str = "request_id"
 ) -> str | None:
     """Retrieve a previously stored request ID from the request state.
 
@@ -168,7 +170,7 @@ def get_request_id_from_request(
     earlier in the request pipeline.
 
     Args:
-        request (Request): The HTTP request object to read the
+        request (HttpContext): The HTTP request object to read the
             stored request ID from.
         attribute_name (str, optional): The attribute name to look
             up on ``request.state``. Defaults to ``"request_id"``.

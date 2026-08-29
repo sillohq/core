@@ -8,7 +8,7 @@ class BaseHistoryManager(ABC):
     """Abstract base class for channel history managers.
 
     This allows users to implement custom history storage backends
-    (e.g., Redis, database, file-based) for WebSocket channel messages.
+    (e.g., Redis, database, file-based) for WebSocketContext channel messages.
     """
 
     @abstractmethod

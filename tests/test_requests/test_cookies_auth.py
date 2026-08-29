@@ -8,7 +8,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 # ========== Cookies Tests ==========
@@ -19,10 +20,10 @@ def test_request_cookies(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         session_id = request.cookies.get("session_id")
         user_id = request.cookies.get("user_id")
-        return response.json({"session_id": session_id, "user_id": user_id})
+        return json({"session_id": session_id, "user_id": user_id})
 
     with test_client_factory(app) as client:
         client.cookies.set("session_id", "abc123")
@@ -38,8 +39,8 @@ def test_request_cookies_empty(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json(
+    async def handler(request: HttpContext):
+        return json(
             {"has_cookies": bool(request.cookies), "count": len(request.cookies)}
         )
 
@@ -56,9 +57,9 @@ def test_request_cookies_multiple(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         cookies_dict = dict(request.cookies)
-        return response.json(cookies_dict)
+        return json(cookies_dict)
 
     with test_client_factory(app) as client:
         client.cookies.set("cookie1", "value1")
@@ -78,9 +79,9 @@ def test_request_cookies_special_characters(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         token = request.cookies.get("token")
-        return response.json({"token": token})
+        return json({"token": token})
 
     with test_client_factory(app) as client:
         client.cookies.set("token", "abc-123_xyz")
@@ -95,10 +96,10 @@ def test_request_cookies_contains(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         has_session = "session" in request.cookies
         has_missing = "missing" in request.cookies
-        return response.json({"has_session": has_session, "has_missing": has_missing})
+        return json({"has_session": has_session, "has_missing": has_missing})
 
     with test_client_factory(app) as client:
         client.cookies.set("session", "xyz")
@@ -115,9 +116,9 @@ def test_request_cookies_iteration(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         cookie_names = list(request.cookies.keys())
-        return response.json({"cookie_names": cookie_names})
+        return json({"cookie_names": cookie_names})
 
     with test_client_factory(app) as client:
         client.cookies.set("a", "1")
@@ -136,8 +137,8 @@ def test_request_is_ajax(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"is_ajax": request.is_ajax})
+    async def handler(request: HttpContext):
+        return json({"is_ajax": request.is_ajax})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"X-Requested-With": "XMLHttpRequest"})
@@ -151,8 +152,8 @@ def test_request_is_ajax_case_insensitive(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"is_ajax": request.is_ajax})
+    async def handler(request: HttpContext):
+        return json({"is_ajax": request.is_ajax})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"X-Requested-With": "xmlhttprequest"})

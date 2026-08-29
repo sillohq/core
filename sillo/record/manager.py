@@ -137,7 +137,7 @@ class DatabaseManager:
         self._initialized = True
         logger.info("Database connected — backend=%s", self.config.backend.value)
 
-    async def ensure_context(self, request, response, call_next):
+    async def ensure_context(self, ctx, call_next):
         """Per-request middleware hook.
 
         Tortoise >=0.25 stores DB connections in a task-scoped
@@ -146,8 +146,8 @@ class DatabaseManager:
         root context here for the duration of the request. Older Tortoise keeps
         connections in global state, where a pass-through is sufficient.
         """
-        ctx = self._root_context
-        if ctx is None or not getattr(ctx, "inited", False):
+        root = self._root_context
+        if root is None or not getattr(root, "inited", False):
             return await call_next()
 
         if _current_context is None:
@@ -157,7 +157,7 @@ class DatabaseManager:
         if _current_context.get() is not None:
             return await call_next()
 
-        token = _current_context.set(ctx)
+        token = _current_context.set(root)
         try:
             return await call_next()
         finally:

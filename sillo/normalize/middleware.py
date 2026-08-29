@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any
 from urllib.parse import urlunparse
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, redirect as _redirect
 from sillo.middleware.base import BaseMiddleware
 
 
@@ -178,10 +178,9 @@ class NormalizeMiddleware(BaseMiddleware):
         skip_patterns = [".", "?", "#"]
         return any(pattern in path for pattern in skip_patterns)
 
-    async def process_request(
+    async def dispatch(
         self,
-        request: Request,
-        response: Response,
+        ctx: HttpContext,
         call_next: Any,
     ) -> Any:
         """
@@ -195,10 +194,8 @@ class NormalizeMiddleware(BaseMiddleware):
         HTTP redirect response to the canonical URL form.
 
         Args:
-            request (Request): The incoming HTTP request object whose URL path
-                will be inspected and potentially modified during normalization.
-            response (Response): The HTTP response object used to construct
-                redirect responses when the slash action requires redirection.
+            ctx (HttpContext): The context whose URL path will be inspected
+                and potentially modified during normalization.
             call_next (Any): An async callable representing the next middleware
                 or route handler in the processing chain.
 
@@ -206,6 +203,7 @@ class NormalizeMiddleware(BaseMiddleware):
             Any: Either a redirect response if the path requires canonicalization
             via redirect, or the result of calling the next handler in the chain.
         """
+        request = ctx
         original_path = request.url.path
 
         if self._should_skip_processing(original_path):
@@ -261,7 +259,7 @@ class NormalizeMiddleware(BaseMiddleware):
                         request.url.fragment,
                     )
                 )
-                return response.redirect(
+                return _redirect(
                     redirect_url, status_code=self.redirect_status_code
                 )
 

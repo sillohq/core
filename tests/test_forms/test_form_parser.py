@@ -3,7 +3,8 @@ from typing import AsyncGenerator
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.formparser import FormParser, MultiPartException, MultiPartParser
 from sillo.objects import FormData, Headers, UploadedFile
 from sillo.testclient import TestClient
@@ -22,13 +23,13 @@ app = SilloApp()
 
 # Define test endpoints for form submission
 @app.post("/form")
-async def handle_form(request: Request, response: Response):
+async def handle_form(request: HttpContext):
     form = await request.form_data
-    return response.json({"fields": dict(form.items())})
+    return json({"fields": dict(form.items())})
 
 
 @app.post("/upload")
-async def handle_upload(request: Request, response: Response):
+async def handle_upload(request: HttpContext):
     form = await request.form_data
     files = {}
     fields = {}
@@ -45,7 +46,7 @@ async def handle_upload(request: Request, response: Response):
         else:
             fields[key] = value
 
-    return response.json({"files": files, "fields": fields})
+    return json({"files": files, "fields": fields})
 
 
 # Helper function to create a stream from bytes for testing parsers

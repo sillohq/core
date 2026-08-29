@@ -5,7 +5,8 @@ Integration tests for CORS middleware with realistic scenarios
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json, text
+from sillo.core.http import HttpContext
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
 
@@ -39,28 +40,28 @@ class TestCORSIntegration:
 
         # API routes like a real web app
         @app.get("/api/users")
-        async def get_users(request: Request, response: Response):
-            return response.json({"users": []})
+        async def get_users(request: HttpContext):
+            return json({"users": []})
 
         @app.get("/api/users/{user_id}")
-        async def get_user(request: Request, response: Response, user_id):
-            return response.json({"user": {"id": user_id, "name": "John"}})
+        async def get_user(request: HttpContext, user_id):
+            return json({"user": {"id": user_id, "name": "John"}})
 
         @app.post("/api/users")
-        async def create_user(request: Request, response: Response):
-            return response.json({"created": True})
+        async def create_user(request: HttpContext):
+            return json({"created": True})
 
         @app.put("/api/users/{user_id}")
-        async def update_user(request: Request, response: Response, user_id):
-            return response.json({"updated": True})
+        async def update_user(request: HttpContext, user_id):
+            return json({"updated": True})
 
         @app.delete("/api/users/{user_id}")
-        async def delete_user(request: Request, response: Response, user_id):
-            return response.json({"deleted": True})
+        async def delete_user(request: HttpContext, user_id):
+            return json({"deleted": True})
 
         @app.get("/api/posts")
-        async def get_posts(request: Request, response: Response):
-            return response.json({"posts": []})
+        async def get_posts(request: HttpContext):
+            return json({"posts": []})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -105,19 +106,19 @@ class TestCORSIntegration:
         # Middleware execution order tracking
         execution_order = []
 
-        async def logging_middleware(request: Request, response: Response, call_next):
+        async def logging_middleware(request: HttpContext, call_next):
             execution_order.append("logging_before")
             result = await call_next()
             execution_order.append("logging_after")
             return result
 
-        async def auth_middleware(request: Request, response: Response, call_next):
+        async def auth_middleware(request: HttpContext, call_next):
             execution_order.append("auth_before")
             result = await call_next()
             execution_order.append("auth_after")
             return result
 
-        async def timing_middleware(request: Request, response: Response, call_next):
+        async def timing_middleware(request: HttpContext, call_next):
             execution_order.append("timing_before")
             result = await call_next()
             result.set_header("X-Response-Time", "100ms")
@@ -125,9 +126,9 @@ class TestCORSIntegration:
             return result
 
         @app.get("/multi-middleware")
-        async def multi_middleware_route(request: Request, response: Response):
+        async def multi_middleware_route(request: HttpContext):
             execution_order.append("handler")
-            return response.json({"message": "OK"})
+            return json({"message": "OK"})
 
         # Add middleware in specific order
         app.use(logging_middleware)
@@ -171,8 +172,8 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.post("/api/upload")
-        async def upload_file(request: Request, response: Response):
-            return response.json({"uploaded": True, "filename": "test.jpg"})
+        async def upload_file(request: HttpContext):
+            return json({"uploaded": True, "filename": "test.jpg"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -222,26 +223,26 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.post("/api/login")
-        async def login(request: Request, response: Response):
-            return response.json({"token": "abc123", "user": "john"})
+        async def login(request: HttpContext):
+            return json({"token": "abc123", "user": "john"})
 
         @app.get("/api/profile")
-        async def get_profile(request: Request, response: Response):
+        async def get_profile(request: HttpContext):
             # Simulate auth check
             auth_header = request.headers.get("Authorization")
             if not auth_header:
-                return response.status(401).json({"error": "Unauthorized"})
+                return json({"error": "Unauthorized"}, status_code=401)
 
-            return response.json({"user": "john", "email": "john@example.com"})
+            return json({"user": "john", "email": "john@example.com"})
 
         @app.delete("/api/account")
-        async def delete_account(request: Request, response: Response):
+        async def delete_account(request: HttpContext):
             # Simulate auth check
             auth_header = request.headers.get("Authorization")
             if not auth_header:
-                return response.status(401).json({"error": "Unauthorized"})
+                return json({"error": "Unauthorized"}, status_code=401)
 
-            return response.json({"deleted": True})
+            return json({"deleted": True})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -295,12 +296,12 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.post("/api/json")
-        async def json_endpoint(request: Request, response: Response):
-            return response.json({"received": "json"})
+        async def json_endpoint(request: HttpContext):
+            return json({"received": "json"})
 
         @app.post("/api/text")
-        async def text_endpoint(request: Request, response: Response):
-            return response.text("text response")
+        async def text_endpoint(request: HttpContext):
+            return text("text response")
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -343,9 +344,9 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.get("/api/data")
-        async def subdomain_data(request: Request, response: Response):
+        async def subdomain_data(request: HttpContext):
             origin = request.origin
-            response.json({"data": "test"})
+            response = json({"data": "test"})
             if origin:
                 subdomain = origin.split(".")[0].replace("https://", "")
                 response.set_header("X-Subdomain", subdomain)
@@ -381,8 +382,8 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.get("/performance-test")
-        async def performance_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def performance_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -406,9 +407,9 @@ class TestCORSIntegration:
 
         app = SilloApp()
 
-        # Request ID middleware
+        # HttpContext ID middleware
         async def request_id_middleware(
-            request: Request, response: Response, call_next
+            request: HttpContext, call_next
         ):
             import uuid
 
@@ -423,9 +424,9 @@ class TestCORSIntegration:
             return result
 
         @app.get("/tracked-request")
-        async def tracked_route(request: Request, response: Response):
+        async def tracked_route(request: HttpContext):
             request_id = request.scope.get("request_id")
-            return response.json({"request_id": request_id, "message": "OK"})
+            return json({"request_id": request_id, "message": "OK"})
 
         # Add middleware
         app.use(request_id_middleware)

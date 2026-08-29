@@ -3,9 +3,10 @@ from functools import partial
 import pytest
 
 from sillo.application import SilloApp
+from sillo import json
 from sillo.auth.session_auth.backend import login, logout
 from sillo.auth.session_auth.guard import SessionGuard
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.session.middleware import SessionMiddleware
 from sillo.testclient import AsyncTestClient
 from sillo.users import SimpleUser
@@ -51,14 +52,14 @@ async def test_login_sets_session(test_client):
     app.use(SessionMiddleware(secret_key="test-key"))
 
     @app.post("/login")
-    async def do_login(req: Request, res: Response):
+    async def do_login(req: HttpContext):
         login(req, SimpleUser("alice"))
-        return res.json({"ok": True})
+        return json({"ok": True})
 
     @app.get("/check")
-    async def check(req: Request, res: Response):
+    async def check(req: HttpContext):
         d = req.session.get("user")
-        return res.json({"has_user": d is not None, "id": str(d["id"]) if d else None})
+        return json({"has_user": d is not None, "id": str(d["id"]) if d else None})
 
     client = test_client(app)
     login_res = await client.post("/login")
@@ -73,18 +74,18 @@ async def test_logout_clears_session(test_client):
     app.use(SessionMiddleware(secret_key="test-key"))
 
     @app.post("/login")
-    async def do_login(req: Request, res: Response):
+    async def do_login(req: HttpContext):
         login(req, SimpleUser("alice"))
-        return res.json({"ok": True})
+        return json({"ok": True})
 
     @app.post("/logout")
-    async def do_logout(req: Request, res: Response):
+    async def do_logout(req: HttpContext):
         logout(req)
-        return res.json({"ok": True})
+        return json({"ok": True})
 
     @app.get("/check")
-    async def check(req: Request, res: Response):
-        return res.json({"authenticated": bool(req.session.get("user"))})
+    async def check(req: HttpContext):
+        return json({"authenticated": bool(req.session.get("user"))})
 
     client = test_client(app)
 
@@ -109,19 +110,19 @@ async def test_guard_attempt_and_check(test_client):
     guard = SessionGuard(backend=None, user_model=mock_model)
 
     @app.post("/login")
-    async def do_login(req: Request, res: Response):
+    async def do_login(req: HttpContext):
         form = await req.form
         ok = await guard.attempt(req, email=form["email"], password=form["password"])
-        return res.json({"status": "ok" if ok else "fail"})
+        return json({"status": "ok" if ok else "fail"})
 
     @app.get("/check")
-    async def check(req: Request, res: Response):
-        return res.json({"authenticated": await guard.check(req)})
+    async def check(req: HttpContext):
+        return json({"authenticated": await guard.check(req)})
 
     @app.get("/id")
-    async def get_id(req: Request, res: Response):
+    async def get_id(req: HttpContext):
         uid = await guard.id(req)
-        return res.json({"id": uid})
+        return json({"id": uid})
 
     client = test_client(app)
     login_res = await client.post("/login", data={"email": "a@b.com", "password": "secret"})
@@ -143,10 +144,10 @@ async def test_guard_attempt_wrong_password(test_client):
     guard = SessionGuard(backend=None, user_model=mock_model)
 
     @app.post("/login")
-    async def do_login(req: Request, res: Response):
+    async def do_login(req: HttpContext):
         form = await req.form
         ok = await guard.attempt(req, email=form["email"], password=form["password"])
-        return res.json({"status": "ok" if ok else "fail"})
+        return json({"status": "ok" if ok else "fail"})
 
     client = test_client(app)
     res = await client.post("/login", data={"email": "a@b.com", "password": "wrong"})
@@ -161,10 +162,10 @@ async def test_guard_attempt_user_not_found(test_client):
     guard = SessionGuard(backend=None, user_model=mock_model)
 
     @app.post("/login")
-    async def do_login(req: Request, res: Response):
+    async def do_login(req: HttpContext):
         form = await req.form
         ok = await guard.attempt(req, email=form["email"], password=form["password"])
-        return res.json({"status": "ok" if ok else "fail"})
+        return json({"status": "ok" if ok else "fail"})
 
     client = test_client(app)
     res = await client.post("/login", data={"email": "ghost@b.com", "password": "any"})
@@ -179,19 +180,19 @@ async def test_guard_logout(test_client):
     guard = SessionGuard(backend=None, user_model=mock_model)
 
     @app.post("/login")
-    async def do_login(req: Request, res: Response):
+    async def do_login(req: HttpContext):
         form = await req.form
         await guard.attempt(req, email=form["email"], password=form["password"])
-        return res.json({"ok": True})
+        return json({"ok": True})
 
     @app.post("/logout")
-    async def do_logout(req: Request, res: Response):
+    async def do_logout(req: HttpContext):
         await guard.logout(req)
-        return res.json({"ok": True})
+        return json({"ok": True})
 
     @app.get("/check")
-    async def check(req: Request, res: Response):
-        return res.json({"authenticated": await guard.check(req)})
+    async def check(req: HttpContext):
+        return json({"authenticated": await guard.check(req)})
 
     client = test_client(app)
 
@@ -216,10 +217,10 @@ async def test_guard_validate(test_client):
     guard = SessionGuard(backend=None, user_model=mock_model)
 
     @app.post("/validate")
-    async def validate(req: Request, res: Response):
+    async def validate(req: HttpContext):
         body = await req.json
         ok = await guard.validate(req, body)
-        return res.json({"valid": ok})
+        return json({"valid": ok})
 
     client = test_client(app)
     res = await client.post("/validate", json={"email": "a@b.com", "password": "secret"})

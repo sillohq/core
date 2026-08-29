@@ -8,7 +8,8 @@ request. The middleware is driven end to end.
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.http.etag import (
     ETag,
     ETagMiddleware,
@@ -96,7 +97,7 @@ class TestParsingHeaderLists:
             "client": ("127.0.0.1", 1), "server": ("t", 80),
             "scheme": "http", "http_version": "1.1", "root_path": "",
         }
-        request = Request(scope)
+        request = HttpContext(scope)
 
         assert parse_if_match(request) == ['"m"']
         assert parse_if_none_match(request) == ['"n"']
@@ -133,7 +134,7 @@ class TestFreshness:
         headers = []
         if if_none_match is not None:
             headers.append((b"if-none-match", if_none_match.encode()))
-        return Request(
+        return HttpContext(
             {
                 "type": "http", "method": "GET", "path": "/", "raw_path": b"/",
                 "query_string": b"", "headers": headers,
@@ -144,20 +145,20 @@ class TestFreshness:
 
     def test_a_response_with_no_etag_is_never_fresh(self):
         response = Response(request=self._request())
-        response.json({"a": 1})
-        assert is_fresh(self._request('"a"'), response) is False
+        json({"a": 1})
+        assert is_fresh(self._request('"a"')) is False
 
     def test_a_matching_client_tag_is_fresh(self):
         response = Response(request=self._request())
-        response.json({"a": 1})
+        json({"a": 1})
         tag = compute_and_set_etag(response, b"body", override=True)
-        assert is_fresh(self._request(tag), response) is True
+        assert is_fresh(self._request(tag)) is True
 
     def test_a_non_matching_client_tag_is_not_fresh(self):
         response = Response(request=self._request())
-        response.json({"a": 1})
+        json({"a": 1})
         compute_and_set_etag(response, b"body", override=True)
-        assert is_fresh(self._request('"other"'), response) is False
+        assert is_fresh(self._request('"other"')) is False
 
 
 class TestResponseBody:
@@ -199,12 +200,12 @@ class TestMiddleware:
         app = SilloApp(debug=False)
 
         @app.get("/thing")
-        async def thing(request: Request, response: Response):
-            return response.json({"value": 1})
+        async def thing(request: HttpContext):
+            return json({"value": 1})
 
         @app.post("/thing")
-        async def create(request: Request, response: Response):
-            return response.json({"value": 1})
+        async def create(request: HttpContext):
+            return json({"value": 1})
 
         app.use(ETagMiddleware(**kwargs))
         return app

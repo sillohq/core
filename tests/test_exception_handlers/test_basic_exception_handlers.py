@@ -7,8 +7,9 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
+from sillo import json
 from sillo.exceptions import HTTPException, NotFoundException
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 # ========== Basic Exception Handler Tests ==========
@@ -24,14 +25,14 @@ def test_exception_handler_custom_exception(
         pass
 
     async def custom_error_handler(
-        request: Request, response: Response, exc: CustomError
+        request: HttpContext, exc: CustomError
     ):
-        return response.json({"error": "CustomError", "message": str(exc)}).status(400)
+        return json({"error": "CustomError", "message": str(exc)}).status(400)
 
     app.add_exception_handler(CustomError, custom_error_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise CustomError("Something went wrong")
 
     with test_client_factory(app) as client:
@@ -49,7 +50,7 @@ def test_exception_handler_http_exception(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise HTTPException(status_code=403, detail="Forbidden resource")
 
     with test_client_factory(app) as client:
@@ -64,7 +65,7 @@ def test_exception_handler_not_found_exception(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise NotFoundException("Resource not found")
 
     with test_client_factory(app) as client:
@@ -79,14 +80,14 @@ def test_exception_handler_value_error(
     app = SilloApp()
 
     async def value_error_handler(
-        request: Request, response: Response, exc: ValueError
+        request: HttpContext, exc: ValueError
     ):
-        return response.json({"error": "ValueError", "message": str(exc)}).status(400)
+        return json({"error": "ValueError", "message": str(exc)}).status(400)
 
     app.add_exception_handler(ValueError, value_error_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise ValueError("Invalid value provided")
 
     with test_client_factory(app) as client:
@@ -101,15 +102,15 @@ def test_exception_handler_type_error(
     """Test handling TypeError"""
     app = SilloApp()
 
-    async def type_error_handler(request: Request, response: Response, exc: TypeError):
-        return response.json({"error": "TypeError", "message": "Type mismatch"}).status(
+    async def type_error_handler(request: HttpContext, exc: TypeError):
+        return json({"error": "TypeError", "message": "Type mismatch"}).status(
             400
         )
 
     app.add_exception_handler(TypeError, type_error_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise TypeError("Expected string, got int")
 
     with test_client_factory(app) as client:
@@ -130,21 +131,21 @@ def test_exception_handler_multiple_exceptions(
     class ErrorB(Exception):
         pass
 
-    async def error_a_handler(request: Request, response: Response, exc: ErrorA):
-        return response.json({"error": "ErrorA"}).status(400)
+    async def error_a_handler(request: HttpContext, exc: ErrorA):
+        return json({"error": "ErrorA"}).status(400)
 
-    async def error_b_handler(request: Request, response: Response, exc: ErrorB):
-        return response.json({"error": "ErrorB"}).status(500)
+    async def error_b_handler(request: HttpContext, exc: ErrorB):
+        return json({"error": "ErrorB"}).status(500)
 
     app.add_exception_handler(ErrorA, error_a_handler)
     app.add_exception_handler(ErrorB, error_b_handler)
 
     @app.get("/error-a")
-    async def handler_a(request: Request, response: Response):
+    async def handler_a(request: HttpContext):
         raise ErrorA()
 
     @app.get("/error-b")
-    async def handler_b(request: Request, response: Response):
+    async def handler_b(request: HttpContext):
         raise ErrorB()
 
     with test_client_factory(app) as client:
@@ -168,12 +169,12 @@ def test_exception_handler_decorator_style(
 
     @app.add_exception_handler(CustomException)
     async def handle_custom_exception(
-        request: Request, response: Response, exc: CustomException
+        request: HttpContext, exc: CustomException
     ):
-        return response.json({"error": "I'm a teapot", "message": str(exc)}).status(418)
+        return json({"error": "I'm a teapot", "message": str(exc)}).status(418)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise CustomException("Teapot error")
 
     with test_client_factory(app) as client:
@@ -192,16 +193,16 @@ def test_exception_handler_status_code_404(
     app = SilloApp()
 
     async def custom_404_handler(
-        request: Request, response: Response, exc: HTTPException
+        request: HttpContext, exc: HTTPException
     ):
-        return response.json(
+        return json(
             {"error": "Not Found", "path": request.path, "custom": True}
         ).status(404)
 
     app.add_exception_handler(404, custom_404_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise HTTPException(status_code=404, detail="Page not found")
 
     with test_client_factory(app) as client:
@@ -219,9 +220,9 @@ def test_exception_handler_status_code_500(
     app = SilloApp()
 
     async def custom_500_handler(
-        request: Request, response: Response, exc: HTTPException
+        request: HttpContext, exc: HTTPException
     ):
-        return response.json(
+        return json(
             {
                 "error": "Internal Server Error",
                 "message": "Something went wrong on our end",
@@ -231,7 +232,7 @@ def test_exception_handler_status_code_500(
     app.add_exception_handler(500, custom_500_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise HTTPException(status_code=500, detail="Server error")
 
     with test_client_factory(app) as client:
@@ -247,16 +248,16 @@ def test_exception_handler_status_code_401(
     app = SilloApp()
 
     async def custom_401_handler(
-        request: Request, response: Response, exc: HTTPException
+        request: HttpContext, exc: HTTPException
     ):
-        return response.json({"error": "Unauthorized", "login_url": "/login"}).status(
+        return json({"error": "Unauthorized", "login_url": "/login"}).status(
             401
         )
 
     app.add_exception_handler(401, custom_401_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     with test_client_factory(app) as client:
@@ -278,10 +279,10 @@ def test_exception_handler_with_custom_headers(
         pass
 
     async def rate_limit_handler(
-        request: Request, response: Response, exc: RateLimitError
+        request: HttpContext, exc: RateLimitError
     ):
         return (
-            response.json({"error": "Rate limit exceeded", "retry_after": 60})
+            json({"error": "Rate limit exceeded", "retry_after": 60})
             .set_header("Retry-After", "60")
             .status(429)
         )
@@ -289,7 +290,7 @@ def test_exception_handler_with_custom_headers(
     app.add_exception_handler(RateLimitError, rate_limit_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise RateLimitError()
 
     with test_client_factory(app) as client:
@@ -305,7 +306,7 @@ def test_exception_handler_http_exception_with_headers(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise HTTPException(
             status_code=403,
             detail="Forbidden",
@@ -333,13 +334,13 @@ def test_exception_handler_inheritance(
     class SpecificError(BaseError):
         pass
 
-    async def base_error_handler(request: Request, response: Response, exc: BaseError):
-        return response.json({"error": "BaseError"}).status(400)
+    async def base_error_handler(request: HttpContext, exc: BaseError):
+        return json({"error": "BaseError"}).status(400)
 
     app.add_exception_handler(BaseError, base_error_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise SpecificError("Specific error")
 
     with test_client_factory(app) as client:
@@ -360,19 +361,19 @@ def test_exception_handler_specific_over_base(
     class SpecificError(BaseError):
         pass
 
-    async def base_error_handler(request: Request, response: Response, exc: BaseError):
-        return response.status(400).json({"error": "BaseError"})
+    async def base_error_handler(request: HttpContext, exc: BaseError):
+        return json({"error": "BaseError"}, status_code=400)
 
     async def specific_error_handler(
-        request: Request, response: Response, exc: SpecificError
+        request: HttpContext, exc: SpecificError
     ):
-        return response.json({"error": "SpecificError"}).status(422)
+        return json({"error": "SpecificError"}).status(422)
 
     app.add_exception_handler(BaseError, base_error_handler)
     app.add_exception_handler(SpecificError, specific_error_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise SpecificError()
 
     with test_client_factory(app) as client:
@@ -394,9 +395,9 @@ def test_exception_handler_access_request_data(
         pass
 
     async def validation_error_handler(
-        request: Request, response: Response, exc: ValidationError
+        request: HttpContext, exc: ValidationError
     ):
-        return response.json(
+        return json(
             {
                 "error": "Validation failed",
                 "path": request.path,
@@ -408,7 +409,7 @@ def test_exception_handler_access_request_data(
     app.add_exception_handler(ValidationError, validation_error_handler)
 
     @app.post("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise ValidationError("Invalid input")
 
     with test_client_factory(app) as client:
@@ -431,16 +432,16 @@ def test_exception_handler_with_exception_details(
             self.code = code
 
     async def detailed_error_handler(
-        request: Request, response: Response, exc: DetailedError
+        request: HttpContext, exc: DetailedError
     ):
-        return response.json(
+        return json(
             {"error": "DetailedError", "message": str(exc), "code": exc.code}
         ).status(400)
 
     app.add_exception_handler(DetailedError, detailed_error_handler)
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         raise DetailedError("Custom error", code=1001)
 
     with test_client_factory(app) as client:

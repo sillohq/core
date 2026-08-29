@@ -9,7 +9,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from sillo import Request, Response, SilloApp
+from sillo import HttpContext, SilloApp
+from sillo import sse
 from sillo.http.sse import ServerSentEvent, last_event_id, sse_stream
 from sillo.testclient import TestClient
 
@@ -189,7 +190,7 @@ class TestLastEventId:
 
 
 class TestResponseSse:
-    """`response.sse()` end to end.
+    """`sse()` end to end.
 
     The test transport buffers the whole body, so these assert on *what* is
     sent, never on when. Incremental delivery cannot be observed here and is
@@ -202,11 +203,11 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: Request, response: Response):
+        async def events(request: HttpContext):
             async def source():
                 yield {"n": 1}
 
-            return response.sse(source(), keepalive=None)
+            return sse(source(), keepalive=None)
 
         with test_client_factory(app) as client:
             resp = client.get("/events")
@@ -226,12 +227,12 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: Request, response: Response):
+        async def events(request: HttpContext):
             async def source():
                 yield ServerSentEvent(data={"n": 0}, event="tick", id="0")
                 yield "plain"
 
-            return response.sse(source(), keepalive=None, retry=4000)
+            return sse(source(), keepalive=None, retry=4000)
 
         with test_client_factory(app) as client:
             body = client.get("/events").text
@@ -248,11 +249,11 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: Request, response: Response):
+        async def events(request: HttpContext):
             async def source():
                 yield "x"
 
-            return response.sse(
+            return sse(
                 source(), keepalive=None, headers={"cache-control": "private"}
             )
 
@@ -265,11 +266,11 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: Request, response: Response):
+        async def events(request: HttpContext):
             async def source():
                 yield {"b": 2, "a": 1}
 
-            return response.sse(
+            return sse(
                 source(),
                 keepalive=None,
                 encoder=lambda v: json.dumps(v, sort_keys=True, separators=(",", ":")),
@@ -284,13 +285,13 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: Request, response: Response):
+        async def events(request: HttpContext):
             since = last_event_id(request)
 
             async def source():
                 yield {"since": since}
 
-            return response.sse(source(), keepalive=None)
+            return sse(source(), keepalive=None)
 
         with test_client_factory(app) as client:
             resp = client.get("/events", headers={"Last-Event-ID": "9"})

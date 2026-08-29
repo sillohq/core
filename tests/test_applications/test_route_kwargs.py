@@ -31,7 +31,7 @@ def test_a_misspelled_option_is_rejected(app):
     with pytest.raises(TypeError, match="response_modle"):
 
         @app.get("/users", response_modle=UserOut)
-        async def handler(request, response):
+        async def handler(request):
             return {}
 
 
@@ -39,7 +39,7 @@ def test_the_error_suggests_the_intended_option(app):
     with pytest.raises(TypeError, match="did you mean 'response_model'"):
 
         @app.get("/users", response_modle=UserOut)
-        async def handler(request, response):
+        async def handler(request):
             return {}
 
 
@@ -47,7 +47,7 @@ def test_an_option_with_no_close_match_is_still_rejected(app):
     with pytest.raises(TypeError, match="totally_made_up"):
 
         @app.get("/users", totally_made_up=1)
-        async def handler(request, response):
+        async def handler(request):
             return {}
 
 
@@ -55,7 +55,7 @@ def test_a_missing_underscore_is_caught(app):
     with pytest.raises(TypeError, match="did you mean 'request_model'"):
 
         @app.post("/users", requestmodel=UserOut)
-        async def handler(request, response):
+        async def handler(request):
             return {}
 
 
@@ -64,7 +64,7 @@ def test_every_verb_decorator_rejects_unknown_options(app, verb):
     with pytest.raises(TypeError, match="nonsense_option"):
 
         @getattr(app, verb)(f"/{verb}", nonsense_option=True)
-        async def handler(request, response):
+        async def handler(request):
             return {}
 
 
@@ -72,7 +72,7 @@ def test_several_bad_options_are_reported_together(app):
     with pytest.raises(TypeError) as exc:
 
         @app.get("/users", response_modle=UserOut, taggs=["a"])
-        async def handler(request, response):
+        async def handler(request):
             return {}
 
     assert "response_modle" in str(exc.value)
@@ -84,7 +84,7 @@ def test_several_bad_options_are_reported_together(app):
 
 def test_a_correctly_spelled_option_shapes_the_response(app):
     @app.get("/users", response_model=UserOut)
-    async def handler(request, response):
+    async def handler(request):
         return {"id": 1, "name": "Ada", "password_hash": "leaked"}
 
     body = TestClient(app).get("/users").json()
@@ -106,7 +106,7 @@ def test_known_options_are_all_accepted(app):
         response_model=UserOut,
         response_model_exclude_none=True,
     )
-    async def handler(request, response):
+    async def handler(request):
         return {"id": 1, "name": "Ada"}
 
     assert TestClient(app).get("/documented").status_code == 200

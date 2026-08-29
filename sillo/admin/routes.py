@@ -40,6 +40,7 @@ from sillo.record.fields import PasswordField
 
 from .models import AdminActivity
 from .templating import render as _render
+from sillo.core.http import json, text, html, redirect, file, stream, sse, download, empty, abort, not_found
 
 FKAliases = (ForeignKeyFieldInstance, OneToOneFieldInstance)
 M2MAlias = ManyToManyFieldInstance
@@ -273,7 +274,7 @@ def base_ctx(request, site, model_name="", model_slug=""):
 
 def _forbidden(response, site_prefix):
     """Forbidden"""
-    return response.redirect(f"{site_prefix}/", status_code=302)
+    return redirect(f"{site_prefix}/", status_code=302)
 
 
 async def _current_admin_user(request, site):
@@ -606,7 +607,7 @@ def _csv_export(response, columns, rows, filename):
     writer.writerow(columns)
     for row in rows:
         writer.writerow([_csv_cell(row.get(c)) for c in columns])
-    return response.text(
+    return text(
         buf.getvalue(),
         headers={
             "content-type": "text/csv; charset=utf-8",
@@ -629,7 +630,7 @@ def _json_export_default(value):
 def _json_export(response, rows, filename):
     """Render *rows* (dicts) as a downloadable JSON attachment."""
     body = json.dumps(list(rows), indent=2, default=_json_export_default)
-    return response.text(
+    return text(
         body,
         headers={
             "content-type": "application/json; charset=utf-8",
@@ -641,7 +642,7 @@ def _json_export(response, rows, filename):
 # ── Route functions ──────────────────────────────────────────────────────
 
 
-async def login_view(request, response, site):
+async def login_view(request, site):
     """Login View"""
     ctx = {
         "site_title": site.title,
@@ -661,18 +662,18 @@ async def login_view(request, response, site):
                 )
             except Exception:
                 pass
-            return response.redirect(f"{site.prefix}/", status_code=302)
+            return redirect(f"{site.prefix}/", status_code=302)
         ctx["error"] = "Invalid credentials"
-    return response.html(_render("login.html", **ctx))
+    return html(_render("login.html", **ctx))
 
 
-async def logout_view(request, response, site):
+async def logout_view(request, site):
     """Logout View"""
     await site.auth.logout(request)
-    return response.redirect(f"{site.prefix}/login/", status_code=302)
+    return redirect(f"{site.prefix}/login/", status_code=302)
 
 
-async def dashboard_view(request, response, site):
+async def dashboard_view(request, site):
     """Dashboard View"""
     ctx = base_ctx(request, site)
     ctx["title"] = "Dashboard"
@@ -726,10 +727,10 @@ async def dashboard_view(request, response, site):
         if recent
         else []
     )
-    return response.html(_render("dashboard.html", **ctx))
+    return html(_render("dashboard.html", **ctx))
 
 
-async def query_view(request, response, site):
+async def query_view(request, site):
     """Query View — run raw SQL against the app's database from the admin.
 
     Gated on ``is_superuser`` (rather than just "logged in") since it grants
@@ -783,10 +784,10 @@ async def query_view(request, response, site):
             except Exception as e:
                 ctx["error"] = str(e)
 
-    return response.html(_render("query.html", **ctx))
+    return html(_render("query.html", **ctx))
 
 
-async def export_view(request, response, site, model_cls, admin_cls):
+async def export_view(request, site, model_cls, admin_cls):
     """Export View — download a model's (optionally filtered) list as CSV or JSON.
 
     Honors the same ``q`` (search) and ``f_<field>`` (list_filter) query
@@ -870,7 +871,7 @@ async def export_view(request, response, site, model_cls, admin_cls):
     return _csv_export(response, out_columns, out_rows, f"{model_slug}_{stamp}.csv")
 
 
-async def list_view(request, response, site, model_cls, admin_cls):
+async def list_view(request, site, model_cls, admin_cls):
     """List View"""
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
@@ -1071,10 +1072,10 @@ async def list_view(request, response, site, model_cls, admin_cls):
             "page_range": page_range,
         }
     )
-    return response.html(_render("list.html", **ctx))
+    return html(_render("list.html", **ctx))
 
 
-async def detail_view(request, response, site, model_cls, admin_cls, id):
+async def detail_view(request, site, model_cls, admin_cls, id):
     """Detail View"""
     if not admin_cls.has_view_permission(request):
         return _forbidden(response, site.prefix)
@@ -1085,7 +1086,7 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
     try:
         obj = await model_cls.get(pk=id)
     except Exception:
-        return response.text("Not Found", status_code=404)
+        return text("Not Found", status_code=404)
     ctx["title"] = f"{model_name} #{id}"
     ctx["object_id"] = id
     ctx["can_change"] = bool(admin_cls.has_change_permission(request, obj))
@@ -1178,10 +1179,10 @@ async def detail_view(request, response, site, model_cls, admin_cls, id):
             continue
     ctx["reverse_relations"] = reverse
 
-    return response.html(_render("detail.html", **ctx))
+    return html(_render("detail.html", **ctx))
 
 
-async def create_view(request, response, site, model_cls, admin_cls):
+async def create_view(request, site, model_cls, admin_cls):
     """Create View"""
     if not admin_cls.has_add_permission(request):
         return _forbidden(response, site.prefix)
@@ -1241,7 +1242,7 @@ async def create_view(request, response, site, model_cls, admin_cls):
                 rels = [await rel_model.get(pk=pk) for pk in pks]
                 await getattr(obj, name).add(*rels)
             await _log(request, "create", model_name, site, obj.pk)
-            return response.redirect(
+            return redirect(
                 f"{site.prefix}/{model_slug}/{obj.pk}/",
                 status_code=302,
             )
@@ -1254,10 +1255,10 @@ async def create_view(request, response, site, model_cls, admin_cls):
                     pass
                 else:
                     fld["value"] = get(fld["name"]) or ""
-    return response.html(_render("create.html", **ctx))
+    return html(_render("create.html", **ctx))
 
 
-async def update_view(request, response, site, model_cls, admin_cls, id):
+async def update_view(request, site, model_cls, admin_cls, id):
     """Update View"""
     if not admin_cls.has_change_permission(request):
         return _forbidden(response, site.prefix)
@@ -1269,7 +1270,7 @@ async def update_view(request, response, site, model_cls, admin_cls, id):
     try:
         obj = await model_cls.get(pk=id)
     except Exception:
-        return response.text("Not Found", status_code=404)
+        return text("Not Found", status_code=404)
     ctx["title"] = f"Edit {model_name} #{id}"
     ctx["object_id"] = id
 
@@ -1314,7 +1315,7 @@ async def update_view(request, response, site, model_cls, admin_cls, id):
             await obj.save()
             await _apply_reverse_relations(meta, model_cls, obj, get, getlist)
             await _log(request, "update", model_name, site, id)
-            return response.redirect(
+            return redirect(
                 f"{site.prefix}/{model_slug}/{id}/", status_code=302
             )
         except Exception as e:
@@ -1324,10 +1325,10 @@ async def update_view(request, response, site, model_cls, admin_cls, id):
                     fld["value"] = ""
                 elif fld["widget"] not in ("relation", "m2m"):
                     fld["value"] = get(fld["name"]) or ""
-    return response.html(_render("update.html", **ctx))
+    return html(_render("update.html", **ctx))
 
 
-async def delete_view(request, response, site, model_cls, admin_cls, id):
+async def delete_view(request, site, model_cls, admin_cls, id):
     """Delete View"""
     if not admin_cls.has_delete_permission(request):
         return _forbidden(response, site.prefix)
@@ -1338,22 +1339,22 @@ async def delete_view(request, response, site, model_cls, admin_cls, id):
     try:
         obj = await model_cls.get(pk=id)
     except Exception:
-        return response.text("Not Found", status_code=404)
+        return text("Not Found", status_code=404)
     ctx["title"] = f"Delete {model_name} #{id}"
     ctx["object_id"] = id
     if request.method == "POST":
         await _log(request, "delete", model_name, site, id)
         await obj.delete()
-        return response.redirect(f"{site.prefix}/{model_slug}/", status_code=302)
-    return response.html(_render("delete.html", **ctx))
+        return redirect(f"{site.prefix}/{model_slug}/", status_code=302)
+    return html(_render("delete.html", **ctx))
 
 
-async def bulk_view(request, response, site, model_cls, admin_cls):
+async def bulk_view(request, site, model_cls, admin_cls):
     """Bulk View"""
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
     if request.method != "POST":
-        return response.redirect(f"{site.prefix}/{model_slug}/", status_code=302)
+        return redirect(f"{site.prefix}/{model_slug}/", status_code=302)
     if not admin_cls.has_delete_permission(request):
         return _forbidden(response, site.prefix)
     get, getlist = await _collect_form(request)
@@ -1362,4 +1363,4 @@ async def bulk_view(request, response, site, model_cls, admin_cls):
     if action == "delete_selected" and ids:
         await model_cls.filter(pk__in=ids).delete()
         await _log(request, "delete", model_name, site, None, f"bulk:{ids}")
-    return response.redirect(f"{site.prefix}/{model_slug}/", status_code=302)
+    return redirect(f"{site.prefix}/{model_slug}/", status_code=302)

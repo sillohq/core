@@ -7,15 +7,14 @@ from typing import Any
 import anyio
 
 from sillo.core.helpers.async_helpers import collapse_excgroups
-from sillo.core.http.request import ClientDisconnect, Request
+from sillo.core.http.context import ClientDisconnect, HttpContext
 from sillo.core.http.response import (
     BaseResponse,
 )
-from sillo.core.http.response import Responder as Response
 from sillo.types import ASGIApp, Message, MiddlewareType, Receive, Scope, Send
-from sillo.websockets import WebSocket
+from sillo.websockets import WebSocketContext
 
-RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
+RequestResponseEndpoint = typing.Callable[[], typing.Awaitable[BaseResponse]]
 
 T = typing.TypeVar("T")
 
@@ -93,12 +92,12 @@ class DefineMiddleware:
         return f"{class_name}({args_repr})"
 
 
-class _CachedRequest(Request):
+class _CachedRequest(HttpContext):
     """A request subclass that caches the body for dispatch-based middleware.
 
-    If the user calls ``Request.body()`` from their dispatch function we cache
+    If the user calls ``HttpContext.body()`` from their dispatch function we cache
     the entire request body in memory and pass that to downstream middleware,
-    but if they call ``Request.stream()`` then all we do is send an empty body
+    but if they call ``HttpContext.stream()`` then all we do is send an empty body
     so that downstream things don't hang forever.
 
     The class manages three internal states for the wrapped receive callable:
@@ -119,7 +118,7 @@ class _CachedRequest(Request):
         """Initialise the cached request with ASGI scope and receive callable.
 
         Sets up internal state tracking flags and creates the initial stream
-        iterator from the parent ``Request`` class so that body chunks can be
+        iterator from the parent ``HttpContext`` class so that body chunks can be
         lazily consumed by the dispatch middleware.
 
         Args:
@@ -230,7 +229,7 @@ class ASGIRequestResponseBridge:
     Attributes:
         app: The inner ASGI application to delegate to.
         dispatch_func: The dispatch middleware function that receives the
-            request, response, and a ``call_next`` callable.
+            the context and a ``call_next`` callable.
     """
 
     def __init__(self, app: ASGIApp, dispatch: MiddlewareType) -> None:
@@ -240,7 +239,7 @@ class ASGIRequestResponseBridge:
             app: The inner ASGI application that will handle the actual
                 request processing after the dispatch middleware runs.
             dispatch: A middleware function conforming to the dispatch
-                pattern, accepting ``(request, response, call_next)`` and
+                pattern, accepting ``(ctx, call_next)`` and
                 returning an awaitable response.
         """
         self.app = app
@@ -259,11 +258,11 @@ class ASGIRequestResponseBridge:
         """Handle an incoming ASGI connection by bridging dispatch middleware.
 
         For non-HTTP scopes the call is forwarded directly to the inner app.
-        For HTTP scopes, a ``_CachedRequest`` is created along with a
-        ``Responder`` and an in-memory object stream. The dispatch function is
-        invoked with these objects and a ``call_next`` closure that runs the
-        inner app in a background task, streaming the response back through
-        the memory channel.
+        For HTTP scopes, a ``_CachedRequest`` context is created along with an
+        in-memory object stream. The dispatch function is invoked with that
+        context and a ``call_next`` closure that runs the inner app in a
+        background task, streaming the response back through the memory
+        channel.
 
         Args:
             scope: The ASGI connection scope dictionary describing the
@@ -275,9 +274,8 @@ class ASGIRequestResponseBridge:
             await self.app(scope, receive, send)
             return
 
-        request = _CachedRequest(scope, receive)
-        response = Response(request=request)
-        wrapped_receive = request.wrapped_receive
+        ctx = _CachedRequest(scope, receive)
+        wrapped_receive = ctx.wrapped_receive
         response_sent = anyio.Event()
 
         async def call_next(*_):
@@ -370,7 +368,7 @@ class ASGIRequestResponseBridge:
                         # Everything downstream reads the body through this
                         # callable, and it replays what ``_CachedRequest``
                         # buffered rather than pulling from the wire.
-                        # Announcing it lets ``Request`` tell "the body is
+                        # Announcing it lets ``HttpContext`` tell "the body is
                         # gone" apart from "the body is being replayed" —
                         # without it, a dispatch middleware peeking at the body
                         # would leave the handler unable to read it.
@@ -422,16 +420,13 @@ class ASGIRequestResponseBridge:
                 status_code=message["status"],
             )
             response_object.raw_headers = message["headers"]
-            response._response = response_object
             return response_object
 
         streams = anyio.create_memory_object_stream()
         send_stream, recv_stream = streams
         with recv_stream, send_stream, collapse_excgroups():
             async with anyio.create_task_group() as task_group:
-                returned_response = await self.dispatch_func(
-                    request, response, call_next
-                )
+                returned_response = await self.dispatch_func(ctx, call_next)
                 await returned_response(scope, wrapped_receive, send)
                 response_sent.set()
                 recv_stream.close()
@@ -529,7 +524,7 @@ class _StreamingResponse(BaseResponse):
 
 
 WebSocketDispatchFunction = typing.Callable[
-    ["WebSocket", typing.Coroutine[None, None, typing.Any]], typing.Awaitable[None]
+    ["WebSocketContext", typing.Coroutine[None, None, typing.Any]], typing.Awaitable[None]
 ]
 
 
@@ -543,7 +538,7 @@ def wrap_middleware(middleware_function: MiddlewareType) -> DefineMiddleware:
 
     Args:
         middleware_function: A dispatch-style middleware callable that accepts
-            ``(request, response, call_next)`` and returns an awaitable
+            ``(ctx, call_next)`` and returns an awaitable
             response object.
 
     Returns:

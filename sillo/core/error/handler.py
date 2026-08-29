@@ -12,7 +12,7 @@ from typing import cast
 
 from sillo import __version__ as sillo_version
 from sillo.core.helpers.async_helpers import collapse_excgroups
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, html, text
 from sillo.logging import DEBUG, create_logger
 from sillo.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -769,10 +769,10 @@ TEMPLATE = """
                 </div>
             </div>
 
-            <!-- Request Information Section -->
+            <!-- HttpContext Information Section -->
             <div class="section">
                 <div class="section-title" onclick="toggleSection('request-section')">
-                    <span> Request Information</span>
+                    <span> HttpContext Information</span>
                     <button class="collapse-btn" data-section="request-section" onclick="event.stopPropagation(); toggleSection('request-section')">+</button>
                 </div>
                 <div id="request-section" class="section-content">
@@ -853,7 +853,7 @@ CENTER_LINE = """
 """
 
 
-ServerErrHandlerType = typing.Callable[[Request, Response, Exception], typing.Any]
+ServerErrHandlerType = typing.Callable[[HttpContext, Exception], typing.Any]
 
 
 class ServerErrorMiddleware:
@@ -869,7 +869,7 @@ class ServerErrorMiddleware:
     the plain ASGI form — ``__init__(app, ...)`` and ``__call__(scope, receive,
     send)`` — rather than sillo's ``(request, response, call_next)`` dispatch
     form, and that is a deliberate performance decision. The dispatch form is
-    convenient because sillo builds the ``Request`` and ``Response`` and turns
+    convenient because sillo builds the ``HttpContext`` and turns
     the rest of the chain into something awaitable, but doing that costs a
     request object, a response object, an ``anyio.Event``, a memory object
     stream and a background task on *every* request, including the overwhelming
@@ -900,8 +900,8 @@ class ServerErrorMiddleware:
                 page generators are useful on their own and several tests use
                 them that way — but a middleware built without one cannot be
                 called.
-            handler: An optional callable that receives the current Request,
-                Response, and the raised Exception. When provided, this callback
+            handler: An optional callable that receives the current HttpContext,
+                and the raised Exception. When provided, this callback
                 is invoked before generating the default error response, allowing
                 custom error-handling logic such as notifications or logging.
             debug: A boolean flag indicating whether detailed debug error pages
@@ -998,8 +998,7 @@ class ServerErrorMiddleware:
             # written here is overwritten by whatever request runs during the
             # ``await`` below, and the debug page would render every header it
             # was handed. It is passed down to the renderer instead.
-            request = Request(scope, receive)
-            response = Response(request)
+            request = HttpContext(scope, receive)
 
             if self.handler:
                 # A user-supplied handler owns the response outright. This is
@@ -1007,11 +1006,11 @@ class ServerErrorMiddleware:
                 # and its result was then overwritten by the debug page or the
                 # default 500, so a configured server_error_handler had no
                 # observable effect.
-                response = await self.handler(request, response, exc)
+                response = await self.handler(request, exc)
             elif self.debug:
-                response = self.get_debug_response(request, response, exc)
+                response = self.get_debug_response(request, exc)
             else:
-                response = self.error_response(response)
+                response = self.error_response()
 
             headers = scope.get("server_error_headers", {})
             response.set_headers(headers)
@@ -1019,29 +1018,20 @@ class ServerErrorMiddleware:
             logger.error(err)
             await response(scope, receive, send)
 
-    def error_response(self, res: Response):
+    def error_response(self):
         """Generate a minimal plain-text 500 Internal Server Error response.
 
         Used in production mode when debug pages are disabled. Returns a simple
         text response with a generic error message to avoid leaking internal
         details about the application stack or configuration to end users.
 
-        Args:
-            res: The HTTP Response object on which the error text and status
-                code will be set before being returned to the caller.
-
         Returns:
-            The Response object configured with a 500 status code and the
-            plain-text body ``"Internal Server Error"``.
-
-        Raises:
-            None.
+            A response with a 500 status code and the plain-text body
+            ``"Internal Server Error"``.
         """
-        return res.text("Internal Server Error", status_code=500)
+        return text("Internal Server Error", status_code=500)
 
-    def get_debug_response(
-        self, request: Request, response: Response, exc: Exception
-    ) -> Response:
+    def get_debug_response(self, request: HttpContext, exc: Exception):
         """Produce a debug-oriented error response based on the request Accept header.
 
         Inspects the ``Accept`` header of the incoming request to determine the
@@ -1051,16 +1041,14 @@ class ServerErrorMiddleware:
         is used as the fallback format.
 
         Args:
-            request: The HTTP Request object whose ``Accept`` header is inspected
-                to choose between HTML and plain-text error output formats.
-            response: The HTTP Response object that will be populated with the
-                generated error content and appropriate status code.
+            request: The context whose ``Accept`` header is inspected to choose
+                between HTML and plain-text error output formats.
             exc: The exception instance that was caught during request processing,
                 used to extract traceback and error message information.
 
         Returns:
-            A Response object with a 500 status code containing either an HTML
-            debug page or a plain-text traceback, depending on content negotiation.
+            A response with a 500 status code containing either an HTML debug
+            page or a plain-text traceback, depending on content negotiation.
 
         Raises:
             None.
@@ -1070,10 +1058,10 @@ class ServerErrorMiddleware:
             content = self.generate_plain_text(exc)
         elif "text/html" in accept:
             content = self.generate_html(exc, request)
-            return response.html(content, status_code=500)
+            return html(content, status_code=500)
         else:
             content = self.generate_plain_text(exc)
-        return response.text(content, status_code=500)
+        return text(content, status_code=500)
 
     def format_line(
         self,
@@ -1230,7 +1218,7 @@ class ServerErrorMiddleware:
         """
         return "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
-    def _format_request_info(self, request: Request) -> str:
+    def _format_request_info(self, request: HttpContext) -> str:
         """Format HTTP request metadata and headers for display in the error page.
 
         Builds an HTML representation of the incoming request including the HTTP
@@ -1239,7 +1227,7 @@ class ServerErrorMiddleware:
         the error for debugging purposes.
 
         Args:
-            request: The HTTP Request object from which method, URL, path,
+            request: The HTTP HttpContext object from which method, URL, path,
                 headers, and query parameters are extracted for display.
 
         Returns:
@@ -1256,7 +1244,7 @@ class ServerErrorMiddleware:
         _html = f"""
         <div class="info-grid">
             <div class="info-block">
-                <h3>Request Details</h3>
+                <h3>HttpContext Details</h3>
                 <div class="info-item">
                     <div class="info-label">Method:</div>
                     <div class="info-value">{html.escape(method)}</div>
@@ -1588,7 +1576,7 @@ class ServerErrorMiddleware:
 
         return _html
 
-    def generate_html(self, exc: Exception, request: Request, limit: int = 7) -> str:
+    def generate_html(self, exc: Exception, request: HttpContext, limit: int = 7) -> str:
         """Generate a full interactive HTML debug page for the given exception.
 
         Assembles a complete error page by combining CSS styles, JavaScript for

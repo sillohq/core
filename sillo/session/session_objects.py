@@ -22,10 +22,10 @@ class Session:
     Example:
         ```python
         @app.get("/")
-        async def index(request, response):
+        async def index(ctx):
             count = request.session.get("count", 0) + 1
             request.session["count"] = count
-            return response.text(f"seen you {count} times")
+            return text(f"seen you {count} times")
         ```
     """
 

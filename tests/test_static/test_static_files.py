@@ -2,13 +2,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import html
+from sillo.core.http import HttpContext
 from sillo.core.routing import Group
 from sillo.static import StaticFiles
 from sillo.testclient import TestClient
 
 if TYPE_CHECKING:
-    from sillo.core.http import Request, Response
+    from sillo.core.http import HttpContext
 
 
 def test_static_file_serving():
@@ -198,8 +199,8 @@ def test_static_file_forbidden_extensions():
 def test_static_file_custom_404_handler():
     """Test custom 404 handler functionality"""
 
-    def custom_404(request: Request, response: Response) -> Response:
-        return response.html(
+    def custom_404(request: HttpContext) -> Response:
+        return html(
             "<html><body><h1>Custom Not Found</h1></body></html>", status_code=404
         )
 
@@ -219,14 +220,14 @@ def test_static_file_custom_404_handler():
 def test_static_file_404_handler_that_mutates_response_in_place():
     """A handler that returns None (mutates `response` directly rather than
     returning something new) exercises __call__'s "no handler_result"
-    fallback path, which builds the response from `response.get_response()`
+    fallback path, which builds the response from `response`
     instead."""
 
-    def custom_404(request: Request, response: Response) -> None:
+    def custom_404(request: HttpContext) -> None:
         response.status(404)
         response.set_body(b"mutated in place")
         # Deliberately returns None: __call__ falls back to
-        # response.get_response() instead of treating this as the result.
+        # response instead of treating this as the result.
 
     app = SilloApp()
     static_dir = Path(__file__).parent.parent / "static"
@@ -254,7 +255,7 @@ def test_static_file_404_handler_returning_a_bare_asgi_callable():
         )
         await send({"type": "http.response.body", "body": b"bare asgi"})
 
-    def custom_404(request: Request, response: Response):
+    def custom_404(request: HttpContext):
         return bare_asgi_response
 
     app = SilloApp()

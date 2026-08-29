@@ -2,7 +2,7 @@ import typing
 import warnings
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
 from sillo.session.session_objects import Session
 
@@ -100,13 +100,13 @@ class SessionMiddleware(BaseMiddleware):
                 # filling the gap is a convenience, not a requirement.
                 pass
 
-    async def process_request(
+    async def dispatch(
         self,
-        request: Request,
-        response: Response,
+        ctx: HttpContext,
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ):
-        """Process Request"""
+        """Load the session, run the chain, then persist it onto the reply."""
+        request = ctx
         cookie_name = self.session_config.session_cookie_name or "session_id"
         session_key = request.cookies.get(cookie_name)
 
@@ -115,12 +115,14 @@ class SessionMiddleware(BaseMiddleware):
 
         request.scope["session"] = session
 
-        return await call_next()
+        response = await call_next()
+        await self._persist(request, response)
+        return response
 
-    async def process_response(self, request: Request, response: Response):
-        """Process Response"""
+    async def _persist(self, request: HttpContext, response) -> None:
+        """Save the session and write its cookie onto the outgoing response."""
         session: Session | None = request.scope.get("session")
-        if session is None:
+        if session is None or response is None:
             return
 
         cookie_name = self.session_config.session_cookie_name or "session_id"

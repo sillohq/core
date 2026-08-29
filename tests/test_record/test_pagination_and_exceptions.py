@@ -18,7 +18,7 @@ from tortoise.exceptions import (
 )
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.record import Model
 from sillo.record.exceptions import (
     handle_does_not_exist,
@@ -65,7 +65,7 @@ async def record_db():
 
 
 def _request():
-    return Request(
+    return HttpContext(
         {
             "type": "http", "method": "GET", "path": "/", "raw_path": b"/",
             "query_string": b"", "headers": [(b"host", b"test")],
@@ -128,28 +128,28 @@ class TestExceptionHandlers:
         response = Response(request=_request())
 
         result = await handle_does_not_exist(
-            _request(), response, DoesNotExist("Widget matching query does not exist")
+            _request(), DoesNotExist("Widget matching query does not exist")
         )
 
-        assert result.get_response().status_code == 404
+        assert result.status_code == 404
 
     async def test_an_integrity_error_becomes_409(self):
         response = Response(request=_request())
 
         result = await handle_integrity_error(
-            _request(), response, IntegrityError("UNIQUE constraint failed")
+            _request(), IntegrityError("UNIQUE constraint failed")
         )
 
-        assert result.get_response().status_code == 409
+        assert result.status_code == 409
 
     async def test_a_validation_error_becomes_422(self):
         response = Response(request=_request())
 
         result = await handle_validation_error(
-            _request(), response, ValidationError("name is too long")
+            _request(), ValidationError("name is too long")
         )
 
-        assert result.get_response().status_code == 422
+        assert result.status_code == 422
 
     async def test_an_operational_error_becomes_503(self):
         # Service Unavailable rather than a bare 500: an operational error is
@@ -158,10 +158,10 @@ class TestExceptionHandlers:
         response = Response(request=_request())
 
         result = await handle_operational_error(
-            _request(), response, OperationalError("no such table")
+            _request(), OperationalError("no such table")
         )
 
-        assert result.get_response().status_code == 503
+        assert result.status_code == 503
 
 
 class TestHandlerRegistration:
@@ -184,7 +184,7 @@ class TestHandlerRegistration:
         register_db_exception_handlers(app)
 
         @app.get("/widget")
-        async def get_widget(request: Request, response: Response):
+        async def get_widget(request: HttpContext):
             raise DoesNotExist("Widget matching query does not exist")
 
         with TestClient(app, raise_server_exceptions=False) as client:
@@ -195,7 +195,7 @@ class TestHandlerRegistration:
         register_db_exception_handlers(app)
 
         @app.post("/widget")
-        async def create_widget(request: Request, response: Response):
+        async def create_widget(request: HttpContext):
             raise IntegrityError("UNIQUE constraint failed: widgets.name")
 
         with TestClient(app, raise_server_exceptions=False) as client:

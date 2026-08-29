@@ -4,7 +4,7 @@ Tests for parameter extractors in nested dependencies.
 
 import pytest
 from sillo import SilloApp, Query, Header, Cookie, Depend
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 
@@ -26,7 +26,7 @@ def test_nested_query_dependency(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, pagination: dict = Depend(get_pagination)
+        request: HttpContext, pagination: dict = Depend(get_pagination)
     ):
         return pagination
 
@@ -45,7 +45,7 @@ def test_nested_query_override(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, pagination: dict = Depend(get_pagination)
+        request: HttpContext, pagination: dict = Depend(get_pagination)
     ):
         return pagination
 
@@ -64,7 +64,7 @@ def test_nested_header_dependency(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, auth: dict = Depend(get_auth)
+        request: HttpContext, auth: dict = Depend(get_auth)
     ):
         return auth
 
@@ -81,7 +81,7 @@ def test_nested_header_no_value(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, auth: dict = Depend(get_auth)
+        request: HttpContext, auth: dict = Depend(get_auth)
     ):
         return auth
 
@@ -98,7 +98,7 @@ def test_nested_cookie_dependency(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, prefs: dict = Depend(get_prefs)
+        request: HttpContext, prefs: dict = Depend(get_prefs)
     ):
         return prefs
 
@@ -115,7 +115,7 @@ def test_nested_cookie_default(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, prefs: dict = Depend(get_prefs)
+        request: HttpContext, prefs: dict = Depend(get_prefs)
     ):
         return prefs
 
@@ -135,7 +135,7 @@ def test_deeply_nested_query(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, pagination: dict = Depend(get_pagination)
+        request: HttpContext, pagination: dict = Depend(get_pagination)
     ):
         return pagination
 
@@ -158,7 +158,7 @@ def test_mixed_params_in_dependency(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, ctx: dict = Depend(get_context)
+        request: HttpContext, ctx: dict = Depend(get_context)
     ):
         return ctx
 
@@ -182,8 +182,7 @@ def test_handler_and_nested_both_have_query(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request,
-        response: Response,
+        request: HttpContext,
         page: int = Query(1),
         pagination: dict = Depend(get_pagination),
     ):
@@ -207,7 +206,7 @@ def test_nested_dep_with_own_dep_and_query(app, client):
 
     @app.get("/test")
     async def handler(
-        request: Request, response: Response, config: dict = Depend(get_config)
+        request: HttpContext, config: dict = Depend(get_config)
     ):
         return config
 

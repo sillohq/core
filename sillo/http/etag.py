@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from hashlib import sha1
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.core.http.response import BaseResponse
 from sillo.middleware.base import BaseMiddleware
 
@@ -33,23 +33,23 @@ def normalize_etag(tag: str) -> str:
     return tag
 
 
-def set_response_etag(response: Response, etag: str, override: bool = True) -> None:
+def set_response_etag(response: BaseResponse, etag: str, override: bool = True) -> None:
     response.set_header("etag", normalize_etag(etag), override=override)
 
 
 def compute_and_set_etag(
-    response: Response, body: bytes = b"", weak: bool = True, override: bool = False
+    response: BaseResponse, body: bytes = b"", weak: bool = True, override: bool = False
 ) -> str:
     tag = generate_etag_from_bytes(body, weak=weak)
     set_response_etag(response, tag, override=override)
     return tag
 
 
-def parse_if_none_match(request: Request) -> list[str]:
+def parse_if_none_match(request: HttpContext) -> list[str]:
     return _parse_etag_list(request.headers.get("if-none-match"))
 
 
-def parse_if_match(request: Request) -> list[str]:
+def parse_if_match(request: HttpContext) -> list[str]:
     return _parse_etag_list(request.headers.get("if-match"))
 
 
@@ -92,7 +92,7 @@ def etag_matches(
     return False
 
 
-def is_fresh(request: Request, response: Response, weak_compare: bool = True) -> bool:
+def is_fresh(request: HttpContext, response: BaseResponse, weak_compare: bool = True) -> bool:
     current = response.headers.get("etag")
     if not current:
         return False
@@ -117,15 +117,12 @@ class ETagMiddleware(BaseMiddleware):
         self.methods = tuple(method.upper() for method in methods)
         self.override = override
 
-    async def process_request(
-        self, request: Request, response: Response, call_next: Any
-    ) -> Any:
-        return await call_next()
+    async def dispatch(self, ctx: HttpContext, call_next: Any) -> Any:
+        """Run the chain, then attach an ETag and honour ``If-None-Match``."""
+        response = await call_next()
+        request = ctx
 
-    async def process_response(self, request: Request, response: Response) -> Any:
-        if request.method.upper() not in self.methods:
-            return response
-        if not getattr(response, "_response", None):
+        if response is None or request.method.upper() not in self.methods:
             return response
 
         has_existing = bool(response.headers.get("etag"))
@@ -154,7 +151,7 @@ _NOT_MODIFIED_HEADERS = (
 )
 
 
-def _not_modified(response: Response) -> BaseResponse:
+def _not_modified(response: BaseResponse) -> BaseResponse:
     """Build the 304 to send in place of *response*.
 
     A fresh response cannot be turned into a 304 by mutating it. What arrives
@@ -177,7 +174,7 @@ def _not_modified(response: Response) -> BaseResponse:
     return BaseResponse(body=b"", status_code=304, headers=headers)
 
 
-def _response_body(response: Response) -> bytes | None:
+def _response_body(response: BaseResponse) -> bytes | None:
     try:
         body = response.body
     except AttributeError:

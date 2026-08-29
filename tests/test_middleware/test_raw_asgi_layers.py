@@ -1,8 +1,8 @@
 """The built-in error layers are raw ASGI, and ``use()`` can register more.
 
 ``ServerErrorMiddleware`` and ``ExceptionMiddleware`` used to be dispatch
-middleware — ``(request, response, call_next)`` — wrapped in a bridge that
-built a ``Request``, a ``Response``, an ``anyio.Event``, a memory object stream
+middleware — ``(request, call_next)`` — wrapped in a bridge that
+built a ``HttpContext``, a ``Response``, an ``anyio.Event``, a memory object stream
 and a background task for each of them, on every request. Neither ever wanted
 any of it: both only care about a request that raised.
 
@@ -20,9 +20,10 @@ import anyio
 import pytest
 
 from sillo import SilloApp
+from sillo import json
 from sillo._internals._middleware import ASGIRequestResponseBridge
 from sillo.core.error.handler import ServerErrorMiddleware
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.exception_handler import ExceptionMiddleware
 from sillo.exceptions import HTTPException
 from sillo.middleware.base import BaseMiddleware
@@ -46,7 +47,7 @@ class Tagging(BaseMiddleware):
     def __init__(self, tag: str) -> None:
         self.tag = tag
 
-    async def process_request(self, request, response, call_next):
+    async def dispatch(self, request, call_next):
         request.scope.setdefault("tags", []).append(self.tag)
         return await call_next()
 
@@ -76,8 +77,8 @@ def _app(**kwargs) -> SilloApp:
     app = SilloApp(**{"debug": False, **kwargs})
 
     @app.get("/ping")
-    async def ping(request: Request, response: Response):
-        return response.json({"tags": request.scope.get("tags", [])})
+    async def ping(request: HttpContext):
+        return json({"tags": request.scope.get("tags", [])})
 
     return app
 
@@ -118,22 +119,22 @@ class TestEveryErrorPathStillAnswers:
             pass
 
         @app.get("/boom")
-        async def boom(request: Request, response: Response):
+        async def boom(request: HttpContext):
             raise RuntimeError("kaboom")
 
         @app.get("/teapot")
-        async def teapot(request: Request, response: Response):
+        async def teapot(request: HttpContext):
             raise HTTPException(status_code=418, detail="teapot")
 
         @app.get("/custom")
-        async def custom(request: Request, response: Response):
+        async def custom(request: HttpContext):
             raise Custom()
 
-        async def custom_handler(request, response, exc):
-            return response.json({"handled": "class"}, status_code=499)
+        async def custom_handler(request, exc):
+            return json({"handled": "class"}, status_code=499)
 
-        async def status_handler(request, response, exc):
-            return response.json({"handled": "status"}, status_code=418)
+        async def status_handler(request, exc):
+            return json({"handled": "status"}, status_code=418)
 
         app.add_exception_handler(Custom, custom_handler)
         app.add_exception_handler(418, status_handler)
@@ -179,14 +180,14 @@ class TestHandlersRegisteredAfterTheChainExists:
             pass
 
         @app.get("/late")
-        async def late(request: Request, response: Response):
+        async def late(request: HttpContext):
             raise Late()
 
         with test_client_factory(app) as client:
             assert client.get("/late").status_code == 500
 
-            async def handler(request, response, exc):
-                return response.json({"late": True}, status_code=418)
+            async def handler(request, exc):
+                return json({"late": True}, status_code=418)
 
             app.add_exception_handler(Late, handler)
 
@@ -201,11 +202,11 @@ class TestHandlersRegisteredAfterTheChainExists:
             pass
 
         @app.get("/rebuilt")
-        async def rebuilt(request: Request, response: Response):
+        async def rebuilt(request: HttpContext):
             raise Rebuilt()
 
-        async def handler(request, response, exc):
-            return response.json({"ok": True}, status_code=418)
+        async def handler(request, exc):
+            return json({"ok": True}, status_code=418)
 
         app.add_exception_handler(Rebuilt, handler)
         app.use(Tagging("forces-a-rebuild"))
@@ -286,7 +287,7 @@ class TestRawMiddlewareThroughUse:
     def test_it_is_handed_the_raw_scope_rather_than_a_request(
         self, test_client_factory: Callable[[SilloApp], TestClient]
     ):
-        # This is what "raw" buys: no Request is constructed on its behalf,
+        # This is what "raw" buys: no HttpContext is constructed on its behalf,
         # so it reads the scope dict the server passed in.
         app = _app()
         seen: list[tuple[str, str]] = []
@@ -373,7 +374,7 @@ class TestTheDebugRendererIsStillUsableOnItsOwn:
 class TestReadingTheBodyFromAnExceptionHandler:
     """A body can only come off the wire once, and several requests share a scope.
 
-    The router builds one ``Request``; an exception handler running after the
+    The router builds one ``HttpContext``; an exception handler running after the
     route handler already drained the body gets another. Without the scope
     marker the second one awaits a ``receive`` that can never produce another
     chunk, and the request hangs until the client gives up. It fails fast
@@ -388,20 +389,20 @@ class TestReadingTheBodyFromAnExceptionHandler:
             pass
 
         @app.post("/raise-first")
-        async def raise_first(request: Request, response: Response):
+        async def raise_first(request: HttpContext):
             raise Boom()
 
         @app.post("/read-then-raise")
-        async def read_then_raise(request: Request, response: Response):
+        async def read_then_raise(request: HttpContext):
             await request.json
             raise Boom()
 
-        async def handler(request, response, exc):
+        async def handler(request, exc):
             try:
                 body = (await request.body).decode()
             except RuntimeError as error:
                 body = f"RuntimeError: {error}"
-            return response.json({"body": body}, status_code=400)
+            return json({"body": body}, status_code=400)
 
         app.add_exception_handler(Boom, handler)
 
@@ -426,11 +427,11 @@ class TestReadingTheBodyFromAnExceptionHandler:
         app = _app()
 
         @app.post("/echo")
-        async def echo(request: Request, response: Response):
-            return response.json({"seen": await request.json})
+        async def echo(request: HttpContext):
+            return json({"seen": await request.json})
 
         class Peeker(BaseMiddleware):
-            async def process_request(self, request, response, call_next):
+            async def dispatch(self, request, call_next):
                 await request.body
                 return await call_next()
 

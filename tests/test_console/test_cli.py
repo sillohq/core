@@ -65,7 +65,7 @@ PLAIN_APP = """
 
     @app.get("/things")
     async def things(request, response):
-        return response.json([])
+        return json([])
     """
 
 
@@ -557,11 +557,11 @@ def test_routes_can_filter_by_method(elsewhere, monkeypatch):
 
         @app.get("/only-get")
         async def a(request, response):
-            return response.json([])
+            return json([])
 
         @app.post("/only-post")
         async def b(request, response):
-            return response.json([])
+            return json([])
         """,
         name="filtered.py",
     )
@@ -675,11 +675,11 @@ def test_routes_descends_into_mounted_routers(elsewhere, monkeypatch):
 
         @api.get("/health")
         async def health(request, response):
-            return response.json({})
+            return json({})
 
         @api.post("/items")
         async def create_item(request, response):
-            return response.json({})
+            return json({})
 
         app.mount_router(api)
         """,
@@ -708,7 +708,7 @@ def test_a_mount_is_not_labelled_a_websocket(elsewhere, monkeypatch):
 
         @api.get("/health")
         async def health(request, response):
-            return response.json({})
+            return json({})
 
         app.mount_router(api)
         """,
@@ -756,11 +756,11 @@ def test_filtering_by_method_reaches_mounted_routes(elsewhere, monkeypatch):
 
         @api.get("/health")
         async def health(request, response):
-            return response.json({})
+            return json({})
 
         @api.post("/items")
         async def create_item(request, response):
-            return response.json({})
+            return json({})
 
         app.mount_router(api)
         """,

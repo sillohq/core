@@ -212,7 +212,7 @@ def test_legacy_detection():
 
 
 def test_solve_params_collects_and_binds_markers():
-    def handler(request, response, page=Query(1), x_key=Header(), other=5):
+    def handler(request, page=Query(1), x_key=Header(), other=5):
         ...
 
     solved = solve_params(handler)
@@ -222,7 +222,7 @@ def test_solve_params_collects_and_binds_markers():
 
 
 def test_solve_params_on_a_handler_with_no_markers():
-    def handler(request, response):
+    def handler(request):
         ...
 
     assert solve_params(handler) == []

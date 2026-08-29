@@ -10,8 +10,9 @@ application is already failing — a bug here hides the original error.
 import pytest
 
 from sillo import SilloApp
+from sillo import json
 from sillo.core.error.handler import ServerErrorMiddleware
-from sillo.core.http import Request
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 
@@ -28,7 +29,7 @@ def request_():
     instance serves every request, so a stored one would be whichever wrote
     last. See ``test_concurrent_error_pages.py``.
     """
-    return Request(
+    return HttpContext(
         {
             "type": "http",
             "method": "GET",
@@ -190,7 +191,7 @@ def test_debug_mode_returns_an_html_traceback():
     app = SilloApp(debug=True)
 
     @app.get("/boom")
-    async def boom(request, response):
+    async def boom(request):
         raise ValueError("kaboom")
 
     client = TestClient(app, raise_server_exceptions=False)
@@ -204,7 +205,7 @@ def test_non_debug_mode_hides_the_detail():
     app = SilloApp(debug=False)
 
     @app.get("/boom")
-    async def boom(request, response):
+    async def boom(request):
         raise ValueError("secret internal detail")
 
     client = TestClient(app, raise_server_exceptions=False)
@@ -215,13 +216,13 @@ def test_non_debug_mode_hides_the_detail():
 
 
 def test_a_custom_server_error_handler_takes_over():
-    async def custom(request, response, exc):
-        return response.json({"handled": str(exc)}, status_code=500)
+    async def custom(request, exc):
+        return json({"handled": str(exc)}, status_code=500)
 
     app = SilloApp(debug=False, server_error_handler=custom)
 
     @app.get("/boom")
-    async def boom(request, response):
+    async def boom(request):
         raise ValueError("kaboom")
 
     client = TestClient(app, raise_server_exceptions=False)

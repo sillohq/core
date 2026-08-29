@@ -126,7 +126,7 @@ class BaseRoute(ABC):
 
     Concrete subclasses must implement the ``match``, ``handle``, and
     ``url_path_for`` methods to provide specific routing behaviour for
-    different protocol types such as HTTP and WebSocket.
+    different protocol types such as HTTP and WebSocketContext.
 
     The class is designed to be subclassed rather than instantiated
     directly. It serves as the foundation for Route, WebsocketRoute,
@@ -175,7 +175,7 @@ class BaseRoute(ABC):
         Subclasses can implement this method with any signature that makes
         sense for the route type. The base implementation does not enforce
         any specific signature to allow for flexibility across HTTP routes,
-        WebSocket routes, and route groups.
+        WebSocketContext routes, and route groups.
 
         Args:
             *args: Positional arguments passed by the router during the
@@ -204,7 +204,7 @@ class BaseRoute(ABC):
         by the router after a successful path match has been confirmed.
 
         Subclasses must implement this method with the appropriate logic
-        for their protocol type, whether HTTP request handling, WebSocket
+        for their protocol type, whether HTTP request handling, WebSocketContext
         connection management, or group delegation.
 
         Args:

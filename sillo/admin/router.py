@@ -98,7 +98,7 @@ def build_routes(site) -> list:
 def _login_handler(site):
     """Login Handler"""
 
-    async def handler(request, response):
+    async def handler(ctx):
         """Handler"""
         return await login_view(request, response, site)
 
@@ -108,7 +108,7 @@ def _login_handler(site):
 def _logout_handler(site):
     """Logout Handler"""
 
-    async def handler(request, response):
+    async def handler(ctx):
         """Handler"""
         return await logout_view(request, response, site)
 
@@ -118,7 +118,7 @@ def _logout_handler(site):
 def _dashboard_handler(site):
     """Dashboard Handler"""
 
-    async def handler(request, response):
+    async def handler(ctx):
         """Handler"""
         return await dashboard_view(request, response, site)
 
@@ -128,7 +128,7 @@ def _dashboard_handler(site):
 def _query_handler(site):
     """Query Handler"""
 
-    async def handler(request, response):
+    async def handler(ctx):
         """Handler"""
         return await query_view(request, response, site)
 
@@ -138,7 +138,7 @@ def _query_handler(site):
 def _export_handler(site, model_cls, admin_cls):
     """Export Handler"""
 
-    async def handler(request, response):
+    async def handler(ctx):
         """Handler"""
         return await export_view(request, response, site, model_cls, admin_cls)
 
@@ -148,7 +148,7 @@ def _export_handler(site, model_cls, admin_cls):
 def _list_handler(site, model_cls, admin_cls):
     """List Handler"""
 
-    async def handler(request, response):
+    async def handler(ctx):
         """Handler"""
         return await list_view(request, response, site, model_cls, admin_cls)
 
@@ -158,7 +158,7 @@ def _list_handler(site, model_cls, admin_cls):
 def _create_handler(site, model_cls, admin_cls):
     """Create Handler"""
 
-    async def handler(request, response):
+    async def handler(ctx):
         """Handler"""
         return await create_view(request, response, site, model_cls, admin_cls)
 
@@ -168,7 +168,7 @@ def _create_handler(site, model_cls, admin_cls):
 def _detail_handler(site, model_cls, admin_cls):
     """Detail Handler"""
 
-    async def handler(request, response, id):
+    async def handler(ctx, id):
         """Handler"""
         return await detail_view(request, response, site, model_cls, admin_cls, id)
 
@@ -178,7 +178,7 @@ def _detail_handler(site, model_cls, admin_cls):
 def _update_handler(site, model_cls, admin_cls):
     """Update Handler"""
 
-    async def handler(request, response, id):
+    async def handler(ctx, id):
         """Handler"""
         return await update_view(request, response, site, model_cls, admin_cls, id)
 
@@ -188,7 +188,7 @@ def _update_handler(site, model_cls, admin_cls):
 def _delete_handler(site, model_cls, admin_cls):
     """Delete Handler"""
 
-    async def handler(request, response, id):
+    async def handler(ctx, id):
         """Handler"""
         return await delete_view(request, response, site, model_cls, admin_cls, id)
 
@@ -198,7 +198,7 @@ def _delete_handler(site, model_cls, admin_cls):
 def _bulk_handler(site, model_cls, admin_cls):
     """Bulk Handler"""
 
-    async def handler(request, response):
+    async def handler(ctx):
         """Handler"""
         return await bulk_view(request, response, site, model_cls, admin_cls)
 

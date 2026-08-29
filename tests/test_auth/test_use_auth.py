@@ -3,11 +3,13 @@ from functools import partial
 import pytest
 
 from sillo.application import SilloApp
+from sillo import redirect
+from sillo import json
 from sillo.auth import AuthenticationMiddleware, BaseUser, useAuth
 from sillo.auth.backend import AuthenticationBackend
 from sillo.auth.exceptions import AuthenticationFailed
 from sillo.auth.model import AuthResult
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import AsyncTestClient
 from sillo.users import SimpleUser, UnauthenticatedUser
 
@@ -60,7 +62,7 @@ def test_client():
 class AuthBackend(AuthenticationBackend):
     name = "bearerAuth"
 
-    async def authenticate(self, request: Request):
+    async def authenticate(self, request: HttpContext):
         if request.headers.get("X-Auth") == "valid":
             return AuthResult(success=True, identity="1", scope="bearerAuth")
         return AuthResult(success=False, identity="", scope="")
@@ -69,7 +71,7 @@ class AuthBackend(AuthenticationBackend):
 class AdminBackend(AuthenticationBackend):
     name = "bearerAuth"
 
-    async def authenticate(self, request: Request):
+    async def authenticate(self, request: HttpContext):
         if request.headers.get("X-Auth") == "admin":
             return AuthResult(success=True, identity="2", scope="bearerAuth")
         return AuthResult(success=False, identity="", scope="")
@@ -78,7 +80,7 @@ class AdminBackend(AuthenticationBackend):
 class SessionBackend(AuthenticationBackend):
     name = "sessionCookie"
 
-    async def authenticate(self, request: Request):
+    async def authenticate(self, request: HttpContext):
         if request.headers.get("X-Session") == "valid":
             return AuthResult(success=True, identity="1", scope="sessionCookie")
         return AuthResult(success=False, identity="", scope="")
@@ -87,7 +89,7 @@ class SessionBackend(AuthenticationBackend):
 class APIKeyBackend(AuthenticationBackend):
     name = "apiKeyHeader"
 
-    async def authenticate(self, request: Request):
+    async def authenticate(self, request: HttpContext):
         if request.headers.get("X-API-Key") == "secret":
             return AuthResult(success=True, identity="apikey_user", scope="apiKeyHeader")
         return AuthResult(success=False, identity="", scope="")
@@ -103,8 +105,8 @@ async def test_use_auth_required_allows_authenticated(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth())
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected", headers={"X-Auth": "valid"})
@@ -116,8 +118,8 @@ async def test_use_auth_required_rejects_unauthenticated(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth())
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected")
@@ -134,8 +136,8 @@ async def test_use_auth_schemes_allows_matching(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["bearerAuth"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected", headers={"X-Auth": "valid"})
@@ -147,8 +149,8 @@ async def test_use_auth_schemes_rejects_non_matching(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apiKeyHeader"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected", headers={"X-Auth": "valid"})
@@ -160,8 +162,8 @@ async def test_use_auth_schemes_multiple_allows_any(test_client):
     app.use(AuthenticationMiddleware(TestUser, SessionBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["bearerAuth", "sessionCookie"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected", headers={"X-Session": "valid"})
@@ -178,8 +180,8 @@ async def test_use_auth_optional_allows_unauthenticated(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/feed", auth=useAuth(required=False))
-    async def feed(req: Request, res: Response):
-        return res.json({"authenticated": req.user.is_authenticated})
+    async def feed(req: HttpContext):
+        return json({"authenticated": req.user.is_authenticated})
 
     async with test_client(app) as client:
         res = await client.get("/feed")
@@ -192,8 +194,8 @@ async def test_use_auth_optional_attaches_user_if_present(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/feed", auth=useAuth(required=False))
-    async def feed(req: Request, res: Response):
-        return res.json({"authenticated": req.user.is_authenticated})
+    async def feed(req: HttpContext):
+        return json({"authenticated": req.user.is_authenticated})
 
     async with test_client(app) as client:
         res = await client.get("/feed", headers={"X-Auth": "valid"})
@@ -211,8 +213,8 @@ async def test_use_auth_permissions_allows_matching(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/admin", auth=useAuth(permissions=["read"]))
-    async def admin(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def admin(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/admin", headers={"X-Auth": "valid"})
@@ -224,8 +226,8 @@ async def test_use_auth_permissions_rejects_non_matching(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/admin", auth=useAuth(permissions=["delete"]))
-    async def admin(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def admin(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/admin", headers={"X-Auth": "valid"})
@@ -245,8 +247,8 @@ async def test_use_auth_permissions_rejects_anonymous_as_401_not_403(test_client
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/admin", auth=useAuth(permissions=["read"]))
-    async def admin(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def admin(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/admin")
@@ -258,8 +260,8 @@ async def test_use_auth_permissions_admin_user(test_client):
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))
 
     @app.get("/admin", auth=useAuth(permissions=["admin"]))
-    async def admin(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def admin(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/admin", headers={"X-Auth": "admin"})
@@ -276,8 +278,8 @@ async def test_use_auth_schemes_and_permissions(test_client):
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))
 
     @app.get("/secure", auth=useAuth(schemes=["bearerAuth"], permissions=["admin"]))
-    async def secure(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def secure(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/secure", headers={"X-Auth": "admin"})
@@ -289,8 +291,8 @@ async def test_use_auth_schemes_and_permissions_scheme_mismatch(test_client):
     app.use(AuthenticationMiddleware(TestUser, AdminBackend()))
 
     @app.get("/secure", auth=useAuth(schemes=["apiKeyHeader"], permissions=["admin"]))
-    async def secure(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def secure(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/secure", headers={"X-Auth": "admin"})
@@ -307,8 +309,8 @@ async def test_use_auth_route_backends_override_middleware(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/api", auth=useAuth(backends=[APIKeyBackend()]))
-    async def api(req: Request, res: Response):
-        return res.json({"ok": True, "scope": req.scope.get("auth")})
+    async def api(req: HttpContext):
+        return json({"ok": True, "scope": req.scope.get("auth")})
 
     async with test_client(app) as client:
         res = await client.get("/api", headers={"X-API-Key": "secret"})
@@ -321,8 +323,8 @@ async def test_use_auth_route_backends_reject_if_override_fails(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/api", auth=useAuth(backends=[APIKeyBackend()]))
-    async def api(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def api(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/api")
@@ -334,8 +336,8 @@ async def test_use_auth_route_backends_overrides_user(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/api", auth=useAuth(backends=[APIKeyBackend()]))
-    async def api(req: Request, res: Response):
-        return res.json({"display_name": req.user.display_name})
+    async def api(req: HttpContext):
+        return json({"display_name": req.user.display_name})
 
     async with test_client(app) as client:
         res = await client.get("/api", headers={"X-API-Key": "secret"})
@@ -362,8 +364,8 @@ async def test_use_auth_subclass_custom_logic(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/custom", auth=HeaderAuth())
-    async def custom(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def custom(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/custom", headers={"X-Auth": "valid"})
@@ -391,10 +393,10 @@ async def test_unauthorized_hook_replaces_the_401(test_client):
 
     @app.get(
         "/protected",
-        auth=useAuth(unauthorized=lambda req, res: res.json({"custom": True}, status_code=401)),
+        auth=useAuth(unauthorized=lambda req: json({"custom": True}, status_code=401)),
     )
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected")
@@ -408,10 +410,10 @@ async def test_unauthorized_hook_can_redirect(test_client):
 
     @app.get(
         "/dashboard",
-        auth=useAuth(unauthorized=lambda req, res: res.redirect("/login")),
+        auth=useAuth(unauthorized=lambda req: redirect("/login")),
     )
-    async def dashboard(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def dashboard(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/dashboard", follow_redirects=False)
@@ -429,11 +431,11 @@ async def test_unauthorized_hook_fires_on_scheme_mismatch_too(test_client):
         "/scoped",
         auth=useAuth(
             schemes=["sessionCookie"],
-            unauthorized=lambda req, res: res.json({"reason": "wrong-scheme"}, status_code=401),
+            unauthorized=lambda req: json({"reason": "wrong-scheme"}, status_code=401),
         ),
     )
-    async def scoped(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def scoped(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/scoped", headers={"X-Auth": "valid"})
@@ -449,11 +451,11 @@ async def test_forbidden_hook_replaces_the_403(test_client):
         "/admin-only",
         auth=useAuth(
             permissions=["admin"],
-            forbidden=lambda req, res: res.json({"custom": True}, status_code=403),
+            forbidden=lambda req: json({"custom": True}, status_code=403),
         ),
     )
-    async def admin_only(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def admin_only(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/admin-only", headers={"X-Auth": "valid"})
@@ -471,11 +473,11 @@ async def test_forbidden_hook_does_not_fire_on_401(test_client):
         "/admin-only",
         auth=useAuth(
             permissions=["admin"],
-            forbidden=lambda req, res: res.json({"wrong_hook": True}, status_code=403),
+            forbidden=lambda req: json({"wrong_hook": True}, status_code=403),
         ),
     )
-    async def admin_only(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def admin_only(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/admin-only")
@@ -491,12 +493,12 @@ async def test_unauthorized_and_forbidden_are_independent(test_client):
         "/both",
         auth=useAuth(
             permissions=["admin"],
-            unauthorized=lambda req, res: res.json({"which": "unauthorized"}, status_code=401),
-            forbidden=lambda req, res: res.json({"which": "forbidden"}, status_code=403),
+            unauthorized=lambda req: json({"which": "unauthorized"}, status_code=401),
+            forbidden=lambda req: json({"which": "forbidden"}, status_code=403),
         ),
     )
-    async def both(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def both(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         anon = await client.get("/both")
@@ -510,12 +512,12 @@ async def test_an_async_hook_is_awaited(test_client):
     app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
-    async def hook(req: Request, res: Response):
-        return res.json({"async": True}, status_code=401)
+    async def hook(req: HttpContext):
+        return json({"async": True}, status_code=401)
 
     @app.get("/protected", auth=useAuth(unauthorized=hook))
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected")
@@ -528,12 +530,12 @@ async def test_a_sync_hook_still_runs_without_blocking_the_test(test_client):
     app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
-    def hook(req: Request, res: Response):
-        return res.json({"sync": True}, status_code=401)
+    def hook(req: HttpContext):
+        return json({"sync": True}, status_code=401)
 
     @app.get("/protected", auth=useAuth(unauthorized=hook))
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected")
@@ -548,11 +550,11 @@ async def test_the_route_handler_never_runs_when_a_hook_fires(test_client):
 
     @app.get(
         "/protected",
-        auth=useAuth(unauthorized=lambda req, res: res.json({}, status_code=401)),
+        auth=useAuth(unauthorized=lambda req: json({}, status_code=401)),
     )
-    async def protected(req: Request, res: Response):
+    async def protected(req: HttpContext):
         handler_calls.append(1)
-        return res.json({"ok": True})
+        return json({"ok": True})
 
     async with test_client(app) as client:
         await client.get("/protected")
@@ -565,8 +567,8 @@ async def test_no_hooks_keeps_raising_authentication_failed(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/protected", auth=useAuth())
-    async def protected(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def protected(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/protected")
@@ -579,8 +581,8 @@ async def test_no_forbidden_hook_keeps_raising_permission_denied(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/admin-only", auth=useAuth(permissions=["admin"]))
-    async def admin_only(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def admin_only(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         res = await client.get("/admin-only", headers={"X-Auth": "valid"})
@@ -593,10 +595,10 @@ async def test_hooks_are_stored_on_the_instance():
     typo in the attribute name would otherwise only show up as a hook that
     silently never fires."""
 
-    def unauthorized_hook(req, res):
+    def unauthorized_hook(req):
         return None
 
-    def forbidden_hook(req, res):
+    def forbidden_hook(req):
         return None
 
     gate = useAuth(unauthorized=unauthorized_hook, forbidden=forbidden_hook)
@@ -613,13 +615,13 @@ async def test_guard_returns_none_when_authentication_passes():
     confirm the success path gives it nothing to short-circuit on."""
     app = SilloApp()
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
-    gate = useAuth(unauthorized=lambda req, res: res.json({}, status_code=401))
+    gate = useAuth(unauthorized=lambda req: json({}, status_code=401))
 
     class FakeRequest:
         def __init__(self):
             self.scope = {"user": TestUser("1", "testuser"), "auth": None, "auth_scheme": None}
 
-    result = await gate.guard(FakeRequest(), response=None)
+    result = await gate.guard(FakeRequest())
     assert result is None
 
 
@@ -638,8 +640,8 @@ async def test_a_custom_gate_without_guard_still_works(test_client):
     app.use(AuthenticationMiddleware(TestUser, AuthBackend()))
 
     @app.get("/bare", auth=BareGate())
-    async def bare(req: Request, res: Response):
-        return res.json({"ok": True})
+    async def bare(req: HttpContext):
+        return json({"ok": True})
 
     async with test_client(app) as client:
         denied = await client.get("/bare")

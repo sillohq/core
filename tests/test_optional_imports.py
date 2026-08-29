@@ -104,7 +104,7 @@ def test_the_application_can_be_built_without_the_orm():
 
         @app.get("/")
         async def home(request, response):
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         print("built", len(app.router.routes))
         """,

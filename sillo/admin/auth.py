@@ -9,6 +9,7 @@ subclassing :class:`AuthBackend`.
 from __future__ import annotations
 
 from .default_user import AdminUser
+from sillo.core.http import redirect
 
 
 class AuthBackend:
@@ -169,8 +170,9 @@ class _AuthMiddleware:
         """Init"""
         self.backend = backend
 
-    async def __call__(self, request, response, call_next):
-        """Call"""
+    async def __call__(self, ctx, call_next):
+        """Send an unauthenticated visitor to the login page."""
+        request = ctx
         path = (
             request.url.path
             if hasattr(request.url, "path")
@@ -181,5 +183,5 @@ class _AuthMiddleware:
         if path.startswith(("/admin/login", "/admin/static")):
             return await call_next()
         if not await self.backend.authenticate(request):
-            return response.redirect("/admin/login/", status_code=302)
+            return redirect("/admin/login/", status_code=302)
         return await call_next()

@@ -1,5 +1,5 @@
 """
-Tests for WebSocket consumers functionality
+Tests for WebSocketContext consumers functionality
 """
 
 from typing import Any, Callable
@@ -9,7 +9,7 @@ import pytest
 from sillo import SilloApp
 from sillo.core.routing import Router
 from sillo.testclient import TestClient
-from sillo.websockets import WebSocket, WebSocketConsumer
+from sillo.websockets import WebSocketContext, WebSocketConsumer
 
 
 class EchoConsumer(WebSocketConsumer):
@@ -17,7 +17,7 @@ class EchoConsumer(WebSocketConsumer):
 
     encoding = "text"
 
-    async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
         await websocket.send_text(f"Echo: {data}")
 
 
@@ -26,7 +26,7 @@ class JsonConsumer(WebSocketConsumer):
 
     encoding = "json"
 
-    async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
         await websocket.send_json({"received": data, "type": "json"})
 
 
@@ -35,7 +35,7 @@ class BytesConsumer(WebSocketConsumer):
 
     encoding = "bytes"
 
-    async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
         await websocket.send_bytes(b"Received: " + data)
 
 
@@ -48,7 +48,7 @@ class CounterConsumer(WebSocketConsumer):
         super().__init__(*args, **kwargs)
         self.count = 0
 
-    async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
         self.count += 1
         await websocket.send_text(f"Message #{self.count}: {data}")
 
@@ -58,17 +58,17 @@ class StatefulConsumer(WebSocketConsumer):
 
     encoding = "json"
 
-    async def on_connect(self, websocket: WebSocket) -> None:
+    async def on_connect(self, websocket: WebSocketContext) -> None:
         await websocket.accept()
         await websocket.send_json({"status": "connected", "message": "Welcome"})
 
-    async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
         if data.get("action") == "ping":
             await websocket.send_json({"response": "pong"})
         elif data.get("action") == "echo":
             await websocket.send_json({"response": data.get("message")})
 
-    async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
+    async def on_disconnect(self, websocket: WebSocketContext, close_code: int) -> None:
         # Cleanup logic here
         pass
 
@@ -211,13 +211,13 @@ def test_consumer_with_path_parameters(
     class RoomConsumer(WebSocketConsumer):
         encoding = "json"
 
-        async def on_connect(self, websocket: WebSocket) -> None:
+        async def on_connect(self, websocket: WebSocketContext) -> None:
             await websocket.accept()
             # Access path params from websocket scope
             room_id = websocket.path_params.get("room_id")
             await websocket.send_json({"room": room_id, "status": "joined"})
 
-        async def on_receive(self, websocket: WebSocket, data: Any) -> None:
+        async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
             room_id = websocket.path_params.get("room_id")
             await websocket.send_json({"room": room_id, "message": data})
 

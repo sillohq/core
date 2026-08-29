@@ -1,5 +1,6 @@
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.http.lifecycle import (
     RequestIdMiddleware,
     generate_request_id,
@@ -17,8 +18,8 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware())
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def test_route(request: HttpContext):
+            return json({"message": "OK"})
 
         client = TestClient(app)
         response = client.get("/test")
@@ -31,9 +32,9 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware(store_in_request=True))
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
+        async def test_route(request: HttpContext):
             rid = getattr(request.state, "request_id", None)
-            return response.json({"request_id": rid})
+            return json({"request_id": rid})
 
         client = TestClient(app)
         response = client.get("/test")
@@ -46,8 +47,8 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware(force_generate=True))
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"ok": True})
+        async def test_route(request: HttpContext):
+            return json({"ok": True})
 
         client = TestClient(app)
         incoming_id = "incoming-test-id"
@@ -59,8 +60,8 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware(header_name="X-Custom-ID"))
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"ok": True})
+        async def test_route(request: HttpContext):
+            return json({"ok": True})
 
         client = TestClient(app)
         response = client.get("/test")
@@ -71,8 +72,8 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware(include_in_response=False))
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
-            return response.json({"ok": True})
+        async def test_route(request: HttpContext):
+            return json({"ok": True})
 
         client = TestClient(app)
         response = client.get("/test")
@@ -93,10 +94,10 @@ class TestRequestIdHelpers:
         app = SilloApp()
 
         @app.get("/test")
-        async def test_route(request: Request, response: Response):
+        async def test_route(request: HttpContext):
             rid = get_or_generate_request_id(request)
             store_request_id_in_request(request, rid)
-            return response.json({"rid": rid})
+            return json({"rid": rid})
 
         client = TestClient(app)
         response = client.get("/test")

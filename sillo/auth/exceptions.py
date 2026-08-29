@@ -1,6 +1,6 @@
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, json
 from sillo.exceptions import HTTPException
 
 HeadersType = dict[str, Any]  # Alias for better readability
@@ -37,7 +37,7 @@ class AuthException(HTTPException):
             try:
                 await authenticate_user(request)
             except AuthException as exc:
-                return response.json({"error": exc.detail}, status_code=exc.status_code)
+                return json({"error": exc.detail}, status_code=exc.status_code)
     """
 
     def __init__(
@@ -161,9 +161,7 @@ class PermissionDenied(AuthException):
         super().__init__(403, detail, headers)
 
 
-async def AuthErrorHandler(
-    request: Request, response: Response, exc: HTTPException
-) -> Any:
+async def AuthErrorHandler(ctx: HttpContext, exc: HTTPException) -> Any:
     """Handle authentication exceptions and return a JSON error response.
 
     This async error handler is registered with the framework to convert
@@ -176,22 +174,19 @@ async def AuthErrorHandler(
     responses rather than HTML error pages.
 
     Args:
-        request: The incoming HTTP request that triggered the authentication
+        ctx: The context for the request that triggered the authentication
             error. Available for logging or context extraction but not
             modified by this handler.
-        response: The outgoing HTTP response object used to construct the
-            JSON error response. The ``json()`` method is called to produce
-            the response body with the appropriate status code.
         exc: The HTTP exception instance that was raised during authentication.
             Its ``detail``, ``status_code``, and ``headers`` attributes are
             used to construct the error response.
 
     Returns:
-        Response: A JSON-formatted HTTP response containing the error detail
+        A JSON-formatted HTTP response containing the error detail
             message as the body, with the status code and headers from the
             exception. The response content type is ``application/json``.
 
     Raises:
         No exceptions are raised by this handler.
     """
-    return response.json(exc.detail, status_code=exc.status_code, headers=exc.headers)
+    return json(exc.detail, status_code=exc.status_code, headers=exc.headers)

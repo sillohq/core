@@ -11,7 +11,7 @@ from sillo.types import (
     Send,
     WsHandlerType,
 )
-from sillo.websockets import WebSocket
+from sillo.websockets import WebSocketContext
 from sillo.websockets.errors import WebSocketErrorMiddleware
 
 from ._utils import MatchStatus, get_route_path
@@ -20,10 +20,10 @@ from .base import BaseRoute
 
 class WebsocketRoute(BaseRoute):
     """
-    WebSocket route configuration for handling real-time bidirectional communication.
+    WebSocketContext route configuration for handling real-time bidirectional communication.
 
-    WebsocketRoute defines a WebSocket endpoint that can handle persistent connections
-    between clients and the server. Unlike HTTP routes, WebSocket routes maintain
+    WebsocketRoute defines a WebSocketContext endpoint that can handle persistent connections
+    between clients and the server. Unlike HTTP routes, WebSocketContext routes maintain
     an open connection that allows both the client and server to send messages
     at any time.
 
@@ -34,9 +34,9 @@ class WebsocketRoute(BaseRoute):
     - Support for binary and text messages
 
     Examples:
-        1. Basic WebSocket echo server:
+        1. Basic WebSocketContext echo server:
         ```python
-        async def echo_handler(websocket: WebSocket):
+        async def echo_handler(websocket: WebSocketContext):
             await websocket.accept()
             try:
                 while True:
@@ -51,7 +51,7 @@ class WebsocketRoute(BaseRoute):
 
         2. Chat room with path parameters:
         ```python
-        async def chat_handler(websocket: WebSocket):
+        async def chat_handler(websocket: WebSocketContext):
             room_id = websocket.path_params['room_id']
             await websocket.accept()
 
@@ -72,7 +72,7 @@ class WebsocketRoute(BaseRoute):
 
         3. Binary data handling:
         ```python
-        async def file_upload_handler(websocket: WebSocket):
+        async def file_upload_handler(websocket: WebSocketContext):
             await websocket.accept()
 
             try:
@@ -101,7 +101,7 @@ class WebsocketRoute(BaseRoute):
         path: Annotated[
             str,
             Doc("""
-                URL path pattern for the WebSocket endpoint.
+                URL path pattern for the WebSocketContext endpoint.
                 
                 Supports the same path parameter syntax as HTTP routes:
                 - Static paths: "/ws/chat"
@@ -109,7 +109,7 @@ class WebsocketRoute(BaseRoute):
                 - Regex parameters: "/ws/files/{path:.*}"
                 
                 Examples:
-                - "/ws" - Simple WebSocket endpoint
+                - "/ws" - Simple WebSocketContext endpoint
                 - "/ws/chat/{room_id}" - Chat room with room ID parameter
                 - "/ws/user/{user_id}/notifications" - User-specific notifications
                 """),
@@ -117,17 +117,17 @@ class WebsocketRoute(BaseRoute):
         handler: Annotated[
             WsHandlerType,
             Doc("""
-                Async function to handle WebSocket connections.
+                Async function to handle WebSocketContext connections.
                 
-                The handler function receives a WebSocket object and should:
+                The handler function receives a WebSocketContext object and should:
                 1. Accept the connection with await websocket.accept()
                 2. Handle incoming messages in a loop
                 3. Send responses as needed
                 4. Handle disconnections gracefully
                 
-                Function signature: async def handler(websocket: WebSocket) -> None
+                Function signature: async def handler(websocket: WebSocketContext) -> None
                 
-                The WebSocket object provides methods for:
+                The WebSocketContext object provides methods for:
                 - websocket.accept(): Accept the connection
                 - websocket.receive_text(): Receive text messages
                 - websocket.receive_bytes(): Receive binary messages
@@ -139,11 +139,11 @@ class WebsocketRoute(BaseRoute):
                 """),
         ],
     ):
-        """Initialize a WebSocket route with path pattern and handler.
+        """Initialize a WebSocketContext route with path pattern and handler.
 
-        Creates a new WebSocket route that matches incoming WebSocket
+        Creates a new WebSocketContext route that matches incoming WebSocketContext
         upgrade requests against the provided path pattern. The handler
-        function is invoked with a WebSocket object when a client connects
+        function is invoked with a WebSocketContext object when a client connects
         to a matching path.
 
         The path pattern is compiled into a regex using RouteBuilder for
@@ -151,10 +151,10 @@ class WebsocketRoute(BaseRoute):
         asynchronous validation checks are performed on the handler.
 
         Args:
-            path: URL path pattern for the WebSocket endpoint. Supports
+            path: URL path pattern for the WebSocketContext endpoint. Supports
                 dynamic parameters using curly brace syntax.
-            handler: Async function to handle WebSocket connections. Must
-                be a coroutine function accepting a WebSocket argument.
+            handler: Async function to handle WebSocketContext connections. Must
+                be a coroutine function accepting a WebSocketContext argument.
 
         Raises:
             AssertionError: If handler is not callable or is not an async
@@ -171,15 +171,15 @@ class WebsocketRoute(BaseRoute):
         self.router_middleware = None
 
     def match(self, scope: Scope) -> tuple[Any, Any]:
-        """Match a WebSocket request path against this route's URL pattern.
+        """Match a WebSocketContext request path against this route's URL pattern.
 
         Extracts the path from the ASGI scope and attempts to match it
         against the compiled regex pattern. When a match is found, path
         parameters are extracted and converted to their appropriate types
         using the route info convertors.
 
-        Unlike HTTP routes, WebSocket routes do not check the request
-        method since WebSocket connections use a special upgrade mechanism
+        Unlike HTTP routes, WebSocketContext routes do not check the request
+        method since WebSocketContext connections use a special upgrade mechanism
         rather than standard HTTP methods.
 
         Args:
@@ -202,64 +202,66 @@ class WebsocketRoute(BaseRoute):
         return MatchStatus.NONE, {}
 
     async def handle(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """Handle an incoming WebSocket connection by invoking the route handler.
+        """Handle an incoming WebSocketContext connection by invoking the route handler.
 
-        Creates a WebSocket session object from the ASGI connection triple
+        Creates a WebSocketContext session object from the ASGI connection triple
         and passes it to the route's handler function. The handler is wrapped
         in a WebSocketErrorMiddleware to ensure proper error handling and
-        connection cleanup when exceptions occur during the WebSocket session.
+        connection cleanup when exceptions occur during the WebSocketContext session.
 
-        This method sets up the full lifecycle of a WebSocket connection
+        This method sets up the full lifecycle of a WebSocketContext connection
         including creation of the session object, handler invocation, and
         error handling with automatic cleanup.
 
         Args:
-            scope: ASGI scope containing WebSocket connection information
+            scope: ASGI scope containing WebSocketContext connection information
                 including path, headers, and query parameters.
-            receive: ASGI receive callable for reading incoming WebSocket
+            receive: ASGI receive callable for reading incoming WebSocketContext
                 messages from the client.
-            send: ASGI send callable for transmitting WebSocket messages
+            send: ASGI send callable for transmitting WebSocketContext messages
                 back to the client.
         """
 
         # Create the base handler
         async def handler_app(scope: Scope, receive: Receive, send: Send) -> None:
-            """Serve as the base ASGI application for this WebSocket route.
+            """Serve as the base ASGI application for this WebSocketContext route.
 
-            Creates a ``WebSocket`` session object from the raw ASGI
+            Creates a ``WebSocketContext`` session object from the raw ASGI
             connection triple and passes it to the route's handler function.
             This inner function is wrapped by ``WebSocketErrorMiddleware``
             to ensure proper error handling and connection cleanup when
-            exceptions occur during the WebSocket session lifecycle.
+            exceptions occur during the WebSocketContext session lifecycle.
 
             Args:
-                scope: ASGI scope dictionary containing WebSocket connection
+                scope: ASGI scope dictionary containing WebSocketContext connection
                     metadata including path, headers, and query parameters.
-                receive: ASGI receive callable for reading incoming WebSocket
+                receive: ASGI receive callable for reading incoming WebSocketContext
                     messages from the client.
-                send: ASGI send callable for transmitting WebSocket messages
+                send: ASGI send callable for transmitting WebSocketContext messages
                     back to the client.
 
             Returns:
-                None. All communication happens through the WebSocket session
+                None. All communication happens through the WebSocketContext session
                 object passed to the handler.
             """
-            websocket_session = WebSocket(scope, receive=receive, send=send)
-            await self.handler(websocket_session)
+            ctx = WebSocketContext(scope, receive=receive, send=send)
+            # Path parameters reach the handler as keyword arguments, the same
+            # way they do on an HTTP route. They are also on `ctx.path_params`.
+            await self.handler(ctx, **scope.get("path_params", {}))
 
         app = WebSocketErrorMiddleware(handler_app)
 
         await app(scope, receive, send)
 
     def url_path_for(self, name: str, **path_params: dict[str, Any]) -> URLPath:
-        """Generate a URL path for this WebSocket route by name.
+        """Generate a URL path for this WebSocketContext route by name.
 
-        Performs reverse URL resolution for WebSocket routes by substituting
+        Performs reverse URL resolution for WebSocketContext routes by substituting
         the provided path parameters into the route's raw path pattern. The
         method validates that the requested name matches this route's name
         before performing the substitution.
 
-        This enables applications to generate WebSocket connection URLs
+        This enables applications to generate WebSocketContext connection URLs
         dynamically without hardcoding URL patterns throughout the codebase.
 
         Args:
@@ -271,7 +273,7 @@ class WebsocketRoute(BaseRoute):
 
         Returns:
             A URLPath object containing the resolved path string for
-            the WebSocket endpoint.
+            the WebSocketContext endpoint.
 
         Raises:
             ValueError: If the provided name does not match this route's
@@ -291,16 +293,16 @@ class WebsocketRoute(BaseRoute):
         return URLPath(path=path)
 
     def __repr__(self) -> str:
-        """Return a detailed string representation of this WebSocket route.
+        """Return a detailed string representation of this WebSocketContext route.
 
         Produces a human-readable string that includes the route class
         identifier and the raw path pattern. This is useful for debugging
-        and logging purposes, providing a quick overview of the WebSocket
+        and logging purposes, providing a quick overview of the WebSocketContext
         route's configuration.
 
         Returns:
             A formatted string in the form ``<WSRoute /path>`` showing
-            the path pattern of this WebSocket route.
+            the path pattern of this WebSocketContext route.
         """
         return f"<WSRoute {self.raw_path}>"
 

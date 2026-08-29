@@ -7,7 +7,7 @@ from typing_extensions import Doc
 
 from sillo import logging
 from sillo.auth.backend import AuthenticationBackend
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
 from sillo.users import BaseUser, SimpleUser, UnauthenticatedUser
 
@@ -88,17 +88,11 @@ class AuthenticationMiddleware(BaseMiddleware):
             self.backends = list(backend)
         self.user_model = user_model
 
-    async def process_request(
+    async def dispatch(
         self,
-        request: Annotated[
-            Request,
-            Doc("The HTTP request object, containing authentication credentials."),
-        ],
-        response: Annotated[
-            Response,
-            Doc(
-                "The HTTP response object, which may be modified during authentication."
-            ),
+        ctx: Annotated[
+            HttpContext,
+            Doc("The context for this request, carrying the credentials."),
         ],
         call_next: typing.Callable[..., typing.Awaitable[typing.Any]],
     ) -> None:
@@ -116,12 +110,9 @@ class AuthenticationMiddleware(BaseMiddleware):
         logging; the middleware then continues to the next backend.
 
         Args:
-            request: The incoming HTTP request containing credentials such as
+            ctx: The context for this request, carrying credentials such as
                 authorization headers, cookies, or session data that backends
                 use to identify the caller.
-            response: The HTTP response object. Passed to backend
-                ``handle_exception`` methods when a backend raises during
-                authentication, allowing custom error response handling.
             call_next: An async callable representing the next middleware or
                 route handler in the pipeline. Called after authentication
                 processing is complete, regardless of whether a user was
@@ -136,6 +127,7 @@ class AuthenticationMiddleware(BaseMiddleware):
                 caught and handled internally. Exceptions from ``call_next``
                 propagate normally to the caller.
         """
+        request = ctx
         # Try each backend until one successfully authenticates the user
         for backend in self.backends:
             try:
@@ -157,7 +149,7 @@ class AuthenticationMiddleware(BaseMiddleware):
 
             except Exception as e:
                 # Log the error but continue to the next backend
-                backend.handle_exception(response, e)  # ty: ignore
+                backend.handle_exception(request, e)  # ty: ignore
                 continue
         else:
             # No backend authenticated the user

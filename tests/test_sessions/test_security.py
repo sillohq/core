@@ -12,7 +12,8 @@ import os
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.session import SessionConfig
 from sillo.session.file import FileSessionManager
 from sillo.session.middleware import SessionMiddleware
@@ -44,13 +45,13 @@ def _app(manager):
     )
 
     @app.get("/write")
-    async def write(request: Request, response: Response):
+    async def write(request: HttpContext):
         request.session["marker"] = "written"
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     @app.get("/read")
-    async def read(request: Request, response: Response):
-        return response.json({"marker": request.session.get("marker")})
+    async def read(request: HttpContext):
+        return json({"marker": request.session.get("marker")})
 
     return app
 
@@ -166,12 +167,12 @@ class TestSessionIdentifierRotatesOnLogin:
         )
 
         @app.get("/visit")
-        async def visit(request: Request, response: Response):
+        async def visit(request: HttpContext):
             request.session["seen"] = True
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         @app.get("/login")
-        async def login_route(request: Request, response: Response):
+        async def login_route(request: HttpContext):
             from sillo.auth.session_auth.backend import login
 
             class _User:
@@ -179,7 +180,7 @@ class TestSessionIdentifierRotatesOnLogin:
                 display_name = "Ada"
 
             login(request, _User())
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         with TestClient(app) as client:
             client.get("/visit")
@@ -244,7 +245,7 @@ class TestLoggingOutPurgesTheStoredSession:
         )
 
         @app.get("/login")
-        async def login_route(request: Request, response: Response):
+        async def login_route(request: HttpContext):
             from sillo.auth.session_auth.backend import login
 
             class _User:
@@ -252,14 +253,14 @@ class TestLoggingOutPurgesTheStoredSession:
                 display_name = "Ada"
 
             login(request, _User())
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         @app.get("/logout")
-        async def logout_route(request: Request, response: Response):
+        async def logout_route(request: HttpContext):
             from sillo.auth.session_auth.backend import logout
 
             logout(request)
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         with TestClient(app) as client:
             client.get("/login")
@@ -309,19 +310,19 @@ class TestRemovingOneKeyIsNotDeletingTheSession:
         )
 
         @app.get("/fill")
-        async def fill(request: Request, response: Response):
+        async def fill(request: HttpContext):
             request.session["user_id"] = 7
             request.session["cart"] = "abc"
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         @app.get("/drop")
-        async def drop(request: Request, response: Response):
+        async def drop(request: HttpContext):
             del request.session["cart"]
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         @app.get("/show")
-        async def show(request: Request, response: Response):
-            return response.json(
+        async def show(request: HttpContext):
+            return json(
                 {
                     "user_id": request.session.get("user_id"),
                     "cart": request.session.get("cart"),

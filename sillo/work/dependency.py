@@ -13,18 +13,18 @@ Usage::
     from sillo.work.dependency import scheduler, queue_connection, events
 
     @app.get("/admin/scheduler")
-    async def scheduler_status(request, response, sched = Depend(scheduler)):
-        return response.json(sched.stats.to_dict())
+    async def scheduler_status(ctx, sched = Depend(scheduler)):
+        return json(sched.stats.to_dict())
 
     @app.get("/admin/queues")
-    async def queue_status(request, response, conn = Depend(queue_connection)):
-        return response.json({"size": await conn.size("default")})
+    async def queue_status(ctx, conn = Depend(queue_connection)):
+        return json({"size": await conn.size("default")})
 
     @app.post("/signup")
-    async def signup(request, response, dispatcher = Depend(events)):
+    async def signup(ctx, dispatcher = Depend(events)):
         user = await create_user(...)
         await dispatcher.dispatch(UserSignedUp(user_id=user.id))
-        return response.json(ok=True)
+        return json(ok=True)
 """
 
 from __future__ import annotations

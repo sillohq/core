@@ -3,7 +3,7 @@ import typing
 from collections.abc import Callable
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, json
 from sillo.logging import getLogger
 
 # from typing_extensions import Annotated, Doc
@@ -105,47 +105,48 @@ class CORSMiddleware(BaseMiddleware):
         else:
             self.allow_headers = list(SAFELISTED_HEADERS)
 
-    async def process_request(
+    async def dispatch(
         self,
-        request: Request,
-        response: Response,
+        ctx: HttpContext,
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
-        """Process Request"""
+        """Apply the CORS policy to one request."""
         config = getattr(self, "config", None)
         if not config:
             return await call_next()
 
-        origin = request.origin
+        origin = ctx.origin
 
-        method = request.scope["method"]
+        method = ctx.scope["method"]
 
         if not origin and self.strict_origin_checking:
             if self.debug:
                 logger.error("Request denied: Missing 'Origin' header.")
-            return response.json(
+            return json(
                 self.get_error_message("missing_origin"),
                 status_code=self.custom_error_status,
             )
         if (
             method.lower() == "options"
-            and "access-control-request-method" in request.headers
+            and "access-control-request-method" in ctx.headers
         ):
-            return await self.preflight_response(request, response)
-        await self.simple_response(request, response, call_next)
+            return await self.preflight_response(ctx)
+        return await self.simple_response(ctx, call_next)
 
     async def simple_response(
         self,
-        request: Request,
-        response: Response,
+        ctx: HttpContext,
         call_next: typing.Callable[..., typing.Awaitable[Any]],
     ):
-        """Simple Response"""
-        origin = request.origin
-        server_error_headers = request.scope.get("server_error_headers", {})
+        """Run the chain, then stamp the CORS headers on what comes back."""
+        origin = ctx.origin
+        server_error_headers = ctx.scope.get("server_error_headers", {})
         server_error_headers["Access-Control-Allow-Origin"] = origin
-        request.scope["server_error_headers"] = server_error_headers
-        cnext = await call_next()
+        ctx.scope["server_error_headers"] = server_error_headers
+        response = await call_next()
+
+        if response is None:
+            return None
 
         if origin and self.is_allowed_origin(origin):
             response.set_header(
@@ -165,7 +166,7 @@ class CORSMiddleware(BaseMiddleware):
                 ", ".join(self.expose_headers),
                 override=True,
             )
-        return cnext
+        return response
 
     def allow_origin_value(self, origin: str) -> str:
         """What to send back in ``Access-Control-Allow-Origin``.
@@ -211,11 +212,11 @@ class CORSMiddleware(BaseMiddleware):
             return True
         return method.lower() in [x.lower() for x in self.allow_methods]
 
-    async def preflight_response(self, request: Request, response: Response) -> Any:
+    async def preflight_response(self, ctx: HttpContext) -> Any:
         """Preflight Response"""
-        origin = request.headers.get("origin")
-        requested_method = request.headers.get("access-control-request-method")
-        requested_headers = request.headers.get("access-control-request-headers")
+        origin = ctx.headers.get("origin")
+        requested_method = ctx.headers.get("access-control-request-method")
+        requested_headers = ctx.headers.get("access-control-request-headers")
 
         headers = {}
 
@@ -224,7 +225,7 @@ class CORSMiddleware(BaseMiddleware):
                 logger.error(
                     f"Preflight request denied: Origin '{origin}' is not allowed."
                 )
-            return response.json(
+            return json(
                 self.get_error_message("disallowed_origin"),
                 status_code=self.custom_error_status,
             )
@@ -237,7 +238,7 @@ class CORSMiddleware(BaseMiddleware):
                 logger.error(
                     f"Preflight request denied: Method '{requested_method}' is not allowed."
                 )
-            return response.json(
+            return json(
                 self.get_error_message("disallowed_method"),
                 status_code=self.custom_error_status,
             )
@@ -259,7 +260,7 @@ class CORSMiddleware(BaseMiddleware):
                             logger.error(
                                 f"Preflight request denied: Header '{header}' is blacklisted."
                             )
-                        return response.json(
+                        return json(
                             self.get_error_message("disallowed_header"),
                             status_code=self.custom_error_status,
                         )
@@ -272,7 +273,7 @@ class CORSMiddleware(BaseMiddleware):
                             logger.error(
                                 f"Preflight request denied: Header '{header}' is not allowed."
                             )
-                        return response.json(
+                        return json(
                             self.get_error_message("disallowed_header"),
                             status_code=self.custom_error_status,
                         )
@@ -287,7 +288,7 @@ class CORSMiddleware(BaseMiddleware):
         if self.allow_credentials:
             headers["Access-Control-Allow-Credentials"] = "true"
 
-        return response.json("OK", status_code=201, headers=headers)
+        return json("OK", status_code=201, headers=headers)
 
     def get_error_message(self, error_type: str) -> str:
         """Get Error Message"""

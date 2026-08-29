@@ -7,7 +7,8 @@ from typing import Any, Callable, Dict, List
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import empty, html, json, text
+from sillo.core.http import HttpContext
 from sillo.core.http.response import (
     BaseResponse,
     HTMLResponse,
@@ -24,9 +25,9 @@ def test_custom_response_class(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/custom")
-    async def custom_response(request: Request, response: Response):
+    async def custom_response(request: HttpContext):
         custom = PlainTextResponse(body="Custom class response", status_code=200)
-        return response.make_response(custom)
+        return custom
 
     with test_client_factory(app) as client:
         resp = client.get("/custom")
@@ -41,9 +42,9 @@ def test_custom_json_response_class(
     app = SilloApp()
 
     @app.get("/custom-json")
-    async def custom_json(request: Request, response: Response):
+    async def custom_json(request: HttpContext):
         custom = JSONResponse(content={"custom": True}, status_code=201)
-        return response.make_response(custom)
+        return custom
 
     with test_client_factory(app) as client:
         resp = client.get("/custom-json")
@@ -58,9 +59,9 @@ def test_custom_html_response_class(
     app = SilloApp()
 
     @app.get("/custom-html")
-    async def custom_html(request: Request, response: Response):
+    async def custom_html(request: HttpContext):
         custom = HTMLResponse(content="<h1>Custom HTML</h1>", status_code=200)
-        return response.make_response(custom)
+        return custom
 
     with test_client_factory(app) as client:
         resp = client.get("/custom-html")
@@ -76,8 +77,8 @@ def test_response_with_none(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.get("/with-none")
-    async def with_none(request: Request, response: Response):
-        return response.json({"value": None, "exists": True})
+    async def with_none(request: HttpContext):
+        return json({"value": None, "exists": True})
 
     with test_client_factory(app) as client:
         resp = client.get("/with-none")
@@ -92,8 +93,8 @@ def test_response_with_boolean(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/with-boolean")
-    async def with_boolean(request: Request, response: Response):
-        return response.json({"success": True, "failed": False})
+    async def with_boolean(request: HttpContext):
+        return json({"success": True, "failed": False})
 
     with test_client_factory(app) as client:
         resp = client.get("/with-boolean")
@@ -108,8 +109,8 @@ def test_response_with_numbers(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/with-numbers")
-    async def with_numbers(request: Request, response: Response):
-        return response.json(
+    async def with_numbers(request: HttpContext):
+        return json(
             {"integer": 42, "float": 3.14159, "negative": -100, "zero": 0}
         )
 
@@ -128,8 +129,8 @@ def test_response_with_unicode(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/with-unicode")
-    async def with_unicode(request: Request, response: Response):
-        return response.json(
+    async def with_unicode(request: HttpContext):
+        return json(
             {"emoji": "", "chinese": "你好", "arabic": "مرحبا", "special": "café"}
         )
 
@@ -148,8 +149,8 @@ def test_response_with_empty_string(
     app = SilloApp()
 
     @app.get("/empty-string")
-    async def empty_string(request: Request, response: Response):
-        return response.json({"value": "", "name": "test"})
+    async def empty_string(request: HttpContext):
+        return json({"value": "", "name": "test"})
 
     with test_client_factory(app) as client:
         resp = client.get("/empty-string")
@@ -168,8 +169,8 @@ def test_response_ensure_ascii_false(
     app = SilloApp()
 
     @app.get("/no-ascii")
-    async def no_ascii(request: Request, response: Response):
-        return response.json({"text": "café"}, ensure_ascii=False)
+    async def no_ascii(request: HttpContext):
+        return json({"text": "café"}, ensure_ascii=False)
 
     with test_client_factory(app) as client:
         resp = client.get("/no-ascii")
@@ -183,8 +184,8 @@ def test_response_ensure_ascii_true(
     app = SilloApp()
 
     @app.get("/with-ascii")
-    async def with_ascii(request: Request, response: Response):
-        return response.json({"text": "café"}, ensure_ascii=True)
+    async def with_ascii(request: HttpContext):
+        return json({"text": "café"}, ensure_ascii=True)
 
     with test_client_factory(app) as client:
         resp = client.get("/with-ascii")
@@ -199,10 +200,10 @@ def test_response_large_json(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.get("/large-json")
-    async def large_json(request: Request, response: Response):
+    async def large_json(request: HttpContext):
         # Create a large list
         items = [{"id": i, "data": f"value_{i}" * 10} for i in range(1000)]
-        return response.json({"items": items})
+        return json({"items": items})
 
     with test_client_factory(app) as client:
         resp = client.get("/large-json")
@@ -216,10 +217,10 @@ def test_response_large_text(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.get("/large-text")
-    async def large_text(request: Request, response: Response):
+    async def large_text(request: HttpContext):
         # Create large text (1MB)
         text = "x" * (1024 * 1024)
-        return response.text(text)
+        return text(text)
 
     with test_client_factory(app) as client:
         resp = client.get("/large-text")
@@ -237,25 +238,25 @@ def test_conditional_response_type(
     app = SilloApp()
 
     @app.get("/conditional")
-    async def conditional_response(request: Request, response: Response):
+    async def conditional_response(request: HttpContext):
         accept = request.headers.get("accept", "")
 
         data = {"message": "Hello", "status": "ok"}
 
         if "application/json" in accept:
-            return response.json(data)
+            return json(data)
         elif "text/html" in accept:
-            return response.html(f"<div>{data}</div>")
+            return html(f"<div>{data}</div>")
         else:
-            return response.text(str(data))
+            return text(str(data))
 
     with test_client_factory(app) as client:
-        # Request JSON
+        # HttpContext JSON
         resp_json = client.get("/conditional", headers={"accept": "application/json"})
         assert resp_json.status_code == 200
         assert "application/json" in resp_json.headers.get("content-type", "")
 
-        # Request HTML
+        # HttpContext HTML
         resp_html = client.get("/conditional", headers={"accept": "text/html"})
         assert resp_html.status_code == 200
         assert "text/html" in resp_html.headers.get("content-type", "")
@@ -268,17 +269,17 @@ def test_response_based_on_method(
     app = SilloApp()
 
     @app.route("/resource", methods=["GET", "POST", "PUT", "DELETE"])
-    async def resource_handler(request: Request, response: Response):
+    async def resource_handler(request: HttpContext):
         method = request.method
 
         if method == "GET":
-            return response.json({"action": "read"})
+            return json({"action": "read"})
         elif method == "POST":
-            return response.json({"action": "created"}).status(201)
+            return json({"action": "created"}).status(201)
         elif method == "PUT":
-            return response.json({"action": "updated"})
+            return json({"action": "updated"})
         elif method == "DELETE":
-            return response.empty().status(204)
+            return empty().status(204)
 
     with test_client_factory(app) as client:
         get_resp = client.get("/resource")

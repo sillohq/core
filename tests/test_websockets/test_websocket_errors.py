@@ -1,5 +1,5 @@
 """
-Tests for WebSocket error handling middleware
+Tests for WebSocketContext error handling middleware
 """
 
 import asyncio
@@ -13,7 +13,7 @@ from sillo.exceptions import WebSocketException
 from sillo.core.routing import Router
 from sillo.testclient import TestClient
 from sillo.types import ASGIApp, Receive, Scope, Send
-from sillo.websockets.base import WebSocket
+from sillo.websockets.base import WebSocketContext
 from sillo.websockets.errors import (
     WebSocketErrorMiddleware,
     websocket_exception_handler,
@@ -118,7 +118,7 @@ class TestWebSocketErrorMiddleware:
             # Verify error was logged
             mock_logger.error.assert_called_once()
             log_call = mock_logger.error.call_args[0][0]
-            assert "WebSocket error:" in log_call
+            assert "WebSocketContext error:" in log_call
 
     def test_logging_on_general_exception(self):
         """Test that general exceptions are logged"""
@@ -157,11 +157,11 @@ class TestWebSocketErrorIntegration:
         app = SilloApp()
 
         @app.ws_route("/ws/error")
-        async def error_endpoint(websocket: WebSocket):
+        async def error_endpoint(websocket: WebSocketContext):
             raise WebSocketException(code=1008, reason="Policy violation")
 
         with test_client_factory(app) as client:
-            # WebSocket connection should be rejected/closed due to exception
+            # WebSocketContext connection should be rejected/closed due to exception
             with pytest.raises(Exception):  # Connection should fail
                 with client.websocket_connect("/ws/error"):
                     pass  # This should not be reached
@@ -173,11 +173,11 @@ class TestWebSocketErrorIntegration:
         app = SilloApp()
 
         @app.ws_route("/ws/general-error")
-        async def general_error_endpoint(websocket: WebSocket):
+        async def general_error_endpoint(websocket: WebSocketContext):
             raise ValueError("Something went wrong")
 
         with test_client_factory(app) as client:
-            # WebSocket connection should be closed with internal error
+            # WebSocketContext connection should be closed with internal error
             with pytest.raises(Exception):  # Connection should fail
                 with client.websocket_connect("/ws/general-error"):
                     pass  # This should not be reached
@@ -187,7 +187,7 @@ class TestWebSocketErrorIntegration:
         app = SilloApp()
 
         @app.ws_route("/ws/normal")
-        async def normal_endpoint(websocket: WebSocket):
+        async def normal_endpoint(websocket: WebSocketContext):
             await websocket.accept()
             data = await websocket.receive_text()
             await websocket.send_text(f"Echo: {data}")
@@ -204,7 +204,7 @@ class TestWebSocketErrorIntegration:
         router = Router(prefix="/api")
 
         @router.ws_route("/error")
-        async def router_error_endpoint(websocket: WebSocket):
+        async def router_error_endpoint(websocket: WebSocketContext):
             raise WebSocketException(code=1009, reason="Router error")
 
         app = SilloApp()

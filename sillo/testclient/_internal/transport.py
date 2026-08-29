@@ -158,7 +158,7 @@ class TestClientTransport(httpx.BaseTransport):
         port: int,
     ) -> WebSocketTestSession:
         """
-        Handles a WebSocket request and returns a WebSocketTestSession.
+        Handles a WebSocketContext request and returns a WebSocketTestSession.
 
         Args:
             request (httpx.Request): The HTTP request object.
@@ -478,7 +478,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
         self.app_state = app_state
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
-        """Handle Async Request"""
+        """Handle Async HttpContext"""
         scheme, netloc, path, raw_path, query = self._parse_url(request.url)
         host, port, default_port = self._parse_host_and_port(netloc, scheme)
         headers = self._build_headers(request.headers, host, port, default_port)
@@ -543,7 +543,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
         host: str,
         port: int,
     ) -> WebSocketTestSession:
-        """Handle Websocket Request"""
+        """Handle Websocket HttpContext"""
         subprotocol = request.headers.get("sec-websocket-protocol", None)
         subprotocols: Sequence[str] = (
             [v.strip() for v in subprotocol.split(",")] if subprotocol else []
@@ -562,7 +562,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
             "state": self.app_state.copy(),
             "extensions": {"websocket.http.response": {}},
         }
-        # WebSocket handling should still use the same test session abstraction
+        # WebSocketContext handling should still use the same test session abstraction
         return WebSocketTestSession(self.app, scope, portal_factory=None)
 
     def _build_http_scope(
@@ -596,7 +596,7 @@ class AsyncTestClientTransport(httpx.AsyncBaseTransport):
     async def _process_http_request(
         self, scope: dict[str, Any], request: httpx.Request
     ) -> httpx.Response:
-        """Process Http Request"""
+        """Process Http HttpContext"""
         request_complete = False
         response_started = False
         response_complete = anyio.Event()

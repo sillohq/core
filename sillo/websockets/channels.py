@@ -5,7 +5,7 @@ import uuid
 from typing import ClassVar
 
 from sillo import logging as sillo_logger
-from sillo.websockets import WebSocket
+from sillo.websockets import WebSocketContext
 
 from .history import BaseHistoryManager, InMemoryHistoryManager
 from .utils import (
@@ -27,20 +27,20 @@ class Channel:
 
     def __init__(
         self,
-        websocket: WebSocket,
+        websocket: WebSocketContext,
         payload_type: str,
         expires: int | None = None,
     ) -> None:
         """Main websocket channel class.
 
         Args:
-            websocket (WebSocket): Starlette websocket
+            websocket (WebSocketContext): Starlette websocket
             expires (int): Channel ttl in seconds
             encoding (str): encoding of payload (str, bytes, json)
             uuid (str): channel uuid
             created (tim): channel creation time
         """
-        assert isinstance(websocket, WebSocket)
+        assert isinstance(websocket, WebSocketContext)
         if expires:
             assert isinstance(expires, int)
         assert isinstance(payload_type, str) and payload_type in [
@@ -257,7 +257,7 @@ class ChannelBox:
     @classmethod
     async def close_all_connections(cls) -> None:
         """
-        Close all WebSocket connections in all groups.
+        Close all WebSocketContext connections in all groups.
         """
         for group_name, channels in cls.CHANNEL_GROUPS.items():
             for channel in list(

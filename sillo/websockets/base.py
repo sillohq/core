@@ -3,7 +3,7 @@ import json
 import typing
 from collections.abc import AsyncIterator, Iterable
 
-from sillo.core.http.request import HTTPConnection
+from sillo.core.http.context import BaseContext
 
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
@@ -30,7 +30,7 @@ class WebSocketDisconnect(Exception):
         self.reason = reason or ""
 
 
-class WebSocket(HTTPConnection):
+class WebSocketContext(BaseContext):
     """Websocket"""
 
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -141,7 +141,7 @@ class WebSocket(HTTPConnection):
         """Receive Text"""
         if self.application_state != WebSocketState.CONNECTED:
             raise RuntimeError(
-                'WebSocket is not connected. Need to call "accept" first.'
+                'WebSocketContext is not connected. Need to call "accept" first.'
             )
         message = await self.receive()
         self._raise_on_disconnect(message)
@@ -151,7 +151,7 @@ class WebSocket(HTTPConnection):
         """Receive Bytes"""
         if self.application_state != WebSocketState.CONNECTED:
             raise RuntimeError(
-                'WebSocket is not connected. Need to call "accept" first.'
+                'WebSocketContext is not connected. Need to call "accept" first.'
             )
         message = await self.receive()
         self._raise_on_disconnect(message)
@@ -163,7 +163,7 @@ class WebSocket(HTTPConnection):
             raise RuntimeError('The "mode" argument should be "text" or "binary".')
         if self.application_state != WebSocketState.CONNECTED:
             raise RuntimeError(
-                'WebSocket is not connected. Need to call "accept" first.'
+                'WebSocketContext is not connected. Need to call "accept" first.'
             )
         message = await self.receive()
         self._raise_on_disconnect(message)

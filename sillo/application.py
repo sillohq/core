@@ -55,7 +55,7 @@ from .types import (
 if TYPE_CHECKING:
     from sillo.auth.backend import AuthenticationBackend
     from sillo.console import Command
-    from sillo.core.http import Request, Response
+    from sillo.core.http import HttpContext
     from sillo.users import BaseUser
 
 import json
@@ -81,7 +81,7 @@ class SilloApp:
     This class serves as the central entry point for building asynchronous
     web applications and APIs. It integrates routing, middleware, dependency
     injection, OpenAPI documentation generation, lifespan management, and
-    WebSocket support into a single cohesive interface.
+    WebSocketContext support into a single cohesive interface.
 
     The application follows the ASGI specification and can be served by any
     compliant ASGI server such as uvicorn, granian, or daphne. It provides
@@ -225,7 +225,7 @@ class SilloApp:
             Doc("""
                     A list of dependencies for the application. These dependencies are used to resolve dependencies within the application.
 
-                    A dependency is a function that takes a `Request` object and returns the value that should be injected into the dependency.
+                    A dependency is a function that takes a `HttpContext` object and returns the value that should be injected into the dependency.
 
                     You can add dependencies to the application using the `add_dependency` method of the `Router` class.
                 """),
@@ -571,9 +571,9 @@ class SilloApp:
         # loop variable would give every route the last presenter in the list,
         # which shows up as the wrong viewer rendering at the right path.
         @self.get(ui.path, exclude_from_schema=True)
-        async def docs_ui(request: Request, response: Response, _ui: DocsUI = ui):
-            root_path = request.scope.get("root_path", "")
-            return response.html(_ui.render(self._docs_context(root_path)))
+        async def docs_ui(ctx: HttpContext, _ui: DocsUI = ui):
+            root_path = ctx.scope.get("root_path", "")
+            return html(_ui.render(self._docs_context(root_path)))
 
     def setup(self) -> None:
         """
@@ -595,11 +595,12 @@ class SilloApp:
             None
         """
 
+        from sillo.core.http import html
         from sillo.core.http.response import BaseResponse
 
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)
-        async def serve_openapi(request: Request, response: Response):
-            root_path = request.scope.get("root_path", "")
+        async def serve_openapi(ctx: HttpContext):
+            root_path = ctx.scope.get("root_path", "")
             return BaseResponse(
                 body=self.build_openapi(root_path),
                 content_type="application/json",
@@ -910,10 +911,10 @@ class SilloApp:
         Two forms are accepted.
 
         The default is sillo's dispatch form: an instance, or a plain function,
-        taking `(request, response, call_next)`. sillo builds the `Request` and
-        the `Response` for it and turns the rest of the chain into something
-        awaitable. That is convenient, and it costs a request object, a
-        response object and a background task per layer per request.
+        taking `(ctx, call_next)`. sillo builds the `HttpContext` for it and
+        turns the rest of the chain into something awaitable. That is
+        convenient, and it costs a context object and a background task per
+        layer per request. Return a response to end the chain early.
 
         Passing `raw=True` registers a raw ASGI middleware instead. The
         argument is then a *factory* — usually a class — invoked as
@@ -925,8 +926,8 @@ class SilloApp:
         middleware from other frameworks generally drops straight in.
 
         Args:
-            middleware: With `raw=False`, a callable taking a `Request`, a
-                `Response` and a `call_next` callable, returning a `Response`.
+            middleware: With `raw=False`, a callable taking an `HttpContext`
+                and a `call_next` callable, returning a response.
                 With `raw=True`, a factory taking the next ASGI application as
                 its first argument and returning an ASGI application.
             *args: Positional arguments for the factory. `raw=True` only.
@@ -945,8 +946,8 @@ class SilloApp:
         Example:
             ```python
             # dispatch form
-            async def logging_middleware(request: Request, response: Response, call_next):
-                print(f"Request received: {request.method} {request.url}")
+            async def logging_middleware(ctx: HttpContext, call_next):
+                print(f"Request received: {ctx.method} {ctx.url}")
                 return await call_next()
 
             app.use(logging_middleware)
@@ -1025,7 +1026,7 @@ class SilloApp:
             app.add_encoder(Decimal, lambda d: float(d))
 
             @app.get("/price")
-            async def price(request, response):
+            async def price(ctx):
                 return {"total": Decimal("19.99")}
             ```
         """
@@ -1038,19 +1039,19 @@ class SilloApp:
         self,
         route: Annotated[
             WebsocketRoute,
-            Doc("An instance of the Route class representing a WebSocket route."),
+            Doc("An instance of the Route class representing a WebSocketContext route."),
         ]
         | None = None,
         path: str | None = None,
         handler: WsHandlerType | None = None,
     ) -> None:
         """
-        Adds a WebSocket route to the application.
+        Adds a WebSocketContext route to the application.
 
-        This method registers a WebSocket route, allowing the application to handle WebSocket connections.
+        This method registers a WebSocketContext route, allowing the application to handle WebSocketContext connections.
 
         Args:
-            route (Route): The WebSocket route configuration.
+            route (Route): The WebSocketContext route configuration.
 
         Returns:
             None
@@ -1182,7 +1183,7 @@ class SilloApp:
 
             @user_router.route("/list", methods=["GET"])
             def get_users(request, response):
-                 response.json({"users": ["Alice", "Bob"]})
+                 json({"users": ["Alice", "Bob"]})
 
             app.mount_router(user_router)  # Mounts the user routes into the main app
             ```
@@ -1256,7 +1257,7 @@ class SilloApp:
 
         # Innermost first. Both built-in layers are raw ASGI middleware: they
         # take the next app and are called with ``(scope, receive, send)``,
-        # with no ``Request``, ``Response`` or background task constructed on
+        # with no ``HttpContext`` or background task constructed on
         # their behalf. Neither reads the body or rewrites the response on the
         # way out — they only care about a request that raised — so paying for
         # a dispatch bridge per layer per request bought nothing, and was the
@@ -1285,7 +1286,7 @@ class SilloApp:
         global state dictionary into the ASGI scope for downstream access.
         Dispatches the connection to the appropriate handler based on the
         scope type: lifespan connections are routed to ``handle_lifespan``,
-        while HTTP and WebSocket connections are routed to ``handle_request``.
+        while HTTP and WebSocketContext connections are routed to ``handle_request``.
 
         Args:
             scope: The ASGI connection scope dictionary containing metadata
@@ -1329,9 +1330,9 @@ class SilloApp:
                 Receives (request, response) and returns response or raw data.
                 
                 Example:
-                async def get_user(request, response):
+                async def get_user(ctx):
                     user = await get_user_from_db(request.path_params['user_id'])
-                    return response.json(user)
+                    return json(user)
             """),
         ] = None,
         name: Annotated[
@@ -1444,9 +1445,9 @@ class SilloApp:
         Examples:
             1. Basic GET endpoint:
             @router.get("/users")
-            async def get_users(request: Request, response: Response):
+            async def get_users(ctx: HttpContext):
                 users = await get_all_users()
-                return response.json(users)
+                return json(users)
 
             2. GET with path parameter and response model:
             @router.get(
@@ -1456,12 +1457,12 @@ class SilloApp:
                     404: {"description": "User not found"}
                 }
             )
-            async def get_user(request: Request, response: Response):
+            async def get_user(ctx: HttpContext):
                 user_id = request.path_params['user_id']
                 user = await get_user_by_id(user_id)
                 if not user:
-                    return response.status(404).json({"error": "User not found"})
-                return response.json(user)
+                    return json({"error": "User not found"})
+                return json(user)
 
             3. GET with query parameters:
             class UserQuery(BaseModel):
@@ -1469,13 +1470,13 @@ class SilloApp:
                 limit: int = 100
 
             @router.get("/users/search", request_model=UserQuery)
-            async def search_users(request: Request, response: Response):
+            async def search_users(ctx: HttpContext):
                 query = request.query_params
                 users = await search_users(
                     active=query['active'],
                     limit=query['limit']
                 )
-                return response.json(users)
+                return json(users)
         """
 
         return self.route(
@@ -1513,9 +1514,9 @@ class SilloApp:
             Doc("""
                 Async handler function for POST requests.
                 Example:
-                async def create_user(request, response):
+                async def create_user(ctx):
                     user_data = request.json
-                    return response.json(user_data, status=201)
+                    return json(user_data, status=201)
             """),
         ] = None,
         name: Annotated[
@@ -1638,9 +1639,9 @@ class SilloApp:
         Examples:
             1. Simple POST endpoint:
             @router.post("/messages")
-            async def create_message(request, response):
+            async def create_message(ctx):
                 message = await Message.create(**request.json)
-                return response.json(message, status=201)
+                return json(message, status=201)
 
             2. POST with request validation:
             class ProductCreate(BaseModel):
@@ -1653,16 +1654,16 @@ class SilloApp:
                 request_model=ProductCreate,
                 responses={201: ProductSchema}
             )
-            async def create_product(request, response):
+            async def create_product(ctx):
                 product = await Product.create(**request.validated_data)
-                return response.json(product, status=201)
+                return json(product, status=201)
 
             3. POST with file upload:
             @router.post("/upload")
-            async def upload_file(request, response):
+            async def upload_file(ctx):
                 file = request.files.get('file')
                 # Process file upload
-                return response.json({"filename": file.filename})
+                return json({"filename": file.filename})
         """
         return self.route(
             path=path,
@@ -1699,9 +1700,9 @@ class SilloApp:
             Doc("""
                 Async handler function for DELETE requests.
                 Example:
-                async def delete_user(request, response):
+                async def delete_user(ctx):
                     user_id = request.path_params['id']
-                    return response.json({"deleted": user_id})
+                    return json({"deleted": user_id})
             """),
         ] = None,
         name: Annotated[
@@ -1812,7 +1813,7 @@ class SilloApp:
         Examples:
             1. Simple DELETE endpoint:
             @router.delete("/users/{id}")
-            async def delete_user(request, response):
+            async def delete_user(ctx):
                 await User.delete(request.path_params['id'])
                 return response.status(204)
 
@@ -1824,7 +1825,7 @@ class SilloApp:
                     400: {"description": "Confirmation required"}
                 }
             )
-            async def delete_account(request, response):
+            async def delete_account(ctx):
                 if not request.query_params.get('confirm'):
                     return response.status(400)
                 await request.user.delete()
@@ -1832,9 +1833,9 @@ class SilloApp:
 
             3. Soft DELETE:
             @router.delete("/posts/{id}")
-            async def soft_delete_post(request, response):
+            async def soft_delete_post(ctx):
                 await Post.soft_delete(request.path_params['id'])
-                return response.json({"status": "archived"})
+                return json({"status": "archived"})
         """
         return self.route(
             path=path,
@@ -1870,9 +1871,9 @@ class SilloApp:
             Doc("""
                 Async handler function for PUT requests.
                 Example:
-                async def update_user(request, response):
+                async def update_user(ctx):
                     user_id = request.path_params['id']
-                    return response.json({"updated": user_id})
+                    return json({"updated": user_id})
             """),
         ] = None,
         name: Annotated[
@@ -1977,7 +1978,7 @@ class SilloApp:
                 "multipart/form-data",
             ],
             Doc("""
-                Request content type.
+                HttpContext content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -1995,10 +1996,10 @@ class SilloApp:
         Examples:
             1. Simple PUT endpoint:
             @router.put("/users/{id}")
-            async def update_user(request, response):
+            async def update_user(ctx):
                 user_id = request.path_params['id']
                 await User.update(user_id, **request.json)
-                return response.json({"status": "updated"})
+                return json({"status": "updated"})
 
             2. PUT with full resource replacement:
             @router.put(
@@ -2009,20 +2010,20 @@ class SilloApp:
                     404: {"description": "Article not found"}
                 }
             )
-            async def replace_article(request, response):
+            async def replace_article(ctx):
                 article = await Article.replace(
                     request.path_params['slug'],
                     request.validated_data
                 )
-                return response.json(article)
+                return json(article)
 
             3. PUT with conditional update:
             @router.put("/resources/{id}")
-            async def update_resource(request, response):
+            async def update_resource(ctx):
                 if request.headers.get('If-Match') != expected_etag:
                     return response.status(412)
                 # Process update
-                return response.json({"status": "success"})
+                return json({"status": "success"})
         """
         return self.route(
             path=path,
@@ -2059,9 +2060,9 @@ class SilloApp:
             Doc("""
                 Async handler function for PATCH requests.
                 Example:
-                async def partial_update_user(request, response):
+                async def partial_update_user(ctx):
                     user_id = request.path_params['id']
-                    return response.json({"updated": user_id})
+                    return json({"updated": user_id})
             """),
         ] = None,
         name: Annotated[
@@ -2166,7 +2167,7 @@ class SilloApp:
                 "multipart/form-data",
             ],
             Doc("""
-                Request content type.
+                HttpContext content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2184,10 +2185,10 @@ class SilloApp:
         Examples:
             1. Simple PATCH endpoint:
             @router.patch("/users/{id}")
-            async def update_user(request, response):
+            async def update_user(ctx):
                 user_id = request.path_params['id']
                 await User.partial_update(user_id, **request.json)
-                return response.json({"status": "updated"})
+                return json({"status": "updated"})
 
             2. PATCH with JSON Merge Patch:
             @router.patch(
@@ -2195,22 +2196,22 @@ class SilloApp:
                 request_model=ArticlePatch,
                 responses={200: ArticleSchema}
             )
-            async def patch_article(request, response):
+            async def patch_article(ctx):
                 article = await Article.patch(
                     request.path_params['id'],
                     request.validated_data
                 )
-                return response.json(article)
+                return json(article)
 
             3. PATCH with selective fields:
             @router.patch("/profile")
-            async def update_profile(request, response):
+            async def update_profile(ctx):
                 allowed_fields = {'bio', 'avatar_url'}
                 data = await request.json
                 updates = {k: v for k, v in data.items()
                         if k in allowed_fields}
                 await Profile.update(request.user.id, **updates)
-                return response.json(updates)
+                return json(updates)
         """
         return self.route(
             path=path,
@@ -2247,7 +2248,7 @@ class SilloApp:
             Doc("""
                 Async handler function for OPTIONS requests.
                 Example:
-                async def user_options(request, response):
+                async def user_options(ctx):
                     response.headers['Allow'] = 'GET, POST, OPTIONS'
                     return response
             """),
@@ -2359,13 +2360,13 @@ class SilloApp:
         Examples:
             1. Simple OPTIONS endpoint:
             @router.options("/users")
-            async def user_options(request, response):
+            async def user_options(ctx):
                 response.headers['Allow'] = 'GET, POST, OPTIONS'
                 return response
 
             2. CORS OPTIONS handler:
             @router.options("/{path:path}")
-            async def cors_options(request, response):
+            async def cors_options(ctx):
                 response.headers.update({
                     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
                     'Access-Control-Allow-Headers': 'Content-Type',
@@ -2375,8 +2376,8 @@ class SilloApp:
 
             3. Detailed OPTIONS response:
             @router.options("/resources")
-            async def resource_options(request, response):
-                return response.json({
+            async def resource_options(ctx):
+                return json({
                     "methods": ["GET", "POST"],
                     "formats": ["application/json"],
                     "limits": {"max_size": "10MB"}
@@ -2416,7 +2417,7 @@ class SilloApp:
             Doc("""
                 Async handler function for HEAD requests.
                 Example:
-                async def check_resource(request, response):
+                async def check_resource(ctx):
                     exists = await Resource.exists(request.path_params['id'])
                     return response.status(200 if exists else 404)
             """),
@@ -2528,13 +2529,13 @@ class SilloApp:
         Examples:
             1. Simple HEAD endpoint:
             @router.head("/resources/{id}")
-            async def check_resource(request, response):
+            async def check_resource(ctx):
                 exists = await Resource.exists(request.path_params['id'])
                 return response.status(200 if exists else 404)
 
             2. HEAD with cache headers:
             @router.head("/static/{path:path}")
-            async def check_static(request, response):
+            async def check_static(ctx):
                 path = request.path_params['path']
                 if not static_file_exists(path):
                     return response.status(404)
@@ -2543,7 +2544,7 @@ class SilloApp:
 
             3. HEAD with metadata:
             @router.head("/documents/{id}")
-            async def document_metadata(request, response):
+            async def document_metadata(ctx):
                 doc = await Document.metadata(request.path_params['id'])
                 if not doc:
                     return response.status(404)
@@ -2597,7 +2598,7 @@ class SilloApp:
             Doc("""
                 Async handler function for HEAD requests.
                 Example:
-                async def check_resource(request, response):
+                async def check_resource(ctx):
                     exists = await Resource.exists(request.path_params['id'])
                     return response.status(200 if exists else 404)
             """),
@@ -2649,7 +2650,7 @@ class SilloApp:
                 "multipart/form-data",
             ],
             Doc("""
-                Request content type.
+                HttpContext content type.
                 Example: 'application/json'
             """),
         ] = "application/json",
@@ -2775,7 +2776,7 @@ class SilloApp:
                 ``Exception``) or an integer HTTP status code to handle.
                 For example, ``ValueError`` or ``404``.
             handler: An optional callable that accepts ``(request, response,
-                exception)`` and returns a ``Response``. When ``None``, a
+                exception)`` and returns a response. When ``None``, a
                 decorator is returned instead for deferred registration.
 
         Returns:
@@ -2842,7 +2843,7 @@ class SilloApp:
         Wraps the entire application with an ASGI middleware.
 
         This method allows adding middleware at the ASGI level, which intercepts all requests
-        (HTTP, WebSocket, and Lifespan) before they reach the application.
+        (HTTP, WebSocketContext, and Lifespan) before they reach the application.
 
         Args:
             middleware_cls: An ASGI middleware class or callable that follows the ASGI interface
@@ -2861,7 +2862,7 @@ class SilloApp:
         """
         Returns all routes registered in the application.
 
-        This method retrieves a list of all HTTP and WebSocket routes defined in the application.
+        This method retrieves a list of all HTTP and WebSocketContext routes defined in the application.
 
         Returns:
             List[Route]: A list of all registered routes.
@@ -2880,14 +2881,14 @@ class SilloApp:
         path: Annotated[
             str,
             Doc("""
-                URL path pattern for the WebSocket route.
+                URL path pattern for the WebSocketContext route.
                 Example: '/ws/chat/{room_id}'
             """),
         ],
         handler: Annotated[
             WsHandlerType | None,
             Doc("""
-                Async handler function for WebSocket connections.
+                Async handler function for WebSocketContext connections.
                 Example:
                 async def chat_handler(websocket, path):
                     await websocket.send("Welcome to the chat!")
@@ -2895,15 +2896,15 @@ class SilloApp:
         ] = None,
     ):
         """
-        Register a WebSocket route with the application.
+        Register a WebSocketContext route with the application.
 
         Args:
-            path (str): URL path pattern for the WebSocket route.
-            handler (Callable): Async handler function for WebSocket connections.
+            path (str): URL path pattern for the WebSocketContext route.
+            handler (Callable): Async handler function for WebSocketContext connections.
                 Example: async def chat_handler(websocket, path): pass
 
         Returns:
-            Callable: A decorator to register the WebSocket route.
+            Callable: A decorator to register the WebSocketContext route.
         """
         return self.router.ws_route(
             path=path,

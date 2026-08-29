@@ -1,8 +1,9 @@
 """Tests for sillo.work.dependency — DI providers for work components."""
 
 from sillo import SilloApp
+from sillo import json
 from sillo.core.dependencies import Depend
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 from sillo.work import setup_work
 from sillo.work.dependency import scheduler, queue_connection, events
@@ -15,9 +16,9 @@ def test_scheduler_injection():
     sched = work["scheduler"]
 
     @app.get("/scheduler")
-    async def handler(request: Request, response: Response, s=Depend(scheduler)):
+    async def handler(request: HttpContext, s=Depend(scheduler)):
         assert s is sched
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     client = TestClient(app)
     resp = client.get("/scheduler")
@@ -31,9 +32,9 @@ def test_queue_connection_injection():
     conn = work["connection"]
 
     @app.get("/queue")
-    async def handler(request: Request, response: Response, c=Depend(queue_connection)):
+    async def handler(request: HttpContext, c=Depend(queue_connection)):
         assert c is conn
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     client = TestClient(app)
     resp = client.get("/queue")
@@ -46,9 +47,9 @@ def test_events_injection():
     setup_work(app)
 
     @app.get("/events")
-    async def handler(request: Request, response: Response, d=Depend(events)):
+    async def handler(request: HttpContext, d=Depend(events)):
         assert d is not None
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     client = TestClient(app)
     resp = client.get("/events")
@@ -63,9 +64,9 @@ def test_provider_raises_when_not_setup():
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response, x=Depend(provider)):
+    async def handler(request: HttpContext, x=Depend(provider)):
         assert x is None
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     client = TestClient(app)
     resp = client.get("/test")

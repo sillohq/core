@@ -7,19 +7,19 @@ methods::
     from sillo.auth import useAuth
 
     @router.get("/profile", auth=useAuth())
-    async def profile(request, response): ...
+    async def profile(ctx): ...
 
     @router.get("/admin", auth=useAuth(schemes=["bearerAuth"]))
-    async def admin(request, response): ...
+    async def admin(ctx): ...
 
     @router.get("/users", auth=useAuth(permissions=["read:users"]))
-    async def list_users(request, response): ...
+    async def list_users(ctx): ...
 
     @router.get("/internal", auth=useAuth(backends=[APIKeyAuthBackend()]))
-    async def internal_api(request, response): ...
+    async def internal_api(ctx): ...
 
     @router.get("/feed", auth=useAuth(required=False))
-    async def feed(request, response):
+    async def feed(ctx):
         user = request.user  # may be UnauthenticatedUser
 
 A failed gate normally raises ``AuthenticationFailed`` (401) or
@@ -31,24 +31,24 @@ route needs — without touching global exception handling::
     @router.get(
         "/dashboard",
         auth=useAuth(
-            unauthorized=lambda request, response: response.redirect("/login"),
+            unauthorized=lambda ctx: redirect("/login"),
         ),
     )
-    async def dashboard(request, response): ...
+    async def dashboard(ctx): ...
 
     @router.get(
         "/api/orders",
         auth=useAuth(
             permissions=["orders:read"],
-            unauthorized=lambda request, response: response.json(
+            unauthorized=lambda ctx: json(
                 {"error": "sign_in_required"}, status_code=401
             ),
-            forbidden=lambda request, response: response.json(
+            forbidden=lambda ctx: json(
                 {"error": "not_allowed"}, status_code=403
             ),
         ),
     )
-    async def orders(request, response): ...
+    async def orders(ctx): ...
 
 Both are optional and independent: set one, both, or neither. Either may be a
 plain function or a coroutine function, and each is called as
@@ -87,14 +87,14 @@ if TYPE_CHECKING:
     # drags the ORM into `import sillo` and makes the package unimportable
     # without the `record` extra. Both names are only ever annotations here,
     # and `from __future__ import annotations` keeps those unevaluated.
-    from sillo.core.http import Request, Response
+    from sillo.core.http import HttpContext
     from sillo.users.base import BaseUser, UserProtocol
 
 #: A per-gate failure hook: sync or async, called as ``hook(request, response)``
 #: when the gate refuses the request. Whatever it returns is sent back as the
 #: response in place of the default ``AuthenticationFailed``/``PermissionDenied``
 #: error — the route handler is never reached.
-FailureHook = Callable[["Request", "Response"], Union[Any, Awaitable[Any]]]
+FailureHook = Callable[["HttpContext"], Union[Any, Awaitable[Any]]]
 
 
 #: What the shipped backends used to report as ``AuthResult.scope``, mapped to
@@ -129,7 +129,7 @@ def accepted_identifiers(names: Sequence[str]) -> set:
     return accepted
 
 
-def request_identifiers(request: Request) -> set:
+def request_identifiers(request: HttpContext) -> set:
     """The identifiers a request authenticated under.
 
     ``auth`` and ``auth_scheme`` hold the same value for every shipped
@@ -189,8 +189,8 @@ class useAuth:
         Use as a route-level auth gate::
 
             @router.get("/profile", auth=useAuth(schemes=["bearerAuth"]))
-            async def profile(request, response):
-                return response.json({"user": request.user})
+            async def profile(ctx):
+                return json({"user": ctx.user})
     """
 
     def __init__(
@@ -265,17 +265,15 @@ class useAuth:
         self.unauthorized: FailureHook | None = unauthorized
         self.forbidden: FailureHook | None = forbidden
 
-    async def guard(self, request: Request, response: Response) -> Any | None:
+    async def guard(self, ctx: HttpContext) -> Any | None:
         """Run the gate, and turn a failure into a response if this gate says how to.
 
         The entry point the router calls — in preference to ``authenticate``
-        directly — because answering a failure with a custom response needs
-        ``response``, which ``authenticate`` was never given and whose
-        signature stays untouched so existing subclasses keep working.
+        directly — because it is what lets a failure hook answer the request
+        with a response of its own, which ``authenticate`` cannot do.
 
         Args:
-            request: The incoming request.
-            response: The outgoing response, handed to whichever hook fires.
+            ctx: The context for the request being gated.
 
         Returns:
             The hook's return value if ``authenticate`` raised and this gate
@@ -290,19 +288,19 @@ class useAuth:
                 hook is set on this gate.
         """
         try:
-            await self.authenticate(request)
+            await self.authenticate(ctx)
         except PermissionDenied:
             if self.forbidden is None:
                 raise
-            return await self._run_hook(self.forbidden, request, response)
+            return await self._run_hook(self.forbidden, ctx)
         except AuthenticationFailed:
             if self.unauthorized is None:
                 raise
-            return await self._run_hook(self.unauthorized, request, response)
+            return await self._run_hook(self.unauthorized, ctx)
         return None
 
     @staticmethod
-    async def _run_hook(hook: FailureHook, request: Request, response: Response) -> Any:
+    async def _run_hook(hook: FailureHook, ctx: HttpContext) -> Any:
         """Call a failure hook, awaiting it only if it is itself async.
 
         A sync hook runs in the thread pool rather than inline, on the same
@@ -311,10 +309,10 @@ class useAuth:
         everyone else's requests while it does.
         """
         if is_async_callable(hook):
-            return await hook(request, response)
-        return await run_in_threadpool(hook, request, response)
+            return await hook(ctx)
+        return await run_in_threadpool(hook, ctx)
 
-    async def authenticate(self, request: Request) -> bool:
+    async def authenticate(self, request: HttpContext) -> bool:
         """Run the authentication and authorisation gate before the route handler.
 
         This is the main entry point called by the framework before the route
@@ -409,7 +407,7 @@ class useAuth:
 
         return requirements
 
-    def _check_schemes(self, request: Request) -> None:
+    def _check_schemes(self, request: HttpContext) -> None:
         """Verify the request authenticated through an accepted scheme.
 
         Both ``auth_scheme`` and ``auth`` are consulted. The shipped backends
@@ -451,7 +449,7 @@ class useAuth:
             return self.user_model
         return SimpleUser
 
-    async def _authenticate_with_backends(self, request: Request) -> None:
+    async def _authenticate_with_backends(self, request: HttpContext) -> None:
         """Authenticate the request using the gate's custom backend list.
 
         Iterates through the configured backends in order, attempting to

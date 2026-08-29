@@ -17,7 +17,8 @@ from __future__ import annotations
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.security.csrf import CSRFConfig, CSRFMiddleware
 from sillo.testclient import TestClient
 
@@ -29,16 +30,16 @@ def build(**config):
     app.use(CSRFMiddleware(config=CSRFConfig(enabled=True, secret_key=SECRET, **config)))
 
     @app.get("/token")
-    async def token(request: Request, response: Response):
-        return response.json({"token": request.state.csrf_token})
+    async def token(request: HttpContext):
+        return json({"token": request.state.csrf_token})
 
     @app.post("/protected")
-    async def protected(request: Request, response: Response):
-        return response.json({"status": "ok"})
+    async def protected(request: HttpContext):
+        return json({"status": "ok"})
 
     @app.post("/webhooks/stripe")
-    async def webhook(request: Request, response: Response):
-        return response.json({"status": "ok"})
+    async def webhook(request: HttpContext):
+        return json({"status": "ok"})
 
     return app
 

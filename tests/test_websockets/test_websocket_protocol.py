@@ -1,5 +1,5 @@
 """
-WebSocket protocol handling: binary mode, iteration, close codes, and the
+WebSocketContext protocol handling: binary mode, iteration, close codes, and the
 state machine that rejects out-of-order ASGI messages.
 
 The state assertions matter because an ASGI server is entitled to hang up at
@@ -13,7 +13,7 @@ import pytest
 
 from sillo import SilloApp
 from sillo.testclient import TestClient
-from sillo.websockets import WebSocket, WebSocketDisconnect
+from sillo.websockets import WebSocketContext, WebSocketDisconnect
 
 
 # ── binary and json modes ────────────────────────────────────────────────
@@ -25,7 +25,7 @@ def test_binary_json_is_sent_and_received(
     app = SilloApp()
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         payload = await websocket.receive_json(mode="binary")
         await websocket.send_json({"echo": payload}, mode="binary")
@@ -44,7 +44,7 @@ def test_an_unknown_receive_mode_is_rejected(
     seen = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         try:
             await websocket.receive_json(mode="morse")
@@ -66,7 +66,7 @@ def test_an_unknown_send_mode_is_rejected(
     seen = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         try:
             await websocket.send_json({"a": 1}, mode="morse")
@@ -85,7 +85,7 @@ def test_bytes_round_trip(test_client_factory: Callable[[SilloApp], TestClient])
     app = SilloApp()
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         data = await websocket.receive_bytes()
         await websocket.send_bytes(data[::-1])
@@ -107,7 +107,7 @@ def test_iterating_text_messages(
     received = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         async for message in websocket.iter_text():
             received.append(message)
@@ -130,7 +130,7 @@ def test_iteration_ends_on_disconnect(
     finished = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         async for _ in websocket.iter_text():
             pass
@@ -151,7 +151,7 @@ def test_iterating_bytes_messages(
     received = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         async for chunk in websocket.iter_bytes():
             received.append(chunk)
@@ -172,7 +172,7 @@ def test_iterating_json_messages(
     received = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         async for payload in websocket.iter_json():
             received.append(payload)
@@ -196,7 +196,7 @@ def test_a_socket_reports_itself_connected(
     states = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         # ``is_connected`` is a method, not a property — reading it without
         # calling it yields a bound method, which is always truthy.
         states.append(websocket.is_connected())
@@ -219,7 +219,7 @@ def test_receiving_after_a_disconnect_is_refused(
     errors = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         # The low-level ``receive`` hands back the disconnect message rather
         # than raising; only the typed helpers turn it into an exception.
@@ -245,7 +245,7 @@ def test_receiving_text_from_a_closed_socket_raises_disconnect(
     disconnected = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         try:
             await websocket.receive_text()
@@ -268,7 +268,7 @@ def test_receiving_text_when_the_frame_is_binary_is_an_error(
     errors = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         try:
             await websocket.receive_text()
@@ -290,7 +290,7 @@ def test_receiving_bytes_when_the_frame_is_text_is_an_error(
     errors = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         try:
             await websocket.receive_bytes()
@@ -312,7 +312,7 @@ def test_receiving_before_accepting_is_refused(
     errors = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         try:
             await websocket.receive_text()
         except RuntimeError as exc:
@@ -334,7 +334,7 @@ def test_sending_before_accepting_is_refused(
     errors = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         try:
             await websocket.send_text("too early")
         except RuntimeError as exc:
@@ -358,7 +358,7 @@ def test_a_custom_close_code_reaches_the_client(
     app = SilloApp()
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         await websocket.close(code=4001, reason="policy violation")
 
@@ -375,7 +375,7 @@ def test_the_close_reason_reaches_the_client(
     app = SilloApp()
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         await websocket.close(code=4002, reason="too chatty")
 
@@ -393,7 +393,7 @@ def test_a_connection_can_be_refused_before_accepting(
     app = SilloApp()
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.close(code=4003)
 
     with test_client_factory(app) as client:
@@ -409,7 +409,7 @@ def test_the_default_close_code_is_normal(
     app = SilloApp()
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         await websocket.accept()
         await websocket.close()
 
@@ -428,7 +428,7 @@ def test_the_path_is_available(test_client_factory: Callable[[SilloApp], TestCli
     seen = []
 
     @app.ws_route("/ws/room")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         seen.append(websocket.url.path)
         await websocket.accept()
         await websocket.close()
@@ -447,7 +447,7 @@ def test_query_parameters_are_available(
     seen = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         seen.append(websocket.query_params.get("token"))
         await websocket.accept()
         await websocket.close()
@@ -464,7 +464,7 @@ def test_headers_are_available(test_client_factory: Callable[[SilloApp], TestCli
     seen = []
 
     @app.ws_route("/ws")
-    async def endpoint(websocket: WebSocket):
+    async def endpoint(websocket: WebSocketContext):
         seen.append(websocket.headers.get("x-client"))
         await websocket.accept()
         await websocket.close()
@@ -483,8 +483,8 @@ def test_path_parameters_are_available(
     seen = []
 
     @app.ws_route("/ws/{room_id}")
-    async def endpoint(websocket: WebSocket):
-        # WebSocket handlers take only the connection; path parameters are
+    async def endpoint(websocket: WebSocketContext):
+        # WebSocketContext handlers take only the connection; path parameters are
         # read off it rather than injected as arguments.
         seen.append(websocket.path_params["room_id"])
         await websocket.accept()

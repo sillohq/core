@@ -19,7 +19,7 @@ from sillo.websockets import (
     ChannelBox,
     InMemoryHistoryManager,
     NoOpHistoryManager,
-    WebSocket,
+    WebSocketContext,
 )
 from sillo.websockets.utils import (
     ChannelAddStatusEnum,
@@ -45,7 +45,7 @@ def clean_channel_box():
     ChannelBox.HISTORY_MANAGER = original_manager
 
 
-class FakeWebSocket(WebSocket):
+class FakeWebSocket(WebSocketContext):
     """A websocket that records instead of writing to a socket."""
 
     def __init__(self):

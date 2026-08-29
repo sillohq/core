@@ -402,7 +402,7 @@ class HTTPClient:
 
         if response_model is None:
             try:
-                return response.json()
+                return json()
             except Exception:
                 return response.text
 
@@ -543,7 +543,7 @@ class HTTPClient:
         """Send an OPTIONS request."""
         response = await self._send("OPTIONS", url, **kwargs)
         try:
-            return response.json()
+            return json()
         except Exception:
             return response.text
 

@@ -14,8 +14,10 @@ from tortoise.exceptions import (
     ValidationError,
 )
 
+from sillo.core.http import json
 
-async def handle_does_not_exist(request, response, exc: DoesNotExist):
+
+async def handle_does_not_exist(ctx, exc: DoesNotExist):
     """Return a 404 HTTP response when a Tortoise ``.get()`` query fails.
 
     Catches ``DoesNotExist`` exceptions raised by Tortoise ORM when a
@@ -23,18 +25,17 @@ async def handle_does_not_exist(request, response, exc: DoesNotExist):
     database-level error into a standard HTTP 404 JSON response.
 
     Args:
-        request: The incoming HTTP request object.
-        response: The response factory used to build the JSON error body.
+        ctx: The context for the request that raised.
         exc: The caught ``DoesNotExist`` exception instance.
 
     Returns:
         A JSON response with ``{"error": "Not Found", "detail": "<message>"}``
         and a 404 status code.
     """
-    return response.json({"error": "Not Found", "detail": str(exc)}, status_code=404)
+    return json({"error": "Not Found", "detail": str(exc)}, status_code=404)
 
 
-async def handle_integrity_error(request, response, exc: IntegrityError):
+async def handle_integrity_error(ctx, exc: IntegrityError):
     """Return a 409 Conflict response on unique-constraint or FK violations.
 
     Converts Tortoise ``IntegrityError`` exceptions (raised on duplicate
@@ -42,18 +43,17 @@ async def handle_integrity_error(request, response, exc: IntegrityError):
     JSON response.
 
     Args:
-        request: The incoming HTTP request object.
-        response: The response factory for building error responses.
+        ctx: The context for the request that raised.
         exc: The caught ``IntegrityError`` exception instance.
 
     Returns:
         A JSON response with ``{"error": "Conflict", "detail": "<message>"}``
         and a 409 status code.
     """
-    return response.json({"error": "Conflict", "detail": str(exc)}, status_code=409)
+    return json({"error": "Conflict", "detail": str(exc)}, status_code=409)
 
 
-async def handle_validation_error(request, response, exc: ValidationError):
+async def handle_validation_error(ctx, exc: ValidationError):
     """Return a 422 Unprocessable Entity response on model validation failure.
 
     Catches Tortoise ``ValidationError`` (field-level validation failures
@@ -61,20 +61,19 @@ async def handle_validation_error(request, response, exc: ValidationError):
     HTTP 422 JSON payload.
 
     Args:
-        request: The incoming HTTP request object.
-        response: The response factory for building error responses.
+        ctx: The context for the request that raised.
         exc: The caught ``ValidationError`` exception instance.
 
     Returns:
         A JSON response with ``{"error": "Validation Error", "detail": "<message>"}``
         and a 422 status code.
     """
-    return response.json(
+    return json(
         {"error": "Validation Error", "detail": str(exc)}, status_code=422
     )
 
 
-async def handle_operational_error(request, response, exc: OperationalError):
+async def handle_operational_error(ctx, exc: OperationalError):
     """Return a 503 Service Unavailable when the database is unreachable.
 
     Converts Tortoise ``OperationalError`` exceptions (connection refused,
@@ -82,15 +81,14 @@ async def handle_operational_error(request, response, exc: OperationalError):
     upstream load-balancers or monitoring can react appropriately.
 
     Args:
-        request: The incoming HTTP request object.
-        response: The response factory for building error responses.
+        ctx: The context for the request that raised.
         exc: The caught ``OperationalError`` exception instance.
 
     Returns:
         A JSON response with ``{"error": "Service Unavailable", "detail": "..."}``
         and a 503 status code.
     """
-    return response.json(
+    return json(
         {"error": "Service Unavailable", "detail": "Database unavailable"},
         status_code=503,
     )

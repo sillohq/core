@@ -18,7 +18,8 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.session import SessionConfig
 from sillo.session.middleware import SessionMiddleware
 from sillo.session.signed_cookies import SignedSessionManager
@@ -32,13 +33,13 @@ def app_with(**settings):
     app.use(SessionMiddleware(secret_key=SECRET, session_cookie_secure=False, **settings))
 
     @app.get("/login")
-    async def login(request: Request, response: Response):
+    async def login(request: HttpContext):
         request.session["user_id"] = 7
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     @app.get("/whoami")
-    async def whoami(request: Request, response: Response):
-        return response.json({"user_id": request.session.get("user_id")})
+    async def whoami(request: HttpContext):
+        return json({"user_id": request.session.get("user_id")})
 
     return app
 
@@ -209,9 +210,9 @@ class TestOversizedCookies:
         app.use(SessionMiddleware(secret_key=SECRET, session_cookie_secure=False))
 
         @app.get("/fill")
-        async def fill(request: Request, response: Response):
+        async def fill(request: HttpContext):
             request.session["blob"] = "x" * 5000
-            return response.json({"ok": True})
+            return json({"ok": True})
 
         with TestClient(app) as client:
             with pytest.warns(RuntimeWarning, match="over the"):

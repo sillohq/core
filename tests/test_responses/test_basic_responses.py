@@ -7,7 +7,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import empty, html, json, text
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 # ========== Text Response Tests ==========
@@ -18,8 +19,8 @@ def test_text_response(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/text")
-    async def text_handler(request: Request, response: Response):
-        return response.text("Hello, World!")
+    async def text_handler(request: HttpContext):
+        return text("Hello, World!")
 
     with test_client_factory(app) as client:
         resp = client.get("/text")
@@ -35,8 +36,8 @@ def test_text_response_with_status_code(
     app = SilloApp()
 
     @app.get("/text-created")
-    async def text_created(request: Request, response: Response):
-        return response.text("Resource created", status_code=201)
+    async def text_created(request: HttpContext):
+        return text("Resource created", status_code=201)
 
     with test_client_factory(app) as client:
         resp = client.get("/text-created")
@@ -51,8 +52,8 @@ def test_text_response_with_headers(
     app = SilloApp()
 
     @app.get("/text-headers")
-    async def text_headers(request: Request, response: Response):
-        return response.text("Custom headers", headers={"X-Custom": "value"})
+    async def text_headers(request: HttpContext):
+        return text("Custom headers", headers={"X-Custom": "value"})
 
     with test_client_factory(app) as client:
         resp = client.get("/text-headers")
@@ -68,8 +69,8 @@ def test_json_response(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/json")
-    async def json_handler(request: Request, response: Response):
-        return response.json({"message": "Hello", "status": "ok"})
+    async def json_handler(request: HttpContext):
+        return json({"message": "Hello", "status": "ok"})
 
     with test_client_factory(app) as client:
         resp = client.get("/json")
@@ -85,8 +86,8 @@ def test_json_response_with_list(
     app = SilloApp()
 
     @app.get("/items")
-    async def get_items(request: Request, response: Response):
-        return response.json([{"id": 1, "name": "Item 1"}, {"id": 2, "name": "Item 2"}])
+    async def get_items(request: HttpContext):
+        return json([{"id": 1, "name": "Item 1"}, {"id": 2, "name": "Item 2"}])
 
     with test_client_factory(app) as client:
         resp = client.get("/items")
@@ -103,8 +104,8 @@ def test_json_response_with_status_code(
     app = SilloApp()
 
     @app.post("/create")
-    async def create_resource(request: Request, response: Response):
-        return response.json({"id": 123, "created": True}, status_code=201)
+    async def create_resource(request: HttpContext):
+        return json({"id": 123, "created": True}, status_code=201)
 
     with test_client_factory(app) as client:
         resp = client.post("/create")
@@ -119,8 +120,8 @@ def test_json_response_with_indent(
     app = SilloApp()
 
     @app.get("/pretty")
-    async def pretty_json(request: Request, response: Response):
-        return response.json({"key": "value"}, indent=2)
+    async def pretty_json(request: HttpContext):
+        return json({"key": "value"}, indent=2)
 
     with test_client_factory(app) as client:
         resp = client.get("/pretty")
@@ -136,11 +137,11 @@ def test_json_response_with_nested_data(
     app = SilloApp()
 
     @app.get("/nested")
-    async def nested_json(request: Request, response: Response):
+    async def nested_json(request: HttpContext):
         data = {
             "user": {"id": 1, "name": "Alice", "profile": {"age": 30, "city": "NYC"}}
         }
-        return response.json(data)
+        return json(data)
 
     with test_client_factory(app) as client:
         resp = client.get("/nested")
@@ -157,8 +158,8 @@ def test_html_response(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/html")
-    async def html_handler(request: Request, response: Response):
-        return response.html("<h1>Hello World</h1>")
+    async def html_handler(request: HttpContext):
+        return html("<h1>Hello World</h1>")
 
     with test_client_factory(app) as client:
         resp = client.get("/html")
@@ -174,7 +175,7 @@ def test_html_response_with_full_page(
     app = SilloApp()
 
     @app.get("/page")
-    async def html_page(request: Request, response: Response):
+    async def html_page(request: HttpContext):
         html = """
         <!DOCTYPE html>
         <html>
@@ -182,7 +183,7 @@ def test_html_response_with_full_page(
         <body><h1>Welcome</h1></body>
         </html>
         """
-        return response.html(html)
+        return html(html)
 
     with test_client_factory(app) as client:
         resp = client.get("/page")
@@ -198,8 +199,8 @@ def test_html_response_with_status_code(
     app = SilloApp()
 
     @app.get("/error")
-    async def html_error(request: Request, response: Response):
-        return response.html("<h1>Not Found</h1>", status_code=404)
+    async def html_error(request: HttpContext):
+        return html("<h1>Not Found</h1>", status_code=404)
 
     with test_client_factory(app) as client:
         resp = client.get("/error")
@@ -215,8 +216,8 @@ def test_empty_response(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/empty")
-    async def empty_handler(request: Request, response: Response):
-        return response.empty()
+    async def empty_handler(request: HttpContext):
+        return empty()
 
     with test_client_factory(app) as client:
         resp = client.get("/empty")
@@ -231,8 +232,8 @@ def test_empty_response_with_status_code(
     app = SilloApp()
 
     @app.delete("/resource/{id}")
-    async def delete_resource(request: Request, response: Response, id: str):
-        return response.empty(status_code=204)
+    async def delete_resource(request: HttpContext, id: str):
+        return empty(status_code=204)
 
     with test_client_factory(app) as client:
         resp = client.delete("/resource/123")
@@ -248,8 +249,8 @@ def test_response_status_method(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/custom-status")
-    async def custom_status(request: Request, response: Response):
-        return response.text("I'm a teapot").status(418)
+    async def custom_status(request: HttpContext):
+        return text("I'm a teapot").status(418)
 
     with test_client_factory(app) as client:
         resp = client.get("/custom-status")
@@ -262,8 +263,8 @@ def test_response_chaining(test_client_factory: Callable[[SilloApp], TestClient]
     app = SilloApp()
 
     @app.get("/chain")
-    async def chain_methods(request: Request, response: Response):
-        return response.json({"created": True}).status(201)
+    async def chain_methods(request: HttpContext):
+        return json({"created": True}).status(201)
 
     with test_client_factory(app) as client:
         resp = client.get("/chain")
@@ -281,8 +282,8 @@ def test_response_content_type_text(
     app = SilloApp()
 
     @app.get("/text")
-    async def text_response(request: Request, response: Response):
-        return response.text("Plain text")
+    async def text_response(request: HttpContext):
+        return text("Plain text")
 
     with test_client_factory(app) as client:
         resp = client.get("/text")
@@ -297,8 +298,8 @@ def test_response_content_type_json(
     app = SilloApp()
 
     @app.get("/json")
-    async def json_response(request: Request, response: Response):
-        return response.json({"test": "data"})
+    async def json_response(request: HttpContext):
+        return json({"test": "data"})
 
     with test_client_factory(app) as client:
         resp = client.get("/json")
@@ -313,8 +314,8 @@ def test_response_content_type_html(
     app = SilloApp()
 
     @app.get("/html")
-    async def html_response(request: Request, response: Response):
-        return response.html("<p>HTML content</p>")
+    async def html_response(request: HttpContext):
+        return html("<p>HTML content</p>")
 
     with test_client_factory(app) as client:
         resp = client.get("/html")

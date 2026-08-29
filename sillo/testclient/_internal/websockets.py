@@ -35,13 +35,13 @@ class WebSocketDenialResponse(  # ty: ignore[invalid-method-override]
 ):
     """
     A special case of `WebSocketDisconnect`, raised in the `TestClient` if the
-    `WebSocket` is closed before being accepted with a `send_denial_response()`.
+    `WebSocketContext` is closed before being accepted with a `send_denial_response()`.
     """
 
 
 class WebSocketTestSession:
     """
-    Represents a test session for a WebSocket connection.
+    Represents a test session for a WebSocketContext connection.
     """
 
     def __init__(
@@ -120,7 +120,7 @@ class WebSocketTestSession:
 
     async def _run(self) -> None:
         """
-        Run the WebSocket session in a sub-thread.
+        Run the WebSocketContext session in a sub-thread.
         """
 
         async def run_app(tg: TaskGroup) -> None:
@@ -162,7 +162,7 @@ class WebSocketTestSession:
 
     def _raise_on_close(self, message: Message) -> None:
         """
-        Raise a WebSocketDisconnect or WebSocketDenialResponse if the WebSocket is closed.
+        Raise a WebSocketDisconnect or WebSocketDenialResponse if the WebSocketContext is closed.
 
         Args:
             message (Message): The received message.

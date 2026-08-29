@@ -9,7 +9,8 @@ as is the pass-through branch where the pattern does not match.
 from typing import Callable
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
 from sillo.middleware.utils import use_for_route
 from sillo.testclient import TestClient
@@ -20,16 +21,16 @@ def _app_with(middleware) -> SilloApp:
     app.use(middleware)
 
     @app.get("/api/users")
-    async def users(request: Request, response: Response):
-        return response.json({"path": "users"})
+    async def users(request: HttpContext):
+        return json({"path": "users"})
 
     @app.get("/api/posts/recent")
-    async def recent(request: Request, response: Response):
-        return response.json({"path": "recent"})
+    async def recent(request: HttpContext):
+        return json({"path": "recent"})
 
     @app.get("/public")
-    async def public(request: Request, response: Response):
-        return response.json({"path": "public"})
+    async def public(request: HttpContext):
+        return json({"path": "public"})
 
     return app
 
@@ -43,7 +44,7 @@ def test_the_middleware_runs_on_the_matching_path(
     seen = []
 
     @use_for_route("/api/users")
-    async def guard(request: Request, response: Response, call_next):
+    async def guard(request: HttpContext, call_next):
         seen.append(request.url.path)
         return await call_next()
 
@@ -58,7 +59,7 @@ def test_the_middleware_is_skipped_elsewhere(
     seen = []
 
     @use_for_route("/api/users")
-    async def guard(request: Request, response: Response, call_next):
+    async def guard(request: HttpContext, call_next):
         seen.append(request.url.path)
         return await call_next()
 
@@ -74,7 +75,7 @@ def test_an_exact_pattern_does_not_match_a_longer_path(
     seen = []
 
     @use_for_route("/api")
-    async def guard(request: Request, response: Response, call_next):
+    async def guard(request: HttpContext, call_next):
         seen.append(request.url.path)
         return await call_next()
 
@@ -87,7 +88,7 @@ def test_a_skipped_middleware_still_reaches_the_handler(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
     @use_for_route("/nothing-here")
-    async def guard(request: Request, response: Response, call_next):
+    async def guard(request: HttpContext, call_next):
         return await call_next()
 
     with test_client_factory(_app_with(guard)) as client:
@@ -103,7 +104,7 @@ def test_a_wildcard_matches_a_child_path(
     seen = []
 
     @use_for_route("/api/*")
-    async def guard(request: Request, response: Response, call_next):
+    async def guard(request: HttpContext, call_next):
         seen.append(request.url.path)
         return await call_next()
 
@@ -119,7 +120,7 @@ def test_a_wildcard_does_not_leak_to_a_sibling_prefix(
     seen = []
 
     @use_for_route("/api/*")
-    async def guard(request: Request, response: Response, call_next):
+    async def guard(request: HttpContext, call_next):
         seen.append(request.url.path)
         return await call_next()
 
@@ -132,8 +133,8 @@ def test_a_scoped_middleware_can_short_circuit_the_request(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
     @use_for_route("/api/*")
-    async def guard(request: Request, response: Response, call_next):
-        return response.json({"blocked": True}, status_code=403)
+    async def guard(request: HttpContext, call_next):
+        return json({"blocked": True}, status_code=403)
 
     with test_client_factory(_app_with(guard)) as client:
         blocked = client.get("/api/users")
@@ -147,8 +148,8 @@ def test_a_scoped_middleware_can_set_a_header(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
     @use_for_route("/api/*")
-    async def tag(request: Request, response: Response, call_next):
-        await call_next()
+    async def tag(request: HttpContext, call_next):
+        response = await call_next()
         response.set_header("X-Scope", "api")
         return response
 
@@ -168,7 +169,7 @@ def test_a_scoped_class_middleware_runs_on_a_match(
 
     class Scoped(BaseMiddleware):
         @use_for_route("/api/*")
-        async def __call__(self, request: Request, response: Response, call_next):
+        async def __call__(self, request: HttpContext, call_next):
             seen.append(request.url.path)
             return await call_next()
 
@@ -184,7 +185,7 @@ def test_a_scoped_class_middleware_is_skipped_elsewhere(
 
     class Scoped(BaseMiddleware):
         @use_for_route("/api/*")
-        async def __call__(self, request: Request, response: Response, call_next):
+        async def __call__(self, request: HttpContext, call_next):
             seen.append(request.url.path)
             return await call_next()
 
@@ -201,7 +202,7 @@ def test_a_scoped_class_middleware_keeps_access_to_instance_state(
             self.hits = 0
 
         @use_for_route("/api/*")
-        async def __call__(self, request: Request, response: Response, call_next):
+        async def __call__(self, request: HttpContext, call_next):
             self.hits += 1
             return await call_next()
 
@@ -219,7 +220,7 @@ def test_a_scoped_class_middleware_keeps_access_to_instance_state(
 
 def test_the_decorator_preserves_the_function_name():
     @use_for_route("/api/*")
-    async def guard(request, response, call_next):
+    async def guard(request, call_next):
         return await call_next()
 
     assert guard.__name__ == "guard"

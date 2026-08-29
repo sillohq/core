@@ -276,7 +276,7 @@ async def send_email(
         from sillo.mail import send_email
 
         @app.post("/signup")
-        async def signup(request, response):
+        async def signup(ctx):
             ...
             await send_email(user.email, "Welcome", body="...")
 

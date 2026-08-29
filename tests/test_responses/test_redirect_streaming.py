@@ -7,7 +7,8 @@ from typing import AsyncIterator, Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json, redirect, stream, text
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 # ========== Redirect Response Tests ==========
@@ -18,12 +19,12 @@ def test_redirect_response(test_client_factory: Callable[[SilloApp], TestClient]
     app = SilloApp()
 
     @app.get("/old-path")
-    async def old_path(request: Request, response: Response):
-        return response.redirect("/new-path")
+    async def old_path(request: HttpContext):
+        return redirect("/new-path")
 
     @app.get("/new-path")
-    async def new_path(request: Request, response: Response):
-        return response.text("New location")
+    async def new_path(request: HttpContext):
+        return text("New location")
 
     with test_client_factory(app) as client:
         resp = client.get("/old-path", follow_redirects=False)
@@ -36,12 +37,12 @@ def test_redirect_with_follow(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/redirect-me")
-    async def redirect_me(request: Request, response: Response):
-        return response.redirect("/destination")
+    async def redirect_me(request: HttpContext):
+        return redirect("/destination")
 
     @app.get("/destination")
-    async def destination(request: Request, response: Response):
-        return response.json({"arrived": True})
+    async def destination(request: HttpContext):
+        return json({"arrived": True})
 
     with test_client_factory(app) as client:
         resp = client.get("/redirect-me", follow_redirects=True)
@@ -54,12 +55,12 @@ def test_redirect_301_permanent(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/old")
-    async def old_endpoint(request: Request, response: Response):
-        return response.redirect("/new", status_code=301)
+    async def old_endpoint(request: HttpContext):
+        return redirect("/new", status_code=301)
 
     @app.get("/new")
-    async def new_endpoint(request: Request, response: Response):
-        return response.text("Moved permanently")
+    async def new_endpoint(request: HttpContext):
+        return text("Moved permanently")
 
     with test_client_factory(app) as client:
         resp = client.get("/old", follow_redirects=False)
@@ -72,12 +73,12 @@ def test_redirect_303_see_other(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.post("/submit")
-    async def submit_form(request: Request, response: Response):
-        return response.redirect("/success", status_code=303)
+    async def submit_form(request: HttpContext):
+        return redirect("/success", status_code=303)
 
     @app.get("/success")
-    async def success_page(request: Request, response: Response):
-        return response.text("Submission successful")
+    async def success_page(request: HttpContext):
+        return text("Submission successful")
 
     with test_client_factory(app) as client:
         resp = client.post("/submit", follow_redirects=False)
@@ -90,12 +91,12 @@ def test_redirect_307_temporary(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/temp")
-    async def temp_redirect(request: Request, response: Response):
-        return response.redirect("/target", status_code=307)
+    async def temp_redirect(request: HttpContext):
+        return redirect("/target", status_code=307)
 
     @app.get("/target")
-    async def target(request: Request, response: Response):
-        return response.text("Temporary target")
+    async def target(request: HttpContext):
+        return text("Temporary target")
 
     with test_client_factory(app) as client:
         resp = client.get("/temp", follow_redirects=False)
@@ -109,12 +110,12 @@ def test_redirect_308_permanent_redirect(
     app = SilloApp()
 
     @app.get("/old-api")
-    async def old_api(request: Request, response: Response):
-        return response.redirect("/new-api", status_code=308)
+    async def old_api(request: HttpContext):
+        return redirect("/new-api", status_code=308)
 
     @app.get("/new-api")
-    async def new_api(request: Request, response: Response):
-        return response.json({"version": "2.0"})
+    async def new_api(request: HttpContext):
+        return json({"version": "2.0"})
 
     with test_client_factory(app) as client:
         resp = client.get("/old-api", follow_redirects=False)
@@ -126,8 +127,8 @@ def test_redirect_external_url(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/external")
-    async def external_redirect(request: Request, response: Response):
-        return response.redirect("https://example.com")
+    async def external_redirect(request: HttpContext):
+        return redirect("https://example.com")
 
     with test_client_factory(app) as client:
         resp = client.get("/external", follow_redirects=False)
@@ -142,14 +143,14 @@ def test_redirect_with_query_params(
     app = SilloApp()
 
     @app.get("/search")
-    async def search_redirect(request: Request, response: Response):
-        return response.redirect("/results?q=test&page=1")
+    async def search_redirect(request: HttpContext):
+        return redirect("/results?q=test&page=1")
 
     @app.get("/results")
-    async def results(request: Request, response: Response):
+    async def results(request: HttpContext):
         q = request.query_params.get("q")
         page = request.query_params.get("page")
-        return response.json({"query": q, "page": page})
+        return json({"query": q, "page": page})
 
     with test_client_factory(app) as client:
         resp = client.get("/search", follow_redirects=True)
@@ -159,17 +160,17 @@ def test_redirect_with_query_params(
 
 
 def test_redirect_by_route_name(test_client_factory: Callable[[SilloApp], TestClient]):
-    """Test redirect using route name instead of URL"""
+    """A named route is resolved with ctx.url_for and handed to redirect()."""
     app = SilloApp()
 
     @app.get("/user/{user_id}", name="user_profile")
-    async def get_user(request: Request, response: Response):
+    async def get_user(request: HttpContext):
         user_id = request.path_params.get("user_id")
-        return response.json({"user_id": user_id})
+        return json({"user_id": user_id})
 
     @app.get("/users")
-    async def list_users(request: Request, response: Response):
-        return response.redirect(name="user_profile", user_id=42)
+    async def list_users(request: HttpContext):
+        return redirect(request.url_for("user_profile", user_id=42))
 
     with test_client_factory(app) as client:
         resp = client.get("/users", follow_redirects=False)
@@ -180,16 +181,16 @@ def test_redirect_by_route_name(test_client_factory: Callable[[SilloApp], TestCl
 def test_redirect_by_route_name_absolute_url(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test redirect by name generates absolute URL"""
+    """ctx.url_for builds an absolute URL, which redirect() sends as-is."""
     app = SilloApp()
 
     @app.get("/profile/{user_id}", name="profile")
-    async def profile(request: Request, response: Response):
-        return response.json({"id": request.path_params.get("user_id")})
+    async def profile(request: HttpContext):
+        return json({"id": request.path_params.get("user_id")})
 
     @app.get("/goto")
-    async def goto(request: Request, response: Response):
-        return response.redirect(name="profile", user_id=123)
+    async def goto(request: HttpContext):
+        return redirect(request.url_for("profile", user_id=123))
 
     with test_client_factory(app) as client:
         resp = client.get("/goto", follow_redirects=False)
@@ -198,15 +199,15 @@ def test_redirect_by_route_name_absolute_url(
         assert "/profile/123" in location
 
 
-def test_redirect_name_and_url_error(
+def test_redirect_to_an_unknown_route_name_is_an_error(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test redirect raises error when both url and name provided"""
+    """url_for raises for a name no route claims, rather than redirecting nowhere."""
     app = SilloApp()
 
     @app.get("/test")
-    async def test_route(request: Request, response: Response):
-        return response.redirect(url="/a", name="b")
+    async def test_route(request: HttpContext):
+        return redirect(request.url_for("no-such-route"))
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -225,8 +226,8 @@ def test_streaming_response(test_client_factory: Callable[[SilloApp], TestClient
             yield f"chunk{i}\n"
 
     @app.get("/stream")
-    async def stream_data(request: Request, response: Response):
-        return response.stream(generate_data())
+    async def stream_data(request: HttpContext):
+        return stream(generate_data())
 
     with test_client_factory(app) as client:
         resp = client.get("/stream")
@@ -247,8 +248,8 @@ def test_streaming_response_bytes(
             yield f"data{i}".encode()
 
     @app.get("/stream-bytes")
-    async def stream_bytes(request: Request, response: Response):
-        return response.stream(generate_bytes())
+    async def stream_bytes(request: HttpContext):
+        return stream(generate_bytes())
 
     with test_client_factory(app) as client:
         resp = client.get("/stream-bytes")
@@ -270,8 +271,8 @@ def test_streaming_response_with_content_type(
         yield '{"id": 3}\n'
 
     @app.get("/stream-json")
-    async def stream_json(request: Request, response: Response):
-        return response.stream(
+    async def stream_json(request: HttpContext):
+        return stream(
             generate_json_lines(), content_type="application/x-ndjson"
         )
 
@@ -292,8 +293,8 @@ def test_streaming_response_with_status_code(
         yield "partial content"
 
     @app.get("/stream-partial")
-    async def stream_partial(request: Request, response: Response):
-        return response.stream(generate_partial(), status_code=206)
+    async def stream_partial(request: HttpContext):
+        return stream(generate_partial(), status_code=206)
 
     with test_client_factory(app) as client:
         resp = client.get("/stream-partial")
@@ -309,8 +310,8 @@ def test_streaming_large_data(test_client_factory: Callable[[SilloApp], TestClie
             yield f"line{i}\n"
 
     @app.get("/stream-large")
-    async def stream_large(request: Request, response: Response):
-        return response.stream(generate_large_data())
+    async def stream_large(request: HttpContext):
+        return stream(generate_large_data())
 
     with test_client_factory(app) as client:
         resp = client.get("/stream-large")
@@ -331,8 +332,8 @@ def test_streaming_csv_data(test_client_factory: Callable[[SilloApp], TestClient
         yield "3,Charlie,300\n"
 
     @app.get("/stream-csv")
-    async def stream_csv(request: Request, response: Response):
-        return response.stream(generate_csv(), content_type="text/csv")
+    async def stream_csv(request: HttpContext):
+        return stream(generate_csv(), content_type="text/csv")
 
     with test_client_factory(app) as client:
         resp = client.get("/stream-csv")
@@ -352,8 +353,8 @@ def test_streaming_empty(test_client_factory: Callable[[SilloApp], TestClient]):
         yield  # This line is never reached
 
     @app.get("/stream-empty")
-    async def stream_empty(request: Request, response: Response):
-        return response.stream(generate_empty())
+    async def stream_empty(request: HttpContext):
+        return stream(generate_empty())
 
     with test_client_factory(app) as client:
         resp = client.get("/stream-empty")
@@ -368,16 +369,16 @@ def test_redirect_chain(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/start")
-    async def start(request: Request, response: Response):
-        return response.redirect("/middle")
+    async def start(request: HttpContext):
+        return redirect("/middle")
 
     @app.get("/middle")
-    async def middle(request: Request, response: Response):
-        return response.redirect("/end")
+    async def middle(request: HttpContext):
+        return redirect("/end")
 
     @app.get("/end")
-    async def end(request: Request, response: Response):
-        return response.text("Final destination")
+    async def end(request: HttpContext):
+        return text("Final destination")
 
     with test_client_factory(app) as client:
         resp = client.get("/start", follow_redirects=True)
@@ -390,15 +391,15 @@ def test_conditional_redirect(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/conditional")
-    async def conditional_redirect(request: Request, response: Response):
+    async def conditional_redirect(request: HttpContext):
         redirect_param = request.query_params.get("redirect")
         if redirect_param == "yes":
-            return response.redirect("/redirected")
-        return response.text("No redirect")
+            return redirect("/redirected")
+        return text("No redirect")
 
     @app.get("/redirected")
-    async def redirected(request: Request, response: Response):
-        return response.text("Redirected successfully")
+    async def redirected(request: HttpContext):
+        return text("Redirected successfully")
 
     with test_client_factory(app) as client:
         # Without redirect parameter

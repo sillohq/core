@@ -6,11 +6,10 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from sillo.core.http.request import Request
-from sillo.core.http.response import Responder as Response
-from sillo.core.http.response import StreamingResponse
+from sillo.core.http.context import HttpContext
+from sillo.core.http.response import BaseResponse, StreamingResponse
 
-from .websockets import WebSocket
+from .websockets import WebSocketContext
 
 # Type alias for route model arguments — accepts any of:
 #   - a single Pydantic model class
@@ -25,36 +24,38 @@ Message = typing.MutableMapping[str, typing.Any]
 
 Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[[Message], typing.Awaitable[None]]
-RequestResponseEndpoint = typing.Callable[
-    [], typing.Awaitable[Response | StreamingResponse]
-]
+#: Awaits the rest of the middleware chain and returns its response.
+CallNext = typing.Callable[[], typing.Awaitable[Any]]
 
+#: Kept as the historical name for :data:`CallNext`.
+RequestResponseEndpoint = CallNext
+
+#: A middleware. Takes the context and ``call_next``; returns a response to
+#: end the chain early, or whatever ``call_next`` produced.
 MiddlewareType = typing.Callable[
-    [Request, Response, RequestResponseEndpoint],
-    typing.Awaitable[Response | StreamingResponse],
+    [HttpContext, CallNext],
+    typing.Awaitable[Any],
 ]
 
-WsHandlerType = typing.Callable[[WebSocket], typing.Awaitable[None]]
+WsHandlerType = typing.Callable[[WebSocketContext], typing.Awaitable[None]]
 HandlerType = Callable[..., Any]
 #: An exception handler. Must be ``async``.
 #:
 #: The dispatcher in ``sillo.exception_handler`` does ``await handler(...)``
 #: unconditionally, and every built-in handler is a coroutine function, so
 #: the awaitable is part of the contract rather than an accepted alternative.
-#: Declaring the return as a bare ``Response`` described neither the built-ins
+#: Declaring the return as a bare response described neither the built-ins
 #: nor anything an application can actually register: every ``async`` handler
 #: -- the only kind that works -- was reported as the wrong type, and the
 #: dispatcher needed a ``ty: ignore[invalid-await]`` to await its own alias.
-ExceptionHandlerType = Callable[
-    [Request, Response, Exception], typing.Awaitable[Response]
-]
+ExceptionHandlerType = Callable[[HttpContext, Exception], typing.Awaitable[BaseResponse]]
 
 #: An exception handler for one specific exception type.
 #:
 #: The same shape as :data:`ExceptionHandlerType`, but parameterised by the
 #: exception it handles, so that
 #:
-#:     async def on_not_found(request, response, exc: NotFound) -> Response
+#:     async def on_not_found(ctx, exc: NotFound) -> BaseResponse
 #:
 #: registers against ``NotFound`` without being reported as incompatible.
 #: Callables are contravariant in their parameters, so a handler narrowed to
@@ -62,6 +63,6 @@ ExceptionHandlerType = Callable[
 #: correct in general and useless here, because the registration call is
 #: exactly what pairs the handler with its own exception class.
 ExcT = typing.TypeVar("ExcT", bound=Exception)
-ExceptionHandlerFor = Callable[[Request, Response, ExcT], typing.Awaitable[Response]]
+ExceptionHandlerFor = Callable[[HttpContext, ExcT], typing.Awaitable[BaseResponse]]
 
 ASGIApp = typing.Callable[[Scope, Receive, Send], typing.Awaitable[Any]]

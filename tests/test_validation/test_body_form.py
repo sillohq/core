@@ -1,9 +1,10 @@
 """
-Request bodies come from the ``request_model=`` route argument — the single way
+HttpContext bodies come from the ``request_model=`` route argument — the single way
 to declare one — plus forms and multipart uploads via markers.
 """
 
 from sillo import File, Form, Path, Query
+from sillo import json
 from sillo.core.dependencies import Depend
 from sillo.testclient import TestClient
 
@@ -12,8 +13,8 @@ from .conftest import UserCreate
 
 def test_request_model_injects_into_bare_param(app, client):
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, response, user):
-        return response.json({"name": user.name, "age": user.age})
+    async def handler(request, user):
+        return json({"name": user.name, "age": user.age})
 
     assert client.post("/users", json={"name": "Alice", "age": 30}).json() == {
         "name": "Alice",
@@ -25,8 +26,8 @@ def test_request_model_also_on_request(app, client):
     """The body is always reachable via request.validated_data."""
 
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, response):
-        return response.json({"name": request.validated_data.name})
+    async def handler(request):
+        return json({"name": request.validated_data.name})
 
     assert client.post("/users", json={"name": "Al", "age": 1}).json() == {"name": "Al"}
 
@@ -38,8 +39,8 @@ def test_request_model_composes_with_depend(app, client):
         return "db"
 
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, response, user, db=Depend(get_db)):
-        return response.json({"name": user.name, "db": db})
+    async def handler(request, user, db=Depend(get_db)):
+        return json({"name": user.name, "db": db})
 
     assert client.post("/users", json={"name": "Al", "age": 1}).json() == {
         "name": "Al",
@@ -49,8 +50,8 @@ def test_request_model_composes_with_depend(app, client):
 
 def test_request_model_composes_with_markers(app, client):
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, response, user, notify=Query(False, type=bool)):
-        return response.json({"name": user.name, "notify": notify})
+    async def handler(request, user, notify=Query(False, type=bool)):
+        return json({"name": user.name, "notify": notify})
 
     assert client.post("/users?notify=true", json={"name": "Al", "age": 1}).json() == {
         "name": "Al",
@@ -62,8 +63,8 @@ def test_request_model_composes_with_path_params(app, client):
     """A path parameter must not be mistaken for the body target."""
 
     @app.post("/teams/{team_id}/users", request_model=UserCreate)
-    async def handler(request, response, team_id, user):
-        return response.json({"team": team_id, "name": user.name})
+    async def handler(request, team_id, user):
+        return json({"team": team_id, "name": user.name})
 
     assert client.post("/teams/7/users", json={"name": "Al", "age": 1}).json() == {
         "team": "7",
@@ -80,13 +81,12 @@ def test_request_model_with_everything(app, client):
     @app.post("/teams/{team_id}/users", request_model=UserCreate)
     async def handler(
         request,
-        response,
         user,
         team_id=Path(type=int),
         page=Query(1, type=int, ge=1),
         db=Depend(get_db),
     ):
-        return response.json(
+        return json(
             {"name": user.name, "team": team_id, "page": page, "db": db}
         )
 
@@ -98,16 +98,16 @@ def test_legacy_positional_binding_still_works(app, client):
     """A body parameter carrying a default keeps the original binding rule."""
 
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, response, data=None):
-        return response.json({"name": data.name})
+    async def handler(request, data=None):
+        return json({"name": data.name})
 
     assert client.post("/users", json={"name": "Al", "age": 1}).json() == {"name": "Al"}
 
 
 def test_validation_error_keeps_legacy_shape(app, client):
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, response, user):
-        return response.json({})
+    async def handler(request, user):
+        return json({})
 
     resp = client.post("/users", json={"name": "Al"})
     assert resp.status_code == 422
@@ -120,8 +120,8 @@ def test_non_object_body_is_422_not_500(app, client):
     """The old ``Model(**body)`` splat raised TypeError on a JSON array."""
 
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, response, user):
-        return response.json({})
+    async def handler(request, user):
+        return json({})
 
     resp = client.post("/users", json=["not", "an", "object"])
     assert resp.status_code == 422
@@ -129,8 +129,8 @@ def test_non_object_body_is_422_not_500(app, client):
 
 def test_malformed_json_is_422_not_500(app, client):
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, response, user):
-        return response.json({})
+    async def handler(request, user):
+        return json({})
 
     resp = client.post(
         "/users", content=b"{not json", headers={"Content-Type": "application/json"}
@@ -143,8 +143,8 @@ def test_strict_mode_unifies_body_error_shape(strict_app):
     """strict_validation puts body errors in the same envelope as everything else."""
 
     @strict_app.post("/users", request_model=UserCreate)
-    async def handler(request, response, user):
-        return response.json({})
+    async def handler(request, user):
+        return json({})
 
     resp = TestClient(strict_app).post("/users", json={"name": "Al"})
     assert resp.status_code == 422
@@ -153,8 +153,8 @@ def test_strict_mode_unifies_body_error_shape(strict_app):
 
 def test_urlencoded_form(app, client):
     @app.post("/form")
-    async def handler(request, response, title=Form(type=str), count=Form(0, type=int)):
-        return response.json({"title": title, "count": count})
+    async def handler(request, title=Form(type=str), count=Form(0, type=int)):
+        return json({"title": title, "count": count})
 
     assert client.post("/form", data={"title": "hello", "count": "3"}).json() == {
         "title": "hello",
@@ -164,8 +164,8 @@ def test_urlencoded_form(app, client):
 
 def test_form_validation_error_is_422(app, client):
     @app.post("/form")
-    async def handler(request, response, count=Form(type=int)):
-        return response.json({})
+    async def handler(request, count=Form(type=int)):
+        return json({})
 
     resp = client.post("/form", data={"count": "abc"})
     assert resp.status_code == 422
@@ -174,9 +174,9 @@ def test_form_validation_error_is_422(app, client):
 
 def test_multipart_file_upload(app, client):
     @app.post("/upload")
-    async def handler(request, response, title=Form(type=str), avatar=File(...)):
+    async def handler(request, title=Form(type=str), avatar=File(...)):
         content = await avatar.read()
-        return response.json(
+        return json(
             {"title": title, "filename": avatar.filename, "size": len(content)}
         )
 
@@ -188,8 +188,8 @@ def test_multipart_file_upload(app, client):
 
 def test_missing_required_file_is_422(app, client):
     @app.post("/upload")
-    async def handler(request, response, avatar=File(...)):
-        return response.json({})
+    async def handler(request, avatar=File(...)):
+        return json({})
 
     resp = client.post("/upload", data={"other": "x"})
     assert resp.status_code == 422
@@ -198,8 +198,8 @@ def test_missing_required_file_is_422(app, client):
 
 def test_optional_file_defaults_to_none(app, client):
     @app.post("/upload")
-    async def handler(request, response, avatar=File(None)):
-        return response.json({"got": avatar is not None})
+    async def handler(request, avatar=File(None)):
+        return json({"got": avatar is not None})
 
     assert client.post("/upload", data={"other": "x"}).json() == {"got": False}
 
@@ -211,8 +211,8 @@ def test_markers_work_inside_dependencies(app, client):
         return {"page": page, "size": size}
 
     @app.get("/items")
-    async def handler(request, response, pager=Depend(pagination)):
-        return response.json(pager)
+    async def handler(request, pager=Depend(pagination)):
+        return json(pager)
 
     assert client.get("/items?page=3&size=20").json() == {"page": 3, "size": 20}
 

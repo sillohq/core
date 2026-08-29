@@ -111,7 +111,7 @@ class AsyncTestClient(httpx.AsyncClient):
         timeout: TimeoutTypes | UseClientDefault = USE_CLIENT_DEFAULT,
         extensions: RequestExtensions | None = None,
     ) -> httpx.Response:
-        """Request"""
+        """HttpContext"""
         url = self._merge_url(url)
         redirect: bool | UseClientDefault = USE_CLIENT_DEFAULT
         if follow_redirects is not None:
@@ -180,7 +180,7 @@ class AsyncTestClient(httpx.AsyncClient):
             # request before dispatching to the app, so this branch guards a
             # transport contract violation rather than any reachable app
             # behavior.
-            raise RuntimeError("Expected WebSocket upgrade")  # pragma: no cover
+            raise RuntimeError("Expected WebSocketContext upgrade")  # pragma: no cover
 
     def _prepare_websocket_headers(
         self,

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import pytest
 
 from sillo import SilloApp
+from sillo import json
 from sillo.core.encoding import CUSTOM_ENCODERS, register_encoder
 from sillo.testclient import TestClient
 
@@ -33,7 +34,7 @@ class TestAppAddEncoder:
         app.add_encoder(Money, lambda m: {"amount": str(m.amount), "currency": m.currency})
 
         @app.get("/price")
-        async def price(request, response):
+        async def price(request):
             return {"total": Money(decimal.Decimal("19.99"), "USD")}
 
         client = TestClient(app)
@@ -46,7 +47,7 @@ class TestAppAddEncoder:
         app.add_encoder(Vector, lambda v: [v.x, v.y])
 
         @app.get("/vec")
-        async def vec(request, response):
+        async def vec(request):
             return {"points": [Vector(1, 2), Vector(3, 4)]}
 
         client = TestClient(app)
@@ -64,8 +65,8 @@ class TestResponseJsonCustomEncoder:
         app = SilloApp()
 
         @app.get("/raw")
-        async def raw(request, response):
-            return response.json(
+        async def raw(request):
+            return json(
                 {"v": Vector(5, 6)},
                 custom_encoder={Vector: lambda v: {"x": v.x, "y": v.y}},
             )
@@ -79,8 +80,8 @@ class TestResponseJsonCustomEncoder:
         app = SilloApp()
 
         @app.get("/override")
-        async def override(request, response):
-            return response.json(
+        async def override(request):
+            return json(
                 Vector(7, 8),
                 custom_encoder={Vector: lambda v: {"x": v.x, "y": v.y}},
             )
@@ -95,8 +96,8 @@ class TestEncoderPrecedence:
         app.add_encoder(Vector, lambda v: "app-level")
 
         @app.get("/win")
-        async def win(request, response):
-            return response.json(
+        async def win(request):
+            return json(
                 Vector(1, 1),
                 custom_encoder={Vector: lambda v: "call-level"},
             )

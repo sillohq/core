@@ -1,7 +1,7 @@
 import typing
 
 from . import status
-from .base import WebSocket, WebSocketDisconnect
+from .base import WebSocketContext, WebSocketDisconnect
 from .channels import Channel, ChannelBox
 from .consumers import WebSocketConsumer
 from .history import BaseHistoryManager, InMemoryHistoryManager, NoOpHistoryManager
@@ -19,7 +19,7 @@ __all__ = [
     "ChannelBox",
     "InMemoryHistoryManager",
     "NoOpHistoryManager",
-    "WebSocket",
+    "WebSocketContext",
     "WebSocketConsumer",
     "WebSocketDisconnect",
     "status",

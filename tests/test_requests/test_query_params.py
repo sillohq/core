@@ -7,7 +7,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 # ========== Query Parameters Tests ==========
@@ -18,10 +19,10 @@ def test_request_query_params(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/search")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         q = request.query_params.get("q")
         page = request.query_params.get("page")
-        return response.json({"q": q, "page": page})
+        return json({"q": q, "page": page})
 
     with test_client_factory(app) as client:
         resp = client.get("/search?q=test&page=1")
@@ -38,9 +39,9 @@ def test_request_query_params_multiple_values(
     app = SilloApp()
 
     @app.get("/filter")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         tags = request.query_params.getlist("tag")
-        return response.json({"tags": tags})
+        return json({"tags": tags})
 
     with test_client_factory(app) as client:
         resp = client.get("/filter?tag=python&tag=web&tag=async")
@@ -59,8 +60,8 @@ def test_request_query_params_empty(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json(
+    async def handler(request: HttpContext):
+        return json(
             {
                 "has_params": bool(request.query_params),
                 "count": len(request.query_params),
@@ -80,9 +81,9 @@ def test_request_query_params_special_characters(
     app = SilloApp()
 
     @app.get("/search")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         q = request.query_params.get("q")
-        return response.json({"q": q})
+        return json({"q": q})
 
     with test_client_factory(app) as client:
         resp = client.get("/search?q=hello%20world")
@@ -96,9 +97,9 @@ def test_request_query_params_unicode(
     app = SilloApp()
 
     @app.get("/search")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         q = request.query_params.get("q")
-        return response.json({"q": q})
+        return json({"q": q})
 
     with test_client_factory(app) as client:
         resp = client.get("/search?q=café")
@@ -112,9 +113,9 @@ def test_request_get_query_params_flat(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         params = request.get_query_params(flat=True)
-        return response.json(params)
+        return json(params)
 
     with test_client_factory(app) as client:
         resp = client.get("/test?a=1&b=2&c=3")
@@ -131,9 +132,9 @@ def test_request_get_query_params_not_flat(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         params = request.get_query_params(flat=False)
-        return response.json({"params_type": str(type(params).__name__)})
+        return json({"params_type": str(type(params).__name__)})
 
     with test_client_factory(app) as client:
         resp = client.get("/test?a=1&b=2")
@@ -147,10 +148,10 @@ def test_request_query_params_boolean_like(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         active = request.query_params.get("active")
         enabled = request.query_params.get("enabled")
-        return response.json({"active": active, "enabled": enabled})
+        return json({"active": active, "enabled": enabled})
 
     with test_client_factory(app) as client:
         resp = client.get("/test?active=true&enabled=false")
@@ -166,10 +167,10 @@ def test_request_query_params_numbers(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         page = request.query_params.get("page")
         limit = request.query_params.get("limit")
-        return response.json(
+        return json(
             {
                 "page": page,
                 "limit": limit,
@@ -194,9 +195,9 @@ def test_request_query_params_empty_value(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         q = request.query_params.get("q", "default")
-        return response.json({"q": q})
+        return json({"q": q})
 
     with test_client_factory(app) as client:
         resp = client.get("/test?q=")
@@ -210,10 +211,10 @@ def test_request_query_params_default_value(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         page = request.query_params.get("page", "1")
         limit = request.query_params.get("limit", "10")
-        return response.json({"page": page, "limit": limit})
+        return json({"page": page, "limit": limit})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -229,12 +230,12 @@ def test_request_query_params_mixed(
     app = SilloApp()
 
     @app.get("/search")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         q = request.query_params.get("q")
         page = request.query_params.get("page", "1")
         sort = request.query_params.get("sort", "asc")
         tags = request.query_params.getlist("tag")
-        return response.json({"q": q, "page": page, "sort": sort, "tags": tags})
+        return json({"q": q, "page": page, "sort": sort, "tags": tags})
 
     with test_client_factory(app) as client:
         resp = client.get("/search?q=python&page=2&tag=web&tag=framework")
@@ -252,9 +253,9 @@ def test_request_query_params_iteration(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         params_dict = dict(request.query_params)
-        return response.json(params_dict)
+        return json(params_dict)
 
     with test_client_factory(app) as client:
         resp = client.get("/test?a=1&b=2&c=3")
@@ -271,11 +272,11 @@ def test_request_query_params_contains(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         has_q = "q" in request.query_params
         has_page = "page" in request.query_params
         has_missing = "missing" in request.query_params
-        return response.json(
+        return json(
             {"has_q": has_q, "has_page": has_page, "has_missing": has_missing}
         )
 
@@ -294,9 +295,9 @@ def test_request_query_params_keys(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         keys = list(request.query_params.keys())
-        return response.json({"keys": keys})
+        return json({"keys": keys})
 
     with test_client_factory(app) as client:
         resp = client.get("/test?a=1&b=2&c=3")
@@ -313,9 +314,9 @@ def test_request_query_params_values(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         values = list(request.query_params.values())
-        return response.json({"values": values})
+        return json({"values": values})
 
     with test_client_factory(app) as client:
         resp = client.get("/test?a=1&b=2&c=3")
@@ -332,9 +333,9 @@ def test_request_query_params_items(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
+    async def handler(request: HttpContext):
         items = dict(request.query_params.items())
-        return response.json(items)
+        return json(items)
 
     with test_client_factory(app) as client:
         resp = client.get("/test?name=John&age=30")

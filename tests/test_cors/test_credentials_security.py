@@ -10,7 +10,8 @@ refused only in its literal form, which reflection sidesteps.
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.security.cors import CORSMiddleware, CorsConfig
 from sillo.testclient import TestClient
 
@@ -19,8 +20,8 @@ def _app(config):
     app = SilloApp()
 
     @app.get("/resource")
-    async def resource(request: Request, response: Response):
-        return response.json({"message": "OK"})
+    async def resource(request: HttpContext):
+        return json({"message": "OK"})
 
     app.use(CORSMiddleware(config=config))
     return app

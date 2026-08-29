@@ -11,7 +11,7 @@ import asyncio
 
 import pytest
 
-from sillo.websockets import Channel, ChannelBox, WebSocket
+from sillo.websockets import Channel, ChannelBox, WebSocketContext
 from sillo.websockets.utils import ChannelRemoveStatusEnum
 
 
@@ -19,7 +19,7 @@ def _run(coro):
     return asyncio.run(coro)
 
 
-class FakeWebSocket(WebSocket):
+class FakeWebSocket(WebSocketContext):
     def __init__(self):
         super().__init__(
             {"type": "websocket", "path": "/ws", "headers": [], "query_string": b""},

@@ -10,7 +10,7 @@ from . import status
 # NOTE: WebsocketRoute is imported lazily inside as_route() to break a
 # circular import: types → websockets → consumers → routing.websocket → types.
 # Moving it to top-level would fail during module initialization.
-from .base import WebSocket
+from .base import WebSocketContext
 from .channels import Channel, ChannelBox, PayloadTypeEnum
 
 Message = typing.MutableMapping[str, typing.Any]
@@ -45,7 +45,7 @@ class WebSocketConsumer:
         from sillo.core.routing.websocket import WebsocketRoute
 
         async def handler(
-            websocket: WebSocket, **kwargs: dict[str, typing.Any]
+            websocket: WebSocketContext, **kwargs: dict[str, typing.Any]
         ) -> None:
             """Handler"""
             instance = cls()
@@ -53,7 +53,7 @@ class WebSocketConsumer:
 
         return WebsocketRoute(path, handler)
 
-    async def __call__(self, ws: WebSocket) -> None:
+    async def __call__(self, ws: WebSocketContext) -> None:
         """Call"""
         self.websocket = ws
 
@@ -87,7 +87,7 @@ class WebSocketConsumer:
         finally:
             await self.on_disconnect(self.websocket, close_code)
 
-    async def decode(self, websocket: WebSocket, message: Message) -> typing.Any:
+    async def decode(self, websocket: WebSocketContext, message: Message) -> typing.Any:
         """Decode"""
         if self.encoding == "text":
             if "text" not in message:
@@ -118,21 +118,21 @@ class WebSocketConsumer:
         )
         return message["text"] if message.get("text") else message["bytes"]
 
-    async def on_connect(self, websocket: WebSocket) -> None:
+    async def on_connect(self, websocket: WebSocketContext) -> None:
         """Override to handle an incoming websocket connection"""
         await websocket.accept()
         if self.logging_enabled:
-            self.logger.info("New WebSocket connection established")
+            self.logger.info("New WebSocketContext connection established")
 
-    async def on_receive(self, websocket: WebSocket, data: typing.Any) -> None:
+    async def on_receive(self, websocket: WebSocketContext, data: typing.Any) -> None:
         """Override to handle an incoming websocket message"""
         if self.logging_enabled:
             self.logger.info(f"Received message: {data}")
 
-    async def on_disconnect(self, websocket: WebSocket, close_code: int) -> None:
+    async def on_disconnect(self, websocket: WebSocketContext, close_code: int) -> None:
         """Override to handle a disconnecting websocket"""
         if self.logging_enabled:
-            self.logger.info(f"WebSocket disconnected with code: {close_code}")
+            self.logger.info(f"WebSocketContext disconnected with code: {close_code}")
 
     # New Methods for Channel and Group Management
     async def broadcast(

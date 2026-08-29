@@ -5,7 +5,8 @@ Tests for CORS preflight requests (OPTIONS)
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.security.cors import CorsConfig, CORSMiddleware
 from sillo.testclient import TestClient
 
@@ -32,16 +33,16 @@ def cors_app():
 
     # Add test routes
     @app.get("/test")
-    async def test_route(request: Request, response: Response):
-        return response.json({"message": "OK"})
+    async def test_route(request: HttpContext):
+        return json({"message": "OK"})
 
     @app.post("/data")
-    async def data_route(request: Request, response: Response):
-        return response.json({"received": True})
+    async def data_route(request: HttpContext):
+        return json({"received": True})
 
     @app.put("/update")
-    async def update_route(request: Request, response: Response):
-        return response.json({"updated": True})
+    async def update_route(request: HttpContext):
+        return json({"updated": True})
 
     app.use(CORSMiddleware(config=cors_config))
     return app
@@ -105,8 +106,8 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/wildcard-headers")
-        async def wildcard_headers_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def wildcard_headers_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -140,8 +141,8 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/wildcard-blacklist")
-        async def route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
         wildcard_client = TestClient(app)
@@ -292,8 +293,8 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/no-creds-preflight")
-        async def no_creds_preflight_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def no_creds_preflight_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -324,8 +325,8 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/max-age-test")
-        async def max_age_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def max_age_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 
@@ -358,8 +359,8 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/blacklist-preflight")
-        async def blacklist_preflight_route(request: Request, response: Response):
-            return response.json({"message": "OK"})
+        async def blacklist_preflight_route(request: HttpContext):
+            return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
 

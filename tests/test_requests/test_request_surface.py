@@ -1,4 +1,4 @@
-"""The parts of ``Request`` reached by inspection rather than by routing.
+"""The parts of ``HttpContext`` reached by inspection rather than by routing.
 
 A request is a mapping over the ASGI scope, a body it can read exactly once,
 and a handful of properties that answer questions about the connection. The
@@ -12,7 +12,7 @@ from __future__ import annotations
 import anyio
 import pytest
 
-from sillo.core.http.request import Address, Request
+from sillo.core.http.context import Address, HttpContext
 
 
 def make_scope(**overrides):
@@ -49,74 +49,74 @@ async def body_receive(*chunks: bytes):
 
 
 class TestTheMappingProtocol:
-    """``Request`` is a Mapping over the scope, which is what lets middleware
+    """``HttpContext`` is a Mapping over the scope, which is what lets middleware
     read scope keys off the request without reaching for ``.scope``."""
 
     def test_a_key_is_readable(self):
-        request = Request(make_scope(), None)
+        request = HttpContext(make_scope(), None)
 
         assert request["method"] == "GET"
 
     def test_a_missing_key_raises(self):
-        request = Request(make_scope(), None)
+        request = HttpContext(make_scope(), None)
 
         with pytest.raises(KeyError):
             request["not-there"]
 
     def test_it_iterates_the_scope_keys(self):
-        request = Request(make_scope(), None)
+        request = HttpContext(make_scope(), None)
 
         assert "method" in list(request)
 
     def test_it_has_the_scope_s_length(self):
         scope = make_scope()
-        request = Request(scope, None)
+        request = HttpContext(scope, None)
 
         assert len(request) == len(scope)
 
     def test_the_app_comes_off_the_scope(self):
         sentinel = object()
-        request = Request(make_scope(app=sentinel), None)
+        request = HttpContext(make_scope(app=sentinel), None)
 
         assert request.app is sentinel
 
 
 class TestTheClientAddress:
     def test_the_client_is_reported_as_an_address(self):
-        request = Request(make_scope(client=("10.0.0.1", 51234)), None)
+        request = HttpContext(make_scope(client=("10.0.0.1", 51234)), None)
 
         assert request.client == Address("10.0.0.1", 51234)
 
     def test_an_absent_client_is_none(self):
         """A request from a unix socket, or a test harness, has no peer."""
-        request = Request(make_scope(client=None), None)
+        request = HttpContext(make_scope(client=None), None)
 
         assert request.client is None
 
 
 class TestHeaderConveniences:
     def test_the_origin_is_read_from_the_header(self):
-        request = Request(
+        request = HttpContext(
             make_scope(headers=[(b"origin", b"https://other.test")]), None
         )
 
         assert request.origin == "https://other.test"
 
     def test_an_absent_origin_is_derived_from_the_url(self):
-        """``Request.origin`` falls back to scheme+authority rather than
+        """``HttpContext.origin`` falls back to scheme+authority rather than
         answering None, so a same-origin request compares equal to the
         origin a cross-origin one would have sent."""
-        request = Request(make_scope(), None)
+        request = HttpContext(make_scope(), None)
 
         assert request.origin == "http://example.test"
 
     def test_no_content_type_header_reads_as_none(self):
-        request = Request(make_scope(), None)
+        request = HttpContext(make_scope(), None)
 
         assert request.content_type is None
 
     def test_a_content_type_is_returned_without_its_parameters(self):
-        request = Request(
+        request = HttpContext(
             make_scope(headers=[(b"content-type", b"text/html; charset=utf-8")]), None
         )
 
@@ -124,17 +124,17 @@ class TestHeaderConveniences:
 
 
 class TestChannelsThatWereNeverProvided:
-    """A ``Request`` can be built from a scope alone -- exception handlers and
+    """A ``HttpContext`` can be built from a scope alone -- exception handlers and
     tests both do it -- and then has nothing to read from or write to."""
 
     async def test_receiving_without_a_channel_says_so(self):
-        request = Request(make_scope())
+        request = HttpContext(make_scope())
 
         with pytest.raises(RuntimeError, match="No receive channel"):
             await request.receive()
 
     async def test_sending_a_push_without_a_channel_says_so(self):
-        request = Request(
+        request = HttpContext(
             make_scope(extensions={"http.response.push": {}}),
         )
 
@@ -144,7 +144,7 @@ class TestChannelsThatWereNeverProvided:
 
 class TestReadingTheBody:
     async def test_the_body_is_returned(self):
-        request = Request(make_scope(method="POST"), await body_receive(b"hello"))
+        request = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
 
         assert await request.body == b"hello"
 
@@ -152,7 +152,7 @@ class TestReadingTheBody:
         """Once the body is read it is kept, so a second consumer -- an
         exception handler, a logging middleware -- gets it rather than a
         'stream consumed' error."""
-        request = Request(make_scope(method="POST"), await body_receive(b"hello"))
+        request = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
         await request.body
 
         chunks = [chunk async for chunk in request.stream()]
@@ -162,7 +162,7 @@ class TestReadingTheBody:
     async def test_streaming_twice_without_caching_is_refused(self):
         """The channel is drained, so the second read would hang forever
         waiting for a body that has already gone past."""
-        request = Request(make_scope(method="POST"), await body_receive(b"hello"))
+        request = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
         async for _ in request.stream():
             pass
 
@@ -171,7 +171,7 @@ class TestReadingTheBody:
                 pass
 
     async def test_text_decodes_as_utf8(self):
-        request = Request(
+        request = HttpContext(
             make_scope(method="POST"), await body_receive("café".encode())
         )
 
@@ -181,7 +181,7 @@ class TestReadingTheBody:
         """A body that is not valid UTF-8 still has to produce *something*:
         raising here turns a malformed request into a 500 rather than a 400.
         """
-        request = Request(make_scope(method="POST"), await body_receive(b"\xff\xfe"))
+        request = HttpContext(make_scope(method="POST"), await body_receive(b"\xff\xfe"))
 
         assert await request.text == "\xff\xfe".encode("latin-1").decode("latin-1")
 
@@ -191,7 +191,7 @@ class TestDisconnectDetection:
         async def receive():
             return {"type": "http.disconnect"}
 
-        request = Request(make_scope(), receive)
+        request = HttpContext(make_scope(), receive)
 
         assert await request.is_disconnected() is True
 
@@ -203,7 +203,7 @@ class TestDisconnectDetection:
             await anyio.sleep(10)
             return {"type": "http.request", "body": b"", "more_body": False}
 
-        request = Request(make_scope(), receive)
+        request = HttpContext(make_scope(), receive)
 
         assert await request.is_disconnected() is False
 
@@ -214,7 +214,7 @@ class TestDisconnectDetection:
             calls.append(1)
             return {"type": "http.disconnect"}
 
-        request = Request(make_scope(), receive)
+        request = HttpContext(make_scope(), receive)
         await request.is_disconnected()
         await request.is_disconnected()
 
@@ -228,7 +228,7 @@ class TestServerPush:
         async def send(message):
             sent.append(message)
 
-        request = Request(
+        request = HttpContext(
             make_scope(extensions={"http.response.push": {}}, headers=[]),
             None,
             send,
@@ -248,7 +248,7 @@ class TestServerPush:
         async def send(message):
             sent.append(message)
 
-        request = Request(
+        request = HttpContext(
             make_scope(
                 extensions={"http.response.push": {}},
                 headers=[(b"accept-encoding", b"gzip")],
@@ -268,7 +268,7 @@ class TestServerPush:
         async def send(message):
             sent.append(message)
 
-        request = Request(make_scope(extensions={}), None, send)
+        request = HttpContext(make_scope(extensions={}), None, send)
 
         await request.send_push_promise("/style.css")
 

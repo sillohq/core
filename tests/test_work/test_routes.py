@@ -7,9 +7,10 @@ import asyncio
 import json
 
 from sillo import SilloApp
+from sillo import json
 from sillo.work.background.tasks import BackgroundTask
 from sillo.core.dependencies import Depend
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import AsyncTestClient
 from sillo.work import setup_work
 from sillo.work.dependency import events, queue_connection, scheduler
@@ -30,12 +31,12 @@ async def test_route_launches_background_task_and_drains():
     sink = []
 
     @app.post("/ingest")
-    async def ingest(request: Request, response: Response):
+    async def ingest(request: HttpContext):
         async def process(value: str):
             sink.append(value)
 
         BackgroundTask.run(process, request.query_params.get("v", "x"))
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     async with AsyncTestClient(app) as client:
         resp = await client.post("/ingest?v=hello")
@@ -56,7 +57,7 @@ async def test_route_dispatches_job_consumed_by_worker():
     SENT_EMAILS.clear()
 
     @app.post("/email")
-    async def send_email(request: Request, response: Response):
+    async def send_email(request: HttpContext):
         to = request.query_params.get("to", "nobody")
         payload = json.dumps(
             {
@@ -65,7 +66,7 @@ async def test_route_dispatches_job_consumed_by_worker():
             }
         )
         await conn.push("default", payload)
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     worker = QueueWorker(
         _manager_with(conn),
@@ -108,9 +109,9 @@ async def test_route_fires_event_through_dispatcher():
     dispatcher.register(RoutePing, handler)
 
     @app.post("/ping")
-    async def ping(request: Request, response: Response, d=Depend(events)):
+    async def ping(request: HttpContext, d=Depend(events)):
         await d.dispatch(RoutePing(who=request.query_params.get("who", "anon")))
-        return response.json({"ok": True})
+        return json({"ok": True})
 
     async with AsyncTestClient(app) as client:
         resp = await client.post("/ping?who=router")
@@ -123,8 +124,8 @@ async def test_route_exposes_scheduler_stats_via_di():
     app = _make_app()
 
     @app.get("/scheduler-stats")
-    async def stats(request: Request, response: Response, s=Depend(scheduler)):
-        return response.json(s.stats.to_dict())
+    async def stats(request: HttpContext, s=Depend(scheduler)):
+        return json(s.stats.to_dict())
 
     async with AsyncTestClient(app) as client:
         resp = await client.get("/scheduler-stats")
@@ -140,8 +141,8 @@ async def test_route_reads_queue_size_via_di():
     await conn.push("default", "sample-payload")
 
     @app.get("/queue-size")
-    async def size(request: Request, response: Response, c=Depend(queue_connection)):
-        return response.json({"size": await c.size("default")})
+    async def size(request: HttpContext, c=Depend(queue_connection)):
+        return json({"size": await c.size("default")})
 
     async with AsyncTestClient(app) as client:
         resp = await client.get("/queue-size")

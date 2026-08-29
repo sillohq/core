@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext, json
 from sillo.middleware.base import BaseMiddleware
 
 
@@ -73,14 +73,14 @@ class AcceptsInfo:
         request: The HTTP request object whose headers are being inspected.
     """
 
-    def __init__(self, request: Request):
+    def __init__(self, request: HttpContext):
         """Initialize AcceptsInfo by binding it to a specific HTTP request.
 
         Sets up internal caches for the four Accept-family header categories
         and stores a reference to the request for lazy header parsing.
 
         Args:
-            request: The HTTP :class:`~sillo.http.Request` instance whose
+            request: The HTTP :class:`~sillo.http.HttpContext` instance whose
                 Accept-family headers will be inspected and parsed on demand.
 
         Returns:
@@ -636,7 +636,7 @@ def get_best_match(accept_header: str, options: list[str]) -> str | None:
     return options[0] if options else None
 
 
-def get_accepts_info(request: Request) -> dict[str, Any]:
+def get_accepts_info(request: HttpContext) -> dict[str, Any]:
     """Build a comprehensive dictionary of parsed Accept-family header data.
 
     Parses all four Accept-family headers (Accept, Accept-Language,
@@ -645,7 +645,7 @@ def get_accepts_info(request: Request) -> dict[str, Any]:
     in a single dictionary for convenient access.
 
     Args:
-        request: The HTTP :class:`~sillo.http.Request` instance whose
+        request: The HTTP :class:`~sillo.http.HttpContext` instance whose
             Accept-family headers should be parsed and collected.
 
     Returns:
@@ -706,7 +706,7 @@ def create_vary_header(existing_vary: str | None, new_fields: list[str]) -> str:
 
 
 def get_accepts_from_request(
-    request: Request, attribute_name: str = "accepts"
+    request: HttpContext, attribute_name: str = "accepts"
 ) -> AcceptsInfo:
     """Create an AcceptsInfo instance bound to the given HTTP request.
 
@@ -717,7 +717,7 @@ def get_accepts_from_request(
     request directly.
 
     Args:
-        request: The HTTP :class:`~sillo.http.Request` instance from which
+        request: The HTTP :class:`~sillo.http.HttpContext` instance from which
             Accept-family headers will be lazily parsed.
         attribute_name: The name of the attribute used to store the
             AcceptsInfo on the request state. Defaults to ``"accepts"``.
@@ -733,7 +733,7 @@ def get_accepts_from_request(
 
 
 def get_accepted_content_types(
-    request: Request, attribute_name: str = "accepts_parsed"
+    request: HttpContext, attribute_name: str = "accepts_parsed"
 ) -> list[str]:
     """Extract accepted content type values from pre-parsed request state.
 
@@ -742,7 +742,7 @@ def get_accepted_content_types(
     strings that have a quality factor greater than zero.
 
     Args:
-        request: The HTTP :class:`~sillo.http.Request` instance whose
+        request: The HTTP :class:`~sillo.http.HttpContext` instance whose
             state contains pre-parsed Accept header data, typically set
             by :class:`AcceptsMiddleware`.
         attribute_name: The name of the state attribute containing the
@@ -762,7 +762,7 @@ def get_accepted_content_types(
 
 
 def get_accepted_languages(
-    request: Request, attribute_name: str = "accepts_parsed"
+    request: HttpContext, attribute_name: str = "accepts_parsed"
 ) -> list[str]:
     """Extract accepted language tags from pre-parsed request state.
 
@@ -771,7 +771,7 @@ def get_accepted_languages(
     strings that have a quality factor greater than zero.
 
     Args:
-        request: The HTTP :class:`~sillo.http.Request` instance whose
+        request: The HTTP :class:`~sillo.http.HttpContext` instance whose
             state contains pre-parsed Accept-Language header data,
             typically set by :class:`AcceptsMiddleware`.
         attribute_name: The name of the state attribute containing the
@@ -791,7 +791,7 @@ def get_accepted_languages(
 
 
 def get_accepted_charsets(
-    request: Request, attribute_name: str = "accepts_parsed"
+    request: HttpContext, attribute_name: str = "accepts_parsed"
 ) -> list[str]:
     """Extract accepted charset names from pre-parsed request state.
 
@@ -800,7 +800,7 @@ def get_accepted_charsets(
     strings that have a quality factor greater than zero.
 
     Args:
-        request: The HTTP :class:`~sillo.http.Request` instance whose
+        request: The HTTP :class:`~sillo.http.HttpContext` instance whose
             state contains pre-parsed Accept-Charset header data,
             typically set by :class:`AcceptsMiddleware`.
         attribute_name: The name of the state attribute containing the
@@ -820,7 +820,7 @@ def get_accepted_charsets(
 
 
 def get_accepted_encodings(
-    request: Request, attribute_name: str = "accepts_parsed"
+    request: HttpContext, attribute_name: str = "accepts_parsed"
 ) -> list[str]:
     """Extract accepted encoding tokens from pre-parsed request state.
 
@@ -829,7 +829,7 @@ def get_accepted_encodings(
     token strings that have a quality factor greater than zero.
 
     Args:
-        request: The HTTP :class:`~sillo.http.Request` instance whose
+        request: The HTTP :class:`~sillo.http.HttpContext` instance whose
             state contains pre-parsed Accept-Encoding header data,
             typically set by :class:`AcceptsMiddleware`.
         attribute_name: The name of the state attribute containing the
@@ -849,7 +849,7 @@ def get_accepted_encodings(
 
 
 def get_best_accepted_content_type(
-    request: Request, available_types: list[str], attribute_name: str = "accepts_parsed"
+    request: HttpContext, available_types: list[str], attribute_name: str = "accepts_parsed"
 ) -> str | None:
     """Determine the best content type match from available options using request state.
 
@@ -858,7 +858,7 @@ def get_best_accepted_content_type(
     first available type that matches via :func:`matches_media_type`.
 
     Args:
-        request: The HTTP :class:`~sillo.http.Request` instance whose
+        request: The HTTP :class:`~sillo.http.HttpContext` instance whose
             state contains pre-parsed Accept header data.
         available_types: A list of media type strings the server can
             produce, e.g. ``["application/json", "text/html"]``.
@@ -882,7 +882,7 @@ def get_best_accepted_content_type(
 
 
 def get_best_accepted_language(
-    request: Request,
+    request: HttpContext,
     available_languages: list[str],
     attribute_name: str = "accepts_parsed",
 ) -> str | None:
@@ -894,7 +894,7 @@ def get_best_accepted_language(
     so that ``"en"`` can satisfy ``"en-US"`` and vice versa.
 
     Args:
-        request: The HTTP :class:`~sillo.http.Request` instance whose
+        request: The HTTP :class:`~sillo.http.HttpContext` instance whose
             state contains pre-parsed Accept-Language header data.
         available_languages: A list of language tag strings the server
             can serve, e.g. ``["en", "fr", "de"]``.
@@ -986,10 +986,8 @@ class AcceptsMiddleware(BaseMiddleware):
         self.store_accepts_info = store_accepts_info
         self.vary: list[str] = []
 
-    async def process_request(
-        self, request: Request, response: Response, call_next: Any
-    ) -> Any:
-        """Process an incoming request by parsing and storing Accept-family headers.
+    async def dispatch(self, ctx: HttpContext, call_next: Any) -> Any:
+        """Parse the Accept-family headers, then set Vary on the reply.
 
         When ``store_accepts_info`` is enabled, parses all four Accept-family
         headers and stores both a comprehensive info dictionary and a
@@ -998,21 +996,19 @@ class AcceptsMiddleware(BaseMiddleware):
         appropriate ``Vary`` headers can be set on the response.
 
         Args:
-            request: The incoming HTTP :class:`~sillo.http.Request` object
-                whose headers will be inspected and parsed.
-            response: The HTTP :class:`~sillo.http.Response` object that
-                will eventually be sent back to the client.
+            ctx: The context whose headers will be inspected and parsed.
             call_next: An async callable that invokes the next middleware
                 or request handler in the processing chain.
 
         Returns:
-            The result of calling the next handler in the chain, which
-            is typically a :class:`~sillo.http.Response` object.
+            The response from the rest of the chain, with ``Vary`` and
+            ``Content-Type`` set as configured.
 
         Raises:
             No exceptions are raised directly; any exceptions from the
             downstream handler are propagated unchanged.
         """
+        request = ctx
         if self.store_accepts_info:
             accepts_info = get_accepts_info(request)
             request.state.accepts = accepts_info
@@ -1037,10 +1033,12 @@ class AcceptsMiddleware(BaseMiddleware):
                 self.vary.append("Accept-Charset")
             if request.headers.get("Accept-Encoding"):
                 self.vary.append("Accept-Encoding")
-        return await call_next()
 
-    async def process_response(self, request: Request, response: Response) -> Any:
-        """Process the outgoing response by setting Vary and Content-Type headers.
+        response = await call_next()
+        return self._decorate(request, response)
+
+    def _decorate(self, request: HttpContext, response: Any) -> Any:
+        """Set the Vary and Content-Type headers on the outgoing response.
 
         If any Accept-family headers were detected in the request, adds
         corresponding ``Vary`` header fields to the response. If no
@@ -1049,18 +1047,20 @@ class AcceptsMiddleware(BaseMiddleware):
         header or falls back to the configured default.
 
         Args:
-            request: The original HTTP :class:`~sillo.http.Request` object
-                used to look up Accept headers for content negotiation.
-            response: The outgoing HTTP :class:`~sillo.http.Response` object
-                whose headers will be updated before sending to the client.
+            request: The context used to look up Accept headers for
+                content negotiation.
+            response: The outgoing response whose headers will be updated
+                before sending to the client.
 
         Returns:
-            The modified :class:`~sillo.http.Response` object with updated
-            ``Vary`` and ``Content-Type`` headers as appropriate.
+            The response, with ``Vary`` and ``Content-Type`` headers updated
+            as appropriate.
 
         Raises:
             No exceptions are raised during response processing.
         """
+        if response is None:
+            return None
         if self.vary:
             existing_vary = response.headers.get("Vary")
             response.set_header(
@@ -1139,7 +1139,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
 
     def negotiate_content_type(
         self,
-        request: Request,
+        request: HttpContext,
         available_types: list[str],
         default_type: str | None = None,
     ) -> str:
@@ -1151,7 +1151,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
         configured default content type.
 
         Args:
-            request: The HTTP :class:`~sillo.http.Request` instance whose
+            request: The HTTP :class:`~sillo.http.HttpContext` instance whose
                 Accept header will be used for negotiation.
             available_types: A list of media type strings the server can
                 produce, e.g. ``["application/json", "text/html"]``.
@@ -1175,7 +1175,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
 
     def negotiate_language(
         self,
-        request: Request,
+        request: HttpContext,
         available_languages: list[str],
         default_language: str | None = None,
     ) -> str:
@@ -1187,7 +1187,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
         language or the middleware's configured default language.
 
         Args:
-            request: The HTTP :class:`~sillo.http.Request` instance whose
+            request: The HTTP :class:`~sillo.http.HttpContext` instance whose
                 Accept-Language header will be used for negotiation.
             available_languages: A list of language tag strings the server
                 can serve, e.g. ``["en", "fr", "de"]``.
@@ -1256,10 +1256,8 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
         self.available_types = available_types
         self.available_languages = available_languages or ["en"]
 
-    async def process_request(
-        self, request: Request, response: Response, call_next: Any
-    ) -> Any:
-        """Process a request with strict content negotiation enforcement.
+    async def dispatch(self, ctx: HttpContext, call_next: Any) -> Any:
+        """Enforce strict content negotiation before running the chain.
 
         Negotiates the best content type and language for the request.
         If the client cannot accept any of the available content types
@@ -1268,22 +1266,21 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
         and proceeds to the next handler.
 
         Args:
-            request: The incoming HTTP :class:`~sillo.http.Request` object
-                whose Accept headers will be used for strict negotiation.
-            response: The HTTP :class:`~sillo.http.Response` object used
-                to send a 406 response if negotiation fails.
+            ctx: The context whose Accept headers will be used for strict
+                negotiation.
             call_next: An async callable that invokes the next middleware
                 or request handler in the processing chain.
 
         Returns:
-            Either an HTTP 406 :class:`~sillo.http.Response` if the client
-            cannot accept any available types, or the result of calling
-            the next handler in the chain.
+            Either an HTTP 406 response if the client cannot accept any
+            available types, or the result of calling the next handler in
+            the chain.
 
         Raises:
             No exceptions are raised directly; any exceptions from the
             downstream handler are propagated unchanged.
         """
+        request = ctx
         best_type = self.negotiate_content_type(
             request, self.available_types, self.default_content_type
         )
@@ -1294,7 +1291,7 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
             # discarded and this shipped a "Not Acceptable" body under a 200,
             # leaving clients to treat the error as a successful payload.
             # json() also sets the content type, so no header call is needed.
-            return response.json(
+            return json(
                 {
                     "error": "Not Acceptable",
                     "message": "Client does not accept any available content types",
@@ -1304,7 +1301,7 @@ class StrictContentNegotiationMiddleware(ContentNegotiationMiddleware):
             )
         # Attached dynamically for downstream handlers to read. These were
         # written with setattr(), which only had the effect of hiding them from
-        # the type checker — they are not declared on Request either way.
+        # the type checker — they are not declared on HttpContext either way.
         request.negotiated_content_type = best_type  # ty: ignore[unresolved-attribute]
         best_language = self.negotiate_language(
             request, self.available_languages, self.default_language

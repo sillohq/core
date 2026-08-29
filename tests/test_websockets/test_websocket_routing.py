@@ -1,5 +1,5 @@
 """
-Tests for WebSocket routing functionality
+Tests for WebSocketContext routing functionality
 """
 
 from typing import Callable
@@ -9,15 +9,15 @@ import pytest
 from sillo import SilloApp
 from sillo.core.routing import Router
 from sillo.testclient import TestClient
-from sillo.websockets import WebSocket
+from sillo.websockets import WebSocketContext
 
 
 def test_basic_websocket_route(test_client_factory: Callable[[SilloApp], TestClient]):
-    """Test basic WebSocket route"""
+    """Test basic WebSocketContext route"""
     app = SilloApp()
 
     @app.ws_route("/ws")
-    async def websocket_endpoint(websocket: WebSocket):
+    async def websocket_endpoint(websocket: WebSocketContext):
         await websocket.accept()
         data = await websocket.receive_text()
         await websocket.send_text(f"Echo: {data}")
@@ -33,11 +33,11 @@ def test_basic_websocket_route(test_client_factory: Callable[[SilloApp], TestCli
 def test_websocket_json_communication(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocket JSON message exchange"""
+    """Test WebSocketContext JSON message exchange"""
     app = SilloApp()
 
     @app.ws_route("/ws/json")
-    async def websocket_json(websocket: WebSocket):
+    async def websocket_json(websocket: WebSocketContext):
         await websocket.accept()
         data = await websocket.receive_json()
         await websocket.send_json({"received": data, "status": "ok"})
@@ -55,11 +55,11 @@ def test_websocket_json_communication(
 def test_websocket_bytes_communication(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocket binary message exchange"""
+    """Test WebSocketContext binary message exchange"""
     app = SilloApp()
 
     @app.ws_route("/ws/bytes")
-    async def websocket_bytes(websocket: WebSocket):
+    async def websocket_bytes(websocket: WebSocketContext):
         await websocket.accept()
         data = await websocket.receive_bytes()
         await websocket.send_bytes(b"Received: " + data)
@@ -75,11 +75,11 @@ def test_websocket_bytes_communication(
 def test_websocket_with_path_parameters(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocket route with path parameters"""
+    """Test WebSocketContext route with path parameters"""
     app = SilloApp()
 
     @app.ws_route("/ws/room/{room_id}")
-    async def websocket_room(websocket: WebSocket):
+    async def websocket_room(websocket: WebSocketContext):
         room_id = websocket.path_params["room_id"]
         await websocket.accept()
         await websocket.send_json({"room": room_id, "status": "connected"})
@@ -95,11 +95,11 @@ def test_websocket_with_path_parameters(
 def test_websocket_multiple_messages(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocket with multiple message exchanges"""
+    """Test WebSocketContext with multiple message exchanges"""
     app = SilloApp()
 
     @app.ws_route("/ws/chat")
-    async def websocket_chat(websocket: WebSocket):
+    async def websocket_chat(websocket: WebSocketContext):
         await websocket.accept()
         for i in range(3):
             data = await websocket.receive_text()
@@ -121,12 +121,12 @@ def test_websocket_multiple_messages(
 def test_websocket_router_mounting(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocket router mounting"""
+    """Test WebSocketContext router mounting"""
     app = SilloApp()
     ws_router = Router(prefix="/api/ws")
 
     @ws_router.ws_route("/echo")
-    async def echo_endpoint(websocket: WebSocket):
+    async def echo_endpoint(websocket: WebSocketContext):
         await websocket.accept()
         data = await websocket.receive_text()
         await websocket.send_text(f"Router echo: {data}")
@@ -144,13 +144,13 @@ def test_websocket_router_mounting(
 def test_websocket_multiple_routers(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test multiple WebSocket routers"""
+    """Test multiple WebSocketContext routers"""
     app = SilloApp()
 
     chat_router = Router(prefix="/chat")
 
     @chat_router.ws_route("/room")
-    async def chat_room(websocket: WebSocket):
+    async def chat_room(websocket: WebSocketContext):
         await websocket.accept()
         await websocket.send_text("Chat room")
         await websocket.close()
@@ -158,7 +158,7 @@ def test_websocket_multiple_routers(
     api_router = Router(prefix="/api")
 
     @api_router.ws_route("/status")
-    async def api_status(websocket: WebSocket):
+    async def api_status(websocket: WebSocketContext):
         await websocket.accept()
         await websocket.send_json({"status": "online"})
         await websocket.close()
@@ -178,13 +178,13 @@ def test_websocket_multiple_routers(
 def test_websocket_nested_routers(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test nested WebSocket routers"""
+    """Test nested WebSocketContext routers"""
     app = SilloApp()
 
     inner_router = Router(prefix="/v1")
 
     @inner_router.ws_route("/endpoint")
-    async def inner_endpoint(websocket: WebSocket):
+    async def inner_endpoint(websocket: WebSocketContext):
         await websocket.accept()
         await websocket.send_text("Nested endpoint")
         await websocket.close()
@@ -203,11 +203,11 @@ def test_websocket_nested_routers(
 def test_websocket_with_query_parameters(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocket with query parameters"""
+    """Test WebSocketContext with query parameters"""
     app = SilloApp()
 
     @app.ws_route("/ws/query")
-    async def websocket_query(websocket: WebSocket):
+    async def websocket_query(websocket: WebSocketContext):
         await websocket.accept()
         query_params = dict(websocket.query_params)
         await websocket.send_json(query_params)
@@ -221,13 +221,13 @@ def test_websocket_with_query_parameters(
 
 
 def test_websocket_isolation(test_client_factory: Callable[[SilloApp], TestClient]):
-    """Test that WebSocket routes are isolated"""
+    """Test that WebSocketContext routes are isolated"""
     app = SilloApp()
 
     router1 = Router(prefix="/ws1")
 
     @router1.ws_route("/test")
-    async def ws1_test(websocket: WebSocket):
+    async def ws1_test(websocket: WebSocketContext):
         await websocket.accept()
         await websocket.send_text("Router 1")
         await websocket.close()
@@ -235,7 +235,7 @@ def test_websocket_isolation(test_client_factory: Callable[[SilloApp], TestClien
     router2 = Router(prefix="/ws2")
 
     @router2.ws_route("/test")
-    async def ws2_test(websocket: WebSocket):
+    async def ws2_test(websocket: WebSocketContext):
         await websocket.accept()
         await websocket.send_text("Router 2")
         await websocket.close()

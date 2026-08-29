@@ -1,5 +1,6 @@
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.http import ETag, ETagMiddleware, generate_etag_from_bytes
 from sillo.testclient import TestClient
 
@@ -9,8 +10,8 @@ def test_etag_middleware_sets_etag_on_get():
     app.use(ETagMiddleware())
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "Hello, World!"})
+    async def handler(request: HttpContext):
+        return json({"message": "Hello, World!"})
 
     client = TestClient(app)
     resp = client.get("/test")
@@ -24,8 +25,8 @@ def test_etag_middleware_ignores_post_by_default():
     app.use(ETagMiddleware())
 
     @app.post("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "Hello, World!"})
+    async def handler(request: HttpContext):
+        return json({"message": "Hello, World!"})
 
     client = TestClient(app)
     resp = client.post("/test", json={"data": "test"})
@@ -39,8 +40,8 @@ def test_etag_middleware_honors_existing_etag():
     app.use(ETag())
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"ok": True}).set_header("etag", '"custom-etag"')
+    async def handler(request: HttpContext):
+        return json({"ok": True}).set_header("etag", '"custom-etag"')
 
     client = TestClient(app)
     resp = client.get("/test")
@@ -53,8 +54,8 @@ def test_etag_conditional_get_returns_304():
     app.use(ETagMiddleware())
 
     @app.get("/test")
-    async def handler(request: Request, response: Response):
-        return response.json({"message": "Hello, World!"})
+    async def handler(request: HttpContext):
+        return json({"message": "Hello, World!"})
 
     client = TestClient(app)
     first = client.get("/test")

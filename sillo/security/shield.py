@@ -12,7 +12,8 @@ Usage::
 """
 
 from sillo.middleware.base import BaseMiddleware
-from sillo.types import Request, Response
+from sillo.core.http import redirect as _redirect
+from sillo.types import HttpContext
 
 
 class Shield(BaseMiddleware):
@@ -151,17 +152,20 @@ class Shield(BaseMiddleware):
                 policies.append(f"{feature}=({' '.join(setting)})")
         return ", ".join(policies)
 
-    async def __call__(self, request: Request, response: Response, call_next):
-        """Call"""
+    async def dispatch(self, ctx: HttpContext, call_next):
+        """Redirect to HTTPS if configured, then stamp the security headers."""
+        request = ctx
         if self.ssl_redirect and request.url.scheme != "https":
             redirect_url = (
                 f"https://{self.ssl_host or request.url.hostname}{request.url.path}"
             )
-            return response.redirect(
-                url=redirect_url, status_code=301 if self.ssl_permanent else 302
+            return _redirect(
+                redirect_url, status_code=301 if self.ssl_permanent else 302
             )
 
-        await call_next()
+        response = await call_next()
+        if response is None:
+            return None
 
         headers = dict(response.headers)
 

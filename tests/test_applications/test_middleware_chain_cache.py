@@ -13,7 +13,8 @@ from a startup hook, after the chain already exists.
 """
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import json
+from sillo.core.http import HttpContext
 from sillo.middleware.base import BaseMiddleware
 from sillo.testclient import TestClient
 
@@ -24,7 +25,7 @@ class Tagging(BaseMiddleware):
     def __init__(self, tag):
         self.tag = tag
 
-    async def process_request(self, request, response, call_next):
+    async def dispatch(self, request, call_next):
         # On the way in, so the handler can see it: the handler is innermost
         # and has already serialized by the time the stack unwinds.
         request.scope.setdefault("tags", []).append(self.tag)
@@ -35,8 +36,8 @@ def _app():
     app = SilloApp()
 
     @app.get("/ping")
-    async def ping(request: Request, response: Response):
-        return response.json({"tags": request.scope.get("tags", [])})
+    async def ping(request: HttpContext):
+        return json({"tags": request.scope.get("tags", [])})
 
     return app
 
@@ -139,8 +140,8 @@ class TestRoutesDoNotNeedARebuild:
             chain = app._request_chain
 
             @app.get("/added-later")
-            async def later(request: Request, response: Response):
-                return response.json({"ok": True})
+            async def later(request: HttpContext):
+                return json({"ok": True})
 
             assert client.get("/added-later").status_code == 200
             # No rebuild was needed to see it.
@@ -151,8 +152,8 @@ class TestRoutesDoNotNeedARebuild:
 
         async def register():
             @app.get("/from-startup")
-            async def from_startup(request: Request, response: Response):
-                return response.json({"ok": True})
+            async def from_startup(request: HttpContext):
+                return json({"ok": True})
 
         app.on_startup(register)
 

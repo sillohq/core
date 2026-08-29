@@ -14,6 +14,7 @@ from functools import partial
 import pytest
 
 from sillo.application import SilloApp
+from sillo import json
 from sillo.auth import (
     useAuth,
     AuthenticationMiddleware,
@@ -23,7 +24,7 @@ from sillo.auth import (
     decode_jwt,
 )
 from sillo.users import SimpleUser
-from sillo.core.http import Request, Response
+from sillo.core.http import HttpContext
 from sillo.testclient import AsyncTestClient
 
 
@@ -103,8 +104,8 @@ async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected_route(req: Request, res: Response):
-        return res.json(
+    async def protected_route(req: HttpContext):
+        return json(
             {"user_id": req.user.identity, "username": req.user.display_name}
         )
 
@@ -125,8 +126,8 @@ async def test_jwt_auth_backend_missing_header(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected_route(req: Request, res: Response):
-        return res.json(
+    async def protected_route(req: HttpContext):
+        return json(
             {"user_id": req.user.identity, "username": req.user.display_name}
         )
 
@@ -147,8 +148,8 @@ async def test_jwt_auth_backend_missing_header(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected(req: HttpContext):
+        return json({"user": req.user})
 
     client = test_client(app)
     async with client:
@@ -162,8 +163,8 @@ async def test_jwt_auth_backend_invalid_header_format(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected(req: HttpContext):
+        return json({"user": req.user})
 
     client = test_client(app)
     async with client:
@@ -177,8 +178,8 @@ async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected(req: HttpContext):
+        return json({"user": req.user})
 
     client = test_client(app)
     async with client:
@@ -194,8 +195,8 @@ async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected(req: HttpContext):
+        return json({"user": req.user})
 
     client = test_client(app)
     async with client:
@@ -211,8 +212,8 @@ async def test_jwt_auth_backend_user_not_found(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected(req: HttpContext):
+        return json({"user": req.user})
 
     payload = {"id": "999", "username": "ghost"}
     token = create_jwt(payload, SECRET)
@@ -231,8 +232,8 @@ async def test_jwt_auth_backend_wrong_identifier_field(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: Request, res: Response):
-        return res.json({"user": req.user})
+    async def protected(req: HttpContext):
+        return json({"user": req.user})
 
     payload = {"user_id": "1", "username": "testuser"}
     token = create_jwt(payload, SECRET)

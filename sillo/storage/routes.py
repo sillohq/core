@@ -32,6 +32,7 @@ from urllib.parse import unquote
 
 from .config import StorageConfig
 from .errors import FileNotFound, PolicyRefused, SignatureInvalid, UnsafeKey
+from sillo.core.http import json, text, html, redirect, file, stream, sse, download, empty, abort, not_found
 
 __all__ = ["mount"]
 
@@ -70,7 +71,7 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
     """
     route = config.route.rstrip("/")
 
-    async def serve(request, response, bucket: str, key: str):
+    async def serve(request, bucket: str, key: str):
         """Serve one object, if the caller may have it.
 
         Args:
@@ -85,7 +86,7 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
         try:
             held = storage.bucket(bucket)
         except KeyError:
-            return response.json({"detail": "Not found"}, status_code=404)
+            return json({"detail": "Not found"}, status_code=404)
 
         signed = False
         token = (
@@ -99,7 +100,7 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
                 held.driver._signer.verify(token, key=key, method="GET")
                 signed = True
             except (SignatureInvalid, AttributeError):
-                return response.json({"detail": "Not found"}, status_code=404)
+                return json({"detail": "Not found"}, status_code=404)
 
         try:
             info = await held.stat(key, user=_user(request), signed=signed)
@@ -107,9 +108,9 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
             # One answer for "no such object" and "not yours". A 403 on a
             # private bucket confirms the object exists, which is half of what
             # somebody probing for it wants to know.
-            return response.json({"detail": "Not found"}, status_code=404)
+            return json({"detail": "Not found"}, status_code=404)
         except PolicyRefused:
-            return response.json({"detail": "Not found"}, status_code=404)
+            return json({"detail": "Not found"}, status_code=404)
 
         disposition = "inline" if info.content_type in INLINE else "attachment"
         filename = key.rsplit("/", 1)[-1]
@@ -126,7 +127,7 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
             **dict(GUARDS),
         }
 
-        return response.stream(
+        return stream(
             held.get(key, user=_user(request), signed=signed),
             content_type=info.content_type,
             headers=headers,

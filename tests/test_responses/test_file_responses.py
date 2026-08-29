@@ -10,7 +10,8 @@ from typing import Callable
 import pytest
 
 from sillo import SilloApp
-from sillo.core.http import Request, Response
+from sillo import download, file, json
+from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
 # ========== File Response Tests ==========
@@ -28,8 +29,8 @@ def test_file_response(test_client_factory: Callable[[SilloApp], TestClient]):
     try:
 
         @app.get("/file")
-        async def serve_file(request: Request, response: Response):
-            return response.file(temp_path)
+        async def serve_file(request: HttpContext):
+            return file(temp_path)
 
         with test_client_factory(app) as client:
             resp = client.get("/file")
@@ -52,8 +53,8 @@ def test_file_response_with_custom_filename(
     try:
 
         @app.get("/custom-file")
-        async def serve_custom_file(request: Request, response: Response):
-            return response.file(temp_path, filename="custom_name.txt")
+        async def serve_custom_file(request: HttpContext):
+            return file(temp_path, filename="custom_name.txt")
 
         with test_client_factory(app) as client:
             resp = client.get("/custom-file")
@@ -78,8 +79,8 @@ def test_file_response_content_type(
     try:
 
         @app.get("/json-file")
-        async def serve_json_file(request: Request, response: Response):
-            return response.file(temp_path)
+        async def serve_json_file(request: HttpContext):
+            return file(temp_path)
 
         with test_client_factory(app) as client:
             resp = client.get("/json-file")
@@ -105,8 +106,8 @@ def test_file_response_inline_disposition(
     try:
 
         @app.get("/inline")
-        async def serve_inline(request: Request, response: Response):
-            return response.file(temp_path, content_disposition_type="inline")
+        async def serve_inline(request: HttpContext):
+            return file(temp_path, content_disposition_type="inline")
 
         with test_client_factory(app) as client:
             resp = client.get("/inline")
@@ -131,8 +132,8 @@ def test_download_response(test_client_factory: Callable[[SilloApp], TestClient]
     try:
 
         @app.get("/download")
-        async def download_file(request: Request, response: Response):
-            return response.download(temp_path)
+        async def download_file(request: HttpContext):
+            return download(temp_path)
 
         with test_client_factory(app) as client:
             resp = client.get("/download")
@@ -156,8 +157,8 @@ def test_download_with_custom_filename(
     try:
 
         @app.get("/download-csv")
-        async def download_csv(request: Request, response: Response):
-            return response.download(temp_path, filename="data.csv")
+        async def download_csv(request: HttpContext):
+            return download(temp_path, filename="data.csv")
 
         with test_client_factory(app) as client:
             resp = client.get("/download-csv")
@@ -185,8 +186,8 @@ def test_large_file_response(test_client_factory: Callable[[SilloApp], TestClien
     try:
 
         @app.get("/large-file")
-        async def serve_large_file(request: Request, response: Response):
-            return response.file(temp_path)
+        async def serve_large_file(request: HttpContext):
+            return file(temp_path)
 
         with test_client_factory(app) as client:
             resp = client.get("/large-file")
@@ -212,8 +213,8 @@ def test_binary_file_response(test_client_factory: Callable[[SilloApp], TestClie
     try:
 
         @app.get("/binary")
-        async def serve_binary(request: Request, response: Response):
-            return response.file(temp_path)
+        async def serve_binary(request: HttpContext):
+            return file(temp_path)
 
         with test_client_factory(app) as client:
             resp = client.get("/binary")
@@ -231,8 +232,8 @@ def test_file_not_found(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/missing-file")
-    async def serve_missing_file(request: Request, response: Response):
-        return response.file("/nonexistent/path/file.txt")
+    async def serve_missing_file(request: HttpContext):
+        return file("/nonexistent/path/file.txt")
 
     with test_client_factory(app) as client:
         # This should raise an error or return 404
@@ -262,8 +263,8 @@ def test_file_content_length_header(
     try:
 
         @app.get("/file-length")
-        async def serve_file_length(request: Request, response: Response):
-            return response.file(temp_path)
+        async def serve_file_length(request: HttpContext):
+            return file(temp_path)
 
         with test_client_factory(app) as client:
             resp = client.get("/file-length")
@@ -291,8 +292,8 @@ def test_file_accept_ranges_header(
     try:
 
         @app.get("/ranges")
-        async def serve_with_ranges(request: Request, response: Response):
-            return response.file(temp_path)
+        async def serve_with_ranges(request: HttpContext):
+            return file(temp_path)
 
         with test_client_factory(app) as client:
             resp = client.get("/ranges")
@@ -304,7 +305,7 @@ def test_file_accept_ranges_header(
         os.unlink(temp_path)
 
 
-# ========== Range Request Tests ==========
+# ========== Range HttpContext Tests ==========
 
 
 @pytest.fixture
@@ -320,8 +321,8 @@ def range_app(request: pytest.FixtureRequest):
     app = SilloApp()
 
     @app.get("/asset")
-    async def serve_asset(req: Request, response: Response):
-        return response.file(temp_path)
+    async def serve_asset(req: HttpContext):
+        return file(temp_path)
 
     return app, payload
 
@@ -509,8 +510,8 @@ def test_set_body_keeps_content_length_in_step(
     app = SilloApp()
 
     @app.get("/rewritten")
-    async def rewritten(request: Request, response: Response):
-        response.json({"message": "hi"})
+    async def rewritten(request: HttpContext):
+        response = json({"message": "hi"})
         response.set_body(b'{"message":"a considerably longer body than before"}')
         return response
 
@@ -533,8 +534,8 @@ def test_set_header_override_keeps_headers_mapping_live(
     app = SilloApp()
 
     @app.get("/headers")
-    async def headers(request: Request, response: Response):
-        inner = response.json({"ok": True}).get_response()
+    async def headers(request: HttpContext):
+        inner = json({"ok": True})
         inner.headers["x-first"] = "1"  # builds the cached view
         inner.set_header("x-second", "2", override=True)  # used to rebind
         inner.headers["x-third"] = "3"  # must still reach the wire

@@ -11,7 +11,7 @@ from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 
 if typing.TYPE_CHECKING:
-    from sillo.core.http import Request
+    from sillo.core.http import HttpContext
 
 __all__ = [
     "Cookie",
@@ -251,7 +251,7 @@ class ParameterExtractor:
         default = ... if (self.default is ... or self.required) else self.default
         return Field(default, **kwargs)
 
-    def extract(self, request: Request | None) -> Any:
+    def extract(self, request: HttpContext | None) -> Any:
         """Extract this parameter's value from the request (legacy path).
 
         Subclasses that read from a synchronously-available part of the request
@@ -271,7 +271,7 @@ class ParameterExtractor:
         """
         raise NotImplementedError
 
-    def _extract_from(self, source: Any, request: Request | None) -> Any:
+    def _extract_from(self, source: Any, request: HttpContext | None) -> Any:
         """Look a value up in a mapping and apply legacy coercion.
 
         Shared implementation behind ``Query.extract``, ``Header.extract``, and
@@ -397,7 +397,7 @@ class Query(ParameterExtractor):
     Reads from the portion of the URL after ``?``. Used as a handler parameter
     default::
 
-        async def handler(request, response, page=Query(1, type=int, ge=1)):
+        async def handler(ctx, page=Query(1, type=int, ge=1)):
             ...
 
     Attributes:
@@ -406,7 +406,7 @@ class Query(ParameterExtractor):
 
     location = ParameterLocation.QUERY
 
-    def extract(self, request: Request | None) -> Any:
+    def extract(self, request: HttpContext | None) -> Any:
         """Read this parameter from the request's query string.
 
         Args:
@@ -436,7 +436,7 @@ class Header(ParameterExtractor):
 
     location = ParameterLocation.HEADER
 
-    def extract(self, request: Request | None) -> Any:
+    def extract(self, request: HttpContext | None) -> Any:
         """Read this parameter from the request's headers.
 
         Args:
@@ -462,7 +462,7 @@ class Cookie(ParameterExtractor):
 
     location = ParameterLocation.COOKIE
 
-    def extract(self, request: Request | None) -> Any:
+    def extract(self, request: HttpContext | None) -> Any:
         """Read this parameter from the request's cookies.
 
         Args:
@@ -497,7 +497,7 @@ class Path(ParameterExtractor):
 
     location = ParameterLocation.PATH
 
-    def extract(self, request: Request | None) -> Any:
+    def extract(self, request: HttpContext | None) -> Any:
         """Read this parameter from the request's matched path parameters.
 
         Args:
@@ -644,7 +644,7 @@ def solve_params(handler: Any) -> list[SolvedParamDependency]:
 
 async def resolve_param(
     param_dep: SolvedParamDependency,
-    request: Request | None = None,
+    request: HttpContext | None = None,
 ) -> Any:
     """Resolve a single parameter dependency by extracting its value.
 
