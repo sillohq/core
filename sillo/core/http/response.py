@@ -8,14 +8,13 @@ import os
 import stat
 import typing
 from base64 import b64encode
-from collections.abc import AsyncIterable, AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime, formatdate
 from functools import partial
 from hashlib import sha1
 from pathlib import Path
 from typing import (
-    Annotated,
     Any,
     ClassVar,
     Union,
@@ -25,22 +24,10 @@ from urllib.parse import quote
 import anyio
 import anyio.to_thread
 from anyio import AsyncFile
-from typing_extensions import Doc
 
 from sillo.core.encoding import jsonable_encoder
-from sillo.core.http.context import ClientDisconnect, HttpContext
-from sillo.exceptions import HTTPException, NotFoundException
+from sillo.core.http.context import ClientDisconnect
 from sillo.objects import MutableHeaders
-from sillo.pagination import (
-    AsyncListDataHandler,
-    AsyncPaginator,
-    BasePaginationStrategy,
-    CursorPagination,
-    LimitOffsetPagination,
-    PageNumberPagination,
-    SyncListDataHandler,
-    SyncPaginator,
-)
 
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
@@ -645,9 +632,7 @@ class BaseResponse:
             self.set_cookie(**cookie)
         return self
 
-    def set_permanent_cookie(
-        self, key: str, value: str, **kwargs: Any
-    ) -> BaseResponse:
+    def set_permanent_cookie(self, key: str, value: str, **kwargs: Any) -> BaseResponse:
         """Set a cookie that expires ten years out. Returns ``self``."""
         expires = datetime.now(timezone.utc) + timedelta(days=365 * 10)
         return self.set_cookie(key, value, expires=expires, **kwargs)

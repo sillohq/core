@@ -8,8 +8,9 @@ subclassing :class:`AuthBackend`.
 
 from __future__ import annotations
 
-from .default_user import AdminUser
 from sillo.core.http import redirect
+
+from .default_user import AdminUser
 
 
 class AuthBackend:

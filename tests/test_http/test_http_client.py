@@ -166,7 +166,7 @@ class TestCacheConfig:
 
     def test_disabled_policy_blocks_read_and_write(self):
         cc = CacheConfig(policy=CachePolicy.DISABLED)
-        mock_req = MagicMock(spec=HttpContext)
+        mock_req = MagicMock(spec=Request)
         mock_req.method = "GET"
         mock_resp = MagicMock(spec=Response)
         mock_resp.request.method = "GET"
@@ -176,7 +176,7 @@ class TestCacheConfig:
 
     def test_read_only_blocks_write(self):
         cc = CacheConfig(policy=CachePolicy.READ_ONLY)
-        mock_req = MagicMock(spec=HttpContext)
+        mock_req = MagicMock(spec=Request)
         mock_req.method = "GET"
         mock_resp = MagicMock(spec=Response)
         mock_resp.request.method = "GET"
@@ -186,7 +186,7 @@ class TestCacheConfig:
 
     def test_write_only_blocks_read(self):
         cc = CacheConfig(policy=CachePolicy.WRITE_ONLY)
-        mock_req = MagicMock(spec=HttpContext)
+        mock_req = MagicMock(spec=Request)
         mock_req.method = "GET"
         mock_resp = MagicMock(spec=Response)
         mock_resp.request.method = "GET"
@@ -212,44 +212,44 @@ class TestCacheConfig:
 
 class TestCacheKeyBuilder:
     def test_build_minimal(self):
-        req = HttpContext("GET", "https://example.com/resource")
+        req = Request("GET", "https://example.com/resource")
         key = CacheKeyBuilder.build(req)
         assert isinstance(key, str)
         assert len(key) == 64
 
     def test_build_with_prefix(self):
-        req = HttpContext("GET", "https://example.com/resource")
+        req = Request("GET", "https://example.com/resource")
         key = CacheKeyBuilder.build(req, prefix="myapp")
         assert key.startswith("myapp:")
 
     def test_different_methods_different_keys(self):
-        req1 = HttpContext("GET", "https://example.com/resource")
-        req2 = HttpContext("POST", "https://example.com/resource")
+        req1 = Request("GET", "https://example.com/resource")
+        req2 = Request("POST", "https://example.com/resource")
         k1 = CacheKeyBuilder.build(req1)
         k2 = CacheKeyBuilder.build(req2)
         assert k1 != k2
 
     def test_different_urls_different_keys(self):
-        req1 = HttpContext("GET", "https://example.com/a")
-        req2 = HttpContext("GET", "https://example.com/b")
+        req1 = Request("GET", "https://example.com/a")
+        req2 = Request("GET", "https://example.com/b")
         k1 = CacheKeyBuilder.build(req1)
         k2 = CacheKeyBuilder.build(req2)
         assert k1 != k2
 
     def test_same_input_same_key(self):
-        req1 = HttpContext("GET", "https://example.com/resource")
-        req2 = HttpContext("GET", "https://example.com/resource")
+        req1 = Request("GET", "https://example.com/resource")
+        req2 = Request("GET", "https://example.com/resource")
         assert CacheKeyBuilder.build(req1) == CacheKeyBuilder.build(req2)
 
     def test_with_query_string(self):
-        req1 = HttpContext("GET", "https://example.com/resource?page=1")
-        req2 = HttpContext("GET", "https://example.com/resource?page=2")
+        req1 = Request("GET", "https://example.com/resource?page=1")
+        req2 = Request("GET", "https://example.com/resource?page=2")
         assert CacheKeyBuilder.build(req1) != CacheKeyBuilder.build(req2)
 
     def test_with_headers_in_key(self):
-        req1 = HttpContext("GET", "https://example.com/resource")
+        req1 = Request("GET", "https://example.com/resource")
         req1.headers["accept"] = "application/json"
-        req2 = HttpContext("GET", "https://example.com/resource")
+        req2 = Request("GET", "https://example.com/resource")
         req2.headers["accept"] = "text/html"
         key1 = CacheKeyBuilder.build(req1, include_headers=True, cache_key_headers=["accept"])
         key2 = CacheKeyBuilder.build(req2, include_headers=True, cache_key_headers=["accept"])
@@ -267,12 +267,12 @@ class TestHTTPCache:
         return HTTPCache(memory_backend, config=config)
 
     async def test_get_missing(self, http_cache):
-        req = HttpContext("GET", "https://example.com/resource")
+        req = Request("GET", "https://example.com/resource")
         result = await http_cache.get(req)
         assert result is _MISSING
 
     async def test_set_and_get(self, http_cache):
-        req = HttpContext("GET", "https://example.com/resource")
+        req = Request("GET", "https://example.com/resource")
         resp = Response(200, json={"key": "value"}, request=req)
         await http_cache.set(req, resp)
         cached = await http_cache.get(req)
@@ -281,9 +281,9 @@ class TestHTTPCache:
         assert json.loads(cached.body) == {"key": "value"}
 
     async def test_set_and_get_multiple(self, http_cache):
-        req1 = HttpContext("GET", "https://example.com/a")
+        req1 = Request("GET", "https://example.com/a")
         resp1 = Response(200, json={"id": 1}, request=req1)
-        req2 = HttpContext("GET", "https://example.com/b")
+        req2 = Request("GET", "https://example.com/b")
         resp2 = Response(200, json={"id": 2}, request=req2)
         await http_cache.set(req1, resp1)
         await http_cache.set(req2, resp2)
@@ -293,7 +293,7 @@ class TestHTTPCache:
         assert json.loads(c2.body) == {"id": 2}
 
     async def test_invalidate(self, http_cache):
-        req = HttpContext("GET", "https://example.com/resource")
+        req = Request("GET", "https://example.com/resource")
         resp = Response(200, json={"x": 1}, request=req)
         await http_cache.set(req, resp)
         assert await http_cache.get(req) is not _MISSING
@@ -301,8 +301,8 @@ class TestHTTPCache:
         assert await http_cache.get(req) is _MISSING
 
     async def test_clear(self, http_cache):
-        req1 = HttpContext("GET", "https://example.com/a")
-        req2 = HttpContext("GET", "https://example.com/b")
+        req1 = Request("GET", "https://example.com/a")
+        req2 = Request("GET", "https://example.com/b")
         await http_cache.set(req1, Response(200, json={"a": 1}, request=req1))
         await http_cache.set(req2, Response(200, json={"b": 2}, request=req2))
         await http_cache.clear()
@@ -310,7 +310,7 @@ class TestHTTPCache:
         assert await http_cache.get(req2) is _MISSING
 
     async def test_custom_ttl(self, http_cache):
-        req = HttpContext("GET", "https://example.com/resource")
+        req = Request("GET", "https://example.com/resource")
         resp = Response(200, json={"x": 1}, request=req)
         await http_cache.set(req, resp, ttl=10)
         cached = await http_cache.get(req)
@@ -319,8 +319,8 @@ class TestHTTPCache:
     async def test_invalidate_tags(self, memory_backend):
         config = CacheConfig(ttl=120, tags=["group-a"])
         http_cache = HTTPCache(memory_backend, config=config)
-        req1 = HttpContext("GET", "https://example.com/a")
-        req2 = HttpContext("GET", "https://example.com/b")
+        req1 = Request("GET", "https://example.com/a")
+        req2 = Request("GET", "https://example.com/b")
         await http_cache.set(req1, Response(200, json={"a": 1}, request=req1))
         await http_cache.set(req2, Response(200, json={"b": 2}, request=req2))
         assert await http_cache.get(req1) is not _MISSING
@@ -344,7 +344,7 @@ class TestHTTPCache:
 
 class TestCachedResponse:
     def test_from_httpx_response(self):
-        req = HttpContext("GET", "https://example.com/resource")
+        req = Request("GET", "https://example.com/resource")
         resp = Response(200, json={"key": "value"}, headers={"content-type": "application/json"}, request=req)
         cached = CachedResponse.from_httpx_response(resp, ttl=300)
         assert cached.status_code == 200
@@ -356,13 +356,13 @@ class TestCachedResponse:
         assert json.loads(cached.body) == {"key": "value"}
 
     def test_from_httpx_without_request(self):
-        req = HttpContext("GET", "https://example.com/data")
+        req = Request("GET", "https://example.com/data")
         resp = Response(200, json={"x": 1}, request=req)
         cached = CachedResponse.from_httpx_response(resp)
         assert cached.url == "https://example.com/data"
 
     def test_to_json_dict_and_from_json_dict_roundtrip(self):
-        req = HttpContext("GET", "https://example.com/resource")
+        req = Request("GET", "https://example.com/resource")
         resp = Response(200, json={"key": "value"}, request=req)
         cached = CachedResponse.from_httpx_response(resp, ttl=60)
         data = cached.to_json_dict()
@@ -374,7 +374,7 @@ class TestCachedResponse:
         assert restored.body == cached.body
 
     def test_to_json_dict_mode(self):
-        req = HttpContext("GET", "https://example.com/r")
+        req = Request("GET", "https://example.com/r")
         resp = Response(200, json={"n": 42}, request=req)
         cached = CachedResponse.from_httpx_response(resp)
         d = cached.to_json_dict()
@@ -520,7 +520,7 @@ class TestHTTPClientStats:
 
 class TestMiddlewareChain:
     async def test_no_middleware(self):
-        request = HttpContext("GET", "https://example.com")
+        request = Request("GET", "https://example.com")
 
         async def final_send(req):
             yield Response(200, json={"ok": True})
@@ -550,7 +550,7 @@ class TestMiddlewareChain:
         logger.addHandler(test_handler)
 
         mw = LoggingMiddleware(logger=logger)
-        request = HttpContext("GET", "https://example.com")
+        request = Request("GET", "https://example.com")
 
         async def final_send(req):
             yield Response(200, json={"ok": True})
@@ -562,7 +562,7 @@ class TestMiddlewareChain:
 
     async def test_header_injection_middleware(self):
         mw = HeaderInjectionMiddleware({"X-Custom": "test-value"})
-        request = HttpContext("GET", "https://example.com")
+        request = Request("GET", "https://example.com")
 
         async def final_send(req):
             yield Response(200, json={})
@@ -574,7 +574,7 @@ class TestMiddlewareChain:
 
     async def test_base_url_middleware(self):
         mw = BaseURLMiddleware("https://api.example.com")
-        request = HttpContext("GET", "/resource")
+        request = Request("GET", "/resource")
 
         async def final_send(req):
             yield Response(200, json={})
@@ -1043,7 +1043,7 @@ class TestHTTPClientMethods:
 
 class TestUtils:
     def test_extract_response_summary_keys(self):
-        req = HttpContext("GET", "https://example.com")
+        req = Request("GET", "https://example.com")
         resp = Response(200, json={"x": 1}, request=req)
         resp.elapsed = timedelta(seconds=0.5)
         summary = extract_response_summary(resp)
@@ -1090,7 +1090,7 @@ class TestUtils:
         assert guess_content_type(b"bytes") == "application/octet-stream"
 
     def test_extract_response_summary_body_preview(self):
-        req = HttpContext("GET", "https://e.com")
+        req = Request("GET", "https://e.com")
         long_body = "x" * 1000
         resp = Response(200, text=long_body, request=req)
         resp.elapsed = timedelta(seconds=0.5)
@@ -1098,7 +1098,7 @@ class TestUtils:
         assert len(summary["body_preview"]) == 500
 
     def test_extract_response_summary_content_length(self):
-        req = HttpContext("GET", "https://e.com")
+        req = Request("GET", "https://e.com")
         resp = Response(200, json={"k": "v"}, request=req)
         resp.elapsed = timedelta(seconds=0.5)
         summary = extract_response_summary(resp)

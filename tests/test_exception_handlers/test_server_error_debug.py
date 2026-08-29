@@ -10,7 +10,7 @@ application is already failing — a bug here hides the original error.
 import pytest
 
 from sillo import SilloApp
-from sillo import json
+from sillo import json as json_response
 from sillo.core.error.handler import ServerErrorMiddleware
 from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
@@ -217,7 +217,7 @@ def test_non_debug_mode_hides_the_detail():
 
 def test_a_custom_server_error_handler_takes_over():
     async def custom(request, exc):
-        return json({"handled": str(exc)}, status_code=500)
+        return json_response({"handled": str(exc)}, status_code=500)
 
     app = SilloApp(debug=False, server_error_handler=custom)
 

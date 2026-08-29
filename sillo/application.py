@@ -25,6 +25,7 @@ from sillo.core.error import (
     ServerErrorMiddleware,
 )
 from sillo.core.helpers.async_helpers import is_async_callable
+from sillo.core.http import html
 from sillo.core.routing import Route, Router, WebsocketRoute
 from sillo.core.routing.base import BaseRoute
 from sillo.env import autoload as _autoload_env
@@ -595,7 +596,6 @@ class SilloApp:
             None
         """
 
-        from sillo.core.http import html
         from sillo.core.http.response import BaseResponse
 
         @self.get(self.openapi.openapi_url, exclude_from_schema=True)

@@ -2,7 +2,7 @@
 Tests for file-based session manager
 """
 
-from sillo import json
+from sillo import json as json_response
 from sillo.core.http import HttpContext
 import json
 import os
@@ -212,7 +212,7 @@ class TestFileSessionIntegration:
             counter = request.session.get("counter", 0)
             counter += 1
             request.session["counter"] = counter
-            return json({"counter": request.session["counter"]})
+            return json_response({"counter": request.session["counter"]})
 
         file_manager = FileSessionManager(
             SessionConfig(session_file_storage_path=self.temp_dir)

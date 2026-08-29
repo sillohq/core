@@ -34,13 +34,17 @@ from tortoise.fields.relational import (
     OneToOneFieldInstance,
 )
 
+from sillo.core.http import (
+    html,
+    redirect,
+    text,
+)
 from sillo.helpers.hashing import hash_password
 from sillo.pagination import AsyncDataHandler, AsyncPaginator, PageNumberPagination
 from sillo.record.fields import PasswordField
 
 from .models import AdminActivity
 from .templating import render as _render
-from sillo.core.http import json, text, html, redirect, file, stream, sse, download, empty, abort, not_found
 
 FKAliases = (ForeignKeyFieldInstance, OneToOneFieldInstance)
 M2MAlias = ManyToManyFieldInstance
@@ -272,8 +276,8 @@ def base_ctx(request, site, model_name="", model_slug=""):
     }
 
 
-def _forbidden(response, site_prefix):
-    """Forbidden"""
+def _forbidden(site_prefix):
+    """Send someone without the permission back to the admin index."""
     return redirect(f"{site_prefix}/", status_code=302)
 
 
@@ -600,7 +604,7 @@ def _csv_cell(v):
     return str(v)
 
 
-def _csv_export(response, columns, rows, filename):
+def _csv_export(columns, rows, filename):
     """Render *rows* (dicts) as a downloadable CSV attachment."""
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -627,7 +631,7 @@ def _json_export_default(value):
     return str(value)
 
 
-def _json_export(response, rows, filename):
+def _json_export(rows, filename):
     """Render *rows* (dicts) as a downloadable JSON attachment."""
     body = json.dumps(list(rows), indent=2, default=_json_export_default)
     return text(
@@ -739,7 +743,7 @@ async def query_view(request, site):
     """
     user = await _current_admin_user(request, site)
     if user is None or not getattr(user, "is_superuser", False):
-        return _forbidden(response, site.prefix)
+        return _forbidden(site.prefix)
 
     tables = sorted(
         {
@@ -777,9 +781,9 @@ async def query_view(request, site):
                 if export_fmt in ("csv", "json"):
                     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
                     if export_fmt == "json":
-                        return _json_export(response, rows, f"query_{stamp}.json")
+                        return _json_export(rows, f"query_{stamp}.json")
                     return _csv_export(
-                        response, ctx["columns"], rows, f"query_{stamp}.csv"
+                        ctx["columns"], rows, f"query_{stamp}.csv"
                     )
             except Exception as e:
                 ctx["error"] = str(e)
@@ -796,7 +800,7 @@ async def export_view(request, site, model_cls, admin_cls):
     rows to avoid an unbounded dump.
     """
     if not admin_cls.has_view_permission(request):
-        return _forbidden(response, site.prefix)
+        return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
@@ -867,14 +871,14 @@ async def export_view(request, site, model_cls, admin_cls):
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     if fmt == "json":
-        return _json_export(response, out_rows, f"{model_slug}_{stamp}.json")
-    return _csv_export(response, out_columns, out_rows, f"{model_slug}_{stamp}.csv")
+        return _json_export(out_rows, f"{model_slug}_{stamp}.json")
+    return _csv_export(out_columns, out_rows, f"{model_slug}_{stamp}.csv")
 
 
 async def list_view(request, site, model_cls, admin_cls):
     """List View"""
     if not admin_cls.has_view_permission(request):
-        return _forbidden(response, site.prefix)
+        return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
@@ -1078,7 +1082,7 @@ async def list_view(request, site, model_cls, admin_cls):
 async def detail_view(request, site, model_cls, admin_cls, id):
     """Detail View"""
     if not admin_cls.has_view_permission(request):
-        return _forbidden(response, site.prefix)
+        return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
@@ -1185,7 +1189,7 @@ async def detail_view(request, site, model_cls, admin_cls, id):
 async def create_view(request, site, model_cls, admin_cls):
     """Create View"""
     if not admin_cls.has_add_permission(request):
-        return _forbidden(response, site.prefix)
+        return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
@@ -1261,7 +1265,7 @@ async def create_view(request, site, model_cls, admin_cls):
 async def update_view(request, site, model_cls, admin_cls, id):
     """Update View"""
     if not admin_cls.has_change_permission(request):
-        return _forbidden(response, site.prefix)
+        return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
@@ -1331,7 +1335,7 @@ async def update_view(request, site, model_cls, admin_cls, id):
 async def delete_view(request, site, model_cls, admin_cls, id):
     """Delete View"""
     if not admin_cls.has_delete_permission(request):
-        return _forbidden(response, site.prefix)
+        return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
@@ -1356,7 +1360,7 @@ async def bulk_view(request, site, model_cls, admin_cls):
     if request.method != "POST":
         return redirect(f"{site.prefix}/{model_slug}/", status_code=302)
     if not admin_cls.has_delete_permission(request):
-        return _forbidden(response, site.prefix)
+        return _forbidden(site.prefix)
     get, getlist = await _collect_form(request)
     action = get("action") or ""
     ids = [int(x) for x in getlist("bulk_ids") if x]

@@ -115,19 +115,19 @@ class TestGuards:
         with TestClient(app) as client:
             return client.get("/storage/public/a.png")
 
-    def test_the_browser_is_told_not_to_sniff(self):
+    def test_the_browser_is_told_not_to_sniff(self, response):
         assert response.headers["x-content-type-options"] == "nosniff"
 
-    def test_it_is_sandboxed(self):
+    def test_it_is_sandboxed(self, response):
         assert "sandbox" in response.headers["content-security-policy"]
 
-    def test_it_carries_no_referrer(self):
+    def test_it_carries_no_referrer(self, response):
         assert response.headers["referrer-policy"] == "no-referrer"
 
-    def test_it_is_not_cross_origin_readable(self):
+    def test_it_is_not_cross_origin_readable(self, response):
         assert response.headers["cross-origin-resource-policy"] == "same-origin"
 
-    def test_a_render_safe_type_is_shown_inline(self):
+    def test_a_render_safe_type_is_shown_inline(self, response):
         assert response.headers["content-disposition"].startswith("inline")
 
     async def test_anything_else_is_downloaded(self, app):
@@ -156,7 +156,7 @@ class TestGuards:
 
         assert '"' not in response.headers["content-disposition"].split("filename=")[1][1:-1]
 
-    def test_it_carries_an_etag(self):
+    def test_it_carries_an_etag(self, response):
         assert response.headers["etag"].startswith('"')
 
 

@@ -176,14 +176,14 @@ def test_html_response_with_full_page(
 
     @app.get("/page")
     async def html_page(request: HttpContext):
-        html = """
+        page = """
         <!DOCTYPE html>
         <html>
         <head><title>Test Page</title></head>
         <body><h1>Welcome</h1></body>
         </html>
         """
-        return html(html)
+        return html(page)
 
     with test_client_factory(app) as client:
         resp = client.get("/page")
@@ -221,7 +221,7 @@ def test_empty_response(test_client_factory: Callable[[SilloApp], TestClient]):
 
     with test_client_factory(app) as client:
         resp = client.get("/empty")
-        assert resp.status_code == 200
+        assert resp.status_code == 204
         assert resp.text == ""
 
 

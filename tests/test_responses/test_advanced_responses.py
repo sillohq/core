@@ -219,8 +219,8 @@ def test_response_large_text(test_client_factory: Callable[[SilloApp], TestClien
     @app.get("/large-text")
     async def large_text(request: HttpContext):
         # Create large text (1MB)
-        text = "x" * (1024 * 1024)
-        return text(text)
+        body = "x" * (1024 * 1024)
+        return text(body)
 
     with test_client_factory(app) as client:
         resp = client.get("/large-text")

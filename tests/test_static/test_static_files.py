@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sillo import SilloApp
-from sillo import html
+from sillo import html, text
 from sillo.core.http import HttpContext
 from sillo.core.routing import Group
 from sillo.static import StaticFiles
@@ -199,7 +199,7 @@ def test_static_file_forbidden_extensions():
 def test_static_file_custom_404_handler():
     """Test custom 404 handler functionality"""
 
-    def custom_404(request: HttpContext) -> Response:
+    def custom_404(ctx: HttpContext):
         return html(
             "<html><body><h1>Custom Not Found</h1></body></html>", status_code=404
         )
@@ -217,17 +217,12 @@ def test_static_file_custom_404_handler():
         assert "text/html" in resp.headers.get("content-type", "")
 
 
-def test_static_file_404_handler_that_mutates_response_in_place():
-    """A handler that returns None (mutates `response` directly rather than
-    returning something new) exercises __call__'s "no handler_result"
-    fallback path, which builds the response from `response`
-    instead."""
+def test_static_file_404_handler_can_build_its_own_response():
+    """A handler is free to build the response however it likes, including
+    setting the status and body separately from the builder call."""
 
-    def custom_404(request: HttpContext) -> None:
-        response.status(404)
-        response.set_body(b"mutated in place")
-        # Deliberately returns None: __call__ falls back to
-        # response instead of treating this as the result.
+    def custom_404(ctx: HttpContext):
+        return text("").status(404).set_body(b"mutated in place")
 
     app = SilloApp()
     static_dir = Path(__file__).parent.parent / "static"

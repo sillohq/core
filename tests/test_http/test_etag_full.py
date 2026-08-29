@@ -144,21 +144,18 @@ class TestFreshness:
         )
 
     def test_a_response_with_no_etag_is_never_fresh(self):
-        response = Response(request=self._request())
-        json({"a": 1})
-        assert is_fresh(self._request('"a"')) is False
+        response = json({"a": 1})
+        assert is_fresh(self._request('"a"'), response) is False
 
     def test_a_matching_client_tag_is_fresh(self):
-        response = Response(request=self._request())
-        json({"a": 1})
+        response = json({"a": 1})
         tag = compute_and_set_etag(response, b"body", override=True)
-        assert is_fresh(self._request(tag)) is True
+        assert is_fresh(self._request(tag), response) is True
 
     def test_a_non_matching_client_tag_is_not_fresh(self):
-        response = Response(request=self._request())
-        json({"a": 1})
+        response = json({"a": 1})
         compute_and_set_etag(response, b"body", override=True)
-        assert is_fresh(self._request('"other"')) is False
+        assert is_fresh(self._request('"other"'), response) is False
 
 
 class TestResponseBody:

@@ -238,13 +238,9 @@ def test_base_middleware_class(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     class CustomMiddleware(BaseMiddleware):
-        async def dispatch(
-            self, request: HttpContext, call_next
-        ):
-            request.scope["processed"] = True
-            return await call_next()
-
-        async def process_response(self, request: HttpContext):
+        async def dispatch(self, ctx: HttpContext, call_next):
+            ctx.scope["processed"] = True
+            response = await call_next()
             response.set_header("X-Processed", "true")
             return response
 
@@ -273,12 +269,8 @@ def test_base_middleware_with_config(
             super().__init__(**kwargs)
             self.prefix = prefix
 
-        async def dispatch(
-            self, request: HttpContext, call_next
-        ):
-            return await call_next()
-
-        async def process_response(self, request: HttpContext):
+        async def dispatch(self, ctx: HttpContext, call_next):
+            response = await call_next()
             response.set_header(f"{self.prefix}Custom", "value")
             return response
 

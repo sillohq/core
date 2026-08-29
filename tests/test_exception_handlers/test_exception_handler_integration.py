@@ -250,9 +250,7 @@ def test_exception_handler_with_path_params(
         request: HttpContext, exc: ItemNotFoundError
     ):
         item_id = request.path_params.get("item_id")
-        return response.status(404).json(
-            {"error": "Item not found", "item_id": item_id}
-        )
+        return json({"error": "Item not found", "item_id": item_id}, status_code=404)
 
     app.add_exception_handler(ItemNotFoundError, item_not_found_handler)
 

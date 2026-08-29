@@ -7,7 +7,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from sillo.core.http.context import HttpContext
-from sillo.core.http.response import BaseResponse, StreamingResponse
+from sillo.core.http.response import BaseResponse
 
 from .websockets import WebSocketContext
 

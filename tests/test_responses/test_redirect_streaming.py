@@ -178,10 +178,10 @@ def test_redirect_by_route_name(test_client_factory: Callable[[SilloApp], TestCl
         assert "/user/42" in resp.headers.get("location", "")
 
 
-def test_redirect_by_route_name_absolute_url(
+def test_redirect_by_route_name_resolves_the_path(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """ctx.url_for builds an absolute URL, which redirect() sends as-is."""
+    """ctx.url_for resolves the name to a path, which redirect() sends as-is."""
     app = SilloApp()
 
     @app.get("/profile/{user_id}", name="profile")
@@ -194,9 +194,7 @@ def test_redirect_by_route_name_absolute_url(
 
     with test_client_factory(app) as client:
         resp = client.get("/goto", follow_redirects=False)
-        location = resp.headers["location"]
-        assert location.startswith("http://")
-        assert "/profile/123" in location
+        assert resp.headers["location"] == "/profile/123"
 
 
 def test_redirect_to_an_unknown_route_name_is_an_error(

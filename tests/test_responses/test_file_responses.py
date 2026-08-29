@@ -539,7 +539,7 @@ def test_set_header_override_keeps_headers_mapping_live(
         inner.headers["x-first"] = "1"  # builds the cached view
         inner.set_header("x-second", "2", override=True)  # used to rebind
         inner.headers["x-third"] = "3"  # must still reach the wire
-        return response
+        return inner
 
     with test_client_factory(app) as client:
         resp = client.get("/headers")

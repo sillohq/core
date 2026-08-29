@@ -12,7 +12,9 @@ from typing import cast
 
 from sillo import __version__ as sillo_version
 from sillo.core.helpers.async_helpers import collapse_excgroups
-from sillo.core.http import HttpContext, html, text
+from sillo.core.http import HttpContext
+from sillo.core.http import html as html_response
+from sillo.core.http import text as text_response
 from sillo.logging import DEBUG, create_logger
 from sillo.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -1029,7 +1031,7 @@ class ServerErrorMiddleware:
             A response with a 500 status code and the plain-text body
             ``"Internal Server Error"``.
         """
-        return text("Internal Server Error", status_code=500)
+        return text_response("Internal Server Error", status_code=500)
 
     def get_debug_response(self, request: HttpContext, exc: Exception):
         """Produce a debug-oriented error response based on the request Accept header.
@@ -1058,10 +1060,10 @@ class ServerErrorMiddleware:
             content = self.generate_plain_text(exc)
         elif "text/html" in accept:
             content = self.generate_html(exc, request)
-            return html(content, status_code=500)
+            return html_response(content, status_code=500)
         else:
             content = self.generate_plain_text(exc)
-        return text(content, status_code=500)
+        return text_response(content, status_code=500)
 
     def format_line(
         self,

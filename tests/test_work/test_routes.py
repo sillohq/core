@@ -7,7 +7,7 @@ import asyncio
 import json
 
 from sillo import SilloApp
-from sillo import json
+from sillo import json as json_response
 from sillo.work.background.tasks import BackgroundTask
 from sillo.core.dependencies import Depend
 from sillo.core.http import HttpContext
@@ -36,7 +36,7 @@ async def test_route_launches_background_task_and_drains():
             sink.append(value)
 
         BackgroundTask.run(process, request.query_params.get("v", "x"))
-        return json({"ok": True})
+        return json_response({"ok": True})
 
     async with AsyncTestClient(app) as client:
         resp = await client.post("/ingest?v=hello")
@@ -66,7 +66,7 @@ async def test_route_dispatches_job_consumed_by_worker():
             }
         )
         await conn.push("default", payload)
-        return json({"ok": True})
+        return json_response({"ok": True})
 
     worker = QueueWorker(
         _manager_with(conn),
@@ -111,7 +111,7 @@ async def test_route_fires_event_through_dispatcher():
     @app.post("/ping")
     async def ping(request: HttpContext, d=Depend(events)):
         await d.dispatch(RoutePing(who=request.query_params.get("who", "anon")))
-        return json({"ok": True})
+        return json_response({"ok": True})
 
     async with AsyncTestClient(app) as client:
         resp = await client.post("/ping?who=router")
@@ -125,7 +125,7 @@ async def test_route_exposes_scheduler_stats_via_di():
 
     @app.get("/scheduler-stats")
     async def stats(request: HttpContext, s=Depend(scheduler)):
-        return json(s.stats.to_dict())
+        return json_response(s.stats.to_dict())
 
     async with AsyncTestClient(app) as client:
         resp = await client.get("/scheduler-stats")
@@ -142,7 +142,7 @@ async def test_route_reads_queue_size_via_di():
 
     @app.get("/queue-size")
     async def size(request: HttpContext, c=Depend(queue_connection)):
-        return json({"size": await c.size("default")})
+        return json_response({"size": await c.size("default")})
 
     async with AsyncTestClient(app) as client:
         resp = await client.get("/queue-size")

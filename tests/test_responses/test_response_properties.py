@@ -6,6 +6,7 @@ from typing import Callable
 
 import pytest
 
+from sillo.core.http.response import BaseResponse
 from sillo import SilloApp
 from sillo import empty, html, json, text
 from sillo.core.http import HttpContext
@@ -37,8 +38,7 @@ def test_set_body_method(test_client_factory: Callable[[SilloApp], TestClient]):
 
     @app.get("/set-body")
     async def set_body(request: HttpContext):
-        response.set_body(b"Custom body content")
-        return text("This will be overridden")
+        return text("This will be overridden").set_body(b"Custom body content")
 
     with test_client_factory(app) as client:
         resp = client.get("/set-body")
@@ -200,13 +200,15 @@ def test_response_type_switching(
         assert "text/html" in resp_html.headers.get("content-type", "")
 
 
-def test_response_resp_method(test_client_factory: Callable[[SilloApp], TestClient]):
-    """Test using the base resp() method"""
+def test_a_hand_built_base_response(
+    test_client_factory: Callable[[SilloApp], TestClient],
+):
+    """A handler may return a BaseResponse it constructed itself."""
     app = SilloApp()
 
     @app.get("/base-resp")
     async def base_resp(request: HttpContext):
-        return response.resp(
+        return BaseResponse(
             body="Custom response",
             status_code=200,
             headers={"X-Custom": "header"},
@@ -250,23 +252,19 @@ def test_response_with_error_status(
 
     @app.get("/bad-request")
     async def bad_request(request: HttpContext):
-        response = json({"error": "Bad request"})
-        return empty(400)
+        return json({"error": "Bad request"}, status_code=400)
 
     @app.get("/unauthorized")
     async def unauthorized(request: HttpContext):
-        response = json({"error": "Unauthorized"})
-        return empty(401)
+        return json({"error": "Unauthorized"}, status_code=401)
 
     @app.get("/not-found")
-    async def not_found(request: HttpContext):
-        response = json({"error": "Not found"})
-        return empty(404)
+    async def missing(request: HttpContext):
+        return json({"error": "Not found"}, status_code=404)
 
     @app.get("/server-error")
     async def server_error(request: HttpContext):
-        response = json({"error": "Internal server error"})
-        return empty(500)
+        return json({"error": "Internal server error"}, status_code=500)
 
     with test_client_factory(app) as client:
         resp400 = client.get("/bad-request")

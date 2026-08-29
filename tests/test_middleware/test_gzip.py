@@ -36,7 +36,7 @@ def client():
         return json({"data": [{"i": i} for i in range(400)]})
 
     @app.get("/stream")
-    async def stream(request):
+    async def stream_chunks(request):
         async def gen():
             for i in range(50):
                 yield f"chunk-{i}\n".encode()

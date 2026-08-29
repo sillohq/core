@@ -5,7 +5,7 @@ Tests the actual /openapi.json endpoint with various configurations.
 
 import pytest
 from sillo import SilloApp, Query, Header, Cookie, Depend, Router
-from sillo import json
+from sillo import json as json_response
 from sillo.core.http import HttpContext
 from sillo.testclient import TestClient
 
@@ -517,11 +517,11 @@ class TestNestedSchemaReferences:
 
         @app.get("/assemblies", responses={200: Assembly})
         async def list_assemblies(request):
-            return json({})
+            return json_response({})
 
         @app.post("/assemblies", request_model=Assembly, responses={201: Assembly})
         async def create_assembly(request):
-            return json({}, status_code=201)
+            return json_response({}, status_code=201)
 
         return app
 
@@ -577,7 +577,7 @@ class TestSchemaExamples:
 
         @app.post("/prices", request_model=Money, responses={200: Money})
         async def create_price(request):
-            return json({})
+            return json_response({})
 
         response = TestClient(app).get("/openapi.json")
 
@@ -593,7 +593,7 @@ class TestSchemaExamples:
 
         @app.post("/prices", request_model=Money, responses={200: Money})
         async def create_price(request):
-            return json({})
+            return json_response({})
 
         spec = TestClient(app).get("/openapi.json").json()
         # A top-level request model is inlined rather than hoisted into
@@ -616,11 +616,11 @@ class TestSchemaExamples:
 
         @app.get("/unrelated")
         async def unrelated(request):
-            return json({"ok": True})
+            return json_response({"ok": True})
 
         @app.post("/withexamples", request_model=WithExamples)
         async def with_examples(request):
-            return json({})
+            return json_response({})
 
         spec = TestClient(app).get("/openapi.json").json()
 
@@ -660,7 +660,7 @@ class TestDiscriminatorMapping:
 
         @app.post("/send", request_model=Send, responses={200: Send})
         async def send(request):
-            return json({})
+            return json_response({})
 
         return app
 

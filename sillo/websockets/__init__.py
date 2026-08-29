@@ -19,8 +19,8 @@ __all__ = [
     "ChannelBox",
     "InMemoryHistoryManager",
     "NoOpHistoryManager",
-    "WebSocketContext",
     "WebSocketConsumer",
+    "WebSocketContext",
     "WebSocketDisconnect",
     "status",
 ]

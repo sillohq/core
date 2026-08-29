@@ -125,8 +125,6 @@ class TestSyncPaginationHandler:
 
 class TestExceptionHandlers:
     async def test_a_missing_row_becomes_404(self):
-        response = Response(request=_request())
-
         result = await handle_does_not_exist(
             _request(), DoesNotExist("Widget matching query does not exist")
         )
@@ -134,8 +132,6 @@ class TestExceptionHandlers:
         assert result.status_code == 404
 
     async def test_an_integrity_error_becomes_409(self):
-        response = Response(request=_request())
-
         result = await handle_integrity_error(
             _request(), IntegrityError("UNIQUE constraint failed")
         )
@@ -143,8 +139,6 @@ class TestExceptionHandlers:
         assert result.status_code == 409
 
     async def test_a_validation_error_becomes_422(self):
-        response = Response(request=_request())
-
         result = await handle_validation_error(
             _request(), ValidationError("name is too long")
         )
@@ -155,8 +149,6 @@ class TestExceptionHandlers:
         # Service Unavailable rather than a bare 500: an operational error is
         # the database being unreachable, which is a transient condition a
         # client may retry.
-        response = Response(request=_request())
-
         result = await handle_operational_error(
             _request(), OperationalError("no such table")
         )
