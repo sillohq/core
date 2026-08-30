@@ -6,27 +6,50 @@
  * JavaScript, closes on Escape and on an outside click for free, and the whole
  * control is two links.
  *
- * Each entry points at the *same page* in the other version rather than that
- * version's front door, so switching keeps your place. Where a page exists in
- * one version and not the other — a guide added for v1.0, one dropped from it —
- * that link 404s. It is the right failure: quietly landing on an index instead
- * is indistinguishable from a switcher that worked, and the 404 names the page
- * that is missing.
+ * Each entry points at the *same page* in the other version, so switching keeps
+ * your place. Versions do not hold the same set of pages, though — the
+ * WebSocket rooms guides exist under v0.x and not under v1.0, having moved to
+ * `sillo-wire` — so a page that is missing there falls back to that manual's
+ * front door rather than sending the reader to a 404.
  */
-import { VERSIONS, routeParts } from '../versions.mjs';
+import { MANUALS, VERSIONS, pageExistsIn, routeParts } from '../versions.mjs';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const pathname = Astro.url.pathname;
 const withoutBase = BASE && pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
-const { version, rest } = routeParts(withoutBase);
+const { version, manual, rest } = routeParts(withoutBase);
+
+/** The manual's own landing page — the last resort. */
+const home = MANUALS.find((entry) => entry.segment === manual)?.home
+    ?? 'guides/introduction/';
+
+/**
+ * The closest page to *slug* that *version* actually has.
+ *
+ * Walks up the path before giving up, so someone on
+ * `guides/websockets/channels/` — a page v1.0 does not have — lands on
+ * `guides/websockets/` rather than all the way back at the introduction.
+ */
+function nearest(slug, version) {
+    const parts = String(slug).replace(/^\/|\/$/g, '').split('/');
+    while (parts.length) {
+        const candidate = parts.join('/') + '/';
+        if (pageExistsIn(candidate, version)) return candidate;
+        parts.pop();
+    }
+    return home;
+}
 
 const current = version ?? VERSIONS[0];
-const targets = VERSIONS.map((entry) => ({
-    ...entry,
-    href: `${BASE}/${entry.slug}/${rest || 'guides/introduction/'}`,
-    active: entry.slug === current.slug,
-}));
+const targets = VERSIONS.map((entry) => {
+    const slug = rest ? nearest(rest, entry.slug) : home;
+    return {
+        ...entry,
+        href: `${BASE}/${entry.slug}/${slug}`,
+        active: entry.slug === current.slug,
+    };
+});
 ---
 
 <details class="switcher">

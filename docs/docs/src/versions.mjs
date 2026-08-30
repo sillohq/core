@@ -17,6 +17,9 @@
  * them.
  */
 
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 /**
  * @typedef {object} DocsVersion
  * @property {string} slug   First URL segment, and the content directory name.
@@ -75,4 +78,35 @@ export function routeParts(pathname) {
         // Trailing slash included, so callers can concatenate without one.
         rest: [second, ...tail].filter(Boolean).join('/') + (second ? '/' : ''),
     };
+}
+
+/**
+ * Whether a page exists in a given version.
+ *
+ * Versions do not hold the same set of pages — the WebSocket rooms guides are
+ * under v0.x and not under v1.0, having moved to `sillo-wire`. Checking the
+ * content tree rather than maintaining a list means nothing can drift: delete
+ * the page and every link to it adjusts.
+ *
+ * Build-time only, which is why reading the filesystem here is safe: this
+ * module is imported by `astro.config.mjs` and by component frontmatter, both
+ * of which run in Node and neither of which reaches the browser.
+ *
+ * The content root is resolved from the working directory rather than from
+ * `import.meta.url`. Astro loads the config in Node, where the two agree, but
+ * serves component frontmatter through Vite, which rewrites the module's own
+ * URL — so the same call answered correctly in one caller and always `false`
+ * in the other.
+ *
+ * @param {string} slug An unversioned page path, e.g. `'guides/routing/'`.
+ * @param {string} version A version slug, e.g. `'v1.0'`.
+ */
+export function pageExistsIn(slug, version) {
+    const trimmed = String(slug).replace(/^\/|\/$/g, '');
+    if (!trimmed) return false;
+
+    const dir = join(process.cwd(), 'src', 'content', 'docs', version);
+    return ['.md', '.mdx', '/index.md', '/index.mdx'].some((suffix) =>
+        existsSync(join(dir, trimmed + suffix))
+    );
 }

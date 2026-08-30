@@ -256,7 +256,7 @@ background work does not get this for free, drain it explicitly:
 @app.on_shutdown
 async def drain():
     await BackgroundTask.drain(timeout=10)
-    await ChannelBox.close_all_connections()
+    await hub.close()          # sillo-wire, if you use it
     await connections.close_all()
 ```
 

@@ -6,7 +6,7 @@ import { remarkMermaid } from './src/plugins/remark-mermaid.mjs';
 import { readdirSync } from 'node:fs';
 import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { VERSIONS, DEFAULT_VERSION } from './src/versions.mjs';
+import { DEFAULT_VERSION, VERSIONS, pageExistsIn } from './src/versions.mjs';
 
 // https://astro.build/config
 const docsBaseUrl = process.env.DOCS_BASE_URL ?? '/';
@@ -40,8 +40,6 @@ function unversionedRedirects() {
                     { status: 302, destination: `/${DEFAULT_VERSION}/${path}/` },
                 ];
             })
-            // The two hand-written redirects above own these already.
-            .filter(([from]) => from !== '/guides/introduction/')
     );
 }
 
@@ -536,16 +534,18 @@ const MANUAL_GROUPS = [
 ];
 
 /**
- * Every group above, with each link rooted at one version.
+ * Every group above, with each link rooted at one version and the pages that
+ * version does not have removed.
  *
  * @param {string} version A slug from src/versions.mjs, e.g. `'v1.0'`.
  */
 function sidebarFor(version) {
-    const root = (link) => `/${version}${link}`;
     return MANUAL_GROUPS.map((group) => ({
         ...group,
-        items: group.items.map((item) => ({ ...item, link: root(item.link) })),
-    }));
+        items: group.items
+            .filter((item) => pageExistsIn(item.link, version))
+            .map((item) => ({ ...item, link: `/${version}${item.link}` })),
+    })).filter((group) => group.items.length > 0);
 }
 
 

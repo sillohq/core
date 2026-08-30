@@ -68,7 +68,7 @@ graph TB
         EE["EventEmitter"]
         BT["BaseTransport"]
         CH["Channel"]
-        CB["ChannelBox"]
+        CB["Hub (sillo-wire)"]
     end
 
     subgraph "Infrastructure"
@@ -1014,32 +1014,33 @@ Abstract base for event transport backends.
 
 ---
 
-### Channel
+### Peer
 
-**Module:** `sillo.websockets.channels`
+**Module:** `sillo.wire.peer` — the [`sillo-wire`](/packages/wire/) package
 
-WebSocket channel wrapper.
+One connected client, with a bounded outbound queue so a broadcast never writes
+to a socket inline. Replaces `Channel`.
 
-**Attributes:** `websocket`, `expires`, `payload_type`, `uuid`, `created`.
+**Attributes:** `socket`, `identity`, `encoding`, `capacity`, `overflow`,
+`pending`, `closed`.
 
-**Related:** `ChannelBox`, `WebSocketContext`
+**Related:** `Hub`, `WebSocketContext`
 
 ---
 
-### ChannelBox
+### Hub
 
-**Module:** `sillo.websockets.channels`
+**Module:** `sillo.wire.hub` — the [`sillo-wire`](/packages/wire/) package
 
-Channel group management (class-level).  Manages groups of WebSocket channels
-for broadcasting.
+Rooms, membership and fan-out. An object rather than class-level state, so two
+hubs are two independent worlds. Replaces `ChannelBox`.
 
-**Class methods:** `add_channel_to_group(channel, group_name)`,
-`remove_channel_from_group(channel, group_name)`,
-`group_send(group_name, payload, save_history)`, `show_groups()`,
-`flush_groups()`, `show_history(group_name)`, `flush_history(group_name)`,
-`close_all_connections()`.
+**Methods:** `join(peer, room)`, `leave(peer, room)`, `disconnect(peer)`,
+`broadcast(room, payload)`, `send_to(identity, payload)`,
+`replay(peer, room, since)`, `history(room)`, `on_join`, `on_leave`,
+`identities(room)`, `prune()`, `close()`.
 
-**Related:** `Channel`, `WebSocketContext`
+**Related:** `Peer`, `Backlog`, `WebSocketContext`
 
 ---
 
@@ -1286,17 +1287,19 @@ Static file serving middleware/router.
 
 ASGI WebSocket wrapper.  Like `HttpContext` but for WebSocket connections.
 
-**Related:** `WebsocketRoute`, `Channel`, `ChannelBox`
+**Related:** `WebsocketRoute`, and `Peer` / `Hub` in [`sillo-wire`](/packages/wire/)
 
 ---
 
-### WebSocketConsumer
+### RoomConsumer
 
-**Module:** `sillo.websockets.consumers`
+**Module:** `sillo.wire.consumer` — the [`sillo-wire`](/packages/wire/) package
 
-WebSocket consumer base class.
+Class-based WebSocket endpoint. Accepts the socket, builds the peer, joins its
+rooms and guarantees cleanup, including when a hook raises. Replaces
+`WebSocketConsumer`.
 
-**Related:** `WebSocketContext`, `Channel`
+**Related:** `WebSocketContext`, `Peer`, `Hub`
 
 ---
 

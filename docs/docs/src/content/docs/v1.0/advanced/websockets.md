@@ -22,25 +22,27 @@ description: "WebSocket state machine, consumers, channels, groups, history"
 
 ## 1. Overview
 
-The WebSocket subsystem provides a **full-duplex communication layer** built on the ASGI protocol. It includes:
+The WebSocket subsystem provides a **full-duplex communication layer** built on the ASGI protocol. In the core it is the connection and nothing above it:
 - A strict state machine for connection lifecycle
-- A consumer pattern for structured message handling
-- Channel-based group messaging (pub/sub within a process)
-- History management for message replay
 - Error middleware for exception handling
+- Close-code constants and routing
+
+Rooms, broadcast, presence and message history live in
+[`sillo-wire`](/packages/wire/).
 
 ```mermaid
 graph TD
     A[Client] <-->|"WebSocket"| B[WebsocketRoute]
-    B -->|"creates"| C[WebSocket]
-    C -->|"passed to"| D[WebSocketConsumer]
-    D -->|"creates"| E[Channel]
-    E -->|"registered in"| F[ChannelBox]
-    F -->|"group_send()"| G[All Channels in Group]
-    G -->|"send"| H[Each Client]
+    B -->|"creates"| C[WebSocketContext]
+    C -->|"passed to"| D[handler]
+    D -->|"send / receive"| A
 
-    I[HistoryManager] -->|"stores"| J[Message History]
-    F -->|"optional"| I
+    subgraph "sillo-wire, installed separately"
+        E[Peer] -->|"joins"| F[Hub]
+        F -->|"broadcast()"| G[every Peer in the room]
+    end
+
+    C -.->|"wrapped by"| E
 ```
 
 ---
@@ -277,414 +279,25 @@ class WebSocketDisconnect(Exception):
 
 ---
 
-## 4. WebSocketConsumer
+## 4. Rooms, consumers and history
 
-**File:** `/Users/admin/sillo.build/core/sillo/websockets/consumers.py` (213 lines)
+These moved to [`sillo-wire`](/packages/wire/) in v1 and are documented there.
+The core keeps the connection; the package adds everything about addressing
+more than one of them at once.
 
-### 4.1 Class Structure
+| Was, in this module | Is, in `sillo.wire` |
+|---|---|
+| `WebSocketConsumer` | `RoomConsumer` |
+| `Channel` | `Peer` |
+| `ChannelBox` | `Hub` — an object, not process-global class state |
+| `BaseHistoryManager` | `Backlog` protocol, with `MemoryBacklog` and `NullBacklog` |
 
-```python
-class WebSocketConsumer:
-    channel: Channel | None = None
-    middleware: ClassVar[list[Any]] = []
-    encoding: str | None = None
+The split is a dependency direction: the room layer needs a socket, a socket
+needs nothing from the room layer, and fan-out is the part that grows a backend
+once groups have to outlive a single worker process.
 
-    def __init__(self, logging_enabled=True, logger=None):
-        self.logging_enabled = logging_enabled
-        self.logger = logger or logging.getLogger("sillo")
-```
 
-### 4.2 `as_route()`: Class Method
-
-```python
-from sillo import WebSocketContext
-
-@classmethod
-def as_route(cls, path: str):
-    from sillo.core.routing.websocket import WebsocketRoute
-
-    async def handler(websocket: WebSocketContext, **kwargs):
-        instance = cls()
-        await instance(websocket, **kwargs)
-
-    return WebsocketRoute(path, handler)
-```
-
-Creates a new consumer instance per connection. The consumer class is converted to a route that can be registered with the app.
-
-### 4.3 `__call__()`: Connection Loop
-
-```python
-from sillo import WebSocketContext
-
-async def __call__(self, ws: WebSocketContext) -> None:
-    self.websocket = ws
-    self.channel = Channel(
-        websocket=self.websocket,
-        expires=3600,
-        payload_type=(
-            PayloadTypeEnum.JSON.value
-            if self.encoding == "json"
-            else PayloadTypeEnum.TEXT.value
-        ),
-    )
-    await self.on_connect(self.websocket)
-
-    close_code = status.WS_1000_NORMAL_CLOSURE
-
-    try:
-        while True:
-            message = await self.websocket.receive()
-            if message["type"] == "websocket.receive":
-                data = await self.decode(self.websocket, message)
-                await self.on_receive(self.websocket, data)
-            elif message["type"] == "websocket.disconnect":
-                close_code = int(message.get("code") or status.WS_1000_NORMAL_CLOSURE)
-                break
-    except Exception:
-        close_code = status.WS_1011_INTERNAL_ERROR
-        raise
-    finally:
-        await self.on_disconnect(self.websocket, close_code)
-```
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant WS as WebSocket
-    participant Cons as Consumer
-    participant Ch as Channel
-
-    C->>WS: Connect
-    WS->>Cons: __call__(ws)
-    Cons->>Ch: Create Channel
-    Cons->>Cons: on_connect(ws)
-    Note over Cons: accept() in on_connect
-
-    loop Message Loop
-        C->>WS: message
-        WS->>Cons: receive()
-        Cons->>Cons: decode(ws, message)
-        Cons->>Cons: on_receive(ws, data)
-    end
-
-    C->>WS: disconnect
-    WS->>Cons: break
-    Cons->>Cons: on_disconnect(ws, code)
-```
-
-### 4.4 `decode()`: Message Decoding
-
-```python
-from sillo import WebSocketContext
-
-async def decode(self, websocket: WebSocketContext, message: Message) -> Any:
-    if self.encoding == "text":
-        if "text" not in message:
-            await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
-            raise RuntimeError("Expected text websocket messages, but got bytes")
-        return message["text"]
-
-    elif self.encoding == "bytes":
-        if "bytes" not in message:
-            await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
-            raise RuntimeError("Expected bytes websocket messages, but got text")
-        return message["bytes"]
-
-    elif self.encoding == "json":
-        text = message.get("text") or message["bytes"].decode("utf-8")
-        try:
-            return json.loads(text)
-        except json.decoder.JSONDecodeError:
-            await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)
-            raise RuntimeError("Malformed JSON data received.")
-
-    # No encoding: return raw text or bytes
-    return message["text"] if message.get("text") else message["bytes"]
-```
-
-| Encoding | Expected Input | Output |
-|----------|---------------|--------|
-| `"text"` | `message["text"]` | `str` |
-| `"bytes"` | `message["bytes"]` | `bytes` |
-| `"json"` | text or bytes | Parsed `dict/list/etc.` |
-| `None` | text or bytes | Raw `str` or `bytes` |
-
-### 4.5 Lifecycle Hooks
-
-```python
-from sillo import WebSocketContext
-
-async def on_connect(self, websocket: WebSocketContext) -> None:
-    await websocket.accept()
-
-async def on_receive(self, websocket: WebSocketContext, data: Any) -> None:
-    pass  # Override in subclass
-
-async def on_disconnect(self, websocket: WebSocketContext, close_code: int) -> None:
-    pass  # Override in subclass
-```
-
-### 4.6 Group Management
-
-```python
-async def broadcast(self, payload, group_name="default", save_history=False):
-    await ChannelBox.group_send(group_name=group_name, payload=payload, save_history=save_history)
-
-async def send_to(self, channel_id: uuid.UUID, payload):
-    for channels in ChannelBox.CHANNEL_GROUPS.values():
-        for channel in channels:
-            if channel.uuid == channel_id:
-                await channel._send(payload)
-                return
-
-async def join_group(self, group_name: str):
-    if self.channel:
-        await ChannelBox.add_channel_to_group(self.channel, group_name=group_name)
-
-async def leave_group(self, group_name: str):
-    if self.channel:
-        await ChannelBox.remove_channel_from_group(self.channel, group_name=group_name)
-
-async def group(self, group_name: str) -> list[Channel]:
-    return list(ChannelBox.CHANNEL_GROUPS.get(group_name, {}).keys())
-```
-
----
-
-## 5. Channel
-
-**File:** `/Users/admin/sillo.build/core/sillo/websockets/channels.py`, line 25
-
-```python
-from sillo import WebSocketContext
-
-class Channel:
-    def __init__(self, websocket: WebSocketContext, payload_type: str, expires: int | None = None):
-        assert isinstance(websocket, WebSocketContext)
-        assert isinstance(payload_type, str) and payload_type in [
-            PayloadTypeEnum.JSON.value,
-            PayloadTypeEnum.TEXT.value,
-            PayloadTypeEnum.BYTES.value,
-        ]
-        self.websocket = websocket
-        self.expires = expires
-        self.payload_type = payload_type
-        self.uuid = uuid.uuid4()
-        self.created = time.time()
-```
-
-### 5.1 `_send()`
-
-```python
-async def _send(self, payload: Any) -> None:
-    try:
-        if self.payload_type == "json":
-            await self.websocket.send_json(payload)
-        elif self.payload_type == "text":
-            await self.websocket.send_text(payload)
-        elif self.payload_type == "bytes":
-            await self.websocket.send_bytes(payload)
-        else:
-            await self.websocket.send(payload)
-    except RuntimeError as error:
-        logging.debug(error)
-    self.created = time.time()  # Reset TTL on activity
-```
-
-### 5.2 `_is_expired()`
-
-```python
-async def _is_expired(self) -> bool:
-    if not self.expires:
-        return False
-    return (self.expires + int(self.created)) < time.time()
-```
-
----
-
-## 6. ChannelBox
-
-**File:** `/Users/admin/sillo.build/core/sillo/websockets/channels.py`, line 85
-
-```python
-class ChannelBox:
-    CHANNEL_GROUPS: ClassVar[dict[str, Any]] = {}
-    HISTORY_SIZE: int = int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", "1048576"))
-    HISTORY_MANAGER: BaseHistoryManager = InMemoryHistoryManager(
-        history_size=int(os.getenv("CHANNEL_BOX_HISTORY_SIZE", "1048576"))
-    )
-```
-
-`ChannelBox` is a **singleton** (class-level state only, no instances). It manages all channel groups globally.
-
-### 6.1 `add_channel_to_group()`
-
-```python
-@classmethod
-async def add_channel_to_group(cls, channel: Channel, group_name: str = "default") -> ChannelAddStatusEnum:
-    assert group_name, "Group name must to be set."
-    if group_name not in cls.CHANNEL_GROUPS:
-        cls.CHANNEL_GROUPS[group_name] = {}
-        return ChannelAddStatusEnum.CHANNEL_ADDED
-    else:
-        cls.CHANNEL_GROUPS[group_name][channel] = ...
-        return ChannelAddStatusEnum.CHANNEL_EXIST
-```
-
-Groups are stored as `dict[Channel, ...]`. The channel is the key, `...`
-(Ellipsis) is the value. This provides O(1) lookup and deduplication.
-
-### 6.2 `remove_channel_from_group()`
-
-```python
-@classmethod
-async def remove_channel_from_group(cls, channel: Channel, group_name: str) -> ChannelRemoveStatusEnum:
-    group = cls.CHANNEL_GROUPS.get(group_name)
-    if group is None:
-        await cls._clean_expired()
-        return ChannelRemoveStatusEnum.GROUP_DOES_NOT_EXIST
-
-    if group.pop(channel, _MISSING) is _MISSING:
-        await cls._clean_expired()
-        return ChannelRemoveStatusEnum.CHANNEL_DOES_NOT_EXIST
-
-    if not group:
-        cls.CHANNEL_GROUPS.pop(group_name, None)
-        await cls._clean_expired()
-        return ChannelRemoveStatusEnum.GROUP_REMOVED
-
-    await cls._clean_expired()
-    return ChannelRemoveStatusEnum.CHANNEL_REMOVED
-```
-
-Uses a sentinel `_MISSING = object()` to distinguish "not found" from "stored None".
-
-### 6.3 `group_send()`
-
-```python
-@classmethod
-async def group_send(cls, group_name="default", payload={}, save_history=False) -> GroupSendStatusEnum:
-    if save_history:
-        message = ChannelMessageDC(payload=payload)
-        await cls.HISTORY_MANAGER.save_message(group_name, message)
-
-    group_send_status = GroupSendStatusEnum.NO_SUCH_GROUP
-    for channel in cls.CHANNEL_GROUPS.get(group_name, {}):
-        await channel._send(payload)
-        group_send_status = GroupSendStatusEnum.GROUP_SEND
-
-    return group_send_status
-```
-
-### 6.4 `_clean_expired()`
-
-```python
-@classmethod
-async def _clean_expired(cls) -> None:
-    for group_name in list(cls.CHANNEL_GROUPS):
-        for channel in list(cls.CHANNEL_GROUPS.get(group_name, {})):
-            if await channel._is_expired():
-                try:
-                    del cls.CHANNEL_GROUPS[group_name][channel]
-                except KeyError:
-                    pass
-        if not any(cls.CHANNEL_GROUPS.get(group_name, {})):
-            try:
-                del cls.CHANNEL_GROUPS[group_name]
-            except KeyError:
-                pass
-```
-
-Snapshots the dict keys before iterating to avoid "dictionary changed size during iteration" errors.
-
-### 6.5 Other Methods
-
-| Method | Description |
-|--------|-------------|
-| `show_groups()` | Return the full `CHANNEL_GROUPS` dict |
-| `flush_groups()` | Clear all groups |
-| `show_history(group_name)` | Get message history |
-| `flush_history(group_name)` | Clear message history |
-| `set_history_manager(manager)` | Replace the history manager |
-| `close_all_connections()` | Close all WebSocket connections |
-
----
-
-## 7. History Management
-
-**File:** `/Users/admin/sillo.build/core/sillo/websockets/history.py` (124 lines)
-
-### 7.1 BaseHistoryManager (ABC)
-
-```python
-class BaseHistoryManager(ABC):
-    @abstractmethod
-    async def save_message(self, group_name: str, message: ChannelMessageDC) -> None: ...
-
-    @abstractmethod
-    async def get_history(self, group_name: str | None = None) -> list[ChannelMessageDC] | dict[str, list[ChannelMessageDC]]: ...
-
-    @abstractmethod
-    async def flush_history(self, group_name: str | None = None) -> None: ...
-```
-
-### 7.2 InMemoryHistoryManager
-
-```python
-class InMemoryHistoryManager(BaseHistoryManager):
-    def __init__(self, history_size: int = 1_048_576):
-        self._history: dict[str, list[ChannelMessageDC]] = {}
-        self._max_size = history_size
-
-    async def save_message(self, group_name, message):
-        if group_name not in self._history:
-            self._history[group_name] = []
-        self._history[group_name].append(message)
-        # Trim to max size
-        if len(self._history[group_name]) > self._max_size:
-            self._history[group_name] = self._history[group_name][-self._max_size:]
-
-    async def get_history(self, group_name=None):
-        if group_name:
-            return self._history.get(group_name, [])
-        return dict(self._history)
-
-    async def flush_history(self, group_name=None):
-        if group_name:
-            self._history.pop(group_name, None)
-        else:
-            self._history.clear()
-```
-
-**Default size:** 1,048,576 messages (1M entries). Configurable via `CHANNEL_BOX_HISTORY_SIZE` env var.
-
-### 7.3 NoOpHistoryManager
-
-```python
-class NoOpHistoryManager(BaseHistoryManager):
-    async def save_message(self, group_name, message): pass
-    async def get_history(self, group_name=None): return [] if group_name else {}
-    async def flush_history(self, group_name=None): pass
-```
-
-Used when message history is not needed.
-
-### 7.4 ChannelMessageDC
-
-**File:** `/Users/admin/sillo.build/core/sillo/websockets/utils.py`, line 40
-
-```python
-@dataclass
-class ChannelMessageDC:
-    payload: str | bytes
-    uuid: UUID = field(default_factory=uuid.uuid4)
-    created: datetime = field(default_factory=lambda: datetime.now(tz=timezone.utc))
-```
-
----
-
-## 8. Error Handling
+## 5. Error Handling
 
 **File:** `/Users/admin/sillo.build/core/sillo/websockets/errors.py` (40 lines)
 
@@ -719,7 +332,7 @@ async def websocket_exception_handler(websocket: WebSocketContext, exc: WebSocke
 
 ---
 
-## 9. IANA Status Codes
+## 6. IANA Status Codes
 
 **File:** `/Users/admin/sillo.build/core/sillo/websockets/status.py` (66 lines)
 
@@ -747,7 +360,7 @@ async def websocket_exception_handler(websocket: WebSocketContext, exc: WebSocke
 
 ---
 
-## 10. WebSocket Routing
+## 7. WebSocket Routing
 
 **File:** `/Users/admin/sillo.build/core/sillo/core/routing/websocket.py` (308 lines)
 
@@ -774,31 +387,9 @@ class WebsocketRoute(BaseRoute):
 
 ---
 
-## 11. Usage Patterns
+## 8. Usage Patterns
 
-### 11.1 Basic Consumer
-
-```python
-from sillo.websockets import WebSocketConsumer, WebSocketContext
-
-class ChatConsumer(WebSocketConsumer):
-    encoding = "json"
-
-    async def on_connect(self, websocket: WebSocketContext):
-        await websocket.accept()
-        await self.join_group("chat")
-
-    async def on_receive(self, websocket: WebSocketContext, data: dict):
-        await self.broadcast(data, group_name="chat")
-
-    async def on_disconnect(self, websocket: WebSocketContext, close_code: int):
-        await self.leave_group("chat")
-
-# Register route
-app.route(ChatConsumer.as_route("/ws/chat"))
-```
-
-### 11.2 Direct WebSocket Handler
+### 8.1 Direct WebSocket Handler
 
 ```python
 from sillo import WebSocketContext
@@ -815,22 +406,29 @@ async def websocket_handler(websocket: WebSocketContext):
 app.websocket("/ws/echo")(websocket_handler)
 ```
 
-### 11.3 Custom History Manager
+### 8.2 Rooms and broadcast
+
+Both live in [`sillo-wire`](/packages/wire/):
 
 ```python
-from sillo.websockets import ChannelBox, NoOpHistoryManager
+from sillo.wire import Hub, Peer
 
-# Disable history for production
-ChannelBox.set_history_manager(NoOpHistoryManager())
+hub = Hub()
 
-# Or use in-memory with custom size
-from sillo.websockets import InMemoryHistoryManager
-ChannelBox.set_history_manager(InMemoryHistoryManager(history_size=10_000))
+async def chat(socket: WebSocketContext, room: str):
+    await socket.accept()
+    peer = Peer(socket)
+    await hub.join(peer, room)
+    try:
+        async for message in socket.iter_json():
+            await hub.broadcast(room, message)
+    finally:
+        await hub.disconnect(peer)
 ```
 
 ---
 
-## 12. Supporting Enums
+## 9. Supporting Enums
 
 **File:** `/Users/admin/sillo.build/core/sillo/websockets/utils.py`
 
@@ -857,44 +455,28 @@ class PayloadTypeEnum(Enum):
 
 ---
 
-## 13. Design Decisions
+## 10. Design Decisions
 
 ### D-1: Dual State Machine
 The client/application state split mirrors the ASGI spec's design. The client state tracks what the client has sent; the application state tracks what the server has sent. Both must be `CONNECTED` for `is_connected()` to return `True`.
 
-### D-2: Class-Level ChannelBox
-`ChannelBox` uses only class-level state (no instances). This makes it a
-process-wide singleton that all consumers share. The trade-off is that it
-cannot be used across processes, for multi-process deployments, use the events
-system with Redis transport.
-
-### D-3: Channel as Dict Key
-Channels are stored as dict keys in `CHANNEL_GROUPS`. This provides O(1) lookup and automatic deduplication (a channel can only be in a group once).
-
-### D-4: Sentinel for dict.pop
-`_MISSING = object()` is used as a sentinel in `group.pop(channel, _MISSING)` to distinguish "channel not found" from "channel stored None".
-
-### D-5: Expired Channel Cleanup
-`_clean_expired()` is called on every `remove_channel_from_group()` call. This
-is a lazy cleanup strategy. Expired channels are only removed when the groups
-are actively being modified.
+### D-2: Rooms live outside the core
+The group registry was class-level state on a `ChannelBox`, which made it a
+process-wide singleton every consumer shared — untestable in isolation and
+impossible to scope per tenant. It is now a `Hub` object in
+[`sillo-wire`](/packages/wire/), which also gives the fan-out somewhere to grow
+a cross-process backend without the core acquiring a Redis dependency.
 
 ---
 
-## 14. Source Traceability
+## 11. Source Traceability
 
 | Component | File | Lines |
 |-----------|------|-------|
 | `WebSocketState` enum | `core/sillo/websockets/base.py` | 15-21 |
 | `WebSocketDisconnect` | `core/sillo/websockets/base.py` | 24-30 |
 | `WebSocketContext` class | `core/sillo/websockets/base.py` | 33-231 |
-| `WebSocketConsumer` | `core/sillo/websockets/consumers.py` | 19-213 |
-| `Channel` | `core/sillo/websockets/channels.py` | 25-82 |
-| `ChannelBox` | `core/sillo/websockets/channels.py` | 85-277 |
-| `BaseHistoryManager` | `core/sillo/websockets/history.py` | 7-49 |
-| `InMemoryHistoryManager` | `core/sillo/websockets/history.py` | 52-98 |
-| `NoOpHistoryManager` | `core/sillo/websockets/history.py` | 100-124 |
 | `WebSocketErrorMiddleware` | `core/sillo/websockets/errors.py` | 20-40 |
 | Status codes | `core/sillo/websockets/status.py` | 1-66 |
-| Enums | `core/sillo/websockets/utils.py` | 1-48 |
+| `Hub`, `Peer`, `RoomConsumer`, `Backlog` | [`sillo-wire`](/packages/wire/) | separate package |
 | `WebsocketRoute` | `core/sillo/core/routing/websocket.py` | 21-308 |

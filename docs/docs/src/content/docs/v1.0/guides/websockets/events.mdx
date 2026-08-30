@@ -140,8 +140,7 @@ shares the base class's dictionary and registers into the same table, one
 consumer's message types silently become available on another's endpoint.
 
 The catch-all `except Exception` is load-bearing. Without it, one bad
-message propagates out of `on_receive` and terminates the connection, as
-described in [Consumers](/v1.0/guides/websockets/consumer/).
+message propagates out of `on_receive` and terminates the connection.
 
 ##  Validating message payloads
 
@@ -471,9 +470,8 @@ state.
 
 ##  Related
 
-- [Consumers](/v1.0/guides/websockets/consumer/): the class these patterns extend
-- [Groups](/v1.0/guides/websockets/groups/): `group_send` and its delivery semantics
-- [Channels](/v1.0/guides/websockets/channels/): what a group contains
+- [Wire](/packages/wire/): the rooms, consumers and broadcast these patterns
+  build on, in a package that installs alongside the core
 - [WebSockets](/v1.0/guides/websockets/): connections, routing, and close codes
 - [Events](/v1.0/guides/events/): the full application event emitter API
 - [Rate Limiting](/v1.0/guides/rate-limiting/): the HTTP limiter, and why it does

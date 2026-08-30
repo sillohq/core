@@ -22,19 +22,25 @@ sent, a WebSocket stays open and either side can send at any time. That
 makes it the right tool for chat, live dashboards, collaborative editing,
 multiplayer state, and push notifications.
 
-sillo's WebSocket support has four layers, each building on the one
-below:
+The core ships the connection itself, and nothing about talking to more than
+one of them at a time:
 
-| Layer | What it gives you | Guide |
+| Layer | What it gives you | Where |
 |---|---|---|
 | `WebSocketContext` | The raw connection: accept, send, receive, close | This page |
-| `Channel` | A connection plus a payload type and an expiry | [Channels](/v1.0/guides/websockets/channels/) |
-| `ChannelBox` | Named groups of channels and broadcast | [Groups](/v1.0/guides/websockets/groups/) |
-| `WebSocketConsumer` | A class with lifecycle hooks and group helpers | [Consumers](/v1.0/guides/websockets/consumer/) |
+| `Peer`, `Hub`, `RoomConsumer` | Rooms, presence, broadcast, replay | [`sillo-wire`](/packages/wire/) |
 
-Start at the bottom. Most real applications end up using consumers, but
-understanding the raw connection first makes the rest obvious rather than
-magical.
+Rooms and fan-out moved out of the core in v1. The reason is a dependency
+direction rather than size: the room layer needs a socket, a socket needs
+nothing from the room layer, and fan-out is the part that grows a backend once
+groups have to span more than one worker process.
+
+```bash
+pip install sillo-wire
+```
+
+Start here regardless. Most applications end up using a hub, but understanding
+the raw connection first makes the rest obvious rather than magical.
 
 ##  When to reach for a WebSocket
 
@@ -416,11 +422,8 @@ degrade the process.
 
 ##  Related
 
-- [Consumers](/v1.0/guides/websockets/consumer/): the class-based API with lifecycle
-  hooks
-- [Channels](/v1.0/guides/websockets/channels/): wrapping a connection with a
-  payload type and expiry
-- [Groups](/v1.0/guides/websockets/groups/): broadcasting to many connections
+- [Wire](/packages/wire/): rooms, presence, broadcast and replay, in a package
+  that installs alongside the core
 - [Events](/v1.0/guides/websockets/events/): routing messages to handlers by type
 - [Streaming Responses](/v1.0/guides/streaming-response/): SSE, for one-directional
   push

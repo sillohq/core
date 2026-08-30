@@ -47,6 +47,19 @@ const groups: Group[] = [
         ],
     },
     {
+        /*
+         * The ecosystem packages. This is deliberately the only entry point to
+         * /packages/ in the whole site: they version independently of the core
+         * manuals, so putting them in the section bar or a manual's sidebar
+         * would imply they move with whichever version you are reading.
+         */
+        title: 'Packages',
+        links: [
+            { label: 'All packages', href: `${DOCS}/packages/` },
+            { label: 'Wire — WebSocket rooms', href: `${DOCS}/packages/wire/` },
+        ],
+    },
+    {
         title: 'Project',
         links: [
             { label: 'GitHub', href: GITHUB },
