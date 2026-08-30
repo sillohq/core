@@ -13,7 +13,7 @@ from sillo.core.routing.grouping import Group
 from sillo.openapi.utils import get_openapi
 
 
-async def handler(request):
+async def handler(ctx):
     return json({})
 
 
@@ -142,11 +142,11 @@ def test_flattening_a_real_application_router():
     app = SilloApp()
 
     @app.get("/users")
-    async def users(request: HttpContext):
+    async def users(ctx: HttpContext):
         return json([])
 
     @app.post("/users")
-    async def create(request: HttpContext):
+    async def create(ctx: HttpContext):
         return json({})
 
     assert "/users" in _paths(get_openapi(app.router))

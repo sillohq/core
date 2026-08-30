@@ -74,8 +74,8 @@ class Depend:
                 return json(await db.query("SELECT * FROM items"))
 
             @app.get("/me")
-            async def get_me(ctx, req=Depend(get_request=True)):
-                return json({"user": req.user})
+            async def get_me(ctx, injected=Depend(get_request=True)):
+                return json({"user": injected.user})
         """
         self.dependency = dependency
         self.get_request = get_request
@@ -343,7 +343,7 @@ def _build_execution_plan(root: Dependant) -> list[ExecutionStep]:
 def _collect_kwargs(
     node: Dependant,
     values: dict[str, Any],
-    request: HttpContext | None,
+    ctx: HttpContext | None,
     validated: dict[int, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """
@@ -376,19 +376,19 @@ def _collect_kwargs(
         dep.name: values[dep.name] for dep in node.dependencies if dep.name
     }
     for ext in node.param_extractors:
-        kwargs[ext.param_name] = ext.extractor.extract(request)
+        kwargs[ext.param_name] = ext.extractor.extract(ctx)
     if validated:
         node_values = validated.get(id(node))
         if node_values:
             kwargs.update(node_values)
     for rp in node.request_param_names:
-        kwargs[rp] = request
+        kwargs[rp] = ctx
     return kwargs
 
 
 async def resolve_validated_params(
     dependant: Dependant,
-    request: HttpContext | None,
+    ctx: HttpContext | None,
 ) -> dict[int, dict[str, Any]]:
     """
     Run every Pydantic validator in a dependency tree against the request.
@@ -421,17 +421,17 @@ async def resolve_validated_params(
     resolved: dict[int, dict[str, Any]] = {}
     errors: list[dict[str, Any]] = []
 
-    if request is None:
+    if ctx is None:
         # Every validator reads from the request, so there is nothing to
         # check without one. Saying so once beats guarding at each use.
         return resolved
 
     # Parsed once for the whole tree rather than per node; the request caches
     # the result anyway, but this also keeps the await off the per-node path.
-    form = await request.form if dependant._needs_form else None
+    form = await ctx.form if dependant._needs_form else None
 
     for node_id, validator in dependant._validator_plan:
-        node_values, node_errors = validator.validate_sync(request)
+        node_values, node_errors = validator.validate_sync(ctx)
         if node_errors:
             errors.extend(node_errors)
 
@@ -457,7 +457,7 @@ _NO_VALIDATED: dict[int, dict[str, Any]] = {}
 
 async def solve_dependencies(
     dependant: Dependant,
-    request: HttpContext | None = None,
+    ctx: HttpContext | None = None,
     dependency_cache: DependencyCache | None = None,
     cleanup_callbacks: list[Callable[[], Any]] | None = None,
 ) -> dict[str, Any]:
@@ -501,8 +501,8 @@ async def solve_dependencies(
     # The overwhelmingly common case is a route with nothing to validate. Test
     # the precomputed plan first so those requests never allocate a coroutine.
     validated = (
-        await resolve_validated_params(dependant, request)
-        if dependant._validator_plan and request is not None
+        await resolve_validated_params(dependant, ctx)
+        if dependant._validator_plan and ctx is not None
         else _NO_VALIDATED
     )
 
@@ -514,7 +514,7 @@ async def solve_dependencies(
                 values[sub.name] = cache[sub.cache_key]
             continue
 
-        kwargs = _collect_kwargs(sub, values, request, validated)
+        kwargs = _collect_kwargs(sub, values, ctx, validated)
 
         if step.is_root:
             return kwargs

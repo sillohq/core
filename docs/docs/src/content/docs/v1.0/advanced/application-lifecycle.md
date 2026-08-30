@@ -798,7 +798,7 @@ RequestResponseEndpoint = Callable[[], Awaitable[BaseResponse | StreamingRespons
 ```
 
 A dispatch middleware receives:
-- `request`: The incoming `HttpContext` object
+- `ctx`: The incoming `HttpContext`
 - responses are built by the handler with `sillo.responses` and returned
 - `call_next`: An async callable that continues the chain
 

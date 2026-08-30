@@ -19,8 +19,8 @@ def test_request_json_body(test_client_factory: Callable[[SilloApp], TestClient]
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        data = await request.json
+    async def handler(ctx: HttpContext):
+        data = await ctx.json
         return json(data)
 
     with test_client_factory(app) as client:
@@ -36,8 +36,8 @@ def test_request_json_nested(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        data = await request.json
+    async def handler(ctx: HttpContext):
+        data = await ctx.json
         return json(data)
 
     with test_client_factory(app) as client:
@@ -52,8 +52,8 @@ def test_request_json_array(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        data = await request.json
+    async def handler(ctx: HttpContext):
+        data = await ctx.json
         return json({"count": len(data), "items": data})
 
     with test_client_factory(app) as client:
@@ -70,8 +70,8 @@ def test_request_json_empty_object(
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        data = await request.json
+    async def handler(ctx: HttpContext):
+        data = await ctx.json
         return json({"received": data, "is_dict": isinstance(data, dict)})
 
     with test_client_factory(app) as client:
@@ -86,8 +86,8 @@ def test_request_json_with_null(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        data = await request.json
+    async def handler(ctx: HttpContext):
+        data = await ctx.json
         return json(data)
 
     with test_client_factory(app) as client:
@@ -104,8 +104,8 @@ def test_request_json_with_boolean(
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        data = await request.json
+    async def handler(ctx: HttpContext):
+        data = await ctx.json
         return json(data)
 
     with test_client_factory(app) as client:
@@ -122,8 +122,8 @@ def test_request_json_with_numbers(
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        data = await request.json
+    async def handler(ctx: HttpContext):
+        data = await ctx.json
         return json(data)
 
     with test_client_factory(app) as client:
@@ -144,8 +144,8 @@ def test_request_text_body(test_client_factory: Callable[[SilloApp], TestClient]
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        text = await request.text
+    async def handler(ctx: HttpContext):
+        text = await ctx.text
         return json({"text": text, "length": len(text)})
 
     with test_client_factory(app) as client:
@@ -160,8 +160,8 @@ def test_request_text_multiline(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        text = await request.text
+    async def handler(ctx: HttpContext):
+        text = await ctx.text
         return json({"text": text})
 
     with test_client_factory(app) as client:
@@ -175,8 +175,8 @@ def test_request_text_unicode(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        text = await request.text
+    async def handler(ctx: HttpContext):
+        text = await ctx.text
         return json({"text": text})
 
     with test_client_factory(app) as client:
@@ -190,8 +190,8 @@ def test_request_text_empty(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        text = await request.text
+    async def handler(ctx: HttpContext):
+        text = await ctx.text
         return json({"text": text, "is_empty": text == ""})
 
     with test_client_factory(app) as client:
@@ -209,8 +209,8 @@ def test_request_raw_body(test_client_factory: Callable[[SilloApp], TestClient])
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        body = await request.body
+    async def handler(ctx: HttpContext):
+        body = await ctx.body
         return json({"length": len(body), "is_bytes": isinstance(body, bytes)})
 
     with test_client_factory(app) as client:
@@ -225,8 +225,8 @@ def test_request_body_binary(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.post("/upload")
-    async def handler(request: HttpContext):
-        body = await request.body
+    async def handler(ctx: HttpContext):
+        body = await ctx.body
         return json({"size": len(body)})
 
     with test_client_factory(app) as client:
@@ -240,8 +240,8 @@ def test_request_body_empty(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        body = await request.body
+    async def handler(ctx: HttpContext):
+        body = await ctx.body
         return json({"length": len(body)})
 
     with test_client_factory(app) as client:
@@ -259,8 +259,8 @@ def test_request_form_data_urlencoded(
     app = SilloApp()
 
     @app.post("/form")
-    async def handler(request: HttpContext):
-        form = await request.form
+    async def handler(ctx: HttpContext):
+        form = await ctx.form
         return json(
             {"username": form.get("username"), "email": form.get("email")}
         )
@@ -281,8 +281,8 @@ def test_request_form_data_multiple_values(
     app = SilloApp()
 
     @app.post("/form")
-    async def handler(request: HttpContext):
-        form = await request.form
+    async def handler(ctx: HttpContext):
+        form = await ctx.form
         tags = form.getlist("tag")
         return json({"tags": tags})
 
@@ -299,8 +299,8 @@ def test_request_form_data_empty(
     app = SilloApp()
 
     @app.post("/form")
-    async def handler(request: HttpContext):
-        form = await request.form
+    async def handler(ctx: HttpContext):
+        form = await ctx.form
         return json({"has_data": bool(form)})
 
     with test_client_factory(app) as client:
@@ -316,8 +316,8 @@ def test_request_accepts_json(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"accepts_json": request.accepts_json})
+    async def handler(ctx: HttpContext):
+        return json({"accepts_json": ctx.accepts_json})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"Accept": "application/json"})
@@ -331,8 +331,8 @@ def test_request_accepts_json_wildcard(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"accepts_json": request.accepts_json})
+    async def handler(ctx: HttpContext):
+        return json({"accepts_json": ctx.accepts_json})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"Accept": "*/*"})
@@ -344,8 +344,8 @@ def test_request_accepts_html(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"accepts_html": request.accepts_html})
+    async def handler(ctx: HttpContext):
+        return json({"accepts_html": ctx.accepts_html})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"Accept": "text/html"})
@@ -359,8 +359,8 @@ def test_request_accepts_html_wildcard(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"accepts_html": request.accepts_html})
+    async def handler(ctx: HttpContext):
+        return json({"accepts_html": ctx.accepts_html})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"Accept": "*/*"})
@@ -375,8 +375,8 @@ def test_request_large_json(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        data = await request.json
+    async def handler(ctx: HttpContext):
+        data = await ctx.json
         return json({"count": len(data)})
 
     with test_client_factory(app) as client:
@@ -390,8 +390,8 @@ def test_request_large_text(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.post("/data")
-    async def handler(request: HttpContext):
-        text = await request.text
+    async def handler(ctx: HttpContext):
+        text = await ctx.text
         return json({"length": len(text)})
 
     with test_client_factory(app) as client:

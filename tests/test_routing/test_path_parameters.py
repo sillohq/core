@@ -20,7 +20,7 @@ def test_single_path_parameter(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/users/{user_id}")
-    async def get_user(request: HttpContext, user_id: str):
+    async def get_user(ctx: HttpContext, user_id: str):
         return json({"user_id": user_id})
 
     with test_client_factory(app) as client:
@@ -37,7 +37,7 @@ def test_multiple_path_parameters(
 
     @app.get("/users/{user_id}/posts/{post_id}")
     async def get_user_post(
-        request: HttpContext, user_id: str, post_id: str
+        ctx: HttpContext, user_id: str, post_id: str
     ):
         return json({"user_id": user_id, "post_id": post_id})
 
@@ -56,7 +56,7 @@ def test_path_parameter_with_router(
     router = Router(prefix="/api")
 
     @router.get("/products/{product_id}")
-    async def get_product(request: HttpContext, product_id: str):
+    async def get_product(ctx: HttpContext, product_id: str):
         return json({"product_id": product_id})
 
     app.mount_router(router)
@@ -75,7 +75,7 @@ def test_integer_path_parameter(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/items/{item_id:int}")
-    async def get_item(request: HttpContext, item_id: int):
+    async def get_item(ctx: HttpContext, item_id: int):
         return json({"item_id": item_id, "type": type(item_id).__name__})
 
     with test_client_factory(app) as client:
@@ -89,7 +89,7 @@ def test_float_path_parameter(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/prices/{price:float}")
-    async def get_price(request: HttpContext, price: float):
+    async def get_price(ctx: HttpContext, price: float):
         return json({"price": price, "type": type(price).__name__})
 
     with test_client_factory(app) as client:
@@ -103,7 +103,7 @@ def test_path_path_parameter(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.get("/files/{filepath:path}")
-    async def get_file(request: HttpContext, filepath: str):
+    async def get_file(ctx: HttpContext, filepath: str):
         return json({"filepath": filepath})
 
     with test_client_factory(app) as client:
@@ -120,7 +120,7 @@ def test_url_for_basic(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/users", name="list-users")
-    async def list_users(request: HttpContext):
+    async def list_users(ctx: HttpContext):
         return json({"users": []})
 
     with test_client_factory(app) as client:
@@ -135,7 +135,7 @@ def test_url_for_with_path_parameter(
     app = SilloApp()
 
     @app.get("/users/{user_id}", name="get-user")
-    async def get_user(request: HttpContext, user_id: str):
+    async def get_user(ctx: HttpContext, user_id: str):
         return json({"user_id": user_id})
 
     with test_client_factory(app) as client:
@@ -151,7 +151,7 @@ def test_url_for_with_multiple_parameters(
 
     @app.get("/users/{user_id}/posts/{post_id}", name="get-user-post")
     async def get_user_post(
-        request: HttpContext, user_id: str, post_id: str
+        ctx: HttpContext, user_id: str, post_id: str
     ):
         return json({"user_id": user_id, "post_id": post_id})
 
@@ -166,7 +166,7 @@ def test_url_for_on_router(test_client_factory: Callable[[SilloApp], TestClient]
     router = Router(prefix="/api")
 
     @router.get("/products/{product_id}", name="get-product")
-    async def get_product(request: HttpContext, product_id: str):
+    async def get_product(ctx: HttpContext, product_id: str):
         return json({"product_id": product_id})
 
     app.mount_router(router, name="api")
@@ -181,7 +181,7 @@ def test_url_for_missing_parameter():
     app = SilloApp()
 
     @app.get("/users/{user_id}", name="get-user")
-    async def get_user(request: HttpContext, user_id: str):
+    async def get_user(ctx: HttpContext, user_id: str):
         return json({"user_id": user_id})
 
     with pytest.raises(ValueError):
@@ -205,7 +205,7 @@ def test_nested_path_parameters(test_client_factory: Callable[[SilloApp], TestCl
 
     @app.get("/orgs/{org_id}/teams/{team_id}/members/{member_id}")
     async def get_member(
-        request: HttpContext, org_id: str, team_id: str, member_id: str
+        ctx: HttpContext, org_id: str, team_id: str, member_id: str
     ):
         return json(
             {"org_id": org_id, "team_id": team_id, "member_id": member_id}
@@ -227,7 +227,7 @@ def test_path_parameter_with_special_characters(
     app = SilloApp()
 
     @app.get("/search/{query}")
-    async def search(request: HttpContext, query: str):
+    async def search(ctx: HttpContext, query: str):
         return json({"query": query})
 
     with test_client_factory(app) as client:
@@ -243,7 +243,7 @@ def test_optional_trailing_slash(
     app = SilloApp()
 
     @app.get("/items/{item_id}")
-    async def get_item(request: HttpContext, item_id: str):
+    async def get_item(ctx: HttpContext, item_id: str):
         return json({"item_id": item_id})
 
     with test_client_factory(app) as client:
@@ -258,16 +258,16 @@ def test_optional_trailing_slash(
 def test_path_params_in_request_object(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test that path params are accessible in request.path_params"""
+    """Test that path params are accessible in ctx.path_params"""
     app = SilloApp()
 
     @app.get("/api/{version}/users/{user_id}")
-    async def get_user(request: HttpContext, *args, **kwargs):
+    async def get_user(ctx: HttpContext, *args, **kwargs):
         return json(
             {
-                "version": request.path_params["version"],
-                "user_id": request.path_params["user_id"],
-                "all_params": dict(request.path_params),
+                "version": ctx.path_params["version"],
+                "user_id": ctx.path_params["user_id"],
+                "all_params": dict(ctx.path_params),
             }
         )
 
@@ -287,7 +287,7 @@ def test_mixed_static_and_dynamic_segments(
     app = SilloApp()
 
     @app.get("/api/v1/users/{user_id}/profile")
-    async def get_profile(request: HttpContext, user_id: str):
+    async def get_profile(ctx: HttpContext, user_id: str):
         return json({"user_id": user_id, "endpoint": "profile"})
 
     with test_client_factory(app) as client:
@@ -302,7 +302,7 @@ def test_uuid_path_parameter(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.get("/resources/{resource_id}")
-    async def get_resource(request: HttpContext, resource_id: str):
+    async def get_resource(ctx: HttpContext, resource_id: str):
         return json({"resource_id": resource_id})
 
     with test_client_factory(app) as client:

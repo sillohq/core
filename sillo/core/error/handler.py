@@ -869,7 +869,7 @@ class ServerErrorMiddleware:
     This is the outermost layer of every application's chain, so it is the last
     thing standing between an exception and the ASGI server. It is written in
     the plain ASGI form — ``__init__(app, ...)`` and ``__call__(scope, receive,
-    send)`` — rather than sillo's ``(request, response, call_next)`` dispatch
+    send)`` — rather than sillo's ``(ctx, call_next)`` dispatch
     form, and that is a deliberate performance decision. The dispatch form is
     convenient because sillo builds the ``HttpContext`` and turns
     the rest of the chain into something awaitable, but doing that costs a
@@ -1000,7 +1000,7 @@ class ServerErrorMiddleware:
             # written here is overwritten by whatever request runs during the
             # ``await`` below, and the debug page would render every header it
             # was handed. It is passed down to the renderer instead.
-            request = HttpContext(scope, receive)
+            ctx = HttpContext(scope, receive)
 
             if self.handler:
                 # A user-supplied handler owns the response outright. This is
@@ -1008,9 +1008,9 @@ class ServerErrorMiddleware:
                 # and its result was then overwritten by the debug page or the
                 # default 500, so a configured server_error_handler had no
                 # observable effect.
-                response = await self.handler(request, exc)
+                response = await self.handler(ctx, exc)
             elif self.debug:
-                response = self.get_debug_response(request, exc)
+                response = self.get_debug_response(ctx, exc)
             else:
                 response = self.error_response()
 
@@ -1033,7 +1033,7 @@ class ServerErrorMiddleware:
         """
         return text_response("Internal Server Error", status_code=500)
 
-    def get_debug_response(self, request: HttpContext, exc: Exception):
+    def get_debug_response(self, ctx: HttpContext, exc: Exception):
         """Produce a debug-oriented error response based on the request Accept header.
 
         Inspects the ``Accept`` header of the incoming request to determine the
@@ -1055,11 +1055,11 @@ class ServerErrorMiddleware:
         Raises:
             None.
         """
-        accept = request.headers.get("accept", "")
+        accept = ctx.headers.get("accept", "")
         if not accept:
             content = self.generate_plain_text(exc)
         elif "text/html" in accept:
-            content = self.generate_html(exc, request)
+            content = self.generate_html(exc, ctx)
             return html_response(content, status_code=500)
         else:
             content = self.generate_plain_text(exc)
@@ -1220,7 +1220,7 @@ class ServerErrorMiddleware:
         """
         return "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
-    def _format_request_info(self, request: HttpContext) -> str:
+    def _format_request_info(self, ctx: HttpContext) -> str:
         """Format HTTP request metadata and headers for display in the error page.
 
         Builds an HTML representation of the incoming request including the HTTP
@@ -1239,8 +1239,8 @@ class ServerErrorMiddleware:
         Raises:
             None.
         """
-        method = request.method
-        url = str(request.url)
+        method = ctx.method
+        url = str(ctx.url)
 
         # General request info
         _html = f"""
@@ -1257,7 +1257,7 @@ class ServerErrorMiddleware:
                 </div>
                 <div class="info-item">
                     <div class="info-label">Path:</div>
-                    <div class="info-value">{html.escape(request.path)}</div>
+                    <div class="info-value">{html.escape(ctx.path)}</div>
                 </div>
                 
             </div>
@@ -1268,7 +1268,7 @@ class ServerErrorMiddleware:
         """
 
         # Add headers
-        for name, value in request.headers.items():
+        for name, value in ctx.headers.items():
             _html += f"""
                     <tr>
                         <td>{html.escape(name)}</td>
@@ -1283,14 +1283,14 @@ class ServerErrorMiddleware:
         """
 
         # Add query parameters if available
-        if hasattr(request, "query_params") and request.query_params:
+        if hasattr(ctx, "query_params") and ctx.query_params:
             _html += """
             <div class="info-block">
                 <h3>Query Parameters</h3>
                 <table class="key-value-table">
             """
 
-            for name, value in request.query_params.items():
+            for name, value in ctx.query_params.items():
                 _html += f"""
                     <tr>
                         <td>{html.escape(name)}</td>
@@ -1578,7 +1578,7 @@ class ServerErrorMiddleware:
 
         return _html
 
-    def generate_html(self, exc: Exception, request: HttpContext, limit: int = 7) -> str:
+    def generate_html(self, exc: Exception, ctx: HttpContext, limit: int = 7) -> str:
         """Generate a full interactive HTML debug page for the given exception.
 
         Assembles a complete error page by combining CSS styles, JavaScript for
@@ -1637,7 +1637,7 @@ class ServerErrorMiddleware:
 
         # Get request information if available
         try:
-            request_info = self._format_request_info(request)
+            request_info = self._format_request_info(ctx)
         except Exception as e:
             request_info = f"<div class='info-block'><h3>Error retrieving request information</h3><p>{html.escape(str(e))}</p></div>"
 

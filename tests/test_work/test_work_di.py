@@ -16,7 +16,7 @@ def test_scheduler_injection():
     sched = work["scheduler"]
 
     @app.get("/scheduler")
-    async def handler(request: HttpContext, s=Depend(scheduler)):
+    async def handler(ctx: HttpContext, s=Depend(scheduler)):
         assert s is sched
         return json({"ok": True})
 
@@ -32,7 +32,7 @@ def test_queue_connection_injection():
     conn = work["connection"]
 
     @app.get("/queue")
-    async def handler(request: HttpContext, c=Depend(queue_connection)):
+    async def handler(ctx: HttpContext, c=Depend(queue_connection)):
         assert c is conn
         return json({"ok": True})
 
@@ -47,7 +47,7 @@ def test_events_injection():
     setup_work(app)
 
     @app.get("/events")
-    async def handler(request: HttpContext, d=Depend(events)):
+    async def handler(ctx: HttpContext, d=Depend(events)):
         assert d is not None
         return json({"ok": True})
 
@@ -64,7 +64,7 @@ def test_provider_raises_when_not_setup():
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext, x=Depend(provider)):
+    async def handler(ctx: HttpContext, x=Depend(provider)):
         assert x is None
         return json({"ok": True})
 

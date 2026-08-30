@@ -97,7 +97,7 @@ class LocationSpec:
     passthrough: dict[str, str] = field(default_factory=dict)
 
     # --- Precomputed at registration; read-only at request time. -------------
-    #: ``request`` attribute holding this location's values, as a C-level
+    #: ``ctx`` attribute holding this location's values, as a C-level
     #: attrgetter so the hot path does no branching to find its source.
     source_getter: Callable[[Any], Any] | None = None
     #: Wire names read with a plain ``get``.
@@ -123,8 +123,8 @@ class LocationSpec:
         or report the field as missing) from "explicitly null".
 
         Args:
-            source: The request mapping to read, such as ``request.query_params``
-                or ``request.headers``. May be ``None``.
+            source: The request mapping to read, such as ``ctx.query_params``
+                or ``ctx.headers``. May be ``None``.
 
         Returns:
             A dictionary keyed by wire name containing only the keys present in
@@ -252,7 +252,7 @@ class CompiledValidator:
         return bool(self.specs) or self.needs_form
 
     def validate_sync(
-        self, request: HttpContext
+        self, ctx: HttpContext
     ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """Validate every location available without awaiting the body.
 
@@ -270,7 +270,7 @@ class CompiledValidator:
         for spec in self.specs:
             if spec.source_getter is None:
                 continue
-            spec_values, spec_errors = spec.validate(spec.source_getter(request))
+            spec_values, spec_errors = spec.validate(spec.source_getter(ctx))
             values.update(spec_values)
             if spec_errors:
                 errors.extend(spec_errors)

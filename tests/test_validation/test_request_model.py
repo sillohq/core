@@ -13,12 +13,12 @@ class UserCreate(BaseModel):
 
 
 def test_request_model_validated_data_on_request():
-    """request_model validates body and sets request.validated_data."""
+    """request_model validates body and sets ctx.validated_data."""
     app = SilloApp()
 
     @app.post("/users", request_model=UserCreate)
-    async def create_user(request: HttpContext):
-        user = request.validated_data
+    async def create_user(ctx: HttpContext):
+        user = ctx.validated_data
         assert isinstance(user, UserCreate)
         return json(user.model_dump(), status_code=201)
 
@@ -37,7 +37,7 @@ def test_request_model_injected_as_third_param():
     app = SilloApp()
 
     @app.post("/users", request_model=UserCreate)
-    async def create_user(request: HttpContext, data):
+    async def create_user(ctx: HttpContext, data):
         return json({"name": data.name, "age": data.age}, status_code=201)
 
     client = TestClient(app)
@@ -54,7 +54,7 @@ def test_request_model_validation_error():
     app = SilloApp()
 
     @app.post("/users", request_model=UserCreate)
-    async def create_user(request: HttpContext):
+    async def create_user(ctx: HttpContext):
         return json({"ok": True})
 
     client = TestClient(app)
@@ -77,8 +77,8 @@ def test_request_model_with_di_does_not_clash():
         return "db_connected"
 
     @app.post("/users", request_model=UserCreate)
-    async def create_user(request: HttpContext, db: str = Depend(get_db)):
-        user = request.validated_data
+    async def create_user(ctx: HttpContext, db: str = Depend(get_db)):
+        user = ctx.validated_data
         return json({"name": user.name, "db": db})
 
     client = TestClient(app)
@@ -95,8 +95,8 @@ def test_no_request_model_no_validation():
     app = SilloApp()
 
     @app.post("/echo")
-    async def echo(request: HttpContext):
-        assert request.validated_data is None
+    async def echo(ctx: HttpContext):
+        assert ctx.validated_data is None
         return json({"ok": True})
 
     client = TestClient(app)

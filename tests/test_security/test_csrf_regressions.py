@@ -30,15 +30,15 @@ def build(**config):
     app.use(CSRFMiddleware(config=CSRFConfig(enabled=True, secret_key=SECRET, **config)))
 
     @app.get("/token")
-    async def token(request: HttpContext):
-        return json({"token": request.state.csrf_token})
+    async def token(ctx: HttpContext):
+        return json({"token": ctx.state.csrf_token})
 
     @app.post("/protected")
-    async def protected(request: HttpContext):
+    async def protected(ctx: HttpContext):
         return json({"status": "ok"})
 
     @app.post("/webhooks/stripe")
-    async def webhook(request: HttpContext):
+    async def webhook(ctx: HttpContext):
         return json({"status": "ok"})
 
     return app

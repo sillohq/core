@@ -31,11 +31,11 @@ async def test_route_launches_background_task_and_drains():
     sink = []
 
     @app.post("/ingest")
-    async def ingest(request: HttpContext):
+    async def ingest(ctx: HttpContext):
         async def process(value: str):
             sink.append(value)
 
-        BackgroundTask.run(process, request.query_params.get("v", "x"))
+        BackgroundTask.run(process, ctx.query_params.get("v", "x"))
         return json_response({"ok": True})
 
     async with AsyncTestClient(app) as client:
@@ -57,8 +57,8 @@ async def test_route_dispatches_job_consumed_by_worker():
     SENT_EMAILS.clear()
 
     @app.post("/email")
-    async def send_email(request: HttpContext):
-        to = request.query_params.get("to", "nobody")
+    async def send_email(ctx: HttpContext):
+        to = ctx.query_params.get("to", "nobody")
         payload = json.dumps(
             {
                 "job": "tests.test_work.work_jobs.SendEmail",
@@ -109,8 +109,8 @@ async def test_route_fires_event_through_dispatcher():
     dispatcher.register(RoutePing, handler)
 
     @app.post("/ping")
-    async def ping(request: HttpContext, d=Depend(events)):
-        await d.dispatch(RoutePing(who=request.query_params.get("who", "anon")))
+    async def ping(ctx: HttpContext, d=Depend(events)):
+        await d.dispatch(RoutePing(who=ctx.query_params.get("who", "anon")))
         return json_response({"ok": True})
 
     async with AsyncTestClient(app) as client:
@@ -124,7 +124,7 @@ async def test_route_exposes_scheduler_stats_via_di():
     app = _make_app()
 
     @app.get("/scheduler-stats")
-    async def stats(request: HttpContext, s=Depend(scheduler)):
+    async def stats(ctx: HttpContext, s=Depend(scheduler)):
         return json_response(s.stats.to_dict())
 
     async with AsyncTestClient(app) as client:
@@ -141,7 +141,7 @@ async def test_route_reads_queue_size_via_di():
     await conn.push("default", "sample-payload")
 
     @app.get("/queue-size")
-    async def size(request: HttpContext, c=Depend(queue_connection)):
+    async def size(ctx: HttpContext, c=Depend(queue_connection)):
         return json_response({"size": await c.size("default")})
 
     async with AsyncTestClient(app) as client:

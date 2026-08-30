@@ -185,7 +185,7 @@ def bucket(name: str = "") -> Bucket:
 
         @app.post("/avatar")
         async def upload_avatar(ctx):
-            stored = await bucket("avatars").put(key, upload, user=request.user)
+            stored = await bucket("avatars").put(key, upload, user=ctx.user)
             ...
 
     Args:

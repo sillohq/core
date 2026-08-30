@@ -1,5 +1,5 @@
 """
-Tests for new HttpContext utility flags and methods
+Tests for new Request utility flags and methods
 """
 
 import pytest
@@ -15,12 +15,12 @@ def test_request_is_json_flag(test_client_factory):
     app = SilloApp()
 
     @app.post("/json")
-    async def json_endpoint(request: HttpContext):
-        return json({"is_json": request.is_json})
+    async def json_endpoint(ctx: HttpContext):
+        return json({"is_json": ctx.is_json})
 
     @app.post("/text")
-    async def text_endpoint(request: HttpContext):
-        return json({"is_json": request.is_json})
+    async def text_endpoint(ctx: HttpContext):
+        return json({"is_json": ctx.is_json})
 
     with test_client_factory(app) as client:
         # Test JSON request
@@ -43,12 +43,12 @@ def test_request_is_form_flag(test_client_factory):
     app = SilloApp()
 
     @app.post("/form")
-    async def form_endpoint(request: HttpContext):
-        return json({"is_form": request.is_form})
+    async def form_endpoint(ctx: HttpContext):
+        return json({"is_form": ctx.is_form})
 
     @app.post("/json")
-    async def json_endpoint(request: HttpContext):
-        return json({"is_form": request.is_form})
+    async def json_endpoint(ctx: HttpContext):
+        return json({"is_form": ctx.is_form})
 
     with test_client_factory(app) as client:
         # Test form request
@@ -69,12 +69,12 @@ def test_request_is_multipart_flag(test_client_factory):
     app = SilloApp()
 
     @app.post("/upload")
-    async def upload_endpoint(request: HttpContext):
-        return json({"is_multipart": request.is_multipart})
+    async def upload_endpoint(ctx: HttpContext):
+        return json({"is_multipart": ctx.is_multipart})
 
     @app.post("/json")
-    async def json_endpoint(request: HttpContext):
-        return json({"is_multipart": request.is_multipart})
+    async def json_endpoint(ctx: HttpContext):
+        return json({"is_multipart": ctx.is_multipart})
 
     with test_client_factory(app) as client:
         # Test multipart request (simulated)
@@ -90,12 +90,12 @@ def test_request_is_urlencoded_flag(test_client_factory):
     app = SilloApp()
 
     @app.post("/form")
-    async def form_endpoint(request: HttpContext):
-        return json({"is_urlencoded": request.is_urlencoded})
+    async def form_endpoint(ctx: HttpContext):
+        return json({"is_urlencoded": ctx.is_urlencoded})
 
     @app.post("/json")
-    async def json_endpoint(request: HttpContext):
-        return json({"is_urlencoded": request.is_urlencoded})
+    async def json_endpoint(ctx: HttpContext):
+        return json({"is_urlencoded": ctx.is_urlencoded})
 
     with test_client_factory(app) as client:
         # Test URL-encoded request
@@ -116,8 +116,8 @@ def test_request_has_cookie_flag(test_client_factory):
     app = SilloApp()
 
     @app.get("/cookies")
-    async def cookies_endpoint(request: HttpContext):
-        return json({"has_cookie": request.has_cookie})
+    async def cookies_endpoint(ctx: HttpContext):
+        return json({"has_cookie": ctx.has_cookie})
 
     with test_client_factory(app) as client:
         # Test request with cookies
@@ -138,12 +138,12 @@ def test_request_has_body_flag(test_client_factory):
     app = SilloApp()
 
     @app.post("/data")
-    async def data_endpoint(request: HttpContext):
-        return json({"has_body": request.has_body})
+    async def data_endpoint(ctx: HttpContext):
+        return json({"has_body": ctx.has_body})
 
     @app.get("/no-data")
-    async def no_data_endpoint(request: HttpContext):
-        return json({"has_body": request.has_body})
+    async def no_data_endpoint(ctx: HttpContext):
+        return json({"has_body": ctx.has_body})
 
     with test_client_factory(app) as client:
         # Test POST request with body
@@ -164,8 +164,8 @@ def test_request_is_authenticated_flag(test_client_factory):
     app = SilloApp()
 
     @app.get("/auth")
-    async def auth_endpoint(request: HttpContext):
-        return json({"is_authenticated": request.is_authenticated})
+    async def auth_endpoint(ctx: HttpContext):
+        return json({"is_authenticated": ctx.is_authenticated})
 
     with test_client_factory(app) as client:
         # Test unauthenticated request
@@ -180,8 +180,8 @@ def test_request_has_session_flag(test_client_factory):
     app = SilloApp()
 
     @app.get("/session")
-    async def session_endpoint(request: HttpContext):
-        return json({"has_session": request.has_session})
+    async def session_endpoint(ctx: HttpContext):
+        return json({"has_session": ctx.has_session})
 
     with test_client_factory(app) as client:
         # Test request without session middleware
@@ -196,8 +196,8 @@ def test_request_has_files_flag(test_client_factory):
     app = SilloApp()
 
     @app.post("/upload")
-    async def upload_endpoint(request: HttpContext):
-        return json({"has_files": request.has_files})
+    async def upload_endpoint(ctx: HttpContext):
+        return json({"has_files": ctx.has_files})
 
     with test_client_factory(app) as client:
         # Test request without files
@@ -212,15 +212,15 @@ def test_request_flags_with_different_content_types(test_client_factory):
     app = SilloApp()
 
     @app.post("/check")
-    async def check_endpoint(request: HttpContext):
+    async def check_endpoint(ctx: HttpContext):
         return json(
             {
-                "is_json": request.is_json,
-                "is_form": request.is_form,
-                "is_multipart": request.is_multipart,
-                "is_urlencoded": request.is_urlencoded,
-                "has_body": request.has_body,
-                "content_type": request.content_type,
+                "is_json": ctx.is_json,
+                "is_form": ctx.is_form,
+                "is_multipart": ctx.is_multipart,
+                "is_urlencoded": ctx.is_urlencoded,
+                "has_body": ctx.has_body,
+                "content_type": ctx.content_type,
             }
         )
 
@@ -253,12 +253,12 @@ def test_request_has_header_method(test_client_factory):
     app = SilloApp()
 
     @app.get("/headers")
-    async def headers_endpoint(request: HttpContext):
+    async def headers_endpoint(ctx: HttpContext):
         return json(
             {
-                "has_content_type": request.has_header("content-type"),
-                "has_authorization": request.has_header("authorization"),
-                "has_custom_header": request.has_header("x-custom-header"),
+                "has_content_type": ctx.has_header("content-type"),
+                "has_authorization": ctx.has_header("authorization"),
+                "has_custom_header": ctx.has_header("x-custom-header"),
             }
         )
 
@@ -277,12 +277,12 @@ def test_request_get_header_method(test_client_factory):
     app = SilloApp()
 
     @app.get("/headers")
-    async def headers_endpoint(request: HttpContext):
+    async def headers_endpoint(ctx: HttpContext):
         return json(
             {
-                "content_type": request.get_header("content-type"),
-                "missing_header": request.get_header("x-missing", "default_value"),
-                "none_default": request.get_header("x-none"),
+                "content_type": ctx.get_header("content-type"),
+                "missing_header": ctx.get_header("x-missing", "default_value"),
+                "none_default": ctx.get_header("x-none"),
             }
         )
 

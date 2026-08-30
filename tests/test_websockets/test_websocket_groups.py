@@ -1,5 +1,5 @@
 """
-Tests for WebSocketContext groups and channels functionality
+Tests for WebSocket groups and channels functionality
 """
 
 import asyncio

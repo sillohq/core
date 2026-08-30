@@ -24,7 +24,7 @@ def test_router_wrap_asgi_basic(test_client_factory):
             await self.app(scope, receive, send)
 
     @router.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         executed.append("handler")
         return json({"message": "ok"})
 

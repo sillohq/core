@@ -129,12 +129,12 @@ class CSRFMiddleware(BaseMiddleware):
         self._set_token_cookie(ctx, response)
         return response
 
-    def _set_token_cookie(self, request: HttpContext, response) -> None:
+    def _set_token_cookie(self, ctx: HttpContext, response) -> None:
         """Put the CSRF token on the outgoing response for the client to read."""
         if response is None:
             return
 
-        csrf_token = getattr(request.state, "csrf_token", None)
+        csrf_token = getattr(ctx.state, "csrf_token", None)
         if not csrf_token:
             return
 
@@ -148,7 +148,7 @@ class CSRFMiddleware(BaseMiddleware):
             samesite=self.cookie_samesite,
         )
 
-    def _requires_validation(self, request: HttpContext) -> bool:
+    def _requires_validation(self, ctx: HttpContext) -> bool:
         """Whether this unsafe request has to carry a token.
 
         An exempt URL is exempt. That reads as obvious and was not what the
@@ -163,26 +163,26 @@ class CSRFMiddleware(BaseMiddleware):
         does not need a token. Naming none keeps the safe default of treating
         every request as sensitive.
         """
-        if self._url_is_exempt(request.url.path):
+        if self._url_is_exempt(ctx.url.path):
             return False
 
-        if not self._url_is_required(request.url.path):
+        if not self._url_is_required(ctx.url.path):
             return False
 
-        return self._has_sensitive_cookies(request.cookies)
+        return self._has_sensitive_cookies(ctx.cookies)
 
-    async def _submitted_token(self, request: HttpContext) -> str | None:
+    async def _submitted_token(self, ctx: HttpContext) -> str | None:
         """Return the token the client echoed back, from header or form body."""
-        submitted = request.headers.get(self.header_name)
+        submitted = ctx.headers.get(self.header_name)
         if submitted:
             return submitted
 
-        content_type = request.headers.get("content-type", "")
+        content_type = ctx.headers.get("content-type", "")
         if not content_type.startswith(_FORM_CONTENT_TYPES):
             return None
 
         try:
-            form = await request.form
+            form = await ctx.form
         except Exception:
             # An unparseable body carries no token; that is a 403 below, not a
             # 500 out of the middleware.

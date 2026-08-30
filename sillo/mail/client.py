@@ -251,9 +251,9 @@ def setup_mail(app, config: MailConfig | None = None) -> MailClient:
     return client
 
 
-def get_mail_client(request) -> MailClient:
+def get_mail_client(ctx) -> MailClient:
     """Get Mail Client"""
-    client = request.state._state.get("mail_client")
+    client = ctx.state._state.get("mail_client")
     if client is None:
         raise RuntimeError(
             "Mail client not initialized. Call setup_mail(app) during startup."

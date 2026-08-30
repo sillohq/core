@@ -19,8 +19,8 @@ def test_request_method_get(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"method": request.method})
+    async def handler(ctx: HttpContext):
+        return json({"method": ctx.method})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -33,8 +33,8 @@ def test_request_method_post(test_client_factory: Callable[[SilloApp], TestClien
     app = SilloApp()
 
     @app.post("/test")
-    async def handler(request: HttpContext):
-        return json({"method": request.method})
+    async def handler(ctx: HttpContext):
+        return json({"method": ctx.method})
 
     with test_client_factory(app) as client:
         resp = client.post("/test")
@@ -47,8 +47,8 @@ def test_request_method_put(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.put("/test")
-    async def handler(request: HttpContext):
-        return json({"method": request.method})
+    async def handler(ctx: HttpContext):
+        return json({"method": ctx.method})
 
     with test_client_factory(app) as client:
         resp = client.put("/test")
@@ -61,8 +61,8 @@ def test_request_method_delete(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.delete("/test")
-    async def handler(request: HttpContext):
-        return json({"method": request.method})
+    async def handler(ctx: HttpContext):
+        return json({"method": ctx.method})
 
     with test_client_factory(app) as client:
         resp = client.delete("/test")
@@ -75,8 +75,8 @@ def test_request_method_patch(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.patch("/test")
-    async def handler(request: HttpContext):
-        return json({"method": request.method})
+    async def handler(ctx: HttpContext):
+        return json({"method": ctx.method})
 
     with test_client_factory(app) as client:
         resp = client.patch("/test")
@@ -89,12 +89,12 @@ def test_request_is_method(test_client_factory: Callable[[SilloApp], TestClient]
     app = SilloApp()
 
     @app.route("/test", methods=["GET", "POST"])
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json(
             {
-                "is_get": request.is_method("GET"),
-                "is_post": request.is_method("POST"),
-                "is_put": request.is_method("PUT"),
+                "is_get": ctx.is_method("GET"),
+                "is_post": ctx.is_method("POST"),
+                "is_put": ctx.is_method("PUT"),
             }
         )
 
@@ -114,8 +114,8 @@ def test_request_url(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/test/path")
-    async def handler(request: HttpContext):
-        return json({"url": str(request.url)})
+    async def handler(ctx: HttpContext):
+        return json({"url": str(ctx.url)})
 
     with test_client_factory(app) as client:
         resp = client.get("/test/path")
@@ -128,8 +128,8 @@ def test_request_path(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/api/users")
-    async def handler(request: HttpContext):
-        return json({"path": request.path})
+    async def handler(ctx: HttpContext):
+        return json({"path": ctx.path})
 
     with test_client_factory(app) as client:
         resp = client.get("/api/users")
@@ -142,8 +142,8 @@ def test_request_url_scheme(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"scheme": request.url.scheme})
+    async def handler(ctx: HttpContext):
+        return json({"scheme": ctx.url.scheme})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -156,8 +156,8 @@ def test_request_url_netloc(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"netloc": request.url.netloc})
+    async def handler(ctx: HttpContext):
+        return json({"netloc": ctx.url.netloc})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -170,8 +170,8 @@ def test_request_base_url(test_client_factory: Callable[[SilloApp], TestClient])
     app = SilloApp()
 
     @app.get("/test/path")
-    async def handler(request: HttpContext):
-        return json({"base_url": str(request.base_url)})
+    async def handler(ctx: HttpContext):
+        return json({"base_url": str(ctx.base_url)})
 
     with test_client_factory(app) as client:
         resp = client.get("/test/path")
@@ -188,11 +188,11 @@ def test_request_headers(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json(
             {
-                "has_headers": bool(request.headers),
-                "user_agent": request.headers.get("user-agent", ""),
+                "has_headers": bool(ctx.headers),
+                "user_agent": ctx.headers.get("user-agent", ""),
             }
         )
 
@@ -208,10 +208,10 @@ def test_request_get_header(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json(
             {
-                "custom": request.get_header("X-Custom-Header", "default"),
+                "custom": ctx.get_header("X-Custom-Header", "default"),
             }
         )
 
@@ -226,11 +226,11 @@ def test_request_has_header(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json(
             {
-                "has_custom": request.has_header("X-Custom"),
-                "has_missing": request.has_header("X-Missing"),
+                "has_custom": ctx.has_header("X-Custom"),
+                "has_missing": ctx.has_header("X-Missing"),
             }
         )
 
@@ -246,8 +246,8 @@ def test_request_user_agent(test_client_factory: Callable[[SilloApp], TestClient
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"user_agent": request.user_agent})
+    async def handler(ctx: HttpContext):
+        return json({"user_agent": ctx.user_agent})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"User-Agent": "Mozilla/5.0"})
@@ -259,8 +259,8 @@ def test_request_content_type(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.post("/test")
-    async def handler(request: HttpContext):
-        return json({"content_type": request.content_type})
+    async def handler(ctx: HttpContext):
+        return json({"content_type": ctx.content_type})
 
     with test_client_factory(app) as client:
         resp = client.post("/test", json={"data": "test"})
@@ -272,8 +272,8 @@ def test_request_content_length(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.post("/test")
-    async def handler(request: HttpContext):
-        return json({"content_length": request.content_length})
+    async def handler(ctx: HttpContext):
+        return json({"content_length": ctx.content_length})
 
     with test_client_factory(app) as client:
         resp = client.post("/test", json={"data": "test"})
@@ -285,8 +285,8 @@ def test_request_get_client_ip(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"client_ip": request.get_client_ip()})
+    async def handler(ctx: HttpContext):
+        return json({"client_ip": ctx.get_client_ip()})
 
     with test_client_factory(
         app,
@@ -302,8 +302,8 @@ def test_request_get_client_ip_with_forwarded_for(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"client_ip": request.get_client_ip()})
+    async def handler(ctx: HttpContext):
+        return json({"client_ip": ctx.get_client_ip()})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"X-Forwarded-For": "192.168.1.1, 10.0.0.1"})
@@ -317,8 +317,8 @@ def test_request_get_client_ip_with_real_ip(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"client_ip": request.get_client_ip()})
+    async def handler(ctx: HttpContext):
+        return json({"client_ip": ctx.get_client_ip()})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"X-Real-IP": "203.0.113.1"})
@@ -333,8 +333,8 @@ def test_request_valid(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"valid": request.valid()})
+    async def handler(ctx: HttpContext):
+        return json({"valid": ctx.valid()})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -351,8 +351,8 @@ def test_request_str_representation(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        req_str = str(request)
+    async def handler(ctx: HttpContext):
+        req_str = str(ctx)
         return json(
             {
                 "str": req_str,
@@ -376,8 +376,8 @@ def test_request_origin(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"origin": request.origin})
+    async def handler(ctx: HttpContext):
+        return json({"origin": ctx.origin})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"Origin": "https://example.com"})
@@ -391,8 +391,8 @@ def test_request_origin_without_header(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"origin": request.origin})
+    async def handler(ctx: HttpContext):
+        return json({"origin": ctx.origin})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -405,8 +405,8 @@ def test_request_referrer(test_client_factory: Callable[[SilloApp], TestClient])
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"referrer": request.referrer})
+    async def handler(ctx: HttpContext):
+        return json({"referrer": ctx.referrer})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"Referer": "https://example.com/page"})
@@ -418,8 +418,8 @@ def test_request_referrer_empty(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"referrer": request.referrer})
+    async def handler(ctx: HttpContext):
+        return json({"referrer": ctx.referrer})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -434,8 +434,8 @@ def test_request_is_secure_http(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"is_secure": request.is_secure})
+    async def handler(ctx: HttpContext):
+        return json({"is_secure": ctx.is_secure})
 
     with test_client_factory(app) as client:
         resp = client.get("/test")
@@ -453,8 +453,8 @@ def test_request_build_absolute_uri(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        uri = request.build_absolute_uri("/api/users")
+    async def handler(ctx: HttpContext):
+        uri = ctx.build_absolute_uri("/api/users")
         return json({"uri": uri})
 
     with test_client_factory(app) as client:
@@ -470,8 +470,8 @@ def test_request_build_absolute_uri_with_query(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        uri = request.build_absolute_uri("/search", {"q": "test", "page": "1"})
+    async def handler(ctx: HttpContext):
+        uri = ctx.build_absolute_uri("/search", {"q": "test", "page": "1"})
         return json({"uri": uri})
 
     with test_client_factory(app) as client:

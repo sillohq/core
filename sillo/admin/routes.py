@@ -215,9 +215,9 @@ async def _resolve_m2m_value(obj, field_name: str, field_obj, admin_site):
     return results
 
 
-async def _collect_form(request):
+async def _collect_form(ctx):
     """Collect Form"""
-    form = await request.form
+    form = await ctx.form
 
     def get(key):
         """Get"""
@@ -258,15 +258,15 @@ def model_links_html(site):
     return links
 
 
-def base_ctx(request, site, model_name="", model_slug=""):
-    """Base Ctx"""
+def base_tmpl(ctx, site, model_name="", model_slug=""):
+    """Build the template variables every admin page needs."""
     return {
         "site_title": site.title,
         "site_prefix": site.prefix,
         "model_name": model_name,
         "model_slug": model_slug,
         "model_links": model_links_html(site),
-        "user_email": (getattr(request, "session", {}) or {})
+        "user_email": (getattr(ctx, "session", {}) or {})
         .get("user", {})
         .get("display_name", "Admin"),
     }
@@ -277,14 +277,14 @@ def _forbidden(site_prefix):
     return redirect(f"{site_prefix}/", status_code=302)
 
 
-async def _current_admin_user(request, site):
+async def _current_admin_user(ctx, site):
     """Load the full logged-in user record for the current session.
 
     The session only stores ``{"id", "display_name"}``; this fetches the
     real row through ``site.auth.user_model`` for checks that need more
     than identity, e.g. ``is_superuser``.
     """
-    session = getattr(request, "session", None)
+    session = getattr(ctx, "session", None)
     data = session.get("user") if session else None
     if not data:
         return None
@@ -297,12 +297,12 @@ async def _current_admin_user(request, site):
         return None
 
 
-async def _log(request, action, model_name, site, object_id=None, detail=None):
+async def _log(ctx, action, model_name, site, object_id=None, detail=None):
     """Log"""
     try:
-        ctx = base_ctx(request, site)
+        tmpl = base_tmpl(ctx, site)
         await AdminActivity.create(
-            user_email=ctx.get("user_email", "system"),
+            user_email=tmpl.get("user_email", "system"),
             action=action,
             model_name=model_name,
             object_id=str(object_id) if object_id is not None else None,
@@ -642,16 +642,16 @@ def _json_export(rows, filename):
 # ── Route functions ──────────────────────────────────────────────────────
 
 
-async def login_view(request, site):
+async def login_view(ctx, site):
     """Login View"""
-    ctx = {
+    tmpl = {
         "site_title": site.title,
         "site_prefix": site.prefix,
         "error": "",
     }
-    if request.method == "POST":
-        get, _ = await _collect_form(request)
-        ok = await site.auth.login(request, get("email") or "", get("password") or "")
+    if ctx.method == "POST":
+        get, _ = await _collect_form(ctx)
+        ok = await site.auth.login(ctx, get("email") or "", get("password") or "")
         if ok:
             try:
                 user_model = getattr(site.auth, "user_model", None)
@@ -663,20 +663,20 @@ async def login_view(request, site):
             except Exception:
                 pass
             return redirect(f"{site.prefix}/", status_code=302)
-        ctx["error"] = "Invalid credentials"
-    return html(_render("login.html", **ctx))
+        tmpl["error"] = "Invalid credentials"
+    return html(_render("login.html", **tmpl))
 
 
-async def logout_view(request, site):
+async def logout_view(ctx, site):
     """Logout View"""
-    await site.auth.logout(request)
+    await site.auth.logout(ctx)
     return redirect(f"{site.prefix}/login/", status_code=302)
 
 
-async def dashboard_view(request, site):
+async def dashboard_view(ctx, site):
     """Dashboard View"""
-    ctx = base_ctx(request, site)
-    ctx["title"] = "Dashboard"
+    tmpl = base_tmpl(ctx, site)
+    tmpl["title"] = "Dashboard"
     dashboard_models = []
     recent = []
     try:
@@ -698,9 +698,9 @@ async def dashboard_view(request, site):
         can_change = False
         can_delete = False
         try:
-            can_add = bool(admin_cls.has_add_permission(request))
-            can_change = bool(admin_cls.has_change_permission(request))
-            can_delete = bool(admin_cls.has_delete_permission(request))
+            can_add = bool(admin_cls.has_add_permission(ctx))
+            can_change = bool(admin_cls.has_change_permission(ctx))
+            can_delete = bool(admin_cls.has_delete_permission(ctx))
         except Exception:
             pass
         dashboard_models.append(
@@ -713,8 +713,8 @@ async def dashboard_view(request, site):
                 "can_delete": can_delete,
             }
         )
-    ctx["dashboard_models"] = dashboard_models
-    ctx["recent_activity"] = (
+    tmpl["dashboard_models"] = dashboard_models
+    tmpl["recent_activity"] = (
         [
             {
                 "user_email": a.user_email,
@@ -727,17 +727,17 @@ async def dashboard_view(request, site):
         if recent
         else []
     )
-    return html(_render("dashboard.html", **ctx))
+    return html(_render("dashboard.html", **tmpl))
 
 
-async def query_view(request, site):
+async def query_view(ctx, site):
     """Query View — run raw SQL against the app's database from the admin.
 
     Gated on ``is_superuser`` (rather than just "logged in") since it grants
     full read/write access to every table, not just the ones registered
     with the admin.
     """
-    user = await _current_admin_user(request, site)
+    user = await _current_admin_user(ctx, site)
     if user is None or not getattr(user, "is_superuser", False):
         return _forbidden(site.prefix)
 
@@ -752,42 +752,42 @@ async def query_view(request, site):
         key=lambda t: t[0],
     )
 
-    ctx = base_ctx(request, site, "Query", "query")
-    ctx["title"] = "Query"
-    ctx["tables"] = [{"name": n, "table": t} for n, t in tables]
-    ctx["sql"] = ""
-    ctx["error"] = ""
-    ctx["columns"] = []
-    ctx["rows"] = []
-    ctx["rowcount"] = None
+    tmpl = base_tmpl(ctx, site, "Query", "query")
+    tmpl["title"] = "Query"
+    tmpl["tables"] = [{"name": n, "table": t} for n, t in tables]
+    tmpl["sql"] = ""
+    tmpl["error"] = ""
+    tmpl["columns"] = []
+    tmpl["rows"] = []
+    tmpl["rowcount"] = None
 
-    if request.method == "POST":
-        get, _ = await _collect_form(request)
+    if ctx.method == "POST":
+        get, _ = await _collect_form(ctx)
         sql = (get("sql") or "").strip()
         export_fmt = get("export") or ""
-        ctx["sql"] = sql
+        tmpl["sql"] = sql
         if sql:
             try:
                 conn = connections.get("default")
                 rows, rowcount = await conn.execute_query_dict_with_affected(sql)
-                ctx["rows"] = rows
-                ctx["columns"] = list(rows[0].keys()) if rows else []
-                ctx["rowcount"] = rowcount
-                await _log(request, "query", "SQL", site, None, sql[:2000])
+                tmpl["rows"] = rows
+                tmpl["columns"] = list(rows[0].keys()) if rows else []
+                tmpl["rowcount"] = rowcount
+                await _log(ctx, "query", "SQL", site, None, sql[:2000])
                 if export_fmt in ("csv", "json"):
                     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
                     if export_fmt == "json":
                         return _json_export(rows, f"query_{stamp}.json")
                     return _csv_export(
-                        ctx["columns"], rows, f"query_{stamp}.csv"
+                        tmpl["columns"], rows, f"query_{stamp}.csv"
                     )
             except Exception as e:
-                ctx["error"] = str(e)
+                tmpl["error"] = str(e)
 
-    return html(_render("query.html", **ctx))
+    return html(_render("query.html", **tmpl))
 
 
-async def export_view(request, site, model_cls, admin_cls):
+async def export_view(ctx, site, model_cls, admin_cls):
     """Export View — download a model's (optionally filtered) list as CSV or JSON.
 
     Honors the same ``q`` (search) and ``f_<field>`` (list_filter) query
@@ -795,7 +795,7 @@ async def export_view(request, site, model_cls, admin_cls):
     ignores pagination and instead caps the result at ``_EXPORT_ROW_CAP``
     rows to avoid an unbounded dump.
     """
-    if not admin_cls.has_view_permission(request):
+    if not admin_cls.has_view_permission(ctx):
         return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
@@ -803,7 +803,7 @@ async def export_view(request, site, model_cls, admin_cls):
     meta = model_cls._meta
     qs = model_cls.all()
 
-    query = request.query_params.get("q", "")
+    query = ctx.query_params.get("q", "")
     if query and admin_cls.search_fields:
         q_filter = Q()
         for f in admin_cls.search_fields:
@@ -813,7 +813,7 @@ async def export_view(request, site, model_cls, admin_cls):
     for f in admin_cls.get_list_filter():
         if f not in meta.fields_map:
             continue
-        val = request.query_params.get(f"f_{f}", "")
+        val = ctx.query_params.get(f"f_{f}", "")
         if not val:
             continue
         fobj = meta.fields_map[f]
@@ -825,8 +825,8 @@ async def export_view(request, site, model_cls, admin_cls):
         else:
             qs = qs.filter(**{f: val})
 
-    sort = request.query_params.get("sort", "id")
-    d = request.query_params.get("dir", "asc")
+    sort = ctx.query_params.get("sort", "id")
+    d = ctx.query_params.get("dir", "asc")
     dir_prefix = "-" if d == "desc" else ""
     try:
         qs = qs.order_by(f"{dir_prefix}{sort}")
@@ -862,8 +862,8 @@ async def export_view(request, site, model_cls, admin_cls):
         out_rows.append(row)
 
     out_columns = [ci["name"] for ci in column_info]
-    fmt = (request.query_params.get("format") or "csv").lower()
-    await _log(request, "export", model_name, site, None, f"{fmt}:{len(out_rows)} rows")
+    fmt = (ctx.query_params.get("format") or "csv").lower()
+    await _log(ctx, "export", model_name, site, None, f"{fmt}:{len(out_rows)} rows")
 
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     if fmt == "json":
@@ -871,23 +871,23 @@ async def export_view(request, site, model_cls, admin_cls):
     return _csv_export(out_columns, out_rows, f"{model_slug}_{stamp}.csv")
 
 
-async def list_view(request, site, model_cls, admin_cls):
+async def list_view(ctx, site, model_cls, admin_cls):
     """List View"""
-    if not admin_cls.has_view_permission(request):
+    if not admin_cls.has_view_permission(ctx):
         return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
-    ctx = base_ctx(request, site, model_name, model_slug)
-    ctx["title"] = model_name
+    tmpl = base_tmpl(ctx, site, model_name, model_slug)
+    tmpl["title"] = model_name
     meta = model_cls._meta
     qs = model_cls.all()
 
-    page = int(request.query_params.get("page", 1))
+    page = int(ctx.query_params.get("page", 1))
     page_size = admin_cls.list_per_page or 25
-    sort = request.query_params.get("sort", "id")
-    d = request.query_params.get("dir", "asc")
-    query = request.query_params.get("q", "")
+    sort = ctx.query_params.get("sort", "id")
+    d = ctx.query_params.get("dir", "asc")
+    query = ctx.query_params.get("q", "")
 
     if query and admin_cls.search_fields:
         q_filter = Q()
@@ -903,7 +903,7 @@ async def list_view(request, site, model_cls, admin_cls):
         fobj = meta.fields_map[f]
         ftype = _field_kind(fobj, f)
         param = f"f_{f}"
-        val = request.query_params.get(param, "")
+        val = ctx.query_params.get(param, "")
         spec = {
             "name": f,
             "param": param,
@@ -970,8 +970,8 @@ async def list_view(request, site, model_cls, admin_cls):
     paginator = AsyncPaginator(
         data_handler=data_handler,
         pagination_strategy=strategy,
-        base_url=str(request.url),
-        request_params=dict(request.query_params),
+        base_url=str(ctx.url),
+        request_params=dict(ctx.query_params),
         # A page past the end renders as empty rather than raising — rows get
         # deleted out from under bookmarked and back-button page links.
         validate_total_items=False,
@@ -1050,7 +1050,7 @@ async def list_view(request, site, model_cls, admin_cls):
     if not link_cols and columns:
         link_cols = [columns[0]]
 
-    ctx.update(
+    tmpl.update(
         {
             "total": total,
             "page": page,
@@ -1066,31 +1066,31 @@ async def list_view(request, site, model_cls, admin_cls):
             "filters": filters,
             "active_filter_count": len(active_filters),
             "bulk_actions": list(admin_cls.actions or []),
-            "can_add": bool(admin_cls.has_add_permission(request)),
-            "can_change": bool(admin_cls.has_change_permission(request)),
-            "can_delete": bool(admin_cls.has_delete_permission(request)),
+            "can_add": bool(admin_cls.has_add_permission(ctx)),
+            "can_change": bool(admin_cls.has_change_permission(ctx)),
+            "can_delete": bool(admin_cls.has_delete_permission(ctx)),
             "page_range": page_range,
         }
     )
-    return html(_render("list.html", **ctx))
+    return html(_render("list.html", **tmpl))
 
 
-async def detail_view(request, site, model_cls, admin_cls, id):
+async def detail_view(ctx, site, model_cls, admin_cls, id):
     """Detail View"""
-    if not admin_cls.has_view_permission(request):
+    if not admin_cls.has_view_permission(ctx):
         return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
-    ctx = base_ctx(request, site, model_name, model_slug)
+    tmpl = base_tmpl(ctx, site, model_name, model_slug)
     try:
         obj = await model_cls.get(pk=id)
     except Exception:
         return text("Not Found", status_code=404)
-    ctx["title"] = f"{model_name} #{id}"
-    ctx["object_id"] = id
-    ctx["can_change"] = bool(admin_cls.has_change_permission(request, obj))
-    ctx["can_delete"] = bool(admin_cls.has_delete_permission(request, obj))
+    tmpl["title"] = f"{model_name} #{id}"
+    tmpl["object_id"] = id
+    tmpl["can_change"] = bool(admin_cls.has_change_permission(ctx, obj))
+    tmpl["can_delete"] = bool(admin_cls.has_delete_permission(ctx, obj))
 
     meta = model_cls._meta
     fields = []
@@ -1132,7 +1132,7 @@ async def detail_view(request, site, model_cls, admin_cls, id):
                     "type": "text",
                 }
             )
-    ctx["fields"] = fields
+    tmpl["fields"] = fields
 
     reverse = []
     back_fields = (
@@ -1177,27 +1177,27 @@ async def detail_view(request, site, model_cls, admin_cls, id):
             )
         except Exception:
             continue
-    ctx["reverse_relations"] = reverse
+    tmpl["reverse_relations"] = reverse
 
-    return html(_render("detail.html", **ctx))
+    return html(_render("detail.html", **tmpl))
 
 
-async def create_view(request, site, model_cls, admin_cls):
+async def create_view(ctx, site, model_cls, admin_cls):
     """Create View"""
-    if not admin_cls.has_add_permission(request):
+    if not admin_cls.has_add_permission(ctx):
         return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
-    ctx = base_ctx(request, site, model_name, model_slug)
-    ctx["title"] = f"Add {model_name}"
-    ctx["error"] = ""
+    tmpl = base_tmpl(ctx, site, model_name, model_slug)
+    tmpl["title"] = f"Add {model_name}"
+    tmpl["error"] = ""
     meta = model_cls._meta
     fields = await _build_form_fields(meta, admin_cls, is_create=True)
-    ctx["fields"] = fields
+    tmpl["fields"] = fields
 
-    if request.method == "POST":
-        get, getlist = await _collect_form(request)
+    if ctx.method == "POST":
+        get, getlist = await _collect_form(ctx)
         try:
             create_kwargs = {}
             m2m_data = {}
@@ -1241,13 +1241,13 @@ async def create_view(request, site, model_cls, admin_cls):
                 rel_model = meta.fields_map[name].related_model
                 rels = [await rel_model.get(pk=pk) for pk in pks]
                 await getattr(obj, name).add(*rels)
-            await _log(request, "create", model_name, site, obj.pk)
+            await _log(ctx, "create", model_name, site, obj.pk)
             return redirect(
                 f"{site.prefix}/{model_slug}/{obj.pk}/",
                 status_code=302,
             )
         except Exception as e:
-            ctx["error"] = str(e)
+            tmpl["error"] = str(e)
             for fld in fields:
                 if fld["widget"] == "password":
                     fld["value"] = ""
@@ -1255,32 +1255,32 @@ async def create_view(request, site, model_cls, admin_cls):
                     pass
                 else:
                     fld["value"] = get(fld["name"]) or ""
-    return html(_render("create.html", **ctx))
+    return html(_render("create.html", **tmpl))
 
 
-async def update_view(request, site, model_cls, admin_cls, id):
+async def update_view(ctx, site, model_cls, admin_cls, id):
     """Update View"""
-    if not admin_cls.has_change_permission(request):
+    if not admin_cls.has_change_permission(ctx):
         return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
-    ctx = base_ctx(request, site, model_name, model_slug)
-    ctx["error"] = ""
+    tmpl = base_tmpl(ctx, site, model_name, model_slug)
+    tmpl["error"] = ""
     try:
         obj = await model_cls.get(pk=id)
     except Exception:
         return text("Not Found", status_code=404)
-    ctx["title"] = f"Edit {model_name} #{id}"
-    ctx["object_id"] = id
+    tmpl["title"] = f"Edit {model_name} #{id}"
+    tmpl["object_id"] = id
 
     meta = model_cls._meta
     fields = await _build_form_fields(meta, admin_cls, obj=obj, is_create=False)
-    ctx["fields"] = fields
-    ctx["relation_fields"] = await _build_reverse_relation_fields(meta, model_cls, obj)
+    tmpl["fields"] = fields
+    tmpl["relation_fields"] = await _build_reverse_relation_fields(meta, model_cls, obj)
 
-    if request.method == "POST":
-        get, getlist = await _collect_form(request)
+    if ctx.method == "POST":
+        get, getlist = await _collect_form(ctx)
         try:
             for f_name in _form_field_names(meta, admin_cls, False):
                 if f_name in admin_cls.readonly_fields:
@@ -1314,53 +1314,53 @@ async def update_view(request, site, model_cls, admin_cls, id):
                         setattr(obj, f_name, get(f_name) or None)
             await obj.save()
             await _apply_reverse_relations(meta, model_cls, obj, get, getlist)
-            await _log(request, "update", model_name, site, id)
+            await _log(ctx, "update", model_name, site, id)
             return redirect(
                 f"{site.prefix}/{model_slug}/{id}/", status_code=302
             )
         except Exception as e:
-            ctx["error"] = str(e)
+            tmpl["error"] = str(e)
             for fld in fields:
                 if fld["widget"] == "password":
                     fld["value"] = ""
                 elif fld["widget"] not in ("relation", "m2m"):
                     fld["value"] = get(fld["name"]) or ""
-    return html(_render("update.html", **ctx))
+    return html(_render("update.html", **tmpl))
 
 
-async def delete_view(request, site, model_cls, admin_cls, id):
+async def delete_view(ctx, site, model_cls, admin_cls, id):
     """Delete View"""
-    if not admin_cls.has_delete_permission(request):
+    if not admin_cls.has_delete_permission(ctx):
         return _forbidden(site.prefix)
 
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
-    ctx = base_ctx(request, site, model_name, model_slug)
+    tmpl = base_tmpl(ctx, site, model_name, model_slug)
     try:
         obj = await model_cls.get(pk=id)
     except Exception:
         return text("Not Found", status_code=404)
-    ctx["title"] = f"Delete {model_name} #{id}"
-    ctx["object_id"] = id
-    if request.method == "POST":
-        await _log(request, "delete", model_name, site, id)
+    tmpl["title"] = f"Delete {model_name} #{id}"
+    tmpl["object_id"] = id
+    if ctx.method == "POST":
+        await _log(ctx, "delete", model_name, site, id)
         await obj.delete()
         return redirect(f"{site.prefix}/{model_slug}/", status_code=302)
-    return html(_render("delete.html", **ctx))
+    return html(_render("delete.html", **tmpl))
 
 
-async def bulk_view(request, site, model_cls, admin_cls):
+async def bulk_view(ctx, site, model_cls, admin_cls):
     """Bulk View"""
     model_name = getattr(admin_cls, "verbose_name", None) or model_cls.__name__
     model_slug = model_cls.__name__.lower()
-    if request.method != "POST":
+    if ctx.method != "POST":
         return redirect(f"{site.prefix}/{model_slug}/", status_code=302)
-    if not admin_cls.has_delete_permission(request):
+    if not admin_cls.has_delete_permission(ctx):
         return _forbidden(site.prefix)
-    get, getlist = await _collect_form(request)
+    get, getlist = await _collect_form(ctx)
     action = get("action") or ""
     ids = [int(x) for x in getlist("bulk_ids") if x]
     if action == "delete_selected" and ids:
         await model_cls.filter(pk__in=ids).delete()
-        await _log(request, "delete", model_name, site, None, f"bulk:{ids}")
+        await _log(ctx, "delete", model_name, site, None, f"bulk:{ids}")
     return redirect(f"{site.prefix}/{model_slug}/", status_code=302)

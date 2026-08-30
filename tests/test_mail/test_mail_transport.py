@@ -535,8 +535,8 @@ def test_a_handler_can_reach_the_client(test_client_factory):
     setup_mail(app, MailConfig(default_from="a@example.com", suppress_send=True))
 
     @app.get("/send")
-    async def send(request: HttpContext):
-        client = get_mail_client(request)
+    async def send(ctx: HttpContext):
+        client = get_mail_client(ctx)
         result = await client.send_email(to="b@example.com", subject="Hi", body="x")
         return json({"sent": result.success})
 
@@ -548,8 +548,8 @@ def test_asking_for_an_unconfigured_client_is_an_explicit_error(test_client_fact
     app = SilloApp()
 
     @app.get("/send")
-    async def send(request: HttpContext):
-        get_mail_client(request)
+    async def send(ctx: HttpContext):
+        get_mail_client(ctx)
         return json({})
 
     with test_client_factory(app, raise_server_exceptions=False) as http:

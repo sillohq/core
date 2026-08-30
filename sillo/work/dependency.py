@@ -5,7 +5,7 @@ Each provider is a function usable with ``Depend()`` that pulls the
 corresponding work component from the application state.  This lets you
 access schedulers, queue connections, event dispatchers, and background
 task managers directly in your handler signatures without manually
-reaching into ``request.app.state``.
+reaching into ``ctx.app.state``.
 
 Usage::
 
@@ -35,9 +35,9 @@ from sillo.core.dependencies import Depend
 def _make_provider(key: str):
     """Create a DI provider function that pulls *key* from app.state."""
 
-    async def provider(req=Depend(get_request=True)):
+    async def provider(ctx=Depend(get_request=True)):
         """Provider"""
-        app = req.base_app  # ty: ignore[unresolved-attribute]
+        app = ctx.base_app  # ty: ignore[unresolved-attribute]
         return app.state.get(key) if hasattr(app, "state") else None
 
     return provider

@@ -97,10 +97,10 @@ class TestParsingHeaderLists:
             "client": ("127.0.0.1", 1), "server": ("t", 80),
             "scheme": "http", "http_version": "1.1", "root_path": "",
         }
-        request = HttpContext(scope)
+        ctx = HttpContext(scope)
 
-        assert parse_if_match(request) == ['"m"']
-        assert parse_if_none_match(request) == ['"n"']
+        assert parse_if_match(ctx) == ['"m"']
+        assert parse_if_none_match(ctx) == ['"n"']
 
 
 class TestMatching:
@@ -197,11 +197,11 @@ class TestMiddleware:
         app = SilloApp(debug=False)
 
         @app.get("/thing")
-        async def thing(request: HttpContext):
+        async def thing(ctx: HttpContext):
             return json({"value": 1})
 
         @app.post("/thing")
-        async def create(request: HttpContext):
+        async def create(ctx: HttpContext):
             return json({"value": 1})
 
         app.use(ETagMiddleware(**kwargs))

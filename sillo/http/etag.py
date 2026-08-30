@@ -45,12 +45,12 @@ def compute_and_set_etag(
     return tag
 
 
-def parse_if_none_match(request: HttpContext) -> list[str]:
-    return _parse_etag_list(request.headers.get("if-none-match"))
+def parse_if_none_match(ctx: HttpContext) -> list[str]:
+    return _parse_etag_list(ctx.headers.get("if-none-match"))
 
 
-def parse_if_match(request: HttpContext) -> list[str]:
-    return _parse_etag_list(request.headers.get("if-match"))
+def parse_if_match(ctx: HttpContext) -> list[str]:
+    return _parse_etag_list(ctx.headers.get("if-match"))
 
 
 def _parse_etag_list(value: str | None) -> list[str]:
@@ -92,12 +92,12 @@ def etag_matches(
     return False
 
 
-def is_fresh(request: HttpContext, response: BaseResponse, weak_compare: bool = True) -> bool:
+def is_fresh(ctx: HttpContext, response: BaseResponse, weak_compare: bool = True) -> bool:
     current = response.headers.get("etag")
     if not current:
         return False
     return etag_matches(
-        current, parse_if_none_match(request), weak_compare=weak_compare
+        current, parse_if_none_match(ctx), weak_compare=weak_compare
     )
 
 

@@ -1220,7 +1220,7 @@ async def my_handler(
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `request` | `HttpContext` | The incoming HTTP request. Provides access to headers, URL, method, scope, and the application instance. |
+| `ctx` | `HttpContext` | The incoming request's context. Provides access to headers, URL, method, scope, and the application instance. |
 | — | — | There is no response argument. Build one with `json()`, `html()`, `text()` or `empty()` from `sillo.responses` and return it. |
 | `exc` | `Exception` subclass | The caught exception. Handlers should type-hint this to the specific exception class they handle. |
 
@@ -1460,7 +1460,7 @@ ASGI stack:
 
 - `WebSocketErrorMiddleware` works at the raw ASGI level (`scope`, `receive`,
   `send`).
-- `ExceptionMiddleware` works at the sillo middleware level (`request`,
+- `ExceptionMiddleware` works at the sillo middleware level (`ctx`,
   `response`, `call_next`).
 
 ### 15.6 ResponseValidationError Is Intentionally Vague

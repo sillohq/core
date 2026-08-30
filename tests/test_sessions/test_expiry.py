@@ -33,13 +33,13 @@ def app_with(**settings):
     app.use(SessionMiddleware(secret_key=SECRET, session_cookie_secure=False, **settings))
 
     @app.get("/login")
-    async def login(request: HttpContext):
-        request.session["user_id"] = 7
+    async def login(ctx: HttpContext):
+        ctx.session["user_id"] = 7
         return json({"ok": True})
 
     @app.get("/whoami")
-    async def whoami(request: HttpContext):
-        return json({"user_id": request.session.get("user_id")})
+    async def whoami(ctx: HttpContext):
+        return json({"user_id": ctx.session.get("user_id")})
 
     return app
 
@@ -210,8 +210,8 @@ class TestOversizedCookies:
         app.use(SessionMiddleware(secret_key=SECRET, session_cookie_secure=False))
 
         @app.get("/fill")
-        async def fill(request: HttpContext):
-            request.session["blob"] = "x" * 5000
+        async def fill(ctx: HttpContext):
+            ctx.session["blob"] = "x" * 5000
             return json({"ok": True})
 
         with TestClient(app) as client:

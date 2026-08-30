@@ -5,7 +5,7 @@ from anywhere.
 Several subsystems work the same way: ``setup_x(app, config)`` builds one
 long-lived instance and puts it on ``app.state``, and code deep inside a
 handler, a background job, or a script wants it back. Reaching through
-``request.base_app.state["x"]`` only works when there is a request in hand,
+``ctx.base_app.state["x"]`` only works when there is a request in hand,
 needs it threaded down to wherever the lookup happens, and is untyped and
 keyed by a string every subsystem picks independently (``"storage"``,
 ``"mail_client"``, ``"record"``, ...).

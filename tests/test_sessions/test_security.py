@@ -45,13 +45,13 @@ def _app(manager):
     )
 
     @app.get("/write")
-    async def write(request: HttpContext):
-        request.session["marker"] = "written"
+    async def write(ctx: HttpContext):
+        ctx.session["marker"] = "written"
         return json({"ok": True})
 
     @app.get("/read")
-    async def read(request: HttpContext):
-        return json({"marker": request.session.get("marker")})
+    async def read(ctx: HttpContext):
+        return json({"marker": ctx.session.get("marker")})
 
     return app
 
@@ -167,19 +167,19 @@ class TestSessionIdentifierRotatesOnLogin:
         )
 
         @app.get("/visit")
-        async def visit(request: HttpContext):
-            request.session["seen"] = True
+        async def visit(ctx: HttpContext):
+            ctx.session["seen"] = True
             return json({"ok": True})
 
         @app.get("/login")
-        async def login_route(request: HttpContext):
+        async def login_route(ctx: HttpContext):
             from sillo.auth.session_auth.backend import login
 
             class _User:
                 identity = "user-1"
                 display_name = "Ada"
 
-            login(request, _User())
+            login(ctx, _User())
             return json({"ok": True})
 
         with TestClient(app) as client:
@@ -245,21 +245,21 @@ class TestLoggingOutPurgesTheStoredSession:
         )
 
         @app.get("/login")
-        async def login_route(request: HttpContext):
+        async def login_route(ctx: HttpContext):
             from sillo.auth.session_auth.backend import login
 
             class _User:
                 identity = "user-1"
                 display_name = "Ada"
 
-            login(request, _User())
+            login(ctx, _User())
             return json({"ok": True})
 
         @app.get("/logout")
-        async def logout_route(request: HttpContext):
+        async def logout_route(ctx: HttpContext):
             from sillo.auth.session_auth.backend import logout
 
-            logout(request)
+            logout(ctx)
             return json({"ok": True})
 
         with TestClient(app) as client:
@@ -310,22 +310,22 @@ class TestRemovingOneKeyIsNotDeletingTheSession:
         )
 
         @app.get("/fill")
-        async def fill(request: HttpContext):
-            request.session["user_id"] = 7
-            request.session["cart"] = "abc"
+        async def fill(ctx: HttpContext):
+            ctx.session["user_id"] = 7
+            ctx.session["cart"] = "abc"
             return json({"ok": True})
 
         @app.get("/drop")
-        async def drop(request: HttpContext):
-            del request.session["cart"]
+        async def drop(ctx: HttpContext):
+            del ctx.session["cart"]
             return json({"ok": True})
 
         @app.get("/show")
-        async def show(request: HttpContext):
+        async def show(ctx: HttpContext):
             return json(
                 {
-                    "user_id": request.session.get("user_id"),
-                    "cart": request.session.get("cart"),
+                    "user_id": ctx.session.get("user_id"),
+                    "cart": ctx.session.get("cart"),
                 }
             )
 

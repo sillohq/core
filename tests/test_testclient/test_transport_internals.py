@@ -59,9 +59,9 @@ def test_missing_host_header_uses_default_port():
         await send({"type": "http.response.body", "body": b"ok"})
 
     client = TestClient(app)
-    request = client.build_request("GET", "/")
-    del request.headers["host"]
-    response = client.send(request)
+    ctx = client.build_request("GET", "/")
+    del ctx.headers["host"]
+    response = client.send(ctx)
     assert response.status_code == 200
 
 
@@ -73,9 +73,9 @@ def test_missing_host_header_with_non_default_port():
         await send({"type": "http.response.body", "body": b"ok"})
 
     client = TestClient(app, base_url="http://example.com:1234")
-    request = client.build_request("GET", "/")
-    del request.headers["host"]
-    response = client.send(request)
+    ctx = client.build_request("GET", "/")
+    del ctx.headers["host"]
+    response = client.send(ctx)
     assert response.status_code == 200
 
 
@@ -175,9 +175,9 @@ async def test_async_missing_host_header_uses_default_port():
         await send({"type": "http.response.body", "body": b"ok"})
 
     client = AsyncTestClient(app)
-    request = client.build_request("GET", "/")
-    del request.headers["host"]
-    response = await client.send(request)
+    ctx = client.build_request("GET", "/")
+    del ctx.headers["host"]
+    response = await client.send(ctx)
     assert response.status_code == 200
 
 
@@ -190,7 +190,7 @@ async def test_async_explicit_port_and_missing_host_header():
         await send({"type": "http.response.body", "body": b"ok"})
 
     client = AsyncTestClient(app, base_url="http://example.com:1234")
-    request = client.build_request("GET", "/")
-    del request.headers["host"]
-    response = await client.send(request)
+    ctx = client.build_request("GET", "/")
+    del ctx.headers["host"]
+    response = await client.send(ctx)
     assert response.status_code == 200

@@ -26,7 +26,7 @@ def test_nested_query_dependency(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, pagination: dict = Depend(get_pagination)
+        ctx: HttpContext, pagination: dict = Depend(get_pagination)
     ):
         return pagination
 
@@ -45,7 +45,7 @@ def test_nested_query_override(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, pagination: dict = Depend(get_pagination)
+        ctx: HttpContext, pagination: dict = Depend(get_pagination)
     ):
         return pagination
 
@@ -64,7 +64,7 @@ def test_nested_header_dependency(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, auth: dict = Depend(get_auth)
+        ctx: HttpContext, auth: dict = Depend(get_auth)
     ):
         return auth
 
@@ -81,7 +81,7 @@ def test_nested_header_no_value(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, auth: dict = Depend(get_auth)
+        ctx: HttpContext, auth: dict = Depend(get_auth)
     ):
         return auth
 
@@ -98,7 +98,7 @@ def test_nested_cookie_dependency(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, prefs: dict = Depend(get_prefs)
+        ctx: HttpContext, prefs: dict = Depend(get_prefs)
     ):
         return prefs
 
@@ -115,7 +115,7 @@ def test_nested_cookie_default(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, prefs: dict = Depend(get_prefs)
+        ctx: HttpContext, prefs: dict = Depend(get_prefs)
     ):
         return prefs
 
@@ -135,7 +135,7 @@ def test_deeply_nested_query(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, pagination: dict = Depend(get_pagination)
+        ctx: HttpContext, pagination: dict = Depend(get_pagination)
     ):
         return pagination
 
@@ -158,9 +158,9 @@ def test_mixed_params_in_dependency(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, ctx: dict = Depend(get_context)
+        ctx: HttpContext, resolved: dict = Depend(get_context)
     ):
-        return ctx
+        return resolved
 
     response = client.get(
         "/test?page=2",
@@ -182,7 +182,7 @@ def test_handler_and_nested_both_have_query(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext,
+        ctx: HttpContext,
         page: int = Query(1),
         pagination: dict = Depend(get_pagination),
     ):
@@ -206,7 +206,7 @@ def test_nested_dep_with_own_dep_and_query(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, config: dict = Depend(get_config)
+        ctx: HttpContext, config: dict = Depend(get_config)
     ):
         return config
 

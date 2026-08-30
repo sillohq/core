@@ -35,7 +35,7 @@ async def stream_upload(
     storing from there writes a truncated file with no error anywhere.
 
     Args:
-        upload: An ``UploadedFile`` from ``await request.files``, or anything
+        upload: An ``UploadedFile`` from ``await ctx.files``, or anything
             else with async ``read`` and ``seek``.
         chunk_size: How much to read at a time.
 
@@ -44,14 +44,14 @@ async def stream_upload(
 
     Example:
         ```python
-        files = await request.files
+        files = await ctx.files
         upload = files["document"]
 
         await bucket.put(
             f"documents/{upload.filename}",
             stream_upload(upload),
             content_type=upload.content_type or "",
-            user=request.user,
+            user=ctx.user,
         )
         ```
     """

@@ -101,7 +101,7 @@ async def ping(ctx: HttpContext, ip: str = Depend(get_client_ip)):
     return json({"client_ip": ip})
 ```
 
-`get_request=True` is special: it doesn't call a function. It injects the live `HttpContext` object directly. You can also write a normal dependency that takes `request` as a parameter and sillo will inject it:
+`get_request=True` is special: it doesn't call a function. It injects the live `HttpContext` object directly. You can also write a normal dependency that takes `ctx` as a parameter and sillo will inject it:
 
 ```python
 from sillo import HttpContext

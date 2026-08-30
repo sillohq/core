@@ -737,19 +737,19 @@ class TestPermissionGates:
             # The base hooks are ``staticmethod``s and are called off the class,
             # so overrides have to keep that shape.
             @staticmethod
-            def has_view_permission(request, obj=None):
+            def has_view_permission(ctx, obj=None):
                 return False
 
             @staticmethod
-            def has_add_permission(request):
+            def has_add_permission(ctx):
                 return False
 
             @staticmethod
-            def has_change_permission(request, obj=None):
+            def has_change_permission(ctx, obj=None):
                 return False
 
             @staticmethod
-            def has_delete_permission(request, obj=None):
+            def has_delete_permission(ctx, obj=None):
                 return False
 
         app = _make_app(tmp_path / "locked.db", product_admin=LockedProductAdmin)

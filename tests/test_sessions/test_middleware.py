@@ -56,10 +56,10 @@ class TestSessionMiddleware:
         )
 
         @app.get("/session-test")
-        async def session_test(request: HttpContext):
-            user_id = request.session.get("user_id", 0)
-            request.session["user_id"] = user_id + 1
-            return json({"user_id": request.session["user_id"]})
+        async def session_test(ctx: HttpContext):
+            user_id = ctx.session.get("user_id", 0)
+            ctx.session["user_id"] = user_id + 1
+            return json({"user_id": ctx.session["user_id"]})
 
         client = TestClient(app)
 
@@ -98,10 +98,10 @@ class TestSessionMiddleware:
             )
 
             @app.get("/file-session-test")
-            async def file_session_test(request: HttpContext):
-                counter = request.session.get("counter", 0)
-                request.session["counter"] = counter + 1
-                return json({"counter": request.session["counter"]})
+            async def file_session_test(ctx: HttpContext):
+                counter = ctx.session.get("counter", 0)
+                ctx.session["counter"] = counter + 1
+                return json({"counter": ctx.session["counter"]})
 
             client = TestClient(app)
 
@@ -133,9 +133,9 @@ class TestSessionMiddleware:
         )
 
         @app.get("/instance-test")
-        async def instance_test(request: HttpContext):
-            request.session["data"] = "value"
-            return json({"data": request.session["data"]})
+        async def instance_test(ctx: HttpContext):
+            ctx.session["data"] = "value"
+            return json({"data": ctx.session["data"]})
 
         client = TestClient(app)
 
@@ -148,9 +148,9 @@ class TestSessionMiddleware:
         app = SilloApp()
 
         @app.get("/existing-cookie-test")
-        async def existing_cookie_test(request: HttpContext):
-            request.session["existing"] = "data"
-            return json({"existing": request.session["existing"]})
+        async def existing_cookie_test(ctx: HttpContext):
+            ctx.session["existing"] = "data"
+            return json({"existing": ctx.session["existing"]})
 
         app.use(
             SessionMiddleware(config=SessionConfig(), secret_key="test-secret-key")
@@ -173,13 +173,13 @@ class TestSessionMiddleware:
         app = SilloApp()
 
         @app.get("/clear-session-test")
-        async def clear_session_test(request: HttpContext):
-            if request.session.get("clear"):
-                request.session.clear()
-                request.session["cleared"] = True
+        async def clear_session_test(ctx: HttpContext):
+            if ctx.session.get("clear"):
+                ctx.session.clear()
+                ctx.session["cleared"] = True
                 return json({"cleared": True})
             else:
-                request.session["clear"] = True
+                ctx.session["clear"] = True
                 return json({"set": True})
 
         app.use(
@@ -220,8 +220,8 @@ class TestSessionMiddleware:
         )
 
         @app.get("/config-test")
-        async def config_test(request: HttpContext):
-            request.session["test"] = "configured"
+        async def config_test(ctx: HttpContext):
+            ctx.session["test"] = "configured"
             return json({"configured": True})
 
         client = TestClient(app)
@@ -242,9 +242,9 @@ class TestSessionMiddleware:
         app = SilloApp()
 
         @app.get("/error-test")
-        async def error_test(request: HttpContext):
+        async def error_test(ctx: HttpContext):
             try:
-                request.session["test"] = "value"
+                ctx.session["test"] = "value"
                 return json({"success": True})
             except Exception as e:
                 return json({"error": str(e)})
@@ -265,7 +265,7 @@ class TestSessionMiddleware:
         app = SilloApp()
 
         @app.get("/delete-test")
-        async def delete_test(request: HttpContext):
+        async def delete_test(ctx: HttpContext):
             return json({"status": "ok"})
 
         app.use(

@@ -98,12 +98,12 @@ def test_the_application_can_be_built_without_the_orm():
     result = run_without(
         ["tortoise"],
         """
-        from sillo import SilloApp
+        from sillo import SilloApp, HttpContext
 
         app = SilloApp(title="Bare")
 
         @app.get("/")
-        async def home(request, response):
+        async def home(ctx: HttpContext):
             return json({"ok": True})
 
         print("built", len(app.router.routes))

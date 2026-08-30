@@ -78,24 +78,24 @@ class TestDefineMiddlewareRepr:
 
 class TestCachedRequestReceive:
     async def test_an_unread_body_is_streamed_through(self):
-        request = _CachedRequest(
+        ctx = _CachedRequest(
             http_scope(),
             receiver({"type": "http.request", "body": b"chunk", "more_body": False}),
         )
 
-        message = await request.wrapped_receive()
+        message = await ctx.wrapped_receive()
 
         assert message["type"] == "http.request"
         assert message["body"] == b"chunk"
 
     async def test_a_body_already_read_is_replayed_downstream(self):
-        request = _CachedRequest(
+        ctx = _CachedRequest(
             http_scope(),
             receiver({"type": "http.request", "body": b"payload", "more_body": False}),
         )
-        await request.body
+        await ctx.body
 
-        message = await request.wrapped_receive()
+        message = await ctx.wrapped_receive()
 
         assert message["body"] == b"payload"
         assert message["more_body"] is False
@@ -103,53 +103,53 @@ class TestCachedRequestReceive:
     async def test_a_consumed_stream_yields_an_empty_body(self):
         # stream() to completion means the bytes are gone; downstream gets an
         # empty body rather than hanging waiting for one.
-        request = _CachedRequest(
+        ctx = _CachedRequest(
             http_scope(),
             receiver({"type": "http.request", "body": b"gone", "more_body": False}),
         )
-        async for _ in request.stream():
+        async for _ in ctx.stream():
             pass
 
-        message = await request.wrapped_receive()
+        message = await ctx.wrapped_receive()
 
         assert message["type"] == "http.request"
         assert message["body"] == b""
 
     async def test_a_replayed_body_is_followed_by_a_disconnect(self):
-        request = _CachedRequest(
+        ctx = _CachedRequest(
             http_scope(),
             receiver(
                 {"type": "http.request", "body": b"payload", "more_body": False},
                 {"type": "http.disconnect"},
             ),
         )
-        await request.body
-        await request.wrapped_receive()
+        await ctx.body
+        await ctx.wrapped_receive()
 
-        assert (await request.wrapped_receive())["type"] == "http.disconnect"
+        assert (await ctx.wrapped_receive())["type"] == "http.disconnect"
 
     async def test_the_disconnect_is_repeated_without_waiting(self):
-        request = _CachedRequest(
+        ctx = _CachedRequest(
             http_scope(),
             receiver(
                 {"type": "http.request", "body": b"payload", "more_body": False},
                 {"type": "http.disconnect"},
             ),
         )
-        await request.body
-        await request.wrapped_receive()
-        await request.wrapped_receive()
+        await ctx.body
+        await ctx.wrapped_receive()
+        await ctx.wrapped_receive()
 
         # The third call must not block on a receive that will never come.
         with anyio.fail_after(1):
-            assert (await request.wrapped_receive())["type"] == "http.disconnect"
+            assert (await ctx.wrapped_receive())["type"] == "http.disconnect"
 
     async def test_a_disconnect_while_streaming_is_reported(self):
-        request = _CachedRequest(
+        ctx = _CachedRequest(
             http_scope(), receiver({"type": "http.disconnect"})
         )
 
-        assert (await request.wrapped_receive())["type"] == "http.disconnect"
+        assert (await ctx.wrapped_receive())["type"] == "http.disconnect"
 
 
 class TestBridgeRepr:
@@ -157,7 +157,7 @@ class TestBridgeRepr:
         async def inner(scope, receive, send):
             return None
 
-        async def dispatch(request, call_next):
+        async def dispatch(ctx, call_next):
             return await call_next()
 
         # The bridge formats itself through __str__, not __repr__.
@@ -173,7 +173,7 @@ class TestBridgePassthrough:
         async def inner(scope, receive, send):
             seen["type"] = scope["type"]
 
-        async def dispatch(request, call_next):  # pragma: no cover
+        async def dispatch(ctx, call_next):  # pragma: no cover
             raise AssertionError("dispatch must not run for a lifespan scope")
 
         bridge = ASGIRequestResponseBridge(inner, dispatch)
@@ -194,11 +194,11 @@ class TestExceptionsThroughTheBridge:
         app = SilloApp(debug=False)
 
         @app.get("/boom")
-        async def boom(request: HttpContext):
+        async def boom(ctx: HttpContext):
             raise RuntimeError("inner failure")
 
         class Passthrough(BaseMiddleware):
-            async def dispatch(self, request, call_next):
+            async def dispatch(self, ctx, call_next):
                 return await call_next()
 
         app.use(Passthrough())
@@ -210,11 +210,11 @@ class TestExceptionsThroughTheBridge:
         app = SilloApp(debug=False)
 
         @app.get("/never")
-        async def never(request: HttpContext):  # pragma: no cover
+        async def never(ctx: HttpContext):  # pragma: no cover
             raise AssertionError("the handler must not run")
 
         class Blocker(BaseMiddleware):
-            async def dispatch(self, request, call_next):
+            async def dispatch(self, ctx, call_next):
                 return json({"blocked": True}, status_code=403)
 
         app.use(Blocker())
@@ -229,12 +229,12 @@ class TestExceptionsThroughTheBridge:
         app = SilloApp(debug=False)
 
         @app.post("/echo")
-        async def echo(request: HttpContext):
-            return json({"seen": await request.json})
+        async def echo(ctx: HttpContext):
+            return json({"seen": await ctx.json})
 
         class Peeker(BaseMiddleware):
-            async def dispatch(self, request, call_next):
-                await request.body
+            async def dispatch(self, ctx, call_next):
+                await ctx.body
                 return await call_next()
 
         app.use(Peeker())

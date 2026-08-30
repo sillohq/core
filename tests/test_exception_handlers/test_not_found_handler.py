@@ -121,7 +121,7 @@ def test_a_matched_route_is_untouched(production):
     app = SilloApp(debug=False)
 
     @app.get("/exists")
-    async def handler(request):
+    async def handler(ctx):
         return text("here")
 
     assert TestClient(app).get("/exists").status_code == 200

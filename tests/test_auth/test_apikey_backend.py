@@ -40,8 +40,8 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
         def __init__(self):
             super().__init__(header_name="X-API-Key")
 
-        async def authenticate(self, request: HttpContext):
-            raw_token = request.headers.get(self.header_name)
+        async def authenticate(self, ctx: HttpContext):
+            raw_token = ctx.headers.get(self.header_name)
             if not raw_token:
                 return AuthResult(success=False, identity="", scope="")
 
@@ -55,9 +55,9 @@ async def test_apikey_auth_backend_success(test_client, api_key_data):
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apikey"]))
-    async def protected_route(req: HttpContext):
+    async def protected_route(ctx: HttpContext):
         return json(
-            {"user_id": req.user.identity, "username": req.user.display_name}
+            {"user_id": ctx.user.identity, "username": ctx.user.display_name}
         )
 
     async with client:
@@ -75,8 +75,8 @@ async def test_apikey_auth_backend_missing_header(test_client):
     client = test_client(app)
 
     class TestAPIKeyBackend(APIKeyAuthBackend):
-        async def authenticate(self, request: HttpContext):
-            raw_token = request.headers.get("X-API-Key")
+        async def authenticate(self, ctx: HttpContext):
+            raw_token = ctx.headers.get("X-API-Key")
             if not raw_token:
                 return AuthResult(success=False, identity="", scope="")
             return AuthResult(success=True, identity="test", scope="apikey")
@@ -84,8 +84,8 @@ async def test_apikey_auth_backend_missing_header(test_client):
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apikey"]))
-    async def protected_route(req: HttpContext):
-        return json({"user": req.user})
+    async def protected_route(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     async with client:
         response = await client.get("/protected")
@@ -109,8 +109,8 @@ async def test_apikey_auth_backend_invalid_key(test_client):
     app.use(AuthenticationMiddleware(Store, APIKeyAuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apikey"]))
-    async def protected_route(req: HttpContext):
-        return json({"user": req.user})
+    async def protected_route(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     async with client:
         response = await client.get("/protected", headers={"X-API-Key": "invalid_key"})
@@ -125,8 +125,8 @@ async def test_apikey_auth_backend_custom_header(test_client):
         def __init__(self):
             super().__init__(header_name="X-Custom-API-Key")
 
-        async def authenticate(self, request: HttpContext):
-            raw_token = request.headers.get(self.header_name)
+        async def authenticate(self, ctx: HttpContext):
+            raw_token = ctx.headers.get(self.header_name)
             if not raw_token:
                 return AuthResult(success=False, identity="", scope="")
             if raw_token == "valid_custom_key":
@@ -136,8 +136,8 @@ async def test_apikey_auth_backend_custom_header(test_client):
     app.use(AuthenticationMiddleware(SimpleUser, TestAPIKeyBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["apikey"]))
-    async def protected_route(req: HttpContext):
-        return json({"user_id": req.user.identity})
+    async def protected_route(ctx: HttpContext):
+        return json({"user_id": ctx.user.identity})
 
     async with client:
         response = await client.get(

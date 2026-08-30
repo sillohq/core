@@ -32,11 +32,11 @@ There is exactly one way to declare a body, so there is never a question of whic
 ##  How the body reaches your handler
 
 sillo injects the validated model into the **first plain parameter** after
-`request` and `response`, a parameter with no default, which nothing else in
-the framework would fill. The name is entirely yours:
+the context — a parameter with no default, which nothing else in the framework
+would fill. The name is entirely yours:
 
 ```python
-# All equivalent — the third positional parameter receives the validated
+# All equivalent — the second positional parameter receives the validated
 # model regardless of what you call it.
 from sillo import HttpContext
 

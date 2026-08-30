@@ -24,7 +24,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/malformed-origin")
-        async def malformed_origin_route(request: HttpContext):
+        async def malformed_origin_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -49,7 +49,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/invalid-origin-chars")
-        async def invalid_origin_route(request: HttpContext):
+        async def invalid_origin_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -81,7 +81,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/empty-cors")
-        async def empty_cors_route(request: HttpContext):
+        async def empty_cors_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -103,7 +103,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/no-cors-config")
-        async def no_cors_config_route(request: HttpContext):
+        async def no_cors_config_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -129,7 +129,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/non-callable-validator")
-        async def non_callable_validator_route(request: HttpContext):
+        async def non_callable_validator_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -155,7 +155,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/multiple-origins")
-        async def multiple_origins_route(request: HttpContext):
+        async def multiple_origins_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -183,7 +183,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/long-origin")
-        async def long_origin_route(request: HttpContext):
+        async def long_origin_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -208,7 +208,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/null-byte-origin")
-        async def null_byte_origin_route(request: HttpContext):
+        async def null_byte_origin_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -233,7 +233,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/exception-route")
-        async def exception_route(request: HttpContext):
+        async def exception_route(ctx: HttpContext):
             raise ValueError("Route error")
 
         app.use(CORSMiddleware(config=cors_config))
@@ -258,7 +258,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/invalid-method-preflight")
-        async def invalid_method_preflight_route(request: HttpContext):
+        async def invalid_method_preflight_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -287,7 +287,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/empty-method-preflight")
-        async def empty_method_preflight_route(request: HttpContext):
+        async def empty_method_preflight_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -317,7 +317,7 @@ class TestCORSErrorHandling:
 
         @app.get("/whitespace-method-preflight")
         async def whitespace_method_preflight_route(
-            request: HttpContext
+            ctx: HttpContext
         ):
             return json({"message": "OK"})
 
@@ -337,7 +337,7 @@ class TestCORSErrorHandling:
         assert response.status_code == 400
 
     async def test_strict_origin_checking_rejects_a_missing_origin(self):
-        """A falsy ``request.origin`` is refused when strict checking is on.
+        """A falsy ``ctx.origin`` is refused when strict checking is on.
 
         ``HttpContext.origin`` always synthesizes a value from the URL when no
         ``Origin`` header is sent, so a real request never reaches this
@@ -352,7 +352,7 @@ class TestCORSErrorHandling:
         )
         middleware = CORSMiddleware(config=cors_config)
 
-        class FakeRequest:
+        class FakeContext:
             origin = ""
             scope = {"method": "GET"}
             headers = {}
@@ -360,7 +360,7 @@ class TestCORSErrorHandling:
         async def call_next():
             raise AssertionError("should not reach the route handler")
 
-        result = await middleware.dispatch(FakeRequest(), call_next)
+        result = await middleware.dispatch(FakeContext(), call_next)
 
         assert result.status_code == 400
 
@@ -375,7 +375,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/blacklist-simple")
-        async def route(request: HttpContext):
+        async def route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -397,7 +397,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/wildcard-method")
-        async def route(request: HttpContext):
+        async def route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -423,7 +423,7 @@ class TestCORSErrorHandling:
         app = SilloApp()
 
         @app.get("/custom-message")
-        async def route(request: HttpContext):
+        async def route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))

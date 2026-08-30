@@ -93,7 +93,7 @@ async def list_items(ctx: HttpContext, db=Depend(get_db)):
 
 # Pattern 2: Inject the raw HttpContext object
 @app.get("/me")
-async def get_me(ctx: HttpContext, req=Depend(get_request=True)):
+async def get_me(ctx: HttpContext, injected=Depend(get_request=True)):
     ...
 
 # Pattern 3: Nested dependencies

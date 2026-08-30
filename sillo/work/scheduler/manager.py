@@ -59,7 +59,7 @@ class SchedulerManager:
         scheduler.every(3600)(hourly_cleanup)
 
         # In a handler (via DI):
-        sched = request.app.state["scheduler"]
+        sched = ctx.app.state["scheduler"]
         sched.pause("job-id")
     """
 

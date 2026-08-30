@@ -118,9 +118,9 @@ class SessionMiddleware(BaseMiddleware):
         await self._persist(ctx, response)
         return response
 
-    async def _persist(self, request: HttpContext, response) -> None:
+    async def _persist(self, ctx: HttpContext, response) -> None:
         """Save the session and write its cookie onto the outgoing response."""
-        session: Session | None = request.scope.get("session")
+        session: Session | None = ctx.scope.get("session")
         if session is None or response is None:
             return
 

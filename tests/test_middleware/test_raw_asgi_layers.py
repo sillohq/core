@@ -47,8 +47,8 @@ class Tagging(BaseMiddleware):
     def __init__(self, tag: str) -> None:
         self.tag = tag
 
-    async def dispatch(self, request, call_next):
-        request.scope.setdefault("tags", []).append(self.tag)
+    async def dispatch(self, ctx, call_next):
+        ctx.scope.setdefault("tags", []).append(self.tag)
         return await call_next()
 
 
@@ -77,8 +77,8 @@ def _app(**kwargs) -> SilloApp:
     app = SilloApp(**{"debug": False, **kwargs})
 
     @app.get("/ping")
-    async def ping(request: HttpContext):
-        return json({"tags": request.scope.get("tags", [])})
+    async def ping(ctx: HttpContext):
+        return json({"tags": ctx.scope.get("tags", [])})
 
     return app
 
@@ -119,21 +119,21 @@ class TestEveryErrorPathStillAnswers:
             pass
 
         @app.get("/boom")
-        async def boom(request: HttpContext):
+        async def boom(ctx: HttpContext):
             raise RuntimeError("kaboom")
 
         @app.get("/teapot")
-        async def teapot(request: HttpContext):
+        async def teapot(ctx: HttpContext):
             raise HTTPException(status_code=418, detail="teapot")
 
         @app.get("/custom")
-        async def custom(request: HttpContext):
+        async def custom(ctx: HttpContext):
             raise Custom()
 
-        async def custom_handler(request, exc):
+        async def custom_handler(ctx, exc):
             return json({"handled": "class"}, status_code=499)
 
-        async def status_handler(request, exc):
+        async def status_handler(ctx, exc):
             return json({"handled": "status"}, status_code=418)
 
         app.add_exception_handler(Custom, custom_handler)
@@ -180,13 +180,13 @@ class TestHandlersRegisteredAfterTheChainExists:
             pass
 
         @app.get("/late")
-        async def late(request: HttpContext):
+        async def late(ctx: HttpContext):
             raise Late()
 
         with test_client_factory(app) as client:
             assert client.get("/late").status_code == 500
 
-            async def handler(request, exc):
+            async def handler(ctx, exc):
                 return json({"late": True}, status_code=418)
 
             app.add_exception_handler(Late, handler)
@@ -202,10 +202,10 @@ class TestHandlersRegisteredAfterTheChainExists:
             pass
 
         @app.get("/rebuilt")
-        async def rebuilt(request: HttpContext):
+        async def rebuilt(ctx: HttpContext):
             raise Rebuilt()
 
-        async def handler(request, exc):
+        async def handler(ctx, exc):
             return json({"ok": True}, status_code=418)
 
         app.add_exception_handler(Rebuilt, handler)
@@ -389,17 +389,17 @@ class TestReadingTheBodyFromAnExceptionHandler:
             pass
 
         @app.post("/raise-first")
-        async def raise_first(request: HttpContext):
+        async def raise_first(ctx: HttpContext):
             raise Boom()
 
         @app.post("/read-then-raise")
-        async def read_then_raise(request: HttpContext):
-            await request.json
+        async def read_then_raise(ctx: HttpContext):
+            await ctx.json
             raise Boom()
 
-        async def handler(request, exc):
+        async def handler(ctx, exc):
             try:
-                body = (await request.body).decode()
+                body = (await ctx.body).decode()
             except RuntimeError as error:
                 body = f"RuntimeError: {error}"
             return json({"body": body}, status_code=400)
@@ -427,12 +427,12 @@ class TestReadingTheBodyFromAnExceptionHandler:
         app = _app()
 
         @app.post("/echo")
-        async def echo(request: HttpContext):
-            return json({"seen": await request.json})
+        async def echo(ctx: HttpContext):
+            return json({"seen": await ctx.json})
 
         class Peeker(BaseMiddleware):
-            async def dispatch(self, request, call_next):
-                await request.body
+            async def dispatch(self, ctx, call_next):
+                await ctx.body
                 return await call_next()
 
         app.use(Peeker())

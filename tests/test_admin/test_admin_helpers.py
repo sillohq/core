@@ -243,14 +243,14 @@ class TestTheCurrentAdminUser:
         def __init__(self, auth=None):
             self.auth = auth
 
-    class _Request:
+    class _Context:
         def __init__(self, session=None):
             self.session = session
 
     async def test_no_session_means_nobody(self):
         assert (
             await admin_routes._current_admin_user(
-                self._Request(session=None), self._Site()
+                self._Context(session=None), self._Site()
             )
             is None
         )
@@ -258,7 +258,7 @@ class TestTheCurrentAdminUser:
     async def test_an_empty_session_means_nobody(self):
         assert (
             await admin_routes._current_admin_user(
-                self._Request(session={}), self._Site()
+                self._Context(session={}), self._Site()
             )
             is None
         )
@@ -266,10 +266,10 @@ class TestTheCurrentAdminUser:
     async def test_no_user_model_means_nobody(self):
         """The admin can be mounted without an auth backend; asking it who is
         signed in then has one honest answer."""
-        request = self._Request(session={"user": {"id": 1}})
+        ctx = self._Context(session={"user": {"id": 1}})
         site = self._Site(auth=object())
 
-        assert await admin_routes._current_admin_user(request, site) is None
+        assert await admin_routes._current_admin_user(ctx, site) is None
 
     async def test_a_failing_load_means_nobody(self):
         """The row was deleted while the session lived on. Answering None
@@ -281,9 +281,9 @@ class TestTheCurrentAdminUser:
                 async def load_user(_id):
                     raise RuntimeError("row is gone")
 
-        request = self._Request(session={"user": {"id": 1}})
+        ctx = self._Context(session={"user": {"id": 1}})
 
-        assert await admin_routes._current_admin_user(request, self._Site(Auth())) is None
+        assert await admin_routes._current_admin_user(ctx, self._Site(Auth())) is None
 
 
 class TestCsvCellRendering:

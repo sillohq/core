@@ -37,30 +37,30 @@ class TestWrapHttpExceptions:
     """The standalone dispatcher: run the chain, and route what it raises."""
 
     async def test_a_successful_call_is_returned_untouched(self):
-        request = make_ctx()
+        ctx = make_ctx()
         sentinel = object()
 
         async def call_next():
             return sentinel
 
         result = await wrap_http_exceptions(
-            request, call_next, {}, {})
+            ctx, call_next, {}, {})
 
         assert result is sentinel
 
     async def test_a_status_handler_claims_a_matching_http_exception(self):
-        request = make_ctx()
+        ctx = make_ctx()
         seen: dict = {}
 
         async def call_next():
             raise HTTPException(status_code=418, detail="teapot")
 
-        async def on_418(req, exc):
+        async def on_418(ctx, exc):
             seen["exc"] = exc
             return "handled-by-status"
 
         result = await wrap_http_exceptions(
-            request, call_next, {}, {418: on_418}
+            ctx, call_next, {}, {418: on_418}
         )
 
         assert result == "handled-by-status"
@@ -70,16 +70,16 @@ class TestWrapHttpExceptions:
         """Status handlers are consulted first, but a miss must not stop the
         search -- otherwise registering a handler for one status code
         silently disables class-based handling for every other."""
-        request = make_ctx()
+        ctx = make_ctx()
 
         async def call_next():
             raise HTTPException(status_code=404, detail="nope")
 
-        async def on_class(req, exc):
+        async def on_class(ctx, exc):
             return "handled-by-class"
 
         result = await wrap_http_exceptions(
-            request,
+            ctx,
             call_next,
             {HTTPException: on_class},
             {418: lambda *a: None},
@@ -88,7 +88,7 @@ class TestWrapHttpExceptions:
         assert result == "handled-by-class"
 
     async def test_a_class_handler_claims_an_ordinary_exception(self):
-        request = make_ctx()
+        ctx = make_ctx()
 
         class Boom(Exception):
             pass
@@ -96,11 +96,11 @@ class TestWrapHttpExceptions:
         async def call_next():
             raise Boom("bang")
 
-        async def on_boom(req, exc):
+        async def on_boom(ctx, exc):
             return f"handled {exc}"
 
         result = await wrap_http_exceptions(
-            request, call_next, {Boom: on_boom}, {}
+            ctx, call_next, {Boom: on_boom}, {}
         )
 
         assert result == "handled bang"
@@ -108,7 +108,7 @@ class TestWrapHttpExceptions:
     async def test_a_base_class_handler_catches_a_subclass(self):
         """Lookup walks the MRO, which is what makes a handler registered for
         a base class cover everything beneath it."""
-        request = make_ctx()
+        ctx = make_ctx()
 
         class Base(Exception):
             pass
@@ -119,11 +119,11 @@ class TestWrapHttpExceptions:
         async def call_next():
             raise Derived("derived")
 
-        async def on_base(req, exc):
+        async def on_base(ctx, exc):
             return "handled-by-base"
 
         result = await wrap_http_exceptions(
-            request, call_next, {Base: on_base}, {}
+            ctx, call_next, {Base: on_base}, {}
         )
 
         assert result == "handled-by-base"
@@ -131,7 +131,7 @@ class TestWrapHttpExceptions:
     async def test_an_unhandled_exception_is_re_raised(self):
         """Re-raised rather than swallowed: this is how it reaches
         ServerErrorMiddleware and becomes a 500 instead of a None response."""
-        request = make_ctx()
+        ctx = make_ctx()
 
         class Unhandled(Exception):
             pass
@@ -141,19 +141,19 @@ class TestWrapHttpExceptions:
 
         with pytest.raises(Unhandled, match="nobody wants this"):
             await wrap_http_exceptions(
-            request, call_next, {}, {})
+            ctx, call_next, {}, {})
 
     async def test_the_unhandled_traceback_is_logged(self, caplog):
         """The re-raise is the behaviour; the log is what makes it
         diagnosable, since the exception may be reshaped further up."""
-        request = make_ctx()
+        ctx = make_ctx()
 
         async def call_next():
             raise RuntimeError("for the log")
 
         with pytest.raises(RuntimeError), caplog.at_level("ERROR", logger="sillo"):
             await wrap_http_exceptions(
-            request, call_next, {}, {})
+            ctx, call_next, {}, {})
 
         assert "for the log" in caplog.text
 
@@ -165,14 +165,14 @@ class TestWrapHttpExceptions:
         """Both arguments are defaulted rather than assumed. They used to be
         assigned to themselves inside a `try/except KeyError`, which could not
         raise and so defaulted nothing."""
-        request = make_ctx()
+        ctx = make_ctx()
 
         async def call_next():
             return "fine"
 
         assert (
             await wrap_http_exceptions(
-            request, call_next, handlers, statuses)
+            ctx, call_next, handlers, statuses)
             == "fine"
         )
 
@@ -183,11 +183,11 @@ class TestStatusesThatMayNotCarryABody:
 
     @pytest.mark.parametrize("status", [204, 304])
     async def test_the_response_is_empty(self, status):
-        request = make_ctx()
+        ctx = make_ctx()
         middleware = ExceptionMiddleware()
 
         result = await middleware.http_exception(
-            request, HTTPException(status_code=status, detail="ignored")
+            ctx, HTTPException(status_code=status, detail="ignored")
         )
 
         built = result
@@ -196,11 +196,11 @@ class TestStatusesThatMayNotCarryABody:
 
     @pytest.mark.parametrize("status", [204, 304])
     async def test_the_exception_headers_still_reach_the_response(self, status):
-        request = make_ctx()
+        ctx = make_ctx()
         middleware = ExceptionMiddleware()
 
         result = await middleware.http_exception(
-            request,
+            ctx,
             HTTPException(
                 status_code=status, detail="ignored", headers={"x-marker": "kept"}
             ),
@@ -210,11 +210,11 @@ class TestStatusesThatMayNotCarryABody:
         assert "x-marker" in keys
 
     async def test_an_ordinary_status_still_carries_its_detail(self):
-        request = make_ctx()
+        ctx = make_ctx()
         middleware = ExceptionMiddleware()
 
         result = await middleware.http_exception(
-            request, HTTPException(status_code=400, detail="bad input")
+            ctx, HTTPException(status_code=400, detail="bad input")
         )
 
         built = result
@@ -236,11 +236,11 @@ class TestValidationErrorFlattening:
         class User(BaseModel):
             name: str
 
-        request = make_ctx()
+        ctx = make_ctx()
         exc = self._error(User, {})
 
         result = await pydantic_validation_error_handler(
-            request, exc)
+            ctx, exc)
         body = result.body.decode()
 
         assert '"name"' in body
@@ -253,11 +253,11 @@ class TestValidationErrorFlattening:
         class User(BaseModel):
             address: Address
 
-        request = make_ctx()
+        ctx = make_ctx()
         exc = self._error(User, {"address": {}})
 
         result = await pydantic_validation_error_handler(
-            request, exc)
+            ctx, exc)
         body = result.body.decode()
 
         # {"address": {"city": ...}} rather than a flattened "address.city".
@@ -275,11 +275,11 @@ class TestValidationErrorFlattening:
         class User(BaseModel):
             address: Address
 
-        request = make_ctx()
+        ctx = make_ctx()
         exc = self._error(User, {"address": {"street": {}}})
 
         result = await pydantic_validation_error_handler(
-            request, exc)
+            ctx, exc)
         body = result.body.decode()
 
         assert "address.street.number" in body
@@ -290,7 +290,7 @@ class TestValidationErrorFlattening:
         into the string would raise; replacing it silently is the deliberate
         choice, and it has to be exercised or the guard is untested.
         """
-        request = make_ctx()
+        ctx = make_ctx()
 
         class Anything(BaseModel):
             field: str
@@ -309,7 +309,7 @@ class TestValidationErrorFlattening:
         exc.errors = both_shapes  # type: ignore[method-assign]
         try:
             result = await pydantic_validation_error_handler(
-            request, exc)
+            ctx, exc)
         finally:
             exc.errors = original  # type: ignore[method-assign]
 
@@ -321,11 +321,11 @@ class TestValidationErrorFlattening:
         class User(BaseModel):
             name: str
 
-        request = make_ctx()
+        ctx = make_ctx()
         exc = self._error(User, {})
 
         result = await pydantic_validation_error_handler(
-            request, exc)
+            ctx, exc)
 
         assert result.status_code == 422
 
@@ -380,10 +380,10 @@ class TestTheRequestAndResponseValidationHandlers:
         from sillo.exception_handler import request_validation_error_handler
         from sillo.validation import RequestValidationError
 
-        request = make_ctx()
+        ctx = make_ctx()
         exc = RequestValidationError([{"loc": ("body", "name"), "msg": "required"}])
 
-        result = await request_validation_error_handler(request, exc)
+        result = await request_validation_error_handler(ctx, exc)
         built = result
 
         assert built.status_code == 422
@@ -395,10 +395,10 @@ class TestTheRequestAndResponseValidationHandlers:
         from sillo.exception_handler import response_validation_error_handler
         from sillo.validation import ResponseValidationError
 
-        request = make_ctx()
+        ctx = make_ctx()
         exc = ResponseValidationError([{"loc": ("response",), "msg": "wrong shape"}])
 
-        result = await response_validation_error_handler(request, exc)
+        result = await response_validation_error_handler(ctx, exc)
         built = result
 
         assert built.status_code == 500
@@ -409,10 +409,10 @@ class TestTheRequestAndResponseValidationHandlers:
         from sillo.exception_handler import response_validation_error_handler
         from sillo.validation import ResponseValidationError
 
-        request = make_ctx()
+        ctx = make_ctx()
         exc = ResponseValidationError([{"loc": ("response",), "msg": "wrong shape"}])
 
         with caplog.at_level("ERROR", logger="sillo"):
-            await response_validation_error_handler(request, exc)
+            await response_validation_error_handler(ctx, exc)
 
         assert "Response validation failed" in caplog.text

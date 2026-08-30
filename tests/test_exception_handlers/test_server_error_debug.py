@@ -191,7 +191,7 @@ def test_debug_mode_returns_an_html_traceback():
     app = SilloApp(debug=True)
 
     @app.get("/boom")
-    async def boom(request):
+    async def boom(ctx):
         raise ValueError("kaboom")
 
     client = TestClient(app, raise_server_exceptions=False)
@@ -205,7 +205,7 @@ def test_non_debug_mode_hides_the_detail():
     app = SilloApp(debug=False)
 
     @app.get("/boom")
-    async def boom(request):
+    async def boom(ctx):
         raise ValueError("secret internal detail")
 
     client = TestClient(app, raise_server_exceptions=False)
@@ -216,13 +216,13 @@ def test_non_debug_mode_hides_the_detail():
 
 
 def test_a_custom_server_error_handler_takes_over():
-    async def custom(request, exc):
+    async def custom(ctx, exc):
         return json_response({"handled": str(exc)}, status_code=500)
 
     app = SilloApp(debug=False, server_error_handler=custom)
 
     @app.get("/boom")
-    async def boom(request):
+    async def boom(ctx):
         raise ValueError("kaboom")
 
     client = TestClient(app, raise_server_exceptions=False)

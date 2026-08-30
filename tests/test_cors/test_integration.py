@@ -40,27 +40,27 @@ class TestCORSIntegration:
 
         # API routes like a real web app
         @app.get("/api/users")
-        async def get_users(request: HttpContext):
+        async def get_users(ctx: HttpContext):
             return json({"users": []})
 
         @app.get("/api/users/{user_id}")
-        async def get_user(request: HttpContext, user_id):
+        async def get_user(ctx: HttpContext, user_id):
             return json({"user": {"id": user_id, "name": "John"}})
 
         @app.post("/api/users")
-        async def create_user(request: HttpContext):
+        async def create_user(ctx: HttpContext):
             return json({"created": True})
 
         @app.put("/api/users/{user_id}")
-        async def update_user(request: HttpContext, user_id):
+        async def update_user(ctx: HttpContext, user_id):
             return json({"updated": True})
 
         @app.delete("/api/users/{user_id}")
-        async def delete_user(request: HttpContext, user_id):
+        async def delete_user(ctx: HttpContext, user_id):
             return json({"deleted": True})
 
         @app.get("/api/posts")
-        async def get_posts(request: HttpContext):
+        async def get_posts(ctx: HttpContext):
             return json({"posts": []})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -106,19 +106,19 @@ class TestCORSIntegration:
         # Middleware execution order tracking
         execution_order = []
 
-        async def logging_middleware(request: HttpContext, call_next):
+        async def logging_middleware(ctx: HttpContext, call_next):
             execution_order.append("logging_before")
             result = await call_next()
             execution_order.append("logging_after")
             return result
 
-        async def auth_middleware(request: HttpContext, call_next):
+        async def auth_middleware(ctx: HttpContext, call_next):
             execution_order.append("auth_before")
             result = await call_next()
             execution_order.append("auth_after")
             return result
 
-        async def timing_middleware(request: HttpContext, call_next):
+        async def timing_middleware(ctx: HttpContext, call_next):
             execution_order.append("timing_before")
             result = await call_next()
             result.set_header("X-Response-Time", "100ms")
@@ -126,7 +126,7 @@ class TestCORSIntegration:
             return result
 
         @app.get("/multi-middleware")
-        async def multi_middleware_route(request: HttpContext):
+        async def multi_middleware_route(ctx: HttpContext):
             execution_order.append("handler")
             return json({"message": "OK"})
 
@@ -172,7 +172,7 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.post("/api/upload")
-        async def upload_file(request: HttpContext):
+        async def upload_file(ctx: HttpContext):
             return json({"uploaded": True, "filename": "test.jpg"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -223,22 +223,22 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.post("/api/login")
-        async def login(request: HttpContext):
+        async def login(ctx: HttpContext):
             return json({"token": "abc123", "user": "john"})
 
         @app.get("/api/profile")
-        async def get_profile(request: HttpContext):
+        async def get_profile(ctx: HttpContext):
             # Simulate auth check
-            auth_header = request.headers.get("Authorization")
+            auth_header = ctx.headers.get("Authorization")
             if not auth_header:
                 return json({"error": "Unauthorized"}, status_code=401)
 
             return json({"user": "john", "email": "john@example.com"})
 
         @app.delete("/api/account")
-        async def delete_account(request: HttpContext):
+        async def delete_account(ctx: HttpContext):
             # Simulate auth check
-            auth_header = request.headers.get("Authorization")
+            auth_header = ctx.headers.get("Authorization")
             if not auth_header:
                 return json({"error": "Unauthorized"}, status_code=401)
 
@@ -296,11 +296,11 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.post("/api/json")
-        async def json_endpoint(request: HttpContext):
+        async def json_endpoint(ctx: HttpContext):
             return json({"received": "json"})
 
         @app.post("/api/text")
-        async def text_endpoint(request: HttpContext):
+        async def text_endpoint(ctx: HttpContext):
             return text("text response")
 
         app.use(CORSMiddleware(config=cors_config))
@@ -344,8 +344,8 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.get("/api/data")
-        async def subdomain_data(request: HttpContext):
-            origin = request.origin
+        async def subdomain_data(ctx: HttpContext):
+            origin = ctx.origin
             response = json({"data": "test"})
             if origin:
                 subdomain = origin.split(".")[0].replace("https://", "")
@@ -382,7 +382,7 @@ class TestCORSIntegration:
         app = SilloApp()
 
         @app.get("/performance-test")
-        async def performance_route(request: HttpContext):
+        async def performance_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -409,12 +409,12 @@ class TestCORSIntegration:
 
         # HttpContext ID middleware
         async def request_id_middleware(
-            request: HttpContext, call_next
+            ctx: HttpContext, call_next
         ):
             import uuid
 
             request_id = str(uuid.uuid4())
-            request.scope["request_id"] = request_id
+            ctx.scope["request_id"] = request_id
 
             result = await call_next()
 
@@ -424,8 +424,8 @@ class TestCORSIntegration:
             return result
 
         @app.get("/tracked-request")
-        async def tracked_route(request: HttpContext):
-            request_id = request.scope.get("request_id")
+        async def tracked_route(ctx: HttpContext):
+            request_id = ctx.scope.get("request_id")
             return json({"request_id": request_id, "message": "OK"})
 
         # Add middleware

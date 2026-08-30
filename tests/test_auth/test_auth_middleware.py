@@ -111,14 +111,14 @@ async def test_auth_middleware_multiple_backends_success(test_client):
     client = test_client(app)
 
     class FirstBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
-            if request.headers.get("X-First-Auth") == "first_valid":
+        async def authenticate(self, ctx: HttpContext):
+            if ctx.headers.get("X-First-Auth") == "first_valid":
                 return AuthResult(success=True, identity="first_user", scope="first")
             return AuthResult(success=False, identity="", scope="")
 
     class SecondBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
-            if request.headers.get("X-Second-Auth") == "second_valid":
+        async def authenticate(self, ctx: HttpContext):
+            if ctx.headers.get("X-Second-Auth") == "second_valid":
                 return AuthResult(success=True, identity="second_user", scope="second")
             return AuthResult(success=False, identity="", scope="")
 
@@ -127,9 +127,9 @@ async def test_auth_middleware_multiple_backends_success(test_client):
     )
 
     @app.get("/protected", auth=useAuth(schemes=["first"]))
-    async def protected_route(req: HttpContext):
+    async def protected_route(ctx: HttpContext):
         return json(
-            {"user_id": req.user.identity, "auth_method": req.scope.get("auth")}
+            {"user_id": ctx.user.identity, "auth_method": ctx.scope.get("auth")}
         )
 
     async with client:
@@ -145,12 +145,12 @@ async def test_auth_middleware_multiple_backends_fallback(test_client):
     client = test_client(app)
 
     class FirstBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
+        async def authenticate(self, ctx: HttpContext):
             return AuthResult(success=False, identity="", scope="")
 
     class SecondBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
-            if request.headers.get("X-Second-Auth") == "second_valid":
+        async def authenticate(self, ctx: HttpContext):
+            if ctx.headers.get("X-Second-Auth") == "second_valid":
                 return AuthResult(success=True, identity="second_user", scope="second")
             return AuthResult(success=False, identity="", scope="")
 
@@ -159,8 +159,8 @@ async def test_auth_middleware_multiple_backends_fallback(test_client):
     )
 
     @app.get("/protected", auth=useAuth(schemes=["second"]))
-    async def protected_route(req: HttpContext):
-        return json({"user_id": req.user.identity})
+    async def protected_route(ctx: HttpContext):
+        return json({"user_id": ctx.user.identity})
 
     async with client:
         res = await client.get("/protected", headers={"X-Second-Auth": "second_valid"})
@@ -173,14 +173,14 @@ async def test_auth_middleware_no_backends_succeed(test_client):
     client = test_client(app)
 
     class FailingBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
+        async def authenticate(self, ctx: HttpContext):
             return AuthResult(success=False, identity="", scope="")
 
     app.use(AuthenticationMiddleware(TestUser, FailingBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected_route(req: HttpContext):
-        return json({"user": req.user})
+    async def protected_route(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     async with client:
         res = await client.get("/protected")
@@ -197,8 +197,8 @@ async def test_auth_middleware_user_loading_failure(test_client):
     app.use(AuthenticationMiddleware(CustomUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected_route(req: HttpContext):
-        return json({"user": req.user})
+    async def protected_route(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     payload = {"id": "fail_user"}
     token = create_jwt(payload, "a-test-jwt-secret-key-for-hs256")
@@ -215,12 +215,12 @@ async def test_auth_middleware_backend_exception_handling(test_client):
     client = test_client(app)
 
     class FaultyAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
+        async def authenticate(self, ctx: HttpContext):
             raise Exception("Backend error")
 
     class WorkingAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
-            if request.headers.get("X-Backup-Auth") == "backup_valid":
+        async def authenticate(self, ctx: HttpContext):
+            if ctx.headers.get("X-Backup-Auth") == "backup_valid":
                 return AuthResult(success=True, identity="backup_user", scope="backup")
             return AuthResult(success=False, identity="", scope="")
 
@@ -231,8 +231,8 @@ async def test_auth_middleware_backend_exception_handling(test_client):
     )
 
     @app.get("/protected", auth=useAuth(schemes=["backup"]))
-    async def protected_route(req: HttpContext):
-        return json({"user_id": req.user.identity})
+    async def protected_route(ctx: HttpContext):
+        return json({"user_id": ctx.user.identity})
 
     async with client:
         res = await client.get("/protected", headers={"X-Backup-Auth": "backup_valid"})

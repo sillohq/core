@@ -12,13 +12,13 @@ class Query:
 
     @strawberry.field
     def get_user_agent(self, info: strawberry.Info) -> str:
-        request = info.context["request"]
-        return request.headers.get("user-agent", "Unknown")
+        ctx = info.context["ctx"]
+        return ctx.headers.get("user-agent", "Unknown")
 
     @strawberry.field
     def get_request_method(self, info: strawberry.Info) -> str:
-        request = info.context["request"]
-        return request.method
+        ctx = info.context["ctx"]
+        return ctx.method
 
 
 schema = strawberry.Schema(query=Query)

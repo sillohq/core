@@ -72,15 +72,15 @@ async def test_session_auth_backend_success(test_client):
     app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
-    async def login_route(req: HttpContext):
+    async def login_route(ctx: HttpContext):
         user = TestUser("1", "testuser", ["read", "write"])
-        login(req, user)
+        login(ctx, user)
         return json({"message": "logged in"})
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: HttpContext):
+    async def protected(ctx: HttpContext):
         return json(
-            {"user_id": req.user.identity, "username": req.user.display_name}
+            {"user_id": ctx.user.identity, "username": ctx.user.display_name}
         )
 
     client = test_client(app)
@@ -101,8 +101,8 @@ async def test_session_auth_backend_no_session(test_client):
     app.use(SessionMiddleware(secret_key="secret"))
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: HttpContext):
-        return json({"user": req.user})
+    async def protected(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     client = test_client(app)
     async with client:
@@ -115,8 +115,8 @@ async def test_session_auth_backend_missing_session_middleware(test_client):
     app.use(AuthenticationMiddleware(TestUser, SessionAuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: HttpContext):
-        return json({"user": req.user})
+    async def protected(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     client = test_client(app)
     async with client:
@@ -130,19 +130,19 @@ async def test_session_auth_backend_logout(test_client):
     app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
-    async def login_route(req: HttpContext):
+    async def login_route(ctx: HttpContext):
         user = TestUser("1", "testuser", ["read", "write"])
-        login(req, user)
+        login(ctx, user)
         return json({"message": "logged in"})
 
     @app.post("/logout")
-    async def logout_route(req: HttpContext):
-        logout(req)
+    async def logout_route(ctx: HttpContext):
+        logout(ctx)
         return json({"message": "logged out"})
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: HttpContext):
-        return json({"user_id": req.user.identity})
+    async def protected(ctx: HttpContext):
+        return json({"user_id": ctx.user.identity})
 
     client = test_client(app)
     async with client:
@@ -174,17 +174,17 @@ async def test_session_auth_backend_custom_session_key(test_client):
     app.use(SessionMiddleware(secret_key="secret"))
 
     @app.post("/login")
-    async def login_route(req: HttpContext):
+    async def login_route(ctx: HttpContext):
         user = TestUser("1", "testuser", ["read", "write"])
-        req.session["custom_user"] = {
+        ctx.session["custom_user"] = {
             "id": user.identity,
             "display_name": user.display_name,
         }
         return json({"message": "logged in"})
 
     @app.get("/protected", auth=useAuth(schemes=["session"]))
-    async def protected(req: HttpContext):
-        return json({"user_id": req.user.identity})
+    async def protected(ctx: HttpContext):
+        return json({"user_id": ctx.user.identity})
 
     client = test_client(app)
     async with client:

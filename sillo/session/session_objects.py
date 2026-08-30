@@ -6,7 +6,7 @@ from .config import resolve_session_config
 
 
 class Session:
-    """The per-request session, reached as ``request.session``.
+    """The per-request session, reached as ``ctx.session``.
 
     Behaves like a dictionary. Reads and writes go to an in-memory copy of the
     session data; the backend is only touched by :meth:`load`, which the
@@ -23,8 +23,8 @@ class Session:
         ```python
         @app.get("/")
         async def index(ctx):
-            count = request.session.get("count", 0) + 1
-            request.session["count"] = count
+            count = ctx.session.get("count", 0) + 1
+            ctx.session["count"] = count
             return text(f"seen you {count} times")
         ```
     """

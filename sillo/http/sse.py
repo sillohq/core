@@ -143,7 +143,7 @@ def _coerce(item: Any) -> ServerSentEvent:
     return ServerSentEvent(data=item)
 
 
-def last_event_id(request: Any) -> str | None:
+def last_event_id(ctx: Any) -> str | None:
     """The id the client last received, if this is a reconnection.
 
     ``EventSource`` reconnects on its own after a dropped connection and sends
@@ -156,7 +156,7 @@ def last_event_id(request: Any) -> str | None:
     Returns:
         The ``Last-Event-ID`` header, or None on a first connection.
     """
-    return request.headers.get("last-event-id")
+    return ctx.headers.get("last-event-id")
 
 
 async def sse_stream(

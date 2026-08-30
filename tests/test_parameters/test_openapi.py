@@ -17,7 +17,7 @@ def test_query_params_in_openapi(app):
 
     @app.get("/items")
     async def get_items(
-        request: HttpContext,
+        ctx: HttpContext,
         page: int = Query(1),
         limit: int = Query(10),
     ):
@@ -44,7 +44,7 @@ def test_header_params_in_openapi(app):
 
     @app.get("/api")
     async def api_handler(
-        request: HttpContext,
+        ctx: HttpContext,
         authorization: str = Header(),
     ):
         return {"auth": authorization}
@@ -65,7 +65,7 @@ def test_cookie_params_in_openapi(app):
 
     @app.get("/settings")
     async def settings(
-        request: HttpContext,
+        ctx: HttpContext,
         theme: str = Cookie("light"),
     ):
         return {"theme": theme}
@@ -87,7 +87,7 @@ def test_mixed_params_in_openapi(app):
 
     @app.get("/mixed")
     async def mixed_handler(
-        request: HttpContext,
+        ctx: HttpContext,
         page: int = Query(1),
         authorization: str = Header(),
         theme: str = Cookie("dark"),
@@ -110,7 +110,7 @@ def test_header_alias_in_openapi(app):
 
     @app.get("/custom-header")
     async def custom_header(
-        request: HttpContext,
+        ctx: HttpContext,
         api_key: str = Header(alias="X-API-Key"),
     ):
         return {"key": api_key}
@@ -128,7 +128,7 @@ def test_query_alias_in_openapi(app):
 
     @app.get("/alias")
     async def alias_handler(
-        request: HttpContext,
+        ctx: HttpContext,
         page_num: int = Query(1, alias="page"),
     ):
         return {"page": page_num}
@@ -146,7 +146,7 @@ def test_required_param_in_openapi(app):
 
     @app.get("/required")
     async def required_handler(
-        request: HttpContext,
+        ctx: HttpContext,
         q: str = Query(required=True),
     ):
         return {"q": q}
@@ -168,7 +168,7 @@ def test_nested_dep_params_in_openapi(app):
 
     @app.get("/nested")
     async def nested_handler(
-        request: HttpContext,
+        ctx: HttpContext,
         pagination: dict = None,
     ):
         return pagination

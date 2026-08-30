@@ -23,10 +23,10 @@ def _app():
     app = SilloApp(debug=True)
 
     @app.get("/boom")
-    async def boom(request):
+    async def boom(ctx):
         # The await is the point: it is a suspension, and a suspension is all
         # another request needs to overwrite shared state.
-        await asyncio.sleep(float(request.query_params.get("delay", 0)))
+        await asyncio.sleep(float(ctx.query_params.get("delay", 0)))
         raise RuntimeError("kaboom")
 
     return app

@@ -1,5 +1,5 @@
 """
-Tests for WebSocketContext routing functionality
+Tests for WebSocket routing functionality
 """
 
 from typing import Callable
@@ -13,7 +13,7 @@ from sillo.websockets import WebSocketContext
 
 
 def test_basic_websocket_route(test_client_factory: Callable[[SilloApp], TestClient]):
-    """Test basic WebSocketContext route"""
+    """Test basic WebSocket route"""
     app = SilloApp()
 
     @app.ws_route("/ws")
@@ -55,7 +55,7 @@ def test_websocket_json_communication(
 def test_websocket_bytes_communication(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocketContext binary message exchange"""
+    """Test WebSocket binary message exchange"""
     app = SilloApp()
 
     @app.ws_route("/ws/bytes")
@@ -75,7 +75,7 @@ def test_websocket_bytes_communication(
 def test_websocket_with_path_parameters(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocketContext route with path parameters"""
+    """Test WebSocket route with path parameters"""
     app = SilloApp()
 
     @app.ws_route("/ws/room/{room_id}")
@@ -94,7 +94,7 @@ def test_websocket_with_path_parameters(
 def test_websocket_multiple_messages(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocketContext with multiple message exchanges"""
+    """Test a WebSocket with multiple message exchanges"""
     app = SilloApp()
 
     @app.ws_route("/ws/chat")
@@ -120,7 +120,7 @@ def test_websocket_multiple_messages(
 def test_websocket_router_mounting(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocketContext router mounting"""
+    """Test WebSocket router mounting"""
     app = SilloApp()
     ws_router = Router(prefix="/api/ws")
 
@@ -143,7 +143,7 @@ def test_websocket_router_mounting(
 def test_websocket_multiple_routers(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test multiple WebSocketContext routers"""
+    """Test multiple WebSocket routers"""
     app = SilloApp()
 
     chat_router = Router(prefix="/chat")
@@ -177,7 +177,7 @@ def test_websocket_multiple_routers(
 def test_websocket_nested_routers(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test nested WebSocketContext routers"""
+    """Test nested WebSocket routers"""
     app = SilloApp()
 
     inner_router = Router(prefix="/v1")
@@ -202,7 +202,7 @@ def test_websocket_nested_routers(
 def test_websocket_with_query_parameters(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Test WebSocketContext with query parameters"""
+    """Test a WebSocket with query parameters"""
     app = SilloApp()
 
     @app.ws_route("/ws/query")
@@ -220,7 +220,7 @@ def test_websocket_with_query_parameters(
 
 
 def test_websocket_isolation(test_client_factory: Callable[[SilloApp], TestClient]):
-    """Test that WebSocketContext routes are isolated"""
+    """Test that WebSocket routes are isolated"""
     app = SilloApp()
 
     router1 = Router(prefix="/ws1")

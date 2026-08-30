@@ -104,9 +104,9 @@ async def test_jwt_auth_backend_success(test_client, valid_jwt_token):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected_route(req: HttpContext):
+    async def protected_route(ctx: HttpContext):
         return json(
-            {"user_id": req.user.identity, "username": req.user.display_name}
+            {"user_id": ctx.user.identity, "username": ctx.user.display_name}
         )
 
     client = test_client(app)
@@ -126,9 +126,9 @@ async def test_jwt_auth_backend_missing_header(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected_route(req: HttpContext):
+    async def protected_route(ctx: HttpContext):
         return json(
-            {"user_id": req.user.identity, "username": req.user.display_name}
+            {"user_id": ctx.user.identity, "username": ctx.user.display_name}
         )
 
     client = test_client(app)
@@ -148,8 +148,8 @@ async def test_jwt_auth_backend_missing_header(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: HttpContext):
-        return json({"user": req.user})
+    async def protected(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     client = test_client(app)
     async with client:
@@ -163,8 +163,8 @@ async def test_jwt_auth_backend_invalid_header_format(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: HttpContext):
-        return json({"user": req.user})
+    async def protected(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     client = test_client(app)
     async with client:
@@ -178,8 +178,8 @@ async def test_jwt_auth_backend_invalid_token(test_client, invalid_jwt_token):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: HttpContext):
-        return json({"user": req.user})
+    async def protected(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     client = test_client(app)
     async with client:
@@ -195,8 +195,8 @@ async def test_jwt_auth_backend_expired_token(test_client, expired_jwt_token):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: HttpContext):
-        return json({"user": req.user})
+    async def protected(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     client = test_client(app)
     async with client:
@@ -212,8 +212,8 @@ async def test_jwt_auth_backend_user_not_found(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: HttpContext):
-        return json({"user": req.user})
+    async def protected(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     payload = {"id": "999", "username": "ghost"}
     token = create_jwt(payload, SECRET)
@@ -232,8 +232,8 @@ async def test_jwt_auth_backend_wrong_identifier_field(test_client):
     app.use(AuthenticationMiddleware(TestUser, jwt_backend))
 
     @app.get("/protected", auth=useAuth(schemes=["jwt"]))
-    async def protected(req: HttpContext):
-        return json({"user": req.user})
+    async def protected(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     payload = {"user_id": "1", "username": "testuser"}
     token = create_jwt(payload, SECRET)

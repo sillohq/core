@@ -34,8 +34,8 @@ def sync_app():
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS)
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS)
 
     return app
 
@@ -95,8 +95,8 @@ def test_an_empty_collection_paginates(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, [])
+    async def items(ctx: HttpContext):
+        return paginate(ctx, [])
 
     with test_client_factory(app) as client:
         body = client.get("/items").json()
@@ -111,8 +111,8 @@ def test_limit_offset_by_name(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, strategy="limit_offset")
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, strategy="limit_offset")
 
     with test_client_factory(app) as client:
         body = client.get("/items?limit=5&offset=10").json()
@@ -124,8 +124,8 @@ def test_cursor_by_name(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, strategy="cursor", sort_field="id")
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, strategy="cursor", sort_field="id")
 
     with test_client_factory(app) as client:
         response = client.get("/items")
@@ -139,8 +139,8 @@ def test_an_unknown_strategy_name_is_rejected(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, strategy="telepathy")
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, strategy="telepathy")
 
     with test_client_factory(app, raise_server_exceptions=False) as client:
         assert client.get("/items").status_code == 500
@@ -152,8 +152,8 @@ def test_a_strategy_instance_is_used_as_given(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, strategy=PageNumberPagination(default_page_size=3))
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, strategy=PageNumberPagination(default_page_size=3))
 
     with test_client_factory(app) as client:
         assert len(client.get("/items").json()["items"]) == 3
@@ -165,8 +165,8 @@ def test_an_instance_of_another_strategy(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, strategy=LimitOffsetPagination(default_limit=4))
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, strategy=LimitOffsetPagination(default_limit=4))
 
     with test_client_factory(app) as client:
         assert len(client.get("/items").json()["items"]) == 4
@@ -183,8 +183,8 @@ def test_strategy_configuration_is_applied(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, default_page_size=7)
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, default_page_size=7)
 
     with test_client_factory(app) as client:
         assert len(client.get("/items").json()["items"]) == 7
@@ -196,8 +196,8 @@ def test_a_custom_page_parameter_name(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, page_param="p")
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, page_param="p")
 
     with test_client_factory(app) as client:
         body = client.get("/items?p=2").json()
@@ -211,8 +211,8 @@ def test_the_max_page_size_caps_the_request(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, max_page_size=10)
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, max_page_size=10)
 
     with test_client_factory(app) as client:
         assert len(client.get("/items?page_size=1000").json()["items"]) == 10
@@ -224,8 +224,8 @@ def test_an_unrecognised_keyword_is_a_parameter_override(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, page=3)
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, page=3)
 
     with test_client_factory(app) as client:
         assert client.get("/items").json()["pagination"]["page"] == 3
@@ -237,8 +237,8 @@ def test_an_override_beats_the_query_string(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return paginate(request, ITEMS, page=1)
+    async def items(ctx: HttpContext):
+        return paginate(ctx, ITEMS, page=1)
 
     with test_client_factory(app) as client:
         assert client.get("/items?page=2").json()["pagination"]["page"] == 1
@@ -252,8 +252,8 @@ def async_app():
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return await apaginate(request, ITEMS)
+    async def items(ctx: HttpContext):
+        return await apaginate(ctx, ITEMS)
 
     return app
 
@@ -280,8 +280,8 @@ def test_the_async_form_supports_limit_offset(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return await apaginate(request, ITEMS, strategy="limit_offset")
+    async def items(ctx: HttpContext):
+        return await apaginate(ctx, ITEMS, strategy="limit_offset")
 
     with test_client_factory(app) as client:
         body = client.get("/items?limit=3&offset=6").json()
@@ -295,8 +295,8 @@ def test_the_async_form_supports_cursor(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return await apaginate(request, ITEMS, strategy="cursor", sort_field="id")
+    async def items(ctx: HttpContext):
+        return await apaginate(ctx, ITEMS, strategy="cursor", sort_field="id")
 
     with test_client_factory(app) as client:
         assert client.get("/items").status_code == 200
@@ -308,8 +308,8 @@ def test_the_async_form_rejects_an_unknown_strategy(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return await apaginate(request, ITEMS, strategy="telepathy")
+    async def items(ctx: HttpContext):
+        return await apaginate(ctx, ITEMS, strategy="telepathy")
 
     with test_client_factory(app, raise_server_exceptions=False) as client:
         assert client.get("/items").status_code == 500
@@ -321,8 +321,8 @@ def test_the_async_form_takes_a_strategy_instance(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return await apaginate(request, 
+    async def items(ctx: HttpContext):
+        return await apaginate(ctx, 
             ITEMS, strategy=PageNumberPagination(default_page_size=6)
         )
 
@@ -336,8 +336,8 @@ def test_the_async_form_applies_configuration(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return await apaginate(request, ITEMS, default_page_size=8)
+    async def items(ctx: HttpContext):
+        return await apaginate(ctx, ITEMS, default_page_size=8)
 
     with test_client_factory(app) as client:
         assert len(client.get("/items").json()["items"]) == 8
@@ -349,8 +349,8 @@ def test_the_async_form_paginates_an_empty_collection(
     app = SilloApp()
 
     @app.get("/items")
-    async def items(request: HttpContext):
-        return await apaginate(request, [])
+    async def items(ctx: HttpContext):
+        return await apaginate(ctx, [])
 
     with test_client_factory(app) as client:
         assert client.get("/items").json()["items"] == []

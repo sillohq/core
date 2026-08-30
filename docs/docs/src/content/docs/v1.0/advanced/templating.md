@@ -220,7 +220,7 @@ This is the primary entry point for route handlers.
 
 ### Context Enrichment
 
-When a `request` is provided, the function enriches the context with
+When a `ctx` is provided, the function enriches the template context with
 request-specific variables:
 
 ```python
@@ -318,7 +318,7 @@ flowchart TD
 
 | Variable | Source | Purpose |
 |----------|--------|---------|
-| `request` | The request object | Access to request data in templates |
+| `ctx` | The request's context | Access to request data in templates |
 | `url_for` | `ctx.base_app.url_for` | URL generation helper |
 | `csrf_token` | `ctx.state.csrf_token` | CSRF protection token |
 

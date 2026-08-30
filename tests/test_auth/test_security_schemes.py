@@ -69,7 +69,7 @@ def test_a_backend_may_decline_to_be_documented():
     """A backend with nothing to publish still authenticates."""
 
     class Internal(AuthenticationBackend):
-        async def authenticate(self, request):
+        async def authenticate(self, ctx):
             return AuthResult(success=False, identity="", scope="")
 
     assert Internal().describe() is None
@@ -136,7 +136,7 @@ def test_a_backend_that_declines_is_left_out_of_the_document(
     class Internal(AuthenticationBackend):
         name = "internal"
 
-        async def authenticate(self, request):
+        async def authenticate(self, ctx):
             return AuthResult(success=False, identity="", scope="")
 
     app = SilloApp(
@@ -200,7 +200,7 @@ def test_the_document_follows_the_gate(
     )
 
     @app.get("/me", auth=useAuth(schemes=["bearerAuth", "sessionCookie"]))
-    async def me(request: HttpContext):
+    async def me(ctx: HttpContext):
         return json({})
 
     doc = document(app, test_client_factory)
@@ -226,7 +226,7 @@ def test_an_explicit_security_still_wins(
         auth=useAuth(schemes=["bearerAuth"]),
         security=[{"mtls": []}],
     )
-    async def proxied(request: HttpContext):
+    async def proxied(ctx: HttpContext):
         return json({})
 
     doc = document(app, test_client_factory)
@@ -240,7 +240,7 @@ def test_a_route_with_no_gate_declares_no_security(
     app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get("/health")
-    async def health(request: HttpContext):
+    async def health(ctx: HttpContext):
         return json({})
 
     doc = document(app, test_client_factory)
@@ -258,7 +258,7 @@ class StubBackend(AuthenticationBackend):
         self.name = name
         self._scope = scope
 
-    async def authenticate(self, request):
+    async def authenticate(self, ctx):
         return AuthResult(success=True, identity="u1", scope=self._scope)
 
 
@@ -268,7 +268,7 @@ def test_a_request_through_an_accepted_scheme_passes(
     app = SilloApp(title="T", version="1", auth=[StubBackend("bearerAuth", "jwt")])
 
     @app.get("/me", auth=useAuth(schemes=["bearerAuth"]))
-    async def me(request: HttpContext):
+    async def me(ctx: HttpContext):
         return json({"ok": True})
 
     with test_client_factory(app) as client:
@@ -288,7 +288,7 @@ def test_a_request_through_the_wrong_scheme_is_rejected(
     )
 
     @app.get("/me", auth=useAuth(schemes=["bearerAuth"]))
-    async def me(request: HttpContext):
+    async def me(ctx: HttpContext):
         return json({"ok": True})
 
     with test_client_factory(app) as client:
@@ -301,11 +301,11 @@ def test_the_middleware_records_which_scheme_answered(
     app = SilloApp(title="T", version="1", auth=[StubBackend("apiKeyHeader", "apikey")])
 
     @app.get("/who")
-    async def who(request: HttpContext):
+    async def who(ctx: HttpContext):
         return json(
             {
-                "scope": request.scope.get("auth"),
-                "scheme": request.scope.get("auth_scheme"),
+                "scope": ctx.scope.get("auth"),
+                "scheme": ctx.scope.get("auth_scheme"),
             }
         )
 
@@ -322,14 +322,14 @@ def test_an_unauthenticated_request_records_no_scheme(
     class Never(AuthenticationBackend):
         name = "bearerAuth"
 
-        async def authenticate(self, request):
+        async def authenticate(self, ctx):
             return AuthResult(success=False, identity="", scope="")
 
     app = SilloApp(title="T", version="1", auth=[Never()])
 
     @app.get("/who")
-    async def who(request: HttpContext):
-        return json({"scheme": request.scope.get("auth_scheme")})
+    async def who(ctx: HttpContext):
+        return json({"scheme": ctx.scope.get("auth_scheme")})
 
     with test_client_factory(app) as client:
         assert client.get("/who").json() == {"scheme": None}
@@ -350,7 +350,7 @@ def test_strict_security_rejects_an_unregistered_scheme(
     )
 
     @app.get("/oops", auth=useAuth(schemes=["sessionCookie"]))
-    async def oops(request: HttpContext):
+    async def oops(ctx: HttpContext):
         return json({})
 
     with pytest.raises(ValueError, match="not registered"):
@@ -366,7 +366,7 @@ def test_strict_security_names_the_route_and_the_scheme():
     )
 
     @app.get("/oops", auth=useAuth(schemes=["sessionCookie"]))
-    async def oops(request: HttpContext):
+    async def oops(ctx: HttpContext):
         return json({})
 
     with pytest.raises(ValueError) as caught:
@@ -388,7 +388,7 @@ def test_strict_security_passes_when_everything_resolves():
     )
 
     @app.get("/me", auth=useAuth(schemes=["bearerAuth", "sessionCookie"]))
-    async def me(request: HttpContext):
+    async def me(ctx: HttpContext):
         return json({})
 
     assert "bearerAuth" in app.build_openapi()
@@ -399,7 +399,7 @@ def test_strict_security_is_off_by_default():
     app = SilloApp(title="T", version="1")
 
     @app.get("/oops", security=[{"nothingDefinesThis": []}])
-    async def oops(request: HttpContext):
+    async def oops(ctx: HttpContext):
         return json({})
 
     assert app.build_openapi()
@@ -414,7 +414,7 @@ def test_strict_security_ignores_excluded_routes():
     )
 
     @app.get("/internal", security=[{"ghost": []}], exclude_from_schema=True)
-    async def internal(request: HttpContext):
+    async def internal(ctx: HttpContext):
         return json({})
 
     assert app.build_openapi()
@@ -440,7 +440,7 @@ def test_a_bare_gate_is_documented_as_protected(
     )
 
     @app.get("/plain", auth=useAuth())
-    async def plain(request: HttpContext):
+    async def plain(ctx: HttpContext):
         return json({})
 
     doc = document(app, test_client_factory)
@@ -458,7 +458,7 @@ def test_a_permissions_only_gate_is_documented_as_protected(
     app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get("/perm", auth=useAuth(permissions=["audit:read"]))
-    async def perm(request: HttpContext):
+    async def perm(ctx: HttpContext):
         return json({})
 
     doc = document(app, test_client_factory)
@@ -472,7 +472,7 @@ def test_a_bare_optional_gate_keeps_its_empty_alternative(
     app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get("/feed", auth=useAuth(required=False))
-    async def feed(request: HttpContext):
+    async def feed(ctx: HttpContext):
         return json({})
 
     doc = document(app, test_client_factory)
@@ -487,7 +487,7 @@ def test_a_route_with_no_gate_stays_public(
     app = SilloApp(title="T", version="1", auth=[JWTAuthBackend(secret_key="s")])
 
     @app.get("/health")
-    async def health(request: HttpContext):
+    async def health(ctx: HttpContext):
         return json({})
 
     doc = document(app, test_client_factory)
@@ -510,11 +510,11 @@ def test_the_documented_and_enforced_answers_agree(
     )
 
     @app.get("/gated", auth=useAuth())
-    async def gated(request: HttpContext):
+    async def gated(ctx: HttpContext):
         return json({})
 
     @app.get("/open")
-    async def open_route(request: HttpContext):
+    async def open_route(ctx: HttpContext):
         return json({})
 
     doc = document(app, test_client_factory)
@@ -552,11 +552,11 @@ def test_a_backend_reports_its_scheme_name_as_the_scope(
     app = SilloApp(title="T", version="1", auth=[StubBackend("bearerAuth", "bearerAuth")])
 
     @app.get("/who")
-    async def who(request: HttpContext):
+    async def who(ctx: HttpContext):
         return json(
             {
-                "auth": request.scope.get("auth"),
-                "scheme": request.scope.get("auth_scheme"),
+                "auth": ctx.scope.get("auth"),
+                "scheme": ctx.scope.get("auth_scheme"),
             }
         )
 
@@ -597,8 +597,8 @@ def test_the_middleware_survives_having_no_backends(
     app.use(AuthenticationMiddleware())
 
     @app.get("/anon")
-    async def anon(request: HttpContext):
-        return json({"authenticated": request.user.is_authenticated})
+    async def anon(ctx: HttpContext):
+        return json({"authenticated": ctx.user.is_authenticated})
 
     with test_client_factory(app) as client:
         resp = client.get("/anon")

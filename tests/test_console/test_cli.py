@@ -59,12 +59,12 @@ def write_app(directory, body: str, name: str = "main.py") -> None:
 
 
 PLAIN_APP = """
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
 
     app = SilloApp(title="Plain")
 
     @app.get("/things")
-    async def things(request, response):
+    async def things(ctx: HttpContext):
         return json([])
     """
 
@@ -224,7 +224,7 @@ def test_a_broken_application_leaves_the_framework_commands(elsewhere, monkeypat
 
 
 DATABASE_APP = """
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
     from sillo.record import DatabaseConfig, setup_record
 
     app = SilloApp(title="With database")
@@ -273,7 +273,7 @@ def test_the_queue_commands_are_offered_regardless(elsewhere, monkeypatch):
 
 
 SCHEDULER_APP = """
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
     from sillo.work.scheduler import setup_scheduler
 
     app = SilloApp()
@@ -312,7 +312,7 @@ def test_the_user_model_comes_from_the_application(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import SilloApp
+        from sillo import SilloApp, HttpContext
         from sillo.record import DatabaseConfig, setup_record
         from sillo.users.base import User
 
@@ -339,7 +339,7 @@ def test_the_user_model_comes_from_the_application(elsewhere, monkeypatch):
 
 
 REGISTERED_APP = """
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
     from sillo.console import Argument, Command
 
     app = SilloApp()
@@ -403,7 +403,7 @@ def test_a_projects_name_wins_over_a_bundled_one(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import SilloApp
+        from sillo import SilloApp, HttpContext
         from sillo.console import Command
         from sillo.record import DatabaseConfig, setup_record
 
@@ -437,7 +437,7 @@ def test_a_projects_name_wins_over_a_bundled_one(elsewhere, monkeypatch):
 
 
 def test_add_command_returns_the_class_so_it_can_decorate():
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
 
     app = SilloApp()
 
@@ -452,7 +452,7 @@ def test_add_command_returns_the_class_so_it_can_decorate():
 
 
 def test_a_command_without_a_name_is_refused():
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
 
     app = SilloApp()
 
@@ -464,7 +464,7 @@ def test_a_command_without_a_name_is_refused():
 
 
 def test_registering_the_same_name_twice_is_refused():
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
 
     app = SilloApp()
 
@@ -480,7 +480,7 @@ def test_registering_the_same_name_twice_is_refused():
 
 
 def test_the_decorator_builds_a_command_from_a_function():
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
 
     app = SilloApp()
 
@@ -494,7 +494,7 @@ def test_the_decorator_builds_a_command_from_a_function():
 
 
 def test_a_fresh_application_has_no_commands():
-    from sillo import SilloApp
+    from sillo import SilloApp, HttpContext
 
     assert SilloApp().commands == []
 
@@ -551,16 +551,16 @@ def test_routes_can_filter_by_method(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import SilloApp
+        from sillo import SilloApp, HttpContext
 
         app = SilloApp()
 
         @app.get("/only-get")
-        async def a(request, response):
+        async def a(ctx: HttpContext):
             return json([])
 
         @app.post("/only-post")
-        async def b(request, response):
+        async def b(ctx: HttpContext):
             return json([])
         """,
         name="filtered.py",
@@ -668,17 +668,17 @@ def test_routes_descends_into_mounted_routers(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import Router, SilloApp
+        from sillo import Router, SilloApp, HttpContext
 
         app = SilloApp()
         api = Router(prefix="/api")
 
         @api.get("/health")
-        async def health(request, response):
+        async def health(ctx: HttpContext):
             return json({})
 
         @api.post("/items")
-        async def create_item(request, response):
+        async def create_item(ctx: HttpContext):
             return json({})
 
         app.mount_router(api)
@@ -701,13 +701,13 @@ def test_a_mount_is_not_labelled_a_websocket(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import Router, SilloApp
+        from sillo import Router, SilloApp, HttpContext
 
         app = SilloApp()
         api = Router(prefix="/api")
 
         @api.get("/health")
-        async def health(request, response):
+        async def health(ctx: HttpContext):
             return json({})
 
         app.mount_router(api)
@@ -726,7 +726,7 @@ def test_a_real_websocket_is_labelled(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import SilloApp
+        from sillo import SilloApp, HttpContext
 
         app = SilloApp()
 
@@ -749,17 +749,17 @@ def test_filtering_by_method_reaches_mounted_routes(elsewhere, monkeypatch):
     write_app(
         elsewhere,
         """
-        from sillo import Router, SilloApp
+        from sillo import Router, SilloApp, HttpContext
 
         app = SilloApp()
         api = Router(prefix="/api")
 
         @api.get("/health")
-        async def health(request, response):
+        async def health(ctx: HttpContext):
             return json({})
 
         @api.post("/items")
-        async def create_item(request, response):
+        async def create_item(ctx: HttpContext):
             return json({})
 
         app.mount_router(api)

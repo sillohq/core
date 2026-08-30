@@ -40,7 +40,7 @@ class TestAuthenticationBackendContract:
 
     def test_handle_exception_logs_without_raising(self):
         class Bare(AuthenticationBackend):
-            async def authenticate(self, request):
+            async def authenticate(self, ctx):
                 return None
 
         Bare().handle_exception(object(), RuntimeError("backend failed"))

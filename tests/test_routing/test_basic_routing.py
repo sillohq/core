@@ -32,7 +32,7 @@ def test_router_with_prefix():
 def test_router_with_routes():
     """Test router initialization with routes"""
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     route = Route("/test", handler, methods=["GET"])
@@ -61,7 +61,7 @@ def test_router_with_name():
 def test_route_initialization():
     """Test basic route initialization"""
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     route = Route("/test", handler, methods=["GET"])
@@ -74,7 +74,7 @@ def test_route_initialization():
 def test_route_with_name():
     """Test route initialization with name"""
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     route = Route("/test", handler, methods=["GET"], name="test-route")
@@ -84,7 +84,7 @@ def test_route_with_name():
 def test_route_with_summary_and_description():
     """Test route with OpenAPI documentation"""
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     route = Route(
@@ -102,7 +102,7 @@ def test_route_with_summary_and_description():
 def test_route_with_tags():
     """Test route with tags"""
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     route = Route("/test", handler, methods=["GET"], tags=["test", "api"])
@@ -113,7 +113,7 @@ def test_route_with_tags():
 def test_route_deprecated_flag():
     """Test route deprecation flag"""
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     route = Route("/test", handler, methods=["GET"], deprecated=True)
@@ -123,7 +123,7 @@ def test_route_deprecated_flag():
 def test_route_exclude_from_schema():
     """Test route exclusion from OpenAPI schema"""
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     route = Route("/test", handler, methods=["GET"], exclude_from_schema=True)
@@ -137,7 +137,7 @@ def test_router_add_route_with_route_object():
     """Test adding route using Route object"""
     router = Router()
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     route = Route("/test", handler, methods=["GET"])
@@ -150,7 +150,7 @@ def test_router_add_route_with_parameters():
     """Test adding route using parameters"""
     router = Router()
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("test")
 
     router.add_route(path="/test", handler=handler, methods=["GET"])
@@ -162,10 +162,10 @@ def test_router_add_multiple_routes():
     """Test adding multiple routes to router"""
     router = Router()
 
-    async def handler1(request: HttpContext):
+    async def handler1(ctx: HttpContext):
         return text("test1")
 
-    async def handler2(request: HttpContext):
+    async def handler2(ctx: HttpContext):
         return text("test2")
 
     route1 = Route("/test1", handler1, methods=["GET"])
@@ -187,7 +187,7 @@ def test_basic_route_with_app(test_client_factory: Callable[[SilloApp], TestClie
     app = SilloApp()
 
     @app.get("/hello")
-    async def hello(request: HttpContext):
+    async def hello(ctx: HttpContext):
         return text("Hello, World!")
 
     with test_client_factory(app) as client:
@@ -202,7 +202,7 @@ def test_router_mounted_to_app(test_client_factory: Callable[[SilloApp], TestCli
     router = Router(prefix="/api")
 
     @router.get("/users")
-    async def get_users(request: HttpContext):
+    async def get_users(ctx: HttpContext):
         return json({"users": ["Alice", "Bob"]})
 
     app.mount_router(router)
@@ -216,7 +216,7 @@ def test_router_mounted_to_app(test_client_factory: Callable[[SilloApp], TestCli
 def test_empty_path_converts_to_slash():
     """Test that empty path is converted to /"""
 
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return text("root")
 
     route = Route("", handler, methods=["GET"])
@@ -239,11 +239,11 @@ def test_router_with_multiple_prefixes(
     api_v2 = Router(prefix="/api/v2")
 
     @api_v1.get("/status")
-    async def status_v1(request: HttpContext):
+    async def status_v1(ctx: HttpContext):
         return json({"version": "1.0"})
 
     @api_v2.get("/status")
-    async def status_v2(request: HttpContext):
+    async def status_v2(ctx: HttpContext):
         return json({"version": "2.0"})
 
     app.mount_router(api_v1)

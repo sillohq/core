@@ -208,11 +208,11 @@ class TestFileSessionIntegration:
         app = SilloApp()
 
         @app.get("/file-session-test")
-        async def file_session_test(request: HttpContext):
-            counter = request.session.get("counter", 0)
+        async def file_session_test(ctx: HttpContext):
+            counter = ctx.session.get("counter", 0)
             counter += 1
-            request.session["counter"] = counter
-            return json_response({"counter": request.session["counter"]})
+            ctx.session["counter"] = counter
+            return json_response({"counter": ctx.session["counter"]})
 
         file_manager = FileSessionManager(
             SessionConfig(session_file_storage_path=self.temp_dir)

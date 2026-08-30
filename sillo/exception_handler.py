@@ -146,7 +146,7 @@ class ExceptionMiddleware:
 
     Like :class:`~sillo.core.error.handler.ServerErrorMiddleware` it is written
     in the plain ASGI form — ``__init__(app)`` and ``__call__(scope, receive,
-    send)`` — rather than sillo's ``(request, response, call_next)`` dispatch
+    send)`` — rather than sillo's ``(ctx, call_next)`` dispatch
     form. It has no interest in a request that succeeds, so building a
     an ``HttpContext`` and a background task for one is pure waste;
     both objects are constructed inside the ``except`` clause and nowhere else.

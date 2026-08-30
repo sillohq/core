@@ -20,7 +20,7 @@ methods::
 
     @router.get("/feed", auth=useAuth(required=False))
     async def feed(ctx):
-        user = request.user  # may be UnauthenticatedUser
+        user = ctx.user  # may be UnauthenticatedUser
 
 A failed gate normally raises ``AuthenticationFailed`` (401) or
 ``PermissionDenied`` (403), which the framework turns into a generic JSON
@@ -52,7 +52,7 @@ route needs — without touching global exception handling::
 
 Both are optional and independent: set one, both, or neither. Either may be a
 plain function or a coroutine function, and each is called as
-``hook(request, response)``. Whatever it returns becomes the response for the
+``hook(ctx)``. Whatever it returns becomes the response for the
 request — the route handler never runs. Leaving a hook unset keeps the default
 exception for that failure mode, so existing routes are unaffected.
 
@@ -63,11 +63,11 @@ Subclass to add custom logic::
             super().__init__(**kwargs)
             self.org_id_param = org_id_param
 
-        async def authenticate(self, request) -> bool:
-            if not await super().authenticate(request):
+        async def authenticate(self, ctx) -> bool:
+            if not await super().authenticate(ctx):
                 return False
-            return request.user.belongs_to_org(
-                request.path_params[self.org_id_param]
+            return ctx.user.belongs_to_org(
+                ctx.path_params[self.org_id_param]
             )
 """
 
@@ -90,7 +90,7 @@ if TYPE_CHECKING:
     from sillo.core.http import HttpContext
     from sillo.users.base import BaseUser, UserProtocol
 
-#: A per-gate failure hook: sync or async, called as ``hook(request, response)``
+#: A per-gate failure hook: sync or async, called as ``hook(ctx)``
 #: when the gate refuses the request. Whatever it returns is sent back as the
 #: response in place of the default ``AuthenticationFailed``/``PermissionDenied``
 #: error — the route handler is never reached.
@@ -129,14 +129,14 @@ def accepted_identifiers(names: Sequence[str]) -> set:
     return accepted
 
 
-def request_identifiers(request: HttpContext) -> set:
+def request_identifiers(ctx: HttpContext) -> set:
     """The identifiers a request authenticated under.
 
     ``auth`` and ``auth_scheme`` hold the same value for every shipped
     backend; they differ only for a custom backend that reports a scope but
     never sets a name.
     """
-    return {request.scope.get("auth_scheme"), request.scope.get("auth")}
+    return {ctx.scope.get("auth_scheme"), ctx.scope.get("auth")}
 
 
 class useAuth:
@@ -169,7 +169,7 @@ class useAuth:
     backends:
         If provided, these replace the globally configured middleware
         backends for this route.  Successful authentication overrides
-        ``request.scope["user"]``, ``["auth"]`` and ``["auth_scheme"]``.
+        ``ctx.scope["user"]``, ``["auth"]`` and ``["auth_scheme"]``.
     user_model:
         User model for loading identities when *backends* are overridden.
         Defaults to :class:`sillo.auth.SimpleUser`.
@@ -233,7 +233,7 @@ class useAuth:
                 ``False`` (the default) means any one will do, which OpenAPI
                 writes as separate requirement objects; ``True`` means all of
                 them, which OpenAPI writes as one object with several keys.
-            unauthorized: Called as ``hook(request, response)`` in place of
+            unauthorized: Called as ``hook(ctx)`` in place of
                 the default 401 when authentication is missing or the scheme
                 does not match. Its return value becomes the response and the
                 route handler does not run. May be sync or async. ``None``
@@ -312,7 +312,7 @@ class useAuth:
             return await hook(ctx)
         return await run_in_threadpool(hook, ctx)
 
-    async def authenticate(self, request: HttpContext) -> bool:
+    async def authenticate(self, ctx: HttpContext) -> bool:
         """Run the authentication and authorisation gate before the route handler.
 
         This is the main entry point called by the framework before the route
@@ -329,7 +329,7 @@ class useAuth:
         Returns:
             bool: Always returns ``True`` if the gate passes. This return
                 value allows subclass overrides to add custom logic after
-                calling ``super().authenticate(request)``.
+                calling ``super().authenticate(ctx)``.
 
         Raises:
             AuthenticationFailed: If no authenticated user is found and
@@ -338,16 +338,16 @@ class useAuth:
                 one or more of the required permissions.
         """
         if self.backends is not None:
-            await self._authenticate_with_backends(request)
+            await self._authenticate_with_backends(ctx)
 
-        user = request.scope.get("user")
+        user = ctx.scope.get("user")
         if not user or not user.is_authenticated:
             if self.required:
                 raise AuthenticationFailed
             return True
 
         if self.schemes:
-            self._check_schemes(request)
+            self._check_schemes(ctx)
 
         if self.permissions:
             for perm in self.permissions:
@@ -407,7 +407,7 @@ class useAuth:
 
         return requirements
 
-    def _check_schemes(self, request: HttpContext) -> None:
+    def _check_schemes(self, ctx: HttpContext) -> None:
         """Verify the request authenticated through an accepted scheme.
 
         Both ``auth_scheme`` and ``auth`` are consulted. The shipped backends
@@ -423,7 +423,7 @@ class useAuth:
                 this gate accepts.
         """
         accepted = accepted_identifiers([*self.schemes])
-        if request_identifiers(request).isdisjoint(accepted):
+        if request_identifiers(ctx).isdisjoint(accepted):
             raise AuthenticationFailed
 
     def _resolve_user_model(self) -> type[UserProtocol]:
@@ -449,7 +449,7 @@ class useAuth:
             return self.user_model
         return SimpleUser
 
-    async def _authenticate_with_backends(self, request: HttpContext) -> None:
+    async def _authenticate_with_backends(self, ctx: HttpContext) -> None:
         """Authenticate the request using the gate's custom backend list.
 
         Iterates through the configured backends in order, attempting to
@@ -463,7 +463,7 @@ class useAuth:
 
         Args:
             request: The incoming HTTP request object. On success, the
-                ``"user"`` and ``"auth"`` keys in ``request.scope`` are
+                ``"user"`` and ``"auth"`` keys in ``ctx.scope`` are
                 set to the resolved user object and scope string.
 
         Returns:
@@ -477,11 +477,11 @@ class useAuth:
 
         for backend in self.backends:  # ty: ignore[not-iterable]
             try:
-                result = await backend.authenticate(request)
+                result = await backend.authenticate(ctx)
                 if result.success:
-                    request.scope["user"] = await user_model.load_user(result.identity)
-                    request.scope["auth"] = result.scope
-                    request.scope["auth_scheme"] = backend.name
+                    ctx.scope["user"] = await user_model.load_user(result.identity)
+                    ctx.scope["auth"] = result.scope
+                    ctx.scope["auth_scheme"] = backend.name
                     return
             except Exception:
                 continue

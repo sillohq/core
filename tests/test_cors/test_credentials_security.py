@@ -20,7 +20,7 @@ def _app(config):
     app = SilloApp()
 
     @app.get("/resource")
-    async def resource(request: HttpContext):
+    async def resource(ctx: HttpContext):
         return json({"message": "OK"})
 
     app.use(CORSMiddleware(config=config))

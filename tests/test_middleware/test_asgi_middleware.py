@@ -36,7 +36,7 @@ def test_pure_asgi_middleware_basic(
     wrapped_app = ASGIMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         executed.append("handler")
         return json({"message": "ok"})
 
@@ -65,8 +65,8 @@ def test_pure_asgi_middleware_modifies_scope(
     wrapped_app = ScopeModifierMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        custom_value = request.scope.get("custom_value")
+    async def handler(ctx: HttpContext):
+        custom_value = ctx.scope.get("custom_value")
         return json({"custom_value": custom_value})
 
     with test_client_factory(wrapped_app) as client:
@@ -97,7 +97,7 @@ def test_pure_asgi_middleware_intercepts_send(
     wrapped_app = HeaderInjectorMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"message": "ok"})
 
     with test_client_factory(wrapped_app) as client:
@@ -132,7 +132,7 @@ def test_pure_asgi_middleware_multiple_layers(
             await self.app(scope, receive, send)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_order.append("handler")
         return json({"message": "ok"})
 
@@ -171,7 +171,7 @@ def test_pure_asgi_middleware_request_logging(
     wrapped_app = LoggingMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"message": "ok"})
 
     with test_client_factory(wrapped_app) as client:
@@ -201,7 +201,7 @@ def test_pure_asgi_middleware_handles_websocket(
     wrapped_app = TypeTrackerMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"message": "ok"})
 
     with test_client_factory(wrapped_app) as client:
@@ -237,7 +237,7 @@ def test_pure_asgi_middleware_timing(
     wrapped_app = TimingMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"message": "ok"})
 
     with test_client_factory(wrapped_app) as client:
@@ -264,7 +264,7 @@ def test_pure_asgi_middleware_with_sillo_middleware(
                 execution_order.append("asgi")
             await self.app(scope, receive, send)
 
-    async def sillo_middleware(request: HttpContext, call_next):
+    async def sillo_middleware(ctx: HttpContext, call_next):
         execution_order.append("sillo")
         response = await call_next()
         return response
@@ -273,7 +273,7 @@ def test_pure_asgi_middleware_with_sillo_middleware(
     wrapped_app = ASGIMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_order.append("handler")
         return json({"message": "ok"})
 
@@ -319,7 +319,7 @@ def test_pure_asgi_middleware_error_handling(
     wrapped_app = ErrorHandlerMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise RuntimeError("Test error")
 
     with test_client_factory(wrapped_app) as client:
@@ -346,13 +346,13 @@ def test_pure_asgi_middleware_conditional_processing(
     wrapped_app = ConditionalMiddleware(app)
 
     @app.get("/api/test")
-    async def api_handler(request: HttpContext):
-        is_api = request.scope.get("api_request", False)
+    async def api_handler(ctx: HttpContext):
+        is_api = ctx.scope.get("api_request", False)
         return json({"is_api": is_api})
 
     @app.get("/public/test")
-    async def public_handler(request: HttpContext):
-        is_api = request.scope.get("api_request", False)
+    async def public_handler(ctx: HttpContext):
+        is_api = ctx.scope.get("api_request", False)
         return json({"is_api": is_api})
 
     with test_client_factory(wrapped_app) as client:
@@ -394,8 +394,8 @@ def test_pure_asgi_middleware_request_id(
     wrapped_app = RequestIDMiddleware(app)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        request_id = request.scope.get("request_id")
+    async def handler(ctx: HttpContext):
+        request_id = ctx.scope.get("request_id")
         return json({"request_id": request_id})
 
     with test_client_factory(wrapped_app) as client:
@@ -427,7 +427,7 @@ def test_wrap_asgi_basic(
             await self.app(scope, receive, send)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         executed.append("handler")
         return json({"message": "ok"})
 
@@ -459,8 +459,8 @@ def test_wrap_asgi_with_kwargs(
             await self.app(scope, receive, send)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        custom_value = request.scope.get("custom_value", "")
+    async def handler(ctx: HttpContext):
+        custom_value = ctx.scope.get("custom_value", "")
         return json({"custom_value": custom_value})
 
     # Use wrap_asgi with kwargs
@@ -507,7 +507,7 @@ def test_wrap_asgi_multiple_times(
             await self.app(scope, receive, send)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_order.append("handler")
         return json({"message": "ok"})
 
@@ -557,13 +557,13 @@ def test_wrap_asgi_with_sillo_middleware(
                 execution_order.append("asgi")
             await self.app(scope, receive, send)
 
-    async def sillo_middleware(request: HttpContext, call_next):
+    async def sillo_middleware(ctx: HttpContext, call_next):
         execution_order.append("sillo")
         response = await call_next()
         return response
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_order.append("handler")
         return json({"message": "ok"})
 
@@ -608,7 +608,7 @@ def test_wrap_asgi_header_injection(
             await self.app(scope, receive, send_wrapper)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"message": "ok"})
 
     app.wrap_asgi(HeaderMiddleware, header_name="x-powered-by", header_value="sillo")
@@ -636,8 +636,8 @@ def test_wrap_asgi_scope_modification(
             await self.app(scope, receive, send)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        custom_value = request.scope.get("app_name", "unknown")
+    async def handler(ctx: HttpContext):
+        custom_value = ctx.scope.get("app_name", "unknown")
         return json({"app_name": custom_value})
 
     app.wrap_asgi(ScopeMiddleware, key="app_name", value="sillo-app")
@@ -680,7 +680,7 @@ def test_wrap_asgi_error_handling(
                 await self.app(scope, receive, send)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise ValueError("Test error")
 
     app.wrap_asgi(ErrorHandlerMiddleware)

@@ -53,74 +53,74 @@ class TestTheMappingProtocol:
     read scope keys off the request without reaching for ``.scope``."""
 
     def test_a_key_is_readable(self):
-        request = HttpContext(make_scope(), None)
+        ctx = HttpContext(make_scope(), None)
 
-        assert request["method"] == "GET"
+        assert ctx["method"] == "GET"
 
     def test_a_missing_key_raises(self):
-        request = HttpContext(make_scope(), None)
+        ctx = HttpContext(make_scope(), None)
 
         with pytest.raises(KeyError):
-            request["not-there"]
+            ctx["not-there"]
 
     def test_it_iterates_the_scope_keys(self):
-        request = HttpContext(make_scope(), None)
+        ctx = HttpContext(make_scope(), None)
 
-        assert "method" in list(request)
+        assert "method" in list(ctx)
 
     def test_it_has_the_scope_s_length(self):
         scope = make_scope()
-        request = HttpContext(scope, None)
+        ctx = HttpContext(scope, None)
 
-        assert len(request) == len(scope)
+        assert len(ctx) == len(scope)
 
     def test_the_app_comes_off_the_scope(self):
         sentinel = object()
-        request = HttpContext(make_scope(app=sentinel), None)
+        ctx = HttpContext(make_scope(app=sentinel), None)
 
-        assert request.app is sentinel
+        assert ctx.app is sentinel
 
 
 class TestTheClientAddress:
     def test_the_client_is_reported_as_an_address(self):
-        request = HttpContext(make_scope(client=("10.0.0.1", 51234)), None)
+        ctx = HttpContext(make_scope(client=("10.0.0.1", 51234)), None)
 
-        assert request.client == Address("10.0.0.1", 51234)
+        assert ctx.client == Address("10.0.0.1", 51234)
 
     def test_an_absent_client_is_none(self):
         """A request from a unix socket, or a test harness, has no peer."""
-        request = HttpContext(make_scope(client=None), None)
+        ctx = HttpContext(make_scope(client=None), None)
 
-        assert request.client is None
+        assert ctx.client is None
 
 
 class TestHeaderConveniences:
     def test_the_origin_is_read_from_the_header(self):
-        request = HttpContext(
+        ctx = HttpContext(
             make_scope(headers=[(b"origin", b"https://other.test")]), None
         )
 
-        assert request.origin == "https://other.test"
+        assert ctx.origin == "https://other.test"
 
     def test_an_absent_origin_is_derived_from_the_url(self):
         """``HttpContext.origin`` falls back to scheme+authority rather than
         answering None, so a same-origin request compares equal to the
         origin a cross-origin one would have sent."""
-        request = HttpContext(make_scope(), None)
+        ctx = HttpContext(make_scope(), None)
 
-        assert request.origin == "http://example.test"
+        assert ctx.origin == "http://example.test"
 
     def test_no_content_type_header_reads_as_none(self):
-        request = HttpContext(make_scope(), None)
+        ctx = HttpContext(make_scope(), None)
 
-        assert request.content_type is None
+        assert ctx.content_type is None
 
     def test_a_content_type_is_returned_without_its_parameters(self):
-        request = HttpContext(
+        ctx = HttpContext(
             make_scope(headers=[(b"content-type", b"text/html; charset=utf-8")]), None
         )
 
-        assert request.content_type == "text/html"
+        assert ctx.content_type == "text/html"
 
 
 class TestChannelsThatWereNeverProvided:
@@ -128,62 +128,62 @@ class TestChannelsThatWereNeverProvided:
     tests both do it -- and then has nothing to read from or write to."""
 
     async def test_receiving_without_a_channel_says_so(self):
-        request = HttpContext(make_scope())
+        ctx = HttpContext(make_scope())
 
         with pytest.raises(RuntimeError, match="No receive channel"):
-            await request.receive()
+            await ctx.receive()
 
     async def test_sending_a_push_without_a_channel_says_so(self):
-        request = HttpContext(
+        ctx = HttpContext(
             make_scope(extensions={"http.response.push": {}}),
         )
 
         with pytest.raises(RuntimeError, match="No send channel"):
-            await request.send_push_promise("/style.css")
+            await ctx.send_push_promise("/style.css")
 
 
 class TestReadingTheBody:
     async def test_the_body_is_returned(self):
-        request = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
+        ctx = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
 
-        assert await request.body == b"hello"
+        assert await ctx.body == b"hello"
 
     async def test_a_cached_body_streams_again(self):
         """Once the body is read it is kept, so a second consumer -- an
         exception handler, a logging middleware -- gets it rather than a
         'stream consumed' error."""
-        request = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
-        await request.body
+        ctx = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
+        await ctx.body
 
-        chunks = [chunk async for chunk in request.stream()]
+        chunks = [chunk async for chunk in ctx.stream()]
 
         assert b"".join(chunks) == b"hello"
 
     async def test_streaming_twice_without_caching_is_refused(self):
         """The channel is drained, so the second read would hang forever
         waiting for a body that has already gone past."""
-        request = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
-        async for _ in request.stream():
+        ctx = HttpContext(make_scope(method="POST"), await body_receive(b"hello"))
+        async for _ in ctx.stream():
             pass
 
         with pytest.raises(RuntimeError, match="Stream consumed"):
-            async for _ in request.stream():
+            async for _ in ctx.stream():
                 pass
 
     async def test_text_decodes_as_utf8(self):
-        request = HttpContext(
+        ctx = HttpContext(
             make_scope(method="POST"), await body_receive("café".encode())
         )
 
-        assert await request.text == "café"
+        assert await ctx.text == "café"
 
     async def test_undecodable_text_falls_back_to_latin1(self):
         """A body that is not valid UTF-8 still has to produce *something*:
         raising here turns a malformed request into a 500 rather than a 400.
         """
-        request = HttpContext(make_scope(method="POST"), await body_receive(b"\xff\xfe"))
+        ctx = HttpContext(make_scope(method="POST"), await body_receive(b"\xff\xfe"))
 
-        assert await request.text == "\xff\xfe".encode("latin-1").decode("latin-1")
+        assert await ctx.text == "\xff\xfe".encode("latin-1").decode("latin-1")
 
 
 class TestDisconnectDetection:
@@ -191,9 +191,9 @@ class TestDisconnectDetection:
         async def receive():
             return {"type": "http.disconnect"}
 
-        request = HttpContext(make_scope(), receive)
+        ctx = HttpContext(make_scope(), receive)
 
-        assert await request.is_disconnected() is True
+        assert await ctx.is_disconnected() is True
 
     async def test_a_still_open_connection_reads_as_connected(self):
         """The probe cancels itself rather than waiting: asking 'are you still
@@ -203,9 +203,9 @@ class TestDisconnectDetection:
             await anyio.sleep(10)
             return {"type": "http.request", "body": b"", "more_body": False}
 
-        request = HttpContext(make_scope(), receive)
+        ctx = HttpContext(make_scope(), receive)
 
-        assert await request.is_disconnected() is False
+        assert await ctx.is_disconnected() is False
 
     async def test_the_answer_is_remembered(self):
         calls = []
@@ -214,9 +214,9 @@ class TestDisconnectDetection:
             calls.append(1)
             return {"type": "http.disconnect"}
 
-        request = HttpContext(make_scope(), receive)
-        await request.is_disconnected()
-        await request.is_disconnected()
+        ctx = HttpContext(make_scope(), receive)
+        await ctx.is_disconnected()
+        await ctx.is_disconnected()
 
         assert len(calls) == 1, "the disconnect probe re-read a closed channel"
 
@@ -228,13 +228,13 @@ class TestServerPush:
         async def send(message):
             sent.append(message)
 
-        request = HttpContext(
+        ctx = HttpContext(
             make_scope(extensions={"http.response.push": {}}, headers=[]),
             None,
             send,
         )
 
-        await request.send_push_promise("/style.css")
+        await ctx.send_push_promise("/style.css")
 
         assert sent[0]["type"] == "http.response.push"
         assert sent[0]["path"] == "/style.css"
@@ -248,7 +248,7 @@ class TestServerPush:
         async def send(message):
             sent.append(message)
 
-        request = HttpContext(
+        ctx = HttpContext(
             make_scope(
                 extensions={"http.response.push": {}},
                 headers=[(b"accept-encoding", b"gzip")],
@@ -257,7 +257,7 @@ class TestServerPush:
             send,
         )
 
-        await request.send_push_promise("/style.css")
+        await ctx.send_push_promise("/style.css")
 
         names = [name for name, _ in sent[0]["headers"]]
         assert b"accept-encoding" in names
@@ -268,8 +268,8 @@ class TestServerPush:
         async def send(message):
             sent.append(message)
 
-        request = HttpContext(make_scope(extensions={}), None, send)
+        ctx = HttpContext(make_scope(extensions={}), None, send)
 
-        await request.send_push_promise("/style.css")
+        await ctx.send_push_promise("/style.css")
 
         assert sent == []

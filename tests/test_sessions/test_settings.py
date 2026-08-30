@@ -87,8 +87,8 @@ class TestSettingsOnTheMiddlewareTakeEffect:
         app.use(SessionMiddleware(secret_key=SECRET, **settings))
 
         @app.get("/set")
-        async def set_value(request: HttpContext):
-            request.session["user_id"] = 7
+        async def set_value(ctx: HttpContext):
+            ctx.session["user_id"] = 7
             return json({"ok": True})
 
         return app
@@ -133,23 +133,23 @@ class TestSessionsSurviveOverPlainHttp:
         app.use(SessionMiddleware(secret_key=SECRET, session_cookie_secure=False))
 
         @app.get("/login")
-        async def login(request: HttpContext):
-            request.session["user_id"] = 7
-            request.session["cart"] = "abc"
+        async def login(ctx: HttpContext):
+            ctx.session["user_id"] = 7
+            ctx.session["cart"] = "abc"
             return json({"ok": True})
 
         @app.get("/whoami")
-        async def whoami(request: HttpContext):
+        async def whoami(ctx: HttpContext):
             return json(
                 {
-                    "user_id": request.session.get("user_id"),
-                    "cart": request.session.get("cart"),
+                    "user_id": ctx.session.get("user_id"),
+                    "cart": ctx.session.get("cart"),
                 }
             )
 
         @app.get("/drop-cart")
-        async def drop_cart(request: HttpContext):
-            del request.session["cart"]
+        async def drop_cart(ctx: HttpContext):
+            del ctx.session["cart"]
             return json({"dropped": True})
 
         with TestClient(app) as client:

@@ -28,7 +28,7 @@ def generate_request_id() -> str:
 
 
 def get_request_id_from_header(
-    request: HttpContext, header_name: str = "X-Request-ID"
+    ctx: HttpContext, header_name: str = "X-Request-ID"
 ) -> str | None:
     """Extract a request ID from an incoming HTTP request header.
 
@@ -49,7 +49,7 @@ def get_request_id_from_header(
     Raises:
         None.
     """
-    return request.headers.get(header_name)
+    return ctx.headers.get(header_name)
 
 
 def set_request_id_header(
@@ -79,7 +79,7 @@ def set_request_id_header(
 
 
 def get_or_generate_request_id(
-    request: HttpContext, header_name: str = "X-Request-ID"
+    ctx: HttpContext, header_name: str = "X-Request-ID"
 ) -> str:
     """Return an existing request ID from headers or generate a new one.
 
@@ -101,7 +101,7 @@ def get_or_generate_request_id(
     Raises:
         None.
     """
-    request_id = get_request_id_from_header(request, header_name)
+    request_id = get_request_id_from_header(ctx, header_name)
     if not request_id:
         request_id = generate_request_id()
     return request_id
@@ -134,11 +134,11 @@ def validate_request_id(request_id: str) -> bool:
 
 
 def store_request_id_in_request(
-    request: HttpContext, request_id: str, attribute_name: str = "request_id"
+    ctx: HttpContext, request_id: str, attribute_name: str = "request_id"
 ) -> None:
     """Persist a request ID onto the request's mutable state object.
 
-    Writes the request ID into ``request.state`` under the given
+    Writes the request ID into ``ctx.state`` under the given
     attribute name, making it accessible to downstream handlers and
     middleware without re-parsing headers.
 
@@ -147,7 +147,7 @@ def store_request_id_in_request(
             should be updated with the request ID.
         request_id (str): The request identifier value to store.
         attribute_name (str, optional): The attribute name to use on
-            ``request.state``. Defaults to ``"request_id"``.
+            ``ctx.state``. Defaults to ``"request_id"``.
 
     Returns:
         None.
@@ -155,15 +155,15 @@ def store_request_id_in_request(
     Raises:
         None.
     """
-    request.state.update({attribute_name: request_id})
+    ctx.state.update({attribute_name: request_id})
 
 
 def get_request_id_from_request(
-    request: HttpContext, attribute_name: str = "request_id"
+    ctx: HttpContext, attribute_name: str = "request_id"
 ) -> str | None:
     """Retrieve a previously stored request ID from the request state.
 
-    Reads the request ID from ``request.state`` using the given
+    Reads the request ID from ``ctx.state`` using the given
     attribute name. Returns ``None`` if the attribute was never set,
     indicating that ``store_request_id_in_request`` was not called
     earlier in the request pipeline.
@@ -172,7 +172,7 @@ def get_request_id_from_request(
         request (HttpContext): The HTTP request object to read the
             stored request ID from.
         attribute_name (str, optional): The attribute name to look
-            up on ``request.state``. Defaults to ``"request_id"``.
+            up on ``ctx.state``. Defaults to ``"request_id"``.
 
     Returns:
         Optional[str]: The stored request ID string, or ``None`` if
@@ -181,4 +181,4 @@ def get_request_id_from_request(
     Raises:
         None.
     """
-    return getattr(request.state, attribute_name, None)
+    return getattr(ctx.state, attribute_name, None)

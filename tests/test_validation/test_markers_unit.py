@@ -151,10 +151,10 @@ def test_extract_returns_default_when_unbound():
     """An unbound marker has no name to look up, so it yields its default."""
     marker = Query(5)
 
-    class FakeRequest:
+    class FakeContext:
         query_params = {"anything": "1"}
 
-    assert marker.extract(FakeRequest()) == 5
+    assert marker.extract(FakeContext()) == 5
 
 
 def test_base_class_extract_is_abstract():
@@ -212,7 +212,7 @@ def test_legacy_detection():
 
 
 def test_solve_params_collects_and_binds_markers():
-    def handler(request, page=Query(1), x_key=Header(), other=5):
+    def handler(ctx, page=Query(1), x_key=Header(), other=5):
         ...
 
     solved = solve_params(handler)
@@ -222,7 +222,7 @@ def test_solve_params_collects_and_binds_markers():
 
 
 def test_solve_params_on_a_handler_with_no_markers():
-    def handler(request):
+    def handler(ctx):
         ...
 
     assert solve_params(handler) == []

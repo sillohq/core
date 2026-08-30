@@ -14,11 +14,11 @@ def create_app():
     app.use(Shield(csp_enabled=True))
 
     @app.get("/test")
-    async def test_route(request: HttpContext):
+    async def test_route(ctx: HttpContext):
         return json({"message": "OK"})
 
     @app.post("/data")
-    async def data_route(request: HttpContext):
+    async def data_route(ctx: HttpContext):
         return json({"received": True})
 
     return app

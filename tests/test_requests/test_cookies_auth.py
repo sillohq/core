@@ -20,9 +20,9 @@ def test_request_cookies(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        session_id = request.cookies.get("session_id")
-        user_id = request.cookies.get("user_id")
+    async def handler(ctx: HttpContext):
+        session_id = ctx.cookies.get("session_id")
+        user_id = ctx.cookies.get("user_id")
         return json({"session_id": session_id, "user_id": user_id})
 
     with test_client_factory(app) as client:
@@ -39,9 +39,9 @@ def test_request_cookies_empty(test_client_factory: Callable[[SilloApp], TestCli
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json(
-            {"has_cookies": bool(request.cookies), "count": len(request.cookies)}
+            {"has_cookies": bool(ctx.cookies), "count": len(ctx.cookies)}
         )
 
     with test_client_factory(app) as client:
@@ -57,8 +57,8 @@ def test_request_cookies_multiple(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        cookies_dict = dict(request.cookies)
+    async def handler(ctx: HttpContext):
+        cookies_dict = dict(ctx.cookies)
         return json(cookies_dict)
 
     with test_client_factory(app) as client:
@@ -79,8 +79,8 @@ def test_request_cookies_special_characters(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        token = request.cookies.get("token")
+    async def handler(ctx: HttpContext):
+        token = ctx.cookies.get("token")
         return json({"token": token})
 
     with test_client_factory(app) as client:
@@ -96,9 +96,9 @@ def test_request_cookies_contains(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        has_session = "session" in request.cookies
-        has_missing = "missing" in request.cookies
+    async def handler(ctx: HttpContext):
+        has_session = "session" in ctx.cookies
+        has_missing = "missing" in ctx.cookies
         return json({"has_session": has_session, "has_missing": has_missing})
 
     with test_client_factory(app) as client:
@@ -116,8 +116,8 @@ def test_request_cookies_iteration(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        cookie_names = list(request.cookies.keys())
+    async def handler(ctx: HttpContext):
+        cookie_names = list(ctx.cookies.keys())
         return json({"cookie_names": cookie_names})
 
     with test_client_factory(app) as client:
@@ -137,8 +137,8 @@ def test_request_is_ajax(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"is_ajax": request.is_ajax})
+    async def handler(ctx: HttpContext):
+        return json({"is_ajax": ctx.is_ajax})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"X-Requested-With": "XMLHttpRequest"})
@@ -152,8 +152,8 @@ def test_request_is_ajax_case_insensitive(
     app = SilloApp()
 
     @app.get("/test")
-    async def handler(request: HttpContext):
-        return json({"is_ajax": request.is_ajax})
+    async def handler(ctx: HttpContext):
+        return json({"is_ajax": ctx.is_ajax})
 
     with test_client_factory(app) as client:
         resp = client.get("/test", headers={"X-Requested-With": "xmlhttprequest"})

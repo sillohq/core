@@ -19,7 +19,7 @@ class AuthenticationBackend:
     :class:`~sillo.auth.model.AuthResult` carrying the resolved ``identity``
     (a string) and a ``scope`` string (e.g. ``"jwt"``, ``"session"``,
     ``"apikey"``). ``AuthenticationMiddleware`` and ``useAuth`` turn that
-    identity into ``request.user`` via ``user_model.load_user``.
+    identity into ``ctx.user`` via ``user_model.load_user``.
 
     Subclasses must implement :meth:`authenticate`. The default
     :meth:`handle_exception` logs backend failures so the middleware/route gate
@@ -38,8 +38,8 @@ class AuthenticationBackend:
         Subclass this backend to implement custom authentication logic::
 
             class MyBackend(AuthenticationBackend):
-                async def authenticate(self, request):
-                    token = request.headers.get("X-Custom-Token")
+                async def authenticate(self, ctx):
+                    token = ctx.headers.get("X-Custom-Token")
                     if token:
                         return AuthResult(success=True, identity=token, scope="custom")
                     return AuthResult(success=False, identity="", scope="")
@@ -71,7 +71,7 @@ class AuthenticationBackend:
         """
         return None
 
-    async def authenticate(self, request: HttpContext) -> AuthResult:
+    async def authenticate(self, ctx: HttpContext) -> AuthResult:
         """Resolve the caller's identity from the incoming HTTP request.
 
         Subclasses must override this method to extract credentials from the
@@ -101,8 +101,8 @@ class AuthenticationBackend:
         Example:
             A minimal implementation that reads a token from a header::
 
-                async def authenticate(self, request):
-                    token = request.headers.get("Authorization")
+                async def authenticate(self, ctx):
+                    token = ctx.headers.get("Authorization")
                     if token:
                         return AuthResult(success=True, identity=token, scope="custom")
                     return AuthResult(success=False, identity="", scope="")

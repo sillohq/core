@@ -36,34 +36,34 @@ def client():
     app = SilloApp()
 
     @app.get("/info")
-    async def info(request):
-        return json(get_accepts_info(request))
+    async def info(ctx):
+        return json(get_accepts_info(ctx))
 
     @app.get("/types")
-    async def types(request):
+    async def types(ctx):
         return json(
             {
-                "types": get_accepted_content_types(request),
-                "languages": get_accepted_languages(request),
-                "charsets": get_accepted_charsets(request),
-                "encodings": get_accepted_encodings(request),
+                "types": get_accepted_content_types(ctx),
+                "languages": get_accepted_languages(ctx),
+                "charsets": get_accepted_charsets(ctx),
+                "encodings": get_accepted_encodings(ctx),
             }
         )
 
     @app.get("/best")
-    async def best(request):
+    async def best(ctx):
         return json(
             {
                 "type": get_best_accepted_content_type(
-                    request, ["application/json", "text/html"]
+                    ctx, ["application/json", "text/html"]
                 ),
-                "language": get_best_accepted_language(request, ["en", "fr"]),
+                "language": get_best_accepted_language(ctx, ["en", "fr"]),
             }
         )
 
     @app.get("/wrapper")
-    async def wrapper(request):
-        accepts = get_accepts_from_request(request)
+    async def wrapper(ctx):
+        accepts = get_accepts_from_request(ctx)
         return json({"has_accepts": accepts is not None})
 
     # These helpers read state the middleware attaches to the request.
@@ -118,8 +118,8 @@ def test_accepts_info_exposes_each_header():
     captured = {}
 
     @app.get("/x")
-    async def x(request):
-        info = AcceptsInfo(request)
+    async def x(ctx):
+        info = AcceptsInfo(ctx)
         captured["accept"] = info.accept
         captured["language"] = info.accept_language
         captured["charset"] = info.accept_charset
@@ -157,7 +157,7 @@ def _app_with(middleware):
     app = SilloApp()
 
     @app.get("/x")
-    async def x(request):
+    async def x(ctx):
         return json({"ok": True})
 
     app.use(middleware)

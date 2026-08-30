@@ -10,7 +10,7 @@ def test_etag_middleware_sets_etag_on_get():
     app.use(ETagMiddleware())
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"message": "Hello, World!"})
 
     client = TestClient(app)
@@ -25,7 +25,7 @@ def test_etag_middleware_ignores_post_by_default():
     app.use(ETagMiddleware())
 
     @app.post("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"message": "Hello, World!"})
 
     client = TestClient(app)
@@ -40,7 +40,7 @@ def test_etag_middleware_honors_existing_etag():
     app.use(ETag())
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"ok": True}).set_header("etag", '"custom-etag"')
 
     client = TestClient(app)
@@ -54,7 +54,7 @@ def test_etag_conditional_get_returns_304():
     app.use(ETagMiddleware())
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json({"message": "Hello, World!"})
 
     client = TestClient(app)

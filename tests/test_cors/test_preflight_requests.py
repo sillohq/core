@@ -33,15 +33,15 @@ def cors_app():
 
     # Add test routes
     @app.get("/test")
-    async def test_route(request: HttpContext):
+    async def test_route(ctx: HttpContext):
         return json({"message": "OK"})
 
     @app.post("/data")
-    async def data_route(request: HttpContext):
+    async def data_route(ctx: HttpContext):
         return json({"received": True})
 
     @app.put("/update")
-    async def update_route(request: HttpContext):
+    async def update_route(ctx: HttpContext):
         return json({"updated": True})
 
     app.use(CORSMiddleware(config=cors_config))
@@ -106,7 +106,7 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/wildcard-headers")
-        async def wildcard_headers_route(request: HttpContext):
+        async def wildcard_headers_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -141,7 +141,7 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/wildcard-blacklist")
-        async def route(request: HttpContext):
+        async def route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -293,7 +293,7 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/no-creds-preflight")
-        async def no_creds_preflight_route(request: HttpContext):
+        async def no_creds_preflight_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -325,7 +325,7 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/max-age-test")
-        async def max_age_route(request: HttpContext):
+        async def max_age_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))
@@ -359,7 +359,7 @@ class TestPreflightRequests:
         app = SilloApp()
 
         @app.get("/blacklist-preflight")
-        async def blacklist_preflight_route(request: HttpContext):
+        async def blacklist_preflight_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))

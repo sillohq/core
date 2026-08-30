@@ -157,7 +157,7 @@ class Route(BaseRoute):
             - Any object implementing __call__
 
             The handler should accept a request object and return a response object.
-            Example: def user_handler(request: HttpContext) -> Response: ...
+            Example: def user_handler(ctx: HttpContext) -> Response: ...
             """),
         ],
         methods: Annotated[
@@ -671,7 +671,7 @@ class Route(BaseRoute):
                 if inspect.isawaitable(result):
                     await result
 
-    async def _validate_body(self, request: HttpContext) -> Any:
+    async def _validate_body(self, ctx: HttpContext) -> Any:
         """Read and validate the JSON request body against ``request_model``.
 
         Args:
@@ -691,7 +691,7 @@ class Route(BaseRoute):
                 ``request_model``, preserved for existing clients.
         """
         try:
-            payload = await request.json
+            payload = await ctx.json
         except Exception:
             errors = [
                 {
@@ -956,7 +956,7 @@ class Router(BaseRouter):
                 Async handler function for HEAD requests.
                 Example:
                 async def check_resource(ctx):
-                    exists = await Resource.exists(request.path_params['id'])
+                    exists = await Resource.exists(ctx.path_params['id'])
                     return response.status(200 if exists else 404)
             """),
         ] = None,
@@ -1196,7 +1196,7 @@ class Router(BaseRouter):
             HandlerType | None,
             Doc("""
                 Async handler function for GET requests.
-                Receives (request, response) and returns response or raw data.
+                Receives (ctx) and returns a response or raw data.
                 
                 Example:
                 async def get_user(ctx, user_id: str):
@@ -1420,7 +1420,7 @@ class Router(BaseRouter):
                 Async handler function for POST requests.
                 Example:
                 async def create_user(ctx):
-                    user_data = request.json
+                    user_data = ctx.json
                     return json(user_data, status=201)
             """),
         ] = None,
@@ -1628,7 +1628,7 @@ class Router(BaseRouter):
                 Async handler function for DELETE requests.
                 Example:
                 async def delete_user(ctx):
-                    user_id = request.path_params['id']
+                    user_id = ctx.path_params['id']
                     return json({"deleted": user_id})
             """),
         ] = None,
@@ -1822,7 +1822,7 @@ class Router(BaseRouter):
                 Async handler function for PUT requests.
                 Example:
                 async def update_user(ctx):
-                    user_id = request.path_params['id']
+                    user_id = ctx.path_params['id']
                     return json({"updated": user_id})
             """),
         ] = None,
@@ -2031,7 +2031,7 @@ class Router(BaseRouter):
                 Async handler function for PATCH requests.
                 Example:
                 async def partial_update_user(ctx):
-                    user_id = request.path_params['id']
+                    user_id = ctx.path_params['id']
                     return json({"updated": user_id})
             """),
         ] = None,
@@ -2434,7 +2434,7 @@ class Router(BaseRouter):
                 Async handler function for HEAD requests.
                 Example:
                 async def check_resource(ctx):
-                    exists = await Resource.exists(request.path_params['id'])
+                    exists = await Resource.exists(ctx.path_params['id'])
                     return response.status(200 if exists else 404)
             """),
         ] = None,

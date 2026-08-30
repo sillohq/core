@@ -19,7 +19,7 @@ def test_protected_request_missing_token(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.post("/protected")
-    async def protected(request: HttpContext):
+    async def protected(ctx: HttpContext):
         return json({"status": "protected"})
 
     with test_client_factory(app) as client:
@@ -35,12 +35,12 @@ def test_protected_request_valid_token(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
-    async def get_token(request: HttpContext):
-        token = getattr(request.state, "csrf_token", None)
+    async def get_token(ctx: HttpContext):
+        token = getattr(ctx.state, "csrf_token", None)
         return json({"token": token})
 
     @app.post("/protected")
-    async def protected(request: HttpContext):
+    async def protected(ctx: HttpContext):
         return json({"status": "protected"})
 
     with test_client_factory(app) as client:
@@ -68,12 +68,12 @@ def test_protected_request_invalid_token(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
-    async def get_token(request: HttpContext):
-        token = getattr(request.state, "csrf_token", None)
+    async def get_token(ctx: HttpContext):
+        token = getattr(ctx.state, "csrf_token", None)
         return json({"token": token})
 
     @app.post("/protected")
-    async def protected(request: HttpContext):
+    async def protected(ctx: HttpContext):
         return json({"status": "protected"})
 
     with test_client_factory(app) as client:
@@ -99,8 +99,8 @@ def test_cookie_is_reset_on_response(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
-    async def get_token(request: HttpContext):
-        token = getattr(request.state, "csrf_token", None)
+    async def get_token(ctx: HttpContext):
+        token = getattr(ctx.state, "csrf_token", None)
         return json({"token": token})
 
     with test_client_factory(app) as client:
@@ -128,8 +128,8 @@ def test_csrf_custom_configuration(test_client_factory):
     app.use(CSRFMiddleware(config=csrf_config))
 
     @app.get("/csrf-token")
-    async def get_token(request: HttpContext):
-        token = getattr(request.state, "csrf_token", None)
+    async def get_token(ctx: HttpContext):
+        token = getattr(ctx.state, "csrf_token", None)
         return json({"token": token})
 
     with test_client_factory(app) as client:

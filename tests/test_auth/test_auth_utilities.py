@@ -136,7 +136,7 @@ async def test_session_login_logout():
     from sillo.session.signed_cookies import SignedSessionManager
     from sillo.session.session_objects import Session
 
-    class MockRequest:
+    class MockContext:
         def __init__(self):
             manager = SignedSessionManager(secret_key="secret")
             self.scope = {"session": Session(manager, "a" * 64)}
@@ -145,20 +145,20 @@ async def test_session_login_logout():
         def session(self):
             return self.scope["session"]
 
-    request = MockRequest()
+    ctx = MockContext()
     user = SimpleUser("test")
 
     # Test login
-    login(request, user)
-    assert request.scope["session"]["user"]["id"] == "test"
-    assert request.scope["session"]["user"]["display_name"] == "test"
+    login(ctx, user)
+    assert ctx.scope["session"]["user"]["id"] == "test"
+    assert ctx.scope["session"]["user"]["display_name"] == "test"
     # The identifier the session arrived with must not have survived it.
-    assert request.scope["session"].session_key != "a" * 64
+    assert ctx.scope["session"].session_key != "a" * 64
 
     # Test logout
-    logout(request)
-    assert "user" not in request.scope["session"]
-    assert request.scope["session"].deleted is True
+    logout(ctx)
+    assert "user" not in ctx.scope["session"]
+    assert ctx.scope["session"].deleted is True
 
 
 def test_session_login_without_session_middleware():
@@ -167,15 +167,15 @@ def test_session_login_without_session_middleware():
     app.use(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session
-    class MockRequest:
+    class MockContext:
         def __init__(self):
             self.scope = {}
 
-    request = MockRequest()
+    ctx = MockContext()
     user = SimpleUser("test")
 
     with pytest.raises(AssertionError, match="No Session Middleware Installed"):
-        login(request, user)
+        login(ctx, user)
 
 
 def test_session_logout_without_session_middleware():
@@ -184,14 +184,14 @@ def test_session_logout_without_session_middleware():
     app.use(SessionMiddleware(secret_key="secret"))
 
     # Create a mock request without session
-    class MockRequest:
+    class MockContext:
         def __init__(self):
             self.scope = {}
 
-    request = MockRequest()
+    ctx = MockContext()
 
     with pytest.raises(AssertionError, match="No Session Middleware Installed"):
-        logout(request)
+        logout(ctx)
 
 
 def test_create_jwt_with_payload_modification():

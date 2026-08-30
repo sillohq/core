@@ -13,7 +13,7 @@ from sillo.testclient import TestClient
 
 def test_constraint_violation_is_422_with_location(app, client):
     @app.get("/items")
-    async def handler(request, page=Query(1, type=int, ge=1, le=100)):
+    async def handler(ctx, page=Query(1, type=int, ge=1, le=100)):
         return json({"page": page})
 
     resp = client.get("/items?page=0")
@@ -27,7 +27,7 @@ def test_unparseable_value_is_422_not_500(app, client):
     """The legacy path let int('abc') escape as a 500; this must be a 422."""
 
     @app.get("/items")
-    async def handler(request, page=Query(1, type=int)):
+    async def handler(ctx, page=Query(1, type=int)):
         return json({"page": page})
 
     resp = client.get("/items?page=abc")
@@ -39,7 +39,7 @@ def test_missing_required_is_422_not_500(app, client):
     """A declared type with no default is required and reports as such."""
 
     @app.get("/items")
-    async def handler(request, q=Query(type=str)):
+    async def handler(ctx, q=Query(type=str)):
         return json({"q": q})
 
     resp = client.get("/items")
@@ -49,7 +49,7 @@ def test_missing_required_is_422_not_500(app, client):
 
 def test_repeated_query_params_build_a_list(app, client):
     @app.get("/items")
-    async def handler(request, tags=Query([], type=List[str])):
+    async def handler(ctx, tags=Query([], type=List[str])):
         return json({"tags": tags})
 
     assert client.get("/items?tags=a&tags=b").json() == {"tags": ["a", "b"]}
@@ -57,7 +57,7 @@ def test_repeated_query_params_build_a_list(app, client):
 
 def test_default_is_applied_when_absent(app, client):
     @app.get("/items")
-    async def handler(request, page=Query(7, type=int, ge=1)):
+    async def handler(ctx, page=Query(7, type=int, ge=1)):
         return json({"page": page})
 
     assert client.get("/items").json() == {"page": 7}
@@ -67,7 +67,7 @@ def test_alias_is_reported_in_errors(app, client):
     """Errors name the wire parameter, not the Python identifier."""
 
     @app.get("/items")
-    async def handler(request, page_num=Query(type=int, alias="page")):
+    async def handler(ctx, page_num=Query(type=int, alias="page")):
         return json({"page": page_num})
 
     resp = client.get("/items?page=nope")
@@ -76,7 +76,7 @@ def test_alias_is_reported_in_errors(app, client):
 
 def test_header_validation_uses_header_casing(app, client):
     @app.get("/items")
-    async def handler(request, x_count=Header(type=int)):
+    async def handler(ctx, x_count=Header(type=int)):
         return json({"count": x_count})
 
     assert client.get("/items", headers={"X-Count": "5"}).json() == {"count": 5}
@@ -87,7 +87,7 @@ def test_header_validation_uses_header_casing(app, client):
 
 def test_cookie_validation(app, client):
     @app.get("/items")
-    async def handler(request, visits=Cookie(0, type=int)):
+    async def handler(ctx, visits=Cookie(0, type=int)):
         return json({"visits": visits})
 
     client.cookies.set("visits", "12")
@@ -98,7 +98,7 @@ def test_path_marker_validates(app, client):
     """A Path marker types a plain {id} segment without changing the pattern."""
 
     @app.get("/items/{item_id}")
-    async def handler(request, item_id=Path(type=int)):
+    async def handler(ctx, item_id=Path(type=int)):
         return json({"id": item_id, "type": type(item_id).__name__})
 
     assert client.get("/items/42").json() == {"id": 42, "type": "int"}
@@ -111,7 +111,7 @@ def test_path_marker_does_not_duplicate_kwarg(app, client):
     """Path params also arrive as **kwargs; the validated value must win once."""
 
     @app.get("/items/{item_id}")
-    async def handler(request, item_id=Path(type=int)):
+    async def handler(ctx, item_id=Path(type=int)):
         return json({"id": item_id})
 
     assert client.get("/items/9").status_code == 200
@@ -122,7 +122,7 @@ def test_errors_from_several_locations_are_reported_together(app, client):
 
     @app.get("/items/{item_id}")
     async def handler(
-        request,
+        ctx,
         item_id=Path(type=int),
         page=Query(type=int),
         x_count=Header(type=int),
@@ -141,7 +141,7 @@ def test_strict_mode_upgrades_legacy_markers(strict_app):
     """strict_validation turns the legacy 500s into proper 422s."""
 
     @strict_app.get("/items")
-    async def handler(request, q=Query(required=True), page=Query(1)):
+    async def handler(ctx, q=Query(required=True), page=Query(1)):
         return json({"q": q, "page": page})
 
     client = TestClient(strict_app)
@@ -167,11 +167,11 @@ def test_shared_marker_instance_binds_per_handler(app, client):
     shared = Query(1, type=int)
 
     @app.get("/a")
-    async def handler_a(request, page=shared):
+    async def handler_a(ctx, page=shared):
         return json({"page": page})
 
     @app.get("/b")
-    async def handler_b(request, offset=shared):
+    async def handler_b(ctx, offset=shared):
         return json({"offset": offset})
 
     assert client.get("/a?page=5").json() == {"page": 5}

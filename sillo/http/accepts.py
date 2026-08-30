@@ -637,7 +637,7 @@ def get_best_match(accept_header: str, options: list[str]) -> str | None:
     return options[0] if options else None
 
 
-def get_accepts_info(request: HttpContext) -> dict[str, Any]:
+def get_accepts_info(ctx: HttpContext) -> dict[str, Any]:
     """Build a comprehensive dictionary of parsed Accept-family header data.
 
     Parses all four Accept-family headers (Accept, Accept-Language,
@@ -660,20 +660,20 @@ def get_accepts_info(request: HttpContext) -> dict[str, Any]:
         No exceptions are raised during parsing.
     """
     return {
-        "accept": parse_accept_header(request.headers.get("Accept", "")),
+        "accept": parse_accept_header(ctx.headers.get("Accept", "")),
         "accept_language": parse_accept_language(
-            request.headers.get("Accept-Language", "")
+            ctx.headers.get("Accept-Language", "")
         ),
         "accept_charset": parse_accept_charset(
-            request.headers.get("Accept-Charset", "")
+            ctx.headers.get("Accept-Charset", "")
         ),
         "accept_encoding": parse_accept_encoding(
-            request.headers.get("Accept-Encoding", "")
+            ctx.headers.get("Accept-Encoding", "")
         ),
-        "raw_accept": request.headers.get("Accept", ""),
-        "raw_accept_language": request.headers.get("Accept-Language", ""),
-        "raw_accept_charset": request.headers.get("Accept-Charset", ""),
-        "raw_accept_encoding": request.headers.get("Accept-Encoding", ""),
+        "raw_accept": ctx.headers.get("Accept", ""),
+        "raw_accept_language": ctx.headers.get("Accept-Language", ""),
+        "raw_accept_charset": ctx.headers.get("Accept-Charset", ""),
+        "raw_accept_encoding": ctx.headers.get("Accept-Encoding", ""),
     }
 
 
@@ -707,7 +707,7 @@ def create_vary_header(existing_vary: str | None, new_fields: list[str]) -> str:
 
 
 def get_accepts_from_request(
-    request: HttpContext, attribute_name: str = "accepts"
+    ctx: HttpContext, attribute_name: str = "accepts"
 ) -> AcceptsInfo:
     """Create an AcceptsInfo instance bound to the given HTTP request.
 
@@ -730,11 +730,11 @@ def get_accepts_from_request(
     Raises:
         No exceptions are raised during construction.
     """
-    return AcceptsInfo(request)
+    return AcceptsInfo(ctx)
 
 
 def get_accepted_content_types(
-    request: HttpContext, attribute_name: str = "accepts_parsed"
+    ctx: HttpContext, attribute_name: str = "accepts_parsed"
 ) -> list[str]:
     """Extract accepted content type values from pre-parsed request state.
 
@@ -757,13 +757,13 @@ def get_accepted_content_types(
         No exceptions are raised; returns an empty list if the attribute
         is missing or contains no accept data.
     """
-    accepts_parsed = getattr(request.state, attribute_name, {})
+    accepts_parsed = getattr(ctx.state, attribute_name, {})
     accept_items = accepts_parsed.get("accept", [])
     return [item.value for item in accept_items if item.quality > 0]
 
 
 def get_accepted_languages(
-    request: HttpContext, attribute_name: str = "accepts_parsed"
+    ctx: HttpContext, attribute_name: str = "accepts_parsed"
 ) -> list[str]:
     """Extract accepted language tags from pre-parsed request state.
 
@@ -786,13 +786,13 @@ def get_accepted_languages(
         No exceptions are raised; returns an empty list if the attribute
         is missing or contains no accept-language data.
     """
-    accepts_parsed = getattr(request.state, attribute_name, {})
+    accepts_parsed = getattr(ctx.state, attribute_name, {})
     accept_items = accepts_parsed.get("accept_language", [])
     return [item.value for item in accept_items if item.quality > 0]
 
 
 def get_accepted_charsets(
-    request: HttpContext, attribute_name: str = "accepts_parsed"
+    ctx: HttpContext, attribute_name: str = "accepts_parsed"
 ) -> list[str]:
     """Extract accepted charset names from pre-parsed request state.
 
@@ -815,13 +815,13 @@ def get_accepted_charsets(
         No exceptions are raised; returns an empty list if the attribute
         is missing or contains no accept-charset data.
     """
-    accepts_parsed = getattr(request.state, attribute_name, {})
+    accepts_parsed = getattr(ctx.state, attribute_name, {})
     accept_items = accepts_parsed.get("accept_charset", [])
     return [item.value for item in accept_items if item.quality > 0]
 
 
 def get_accepted_encodings(
-    request: HttpContext, attribute_name: str = "accepts_parsed"
+    ctx: HttpContext, attribute_name: str = "accepts_parsed"
 ) -> list[str]:
     """Extract accepted encoding tokens from pre-parsed request state.
 
@@ -844,13 +844,13 @@ def get_accepted_encodings(
         No exceptions are raised; returns an empty list if the attribute
         is missing or contains no accept-encoding data.
     """
-    accepts_parsed = getattr(request.state, attribute_name, {})
+    accepts_parsed = getattr(ctx.state, attribute_name, {})
     accept_items = accepts_parsed.get("accept_encoding", [])
     return [item.value for item in accept_items if item.quality > 0]
 
 
 def get_best_accepted_content_type(
-    request: HttpContext, available_types: list[str], attribute_name: str = "accepts_parsed"
+    ctx: HttpContext, available_types: list[str], attribute_name: str = "accepts_parsed"
 ) -> str | None:
     """Determine the best content type match from available options using request state.
 
@@ -874,7 +874,7 @@ def get_best_accepted_content_type(
     Raises:
         No exceptions are raised during negotiation.
     """
-    accepted_types = get_accepted_content_types(request, attribute_name)
+    accepted_types = get_accepted_content_types(ctx, attribute_name)
     for accepted_type in accepted_types:
         for available_type in available_types:
             if matches_media_type(accepted_type, available_type):
@@ -883,7 +883,7 @@ def get_best_accepted_content_type(
 
 
 def get_best_accepted_language(
-    request: HttpContext,
+    ctx: HttpContext,
     available_languages: list[str],
     attribute_name: str = "accepts_parsed",
 ) -> str | None:
@@ -910,7 +910,7 @@ def get_best_accepted_language(
     Raises:
         No exceptions are raised during negotiation.
     """
-    accepted_languages = get_accepted_languages(request, attribute_name)
+    accepted_languages = get_accepted_languages(ctx, attribute_name)
     for accepted_lang in accepted_languages:
         if accepted_lang in available_languages:
             return accepted_lang
@@ -968,7 +968,7 @@ class AcceptsMiddleware(BaseMiddleware):
                 for each Accept-family header present in the request.
                 Defaults to ``True``.
             store_accepts_info: If ``True``, parses and stores Accept data
-                on ``request.state`` for downstream handler access.
+                on ``ctx.state`` for downstream handler access.
                 Defaults to ``True``.
             **kwargs: Additional keyword arguments passed to the parent
                 :class:`~sillo.middleware.base.BaseMiddleware` constructor.
@@ -1037,7 +1037,7 @@ class AcceptsMiddleware(BaseMiddleware):
         response = await call_next()
         return self._decorate(ctx, response)
 
-    def _decorate(self, request: HttpContext, response: Any) -> Any:
+    def _decorate(self, ctx: HttpContext, response: Any) -> Any:
         """Set the Vary and Content-Type headers on the outgoing response.
 
         If any Accept-family headers were detected in the request, adds
@@ -1067,7 +1067,7 @@ class AcceptsMiddleware(BaseMiddleware):
                 "Vary", create_vary_header(existing_vary, self.vary), override=True
             )
         if not response.headers.get("Content-Type") and self.default_content_type:
-            accept_header = request.headers.get("Accept")
+            accept_header = ctx.headers.get("Accept")
             if accept_header:
                 negotiated_type = negotiate_content_type(
                     accept_header, [self.default_content_type]
@@ -1107,7 +1107,7 @@ def Accepts(
             for each Accept-family header present in the request.
             Defaults to ``True``.
         store_accepts_info: If ``True``, parses and stores Accept data
-            on ``request.state`` for downstream handler access.
+            on ``ctx.state`` for downstream handler access.
             Defaults to ``True``.
 
     Returns:
@@ -1139,7 +1139,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
 
     def negotiate_content_type(
         self,
-        request: HttpContext,
+        ctx: HttpContext,
         available_types: list[str],
         default_type: str | None = None,
     ) -> str:
@@ -1166,7 +1166,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
         Raises:
             No exceptions are raised during negotiation.
         """
-        accept_header = request.headers.get("Accept")
+        accept_header = ctx.headers.get("Accept")
         if accept_header:
             negotiated = negotiate_content_type(accept_header, available_types)
             if negotiated:
@@ -1175,7 +1175,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
 
     def negotiate_language(
         self,
-        request: HttpContext,
+        ctx: HttpContext,
         available_languages: list[str],
         default_language: str | None = None,
     ) -> str:
@@ -1202,7 +1202,7 @@ class ContentNegotiationMiddleware(AcceptsMiddleware):
         Raises:
             No exceptions are raised during negotiation.
         """
-        accept_language = request.headers.get("Accept-Language")
+        accept_language = ctx.headers.get("Accept-Language")
         if accept_language:
             negotiated = negotiate_language(accept_language, available_languages)
             if negotiated:

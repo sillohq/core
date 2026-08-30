@@ -25,10 +25,10 @@ class Tagging(BaseMiddleware):
     def __init__(self, tag):
         self.tag = tag
 
-    async def dispatch(self, request, call_next):
+    async def dispatch(self, ctx, call_next):
         # On the way in, so the handler can see it: the handler is innermost
         # and has already serialized by the time the stack unwinds.
-        request.scope.setdefault("tags", []).append(self.tag)
+        ctx.scope.setdefault("tags", []).append(self.tag)
         return await call_next()
 
 
@@ -36,8 +36,8 @@ def _app():
     app = SilloApp()
 
     @app.get("/ping")
-    async def ping(request: HttpContext):
-        return json({"tags": request.scope.get("tags", [])})
+    async def ping(ctx: HttpContext):
+        return json({"tags": ctx.scope.get("tags", [])})
 
     return app
 
@@ -140,7 +140,7 @@ class TestRoutesDoNotNeedARebuild:
             chain = app._request_chain
 
             @app.get("/added-later")
-            async def later(request: HttpContext):
+            async def later(ctx: HttpContext):
                 return json({"ok": True})
 
             assert client.get("/added-later").status_code == 200
@@ -152,7 +152,7 @@ class TestRoutesDoNotNeedARebuild:
 
         async def register():
             @app.get("/from-startup")
-            async def from_startup(request: HttpContext):
+            async def from_startup(ctx: HttpContext):
                 return json({"ok": True})
 
         app.on_startup(register)

@@ -11,8 +11,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.REMOVE))
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
-            return json({"path": request.url.path})
+        async def test_route(ctx: HttpContext):
+            return json({"path": ctx.url.path})
 
         client = TestClient(app)
         response = client.get("/test/")
@@ -24,8 +24,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.ADD))
 
         @app.get("/test/")
-        async def test_route(request: HttpContext):
-            return json({"path": request.url.path})
+        async def test_route(ctx: HttpContext):
+            return json({"path": ctx.url.path})
 
         client = TestClient(app)
         response = client.get("/test")
@@ -37,8 +37,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE))
 
         @app.get("/api/test")
-        async def test_route(request: HttpContext):
-            return json({"path": request.url.path})
+        async def test_route(ctx: HttpContext):
+            return json({"path": ctx.url.path})
 
         client = TestClient(app)
         response = client.get("/api/test")
@@ -49,7 +49,7 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE))
 
         @app.get("/style.css")
-        async def css_route(request: HttpContext):
+        async def css_route(ctx: HttpContext):
             return text("body{}")
 
         client = TestClient(app)
@@ -67,8 +67,8 @@ class TestNormalizeMiddleware:
         app.use(NormalizeMiddleware(slash_action=SlashAction.IGNORE, normalize_case=True))
 
         @app.get("/api/test")
-        async def test_route(request: HttpContext):
-            return json({"path": request.url.path})
+        async def test_route(ctx: HttpContext):
+            return json({"path": ctx.url.path})
 
         client = TestClient(app)
         response = client.get("/API/TEST")

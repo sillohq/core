@@ -22,7 +22,7 @@ class AuthenticationMiddleware(BaseMiddleware):
     to the request scope. Processing stops at the first backend that
     successfully authenticates the user. If no backend succeeds, the request
     scope is populated with an ``UnauthenticatedUser`` instance so that
-    downstream code can still access ``request.user`` safely.
+    downstream code can still access ``ctx.user`` safely.
 
     The middleware does not reject unauthenticated requests on its own — that
     is the responsibility of the route-level gate, ``useAuth``. This allows
@@ -104,7 +104,7 @@ class AuthenticationMiddleware(BaseMiddleware):
         under the ``"user"`` and ``"auth"`` keys respectively, and processing
         stops. If no backend authenticates the user, an ``UnauthenticatedUser``
         is set on the scope so downstream code can safely access
-        ``request.user`` without null checks.
+        ``ctx.user`` without null checks.
 
         Backend exceptions are caught and passed to ``handle_exception`` for
         logging; the middleware then continues to the next backend.

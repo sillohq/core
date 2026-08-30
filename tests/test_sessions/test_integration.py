@@ -22,27 +22,27 @@ class TestSessionIntegration:
         app = SilloApp()
 
         @app.post("/login")
-        async def login(request: HttpContext):
-            user_data = await request.json
+        async def login(ctx: HttpContext):
+            user_data = await ctx.json
             user_id = user_data.get("user_id", 1)
-            request.session["user_id"] = user_id
-            request.session["login_time"] = time.time()
+            ctx.session["user_id"] = user_id
+            ctx.session["login_time"] = time.time()
             return json({"success": True, "user_id": user_id})
 
         @app.get("/profile")
-        async def profile(request: HttpContext):
-            user_id = request.session.get("user_id")
+        async def profile(ctx: HttpContext):
+            user_id = ctx.session.get("user_id")
             if not user_id:
                 return json({"error": "Not logged in"}, status_code=401)
 
-            login_time = request.session.get("login_time", 0)
+            login_time = ctx.session.get("login_time", 0)
             return json(
                 {"user_id": user_id, "login_time": login_time, "session_active": True}
             )
 
         @app.post("/logout")
-        async def logout(request: HttpContext):
-            request.session.clear()
+        async def logout(ctx: HttpContext):
+            ctx.session.clear()
             return json({"logged_out": True})
 
         app.use(
@@ -84,15 +84,15 @@ class TestSessionIntegration:
         app = SilloApp()
 
         @app.get("/counter")
-        async def counter(request: HttpContext):
-            count = request.session.get("count", 0)
+        async def counter(ctx: HttpContext):
+            count = ctx.session.get("count", 0)
             count += 1
-            request.session["count"] = count
+            ctx.session["count"] = count
             return json({"count": count})
 
         @app.get("/reset")
-        async def reset(request: HttpContext):
-            request.session.clear()
+        async def reset(ctx: HttpContext):
+            ctx.session.clear()
             return json({"reset": True})
 
         app.use(

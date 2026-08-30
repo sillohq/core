@@ -81,7 +81,7 @@ class APIKeyAuthBackend(AuthenticationBackend):
             self.name = name
         self.description = description
 
-    async def authenticate(self, request: HttpContext) -> Any:
+    async def authenticate(self, ctx: HttpContext) -> Any:
         """Authenticate an incoming request using an API key header.
 
         Reads the API key from the configured HTTP header on the
@@ -105,7 +105,7 @@ class APIKeyAuthBackend(AuthenticationBackend):
         Raises:
             None: No exceptions are explicitly raised by this method.
         """
-        raw_token = request.headers.get(self.header_name)
+        raw_token = ctx.headers.get(self.header_name)
 
         if not raw_token:
             return AuthResult(success=False, identity="", scope="")

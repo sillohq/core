@@ -23,7 +23,7 @@ def test_header_auto_conversion(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, authorization: str = Header()
+        ctx: HttpContext, authorization: str = Header()
     ):
         return {"auth": authorization}
 
@@ -37,7 +37,7 @@ def test_header_underscore_to_camel(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, x_request_id: str = Header()
+        ctx: HttpContext, x_request_id: str = Header()
     ):
         return {"request_id": x_request_id}
 
@@ -50,7 +50,7 @@ def test_header_no_default(app, client):
     """Test Header with no default returns None."""
 
     @app.get("/test")
-    async def handler(request: HttpContext, auth: str = Header()):
+    async def handler(ctx: HttpContext, auth: str = Header()):
         return {"auth": auth}
 
     response = client.get("/test")
@@ -63,7 +63,7 @@ def test_header_with_alias(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext, token: str = Header(alias="X-API-Token")
+        ctx: HttpContext, token: str = Header(alias="X-API-Token")
     ):
         return {"token": token}
 
@@ -77,7 +77,7 @@ def test_header_multiple(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext,
+        ctx: HttpContext,
         authorization: str = Header(),
         content_type: str = Header(),
     ):
@@ -98,7 +98,7 @@ def test_header_mixed_with_alias(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext,
+        ctx: HttpContext,
         authorization: str = Header(),
         api_key: str = Header(alias="X-API-Key"),
     ):
@@ -119,7 +119,7 @@ def test_header_with_custom_alias(app, client):
 
     @app.get("/test")
     async def handler(
-        request: HttpContext,
+        ctx: HttpContext,
         token: str = Header(alias="x-custom-token"),
     ):
         return {"token": token}

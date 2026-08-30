@@ -36,7 +36,7 @@ class AuthException(HTTPException):
         Catch all auth-related errors with a single except clause::
 
             try:
-                await authenticate_user(request)
+                await authenticate_user(ctx)
             except AuthException as exc:
                 return json({"error": exc.detail}, status_code=exc.status_code)
     """

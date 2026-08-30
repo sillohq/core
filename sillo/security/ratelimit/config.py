@@ -63,9 +63,9 @@ class RateLimitConfig:
         self._key_func = key_func or self._default_key
 
     @staticmethod
-    def _default_key(request: HttpContext) -> str | None:
+    def _default_key(ctx: HttpContext) -> str | None:
         """Default Key"""
-        client = request.client
+        client = ctx.client
         if client is not None:
             return client[0]
-        return request.headers.get("x-forwarded-for")
+        return ctx.headers.get("x-forwarded-for")

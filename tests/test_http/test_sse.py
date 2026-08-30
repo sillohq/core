@@ -182,8 +182,8 @@ class TestCleanup:
 
 class TestLastEventId:
     def test_it_reads_the_reconnection_header(self):
-        request = SimpleNamespace(headers={"last-event-id": "42"})
-        assert last_event_id(request) == "42"
+        ctx = SimpleNamespace(headers={"last-event-id": "42"})
+        assert last_event_id(ctx) == "42"
 
     def test_it_is_none_on_a_first_connection(self):
         assert last_event_id(SimpleNamespace(headers={})) is None
@@ -203,7 +203,7 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: HttpContext):
+        async def events(ctx: HttpContext):
             async def source():
                 yield {"n": 1}
 
@@ -227,7 +227,7 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: HttpContext):
+        async def events(ctx: HttpContext):
             async def source():
                 yield ServerSentEvent(data={"n": 0}, event="tick", id="0")
                 yield "plain"
@@ -249,7 +249,7 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: HttpContext):
+        async def events(ctx: HttpContext):
             async def source():
                 yield "x"
 
@@ -266,7 +266,7 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: HttpContext):
+        async def events(ctx: HttpContext):
             async def source():
                 yield {"b": 2, "a": 1}
 
@@ -285,8 +285,8 @@ class TestResponseSse:
         app = SilloApp()
 
         @app.get("/events")
-        async def events(request: HttpContext):
-            since = last_event_id(request)
+        async def events(ctx: HttpContext):
+            since = last_event_id(ctx)
 
             async def source():
                 yield {"since": since}

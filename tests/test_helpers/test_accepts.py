@@ -128,7 +128,7 @@ class TestAcceptsMiddleware:
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
+        async def test_route(ctx: HttpContext):
             return json({"ok": True})
 
         client = TestClient(app)
@@ -140,7 +140,7 @@ class TestAcceptsMiddleware:
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
+        async def test_route(ctx: HttpContext):
             return json({"ok": True})
 
         client = TestClient(app)
@@ -157,8 +157,8 @@ class TestAcceptsMiddleware:
         app.use(AcceptsMiddleware(store_accepts_info=True))
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
-            info = getattr(request.state, "accepts_parsed", None)
+        async def test_route(ctx: HttpContext):
+            info = getattr(ctx.state, "accepts_parsed", None)
             return json({"has_accepts": info is not None})
 
         client = TestClient(app)
@@ -172,8 +172,8 @@ class TestAcceptsInfo:
         app.use(AcceptsMiddleware())
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
-            info = AcceptsInfo(request)
+        async def test_route(ctx: HttpContext):
+            info = AcceptsInfo(ctx)
             return json({"types": info.get_accepted_types()})
 
         client = TestClient(app)
@@ -186,7 +186,7 @@ class TestContentNegotiationMiddleware:
         app = SilloApp()
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
+        async def test_route(ctx: HttpContext):
             return json({"ok": True})
 
         client = TestClient(app)

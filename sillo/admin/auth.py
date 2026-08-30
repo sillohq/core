@@ -20,19 +20,19 @@ class AuthBackend:
     your own auth system (JWT, OAuth, LDAP, etc.).
     """
 
-    async def authenticate(self, request) -> bool:
+    async def authenticate(self, ctx) -> bool:
         """Return True if the request is authenticated."""
         return True
 
-    async def get_user(self, request) -> dict | None:
+    async def get_user(self, ctx) -> dict | None:
         """Return the current user dict or None."""
         return {"id": "anonymous", "username": "Anonymous"}
 
-    async def login(self, request, username: str, password: str) -> bool:
+    async def login(self, ctx, username: str, password: str) -> bool:
         """Attempt login. Return True on success."""
         return True
 
-    async def logout(self, request) -> None:
+    async def logout(self, ctx) -> None:
         """Clear the current session."""
 
     @property
@@ -85,14 +85,14 @@ class SessionAuth(AuthBackend):
             getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)
         )
 
-    async def current_user(self, request):
+    async def current_user(self, ctx):
         """Load the signed-in user, if they may use the admin.
 
         Returns:
             The user row, or None when nobody is signed in, the account no
             longer exists, or it is not permitted here.
         """
-        session = getattr(request, "session", None)
+        session = getattr(ctx, "session", None)
         entry = (session.get("admin_user") or session.get("user")) if session else None
         if not entry:
             return None
@@ -111,7 +111,7 @@ class SessionAuth(AuthBackend):
             return None
         return user
 
-    async def authenticate(self, request) -> bool:
+    async def authenticate(self, ctx) -> bool:
         """Check whether the current request carries a valid admin session.
 
         The session is read for who is signed in, and the account itself for
@@ -119,18 +119,18 @@ class SessionAuth(AuthBackend):
         a display name, and a flag revoked after sign-in has to take effect on
         the next request rather than at the next sign-in.
         """
-        return await self.current_user(request) is not None
+        return await self.current_user(ctx) is not None
 
-    async def get_user(self, request) -> dict | None:
+    async def get_user(self, ctx) -> dict | None:
         """Return the current admin user dict from the session, or None."""
-        if await self.current_user(request) is None:
+        if await self.current_user(ctx) is None:
             return None
-        session = getattr(request, "session", None)
+        session = getattr(ctx, "session", None)
         if session:
             return session.get("admin_user") or session.get("user")
         return None  # pragma: no cover - current_user() above already required a truthy session
 
-    async def login(self, request, username: str, password: str) -> bool:
+    async def login(self, ctx, username: str, password: str) -> bool:
         """Authenticate against ``user_model`` via the shared user contract.
 
         Correct credentials are necessary but not sufficient: the account must
@@ -145,12 +145,12 @@ class SessionAuth(AuthBackend):
         # Store user identity in the session using Sillo's official helper.
         from sillo.auth.session_auth import login as sillo_login
 
-        sillo_login(request, user)
+        sillo_login(ctx, user)
         return True
 
-    async def logout(self, request) -> None:
+    async def logout(self, ctx) -> None:
         """Clear all admin-related session keys."""
-        session = getattr(request, "session", None)
+        session = getattr(ctx, "session", None)
         if session:
             # ``Session`` exposes ``delete``, not the dict ``pop``; it already
             # tolerates a key that is not present.

@@ -611,16 +611,16 @@ class HttpContext(BaseContext):
         @app.post("/users")
         async def create_user(ctx: HttpContext):
             # Access JSON data
-            data = await request.json
+            data = await ctx.json
 
             # Access path parameters
-            user_id = request.path_params.get('id')
+            user_id = ctx.path_params.get('id')
 
             # Access query parameters
-            limit = request.query_params.get('limit', '10')
+            limit = ctx.query_params.get('limit', '10')
 
             # Access headers
-            auth_header = request.headers.get('Authorization')
+            auth_header = ctx.headers.get('Authorization')
 
             return json({"created": True})
         ```
@@ -630,11 +630,11 @@ class HttpContext(BaseContext):
         @app.post("/upload")
         async def upload_file(ctx: HttpContext):
             # Check if request has files
-            if not request.has_files:
+            if not ctx.has_files:
                 return json({"error": "No files uploaded"}, status=400)
 
             # Access uploaded files
-            files = await request.files
+            files = await ctx.files
             uploaded_file = files.get('file')
 
             if uploaded_file:
@@ -651,7 +651,7 @@ class HttpContext(BaseContext):
         @app.post("/contact")
         async def contact_form(ctx: HttpContext):
             # Access form data
-            form = await request.form
+            form = await ctx.form
             name = form.get('name')
             email = form.get('email')
             message = form.get('message')
@@ -968,8 +968,8 @@ class HttpContext(BaseContext):
         """Context manager and awaitable for accessing parsed form data.
 
         Returns an :class:`AwaitableOrContextManagerWrapper` that can be
-        used either as an awaitable (``await request.form_data``) or as an
-        async context manager (``async with request.form_data as form:``).
+        used either as an awaitable (``await ctx.form_data``) or as an
+        async context manager (``async with ctx.form_data as form:``).
         Delegates to :meth:`_get_form` for the actual parsing.
 
         Returns:
@@ -1173,7 +1173,7 @@ class HttpContext(BaseContext):
 
         user = self.scope.get("user", None)
         if not user:
-            raise ValueError("Authentication middleware required to use request.user")
+            raise ValueError("Authentication middleware required to use ctx.user")
         return user
 
     def url_for(self, _name: str, **path_params: dict[str, typing.Any]) -> str:

@@ -28,19 +28,19 @@ def cors_app():
 
     # Add test routes
     @app.get("/test")
-    async def test_route(request: HttpContext):
+    async def test_route(ctx: HttpContext):
         return json({"message": "OK"})
 
     @app.post("/data")
-    async def data_route(request: HttpContext):
+    async def data_route(ctx: HttpContext):
         return json({"received": True})
 
     @app.put("/update")
-    async def update_route(request: HttpContext):
+    async def update_route(ctx: HttpContext):
         return json({"updated": True})
 
     @app.delete("/delete")
-    async def delete_route(request: HttpContext):
+    async def delete_route(ctx: HttpContext):
         return json({"deleted": True})
 
     app.use(CORSMiddleware(config=cors_config))
@@ -171,7 +171,7 @@ class TestSimpleRequests:
         app = SilloApp()
 
         @app.get("/port-test")
-        async def port_route(request: HttpContext):
+        async def port_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         app.use(CORSMiddleware(config=cors_config))

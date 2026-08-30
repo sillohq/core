@@ -123,15 +123,14 @@ class GraphQL:
             None. JSON parsing errors are caught and converted into a 400 response
             with an appropriate error message.
         """
-        req = ctx
-        if req.method == "GET":
+        if ctx.method == "GET":
             if self.graphiql:
                 return html(self._get_graphiql_html())
             return text("Not Found", status_code=404)
 
-        if req.method == "POST":
+        if ctx.method == "POST":
             try:
-                data = await req.json
+                data = await ctx.json
             except Exception:
                 return json(
                     {"errors": [{"message": "Invalid JSON body"}]}, status_code=400
@@ -147,9 +146,8 @@ class GraphQL:
             variables = data.get("variables")
             operation_name = data.get("operationName")
 
-            # The resolver context. `request` is kept as the historical key
-            # alongside `ctx`, which is the name the rest of the framework uses.
-            context = {"ctx": req, "request": req}
+            # What resolvers read as `info.context`.
+            context = {"ctx": ctx}
 
             result: ExecutionResult = await self.schema.execute(
                 cast(str, query),

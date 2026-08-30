@@ -82,7 +82,7 @@ async def time_it(ctx: HttpContext, call_next):
 app.use(time_it)
 ```
 
-You can also mutate `request` (or `ctx.state`) before the handler and read it back inside the handler:
+You can also write to `ctx.state` before the handler and read it back inside the handler:
 
 ```python
 from sillo import HttpContext

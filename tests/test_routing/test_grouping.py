@@ -20,7 +20,7 @@ def test_group_initialization():
     router = Router()
 
     @router.get("/users")
-    async def list_users(request: HttpContext):
+    async def list_users(ctx: HttpContext):
         return json({"users": []})
 
     group = Group(path="/api", app=router)
@@ -32,10 +32,10 @@ def test_group_initialization():
 def test_group_with_routes():
     """Test group initialization with routes"""
 
-    async def handler1(request: HttpContext):
+    async def handler1(ctx: HttpContext):
         return text("route1")
 
-    async def handler2(request: HttpContext):
+    async def handler2(ctx: HttpContext):
         return text("route2")
 
     route1 = Route("/route1", handler1, methods=["GET"])
@@ -63,11 +63,11 @@ def test_group_mounted_to_app(test_client_factory: Callable[[SilloApp], TestClie
     router = Router()
 
     @router.get("/users")
-    async def get_users(request: HttpContext):
+    async def get_users(ctx: HttpContext):
         return json({"users": ["Alice", "Bob"]})
 
     @router.get("/posts")
-    async def get_posts(request: HttpContext):
+    async def get_posts(ctx: HttpContext):
         return json({"posts": ["Post 1", "Post 2"]})
 
     group = Group(path="/api/v1", app=router)
@@ -91,7 +91,7 @@ def test_multiple_groups(test_client_factory: Callable[[SilloApp], TestClient]):
     v1_router = Router()
 
     @v1_router.get("/status")
-    async def v1_status(request: HttpContext):
+    async def v1_status(ctx: HttpContext):
         return json({"version": "1.0"})
 
     v1_group = Group(path="/api/v1", app=v1_router)
@@ -100,7 +100,7 @@ def test_multiple_groups(test_client_factory: Callable[[SilloApp], TestClient]):
     v2_router = Router()
 
     @v2_router.get("/status")
-    async def v2_status(request: HttpContext):
+    async def v2_status(ctx: HttpContext):
         return json({"version": "2.0"})
 
     v2_group = Group(path="/api/v2", app=v2_router)
@@ -127,11 +127,11 @@ def test_nested_groups(test_client_factory: Callable[[SilloApp], TestClient]):
     users_router = Router()
 
     @users_router.get("/list")
-    async def list_users(request: HttpContext):
+    async def list_users(ctx: HttpContext):
         return json({"users": []})
 
     @users_router.get("/{user_id}")
-    async def get_user(request: HttpContext, user_id: str):
+    async def get_user(ctx: HttpContext, user_id: str):
         return json({"user_id": user_id})
 
     # Outer group
@@ -160,7 +160,7 @@ def test_deeply_nested_groups(test_client_factory: Callable[[SilloApp], TestClie
     endpoint_router = Router()
 
     @endpoint_router.get("/data")
-    async def get_data(request: HttpContext):
+    async def get_data(ctx: HttpContext):
         return json({"data": "deep"})
 
     # Build nested structure
@@ -193,7 +193,7 @@ def test_group_route_isolation(test_client_factory: Callable[[SilloApp], TestCli
     admin_router = Router()
 
     @admin_router.get("/dashboard")
-    async def admin_dashboard(request: HttpContext):
+    async def admin_dashboard(ctx: HttpContext):
         return json({"area": "admin"})
 
     admin_group = Group(path="/admin", app=admin_router)
@@ -202,7 +202,7 @@ def test_group_route_isolation(test_client_factory: Callable[[SilloApp], TestCli
     user_router = Router()
 
     @user_router.get("/dashboard")
-    async def user_dashboard(request: HttpContext):
+    async def user_dashboard(ctx: HttpContext):
         return json({"area": "user"})
 
     user_group = Group(path="/user", app=user_router)
@@ -227,7 +227,7 @@ def test_group_with_empty_path(test_client_factory: Callable[[SilloApp], TestCli
     router = Router()
 
     @router.get("/test")
-    async def test_route(request: HttpContext):
+    async def test_route(ctx: HttpContext):
         return json({"test": "ok"})
 
     group = Group(path="", app=router)
@@ -252,22 +252,22 @@ def test_organized_api_structure(
     users_router = Router()
 
     @users_router.get("/")
-    async def list_users(request: HttpContext):
+    async def list_users(ctx: HttpContext):
         return json({"users": []})
 
     @users_router.post("/")
-    async def create_user(request: HttpContext):
+    async def create_user(ctx: HttpContext):
         return json({"created": True})
 
     # Products module
     products_router = Router()
 
     @products_router.get("/")
-    async def list_products(request: HttpContext):
+    async def list_products(ctx: HttpContext):
         return json({"products": []})
 
     @products_router.post("/")
-    async def create_product(request: HttpContext):
+    async def create_product(ctx: HttpContext):
         return json({"created": True})
 
     # Create groups
@@ -300,19 +300,19 @@ def test_group_with_different_http_methods(
     router = Router()
 
     @router.get("/items")
-    async def get_items(request: HttpContext):
+    async def get_items(ctx: HttpContext):
         return json({"method": "GET"})
 
     @router.post("/items")
-    async def create_item(request: HttpContext):
+    async def create_item(ctx: HttpContext):
         return json({"method": "POST"})
 
     @router.put("/items/{item_id}")
-    async def update_item(request: HttpContext, item_id: str):
+    async def update_item(ctx: HttpContext, item_id: str):
         return json({"method": "PUT", "item_id": item_id})
 
     @router.delete("/items/{item_id}")
-    async def delete_item(request: HttpContext, item_id: str):
+    async def delete_item(ctx: HttpContext, item_id: str):
         return json({"method": "DELETE", "item_id": item_id})
 
     group = Group(path="/api", app=router)

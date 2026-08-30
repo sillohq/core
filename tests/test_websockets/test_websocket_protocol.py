@@ -1,5 +1,5 @@
 """
-WebSocketContext protocol handling: binary mode, iteration, close codes, and the
+WebSocket protocol handling: binary mode, iteration, close codes, and the
 state machine that rejects out-of-order ASGI messages.
 
 The state assertions matter because an ASGI server is entitled to hang up at

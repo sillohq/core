@@ -310,7 +310,7 @@ class Model(_TortoiseModel, HasCasts, HasScopes):
             class User(Model):
                 guarded = ("is_admin", "email_verified_at")
 
-            await user.update_from_dict(await request.json())
+            await user.update_from_dict(await ctx.json())
         """
         allowed = self.mass_assignable_fields(only)
 

@@ -57,8 +57,8 @@ class StaticFiles(BaseRouter):
                 Extensions are normalized by stripping leading dots and
                 lowercasing. If ``None`` or empty, all extensions are allowed.
             custom_404_handler: An optional async callable that receives
-                ``(request, response)`` and returns a response when a
-                requested file is not found. If ``None``, a default JSON
+                ``(ctx)`` and returns a response when a requested file is not
+                found. If ``None``, a default JSON
                 404 response is returned.
             cache_control: An optional ``Cache-Control`` header value to
                 apply to all served file responses (e.g.,
@@ -163,7 +163,7 @@ class StaticFiles(BaseRouter):
             return True
         return file_path.suffix.lower().lstrip(".") in self.allowed_extensions
 
-    async def _handle(self, request: HttpContext):
+    async def _handle(self, ctx: HttpContext):
         """
         Handle an incoming static file request by locating and serving the file.
 
@@ -176,7 +176,7 @@ class StaticFiles(BaseRouter):
 
         Args:
             request: The context for the request. The path is extracted from
-                ``request.scope["path"]`` and the method is checked to ensure
+                ``ctx.scope["path"]`` and the method is checked to ensure
                 only GET requests are served.
 
         Returns:
@@ -184,8 +184,8 @@ class StaticFiles(BaseRouter):
             appropriate headers, a 405 error for non-GET methods, a 404
             error from the custom handler, or a default JSON 404 response.
         """
-        path = request.scope.get("path", "").lstrip("/")
-        if request.method != "GET":
+        path = ctx.scope.get("path", "").lstrip("/")
+        if ctx.method != "GET":
             return json("Method not allowed", status_code=405)
         for directory in self.directories:
             try:
@@ -206,7 +206,7 @@ class StaticFiles(BaseRouter):
 
         # Use custom 404 handler if provided, otherwise use default
         if self.custom_404_handler:
-            return self.custom_404_handler(request)
+            return self.custom_404_handler(ctx)
         return json("Resource not found", status_code=404)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
@@ -229,7 +229,7 @@ class StaticFiles(BaseRouter):
             None. The response is sent asynchronously through the ``send``
             callable as per the ASGI specification.
         """
-        request = HttpContext(scope, receive)
-        response = await self._handle(request)
+        ctx = HttpContext(scope, receive)
+        response = await self._handle(ctx)
         if response is not None:
             await response(scope, receive, send)

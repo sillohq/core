@@ -23,14 +23,14 @@ app = SilloApp()
 
 # Define test endpoints for form submission
 @app.post("/form")
-async def handle_form(request: HttpContext):
-    form = await request.form_data
+async def handle_form(ctx: HttpContext):
+    form = await ctx.form_data
     return json({"fields": dict(form.items())})
 
 
 @app.post("/upload")
-async def handle_upload(request: HttpContext):
-    form = await request.form_data
+async def handle_upload(ctx: HttpContext):
+    form = await ctx.form_data
     files = {}
     fields = {}
 

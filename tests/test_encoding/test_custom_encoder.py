@@ -34,7 +34,7 @@ class TestAppAddEncoder:
         app.add_encoder(Money, lambda m: {"amount": str(m.amount), "currency": m.currency})
 
         @app.get("/price")
-        async def price(request):
+        async def price(ctx):
             return {"total": Money(decimal.Decimal("19.99"), "USD")}
 
         client = TestClient(app)
@@ -47,7 +47,7 @@ class TestAppAddEncoder:
         app.add_encoder(Vector, lambda v: [v.x, v.y])
 
         @app.get("/vec")
-        async def vec(request):
+        async def vec(ctx):
             return {"points": [Vector(1, 2), Vector(3, 4)]}
 
         client = TestClient(app)
@@ -65,7 +65,7 @@ class TestResponseJsonCustomEncoder:
         app = SilloApp()
 
         @app.get("/raw")
-        async def raw(request):
+        async def raw(ctx):
             return json(
                 {"v": Vector(5, 6)},
                 custom_encoder={Vector: lambda v: {"x": v.x, "y": v.y}},
@@ -80,7 +80,7 @@ class TestResponseJsonCustomEncoder:
         app = SilloApp()
 
         @app.get("/override")
-        async def override(request):
+        async def override(ctx):
             return json(
                 Vector(7, 8),
                 custom_encoder={Vector: lambda v: {"x": v.x, "y": v.y}},
@@ -96,7 +96,7 @@ class TestEncoderPrecedence:
         app.add_encoder(Vector, lambda v: "app-level")
 
         @app.get("/win")
-        async def win(request):
+        async def win(ctx):
             return json(
                 Vector(1, 1),
                 custom_encoder={Vector: lambda v: "call-level"},

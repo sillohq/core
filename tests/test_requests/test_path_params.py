@@ -21,7 +21,7 @@ def test_request_path_params_single(
     app = SilloApp()
 
     @app.get("/users/{user_id}")
-    async def handler(request: HttpContext, user_id: str):
+    async def handler(ctx: HttpContext, user_id: str):
         return json({"user_id": user_id})
 
     with test_client_factory(app) as client:
@@ -37,7 +37,7 @@ def test_request_path_params_multiple(
     app = SilloApp()
 
     @app.get("/users/{user_id}/posts/{post_id}")
-    async def handler(request: HttpContext, user_id: str, post_id: str):
+    async def handler(ctx: HttpContext, user_id: str, post_id: str):
         return json({"user_id": user_id, "post_id": post_id})
 
     with test_client_factory(app) as client:
@@ -54,7 +54,7 @@ def test_request_path_params_numeric(
     app = SilloApp()
 
     @app.get("/products/{product_id}")
-    async def handler(request: HttpContext, product_id: str):
+    async def handler(ctx: HttpContext, product_id: str):
         return json(
             {
                 "product_id": product_id,
@@ -76,7 +76,7 @@ def test_request_path_params_with_special_chars(
     app = SilloApp()
 
     @app.get("/files/{filename}")
-    async def handler(request: HttpContext, filename: str):
+    async def handler(ctx: HttpContext, filename: str):
         return json({"filename": filename})
 
     with test_client_factory(app) as client:
@@ -91,7 +91,7 @@ def test_request_path_params_uuid_like(
     app = SilloApp()
 
     @app.get("/resources/{resource_id}")
-    async def handler(request: HttpContext, resource_id: str):
+    async def handler(ctx: HttpContext, resource_id: str):
         return json({"resource_id": resource_id})
 
     with test_client_factory(app) as client:
@@ -107,7 +107,7 @@ def test_request_path_params_with_hyphens(
     app = SilloApp()
 
     @app.get("/posts/{post_slug}")
-    async def handler(request: HttpContext, post_slug: str):
+    async def handler(ctx: HttpContext, post_slug: str):
         return json({"post_slug": post_slug})
 
     with test_client_factory(app) as client:
@@ -122,7 +122,7 @@ def test_request_path_params_with_underscores(
     app = SilloApp()
 
     @app.get("/files/{file_name}")
-    async def handler(request: HttpContext, file_name: str):
+    async def handler(ctx: HttpContext, file_name: str):
         return json({"file_name": file_name})
 
     with test_client_factory(app) as client:
@@ -138,7 +138,7 @@ def test_request_path_params_nested_resources(
 
     @app.get("/users/{user_id}/posts/{post_id}/comments/{comment_id}")
     async def handler(
-        request: HttpContext,
+        ctx: HttpContext,
         user_id: str,
         post_id: str,
         comment_id: str,

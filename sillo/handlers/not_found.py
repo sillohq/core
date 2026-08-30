@@ -117,7 +117,7 @@ async def handle_404_error(
     return text(f"404 - Not Found\n{error_message}", status_code=404)
 
 
-def _debug_enabled(request: HttpContext) -> bool:
+def _debug_enabled(ctx: HttpContext) -> bool:
     """Read the application's debug flag, defaulting to off.
 
     The flag lives on the application, which the scope stores under
@@ -135,7 +135,7 @@ def _debug_enabled(request: HttpContext) -> bool:
     Returns:
         ``True`` only when the application explicitly has debug enabled.
     """
-    scope = getattr(request, "scope", {}) or {}
+    scope = getattr(ctx, "scope", {}) or {}
     for key in ("base_app", "app"):
         candidate = scope.get(key)
         if candidate is not None and hasattr(candidate, "debug"):
@@ -143,7 +143,7 @@ def _debug_enabled(request: HttpContext) -> bool:
     return False
 
 
-def _prefers_html(request: HttpContext) -> bool:
+def _prefers_html(ctx: HttpContext) -> bool:
     """Decide whether the client would rather have the HTML page.
 
     A browser sends ``text/html`` ahead of anything else; an API client asks
@@ -157,5 +157,5 @@ def _prefers_html(request: HttpContext) -> bool:
     Returns:
         ``True`` when the client explicitly listed an HTML media type.
     """
-    accept = request.headers.get("accept", "")
+    accept = ctx.headers.get("accept", "")
     return "text/html" in accept or "application/xhtml+xml" in accept

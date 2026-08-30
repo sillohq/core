@@ -17,7 +17,7 @@ def _op(client, path, method="get"):
 
 def test_constraints_appear_in_schema(app, client):
     @app.get("/items")
-    async def handler(request, page=Query(1, type=int, ge=1, le=99)):
+    async def handler(ctx, page=Query(1, type=int, ge=1, le=99)):
         return json({})
 
     param = next(p for p in _op(client, "/items")["parameters"] if p["name"] == "page")
@@ -30,7 +30,7 @@ def test_constraints_appear_in_schema(app, client):
 
 def test_description_appears_in_schema(app, client):
     @app.get("/items")
-    async def handler(request, q=Query(type=str, description="Search text")):
+    async def handler(ctx, q=Query(type=str, description="Search text")):
         return json({})
 
     param = next(p for p in _op(client, "/items")["parameters"] if p["name"] == "q")
@@ -40,7 +40,7 @@ def test_description_appears_in_schema(app, client):
 
 def test_path_marker_types_the_path_param(app, client):
     @app.get("/items/{item_id}")
-    async def handler(request, item_id=Path(type=int)):
+    async def handler(ctx, item_id=Path(type=int)):
         return json({})
 
     params = _op(client, "/items/{item_id}")["parameters"]
@@ -51,7 +51,7 @@ def test_path_marker_types_the_path_param(app, client):
 
 def test_list_query_param_is_an_array(app, client):
     @app.get("/items")
-    async def handler(request, tags=Query([], type=List[str])):
+    async def handler(ctx, tags=Query([], type=List[str])):
         return json({})
 
     param = next(p for p in _op(client, "/items")["parameters"] if p["name"] == "tags")
@@ -61,7 +61,7 @@ def test_list_query_param_is_an_array(app, client):
 
 def test_body_model_schema(app, client):
     @app.post("/users", request_model=UserCreate)
-    async def handler(request, user):
+    async def handler(ctx, user):
         return json({})
 
     body = _op(client, "/users", "post")["requestBody"]
@@ -72,7 +72,7 @@ def test_body_model_schema(app, client):
 
 def test_multipart_body_documents_binary_file(app, client):
     @app.post("/upload")
-    async def handler(request, title=Form(type=str), avatar=File(...)):
+    async def handler(ctx, title=Form(type=str), avatar=File(...)):
         return json({})
 
     body = _op(client, "/upload", "post")["requestBody"]
@@ -84,7 +84,7 @@ def test_multipart_body_documents_binary_file(app, client):
 
 def test_urlencoded_body_when_no_file(app, client):
     @app.post("/form")
-    async def handler(request, title=Form(type=str)):
+    async def handler(ctx, title=Form(type=str)):
         return json({})
 
     body = _op(client, "/form", "post")["requestBody"]
@@ -93,7 +93,7 @@ def test_urlencoded_body_when_no_file(app, client):
 
 def test_response_model_schema(app, client):
     @app.get("/user", response_model=UserOut)
-    async def handler(request):
+    async def handler(ctx):
         return {}
 
     schema = _op(client, "/user")["responses"]["200"]["content"]["application/json"][
@@ -106,7 +106,7 @@ def test_legacy_param_schema_is_unchanged(app, client):
     """Legacy markers keep producing exactly the schema they always did."""
 
     @app.get("/items")
-    async def handler(request, page=Query(1), limit=Query(10)):
+    async def handler(ctx, page=Query(1), limit=Query(10)):
         return json({})
 
     params = _op(client, "/items")["parameters"]
@@ -122,7 +122,7 @@ def test_dependency_params_are_documented(app, client):
         return page
 
     @app.get("/items")
-    async def handler(request, p=Depend(pager)):
+    async def handler(ctx, p=Depend(pager)):
         return json({})
 
     names = [p["name"] for p in _op(client, "/items")["parameters"]]

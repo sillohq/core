@@ -27,7 +27,7 @@ def test_exception_handler_with_middleware(
     class CustomError(Exception):
         pass
 
-    async def logging_middleware(request: HttpContext, call_next):
+    async def logging_middleware(ctx: HttpContext, call_next):
         execution_log.append("middleware_before")
         try:
             response = await call_next()
@@ -38,7 +38,7 @@ def test_exception_handler_with_middleware(
             execution_log.append("middleware_after")
         return response
 
-    async def error_handler(request: HttpContext, exc: CustomError):
+    async def error_handler(ctx: HttpContext, exc: CustomError):
         execution_log.append("error_handler")
         return json({"error": str(exc)}).status(400)
 
@@ -46,7 +46,7 @@ def test_exception_handler_with_middleware(
     app.add_exception_handler(CustomError, error_handler)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_log.append("handler")
         raise CustomError("Test error")
 
@@ -69,19 +69,19 @@ def test_exception_handler_middleware_order(
     class TestError(Exception):
         pass
 
-    async def middleware_1(request: HttpContext, call_next):
+    async def middleware_1(ctx: HttpContext, call_next):
         execution_order.append("m1_before")
         response = await call_next()
         execution_order.append("m1_after")
         return response
 
-    async def middleware_2(request: HttpContext, call_next):
+    async def middleware_2(ctx: HttpContext, call_next):
         execution_order.append("m2_before")
         response = await call_next()
         execution_order.append("m2_after")
         return response
 
-    async def error_handler(request: HttpContext, exc: TestError):
+    async def error_handler(ctx: HttpContext, exc: TestError):
         execution_order.append("error_handler")
         return json({"error": "handled"}, status_code=500)
 
@@ -90,7 +90,7 @@ def test_exception_handler_middleware_order(
     app.add_exception_handler(TestError, error_handler)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_order.append("handler")
         raise TestError()
 
@@ -108,21 +108,21 @@ def test_exception_handler_middleware_state_access(
     class AuthError(Exception):
         pass
 
-    async def auth_middleware(request: HttpContext, call_next):
-        request.state.user_id = "user-456"
-        request.state.authenticated = True
+    async def auth_middleware(ctx: HttpContext, call_next):
+        ctx.state.user_id = "user-456"
+        ctx.state.authenticated = True
         response = await call_next()
         return response
 
-    async def auth_error_handler(request: HttpContext, exc: AuthError):
-        user_id = getattr(request.state, "user_id", None)
+    async def auth_error_handler(ctx: HttpContext, exc: AuthError):
+        user_id = getattr(ctx.state, "user_id", None)
         return json({"error": str(exc), "user_id": user_id}, status_code=403)
 
     app.use(auth_middleware)
     app.add_exception_handler(AuthError, auth_error_handler)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise AuthError("Insufficient permissions")
 
     with test_client_factory(app) as client:
@@ -145,14 +145,14 @@ def test_exception_handler_with_nested_routers(
         pass
 
     async def router_error_handler(
-        request: HttpContext, exc: RouterError
+        ctx: HttpContext, exc: RouterError
     ):
         return json({"error": "Router error"}).status(400)
 
     app.add_exception_handler(RouterError, router_error_handler)
 
     @child_router.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise RouterError("Error in nested router")
 
     parent_router.mount_router(child_router)
@@ -176,22 +176,22 @@ def test_exception_handler_different_methods(
         pass
 
     async def method_error_handler(
-        request: HttpContext, exc: MethodError
+        ctx: HttpContext, exc: MethodError
     ):
-        return json({"error": str(exc), "method": request.method}, status_code=400)
+        return json({"error": str(exc), "method": ctx.method}, status_code=400)
 
     app.add_exception_handler(MethodError, method_error_handler)
 
     @app.get("/test")
-    async def get_handler(request: HttpContext):
+    async def get_handler(ctx: HttpContext):
         raise MethodError("GET error")
 
     @app.post("/test")
-    async def post_handler(request: HttpContext):
+    async def post_handler(ctx: HttpContext):
         raise MethodError("POST error")
 
     @app.put("/test")
-    async def put_handler(request: HttpContext):
+    async def put_handler(ctx: HttpContext):
         raise MethodError("PUT error")
 
     with test_client_factory(app) as client:
@@ -218,15 +218,15 @@ def test_exception_handler_with_query_params(
         pass
 
     async def query_error_handler(
-        request: HttpContext, exc: QueryError
+        ctx: HttpContext, exc: QueryError
     ):
-        page = request.query_params.get("page", "1")
+        page = ctx.query_params.get("page", "1")
         return json({"error": str(exc), "page": page}, status_code=400)
 
     app.add_exception_handler(QueryError, query_error_handler)
 
     @app.get("/items")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise QueryError("Invalid query")
 
     with test_client_factory(app) as client:
@@ -247,15 +247,15 @@ def test_exception_handler_with_path_params(
         pass
 
     async def item_not_found_handler(
-        request: HttpContext, exc: ItemNotFoundError
+        ctx: HttpContext, exc: ItemNotFoundError
     ):
-        item_id = request.path_params.get("item_id")
+        item_id = ctx.path_params.get("item_id")
         return json({"error": "Item not found", "item_id": item_id}, status_code=404)
 
     app.add_exception_handler(ItemNotFoundError, item_not_found_handler)
 
     @app.get("/items/{item_id}")
-    async def handler(request: HttpContext, item_id):
+    async def handler(ctx: HttpContext, item_id):
         raise ItemNotFoundError()
 
     with test_client_factory(app) as client:
@@ -276,18 +276,18 @@ def test_exception_handler_with_request_body(
         pass
 
     async def validation_error_handler(
-        request: HttpContext, exc: ValidationError
+        ctx: HttpContext, exc: ValidationError
     ):
         # Note: In real scenarios, body might already be consumed
         return json(
-            {"error": "Validation failed", "message": str(exc), "path": request.path},
+            {"error": "Validation failed", "message": str(exc), "path": ctx.path},
             status_code=422,
         )
 
     app.add_exception_handler(ValidationError, validation_error_handler)
 
     @app.post("/data")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise ValidationError("Invalid data format")
 
     with test_client_factory(app) as client:
@@ -309,15 +309,15 @@ def test_exception_handler_with_request_headers(
         pass
 
     async def header_error_handler(
-        request: HttpContext, exc: HeaderError
+        ctx: HttpContext, exc: HeaderError
     ):
-        api_key = request.headers.get("X-API-Key", "none")
+        api_key = ctx.headers.get("X-API-Key", "none")
         return json({"error": str(exc), "api_key": api_key}, status_code=400)
 
     app.add_exception_handler(HeaderError, header_error_handler)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise HeaderError("Header validation failed")
 
     with test_client_factory(app) as client:
@@ -338,15 +338,15 @@ def test_exception_handler_with_cookies(
         pass
 
     async def session_error_handler(
-        request: HttpContext, exc: SessionError
+        ctx: HttpContext, exc: SessionError
     ):
-        session_id = request.cookies.get("session_id", "none")
+        session_id = ctx.cookies.get("session_id", "none")
         return json({"error": str(exc), "session_id": session_id}, status_code=401)
 
     app.add_exception_handler(SessionError, session_error_handler)
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise SessionError("Invalid session")
 
     with test_client_factory(app) as client:
@@ -370,11 +370,11 @@ def test_exception_handler_priority_specific_over_general(
     class SpecificError(BaseError):
         pass
 
-    async def base_handler(request: HttpContext, exc: BaseError):
+    async def base_handler(ctx: HttpContext, exc: BaseError):
         return json({"handler": "base"}, status_code=400)
 
     async def specific_handler(
-        request: HttpContext, exc: SpecificError
+        ctx: HttpContext, exc: SpecificError
     ):
         return json({"handler": "specific"}, status_code=422)
 
@@ -382,11 +382,11 @@ def test_exception_handler_priority_specific_over_general(
     app.add_exception_handler(SpecificError, specific_handler)
 
     @app.get("/specific")
-    async def specific_route(request: HttpContext):
+    async def specific_route(ctx: HttpContext):
         raise SpecificError()
 
     @app.get("/base")
-    async def base_route(request: HttpContext):
+    async def base_route(ctx: HttpContext):
         raise BaseError()
 
     with test_client_factory(app) as client:
@@ -412,17 +412,17 @@ def test_exception_handler_complex_scenario(
     class ComplexError(Exception):
         pass
 
-    async def logging_middleware(request: HttpContext, call_next):
+    async def logging_middleware(ctx: HttpContext, call_next):
         execution_log.append("middleware")
-        request.state.request_id = "req-123"
+        ctx.state.request_id = "req-123"
         response = await call_next()
         return response
 
     async def complex_error_handler(
-        request: HttpContext, exc: ComplexError
+        ctx: HttpContext, exc: ComplexError
     ):
         execution_log.append("error_handler")
-        request_id = getattr(request.state, "request_id", None)
+        request_id = getattr(ctx.state, "request_id", None)
         return json(
             {"error": str(exc), "request_id": request_id}, status_code=500
         )
@@ -431,7 +431,7 @@ def test_exception_handler_complex_scenario(
     app.add_exception_handler(ComplexError, complex_error_handler)
 
     @router.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_log.append("handler")
         raise ComplexError("Complex error occurred")
 
@@ -457,12 +457,12 @@ def test_exception_handler_no_handler_defined(
         pass
 
     @app.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         raise UnhandledError("This error has no handler")
 
     with test_client_factory(app) as client:
-        request = client.get("/test")
-        assert request.status_code != 200
+        response = client.get("/test")
+        assert response.status_code != 200
 
 
 def test_exception_handler_with_successful_request(
@@ -474,17 +474,17 @@ def test_exception_handler_with_successful_request(
     class TestError(Exception):
         pass
 
-    async def test_error_handler(request: HttpContext, exc: TestError):
+    async def test_error_handler(ctx: HttpContext, exc: TestError):
         return json({"error": "handled"}).status(400)
 
     app.add_exception_handler(TestError, test_error_handler)
 
     @app.get("/success")
-    async def success_handler(request: HttpContext):
+    async def success_handler(ctx: HttpContext):
         return json({"status": "ok"})
 
     @app.get("/error")
-    async def error_handler(request: HttpContext):
+    async def error_handler(ctx: HttpContext):
         raise TestError()
 
     with test_client_factory(app) as client:

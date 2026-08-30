@@ -18,7 +18,7 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware())
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
+        async def test_route(ctx: HttpContext):
             return json({"message": "OK"})
 
         client = TestClient(app)
@@ -32,8 +32,8 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware(store_in_request=True))
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
-            rid = getattr(request.state, "request_id", None)
+        async def test_route(ctx: HttpContext):
+            rid = getattr(ctx.state, "request_id", None)
             return json({"request_id": rid})
 
         client = TestClient(app)
@@ -47,7 +47,7 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware(force_generate=True))
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
+        async def test_route(ctx: HttpContext):
             return json({"ok": True})
 
         client = TestClient(app)
@@ -60,7 +60,7 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware(header_name="X-Custom-ID"))
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
+        async def test_route(ctx: HttpContext):
             return json({"ok": True})
 
         client = TestClient(app)
@@ -72,7 +72,7 @@ class TestRequestIdMiddleware:
         app.use(RequestIdMiddleware(include_in_response=False))
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
+        async def test_route(ctx: HttpContext):
             return json({"ok": True})
 
         client = TestClient(app)
@@ -94,9 +94,9 @@ class TestRequestIdHelpers:
         app = SilloApp()
 
         @app.get("/test")
-        async def test_route(request: HttpContext):
-            rid = get_or_generate_request_id(request)
-            store_request_id_in_request(request, rid)
+        async def test_route(ctx: HttpContext):
+            rid = get_or_generate_request_id(ctx)
+            store_request_id_in_request(ctx, rid)
             return json({"rid": rid})
 
         client = TestClient(app)

@@ -1180,7 +1180,7 @@ class SilloApp:
             user_router = Router(prefix="/users")
 
             @user_router.route("/list", methods=["GET"])
-            def get_users(request, response):
+            def get_users(ctx, response):
                  json({"users": ["Alice", "Bob"]})
 
             app.mount_router(user_router)  # Mounts the user routes into the main app
@@ -1325,11 +1325,11 @@ class SilloApp:
             HandlerType | None,
             Doc("""
                 Async handler function for GET requests.
-                Receives (request, response) and returns response or raw data.
+                Receives (ctx) and returns a response or raw data.
                 
                 Example:
                 async def get_user(ctx):
-                    user = await get_user_from_db(request.path_params['user_id'])
+                    user = await get_user_from_db(ctx.path_params['user_id'])
                     return json(user)
             """),
         ] = None,
@@ -1456,7 +1456,7 @@ class SilloApp:
                 }
             )
             async def get_user(ctx: HttpContext):
-                user_id = request.path_params['user_id']
+                user_id = ctx.path_params['user_id']
                 user = await get_user_by_id(user_id)
                 if not user:
                     return json({"error": "User not found"})
@@ -1469,7 +1469,7 @@ class SilloApp:
 
             @router.get("/users/search", request_model=UserQuery)
             async def search_users(ctx: HttpContext):
-                query = request.query_params
+                query = ctx.query_params
                 users = await search_users(
                     active=query['active'],
                     limit=query['limit']
@@ -1513,7 +1513,7 @@ class SilloApp:
                 Async handler function for POST requests.
                 Example:
                 async def create_user(ctx):
-                    user_data = request.json
+                    user_data = ctx.json
                     return json(user_data, status=201)
             """),
         ] = None,
@@ -1638,7 +1638,7 @@ class SilloApp:
             1. Simple POST endpoint:
             @router.post("/messages")
             async def create_message(ctx):
-                message = await Message.create(**request.json)
+                message = await Message.create(**ctx.json)
                 return json(message, status=201)
 
             2. POST with request validation:
@@ -1653,13 +1653,13 @@ class SilloApp:
                 responses={201: ProductSchema}
             )
             async def create_product(ctx):
-                product = await Product.create(**request.validated_data)
+                product = await Product.create(**ctx.validated_data)
                 return json(product, status=201)
 
             3. POST with file upload:
             @router.post("/upload")
             async def upload_file(ctx):
-                file = request.files.get('file')
+                file = ctx.files.get('file')
                 # Process file upload
                 return json({"filename": file.filename})
         """
@@ -1699,7 +1699,7 @@ class SilloApp:
                 Async handler function for DELETE requests.
                 Example:
                 async def delete_user(ctx):
-                    user_id = request.path_params['id']
+                    user_id = ctx.path_params['id']
                     return json({"deleted": user_id})
             """),
         ] = None,
@@ -1812,7 +1812,7 @@ class SilloApp:
             1. Simple DELETE endpoint:
             @router.delete("/users/{id}")
             async def delete_user(ctx):
-                await User.delete(request.path_params['id'])
+                await User.delete(ctx.path_params['id'])
                 return response.status(204)
 
             2. DELETE with confirmation:
@@ -1824,15 +1824,15 @@ class SilloApp:
                 }
             )
             async def delete_account(ctx):
-                if not request.query_params.get('confirm'):
+                if not ctx.query_params.get('confirm'):
                     return response.status(400)
-                await request.user.delete()
+                await ctx.user.delete()
                 return response.status(204)
 
             3. Soft DELETE:
             @router.delete("/posts/{id}")
             async def soft_delete_post(ctx):
-                await Post.soft_delete(request.path_params['id'])
+                await Post.soft_delete(ctx.path_params['id'])
                 return json({"status": "archived"})
         """
         return self.route(
@@ -1870,7 +1870,7 @@ class SilloApp:
                 Async handler function for PUT requests.
                 Example:
                 async def update_user(ctx):
-                    user_id = request.path_params['id']
+                    user_id = ctx.path_params['id']
                     return json({"updated": user_id})
             """),
         ] = None,
@@ -1995,8 +1995,8 @@ class SilloApp:
             1. Simple PUT endpoint:
             @router.put("/users/{id}")
             async def update_user(ctx):
-                user_id = request.path_params['id']
-                await User.update(user_id, **request.json)
+                user_id = ctx.path_params['id']
+                await User.update(user_id, **ctx.json)
                 return json({"status": "updated"})
 
             2. PUT with full resource replacement:
@@ -2010,15 +2010,15 @@ class SilloApp:
             )
             async def replace_article(ctx):
                 article = await Article.replace(
-                    request.path_params['slug'],
-                    request.validated_data
+                    ctx.path_params['slug'],
+                    ctx.validated_data
                 )
                 return json(article)
 
             3. PUT with conditional update:
             @router.put("/resources/{id}")
             async def update_resource(ctx):
-                if request.headers.get('If-Match') != expected_etag:
+                if ctx.headers.get('If-Match') != expected_etag:
                     return response.status(412)
                 # Process update
                 return json({"status": "success"})
@@ -2059,7 +2059,7 @@ class SilloApp:
                 Async handler function for PATCH requests.
                 Example:
                 async def partial_update_user(ctx):
-                    user_id = request.path_params['id']
+                    user_id = ctx.path_params['id']
                     return json({"updated": user_id})
             """),
         ] = None,
@@ -2184,8 +2184,8 @@ class SilloApp:
             1. Simple PATCH endpoint:
             @router.patch("/users/{id}")
             async def update_user(ctx):
-                user_id = request.path_params['id']
-                await User.partial_update(user_id, **request.json)
+                user_id = ctx.path_params['id']
+                await User.partial_update(user_id, **ctx.json)
                 return json({"status": "updated"})
 
             2. PATCH with JSON Merge Patch:
@@ -2196,8 +2196,8 @@ class SilloApp:
             )
             async def patch_article(ctx):
                 article = await Article.patch(
-                    request.path_params['id'],
-                    request.validated_data
+                    ctx.path_params['id'],
+                    ctx.validated_data
                 )
                 return json(article)
 
@@ -2205,10 +2205,10 @@ class SilloApp:
             @router.patch("/profile")
             async def update_profile(ctx):
                 allowed_fields = {'bio', 'avatar_url'}
-                data = await request.json
+                data = await ctx.json
                 updates = {k: v for k, v in data.items()
                         if k in allowed_fields}
-                await Profile.update(request.user.id, **updates)
+                await Profile.update(ctx.user.id, **updates)
                 return json(updates)
         """
         return self.route(
@@ -2416,7 +2416,7 @@ class SilloApp:
                 Async handler function for HEAD requests.
                 Example:
                 async def check_resource(ctx):
-                    exists = await Resource.exists(request.path_params['id'])
+                    exists = await Resource.exists(ctx.path_params['id'])
                     return response.status(200 if exists else 404)
             """),
         ] = None,
@@ -2528,13 +2528,13 @@ class SilloApp:
             1. Simple HEAD endpoint:
             @router.head("/resources/{id}")
             async def check_resource(ctx):
-                exists = await Resource.exists(request.path_params['id'])
+                exists = await Resource.exists(ctx.path_params['id'])
                 return response.status(200 if exists else 404)
 
             2. HEAD with cache headers:
             @router.head("/static/{path:path}")
             async def check_static(ctx):
-                path = request.path_params['path']
+                path = ctx.path_params['path']
                 if not static_file_exists(path):
                     return response.status(404)
                 response.headers['Last-Modified'] = get_last_modified(path)
@@ -2543,7 +2543,7 @@ class SilloApp:
             3. HEAD with metadata:
             @router.head("/documents/{id}")
             async def document_metadata(ctx):
-                doc = await Document.metadata(request.path_params['id'])
+                doc = await Document.metadata(ctx.path_params['id'])
                 if not doc:
                     return response.status(404)
                 response.headers['X-Document-Size'] = str(doc.size)
@@ -2597,7 +2597,7 @@ class SilloApp:
                 Async handler function for HEAD requests.
                 Example:
                 async def check_resource(ctx):
-                    exists = await Resource.exists(request.path_params['id'])
+                    exists = await Resource.exists(ctx.path_params['id'])
                     return response.status(200 if exists else 404)
             """),
         ] = None,
@@ -2773,8 +2773,8 @@ class SilloApp:
             exc_class_or_status_code: Either an exception class (subclass of
                 ``Exception``) or an integer HTTP status code to handle.
                 For example, ``ValueError`` or ``404``.
-            handler: An optional callable that accepts ``(request, response,
-                exception)`` and returns a response. When ``None``, a
+            handler: An optional callable that accepts ``(ctx, exception)``
+                and returns a response. When ``None``, a
                 decorator is returned instead for deferred registration.
 
         Returns:

@@ -33,14 +33,14 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/items")
-        async def get_items(req: HttpContext):
+        async def get_items(ctx: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = PageNumberPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             try:
                 paginator = AsyncPaginator(
-                    handler, pagination, base_url, dict(req.query_params)
+                    handler, pagination, base_url, dict(ctx.query_params)
                 )
                 result = await paginator.paginate()
                 return json(result)
@@ -66,14 +66,14 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/items-limit-offset")
-        async def get_items(req: HttpContext):
+        async def get_items(ctx: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = LimitOffsetPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             try:
                 paginator = AsyncPaginator(
-                    handler, pagination, base_url, dict(req.query_params)
+                    handler, pagination, base_url, dict(ctx.query_params)
                 )
                 result = await paginator.paginate()
                 return json(result)
@@ -98,14 +98,14 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/items-cursor")
-        async def get_items(req: HttpContext):
+        async def get_items(ctx: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = CursorPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             try:
                 paginator = AsyncPaginator(
-                    handler, pagination, base_url, dict(req.query_params)
+                    handler, pagination, base_url, dict(ctx.query_params)
                 )
                 result = await paginator.paginate()
                 return json(result)
@@ -151,14 +151,14 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/filtered-items")
-        async def get_filtered_items(req: HttpContext):
+        async def get_filtered_items(ctx: HttpContext):
             handler = FilteredDataHandler(test_data)
             pagination = PageNumberPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             try:
                 paginator = AsyncPaginator(
-                    handler, pagination, base_url, dict(req.query_params)
+                    handler, pagination, base_url, dict(ctx.query_params)
                 )
                 result = await paginator.paginate()
                 return json(result)
@@ -182,17 +182,17 @@ class TestPaginationIntegration:
         client, app = test_client
 
         @app.get("/error-test")
-        async def error_test(req: HttpContext):
+        async def error_test(ctx: HttpContext):
             handler = AsyncListDataHandler([])
             pagination = PageNumberPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             try:
                 paginator = AsyncPaginator(
                     handler,
                     pagination,
                     base_url,
-                    dict(req.query_params),
+                    dict(ctx.query_params),
                     validate_total_items=False,
                 )
                 result = await paginator.paginate()
@@ -226,13 +226,13 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/custom-metadata")
-        async def custom_metadata(req: HttpContext):
+        async def custom_metadata(ctx: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = CustomPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             paginator = AsyncPaginator(
-                handler, pagination, base_url, dict(req.query_params)
+                handler, pagination, base_url, dict(ctx.query_params)
             )
             result = await paginator.paginate()
             return json(result)
@@ -251,37 +251,37 @@ class TestPaginationIntegration:
         test_data = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 
         @app.get("/items-page")
-        async def get_items_page(req: HttpContext):
+        async def get_items_page(ctx: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = PageNumberPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             paginator = AsyncPaginator(
-                handler, pagination, base_url, dict(req.query_params)
+                handler, pagination, base_url, dict(ctx.query_params)
             )
             result = await paginator.paginate()
             return json(result)
 
         @app.get("/items-limit")
-        async def get_items_limit(req: HttpContext):
+        async def get_items_limit(ctx: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = LimitOffsetPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             paginator = AsyncPaginator(
-                handler, pagination, base_url, dict(req.query_params)
+                handler, pagination, base_url, dict(ctx.query_params)
             )
             result = await paginator.paginate()
             return json(result)
 
         @app.get("/items-cursor")
-        async def get_items_cursor(req: HttpContext):
+        async def get_items_cursor(ctx: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = CursorPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             paginator = AsyncPaginator(
-                handler, pagination, base_url, dict(req.query_params)
+                handler, pagination, base_url, dict(ctx.query_params)
             )
             result = await paginator.paginate()
             return json(result)
@@ -317,13 +317,13 @@ class TestPaginationIntegration:
         ]
 
         @app.get("/complex-items")
-        async def get_complex_items(req: HttpContext):
+        async def get_complex_items(ctx: HttpContext):
             handler = AsyncListDataHandler(test_data)
             pagination = PageNumberPagination()
-            base_url = str(req.url)
+            base_url = str(ctx.url)
 
             paginator = AsyncPaginator(
-                handler, pagination, base_url, dict(req.query_params)
+                handler, pagination, base_url, dict(ctx.query_params)
             )
             result = await paginator.paginate()
             return json(result)

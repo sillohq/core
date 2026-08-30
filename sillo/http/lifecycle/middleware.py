@@ -52,10 +52,10 @@ class RequestIdMiddleware(BaseMiddleware):
                 generate a new UUID4 and ignore any client-supplied
                 header value. Defaults to ``False``.
             store_in_request (bool, optional): When ``True``, persist
-                the request ID on ``request.state`` for downstream
+                the request ID on ``ctx.state`` for downstream
                 access. Defaults to ``True``.
             request_attribute_name (str, optional): The attribute
-                name used when storing the ID on ``request.state``.
+                name used when storing the ID on ``ctx.state``.
                 Defaults to ``"request_id"``.
             include_in_response (bool, optional): When ``True``, set
                 the request ID as a header on the outgoing response.
@@ -146,9 +146,9 @@ def RequestId(
             generate a new UUID4 regardless of client headers.
             Defaults to ``False``.
         store_in_request (bool, optional): When ``True``, persist the
-            request ID on ``request.state``. Defaults to ``True``.
+            request ID on ``ctx.state``. Defaults to ``True``.
         request_attribute_name (str, optional): The attribute name
-            used on ``request.state`` for storage. Defaults to
+            used on ``ctx.state`` for storage. Defaults to
             ``"request_id"``.
         include_in_response (bool, optional): When ``True``, include
             the request ID in the response header. Defaults to

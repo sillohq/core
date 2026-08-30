@@ -77,7 +77,7 @@ class SessionGuard:
         """
         return getattr(self.backend, "identifier", DEFAULT_IDENTIFIER)
 
-    async def attempt(self, request: HttpContext, **credentials) -> bool:
+    async def attempt(self, ctx: HttpContext, **credentials) -> bool:
         """Attempt to authenticate a user with the given credentials.
 
         Extracts ``email`` and ``password`` from the supplied keyword
@@ -111,10 +111,10 @@ class SessionGuard:
         )
         if user is None or not user.check_password(password):
             return False
-        await self.login(request, user)
+        await self.login(ctx, user)
         return True
 
-    async def login(self, request: HttpContext, user) -> None:
+    async def login(self, ctx: HttpContext, user) -> None:
         """Log the given user into the current request session.
 
         Delegates to the backend's ``login`` helper to write the user's
@@ -137,12 +137,12 @@ class SessionGuard:
             ``set_last_login`` call propagate to the caller unchanged.
         """
         _session_login(
-            request, user, session_key=self._session_key, identifier=self._identifier
+            ctx, user, session_key=self._session_key, identifier=self._identifier
         )
         if hasattr(user, "set_last_login"):
             await user.set_last_login()
 
-    async def logout(self, request: HttpContext) -> None:
+    async def logout(self, ctx: HttpContext) -> None:
         """Log the current user out by clearing the session data.
 
         Delegates to the backend's ``logout`` helper to remove the
@@ -160,9 +160,9 @@ class SessionGuard:
             None: Any exceptions from the backend logout helper
             propagate to the caller unchanged.
         """
-        _session_logout(request, session_key=self._session_key)
+        _session_logout(ctx, session_key=self._session_key)
 
-    async def user(self, request: HttpContext):
+    async def user(self, ctx: HttpContext):
         """Retrieve the currently authenticated user from the request session.
 
         Reads the session store to obtain the stored user identifier,
@@ -184,8 +184,8 @@ class SessionGuard:
             result in a ``None`` return value.
         """
         session_user = (
-            request.session.get(self._session_key)
-            if hasattr(request, "session")
+            ctx.session.get(self._session_key)
+            if hasattr(ctx, "session")
             else None
         )
         if session_user and self.user_model:
@@ -198,7 +198,7 @@ class SessionGuard:
                 )
         return None
 
-    async def check(self, request: HttpContext) -> bool:
+    async def check(self, ctx: HttpContext) -> bool:
         """Check whether the current request has an active session.
 
         Performs a lightweight check for the presence of session data
@@ -217,11 +217,11 @@ class SessionGuard:
             None: Missing session attributes are handled gracefully
             and result in a ``False`` return value.
         """
-        if not hasattr(request, "session"):
+        if not hasattr(ctx, "session"):
             return False
-        return bool(request.session.get(self._session_key))
+        return bool(ctx.session.get(self._session_key))
 
-    async def id(self, request: HttpContext) -> str | None:
+    async def id(self, ctx: HttpContext) -> str | None:
         """Return the raw user identifier stored in the current session.
 
         Reads the session store and extracts the identifier field value
@@ -241,18 +241,18 @@ class SessionGuard:
             and result in a ``None`` return value.
         """
         session_user = (
-            request.session.get(self._session_key)
-            if hasattr(request, "session")
+            ctx.session.get(self._session_key)
+            if hasattr(ctx, "session")
             else None
         )
         return str(session_user.get(self._identifier)) if session_user else None
 
-    async def validate(self, request: HttpContext, credentials: dict) -> bool:
+    async def validate(self, ctx: HttpContext, credentials: dict) -> bool:
         """Validate credentials without logging the user in.
 
         Checks the supplied email and password against the user model
         but does not create a session.  Instead, the validated user
-        instance is stashed on ``request.scope["_validated_user"]``
+        instance is stashed on ``ctx.scope["_validated_user"]``
         for downstream middleware or handlers to consume.
 
         Args:
@@ -283,5 +283,5 @@ class SessionGuard:
         )
         if user is None or not user.check_password(password):
             return False
-        request.scope["_validated_user"] = user
+        ctx.scope["_validated_user"] = user
         return True

@@ -51,22 +51,22 @@ class ModelAdmin:
 
     # ── Permissions ───────────────────────────────────────────────────
     @staticmethod
-    def has_view_permission(request) -> bool:
+    def has_view_permission(ctx) -> bool:
         """Has View Permission"""
         return True
 
     @staticmethod
-    def has_add_permission(request) -> bool:
+    def has_add_permission(ctx) -> bool:
         """Has Add Permission"""
         return True
 
     @staticmethod
-    def has_change_permission(request, obj=None) -> bool:
+    def has_change_permission(ctx, obj=None) -> bool:
         """Has Change Permission"""
         return True
 
     @staticmethod
-    def has_delete_permission(request, obj=None) -> bool:
+    def has_delete_permission(ctx, obj=None) -> bool:
         """Has Delete Permission"""
         return True
 

@@ -19,7 +19,7 @@ def test_text_response(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/text")
-    async def text_handler(request: HttpContext):
+    async def text_handler(ctx: HttpContext):
         return text("Hello, World!")
 
     with test_client_factory(app) as client:
@@ -36,7 +36,7 @@ def test_text_response_with_status_code(
     app = SilloApp()
 
     @app.get("/text-created")
-    async def text_created(request: HttpContext):
+    async def text_created(ctx: HttpContext):
         return text("Resource created", status_code=201)
 
     with test_client_factory(app) as client:
@@ -52,7 +52,7 @@ def test_text_response_with_headers(
     app = SilloApp()
 
     @app.get("/text-headers")
-    async def text_headers(request: HttpContext):
+    async def text_headers(ctx: HttpContext):
         return text("Custom headers", headers={"X-Custom": "value"})
 
     with test_client_factory(app) as client:
@@ -69,7 +69,7 @@ def test_json_response(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/json")
-    async def json_handler(request: HttpContext):
+    async def json_handler(ctx: HttpContext):
         return json({"message": "Hello", "status": "ok"})
 
     with test_client_factory(app) as client:
@@ -86,7 +86,7 @@ def test_json_response_with_list(
     app = SilloApp()
 
     @app.get("/items")
-    async def get_items(request: HttpContext):
+    async def get_items(ctx: HttpContext):
         return json([{"id": 1, "name": "Item 1"}, {"id": 2, "name": "Item 2"}])
 
     with test_client_factory(app) as client:
@@ -104,7 +104,7 @@ def test_json_response_with_status_code(
     app = SilloApp()
 
     @app.post("/create")
-    async def create_resource(request: HttpContext):
+    async def create_resource(ctx: HttpContext):
         return json({"id": 123, "created": True}, status_code=201)
 
     with test_client_factory(app) as client:
@@ -120,7 +120,7 @@ def test_json_response_with_indent(
     app = SilloApp()
 
     @app.get("/pretty")
-    async def pretty_json(request: HttpContext):
+    async def pretty_json(ctx: HttpContext):
         return json({"key": "value"}, indent=2)
 
     with test_client_factory(app) as client:
@@ -137,7 +137,7 @@ def test_json_response_with_nested_data(
     app = SilloApp()
 
     @app.get("/nested")
-    async def nested_json(request: HttpContext):
+    async def nested_json(ctx: HttpContext):
         data = {
             "user": {"id": 1, "name": "Alice", "profile": {"age": 30, "city": "NYC"}}
         }
@@ -158,7 +158,7 @@ def test_html_response(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/html")
-    async def html_handler(request: HttpContext):
+    async def html_handler(ctx: HttpContext):
         return html("<h1>Hello World</h1>")
 
     with test_client_factory(app) as client:
@@ -175,7 +175,7 @@ def test_html_response_with_full_page(
     app = SilloApp()
 
     @app.get("/page")
-    async def html_page(request: HttpContext):
+    async def html_page(ctx: HttpContext):
         page = """
         <!DOCTYPE html>
         <html>
@@ -199,7 +199,7 @@ def test_html_response_with_status_code(
     app = SilloApp()
 
     @app.get("/error")
-    async def html_error(request: HttpContext):
+    async def html_error(ctx: HttpContext):
         return html("<h1>Not Found</h1>", status_code=404)
 
     with test_client_factory(app) as client:
@@ -216,7 +216,7 @@ def test_empty_response(test_client_factory: Callable[[SilloApp], TestClient]):
     app = SilloApp()
 
     @app.get("/empty")
-    async def empty_handler(request: HttpContext):
+    async def empty_handler(ctx: HttpContext):
         return empty()
 
     with test_client_factory(app) as client:
@@ -232,7 +232,7 @@ def test_empty_response_with_status_code(
     app = SilloApp()
 
     @app.delete("/resource/{id}")
-    async def delete_resource(request: HttpContext, id: str):
+    async def delete_resource(ctx: HttpContext, id: str):
         return empty(status_code=204)
 
     with test_client_factory(app) as client:
@@ -249,7 +249,7 @@ def test_response_status_method(test_client_factory: Callable[[SilloApp], TestCl
     app = SilloApp()
 
     @app.get("/custom-status")
-    async def custom_status(request: HttpContext):
+    async def custom_status(ctx: HttpContext):
         return text("I'm a teapot").status(418)
 
     with test_client_factory(app) as client:
@@ -263,7 +263,7 @@ def test_response_chaining(test_client_factory: Callable[[SilloApp], TestClient]
     app = SilloApp()
 
     @app.get("/chain")
-    async def chain_methods(request: HttpContext):
+    async def chain_methods(ctx: HttpContext):
         return json({"created": True}).status(201)
 
     with test_client_factory(app) as client:
@@ -282,7 +282,7 @@ def test_response_content_type_text(
     app = SilloApp()
 
     @app.get("/text")
-    async def text_response(request: HttpContext):
+    async def text_response(ctx: HttpContext):
         return text("Plain text")
 
     with test_client_factory(app) as client:
@@ -298,7 +298,7 @@ def test_response_content_type_json(
     app = SilloApp()
 
     @app.get("/json")
-    async def json_response(request: HttpContext):
+    async def json_response(ctx: HttpContext):
         return json({"test": "data"})
 
     with test_client_factory(app) as client:
@@ -314,7 +314,7 @@ def test_response_content_type_html(
     app = SilloApp()
 
     @app.get("/html")
-    async def html_response(request: HttpContext):
+    async def html_response(ctx: HttpContext):
         return html("<p>HTML content</p>")
 
     with test_client_factory(app) as client:

@@ -1,3 +1,3 @@
 """
-WebSocketContext tests package
+WebSocket tests package
 """

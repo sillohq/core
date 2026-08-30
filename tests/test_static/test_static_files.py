@@ -250,7 +250,7 @@ def test_static_file_404_handler_returning_a_bare_asgi_callable():
         )
         await send({"type": "http.response.body", "body": b"bare asgi"})
 
-    def custom_404(request: HttpContext):
+    def custom_404(ctx: HttpContext):
         return bare_asgi_response
 
     app = SilloApp()

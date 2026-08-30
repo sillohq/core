@@ -105,7 +105,7 @@ class State:
 
     Provides a dictionary-backed container that supports both attribute-style
     and dictionary-style access for storing and retrieving arbitrary data.
-    This is used throughout the framework for ``request.state`` and ``app.state``
+    This is used throughout the framework for ``ctx.state`` and ``app.state``
     to allow middleware and handlers to share data during request processing.
 
     Attribute access that references a non-existent key returns ``None`` rather

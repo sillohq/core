@@ -66,7 +66,7 @@ def test_abort_rendered_as_json(
     app = SilloApp()
 
     @app.get("/admin")
-    async def admin(request: HttpContext):
+    async def admin(ctx: HttpContext):
         abort(403, detail="Admins only")
         return json({"ok": True})
 
@@ -82,7 +82,7 @@ def test_abort_does_not_return_body_after_raise(
     app = SilloApp()
 
     @app.get("/boom")
-    async def boom(request: HttpContext):
+    async def boom(ctx: HttpContext):
         abort(418, detail="teapot")
         return json({"unreachable": True})
 
@@ -98,7 +98,7 @@ def test_not_found_rendered_as_404(
     app = SilloApp()
 
     @app.get("/items/{item_id:int}")
-    async def get_item(request: HttpContext, item_id: int):
+    async def get_item(ctx: HttpContext, item_id: int):
         if item_id != 1:
             not_found(detail=f"Item {item_id} not found")
         return json({"item_id": item_id})

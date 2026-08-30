@@ -13,7 +13,7 @@ def test_int_default_still_coerces(app, client):
     """A default value's type still drives coercion when no type is declared."""
 
     @app.get("/legacy")
-    async def handler(request, page=Query(1)):
+    async def handler(ctx, page=Query(1)):
         return json({"page": page, "type": type(page).__name__})
 
     data = client.get("/legacy?page=42").json()
@@ -24,7 +24,7 @@ def test_missing_param_without_default_is_none(app, client):
     """Query() with no default yields None rather than a 422."""
 
     @app.get("/legacy")
-    async def handler(request, q=Query()):
+    async def handler(ctx, q=Query()):
         return json({"q": q})
 
     assert client.get("/legacy").json() == {"q": None}
@@ -34,7 +34,7 @@ def test_no_default_returns_raw_string(app, client):
     """Without a default there is nothing to infer from, so the string is raw."""
 
     @app.get("/legacy")
-    async def handler(request, q=Query()):
+    async def handler(ctx, q=Query()):
         return json({"type": type(q).__name__})
 
     assert client.get("/legacy?q=123").json() == {"type": "str"}
@@ -49,7 +49,7 @@ def test_required_missing_is_500(app):
     """
 
     @app.get("/legacy")
-    async def handler(request, q=Query(required=True)):
+    async def handler(ctx, q=Query(required=True)):
         return json({"q": q})
 
     client = TestClient(app, raise_server_exceptions=False)
@@ -60,7 +60,7 @@ def test_list_default_comma_splits(app, client):
     """A list default keeps the legacy comma-splitting behavior."""
 
     @app.get("/legacy")
-    async def handler(request, tags=Query([])):
+    async def handler(ctx, tags=Query([])):
         return json({"tags": tags})
 
     assert client.get("/legacy?tags=a,b,c").json() == {"tags": ["a", "b", "c"]}
@@ -70,7 +70,7 @@ def test_bool_default_coerces_yes(app, client):
     """Legacy bool coercion accepts 'yes', which plain Pydantic would reject."""
 
     @app.get("/legacy")
-    async def handler(request, active=Query(False)):
+    async def handler(ctx, active=Query(False)):
         return json({"active": active})
 
     assert client.get("/legacy?active=yes").json() == {"active": True}
@@ -80,7 +80,7 @@ def test_header_and_cookie_defaults(app, client):
     """Header casing and cookie defaults are unchanged."""
 
     @app.get("/legacy")
-    async def handler(request, x_api_key=Header(), theme=Cookie("dark")):
+    async def handler(ctx, x_api_key=Header(), theme=Cookie("dark")):
         return json({"key": x_api_key, "theme": theme})
 
     data = client.get("/legacy", headers={"X-Api-Key": "abc"}).json()
@@ -95,7 +95,7 @@ def test_metadata_only_does_not_change_behavior(app, client):
     """
 
     @app.get("/legacy")
-    async def handler(request, q=Query(description="a query")):
+    async def handler(ctx, q=Query(description="a query")):
         return json({"q": q})
 
     assert client.get("/legacy").json() == {"q": None}

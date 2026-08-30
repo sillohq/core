@@ -251,7 +251,7 @@ class ParameterExtractor:
         default = ... if (self.default is ... or self.required) else self.default
         return Field(default, **kwargs)
 
-    def extract(self, request: HttpContext | None) -> Any:
+    def extract(self, ctx: HttpContext | None) -> Any:
         """Extract this parameter's value from the request (legacy path).
 
         Subclasses that read from a synchronously-available part of the request
@@ -271,7 +271,7 @@ class ParameterExtractor:
         """
         raise NotImplementedError
 
-    def _extract_from(self, source: Any, request: HttpContext | None) -> Any:
+    def _extract_from(self, source: Any, ctx: HttpContext | None) -> Any:
         """Look a value up in a mapping and apply legacy coercion.
 
         Shared implementation behind ``Query.extract``, ``Header.extract``, and
@@ -280,7 +280,7 @@ class ParameterExtractor:
 
         Args:
             source: The request mapping to read from, such as
-                ``request.query_params`` or ``request.headers``.
+                ``ctx.query_params`` or ``ctx.headers``.
             request: The incoming request, or ``None``. When ``None``, the
                 default is returned without any lookup.
 
@@ -291,7 +291,7 @@ class ParameterExtractor:
         Raises:
             ValueError: If ``required`` is set and the value is absent.
         """
-        if request is None:
+        if ctx is None:
             return self.default
 
         param_name = self._get_param_name()
@@ -406,7 +406,7 @@ class Query(ParameterExtractor):
 
     location = ParameterLocation.QUERY
 
-    def extract(self, request: HttpContext | None) -> Any:
+    def extract(self, ctx: HttpContext | None) -> Any:
         """Read this parameter from the request's query string.
 
         Args:
@@ -419,7 +419,7 @@ class Query(ParameterExtractor):
             ValueError: If the parameter is required and absent.
         """
         return self._extract_from(
-            request.query_params if request is not None else None, request
+            ctx.query_params if ctx is not None else None, ctx
         )
 
 
@@ -436,7 +436,7 @@ class Header(ParameterExtractor):
 
     location = ParameterLocation.HEADER
 
-    def extract(self, request: HttpContext | None) -> Any:
+    def extract(self, ctx: HttpContext | None) -> Any:
         """Read this parameter from the request's headers.
 
         Args:
@@ -449,7 +449,7 @@ class Header(ParameterExtractor):
             ValueError: If the header is required and absent.
         """
         return self._extract_from(
-            request.headers if request is not None else None, request
+            ctx.headers if ctx is not None else None, ctx
         )
 
 
@@ -462,7 +462,7 @@ class Cookie(ParameterExtractor):
 
     location = ParameterLocation.COOKIE
 
-    def extract(self, request: HttpContext | None) -> Any:
+    def extract(self, ctx: HttpContext | None) -> Any:
         """Read this parameter from the request's cookies.
 
         Args:
@@ -475,7 +475,7 @@ class Cookie(ParameterExtractor):
             ValueError: If the cookie is required and absent.
         """
         return self._extract_from(
-            request.cookies if request is not None else None, request
+            ctx.cookies if ctx is not None else None, ctx
         )
 
 
@@ -497,7 +497,7 @@ class Path(ParameterExtractor):
 
     location = ParameterLocation.PATH
 
-    def extract(self, request: HttpContext | None) -> Any:
+    def extract(self, ctx: HttpContext | None) -> Any:
         """Read this parameter from the request's matched path parameters.
 
         Args:
@@ -507,7 +507,7 @@ class Path(ParameterExtractor):
             The path parameter value, or the configured default.
         """
         return self._extract_from(
-            request.path_params if request is not None else None, request
+            ctx.path_params if ctx is not None else None, ctx
         )
 
     def to_field_info(self) -> FieldInfo:
@@ -644,7 +644,7 @@ def solve_params(handler: Any) -> list[SolvedParamDependency]:
 
 async def resolve_param(
     param_dep: SolvedParamDependency,
-    request: HttpContext | None = None,
+    ctx: HttpContext | None = None,
 ) -> Any:
     """Resolve a single parameter dependency by extracting its value.
 
@@ -658,7 +658,7 @@ async def resolve_param(
     Returns:
         The extracted parameter value.
     """
-    return param_dep.extractor.extract(request)
+    return param_dep.extractor.extract(ctx)
 
 
 # Imported last: sillo.objects.http pulls in the datastructures module, and

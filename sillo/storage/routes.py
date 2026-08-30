@@ -72,7 +72,7 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
     """
     route = config.route.rstrip("/")
 
-    async def serve(request, bucket: str, key: str):
+    async def serve(ctx, bucket: str, key: str):
         """Serve one object, if the caller may have it.
 
         Args:
@@ -91,8 +91,8 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
 
         signed = False
         token = (
-            request.query_params.get("token")
-            if hasattr(request, "query_params")
+            ctx.query_params.get("token")
+            if hasattr(ctx, "query_params")
             else None
         )
 
@@ -104,7 +104,7 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
                 return json({"detail": "Not found"}, status_code=404)
 
         try:
-            info = await held.stat(key, user=_user(request), signed=signed)
+            info = await held.stat(key, user=_user(ctx), signed=signed)
         except (FileNotFound, UnsafeKey):
             # One answer for "no such object" and "not yours". A 403 on a
             # private bucket confirms the object exists, which is half of what
@@ -129,7 +129,7 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
         }
 
         return stream(
-            held.get(key, user=_user(request), signed=signed),
+            held.get(key, user=_user(ctx), signed=signed),
             content_type=info.content_type,
             headers=headers,
         )
@@ -137,10 +137,10 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
     app.get(f"{route}/{{bucket}}/{{key:path}}", handler=serve, name="storage.serve")
 
 
-def _user(request: Any) -> Any:
+def _user(ctx: Any) -> Any:
     """Who is asking, if anybody.
 
-    ``request.user`` is a property that *raises* when no authentication
+    ``ctx.user`` is a property that *raises* when no authentication
     middleware is installed, so ``getattr(request, "user", None)`` does not
     protect against it — the default is never reached because the lookup does
     not fail, it throws. An application serving a public bucket and running no
@@ -153,7 +153,7 @@ def _user(request: Any) -> Any:
         The authenticated user, or None when there is no auth configured.
     """
     try:
-        return request.user
+        return ctx.user
     except (ValueError, AttributeError, AssertionError):
         return None
 

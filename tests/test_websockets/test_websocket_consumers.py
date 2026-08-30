@@ -1,5 +1,5 @@
 """
-Tests for WebSocketContext consumers functionality
+Tests for WebSocket consumers functionality
 """
 
 from typing import Any, Callable

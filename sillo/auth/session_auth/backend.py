@@ -20,7 +20,7 @@ DEFAULT_IDENTIFIER = "id"
 
 
 def login(
-    request: HttpContext,
+    ctx: HttpContext,
     user,
     session_key: str = DEFAULT_SESSION_KEY,
     identifier: str = DEFAULT_IDENTIFIER,
@@ -58,8 +58,8 @@ def login(
         AssertionError: If the request does not have a session in its scope,
             indicating that the session middleware has not been installed.
     """
-    assert "session" in request.scope, "No Session Middleware Installed"
-    session = request.session  # ty: ignore[unresolved-attribute]
+    assert "session" in ctx.scope, "No Session Middleware Installed"
+    session = ctx.session  # ty: ignore[unresolved-attribute]
 
     if session.get(session_key):
         del session[session_key]
@@ -77,7 +77,7 @@ def login(
     }
 
 
-def logout(request: HttpContext, session_key: str = DEFAULT_SESSION_KEY):
+def logout(ctx: HttpContext, session_key: str = DEFAULT_SESSION_KEY):
     """Terminate a user's session, emptying it.
 
     The whole session goes, not only the entry *session_key* names: a
@@ -104,8 +104,8 @@ def logout(request: HttpContext, session_key: str = DEFAULT_SESSION_KEY):
         AssertionError: If the request does not have a session in its scope,
             indicating that the session middleware has not been installed.
     """
-    assert "session" in request.scope, "No Session Middleware Installed"
-    request.session.clear()  # ty: ignore[unresolved-attribute]
+    assert "session" in ctx.scope, "No Session Middleware Installed"
+    ctx.session.clear()  # ty: ignore[unresolved-attribute]
 
 
 class SessionAuthBackend(AuthenticationBackend):
@@ -128,7 +128,7 @@ class SessionAuthBackend(AuthenticationBackend):
         """Document this backend as the session cookie it rides on.
 
         The credential is not read from the cookie directly — the session
-        middleware has already turned it into ``request.session`` — but the
+        middleware has already turned it into ``ctx.session`` — but the
         cookie is what a caller must send, and that is what the document has
         to describe.
         """
@@ -179,7 +179,7 @@ class SessionAuthBackend(AuthenticationBackend):
             self.name = name
         self.description = description
 
-    async def authenticate(self, request: HttpContext) -> Any:
+    async def authenticate(self, ctx: HttpContext) -> Any:
         """Authenticate the current request by checking session data.
 
         Reads the user data from the request's session using the configured
@@ -203,8 +203,8 @@ class SessionAuthBackend(AuthenticationBackend):
                 scope, indicating that the session middleware has not been
                 installed in the application middleware stack.
         """
-        assert "session" in request.scope, "No Session Middleware Installed"
-        user = request.session.get(self.session_key)
+        assert "session" in ctx.scope, "No Session Middleware Installed"
+        user = ctx.session.get(self.session_key)
 
         if not user:
             return AuthResult(success=False, identity="", scope="")

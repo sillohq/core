@@ -122,14 +122,14 @@ class Query:
 
 ##  Context
 
-The `request` and `response` objects are available in the GraphQL context.
+The request's context is available to resolvers as `info.context["ctx"]`.
 
 ```python
 @strawberry.type
 class Query:
     @strawberry.field
     def user_agent(self, info) -> str:
-        ctx = info.context["request"]
+        ctx = info.context["ctx"]
         return ctx.headers.get("user-agent", "Unknown")
 ```
 
@@ -191,7 +191,7 @@ app. The `ctx` context flows through `schema.execute` unchanged.
 - **GraphiQL in production**: leaving `graphiql=True` exposes an in-browser
   IDE. Set `graphiql=False` for production endpoints you don't want browsable.
 - **Auth.** `GraphQL` does not enforce authentication. Protect the route by
-  registering auth middleware or checking `info.context["request"]` inside
+  registering auth middleware or checking `info.context["ctx"]` inside
   resolvers.
 - **Extra dependency.** `strawberry-graphql` is required. Install with `uv add
   "sillo-framework[graphql]"` (or your lockfile equivalent); importing

@@ -76,8 +76,8 @@ async def test_custom_auth_backend_success(test_client):
     client = test_client(app)
 
     class CustomAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
-            auth_header = request.headers.get("X-Custom-Auth")
+        async def authenticate(self, ctx: HttpContext):
+            auth_header = ctx.headers.get("X-Custom-Auth")
             if auth_header == "valid_token_123":
                 return AuthResult(success=True, identity="custom1", scope="custom")
             return AuthResult(success=False, identity="", scope="")
@@ -85,9 +85,9 @@ async def test_custom_auth_backend_success(test_client):
     app.use(AuthenticationMiddleware(CustomTestUser, CustomAuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["custom"]))
-    async def protected_route(req: HttpContext):
+    async def protected_route(ctx: HttpContext):
         return json(
-            {"user_id": req.user.identity, "permissions": req.user.permissions}
+            {"user_id": ctx.user.identity, "permissions": ctx.user.permissions}
         )
 
     async with client:
@@ -105,8 +105,8 @@ async def test_custom_auth_backend_failure(test_client):
     client = test_client(app)
 
     class CustomAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
-            auth_header = request.headers.get("X-Custom-Auth")
+        async def authenticate(self, ctx: HttpContext):
+            auth_header = ctx.headers.get("X-Custom-Auth")
             if auth_header == "valid_token_123":
                 return AuthResult(success=True, identity="custom1", scope="custom")
             return AuthResult(success=False, identity="", scope="")
@@ -114,8 +114,8 @@ async def test_custom_auth_backend_failure(test_client):
     app.use(AuthenticationMiddleware(CustomTestUser, CustomAuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["custom"]))
-    async def protected_route(req: HttpContext):
-        return json({"user": req.user})
+    async def protected_route(ctx: HttpContext):
+        return json({"user": ctx.user})
 
     async with client:
         res = await client.get("/protected", headers={"X-Custom-Auth": "invalid_token"})
@@ -127,12 +127,12 @@ async def test_custom_auth_backend_exception_handling(test_client):
     client = test_client(app)
 
     class FaultyAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
+        async def authenticate(self, ctx: HttpContext):
             raise Exception("Backend error")
 
     class WorkingAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
-            if request.headers.get("X-Backup-Auth") == "backup_valid":
+        async def authenticate(self, ctx: HttpContext):
+            if ctx.headers.get("X-Backup-Auth") == "backup_valid":
                 return AuthResult(success=True, identity="backup_user", scope="backup")
             return AuthResult(success=False, identity="", scope="")
 
@@ -143,8 +143,8 @@ async def test_custom_auth_backend_exception_handling(test_client):
     )
 
     @app.get("/protected", auth=useAuth(schemes=["backup"]))
-    async def protected_route(req: HttpContext):
-        return json({"user_id": req.user.identity})
+    async def protected_route(ctx: HttpContext):
+        return json({"user_id": ctx.user.identity})
 
     async with client:
         res = await client.get("/protected", headers={"X-Backup-Auth": "backup_valid"})
@@ -157,10 +157,10 @@ async def test_custom_auth_backend_complex_logic(test_client):
     client = test_client(app)
 
     class ComplexAuthBackend(AuthenticationBackend):
-        async def authenticate(self, request: HttpContext):
-            api_key = request.headers.get("X-API-Key")
-            token = request.headers.get("Authorization")
-            user_param = request.query_params.get("user")
+        async def authenticate(self, ctx: HttpContext):
+            api_key = ctx.headers.get("X-API-Key")
+            token = ctx.headers.get("Authorization")
+            user_param = ctx.query_params.get("user")
 
             if (
                 api_key == "complex_key"
@@ -175,8 +175,8 @@ async def test_custom_auth_backend_complex_logic(test_client):
     app.use(AuthenticationMiddleware(SimpleUser, ComplexAuthBackend()))
 
     @app.get("/protected", auth=useAuth(schemes=["complex"]))
-    async def protected_route(req: HttpContext):
-        return json({"user_id": req.user.identity})
+    async def protected_route(ctx: HttpContext):
+        return json({"user_id": ctx.user.identity})
 
     async with client:
         # Valid case

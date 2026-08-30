@@ -25,7 +25,7 @@ def test_router_level_middleware_basic(
 
     executed = []
 
-    async def router_middleware(request: HttpContext, call_next):
+    async def router_middleware(ctx: HttpContext, call_next):
         executed.append("router_middleware")
         response = await call_next()
         return response
@@ -33,7 +33,7 @@ def test_router_level_middleware_basic(
     router.use(router_middleware)
 
     @router.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         executed.append("handler")
         return json({"message": "ok"})
 
@@ -56,7 +56,7 @@ def test_router_level_middleware_isolated(
 
     executed = []
 
-    async def router1_middleware(request: HttpContext, call_next):
+    async def router1_middleware(ctx: HttpContext, call_next):
         executed.append("router1_middleware")
         response = await call_next()
         return response
@@ -64,11 +64,11 @@ def test_router_level_middleware_isolated(
     router1.use(router1_middleware)
 
     @router1.get("/route1")
-    async def handler1(request: HttpContext):
+    async def handler1(ctx: HttpContext):
         return json({"router": "1"})
 
     @router2.get("/route2")
-    async def handler2(request: HttpContext):
+    async def handler2(ctx: HttpContext):
         return json({"router": "2"})
 
     app.mount_router(router1)
@@ -97,13 +97,13 @@ def test_router_level_middleware_multiple(
 
     execution_order = []
 
-    async def middleware_1(request: HttpContext, call_next):
+    async def middleware_1(ctx: HttpContext, call_next):
         execution_order.append("m1_before")
         response = await call_next()
         execution_order.append("m1_after")
         return response
 
-    async def middleware_2(request: HttpContext, call_next):
+    async def middleware_2(ctx: HttpContext, call_next):
         execution_order.append("m2_before")
         response = await call_next()
         execution_order.append("m2_after")
@@ -113,7 +113,7 @@ def test_router_level_middleware_multiple(
     router.use(middleware_2)
 
     @router.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_order.append("handler")
         return json({"message": "ok"})
 
@@ -137,7 +137,7 @@ def test_router_level_middleware_with_prefix(
     app = SilloApp()
     router = Router(prefix="/api")
 
-    async def add_prefix_header(request: HttpContext, call_next):
+    async def add_prefix_header(ctx: HttpContext, call_next):
         response = await call_next()
         response.set_header("X-Router-Prefix", "api")
         return response
@@ -145,11 +145,11 @@ def test_router_level_middleware_with_prefix(
     router.use(add_prefix_header)
 
     @router.get("/users")
-    async def get_users(request: HttpContext):
+    async def get_users(ctx: HttpContext):
         return json({"users": []})
 
     @router.get("/posts")
-    async def get_posts(request: HttpContext):
+    async def get_posts(ctx: HttpContext):
         return json({"posts": []})
 
     app.mount_router(router)
@@ -170,8 +170,8 @@ def test_router_level_middleware_auth(
     protected_router = Router(prefix="/api")
     public_router = Router(prefix="/public")
 
-    async def auth_middleware(request: HttpContext, call_next):
-        token = request.headers.get("Authorization")
+    async def auth_middleware(ctx: HttpContext, call_next):
+        token = ctx.headers.get("Authorization")
         if not token or not token.startswith("Bearer "):
             return json({"error": "Unauthorized"}).status(401)
         response = await call_next()
@@ -180,11 +180,11 @@ def test_router_level_middleware_auth(
     protected_router.use(auth_middleware)
 
     @protected_router.get("/protected")
-    async def protected_handler(request: HttpContext):
+    async def protected_handler(ctx: HttpContext):
         return json({"message": "Protected resource"})
 
     @public_router.get("/test")
-    async def public_handler(request: HttpContext):
+    async def public_handler(ctx: HttpContext):
         return json({"message": "Public resource"})
 
     app.mount_router(protected_router)
@@ -211,7 +211,7 @@ def test_router_level_middleware_modifies_response(
     app = SilloApp()
     router = Router(prefix="/api")
 
-    async def json_wrapper_middleware(request: HttpContext, call_next):
+    async def json_wrapper_middleware(ctx: HttpContext, call_next):
         response = await call_next()
         # Wrap response in a standard format
         response.set_header("X-Wrapped", "true")
@@ -220,7 +220,7 @@ def test_router_level_middleware_modifies_response(
     router.use(json_wrapper_middleware)
 
     @router.get("/data")
-    async def get_data(request: HttpContext):
+    async def get_data(ctx: HttpContext):
         return json({"value": 42})
 
     app.mount_router(router)
@@ -243,13 +243,13 @@ def test_router_and_app_middleware_combined(
 
     execution_order = []
 
-    async def app_middleware(request: HttpContext, call_next):
+    async def app_middleware(ctx: HttpContext, call_next):
         execution_order.append("app_before")
         response = await call_next()
         execution_order.append("app_after")
         return response
 
-    async def router_middleware(request: HttpContext, call_next):
+    async def router_middleware(ctx: HttpContext, call_next):
         execution_order.append("router_before")
         response = await call_next()
         execution_order.append("router_after")
@@ -259,7 +259,7 @@ def test_router_and_app_middleware_combined(
     router.use(router_middleware)
 
     @router.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         execution_order.append("handler")
         return json({"message": "ok"})
 
@@ -285,12 +285,12 @@ def test_multiple_routers_different_middleware(
     router1 = Router(prefix="/api1")
     router2 = Router(prefix="/api2")
 
-    async def router1_middleware(request: HttpContext, call_next):
+    async def router1_middleware(ctx: HttpContext, call_next):
         response = await call_next()
         response.set_header("X-Router", "1")
         return response
 
-    async def router2_middleware(request: HttpContext, call_next):
+    async def router2_middleware(ctx: HttpContext, call_next):
         response = await call_next()
         response.set_header("X-Router", "2")
         return response
@@ -299,11 +299,11 @@ def test_multiple_routers_different_middleware(
     router2.use(router2_middleware)
 
     @router1.get("/route")
-    async def handler1(request: HttpContext):
+    async def handler1(ctx: HttpContext):
         return json({"router": "1"})
 
     @router2.get("/route")
-    async def handler2(request: HttpContext):
+    async def handler2(ctx: HttpContext):
         return json({"router": "2"})
 
     app.mount_router(router1)
@@ -328,13 +328,13 @@ def test_router_middleware_state_isolation(
     router1 = Router(prefix="/api1")
     router2 = Router(prefix="/api2")
 
-    async def router1_state_middleware(request: HttpContext, call_next):
-        request.state.router_name = "router1"
+    async def router1_state_middleware(ctx: HttpContext, call_next):
+        ctx.state.router_name = "router1"
         response = await call_next()
         return response
 
-    async def router2_state_middleware(request: HttpContext, call_next):
-        request.state.router_name = "router2"
+    async def router2_state_middleware(ctx: HttpContext, call_next):
+        ctx.state.router_name = "router2"
         response = await call_next()
         return response
 
@@ -342,12 +342,12 @@ def test_router_middleware_state_isolation(
     router2.use(router2_state_middleware)
 
     @router1.get("/test")
-    async def handler1(request: HttpContext):
-        return json({"router": request.state.router_name})
+    async def handler1(ctx: HttpContext):
+        return json({"router": ctx.state.router_name})
 
     @router2.get("/test")
-    async def handler2(request: HttpContext):
-        return json({"router": request.state.router_name})
+    async def handler2(ctx: HttpContext):
+        return json({"router": ctx.state.router_name})
 
     app.mount_router(router1)
     app.mount_router(router2)
@@ -367,7 +367,7 @@ def test_router_middleware_error_handling(
     app = SilloApp()
     router = Router(prefix="/api")
 
-    async def error_handler_middleware(request: HttpContext, call_next):
+    async def error_handler_middleware(ctx: HttpContext, call_next):
         try:
             response = await call_next()
         except ValueError as e:
@@ -377,7 +377,7 @@ def test_router_middleware_error_handling(
     router.use(error_handler_middleware)
 
     @router.get("/error")
-    async def error_handler(request: HttpContext):
+    async def error_handler(ctx: HttpContext):
         raise ValueError("Router error")
 
     app.mount_router(router)
@@ -398,13 +398,13 @@ def test_router_middleware_with_nested_routers(
     parent_router = Router(prefix="/api")
     child_router = Router(prefix="/child")
 
-    async def parent_middleware(request: HttpContext, call_next):
-        request.scope["parent"] = True
+    async def parent_middleware(ctx: HttpContext, call_next):
+        ctx.scope["parent"] = True
         response = await call_next()
         return response
 
-    async def child_middleware(request: HttpContext, call_next):
-        request.scope["child"] = True
+    async def child_middleware(ctx: HttpContext, call_next):
+        ctx.scope["child"] = True
         response = await call_next()
         return response
 
@@ -412,11 +412,11 @@ def test_router_middleware_with_nested_routers(
     child_router.use(child_middleware)
 
     @child_router.get("/test")
-    async def handler(request: HttpContext):
+    async def handler(ctx: HttpContext):
         return json(
             {
-                "parent": request.scope.get("parent", False),
-                "child": request.scope.get("child", False),
+                "parent": ctx.scope.get("parent", False),
+                "child": ctx.scope.get("child", False),
             }
         )
 

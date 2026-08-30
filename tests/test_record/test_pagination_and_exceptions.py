@@ -176,7 +176,7 @@ class TestHandlerRegistration:
         register_db_exception_handlers(app)
 
         @app.get("/widget")
-        async def get_widget(request: HttpContext):
+        async def get_widget(ctx: HttpContext):
             raise DoesNotExist("Widget matching query does not exist")
 
         with TestClient(app, raise_server_exceptions=False) as client:
@@ -187,7 +187,7 @@ class TestHandlerRegistration:
         register_db_exception_handlers(app)
 
         @app.post("/widget")
-        async def create_widget(request: HttpContext):
+        async def create_widget(ctx: HttpContext):
             raise IntegrityError("UNIQUE constraint failed: widgets.name")
 
         with TestClient(app, raise_server_exceptions=False) as client:

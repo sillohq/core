@@ -56,9 +56,9 @@ async def create_post(ctx: HttpContext, data): ...
 async def create_post(ctx: HttpContext, post): ...
 ```
 
-Sillo looks at the parameters **after** `request` and `response`, skips any
-that something else fills (a `Depend`, a parameter marker, a path parameter)
-and injects into the **first remaining one with no default**.
+Sillo looks at the parameters **after** the context, skips any that something
+else fills (a `Depend`, a parameter marker, a path parameter) and injects into
+the **first remaining one with no default**.
 
 That means it composes with everything:
 

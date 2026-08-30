@@ -1,5 +1,5 @@
 """
-Tests for WebSocketContext error handling middleware
+Tests for WebSocket error handling middleware
 """
 
 import asyncio
@@ -161,7 +161,7 @@ class TestWebSocketErrorIntegration:
             raise WebSocketException(code=1008, reason="Policy violation")
 
         with test_client_factory(app) as client:
-            # WebSocketContext connection should be rejected/closed due to exception
+            # WebSocket connection should be rejected/closed due to exception
             with pytest.raises(Exception):  # Connection should fail
                 with client.websocket_connect("/ws/error"):
                     pass  # This should not be reached
@@ -177,7 +177,7 @@ class TestWebSocketErrorIntegration:
             raise ValueError("Something went wrong")
 
         with test_client_factory(app) as client:
-            # WebSocketContext connection should be closed with internal error
+            # WebSocket connection should be closed with internal error
             with pytest.raises(Exception):  # Connection should fail
                 with client.websocket_connect("/ws/general-error"):
                     pass  # This should not be reached

@@ -101,7 +101,7 @@ class JWTAuthBackend(AuthenticationBackend):
             self.name = name
         self.description = description
 
-    async def authenticate(self, request: HttpContext) -> Any:
+    async def authenticate(self, ctx: HttpContext) -> Any:
         """Authenticate an incoming HTTP request using a Bearer JWT token.
 
         Extracts the token from the ``Authorization`` header, optionally
@@ -127,7 +127,7 @@ class JWTAuthBackend(AuthenticationBackend):
         if not self.secret_key:
             raise RuntimeError("secret_key is required for JWTAuthBackend")
 
-        auth_header = request.headers.get("Authorization")
+        auth_header = ctx.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             return AuthResult(success=False, identity="", scope="")
 

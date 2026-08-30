@@ -15,7 +15,7 @@ def make_app(limit=3, window=60, key="client-a", **kw):
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request):
+    async def home(ctx):
         return {"ok": True}
 
     return app
@@ -67,7 +67,7 @@ def test_skip_when_key_none():
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request):
+    async def home(ctx):
         return {"ok": True}
 
     client = TestClient(app)
@@ -81,7 +81,7 @@ def test_rate_limit_convenience_class():
     app.use(RateLimit(limit=1, window=60, key_func=lambda r: "x"))
 
     @app.get("/")
-    async def home(request):
+    async def home(ctx):
         return {"ok": True}
 
     client = TestClient(app)
@@ -99,14 +99,14 @@ def test_custom_on_exceed_callable():
 
     # on_exceed callable receives (request, result) and must
     # return a response built from the responder.
-    def handler(request, result):
+    def handler(ctx, result):
         return json({"custom": "blocked"}, status_code=429)
 
     cfg.on_exceed = handler
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request):
+    async def home(ctx):
         return {"ok": True}
 
     client = TestClient(app)
@@ -136,7 +136,7 @@ def test_fail_open_allows_on_backend_error():
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request):
+    async def home(ctx):
         return {"ok": True}
 
     client = TestClient(app)
@@ -169,7 +169,7 @@ def test_fail_closed_raises_on_backend_error():
     app.use(RateLimitMiddleware(config=cfg))
 
     @app.get("/")
-    async def home(request):
+    async def home(ctx):
         return {"ok": True}
 
     client = TestClient(app)
