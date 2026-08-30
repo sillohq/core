@@ -116,8 +116,8 @@ events = ["redis>=5.0.0"]
 # HTML Templating
 templating = ["jinja2>=3.1.6"]
 
-# GraphQL Support
-graphql = ["strawberry-graphql>=0.219.0"]
+# GraphQL lives in its own package now: `pip install sillo-graphql`, which
+# imports as `sillo.graphql`. See https://github.com/sillohq/graphql.
 
 # The `sillo` command is a console script, not an extra: see [project.scripts]
 # below. It carries the framework-level commands and, inside a project, merges
@@ -136,7 +136,6 @@ all = [
     "scrypt>=0.8.0",
     "redis>=5.0.0",
     "jinja2>=3.1.6",
-    "strawberry-graphql>=0.219.0",
     "granian>=1.2.0",
     "cryptography>=41.0.0",
     "email-validator>=2.0.0",
@@ -152,7 +151,6 @@ dev = [
     "scrypt>=0.8.0",
     "redis>=5.0.0",
     "jinja2>=3.1.6",
-    "strawberry-graphql>=0.219.0",
     "granian>=1.2.0",
     "cryptography>=41.0.0",
     "email-validator>=2.0.0",
@@ -368,7 +366,6 @@ dev = [
     "scrypt>=0.8.0",
     "redis>=5.0.0",
     "jinja2>=3.1.6",
-    "strawberry-graphql>=0.219.0",
     "redis>=5.0.0",
     "cryptography>=41.0.0",
     "email-validator>=2.0.0",

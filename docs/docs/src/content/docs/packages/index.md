@@ -13,11 +13,12 @@ Each installs under its own name and imports under a Sillo one.
 | Package | Install | Import | What it is |
 |---|---|---|---|
 | [Wire](/packages/wire/) | `sillo-wire` | `sillo.wire` | Rooms, presence and fan-out for WebSockets |
+| [GraphQL](/packages/graphql/) | `sillo-graphql` | `sillo.graphql` | A production GraphQL endpoint over a Strawberry schema |
 
 ## How they attach
 
-The code lives in a top-level package — `sillo_wire` — and the framework name
-is an alias for it. Both bind the same objects:
+The code lives in a top-level package — `sillo_wire`, `sillo_graphql` — and
+the framework name is an alias for it. Both bind the same objects:
 
 ```python
 from sillo.wire import Hub     # both of these
@@ -35,6 +36,11 @@ from a checkout moves where `sillo` resolves and orphans the copy in
 site-packages; removing or replacing the framework leaves that directory
 standing with no `__init__.py` in it, which is an override rather than an
 addition. Uninstalling either package now leaves the other untouched.
+
+One consequence is worth stating plainly: a package cannot claim a name the
+framework still uses. `sillo-graphql` claims `sillo.graphql`, which the
+framework shipped until 1.0 — so against an older framework the alias
+refuses to load and says why, rather than quietly shadowing it.
 
 ## What stays in core
 

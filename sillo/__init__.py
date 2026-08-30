@@ -3,7 +3,7 @@ sillo — The Platform for Python Backends
 
 A modern ASGI web framework. Async-native. Zero boilerplate validation.
 Built-in DI with pre-flattened execution plans. Everything you need — routing,
-middleware, auth, CORS, CSRF, sessions, caching, GraphQL — ships as first-party.
+middleware, auth, CORS, CSRF, sessions and caching — ships as first-party.
 
 Key Features:
 - ASGI-based, async/await throughout
@@ -14,7 +14,7 @@ Key Features:
 - Pydantic validation on every input and output — no type annotations needed
 - Middleware system: CORS, CSRF, sessions, auth, rate limiting, compression
 - Depend(get_request=True) to inject the context into any dependency
-- GraphQL support via Strawberry (sillo.graphql)
+- GraphQL through the sillo-graphql package, importable as sillo.graphql
 - WebSocket support with type safety
 - Flexible routing with path parameters and type conversion
 - OpenAPI documentation generation
@@ -104,10 +104,10 @@ Common Patterns:
 
     app.add_exception_handler(CustomError, custom_handler)
 
-6. GraphQL:
-    from sillo.graphql import GraphQL
+6. GraphQL — `pip install sillo-graphql`, which imports as `sillo.graphql`:
+    from sillo.graphql import Graph, field
 
-    GraphQL(app, schema, path="/graphql", graphiql=True)
+    Graph(schema, limits=Limits(depth=8)).mount(app)
 """
 
 from sillo.core.routing import Group, Route, Router, WebsocketRoute
