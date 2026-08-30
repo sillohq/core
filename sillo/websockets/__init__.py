@@ -2,7 +2,7 @@
 
 The socket itself and the errors it can raise. Rooms, presence, broadcast and
 message history are not here — they live in `sillo-wire`, which installs
-separately and imports as :mod:`sillo_wire`::
+separately and imports as :mod:`sillo.wire`::
 
     pip install sillo-wire
 

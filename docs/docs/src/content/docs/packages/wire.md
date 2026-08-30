@@ -9,13 +9,13 @@ Rooms, presence and fan-out for WebSockets.
 pip install sillo-wire
 ```
 
-Installs as `sillo-wire`, imports as `sillo_wire`. The core keeps the socket
+Installs as `sillo-wire`, imports as `sillo.wire`. The core keeps the socket
 itself — [`WebSocketContext`](/v1.0/guides/websockets/) — and this adds
 everything about talking to more than one of them at a time.
 
 ```python
 from sillo import SilloApp
-from sillo_wire import Hub, Peer
+from sillo.wire import Hub, Peer
 
 app = SilloApp()
 hub = Hub()
@@ -78,7 +78,7 @@ is now counted in payload bytes and evicts oldest-first.
 What happens when a peer cannot keep up is a choice, not a default:
 
 ```python
-from sillo_wire import Overflow, Peer
+from sillo.wire import Overflow, Peer
 
 Peer(socket, overflow=Overflow.DROP_OLDEST)   # keep current — prices, cursors
 Peer(socket, overflow=Overflow.DROP_NEWEST)   # keep order — reconcile later
@@ -106,7 +106,7 @@ joins the rooms, pumps messages, and guarantees the peer leaves every room when
 the connection ends — including when a hook raises.
 
 ```python
-from sillo_wire import Hub, RoomConsumer
+from sillo.wire import Hub, RoomConsumer
 
 hub = Hub()
 
@@ -127,12 +127,12 @@ app.add_ws_route(path="/ws/{room}", handler=Chat.as_handler())
 
 ## Testing
 
-`sillo_wire.testing` ships the piece a unit test of realtime code is missing —
+`sillo.wire.testing` ships the piece a unit test of realtime code is missing —
 a socket:
 
 ```python
-from sillo_wire import Hub, Peer
-from sillo_wire.testing import FakeSocket, drain
+from sillo.wire import Hub, Peer
+from sillo.wire.testing import FakeSocket, drain
 
 async def test_a_broadcast_reaches_the_room():
     hub, socket = Hub(), FakeSocket()

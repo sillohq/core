@@ -12,27 +12,29 @@ Each installs under its own name and imports under a Sillo one.
 
 | Package | Install | Import | What it is |
 |---|---|---|---|
-| [Wire](/packages/wire/) | `sillo-wire` | `sillo_wire` | Rooms, presence and fan-out for WebSockets |
+| [Wire](/packages/wire/) | `sillo-wire` | `sillo.wire` | Rooms, presence and fan-out for WebSockets |
 
 ## How they attach
 
-They do not. Each one is an ordinary top-level package that happens to be built
-for Sillo:
+The code lives in a top-level package — `sillo_wire` — and the framework name
+is an alias for it. Both bind the same objects:
 
 ```python
-from sillo_wire import Hub, Peer
+from sillo.wire import Hub     # both of these
+from sillo_wire import Hub     # name the same class
 ```
 
-An earlier version of Wire installed itself as `sillo.wire`, by shipping into
-the framework's own package directory. It worked, and the import read better —
-but two distributions sharing one directory goes wrong in both directions.
-Installing the framework from a checkout moves where `sillo` resolves, orphaning
-whatever the other package left in site-packages; and removing or replacing the
-framework can leave that directory standing with no `__init__.py` in it, which
-is an override rather than an addition.
+The alias is a meta-path finder the package registers through a `.pth` at
+interpreter startup, plus PEP 561 partial stubs so type checkers resolve it
+too. Nothing is written into the `sillo` package directory.
 
-The prefix was not worth that. A separate top-level name costs one underscore,
-and guarantees nothing a package does can reach the framework's own files.
+That last part is the point. Shipping `sillo/wire/` into the framework's own
+directory is simpler, and it is what Wire did first — but two distributions
+sharing one directory goes wrong in both directions. Installing the framework
+from a checkout moves where `sillo` resolves and orphans the copy in
+site-packages; removing or replacing the framework leaves that directory
+standing with no `__init__.py` in it, which is an override rather than an
+addition. Uninstalling either package now leaves the other untouched.
 
 ## What stays in core
 
