@@ -53,8 +53,3 @@ testapp/
 
 .pdm
 .pdm.toml
-
-# sillo-wire is a separate distribution. When the core is installed editable,
-# its wheel target moves here, so a dev checkout links it in rather than
-# reinstalling on every change. Never committed — see sillo-wire/README.md.
-sillo/wire

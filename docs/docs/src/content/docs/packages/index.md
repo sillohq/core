@@ -12,21 +12,27 @@ Each installs under its own name and imports under a Sillo one.
 
 | Package | Install | Import | What it is |
 |---|---|---|---|
-| [Wire](/packages/wire/) | `sillo-wire` | `sillo.wire` | Rooms, presence and fan-out for WebSockets |
+| [Wire](/packages/wire/) | `sillo-wire` | `sillo_wire` | Rooms, presence and fan-out for WebSockets |
 
 ## How they attach
 
-A package like Wire ships its module *into* the `sillo` package directory, so
-there is no import hook and no namespace package involved:
+They do not. Each one is an ordinary top-level package that happens to be built
+for Sillo:
 
 ```python
-from sillo.wire import Hub, Peer
+from sillo_wire import Hub, Peer
 ```
 
-Type checkers resolve it, tracebacks name it, and `pip uninstall sillo-wire`
-takes exactly its own files with it. What you install and what you import
-differ only because the distribution name has to be unique on PyPI and the
-import path should read as part of the framework.
+An earlier version of Wire installed itself as `sillo.wire`, by shipping into
+the framework's own package directory. It worked, and the import read better —
+but two distributions sharing one directory goes wrong in both directions.
+Installing the framework from a checkout moves where `sillo` resolves, orphaning
+whatever the other package left in site-packages; and removing or replacing the
+framework can leave that directory standing with no `__init__.py` in it, which
+is an override rather than an addition.
+
+The prefix was not worth that. A separate top-level name costs one underscore,
+and guarantees nothing a package does can reach the framework's own files.
 
 ## What stays in core
 

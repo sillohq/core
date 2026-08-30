@@ -1016,7 +1016,7 @@ Abstract base for event transport backends.
 
 ### Peer
 
-**Module:** `sillo.wire.peer` — the [`sillo-wire`](/packages/wire/) package
+**Module:** `sillo_wire.peer` — the [`sillo-wire`](/packages/wire/) package
 
 One connected client, with a bounded outbound queue so a broadcast never writes
 to a socket inline. Replaces `Channel`.
@@ -1030,7 +1030,7 @@ to a socket inline. Replaces `Channel`.
 
 ### Hub
 
-**Module:** `sillo.wire.hub` — the [`sillo-wire`](/packages/wire/) package
+**Module:** `sillo_wire.hub` — the [`sillo-wire`](/packages/wire/) package
 
 Rooms, membership and fan-out. An object rather than class-level state, so two
 hubs are two independent worlds. Replaces `ChannelBox`.
@@ -1293,7 +1293,7 @@ ASGI WebSocket wrapper.  Like `HttpContext` but for WebSocket connections.
 
 ### RoomConsumer
 
-**Module:** `sillo.wire.consumer` — the [`sillo-wire`](/packages/wire/) package
+**Module:** `sillo_wire.consumer` — the [`sillo-wire`](/packages/wire/) package
 
 Class-based WebSocket endpoint. Accepts the socket, builds the peer, joins its
 rooms and guarantees cleanup, including when a hook raises. Replaces
