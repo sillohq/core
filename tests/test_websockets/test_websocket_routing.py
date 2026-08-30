@@ -8,6 +8,8 @@ import pytest
 
 from sillo import SilloApp
 from sillo.core.routing import Router
+from sillo.core.routing.websocket import MatchStatus, WebsocketRoute
+from sillo.responses import json
 from sillo.testclient import TestClient
 from sillo.websockets import WebSocketContext
 
@@ -248,3 +250,49 @@ def test_websocket_isolation(test_client_factory: Callable[[SilloApp], TestClien
 
         with client.websocket_connect("/ws2/test") as websocket:
             assert websocket.receive_text() == "Router 2"
+
+
+async def _ws_handler(ctx):  # pragma: no cover - never invoked
+    await ctx.accept()
+
+
+class TestScopeType:
+    """A WebSocket route must not answer an HTTP request.
+
+    ``matches()`` compared the path and nothing else, so an HTTP request to a
+    path that also carried a WebSocket route matched it — and the handler was
+    handed an HTTP scope, which ``WebSocketContext`` asserts against. An
+    endpoint serving both, as a GraphQL endpoint with subscriptions does,
+    answered 500 to any method its HTTP route did not allow.
+    """
+
+    def test_an_http_request_does_not_match_a_websocket_route(self):
+        route = WebsocketRoute("/ws", handler=_ws_handler)
+        status, params = route.match(
+            {"type": "http", "method": "PUT", "path": "/ws", "headers": []}
+        )
+        assert status == MatchStatus.NONE
+        assert params == {}
+
+    def test_a_websocket_request_still_matches(self):
+        route = WebsocketRoute("/ws", handler=_ws_handler)
+        status, _ = route.match({"type": "websocket", "path": "/ws", "headers": []})
+        assert status == MatchStatus.FULL
+
+    def test_the_http_route_answers_when_both_share_a_path(self):
+        async def socket(ctx):  # pragma: no cover - never reached
+            await ctx.accept()
+
+        app = SilloApp(debug=False)
+
+        @app.get("/both")
+        async def read(ctx):
+            return json({"ok": True})
+
+        app.add_ws_route(path="/both", handler=socket)
+
+        with TestClient(app) as client:
+            assert client.get("/both").json() == {"ok": True}
+            # Previously a 500: the WebSocket route matched and was handed an
+            # HTTP scope.
+            assert client.request("PUT", "/both").status_code == 405

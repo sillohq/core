@@ -192,6 +192,14 @@ class WebsocketRoute(BaseRoute):
             with parameters on success, or MatchStatus.NONE with an
             empty dict on failure.
         """
+        # The path alone is not enough. An HTTP request to a path that also
+        # carries a WebSocket route would otherwise match it, and be handed a
+        # scope `WebSocketContext` refuses -- so a PUT to an endpoint that
+        # serves both became a 500 instead of the 405 the HTTP route was
+        # already prepared to give.
+        if scope.get("type") != "websocket":
+            return MatchStatus.NONE, {}
+
         path = get_route_path(scope)
         match = self.pattern.match(path)
         if match:
