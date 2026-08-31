@@ -14,7 +14,7 @@ The codebase is organized into four concentric layers:
 ```mermaid
 graph TD
     L4["<b>Layer 4 · User Application</b><br/>app = SilloApp(), route handlers, middleware, config"]
-    L3["<b>Layer 3 · Framework Surface</b><br/>application.py · route_builder.py · exception_handler.py<br/>config/ · events/ · auth/ · mail/ · session/ · cache/<br/>templating/ · graphql/ · permissions/ · users/ · validation/"]
+    L3["<b>Layer 3 · Framework Surface</b><br/>application.py · route_builder.py · exception_handler.py<br/>config/ · events/ · auth/ · mail/ · session/ · cache/<br/>templating/ · permissions/ · users/ · validation/"]
     L2["<b>Layer 2 · Core Engine</b><br/>core/routing/ · core/dependencies/ · core/encoding.py<br/>core/http/ · core/error/ · core/helpers/<br/>_internals/_middleware.py · middleware/"]
     L1["<b>Layer 1 · ASGI Primitives</b><br/>types.py · objects/ (Scope, Message, Receive, Send)<br/>websockets/"]
 
@@ -33,7 +33,7 @@ surface.
 
 **Layer 3. Framework Surface** provides the features application developers
 interact with: configuration, events, authentication, sessions, mail,
-templates, GraphQL, permissions, and validation. These modules depend on the
+templates, permissions, and validation. These modules depend on the
 core engine.
 
 **Layer 4. User Application** is the `SilloApp` instance and everything the
@@ -748,7 +748,6 @@ core/sillo/mail/                       — Email sending
 core/sillo/session/                    — Session management
 core/sillo/cache/                      — Caching
 core/sillo/templating/                 — Template rendering
-core/sillo/graphql/                    — GraphQL support
 core/sillo/permissions/                — Authorization
 core/sillo/users/                      — User model
 core/sillo/validation/                 — Parameter validation
