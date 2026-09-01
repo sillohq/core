@@ -664,9 +664,7 @@ def get_accepts_info(ctx: HttpContext) -> dict[str, Any]:
         "accept_language": parse_accept_language(
             ctx.headers.get("Accept-Language", "")
         ),
-        "accept_charset": parse_accept_charset(
-            ctx.headers.get("Accept-Charset", "")
-        ),
+        "accept_charset": parse_accept_charset(ctx.headers.get("Accept-Charset", "")),
         "accept_encoding": parse_accept_encoding(
             ctx.headers.get("Accept-Encoding", "")
         ),

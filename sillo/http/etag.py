@@ -92,13 +92,13 @@ def etag_matches(
     return False
 
 
-def is_fresh(ctx: HttpContext, response: BaseResponse, weak_compare: bool = True) -> bool:
+def is_fresh(
+    ctx: HttpContext, response: BaseResponse, weak_compare: bool = True
+) -> bool:
     current = response.headers.get("etag")
     if not current:
         return False
-    return etag_matches(
-        current, parse_if_none_match(ctx), weak_compare=weak_compare
-    )
+    return etag_matches(current, parse_if_none_match(ctx), weak_compare=weak_compare)
 
 
 class ETagMiddleware(BaseMiddleware):

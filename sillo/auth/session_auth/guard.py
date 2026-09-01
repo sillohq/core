@@ -184,9 +184,7 @@ class SessionGuard:
             result in a ``None`` return value.
         """
         session_user = (
-            ctx.session.get(self._session_key)
-            if hasattr(ctx, "session")
-            else None
+            ctx.session.get(self._session_key) if hasattr(ctx, "session") else None
         )
         if session_user and self.user_model:
             uid = session_user.get(self._identifier)
@@ -241,9 +239,7 @@ class SessionGuard:
             and result in a ``None`` return value.
         """
         session_user = (
-            ctx.session.get(self._session_key)
-            if hasattr(ctx, "session")
-            else None
+            ctx.session.get(self._session_key) if hasattr(ctx, "session") else None
         )
         return str(session_user.get(self._identifier)) if session_user else None
 

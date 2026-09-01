@@ -259,9 +259,7 @@ class NormalizeMiddleware(BaseMiddleware):
                         ctx.url.fragment,
                     )
                 )
-                return _redirect(
-                    redirect_url, status_code=self.redirect_status_code
-                )
+                return _redirect(redirect_url, status_code=self.redirect_status_code)
 
         return await call_next()
 

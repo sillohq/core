@@ -396,7 +396,9 @@ class ExceptionMiddleware:
         return json(exc.detail, status_code=exc.status_code, headers=exc.headers)
 
 
-async def request_validation_error_handler(ctx: HttpContext, exc: RequestValidationError) -> BaseResponse:
+async def request_validation_error_handler(
+    ctx: HttpContext, exc: RequestValidationError
+) -> BaseResponse:
     """Handle a request validation failure with a 422 response.
 
     This is the unified error contract for parameters declared with sillo's
@@ -420,7 +422,9 @@ async def request_validation_error_handler(ctx: HttpContext, exc: RequestValidat
     return json({"detail": exc.errors}, status_code=422)
 
 
-async def response_validation_error_handler(ctx: HttpContext, exc: ResponseValidationError) -> BaseResponse:
+async def response_validation_error_handler(
+    ctx: HttpContext, exc: ResponseValidationError
+) -> BaseResponse:
     """Handle a response validation failure with a 500 response.
 
     A handler returned something its declared ``response_model`` does not
@@ -450,7 +454,9 @@ async def response_validation_error_handler(ctx: HttpContext, exc: ResponseValid
     )
 
 
-async def pydantic_validation_error_handler(ctx: HttpContext, exc: ValidationError) -> BaseResponse:
+async def pydantic_validation_error_handler(
+    ctx: HttpContext, exc: ValidationError
+) -> BaseResponse:
     """Handle a Pydantic ValidationError by producing a structured 422 error response.
 
     Converts a Pydantic ``ValidationError`` into a JSON response with HTTP

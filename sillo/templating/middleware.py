@@ -29,7 +29,8 @@ class TemplateContextMiddleware(BaseMiddleware):
     def __init__(
         self,
         default_context: dict[str, Any] | None = None,
-        context_processor: Callable[[HttpContext], Awaitable[dict[str, Any]]] | None = None,
+        context_processor: Callable[[HttpContext], Awaitable[dict[str, Any]]]
+        | None = None,
     ):
         """Initialise the template-context middleware.
 

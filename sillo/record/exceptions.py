@@ -68,9 +68,7 @@ async def handle_validation_error(ctx, exc: ValidationError):
         A JSON response with ``{"error": "Validation Error", "detail": "<message>"}``
         and a 422 status code.
     """
-    return json(
-        {"error": "Validation Error", "detail": str(exc)}, status_code=422
-    )
+    return json({"error": "Validation Error", "detail": str(exc)}, status_code=422)
 
 
 async def handle_operational_error(ctx, exc: OperationalError):

@@ -90,11 +90,7 @@ def mount(app: Any, storage: Any, config: StorageConfig) -> None:
             return json({"detail": "Not found"}, status_code=404)
 
         signed = False
-        token = (
-            ctx.query_params.get("token")
-            if hasattr(ctx, "query_params")
-            else None
-        )
+        token = ctx.query_params.get("token") if hasattr(ctx, "query_params") else None
 
         if token:
             try:

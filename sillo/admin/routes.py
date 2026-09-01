@@ -778,9 +778,7 @@ async def query_view(ctx, site):
                     stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
                     if export_fmt == "json":
                         return _json_export(rows, f"query_{stamp}.json")
-                    return _csv_export(
-                        tmpl["columns"], rows, f"query_{stamp}.csv"
-                    )
+                    return _csv_export(tmpl["columns"], rows, f"query_{stamp}.csv")
             except Exception as e:
                 tmpl["error"] = str(e)
 
@@ -1315,9 +1313,7 @@ async def update_view(ctx, site, model_cls, admin_cls, id):
             await obj.save()
             await _apply_reverse_relations(meta, model_cls, obj, get, getlist)
             await _log(ctx, "update", model_name, site, id)
-            return redirect(
-                f"{site.prefix}/{model_slug}/{id}/", status_code=302
-            )
+            return redirect(f"{site.prefix}/{model_slug}/{id}/", status_code=302)
         except Exception as e:
             tmpl["error"] = str(e)
             for fld in fields:

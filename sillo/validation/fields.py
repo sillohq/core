@@ -418,9 +418,7 @@ class Query(ParameterExtractor):
         Raises:
             ValueError: If the parameter is required and absent.
         """
-        return self._extract_from(
-            ctx.query_params if ctx is not None else None, ctx
-        )
+        return self._extract_from(ctx.query_params if ctx is not None else None, ctx)
 
 
 class Header(ParameterExtractor):
@@ -448,9 +446,7 @@ class Header(ParameterExtractor):
         Raises:
             ValueError: If the header is required and absent.
         """
-        return self._extract_from(
-            ctx.headers if ctx is not None else None, ctx
-        )
+        return self._extract_from(ctx.headers if ctx is not None else None, ctx)
 
 
 class Cookie(ParameterExtractor):
@@ -474,9 +470,7 @@ class Cookie(ParameterExtractor):
         Raises:
             ValueError: If the cookie is required and absent.
         """
-        return self._extract_from(
-            ctx.cookies if ctx is not None else None, ctx
-        )
+        return self._extract_from(ctx.cookies if ctx is not None else None, ctx)
 
 
 class Path(ParameterExtractor):
@@ -506,9 +500,7 @@ class Path(ParameterExtractor):
         Returns:
             The path parameter value, or the configured default.
         """
-        return self._extract_from(
-            ctx.path_params if ctx is not None else None, ctx
-        )
+        return self._extract_from(ctx.path_params if ctx is not None else None, ctx)
 
     def to_field_info(self) -> FieldInfo:
         """Build a Pydantic field that is always required.

@@ -111,9 +111,7 @@ class RequestIdMiddleware(BaseMiddleware):
         self.request_id = request_id
 
         if self.store_in_request:
-            store_request_id_in_request(
-                ctx, request_id, self.request_attribute_name
-            )
+            store_request_id_in_request(ctx, request_id, self.request_attribute_name)
 
         response = await call_next()
 

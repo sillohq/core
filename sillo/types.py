@@ -48,7 +48,9 @@ HandlerType = Callable[..., Any]
 #: nor anything an application can actually register: every ``async`` handler
 #: -- the only kind that works -- was reported as the wrong type, and the
 #: dispatcher needed a ``ty: ignore[invalid-await]`` to await its own alias.
-ExceptionHandlerType = Callable[[HttpContext, Exception], typing.Awaitable[BaseResponse]]
+ExceptionHandlerType = Callable[
+    [HttpContext, Exception], typing.Awaitable[BaseResponse]
+]
 
 #: An exception handler for one specific exception type.
 #:
