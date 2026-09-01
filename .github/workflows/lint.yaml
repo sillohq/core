@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+      # v1 is where the next major release is being built, and until it merges
+      # nothing on it was ever tested: pushes here ran no workflow at all, so
+      # the branch that changes the most had the least cover.
+      - v1
 
   pull_request:
 
