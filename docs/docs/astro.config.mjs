@@ -6,7 +6,7 @@ import { remarkMermaid } from './src/plugins/remark-mermaid.mjs';
 import { readdirSync } from 'node:fs';
 import { relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_VERSION, VERSIONS, pageExistsIn } from './src/versions.mjs';
+import { DEFAULT_VERSION, PACKAGES, VERSIONS, pageExistsIn } from './src/versions.mjs';
 
 // https://astro.build/config
 const docsBaseUrl = process.env.DOCS_BASE_URL ?? '/';
@@ -533,6 +533,49 @@ const MANUAL_GROUPS = [
     },
 ];
 
+/*
+ * One sidebar per package, flat.
+ *
+ * A package manual is a dozen pages about one library, read start to finish
+ * the first time. Grouping that would be filing cabinets inside a filing
+ * cabinet: every group would hold two or three pages, and the reader would
+ * spend more time opening them than reading. The core manuals are grouped
+ * because they are hundreds of pages across unrelated subsystems.
+ *
+ * Unversioned, so unlike MANUAL_GROUPS these links are written once and used
+ * as-is.
+ */
+const PACKAGE_PAGES = {
+    wire: [
+        { label: 'Overview', link: '/packages/wire/' },
+        { label: 'The Hub', link: '/packages/wire/hub/' },
+        { label: 'Peers & Backpressure', link: '/packages/wire/peers/' },
+        { label: 'Backlog & Replay', link: '/packages/wire/backlog/' },
+        { label: 'Presence', link: '/packages/wire/presence/' },
+        { label: 'Consumers', link: '/packages/wire/consumers/' },
+        { label: 'Testing', link: '/packages/wire/testing/' },
+        { label: 'API Reference', link: '/packages/wire/reference/' },
+    ],
+    graphql: [
+        { label: 'Overview', link: '/packages/graphql/' },
+        { label: 'Resolvers', link: '/packages/graphql/resolvers/' },
+        { label: 'Context & Response', link: '/packages/graphql/context/' },
+        { label: 'Loaders', link: '/packages/graphql/loaders/' },
+        { label: 'Cost & Limits', link: '/packages/graphql/limits/' },
+        { label: 'Errors', link: '/packages/graphql/errors/' },
+        { label: 'Subscriptions', link: '/packages/graphql/subscriptions/' },
+        { label: 'HTTP Transport', link: '/packages/graphql/transport/' },
+        { label: 'Persisted Operations', link: '/packages/graphql/persisted/' },
+        { label: 'Observability', link: '/packages/graphql/observability/' },
+        { label: 'Testing', link: '/packages/graphql/testing/' },
+    ],
+};
+
+/** Every package's pages, in one flat array for Starlight to filter. */
+function packageSidebar() {
+    return PACKAGES.flatMap((entry) => PACKAGE_PAGES[entry.segment] ?? []);
+}
+
 /**
  * Every group above, with each link rooted at one version and the pages that
  * version does not have removed.
@@ -661,7 +704,10 @@ export default defineConfig({
              * src/components/Sidebar.astro, which is what narrows this flat
              * array down to the manual you are reading.
              */
-            sidebar: VERSIONS.flatMap((version) => sidebarFor(version.slug)),
+            sidebar: [
+                ...VERSIONS.flatMap((version) => sidebarFor(version.slug)),
+                ...packageSidebar(),
+            ],
         }),
     ],
 

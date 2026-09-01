@@ -32,18 +32,34 @@ async def room(socket, name: str):
         await hub.disconnect(peer)
 ```
 
+## The shape of it
+
+Four objects, and you will use two of them.
+
+| | |
+|---|---|
+| [`Hub`](/packages/wire/hub/) | Rooms, and everything that fans out to them |
+| [`Peer`](/packages/wire/peers/) | One connection, with a bounded outbound queue |
+| [`Backlog`](/packages/wire/backlog/) | What a reconnecting client missed |
+| [`RoomConsumer`](/packages/wire/consumers/) | The class-based form, with cleanup handled |
+
+A `Peer` wraps a socket. A `Hub` holds sets of peers under room names. A
+broadcast hands one `Envelope` to every peer's queue and returns immediately;
+each peer's own writer task drains its queue to its socket. Nothing else is
+going on.
+
 ## Why it is a separate package
 
 It was `sillo.websockets.channels` until v1. It moved for a dependency
 direction rather than for size: the room layer needs a socket, a socket needs
 nothing from the room layer, and fan-out is the part that grows a backend —
-Redis or NATS, when groups have to span more than one worker process. That
+Redis or NATS, when rooms have to span more than one worker process. That
 belongs behind its own install rather than in everyone's core.
 
 ## What changed in the move
 
-Three things the original could not do, and they are the reason the rewrite was
-worth it rather than a rename.
+Three things the original could not do, and the reason this was a rewrite
+rather than a rename.
 
 **A broadcast no longer blocks on the slowest client.** The old fan-out awaited
 each socket in turn, so one client that had stopped reading stalled every other
@@ -68,86 +84,10 @@ that reconnects asks for what it missed:
 await hub.replay(peer, "lobby", since=last_seq_the_client_saw)
 ```
 
-The old history also sized itself with `sys.getsizeof` on a list, which
-measures the pointer array rather than the messages — a "1 MB" cap held about a
-hundred times that, and cleared everything when it finally tripped. Retention
-is now counted in payload bytes and evicts oldest-first.
-
-## Slow consumers
-
-What happens when a peer cannot keep up is a choice, not a default:
-
-```python
-from sillo.wire import Overflow, Peer
-
-Peer(socket, overflow=Overflow.DROP_OLDEST)   # keep current — prices, cursors
-Peer(socket, overflow=Overflow.DROP_NEWEST)   # keep order — reconcile later
-Peer(socket, overflow=Overflow.CLOSE)         # disconnect; let it reconnect
-```
-
-## Presence and identity
-
-Two peers can share an identity — one person with a phone and two tabs — and
-`send_to` reaches all of them:
-
-```python
-@hub.on_join
-async def joined(room, peer):
-    await hub.broadcast(room, {"event": "joined", "who": peer.identity})
-
-hub.identities("lobby")                    # ["ada", "bob"] — people, not sockets
-await hub.send_to("ada", {"notice": "your export is ready"})
-```
-
-## Consumers
-
-`RoomConsumer` is the class-based form. It accepts the socket, builds the peer,
-joins the rooms, pumps messages, and guarantees the peer leaves every room when
-the connection ends — including when a hook raises.
-
-```python
-from sillo.wire import Hub, RoomConsumer
-
-hub = Hub()
-
-class Chat(RoomConsumer):
-    hub = hub
-
-    async def identify(self, ctx):
-        return ctx.query_params.get("user")
-
-    async def rooms(self, ctx):
-        return [ctx.path_params["room"]]
-
-    async def on_message(self, data):
-        await self.broadcast({"from": self.peer.identity, "text": data})
-
-app.add_ws_route(path="/ws/{room}", handler=Chat.as_handler())
-```
-
-## Testing
-
-`sillo.wire.testing` ships the piece a unit test of realtime code is missing —
-a socket:
-
-```python
-from sillo.wire import Hub, Peer
-from sillo.wire.testing import FakeSocket, drain
-
-async def test_a_broadcast_reaches_the_room():
-    hub, socket = Hub(), FakeSocket()
-    peer = Peer(socket)
-    await hub.join(peer, "lobby")
-
-    await hub.broadcast("lobby", {"hello": True})
-    await drain(peer)          # broadcasts enqueue; this waits for the write
-
-    assert socket.sent == [{"hello": True}]
-```
-
-`FakeSocket(delay=…)` is a client that reads slowly and `FakeSocket(fail=True)`
-one that has gone away — the two cases hardest to reproduce against a real
-server, and the two most worth testing.
+The old history sized itself with `sys.getsizeof` on a list, which measures the
+pointer array rather than the messages — a "1 MB" cap held about a hundred
+times that, and cleared everything when it finally tripped. Retention is now
+counted in payload bytes and evicts oldest-first.
 
 ## Migrating from `sillo.websockets`
 
@@ -163,9 +103,25 @@ server, and the two most worth testing.
 | `ChannelBox.CHANNEL_GROUPS` | `hub.rooms()`, `hub.members(room)` |
 
 The status enums are gone. `join` and `leave` return a plain `bool`, and
-`broadcast` returns a `DeliveryReport`.
+`broadcast` returns a [`DeliveryReport`](/packages/wire/reference/).
+
+## The two import paths
+
+`sillo.wire` and `sillo_wire` are the same module object, not two copies. The
+code lives in the top-level `sillo_wire` package; a `.pth` shipped with the
+distribution registers a meta-path finder at interpreter startup, and PEP 561
+partial stubs serve type checkers, which never run import hooks.
+
+Nothing is written into the framework's own `sillo/` directory. Two
+distributions sharing one package directory goes wrong in both directions —
+installing the framework from a checkout orphans whatever the other package
+left in site-packages, and removing the framework leaves a directory standing
+with no `__init__.py` in it.
+
+## Requirements
+
+Python 3.10 through 3.14, and `sillo-framework`. Nothing else.
 
 ## Source
 
-[github.com/sillohq/wire](https://github.com/sillohq/wire) — BSD-3-Clause,
-Python 3.10+, no dependencies beyond `sillo-framework`.
+[github.com/sillohq/wire](https://github.com/sillohq/wire) — BSD-3-Clause.

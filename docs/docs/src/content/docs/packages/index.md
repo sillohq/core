@@ -15,6 +15,9 @@ Each installs under its own name and imports under a Sillo one.
 | [Wire](/packages/wire/) | `sillo-wire` | `sillo.wire` | Rooms, presence and fan-out for WebSockets |
 | [GraphQL](/packages/graphql/) | `sillo-graphql` | `sillo.graphql` | A production GraphQL endpoint over a Strawberry schema |
 
+Each has a manual of its own — pick one above and the sidebar becomes its
+table of contents.
+
 ## How they attach
 
 The code lives in a top-level package — `sillo_wire`, `sillo_graphql` — and

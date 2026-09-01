@@ -14,7 +14,8 @@
  *
  * The theme docs under `/showcase/` and `/reference/` are deliberately not
  * versioned: they document lucode-starlight, not Sillo, and there is one of
- * them.
+ * them. Neither are the package manuals under `/packages/` — see PACKAGES
+ * below for why.
  */
 
 import { existsSync } from 'node:fs';
@@ -55,6 +56,44 @@ export const MANUALS = [
     { segment: 'pydantic', label: 'Pydantic', home: 'pydantic/', icon: 'shield' },
     { segment: 'advanced', label: 'Advanced', home: 'advanced/', icon: 'layers' },
 ];
+
+/**
+ * The ecosystem packages, each with a manual of its own under `/packages/`.
+ *
+ * They are not versioned with the core docs. A package releases on its own
+ * cadence and declares which framework versions it supports, so filing its
+ * pages under `v1.0/` would claim a coupling that does not exist — and would
+ * mean copying every page again the next time the framework's version
+ * changes.
+ *
+ * `segment` is the second URL segment, after `packages`.
+ */
+export const PACKAGES = [
+    { segment: 'wire', label: 'Wire', install: 'sillo-wire', module: 'sillo.wire' },
+    {
+        segment: 'graphql',
+        label: 'GraphQL',
+        install: 'sillo-graphql',
+        module: 'sillo.graphql',
+    },
+];
+
+const PACKAGE_BY_SEGMENT = new Map(PACKAGES.map((entry) => [entry.segment, entry]));
+
+/**
+ * The package a base-stripped pathname belongs to, if any.
+ *
+ * `undefined` for `/packages/` itself, which is an index across all of them
+ * and so has no single package's sidebar to show.
+ *
+ * @param {string} pathname A pathname with Astro's `base` already removed.
+ * @returns {{ package?: typeof PACKAGES[number] }}
+ */
+export function packageParts(pathname) {
+    const [first, second] = pathname.split('/').filter(Boolean);
+    if (first !== 'packages' || !second) return {};
+    return { package: PACKAGE_BY_SEGMENT.get(second) };
+}
 
 const BY_SLUG = new Map(VERSIONS.map((version) => [version.slug, version]));
 

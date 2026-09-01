@@ -19,33 +19,60 @@
  * does not, because PageFrame renders this slot before it renders the drawer,
  * and what is being narrowed is the route data both of them share.
  *
+ * The package manuals under /packages/ are narrowed the same way, on
+ * `/packages/<name>/`. They are not versioned, so they get the flat sidebar
+ * and no version switcher — which is the honest rendering, since a package
+ * releases on its own cadence.
+ *
  * A wrapper rather than a fork: the theme's Sidebar carries the sliding marker,
  * the scroll-into-view behaviour and the social/theme footer, none of which
  * versioning touches.
  */
 import ThemeSidebar from 'lucode-starlight/components/overrides/Sidebar.astro';
 import VersionSwitcher from './VersionSwitcher.astro';
-import { routeParts } from '../versions.mjs';
+import { packageParts, routeParts } from '../versions.mjs';
 
 const base = import.meta.env.BASE_URL;
 const pathname = Astro.url.pathname;
 const withoutBase = pathname.startsWith(base) ? pathname.slice(base.length) : pathname;
 
 const { version, manual } = routeParts(withoutBase);
+const { package: pkg } = packageParts(withoutBase);
 
 /*
- * Unversioned pages — the theme docs under /showcase/ and /reference/ — have no
- * version to narrow to, and are left exactly as Starlight built them.
+ * Sidebar hrefs carry Astro's `base`; the pathname above had it stripped.
+ *
+ * A page belongs to a manual of a version, or to a package, or to neither —
+ * the theme docs under /showcase/ and /reference/, and /packages/ itself,
+ * which indexes every package and so has no one package's pages to show.
+ * Anything in that last case is left exactly as Starlight built it.
  */
-if (version && manual) {
-    // Sidebar hrefs carry Astro's `base`; the pathname above had it stripped.
-    const prefix = `${base.replace(/\/$/, '')}/${version.slug}/${manual}/`;
+const prefix = version && manual
+    ? `${base.replace(/\/$/, '')}/${version.slug}/${manual}/`
+    : pkg
+      ? `${base.replace(/\/$/, '')}/packages/${pkg.segment}/`
+      : null;
+
+/*
+ * `/packages/` is the index across every package, so no one manual's contents
+ * belong beside it — and left alone it would show all of them at once, two
+ * flat lists of unrelated pages under two entries both called Overview. It
+ * gets nothing, the same as the theme docs, and its own body is the list.
+ */
+const segments = withoutBase.split('/').filter(Boolean);
+const isPackageIndex = segments.length === 1 && segments[0] === 'packages';
+
+if (prefix || isPackageIndex) {
     const route = Astro.locals.starlightRoute;
-    route.sidebar = route.sidebar.filter((entry) =>
-        entry.type === 'link'
-            ? entry.href.startsWith(prefix)
-            : entry.entries.some((link) => link.type === 'link' && link.href.startsWith(prefix))
-    );
+    route.sidebar = prefix
+        ? route.sidebar.filter((entry) =>
+              entry.type === 'link'
+                  ? entry.href.startsWith(prefix)
+                  : entry.entries.some(
+                        (link) => link.type === 'link' && link.href.startsWith(prefix)
+                    )
+          )
+        : [];
 }
 ---
 
