@@ -146,6 +146,10 @@ dev = [
     # All features
     "pyjwt>=2.7.0",
     "tortoise-orm>=1.0",
+    # In `all` but not here, so a fresh dev install had no hashing backend
+    # for any scheme except bcrypt and thirteen tests failed. Older
+    # environments had it left over from an earlier install and hid this.
+    "passlib>=1.7.4",
     "bcrypt>=4.0.0",
     "argon2-cffi>=21.2.0",
     "scrypt>=0.8.0",
