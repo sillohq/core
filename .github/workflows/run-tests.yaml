@@ -2,7 +2,10 @@ name: Run Tests
 on:
   push:
     branches:
-      - main
+      # Renamed from `main` when the 1.0 branch took that name. This is the
+      # released line: 0.x still takes fixes and dependency bumps, and the
+      # release automation runs from here.
+      - v0.x
 
   pull_request:
 
