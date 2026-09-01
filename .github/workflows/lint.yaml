@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - main
-      # v1 is where the next major release is being built, and until it merges
-      # nothing on it was ever tested: pushes here ran no workflow at all, so
-      # the branch that changes the most had the least cover.
-      - v1
+      # The released 0.x line, which still takes dependency bumps and
+      # fixes. `main` above is the 1.0 branch.
+      - v0.x
 
   pull_request:
 

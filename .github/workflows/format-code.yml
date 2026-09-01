@@ -3,7 +3,10 @@ name: Format Python
 on:
   push:
     branches:
-      - main
+      # The released line. This workflow is an auto-formatter that commits and pushes,
+      # so it follows the branch that actually ships rather than the
+      # one being built.
+      - v0.x
 
 permissions:
   contents: write

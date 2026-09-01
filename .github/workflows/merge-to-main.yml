@@ -3,7 +3,10 @@ name: Merge to Main
 on:
   push:
     branches:
-      - main
+      # The released line. This workflow is cz bump, which tags and so publishes to PyPI,
+      # so it follows the branch that actually ships rather than the
+      # one being built.
+      - v0.x
 
 jobs:
   release:
