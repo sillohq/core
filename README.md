@@ -23,6 +23,33 @@
   <a href="https://github.com/sillohq/core/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/sillo-framework?color=green" alt="License"></a>
 </p>
 
+> [!IMPORTANT]
+> **This branch is Sillo 1.0, and 1.0 is not released.**
+>
+> `main` is where 1.0 is being built. Nothing here is on PyPI, the API is still
+> moving, and it is not backwards compatible with the released line — handlers
+> take a single `ctx` argument, `sillo.graphql` and the WebSocket room layer
+> have moved into [their own packages](https://docs.sillo.build/packages/), and
+> more will change before it ships.
+>
+> **`pip install sillo-framework` installs 0.x, not this.** The released code
+> lives on **[`v0.x`](https://github.com/sillohq/core/tree/v0.x)**, which is
+> where fixes and dependency updates go and where releases are cut from. Its
+> documentation is at
+> **[docs.sillo.build/v0.x](https://docs.sillo.build/v0.x/guides/introduction/)**.
+>
+> Reading about the version you have installed? You want
+> [`v0.x`](https://github.com/sillohq/core/tree/v0.x). Building against 1.0
+> before it ships? Install from this branch:
+>
+> ```bash
+> pip install "git+https://github.com/sillohq/core.git@main"
+> ```
+>
+> The 1.0 documentation is at
+> [docs.sillo.build/v1.0](https://docs.sillo.build/v1.0/guides/introduction/),
+> and every page in it says the same thing at the top.
+
 Sillo is the buildsmith framework for APIs, real-time systems, and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, admin, queues, scheduler, and WebSockets already in place. The language does not change. You write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
 
 Each of those is a solved problem with good packages behind it. The work that remains is the fitting, and that is what Sillo does once so you do not do it per project. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI spec. The queue and the scheduler start with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
