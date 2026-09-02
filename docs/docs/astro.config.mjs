@@ -569,6 +569,28 @@ const PACKAGE_PAGES = {
         { label: 'Observability', link: '/packages/graphql/observability/' },
         { label: 'Testing', link: '/packages/graphql/testing/' },
     ],
+    warder: [
+        { label: 'Overview', link: '/packages/warder/' },
+        { label: 'Quickstart', link: '/packages/warder/quickstart/' },
+        { label: 'Declarations', link: '/packages/warder/declarations/' },
+        { label: 'Resources', link: '/packages/warder/resources/' },
+        { label: 'Lists', link: '/packages/warder/lists/' },
+        { label: 'Columns', link: '/packages/warder/columns/' },
+        { label: 'Filters', link: '/packages/warder/filters/' },
+        { label: 'Actions', link: '/packages/warder/actions/' },
+        { label: 'Forms', link: '/packages/warder/forms/' },
+        { label: 'Widgets', link: '/packages/warder/widgets/' },
+        { label: 'Relations', link: '/packages/warder/relations/' },
+        { label: 'Detail pages', link: '/packages/warder/detail/' },
+        { label: 'Dashboard', link: '/packages/warder/dashboard/' },
+        { label: 'Pages', link: '/packages/warder/pages/' },
+        { label: 'Signing in', link: '/packages/warder/auth/' },
+        { label: 'Permissions', link: '/packages/warder/permissions/' },
+        { label: 'Theming', link: '/packages/warder/theming/' },
+        { label: 'The CLI', link: '/packages/warder/cli/' },
+        { label: 'Embedding', link: '/packages/warder/embedding/' },
+        { label: 'API Reference', link: '/packages/warder/reference/' },
+    ],
 };
 
 /** Every package's pages, in one flat array for Starlight to filter. */

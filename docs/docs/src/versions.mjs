@@ -76,6 +76,10 @@ export const PACKAGES = [
         install: 'sillo-graphql',
         module: 'sillo.graphql',
     },
+    // Warder is the exception to the naming rule below: it imports under its
+    // own name rather than under `sillo.`, because it is not an extension of
+    // the framework's surface -- it is an application you mount on yours.
+    { segment: 'warder', label: 'Warder', install: 'warder', module: 'warder' },
 ];
 
 const PACKAGE_BY_SEGMENT = new Map(PACKAGES.map((entry) => [entry.segment, entry]));

@@ -8,24 +8,33 @@ page installs alongside it. They are separate for one reason each, and the
 reason is always the same shape: the package has a dependency, a release
 cadence, or a scope that the core should not carry on everybody's behalf.
 
-Each installs under its own name and imports under a Sillo one.
-
 | Package | Install | Import | What it is |
 |---|---|---|---|
 | [Wire](/packages/wire/) | `sillo-wire` | `sillo.wire` | Rooms, presence and fan-out for WebSockets |
 | [GraphQL](/packages/graphql/) | `sillo-graphql` | `sillo.graphql` | A production GraphQL endpoint over a Strawberry schema |
+| [Warder](/packages/warder/) | `warder` | `warder` | A declarative admin over your models |
 
 Each has a manual of its own — pick one above and the sidebar becomes its
 table of contents.
 
 ## How they attach
 
-The code lives in a top-level package — `sillo_wire`, `sillo_graphql` — and
+Wire and GraphQL extend the framework's own surface, so they take a name inside
+it. The code lives in a top-level package — `sillo_wire`, `sillo_graphql` — and
 the framework name is an alias for it. Both bind the same objects:
 
 ```python
 from sillo.wire import Hub     # both of these
 from sillo_wire import Hub     # name the same class
+```
+
+Warder does not, and the difference is deliberate. It is not an extension of
+`sillo` — it is an application you mount on yours, the way you would mount any
+other. So it keeps its own name:
+
+```python
+from warder import Admin
+admin.mount(app)
 ```
 
 The alias is a meta-path finder the package registers through a `.pth` at
