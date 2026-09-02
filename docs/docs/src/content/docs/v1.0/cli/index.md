@@ -39,7 +39,7 @@ the matching commands:
 | `app.add_command(...)` | Your own commands |
 
 Nothing is configured twice. The database manager
-[`setup_record`](/v1.0/guides/record/) put on `app.state` is the one migrations run
+[`setup_record`](/v1.0/orm/setup/) put on `app.state` is the one migrations run
 against; the user model the application authenticates against is the one
 `user:create` writes to; the scheduler
 [`setup_scheduler`](/v1.0/guides/work/scheduler/) registered is the one

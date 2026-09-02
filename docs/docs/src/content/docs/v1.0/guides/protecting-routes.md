@@ -320,7 +320,7 @@ narrow, rather than starting from "allow" and excluding.
 
 - [Authentication](/v1.0/guides/authentication/): establishing who the caller is
 - [Permissions](/v1.0/guides/permissions/): deciding what they may do
-- [Scopes & Events](/v1.0/guides/record/scopes-events/): query-level enforcement
+- [Query Scopes](/v1.0/orm/scopes/): query-level enforcement
 - [Middleware](/v1.0/guides/middleware/): where authentication runs
 - [Security](/v1.0/guides/security/): the wider checklist
 

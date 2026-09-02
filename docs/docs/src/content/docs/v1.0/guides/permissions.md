@@ -441,9 +441,9 @@ long handler.
 specific record, which is where most real authorization lives.
 
 **Query level** (a global scope that filters by tenant or owner) is the
-strongest, because it applies to code that forgot to check. See [Scopes &
-Events](/v1.0/guides/record/scopes-events/), including its warning that scopes do
-not cover raw SQL or relation traversal.
+strongest, because it applies to code that forgot to check. See [Query
+Scopes](/v1.0/orm/scopes/), including its warning that a global scope does not
+cover raw SQL.
 
 **Database level** (foreign keys, row-level security) survives every
 application bug, and is the only layer an attacker with SQL access still faces.

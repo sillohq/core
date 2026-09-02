@@ -198,7 +198,7 @@ A request arrives at the server, which hands sillo a `scope`, a
 [handler](/v1.0/guides/handlers/), and serializes what comes back.
 
 Around that core sit optional subsystems, each independent: an
-[ORM layer](/v1.0/guides/record/), [background work](/v1.0/guides/work/),
+[ORM layer](/v1.0/orm/), [background work](/v1.0/guides/work/),
 [WebSockets](/v1.0/guides/websockets/), [Inertia](/v1.0/guides/inertia/),
 [caching](/v1.0/guides/cache/), [mail](/v1.0/guides/services/mail/), and an
 [HTTP client](/v1.0/guides/http/client/). None of them are required. An
@@ -211,7 +211,7 @@ The path through the documentation depends on what you are building.
 **A JSON API.** [Routing](/v1.0/guides/routing/) →
 [Handlers](/v1.0/guides/handlers/) → [Validation](/v1.0/guides/validation/) →
 [Error Handling](/v1.0/guides/error-handling/). That is enough to build
-something real. Add [Record](/v1.0/guides/record/) when you need a database
+something real. Add [Record](/v1.0/orm/) when you need a database
 and [Authentication](/v1.0/guides/authentication/) when you need users.
 
 **An application with a front end.** [Routing](/v1.0/guides/routing/) →

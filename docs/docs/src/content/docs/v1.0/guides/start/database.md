@@ -365,7 +365,6 @@ an ordinary Python module shaped the way your project wants.
 
 - [Project Structure](/v1.0/guides/start/structure/): where the data layer sits
 - [The Console](/v1.0/guides/start/console/): the `db` commands in detail
-- [Models & Mixins](/v1.0/guides/record/models/): what you can put in a model
-- [Migrations & Seeding](/v1.0/guides/record/migrations/): the framework-level
-  reference
+- [Models](/v1.0/orm/models/): what you can put in a model
+- [Migrations](/v1.0/orm/migrations/): the framework-level reference
 - [Deployment](/v1.0/guides/start/deployment/): migrating on deploy

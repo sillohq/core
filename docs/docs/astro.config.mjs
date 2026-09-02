@@ -366,20 +366,6 @@ const MANUAL_GROUPS = [
         ],
     },
     {
-        label: 'Building an Application',
-        items: [
-            { label: 'Creating a Project', link: '/guides/start/' },
-            { label: 'Project Structure', link: '/guides/start/structure/' },
-            { label: 'The Console', link: '/guides/start/console/' },
-            { label: 'Database & Migrations', link: '/guides/start/database/' },
-            { label: 'Users & Authentication', link: '/guides/start/authentication/' },
-            { label: 'The Admin Panel', link: '/guides/start/admin/' },
-            { label: 'Background Work', link: '/guides/start/background-work/' },
-            { label: 'Testing', link: '/guides/start/testing/' },
-            { label: 'Deployment', link: '/guides/start/deployment/' },
-        ],
-    },
-    {
         label: 'Core Concepts',
         items: [
             { label: 'Routing', link: '/guides/routing/' },
@@ -400,6 +386,20 @@ const MANUAL_GROUPS = [
             { label: 'Streaming Responses', link: '/guides/streaming-response/' },
             { label: 'Pagination', link: '/guides/pagination/' },
             { label: 'Error Handling', link: '/guides/error-handling/' },
+        ],
+    },
+    {
+        label: 'Building an Application',
+        items: [
+            { label: 'Creating a Project', link: '/guides/start/' },
+            { label: 'Project Structure', link: '/guides/start/structure/' },
+            { label: 'The Console', link: '/guides/start/console/' },
+            { label: 'Database & Migrations', link: '/guides/start/database/' },
+            { label: 'Users & Authentication', link: '/guides/start/authentication/' },
+            { label: 'The Admin Panel', link: '/guides/start/admin/' },
+            { label: 'Background Work', link: '/guides/start/background-work/' },
+            { label: 'Testing', link: '/guides/start/testing/' },
+            { label: 'Deployment', link: '/guides/start/deployment/' },
         ],
     },
     {
@@ -430,7 +430,12 @@ const MANUAL_GROUPS = [
         ],
     },
     {
+        // Dropped from the 1.0 Guides sidebar: Inertia is a package of its
+        // own, and the manual it belongs in is a package manual rather than a
+        // group inside Guides. The pages are still here and still linked from
+        // the prose that needs them, and 0.x keeps the group.
         label: 'Inertia',
+        notIn: ['v1.0'],
         collapsed: true,
         items: [
             { label: 'Overview', link: '/guides/inertia/' },
@@ -606,16 +611,18 @@ function packageSidebar() {
  * @param {string} version A slug from src/versions.mjs, e.g. `'v1.0'`.
  */
 function sidebarFor(version) {
-    return MANUAL_GROUPS.map(({ labels, ...group }) => ({
-        ...group,
-        // A group whose name changed between versions carries both, keyed by
-        // slug: the first ORM group was "ORM & Admin" in 0.x and the admin is
-        // not in the framework at all in 1.0.
-        label: labels?.[version] ?? group.label,
-        items: group.items
-            .filter((item) => pageExistsIn(item.link, version))
-            .map((item) => ({ ...item, link: `/${version}${item.link}` })),
-    })).filter((group) => group.items.length > 0);
+    return MANUAL_GROUPS.filter((group) => !group.notIn?.includes(version))
+        .map(({ labels, notIn, ...group }) => ({
+            ...group,
+            // A group whose name changed between versions carries both, keyed
+            // by slug: the first ORM group was "ORM & Admin" in 0.x and the
+            // admin is not in the framework at all in 1.0.
+            label: labels?.[version] ?? group.label,
+            items: group.items
+                .filter((item) => pageExistsIn(item.link, version))
+                .map((item) => ({ ...item, link: `/${version}${item.link}` })),
+        }))
+        .filter((group) => group.items.length > 0);
 }
 
 
