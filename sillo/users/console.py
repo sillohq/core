@@ -85,10 +85,44 @@ class UserCommand(Command):
     def model(self) -> Any:
         """The user model these commands act on.
 
+        Checked before it is handed on. A model the ORM has never been told
+        about fails deep inside a queryset with ``default_connection for the
+        model ... cannot be None``, which is a true sentence about a thing the
+        reader did not do and cannot act on.
+
         Returns:
             The bound model, or None to let sillo.users.commands choose.
+
+        Raises:
+            CommandError: If the model is not registered with the ORM.
         """
-        return self.config.model if self.config else None
+        bound = self.config.model if self.config else None
+        self._require_registered(bound)
+        return bound
+
+    def _require_registered(self, bound: Any) -> None:
+        """Fail with something actionable when the user model has no connection.
+
+        Args:
+            bound: The bound model, or None for sillo's own.
+        """
+        from sillo.users.base import User
+
+        model = bound or User
+        try:
+            if model._meta.db is not None:
+                return
+        except Exception:
+            pass
+
+        module = model.__module__
+        self.fail(
+            f"{model.__name__} is not registered with the database.\n"
+            f"  Add {module!r} to the application's model modules:\n"
+            f"      setup_record(app, config, model_modules=[..., {module!r}])\n"
+            "  Then run the migrations, or let the ORM build the schema, so the "
+            "table exists."
+        )
 
     def read_password(self, question: str = "Password", confirm: bool = True) -> str:
         """Get a password without echoing it.
