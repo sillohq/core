@@ -367,8 +367,8 @@ ASGI-level.  Sillo's is request/response-level with explicit pre/post phases.
 
 User-facing DI marker.  Declares a dependency on another callable.
 
-**Attributes:** `dependency` (the callable), `get_request` (bool, inject raw
-`HttpContext` instead of resolving).
+**Attributes:** `dependency` (the callable), `get_context` (bool, inject the
+active context — `HttpContext` or `WebSocketContext` — instead of resolving).
 
 **Usage:**
 ```python

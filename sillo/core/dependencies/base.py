@@ -38,28 +38,31 @@ class Depend:
 
     Attributes:
         dependency: The callable whose return value will be injected. If
-            ``None`` and ``get_request`` is ``True``, the raw ``HttpContext``
-            object is injected instead.
-        get_request: When ``True`` and ``dependency`` is ``None``, the
-            framework injects the current ``HttpContext`` object directly
-            into the parameter.
+            ``None`` and ``get_context`` is ``True``, the active context is
+            injected instead — an ``HttpContext`` on an HTTP route, a
+            ``WebSocketContext`` on a WebSocket route.
+        get_context: When ``True`` and ``dependency`` is ``None``, the
+            framework injects the active context object directly into the
+            parameter.
     """
 
     def __init__(
-        self, dependency: Callable[..., Any] | None = None, *, get_request: bool = False
+        self, dependency: Callable[..., Any] | None = None, *, get_context: bool = False
     ) -> None:
         """
-        Initialize a Depend instance with a dependency callable and request flag.
+        Initialize a Depend instance with a dependency callable and context flag.
 
         Args:
             dependency: An optional callable that produces the value to be
                 injected into the handler parameter. Can be a regular function,
                 an async function, a generator, or an async generator. When
-                ``None``, the ``get_request`` flag must be ``True`` to inject
-                the raw request object.
-            get_request: A keyword-only boolean flag indicating whether the
-                raw ``HttpContext`` object should be injected directly. Defaults
+                ``None``, the ``get_context`` flag must be ``True`` to inject
+                the active context object.
+            get_context: A keyword-only boolean flag indicating whether the
+                active context object should be injected directly. Defaults
                 to ``False``. Only effective when ``dependency`` is ``None``.
+                The injected value is an ``HttpContext`` on an HTTP route and
+                a ``WebSocketContext`` on a WebSocket route.
 
         Returns:
             None. This constructor initializes the ``Depend`` marker instance.
@@ -74,11 +77,11 @@ class Depend:
                 return json(await db.query("SELECT * FROM items"))
 
             @app.get("/me")
-            async def get_me(ctx, injected=Depend(get_request=True)):
+            async def get_me(ctx, injected=Depend(get_context=True)):
                 return json({"user": injected.user})
         """
         self.dependency = dependency
-        self.get_request = get_request
+        self.get_context = get_context
 
     def __class_getitem__(cls, item: Any):
         """
@@ -146,8 +149,10 @@ class Dependant:
             in the resolved values dictionary. ``None`` for the root node.
         dependencies: A list of child ``Dependant`` nodes representing direct
             sub-dependencies declared via ``Depend()`` defaults.
-        request_param_names: Parameter names that should receive the raw
-            ``HttpContext`` object directly (declared via ``Depend(get_request=True)``).
+        context_param_names: Parameter names that should receive the active
+            context object directly (declared via ``Depend(get_context=True)``).
+            The value is an ``HttpContext`` on an HTTP route and a
+            ``WebSocketContext`` on a WebSocket route.
         param_extractors: A list of solved parameter extractor dependencies
             (e.g., ``Query``, ``Header``, ``Cookie``) that pull values from
             specific parts of the incoming request.
@@ -178,7 +183,7 @@ class Dependant:
     call: Callable[..., Any] | None = None
     name: str | None = None
     dependencies: list[Dependant] = field(default_factory=list)
-    request_param_names: list[str] = field(default_factory=list)
+    context_param_names: list[str] = field(default_factory=list)
     param_extractors: list[SolvedParamDependency] = field(default_factory=list)
     validator: CompiledValidator | None = None
     is_coroutine: bool = False
@@ -242,7 +247,7 @@ def get_dependant(
     """
     sig = signature(call)
     deps: list[Dependant] = []
-    request_params: list[str] = []
+    context_params: list[str] = []
     markers: list[tuple[str, ParameterExtractor]] = []
     cache_key_parts: list[str] = []
 
@@ -250,8 +255,8 @@ def get_dependant(
         default = param.default
 
         if isinstance(default, Depend):
-            if default.get_request and default.dependency is None:
-                request_params.append(param_name)
+            if default.get_context and default.dependency is None:
+                context_params.append(param_name)
             else:
                 sub = get_dependant(
                     default.dependency,
@@ -283,7 +288,7 @@ def get_dependant(
         call=call,
         name=name,
         dependencies=deps,
-        request_param_names=request_params,
+        context_param_names=context_params,
         param_extractors=extractors,
         validator=validator if validator.is_active else None,
         is_coroutine=inspect.iscoroutinefunction(call),
@@ -356,11 +361,12 @@ def _collect_kwargs(
     Args:
         node: The ``Dependant`` node whose arguments are being collected.
             Its ``dependencies``, ``param_extractors``, and
-            ``request_param_names`` fields determine which values are gathered.
+            ``context_param_names`` fields determine which values are gathered.
         values: A dictionary of already-resolved dependency results, keyed
             by dependency name. Sub-dependency values are looked up here.
-        request: The current ``HttpContext`` object, or ``None`` if not available.
-            Used to satisfy parameter extractors and raw request parameters.
+        ctx: The active context object (``HttpContext`` or ``WebSocketContext``),
+            or ``None`` if not available. Used to satisfy parameter extractors
+            and context parameters.
         validated: Values produced by the Pydantic validators, keyed by the
             id of the ``Dependant`` they belong to. Resolved ahead of this
             call because body and form parsing are asynchronous, whereas this
@@ -381,7 +387,7 @@ def _collect_kwargs(
         node_values = validated.get(id(node))
         if node_values:
             kwargs.update(node_values)
-    for rp in node.request_param_names:
+    for rp in node.context_param_names:
         kwargs[rp] = ctx
     return kwargs
 
@@ -407,8 +413,9 @@ async def resolve_validated_params(
     Args:
         dependant: The root ``Dependant`` whose execution plan should be
             walked. Nodes without a validator are skipped.
-        request: The current ``HttpContext``. When ``None`` there is nothing to
-            validate against and an empty mapping is returned.
+        ctx: The active context (``HttpContext`` or ``WebSocketContext``). When
+            ``None`` there is nothing to validate against and an empty mapping
+            is returned.
 
     Returns:
         A mapping from ``id(dependant_node)`` to the validated keyword
@@ -473,9 +480,10 @@ async def solve_dependencies(
         dependant: The root ``Dependant`` node whose execution plan should
             be resolved. The plan was built during route registration by
             ``get_dependant``.
-        request: The current ``HttpContext`` object to pass to parameter
-            extractors and ``Depend(get_request=True)`` dependencies.
-            May be ``None`` for non-request contexts.
+        ctx: The active context object (``HttpContext`` or
+            ``WebSocketContext``) to pass to parameter extractors and
+            ``Depend(get_context=True)`` dependencies. May be ``None`` for
+            non-request contexts.
         dependency_cache: An optional dictionary for caching resolved
             dependency values across the resolution. If ``None``, a fresh
             empty cache is created. Keys are ``(callable, param_names)``

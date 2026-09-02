@@ -171,14 +171,15 @@ async def me(request, response, user=Depend(get_current_user)):
     return response.json(user)
 ```
 
-When a dependency needs the current request:
+When a dependency needs the active context (the `HttpContext`, or the
+`WebSocketContext` on a socket route):
 
 ```python
 from sillo import Depend
 
 
-def auth_header(request=Depend(get_request=True)):
-    return request.headers.get("Authorization")
+def auth_header(ctx=Depend(get_context=True)):
+    return ctx.headers.get("Authorization")
 ```
 
 ## Routing

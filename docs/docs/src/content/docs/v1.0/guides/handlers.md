@@ -361,12 +361,12 @@ async def me(ctx: HttpContext, user: dict = Depend(get_current_user)):
 ```
 
 Dependencies can be nested, cached per request, and clean up after themselves
-via async generators. The full system (`get_request=True`, sub-dependencies,
+via async generators. The full system (`get_context=True`, sub-dependencies,
 caching, generator teardown) is documented in [Dependency
 Injection](/v1.0/guides/dependency-injection/).
 
 <aside type="caution" title="No `Context()` and no `scope=` on Depend">
-Two patterns you may see in older examples are not part of sillo's API: `Context().request` for injecting the request, and `Depend(fn, scope="request")`. Take a plain `ctx` parameter in the dependency, or use `Depend(get_request=True)`, instead. `Depend` accepts only `dependency` and `get_request`.
+Two patterns you may see in older examples are not part of sillo's API: `Context().request` for injecting the request, and `Depend(fn, scope="request")`. Take a plain `ctx` parameter in the dependency, or use `Depend(get_context=True)`, instead. `Depend` accepts only `dependency` and `get_context`.
 </aside>
 
 ##  A complete handler

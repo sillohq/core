@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Dependency injection on WebSocket routes. A `@app.ws_route(...)` handler's signature is now analysed the same way an HTTP handler's is, so it can declare `Depend(...)` parameters — nested, cached, and `yield`-style with teardown that runs when the connection handler returns. The tree is resolved once, when the socket connects, not per message. Documented in [WebSockets → Dependency injection](https://sillo.build/v1.0/guides/websockets/#dependency-injection).
+
+### Changed
+
+- **Renamed `Depend(get_request=True)` to `Depend(get_context=True)`.** The marker injects the active context, which on a WebSocket route is a `WebSocketContext`, not an `HttpContext` — the old name described only one of the two. The internal `Dependant.request_param_names` field is likewise now `context_param_names`. No alias is kept; `get_request=` raises `TypeError`.
+
 ## [0.3.1] - 2026-08-27
 
 A test-coverage push that took the suite from 91.58% to over 95%. Each of the

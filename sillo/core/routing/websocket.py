@@ -1,8 +1,10 @@
 import inspect
-from typing import Annotated, Any
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Annotated, Any, cast
 
 from typing_extensions import Doc
 
+from sillo.core.dependencies.base import Dependant, get_dependant, solve_dependencies
 from sillo.objects.routing import URLPath
 from sillo.route_builder import RouteBuilder
 from sillo.types import (
@@ -16,6 +18,9 @@ from sillo.websockets.errors import WebSocketErrorMiddleware
 
 from ._utils import MatchStatus, get_route_path
 from .base import BaseRoute
+
+if TYPE_CHECKING:
+    from sillo.core.http import HttpContext
 
 
 class WebsocketRoute(BaseRoute):
@@ -150,11 +155,17 @@ class WebsocketRoute(BaseRoute):
         efficient matching and parameter extraction. Both synchronous and
         asynchronous validation checks are performed on the handler.
 
+        The handler's signature is analysed the same way an HTTP route's is,
+        so it may declare ``Depend(...)`` parameters. ``Depend(get_context=True)``
+        injects the live ``WebSocketContext``.
+
         Args:
             path: URL path pattern for the WebSocket endpoint. Supports
                 dynamic parameters using curly brace syntax.
             handler: Async function to handle WebSocket connections. Must
-                be a coroutine function accepting a WebSocket argument.
+                be a coroutine function whose first parameter is the
+                ``WebSocketContext``; further parameters may be path
+                parameters or ``Depend(...)`` markers.
 
         Raises:
             AssertionError: If handler is not callable or is not an async
@@ -164,6 +175,7 @@ class WebsocketRoute(BaseRoute):
         assert inspect.iscoroutinefunction(handler), "Route handler must be async"
         self.raw_path = path
         self.handler: WsHandlerType = handler
+        self.dependant: Dependant = get_dependant(handler)
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern = self.route_info.pattern
         self.param_names = self.route_info.param_names
@@ -253,11 +265,31 @@ class WebsocketRoute(BaseRoute):
                 object passed to the handler.
             """
             ctx = WebSocketContext(scope, receive=receive, send=send)
-            # Path parameters reach the handler as keyword arguments, the same
-            # way they do on an HTTP route. They are also on `ctx.path_params`,
-            # which is where these come from -- the router writes them into the
-            # scope under "route_params", not "path_params".
-            await self.handler(ctx, **ctx.path_params)
+            cleanups: list[Callable[[], Any]] = []
+            try:
+                # The handler's Depend(...) parameters are solved by the same
+                # engine an HTTP route uses. It is typed for HttpContext, but
+                # only reads members both contexts share via BaseContext
+                # (headers, query params, cookies, path params) plus the
+                # HTTP-only form body, which a socket handler never declares.
+                # A generator dependency registers its teardown on `cleanups`.
+                injected = await solve_dependencies(
+                    self.dependant, cast("HttpContext", ctx), {}, cleanups
+                )
+                # Path parameters reach the handler as keyword arguments, the
+                # same way they do on an HTTP route -- from `ctx.path_params`,
+                # which the router writes into the scope under "route_params".
+                # A parameter also produced by DI (a validated marker) wins, so
+                # the raw captured value is dropped to avoid a duplicate kwarg.
+                path_kwargs = {
+                    k: v for k, v in ctx.path_params.items() if k not in injected
+                }
+                await self.handler(ctx, **path_kwargs, **injected)
+            finally:
+                for cleanup in reversed(cleanups):
+                    result = cleanup()
+                    if inspect.isawaitable(result):
+                        await result
 
         app = WebSocketErrorMiddleware(handler_app)
 

@@ -9,8 +9,6 @@ from pydantic import BaseModel
 from sillo.core.http.context import HttpContext
 from sillo.core.http.response import BaseResponse
 
-from .websockets import WebSocketContext
-
 # Type alias for route model arguments — accepts any of:
 #   - a single Pydantic model class
 #   - a dict mapping int keys (e.g. status codes) to Pydantic model classes
@@ -37,7 +35,9 @@ MiddlewareType = typing.Callable[
     typing.Awaitable[Any],
 ]
 
-WsHandlerType = typing.Callable[[WebSocketContext], typing.Awaitable[None]]
+# The first argument is the WebSocketContext; a handler may also declare path
+# parameters and Depend(...) markers, which are bound by the routing layer.
+WsHandlerType = typing.Callable[..., typing.Awaitable[None]]
 HandlerType = Callable[..., Any]
 #: An exception handler. Must be ``async``.
 #:

@@ -27,9 +27,7 @@ def test_basic_dependency_injection(
         return "user_123"
 
     @app.get("/user")
-    async def get_user(
-        ctx: HttpContext, user_id: str = Depend(get_user_id)
-    ):
+    async def get_user(ctx: HttpContext, user_id: str = Depend(get_user_id)):
         return json({"user_id": user_id})
 
     with test_client_factory(app) as client:
@@ -617,9 +615,7 @@ def test_generator_dependency_cleanup(
             cleanup_state["closed"] = True
 
     @app.get("/yield-cleanup")
-    async def yield_cleanup(
-        ctx: HttpContext, res: dict = Depend(get_resource)
-    ):
+    async def yield_cleanup(ctx: HttpContext, res: dict = Depend(get_resource)):
         assert res["conn"] == "open"
         return json({"ok": True})
 
@@ -649,9 +645,7 @@ def test_nested_yield_dependencies(
             flags["inner_closed"] = True
 
     @app.get("/nested-yield")
-    async def nested_yield(
-        ctx: HttpContext, inner=Depend(inner_dep)
-    ):
+    async def nested_yield(ctx: HttpContext, inner=Depend(inner_dep)):
         return json({"inner": inner})
 
     with test_client_factory(app) as client:
@@ -678,9 +672,7 @@ def test_async_yield_dependencies_cleanup(
             state["closed"] = True
 
     @app.get("/async-yield-cleanup")
-    async def async_yield_endpoint(
-        ctx: HttpContext, data=Depend(async_dep)
-    ):
+    async def async_yield_endpoint(ctx: HttpContext, data=Depend(async_dep)):
         return json(data)
 
     with test_client_factory(app) as client:
@@ -719,9 +711,7 @@ def test_deep_yield_dependency_chain(
             order.append("cleanup_c")
 
     @app.get("/deep-yield")
-    async def deep_yield_endpoint(
-        ctx: HttpContext, c=Depend(dep_c)
-    ):
+    async def deep_yield_endpoint(ctx: HttpContext, c=Depend(dep_c)):
         return json({"result": c})
 
     with test_client_factory(app) as client:
@@ -740,39 +730,39 @@ def test_deep_yield_dependency_chain(
         ]
 
 
-# ========== Depend(get_request=True) Tests ==========
+# ========== Depend(get_context=True) Tests ==========
 
 
-def test_depend_get_request_in_handler(
+def test_depend_get_context_in_handler(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Depend(get_request=True) in handler injects raw HttpContext."""
+    """Depend(get_context=True) in handler injects the raw HttpContext."""
     app = SilloApp()
 
-    @app.get("/request-injected")
+    @app.get("/context-injected")
     async def handler(
         ctx: HttpContext,
-        injected: HttpContext = Depend(get_request=True),
+        injected: HttpContext = Depend(get_context=True),
     ):
         # Same object, reached two ways — that is what this asserts.
         assert injected is ctx
         return json({"path": injected.url.path, "method": injected.method})
 
     with test_client_factory(app) as client:
-        resp = client.get("/request-injected")
+        resp = client.get("/context-injected")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["path"] == "/request-injected"
+        assert data["path"] == "/context-injected"
         assert data["method"] == "GET"
 
 
-def test_depend_get_request_in_subdependency(
+def test_depend_get_context_in_subdependency(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Depend(get_request=True) in a sub-dependency receives HttpContext."""
+    """Depend(get_context=True) in a sub-dependency receives HttpContext."""
     app = SilloApp()
 
-    def get_auth_info(ctx: HttpContext = Depend(get_request=True)):
+    def get_auth_info(ctx: HttpContext = Depend(get_context=True)):
         return {"token": ctx.headers.get("authorization", "none")}
 
     @app.get("/auth-info")
@@ -788,17 +778,17 @@ def test_depend_get_request_in_subdependency(
         assert resp.json()["auth"]["token"] == "Bearer abc123"
 
 
-def test_depend_get_request_with_other_deps(
+def test_depend_get_context_with_other_deps(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Depend(get_request=True) combined with other Depend deps."""
+    """Depend(get_context=True) combined with other Depend deps."""
     app = SilloApp()
 
     def get_user_id():
         return "user_42"
 
     def get_full_context(
-        ctx: HttpContext = Depend(get_request=True),
+        ctx: HttpContext = Depend(get_context=True),
         user_id: str = Depend(get_user_id),
     ):
         return {
@@ -823,10 +813,10 @@ def test_depend_get_request_with_other_deps(
         assert data["method"] == "POST"
 
 
-def test_depend_get_request_and_normal_dep_in_handler(
+def test_depend_get_context_and_normal_dep_in_handler(
     test_client_factory: Callable[[SilloApp], TestClient],
 ):
-    """Mix Depend(get_request=True) and Depend(callable) in same handler."""
+    """Mix Depend(get_context=True) and Depend(callable) in same handler."""
     app = SilloApp()
 
     def get_db():
@@ -835,13 +825,15 @@ def test_depend_get_request_and_normal_dep_in_handler(
     @app.get("/mixed-handler")
     async def handler(
         ctx: HttpContext,
-        injected: HttpContext = Depend(get_request=True),
+        injected: HttpContext = Depend(get_context=True),
         db: str = Depend(get_db),
     ):
-        return json({
-            "path": injected.url.path,
-            "db": db,
-        })
+        return json(
+            {
+                "path": injected.url.path,
+                "db": db,
+            }
+        )
 
     with test_client_factory(app) as client:
         resp = client.get("/mixed-handler")

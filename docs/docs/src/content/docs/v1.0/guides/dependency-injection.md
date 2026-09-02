@@ -82,17 +82,17 @@ recursively before the dependency itself runs.** There is no special
 "dependency API". Dependencies are solved by the exact same engine as the
 route.
 
-##  Injecting the raw request
+##  Injecting the active context
 
-Sometimes a dependency needs the whole request object, to read a header that
+Sometimes a dependency needs the whole context object, to read a header that
 has no extractor, to touch `ctx.state`, or to read the client IP. Use
-`Depend(get_request=True)`:
+`Depend(get_context=True)`:
 
 ```python
 from sillo import HttpContext, Depend
 
 
-def get_client_ip(ctx: HttpContext = Depend(get_request=True)):
+def get_client_ip(ctx: HttpContext = Depend(get_context=True)):
     return ctx.get_client_ip()
 
 
@@ -101,7 +101,10 @@ async def ping(ctx: HttpContext, ip: str = Depend(get_client_ip)):
     return {"client_ip": ip}
 ```
 
-`get_request=True` is special: it doesn't call a function. It injects the live `HttpContext` object directly. You can also write a normal dependency that takes `ctx` as a parameter and sillo will inject it:
+`get_context=True` is special: it doesn't call a function. It injects the live
+context object directly — an `HttpContext` on an HTTP route, a
+`WebSocketContext` on a WebSocket route. You can also write a normal dependency
+that takes `ctx` as a parameter and sillo will inject it:
 
 ```python
 from sillo import HttpContext
@@ -110,7 +113,8 @@ def get_client_ip(ctx: HttpContext):
     return ctx.get_client_ip()
 ```
 
-Both forms work; `get_request=True` is the shorthand when a dependency *only* needs the request.
+Both forms work; `get_context=True` is the shorthand when a dependency *only*
+needs the context.
 
 ##  Nested dependencies
 
@@ -399,6 +403,15 @@ assert resp.status_code == 200
 - **Doing I/O in a non-generator dependency**: if you open a connection and
   `return` it, nothing closes it. Use `yield` so the teardown runs.
 
+##  On WebSocket routes
+
+Everything on this page applies to a `@app.ws_route(...)` handler as well. Its
+signature is analysed the same way, so it can declare `Depend(...)` parameters,
+nest them, and use `yield` dependencies — the teardown runs when the connection
+handler returns. The tree is resolved once, when the socket connects, not per
+message. `Depend(get_context=True)` injects the `WebSocketContext`. See
+[WebSockets → Dependency injection](/v1.0/guides/websockets/#dependency-injection).
+
 ##  Works with
 
 - [Request Parameters](/v1.0/guides/request-parameters/): `Query`, `Header`,
@@ -408,6 +421,8 @@ assert resp.status_code == 200
   dependency-protected function handlers behind a prefix
 - [Middleware](/v1.0/guides/middleware/): request-scoped logic that runs for every
   request, not just injected ones
+- [WebSockets](/v1.0/guides/websockets/#dependency-injection): the same `Depend(...)`
+  markers on a socket handler
 
 ##  Related topics
 

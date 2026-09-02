@@ -38,7 +38,7 @@ flowchart LR
     E -->|"stored on Dependant"| F
 ```
 
-The entire flow lives in `core/sillo/core/dependencies/base.py` (589 lines).
+The entire flow lives in `core/sillo/core/dependencies/base.py` (597 lines).
 
 ---
 
@@ -55,18 +55,18 @@ class Depend:
         self,
         dependency: Callable[..., Any] | None = None,
         *,
-        get_request: bool = False,
+        get_context: bool = False,
     ) -> None:
         self.dependency = dependency
-        self.get_request = get_request
+        self.get_context = get_context
 ```
 
 ### 11.2.1  Fields
 
 | Field          | Type                      | Purpose                                                    |
 |----------------|---------------------------|------------------------------------------------------------|
-| `dependency`   | `Callable \| None`        | The callable whose return value is injected. `None` + `get_request=True` injects the raw `HttpContext`. |
-| `get_request`  | `bool`                    | When `True` and `dependency` is `None`, inject the `HttpContext` object. |
+| `dependency`   | `Callable \| None`        | The callable whose return value is injected. `None` + `get_context=True` injects the active context. |
+| `get_context`  | `bool`                    | When `True` and `dependency` is `None`, inject the active context object — an `HttpContext` on an HTTP route, a `WebSocketContext` on a WebSocket route. |
 
 ### 11.2.2  Generic Subscript Support
 
@@ -91,9 +91,9 @@ async def get_db():
 async def list_items(ctx: HttpContext, db=Depend(get_db)):
     ...
 
-# Pattern 2: Inject the raw HttpContext object
+# Pattern 2: Inject the active context object
 @app.get("/me")
-async def get_me(ctx: HttpContext, injected=Depend(get_request=True)):
+async def get_me(ctx: HttpContext, injected=Depend(get_context=True)):
     ...
 
 # Pattern 3: Nested dependencies
@@ -136,7 +136,7 @@ class Dependant:
     call: Callable[..., Any] | None = None
     name: str | None = None
     dependencies: list[Dependant] = field(default_factory=list)
-    request_param_names: list[str] = field(default_factory=list)
+    context_param_names: list[str] = field(default_factory=list)
     param_extractors: list[SolvedParamDependency] = field(default_factory=list)
     validator: CompiledValidator | None = None
     is_coroutine: bool = False
@@ -156,7 +156,7 @@ class Dependant:
 | `call`               | `Callable \| None`                           | The wrapped callable. `None` for the root node that only collects kwargs. |
 | `name`               | `str \| None`                                | Parameter name under which this dependency's result is stored. `None` for root. |
 | `dependencies`       | `list[Dependant]`                            | Child `Dependant` nodes: direct sub-dependencies declared via `Depend()`. |
-| `request_param_names`| `list[str]`                                  | Parameter names that receive the raw `HttpContext` (from `Depend(get_request=True)`). |
+| `context_param_names`| `list[str]`                                  | Parameter names that receive the active context — `HttpContext` or `WebSocketContext` (from `Depend(get_context=True)`). |
 | `param_extractors`   | `list[SolvedParamDependency]`                | Legacy-mode parameter markers (Query, Header, Cookie) that extract from the request. |
 | `validator`          | `CompiledValidator \| None`                  | Pydantic models compiled for this callable's validated parameters. `None` when none declared. |
 | `is_coroutine`       | `bool`                                       | `True` if `call` is `async def`. |
@@ -203,8 +203,8 @@ This function runs **once per route at registration**. It:
 flowchart TD
     A["get_dependant(call)"] --> B["signature(call)"]
     B --> C{"For each parameter:"}
-    C -->|"isinstance(default, Depend)"| D{"get_request?"}
-    D -->|"Yes, no dependency"| E["Append to request_params"]
+    C -->|"isinstance(default, Depend)"| D{"get_context?"}
+    D -->|"Yes, no dependency"| E["Append to context_params"]
     D -->|"No"| F["get_dependant(dependency, param_name)<br/>recursive call"]
     C -->|"isinstance(default, ParameterExtractor)"| G["Append to markers list"]
     C -->|"other"| H["Skip"]
@@ -222,15 +222,15 @@ flowchart TD
 # base.py:243-265
 sig = signature(call)
 deps: list[Dependant] = []
-request_params: list[str] = []
+context_params: list[str] = []
 markers: list[tuple[str, ParameterExtractor]] = []
 cache_key_parts: list[str] = []
 
 for param_name, param in sig.parameters.items():
     default = param.default
     if isinstance(default, Depend):
-        if default.get_request and default.dependency is None:
-            request_params.append(param_name)
+        if default.get_context and default.dependency is None:
+            context_params.append(param_name)
         else:
             sub = get_dependant(default.dependency, param_name, ...)
             deps.append(sub)
@@ -240,7 +240,7 @@ for param_name, param in sig.parameters.items():
 ```
 
 Each parameter falls into exactly one bucket:
-- **Depend with get_request** → raw Request injection
+- **Depend with get_context** → active context injection (`HttpContext` / `WebSocketContext`)
 - **Depend with dependency** → recursive tree building
 - **ParameterExtractor** → parameter extraction (Query/Header/Cookie/Path/Form/File)
 - **Other** → ignored (framework-external parameters)
@@ -492,7 +492,7 @@ flowchart LR
         A["Sub-dependencies<br/>values[dep.name]"]
         B["Parameter Extractors<br/>extractor.extract(request)"]
         C["Validated Params<br/>validated[id(node)]"]
-        D["Raw Request<br/>Depend(get_request=True)"]
+        D["Active context<br/>Depend(get_context=True)"]
     end
 
     A --> Kwargs["kwargs dict"]
@@ -514,7 +514,7 @@ if validated:
     node_values = validated.get(id(node))
     if node_values:
         kwargs.update(node_values)
-for rp in node.request_param_names:
+for rp in node.context_param_names:
     kwargs[rp] = ctx
 return kwargs
 ```
@@ -785,18 +785,20 @@ The solver iterates this list, executing each step in order. By the time it
 reaches `get_current_user`, `get_db_session` has already been resolved and
 its value is in the `values` dict.
 
-### 11.12.4  Request Injection
+### 11.12.4  Context Injection
 
-`Depend(get_request=True)` is a special case. It bypasses the callable
-execution entirely and directly assigns the `HttpContext` object:
+`Depend(get_context=True)` is a special case. It bypasses the callable
+execution entirely and directly assigns the active context object — an
+`HttpContext` on an HTTP route, a `WebSocketContext` on a WebSocket route
+(the `WebsocketRoute` runs the same solver, passing the socket as `ctx`):
 
 ```python
 # In get_dependant():
-if default.get_request and default.dependency is None:
-    request_params.append(param_name)
+if default.get_context and default.dependency is None:
+    context_params.append(param_name)
 
 # In _collect_kwargs():
-for rp in node.request_param_names:
+for rp in node.context_param_names:
     kwargs[rp] = ctx
 ```
 

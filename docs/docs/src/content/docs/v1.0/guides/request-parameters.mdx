@@ -319,22 +319,23 @@ async def get_data(ctx: HttpContext, data: dict = Depend(get_user_data)):
 - Works with nested dependencies
 - Self-documenting parameters
 
-###  Reading the request directly
+###  Reading the context directly
 
-`Depend(get_request=True)` injects the raw `HttpContext` into a dependency,
+`Depend(get_context=True)` injects the active context into a dependency —
+an `HttpContext` on an HTTP route, a `WebSocketContext` on a WebSocket route —
 leaving the extraction to you:
 
 ```python
 from sillo import Depend
 
-def get_user_data(ctx: HttpContext = Depend(get_request=True)):
+def get_user_data(ctx: HttpContext = Depend(get_context=True)):
     page = ctx.query_params.get("page", "1")
     authorization = ctx.headers.get("Authorization")
     return {"page": page, "token": authorization}
 ```
 
 A plain `ctx` parameter is **not** injected into a dependency — only
-handlers get the context that way. Without `Depend(get_request=True)` it is
+handlers get the context that way. Without `Depend(get_context=True)` it is
 just an unfilled argument.
 
 **Disadvantages:**
