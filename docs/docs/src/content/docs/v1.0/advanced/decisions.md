@@ -534,7 +534,7 @@ How should optional dependencies be handled?
 
 ### Context
 
-- Sillo depends on several optional packages (Tortoise, Redis, Jinja2, etc.).
+- Sillo depends on several optional packages (Tortoise, Redis, PyJWT, etc.).
 - Requiring all of them would bloat the install.
 - Importing them at module level would fail if not installed.
 

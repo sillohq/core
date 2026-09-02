@@ -118,7 +118,7 @@ These are first-party modules, in the framework, each with a page in these docs:
 - caching with memory and Redis-compatible backends
 - WebSockets, consumers, channels, and real-time patterns
 - OpenAPI generation
-- static files, templating, file uploads, and streaming responses
+- static files, file uploads, and streaming responses
 - test clients and testing utilities
 - HTTP client utilities
 - content negotiation, ETags, request lifecycle helpers, and protocol status constants under `sillo.http`
@@ -199,7 +199,7 @@ A request arrives at the server, which hands sillo a `scope`, a
 
 Around that core sit optional subsystems, each independent: an
 [ORM layer](/v1.0/guides/record/), [background work](/v1.0/guides/work/),
-[WebSockets](/v1.0/guides/websockets/), [templating](/v1.0/guides/templating/),
+[WebSockets](/v1.0/guides/websockets/), [Inertia](/v1.0/guides/inertia/),
 [caching](/v1.0/guides/cache/), [mail](/v1.0/guides/services/mail/), and an
 [HTTP client](/v1.0/guides/http/client/). None of them are required. An
 application that only serves JSON needs none of them.
@@ -214,8 +214,8 @@ The path through the documentation depends on what you are building.
 something real. Add [Record](/v1.0/guides/record/) when you need a database
 and [Authentication](/v1.0/guides/authentication/) when you need users.
 
-**A server-rendered application.** [Routing](/v1.0/guides/routing/) →
-[Templating](/v1.0/guides/templating/) → [Sessions](/v1.0/guides/sessions/) →
+**An application with a front end.** [Routing](/v1.0/guides/routing/) →
+[Inertia](/v1.0/guides/inertia/) → [Sessions](/v1.0/guides/sessions/) →
 [CSRF](/v1.0/guides/csrf/). The last is not optional if your forms
 authenticate with cookies.
 

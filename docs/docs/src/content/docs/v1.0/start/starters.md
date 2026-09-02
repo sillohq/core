@@ -26,9 +26,8 @@ sillo-start create-app sillohq/starter-inertia myapp      # Inertia
 
 ## Choosing
 
-Take the **default** when your pages are pages: forms that post and redirect,
-server-rendered HTML, an admin panel, a JSON API for whatever else needs one.
-It has no build step and no `node_modules`.
+Take the **default** when the product is an API: JSON routes, session or JWT
+auth, a queue behind them. It has no build step and no `node_modules`.
 
 Take **Inertia** when you want React or Vue components with the routing,
 validation and auth still on the Python side. You get a frontend without
@@ -44,8 +43,6 @@ app/
   bootstrap.py       assembling the application
   config.py          typed settings, read from .env
   main.py            the ASGI entrypoint — `app.main:app`
-  admin.py           what the admin panel exposes
-  templating.py      template engine setup
   jobs/              queued job classes
   tasks/             scheduled tasks
 database/
@@ -55,8 +52,7 @@ database/
 routes/
   api.py             the JSON API
   auth.py            sign in, sign out, register
-  web.py             server-rendered pages
-templates/           HTML
+  web.py             the welcome page
 static/              CSS
 tests/               a working suite, with fixtures
 storage/             SQLite lives here; gitignored
@@ -69,7 +65,6 @@ and a `README.md`.
 ### What is already wired
 
 - **Session authentication** against a real user model, not a stub.
-- **The admin panel**, at `/admin/`.
 - **Migrations**, with the initial one committed, so `sillo db:migrate` on a
   fresh clone produces a working database rather than an empty one.
 - **A queue and a scheduler**, with the directories to put work in.
@@ -83,7 +78,7 @@ That last one is why this is a repository rather than a template. See
 ### Dependencies
 
 ```toml
-sillo-framework[hashing-bcrypt,record,templating]
+sillo-framework[hashing-bcrypt,record]
 aiosqlite
 email-validator
 ```
@@ -110,10 +105,8 @@ vite.config.ts       the frontend build
 package.json
 ```
 
-And it drops Jinja: the only HTML it serves is `root.html`, which the Inertia
-adapter reads and substitutes into directly. Every other page is a component.
-Installing a template engine to render one static file would be a dependency
-never called.
+The only HTML it serves is `root.html`, which the Inertia adapter reads and
+substitutes into directly. Every other page is a component.
 
 ### Dependencies
 
@@ -124,8 +117,7 @@ aiosqlite
 email-validator
 ```
 
-Note the absence of `templating`. See [Inertia](/v1.0/guides/inertia/) for the
-frontend side.
+See [Inertia](/v1.0/guides/inertia/) for the frontend side.
 
 ## The Makefile
 

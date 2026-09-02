@@ -225,9 +225,14 @@ logging or returning to a client.
 
 ##  Templates
 
-Set `template_directory` and the client builds a Jinja2 environment over
-it. `jinja2` must be installed; without it, templating is silently
-unavailable and `send_template_email` falls through without rendering.
+Set `template_directory` and the client builds a Jinja2 environment over it.
+`jinja2` must be installed — `pip install "sillo-framework[mail]"` — and
+without it template rendering is silently unavailable, so
+`send_template_email` falls through without rendering.
+
+This is the one place Jinja2 survives in the framework. There is no
+application-wide template layer in 1.0; the mail client owns its environment
+and nothing else shares it.
 
 ```python title="template setup"
 config = MailConfig(template_directory="templates/mail")
@@ -456,7 +461,5 @@ auto-reload.
 - [Queue System](/v1.0/guides/work/queue/): where email sending belongs
 - [Jobs](/v1.0/guides/work/jobs/): retry and failure handling for delivery
 - [Background Tasks](/v1.0/guides/work/background/): the non-durable alternative
-- [Templating](/v1.0/guides/templating/): the Jinja2 environment used for HTML
-  bodies
 - [Startup & Shutdown](/v1.0/guides/startups-and-shutdowns/): the hooks `setup_mail`
   registers

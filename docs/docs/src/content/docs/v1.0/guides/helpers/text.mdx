@@ -45,17 +45,17 @@ text.truncate("a" * 50, 20, suffix="…")  # ends with the ellipsis character
 The suffix counts toward the limit, so the result never exceeds `max_length`. That is what makes it safe for a fixed-width column or a `meta` tag with a hard character budget.
 
 ```python title="Meta descriptions from article bodies"
-from sillo.helpers.text import truncate, strip_html
-from sillo.templating import render
 from sillo import HttpContext
+from sillo.helpers.text import strip_html, truncate
+from sillo.responses import json
 
 @app.get("/articles/{slug}")
 async def article(ctx: HttpContext, slug: str):
     art = await Article.get(slug=slug)
-    return await render("article.html", {
-        "article": art,
+    return json({
+        "article": art.to_dict(),
         "meta_description": truncate(strip_html(art.body_html), 160),
-    }, ctx=ctx)
+    })
 ```
 
 <Aside type="caution" title="Truncation counts code points, not visible characters">
@@ -369,6 +369,4 @@ That turns a per-request scan of a 50 KB document into a column read.
 - [Strings](/v1.0/guides/helpers/strings/): identifiers, slugs, and tokens
 - [HTML](/v1.0/guides/helpers/html/): escaping and sanitizing, and the other
   `strip_tags`
-- [Templating](/v1.0/guides/templating/): where truncation and wrapping usually get
-  applied
 - [Mail](/v1.0/guides/services/mail/): confirming that an extracted address is real

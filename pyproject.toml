@@ -113,8 +113,12 @@ storage-s3 = ["httpx>=0.23.3"]
 # Event Distribution (Redis, in-memory fallback available)
 events = ["redis>=5.0.0"]
 
-# HTML Templating
-templating = ["jinja2>=3.1.6"]
+# Templated email bodies. Jinja2 is no longer a framework-wide concern: the
+# HTML templating layer and the built-in admin were dropped in v1, and the
+# admin now lives in its own package (`pip install warder`) with a React
+# interface of its own. This is the one place the framework still renders a
+# template.
+mail = ["jinja2>=3.1.6"]
 
 # GraphQL lives in its own package now: `pip install sillo-graphql`, which
 # imports as `sillo.graphql`. See https://github.com/sillohq/graphql.
@@ -208,7 +212,6 @@ warn_return_any = false
 disallow_untyped_calls = false
 disallow_untyped_defs = false
 files = ["sillo"]
-exclude = "(sillo/templates/.*)"
 
 [tool.black]
 line-length = 88
@@ -235,7 +238,6 @@ exclude = [
     ".pytest_cache",
     "htmlcov",
     "node_modules",
-    "templates",
     "docs",
     "test/",
     "sandbox.py"
@@ -277,7 +279,6 @@ exclude = [
     "examples",
     "tests",
     "test",
-    "sillo/templates",
     "docs",
     "benchmarks",
     "**/test_*.py",

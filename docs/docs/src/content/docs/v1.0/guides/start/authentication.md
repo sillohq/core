@@ -270,7 +270,6 @@ def may_enter(user) -> bool:
     return bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
 ```
 
-See [The Admin Panel](/v1.0/guides/start/admin/).
 
 ##  Adding fields
 
@@ -298,8 +297,6 @@ admin, your scripts) with no second model to mirror it into.
 name, so the framework's built-in `User` would displace yours and your
 extra columns would silently stop being created.
 
-Nor `sillo.admin.default_user`, which would add a parallel `admin_users`
-table.
 :::
 
 ##  Managing accounts
@@ -339,12 +336,12 @@ an account precisely because it was disabled.
 4. **Redeclaring `display_name`, `identity` or `is_authenticated`** as
    fields shadows the base class's properties.
 
-5. **`is_staff` defaults to `False`.** An account created with
-   `create_user` cannot reach the admin, which is the intended default.
+5. **`is_staff` defaults to `False`.** An account created with `create_user`
+   is not an administrator, which is the intended default. `sillo user:admin`
+   is what makes one.
 
 ##  Related
 
-- [The Admin Panel](/v1.0/guides/start/admin/): what `is_staff` gets you into
 - [The Console](/v1.0/guides/start/console/): the `user` commands
 - [Authentication](/v1.0/guides/authentication/): the framework-level reference
 - [JWT Authentication](/v1.0/guides/jwt-auth/): tokens in depth

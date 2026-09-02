@@ -13,20 +13,20 @@ description: "How Sillo works internally, documented subsystem by subsystem."
 
 | # | Document | Description |
 |---|----------|-------------|
-| 01 | [Architecture Overview](/v1.0/advanced/architecture-overview/) | System layers, boundaries, component relationships, dependency graph |
-| 02 | [Application Lifecycle](/v1.0/advanced/application-lifecycle/) | SilloApp, ASGI lifespan, startup/shutdown, state management |
-| 03 | [Configuration System](/v1.0/advanced/configuration/) | Config class, .env loading, secret masking, environment variables |
-| 04 | [Type System & Encoding](/v1.0/advanced/types-and-encoding/) | Core type aliases, jsonable_encoder, custom encoders, serialization |
+| 1 | [Architecture Overview](/v1.0/advanced/architecture-overview/) | System layers, boundaries, component relationships, dependency graph |
+| 2 | [Application Lifecycle](/v1.0/advanced/application-lifecycle/) | SilloApp, ASGI lifespan, startup/shutdown, state management |
+| 3 | [Configuration System](/v1.0/advanced/configuration/) | Config class, .env loading, secret masking, environment variables |
+| 4 | [Type System & Encoding](/v1.0/advanced/types-and-encoding/) | Core type aliases, jsonable_encoder, custom encoders, serialization |
 
 ## Part II: HTTP Layer
 
 | # | Document | Description |
 |---|----------|-------------|
-| 05 | [Routing System](/v1.0/advanced/routing/) | Route compilation, path matching, typed converters, groups, mounted routers |
-| 06 | [Middleware Pipeline](/v1.0/advanced/middleware/) | BaseMiddleware, ASGI bridge, middleware chain, execution order |
-| 07 | [HTTP Request](/v1.0/advanced/http-request/) | BaseContext, Request, body parsing, form data, file uploads |
-| 08 | [HTTP Response](/v1.0/advanced/http-response/) | BaseResponse, JSON/File/Streaming/Redirect responses, the `sillo.responses` builders |
-| 09 | [HTTP Correctness](/v1.0/advanced/http-correctness/) | Content negotiation, ETags, range requests, HTTP client |
+| 5 | [Routing System](/v1.0/advanced/routing/) | Route compilation, path matching, typed converters, groups, mounted routers |
+| 6 | [Middleware Pipeline](/v1.0/advanced/middleware/) | BaseMiddleware, ASGI bridge, middleware chain, execution order |
+| 7 | [HTTP Request](/v1.0/advanced/http-request/) | BaseContext, Request, body parsing, form data, file uploads |
+| 8 | [HTTP Response](/v1.0/advanced/http-response/) | BaseResponse, JSON/File/Streaming/Redirect responses, the `sillo.responses` builders |
+| 9 | [HTTP Correctness](/v1.0/advanced/http-correctness/) | Content negotiation, ETags, range requests, HTTP client |
 | 10 | [Exception Handling](/v1.0/advanced/exception-handling/) | Exception hierarchy, ExceptionMiddleware, error handlers, status codes |
 
 ## Part III: Dependency Injection & Validation
@@ -86,38 +86,36 @@ description: "How Sillo works internally, documented subsystem by subsystem."
 |---|----------|-------------|
 | 32 | [Session Management](/v1.0/advanced/sessions/) | SessionMiddleware, cookie/file backends, Session object, config |
 | 33 | [Cache System](/v1.0/advanced/cache/) | MemoryCache, RedisCache, @cache decorator, serialization, tags |
-| 34 | [Templating](/v1.0/advanced/templating/) | Jinja2 integration, TemplateEngine, middleware, context injection |
-| 35 | [Mail Service](/v1.0/advanced/mail/) | MailClient, SMTP, templates, attachments, config |
-| 36 | [Console Framework](/v1.0/advanced/console/) | Command, Console, arguments/options/flags, output, prompts, terminal |
-| 37 | [Admin Panel](/v1.0/advanced/admin/) | AdminSite, registry, routes, auth, activity log, default user model |
-| 38 | [Pagination](/v1.0/advanced/pagination/) | Strategies (PageNumber/LimitOffset/Cursor), data handlers, paginators |
+| 34 | [Mail Service](/v1.0/advanced/mail/) | MailClient, SMTP, templates, attachments, config |
+| 35 | [Console Framework](/v1.0/advanced/console/) | Command, Console, arguments/options/flags, output, prompts, terminal |
+| 36 | [Pagination](/v1.0/advanced/pagination/) | Strategies (PageNumber/LimitOffset/Cursor), data handlers, paginators |
 
 ## Part X: Testing & Tools
 
 | # | Document | Description |
 |---|----------|-------------|
-| 39 | [Test Client](/v1.0/advanced/test-client/) | Sync/async ASGI test clients, transport, WebSocket testing, helpers |
-| 40 | [Helpers & Utilities](/v1.0/advanced/helpers/) | Files, retry, crypto, JWT, network, HTML, strings, text utilities |
+| 37 | [Test Client](/v1.0/advanced/test-client/) | Sync/async ASGI test clients, transport, WebSocket testing, helpers |
+| 38 | [Helpers & Utilities](/v1.0/advanced/helpers/) | Files, retry, crypto, JWT, network, HTML, strings, text utilities |
 
 ## Part XI: Ecosystem Packages
 
 | # | Document | Description |
 |---|----------|-------------|
-| 41 | [sillo-oauth](/v1.0/advanced/oauth/) | Provider abstraction, OAuth flow, state management, PKCE, testing |
-| 42 | [sillo-inertia](/v1.0/advanced/inertia/) | Adapter, HTML/JSON decision, props, Vite integration, version mismatch |
-| 43 | [sillo-start](/v1.0/advanced/start/) | Project creation, tarball fetching, personalization, naming utilities |
-| 44 | [@sillo/atlas](/v1.0/advanced/atlas/) | OpenAPI reference, DOM construction, API client, search, snippets |
-| 45 | [records-orm](/v1.0/advanced/records-orm/) | Standalone pypika-based ORM, backend abstraction, SQLite backend |
+| 39 | [sillo-oauth](/v1.0/advanced/oauth/) | Provider abstraction, OAuth flow, state management, PKCE, testing |
+| 40 | [sillo-inertia](/v1.0/advanced/inertia/) | Adapter, HTML/JSON decision, props, Vite integration, version mismatch |
+| 41 | [sillo-start](/v1.0/advanced/start/) | Project creation, tarball fetching, personalization, naming utilities |
+| 42 | [@sillo/atlas](/v1.0/advanced/atlas/) | OpenAPI reference, DOM construction, API client, search, snippets |
+| 43 | [records-orm](/v1.0/advanced/records-orm/) | Standalone pypika-based ORM, backend abstraction, SQLite backend |
 
 ## Part XII: Cross-Cutting Concerns
 
 | # | Document | Description |
 |---|----------|-------------|
-| 46 | [Architectural Decisions](/v1.0/advanced/decisions/) | Key design choices, trade-offs, rejected alternatives |
-| 47 | [Debugging Guide](/v1.0/advanced/debugging/) | Symptom → cause → resolution chains, inspection points |
-| 48 | [Extending Sillo](/v1.0/advanced/extending/) | Extension patterns, contracts, where new code lives |
-| 49 | [Change Impact Analysis](/v1.0/advanced/change-impact/) | Module dependency chains, modification consequences |
-| 50 | [Glossary](/v1.0/advanced/glossary/) | Sillo-specific terminology, framework concepts |
+| 44 | [Architectural Decisions](/v1.0/advanced/decisions/) | Key design choices, trade-offs, rejected alternatives |
+| 45 | [Debugging Guide](/v1.0/advanced/debugging/) | Symptom → cause → resolution chains, inspection points |
+| 46 | [Extending Sillo](/v1.0/advanced/extending/) | Extension patterns, contracts, where new code lives |
+| 47 | [Change Impact Analysis](/v1.0/advanced/change-impact/) | Module dependency chains, modification consequences |
+| 48 | [Glossary](/v1.0/advanced/glossary/) | Sillo-specific terminology, framework concepts |
 
 ---
 

@@ -115,7 +115,7 @@ It returns the list of paths it changed, relative to the root. See
 ## If you need more
 
 Personalisation is deliberately small. Anything beyond renaming (choosing a
-database driver, dropping the admin panel, adding a frontend) belongs in the
+database driver, dropping a subsystem, adding a frontend) belongs in the
 starter itself, as something the application already supports and you
 configure, rather than as a substitution the scaffolder performs.
 

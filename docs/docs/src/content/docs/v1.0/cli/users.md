@@ -160,8 +160,8 @@ sillo user:staff someone@example.com            # grant
 sillo user:staff someone@example.com --revoke   # revoke
 ```
 
-Grants or revokes admin access, the `is_staff` flag the [admin
-panel](/v1.0/orm/admin/) checks.
+Grants or revokes staff access: the `is_staff` flag that
+[Warder](/packages/warder/) and anything else gating on it will check.
 
 ## Which model these act on
 

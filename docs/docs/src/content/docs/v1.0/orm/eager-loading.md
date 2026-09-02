@@ -176,13 +176,12 @@ A list page issuing 50-odd near-identical queries is the signature.
 
 **The plan.** [`explain()`](/v1.0/orm/queries/#explain) for one query at a time.
 
-**In the admin.** A `list_display` naming a relation is one query per row.
-Fix it in [`get_queryset`](/v1.0/orm/admin-registering/#get_queryset):
+**In a generic list.** Anything that renders a column per relation — an admin
+panel, a CSV export, a serializer walking `_meta` — is one query per row unless
+the queryset it was handed says otherwise:
 
 ```python
-@classmethod
-def get_queryset(cls, queryset):
-    return queryset.select_related("author").prefetch_related("tags")
+queryset.select_related("author").prefetch_related("tags")
 ```
 
 ## When not to eager load

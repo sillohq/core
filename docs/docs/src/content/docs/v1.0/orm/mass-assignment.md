@@ -40,7 +40,7 @@ Looks fine. Now someone posts:
 ```
 
 `is_staff` is a field. It is in the dict. It is written. The account now has
-[admin access](/v1.0/orm/admin-permissions/).
+staff access to everything that gates on it.
 
 The same shape reaches `is_superuser`, `email_verified_at`, `balance`,
 `organisation_id`. Anything the model happens to have.

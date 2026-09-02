@@ -120,7 +120,7 @@ run returns.
 ```python
 extras = self.multichoice(
     "Which features?",
-    ["record", "cache", "jwt", "templating"],
+    ["record", "cache", "jwt", "mail"],
     defaults=["record"],
     minimum=1,
 )

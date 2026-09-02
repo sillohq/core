@@ -6,7 +6,7 @@ import secrets
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no cover
-    # See sillo.admin.templating: the None fallbacks are runtime-only.
+    # The None fallbacks are runtime-only.
     from cryptography.fernet import Fernet
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC

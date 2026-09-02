@@ -48,7 +48,7 @@ EXTRAS = {
     "jwt": "jwt",
     "record": "tortoise",
     "cache": "redis",
-    "templating": "jinja2",
+    "mail": "jinja2",
     "graphql": "strawberry",
     "bcrypt": "bcrypt",
     "argon2": "argon2",

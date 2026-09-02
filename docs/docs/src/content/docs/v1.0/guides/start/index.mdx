@@ -19,23 +19,22 @@ import { TabItem, Tabs } from '@astrojs/starlight/components';
 Sillo does not generate applications. It publishes one.
 
 [`sillohq/starter`](https://github.com/sillohq/starter) is a working
-application (session authentication against a real user model, an admin panel,
-migrations, server-rendered pages, a JSON API, a queue) that you copy and make
-yours. Its CI boots it and calls every route on every push, on three Python
+application (session authentication against a real user model, migrations, a
+JSON API, a queue) that you copy and make yours. Its CI boots it and calls every route on every push, on three Python
 versions.
 
 That distinction is the whole design, and the rest of this page explains
 why it is worth caring about.
 
 :::tip[New to Sillo? Start smaller]
-The starter is a complete application (auth, an admin panel, migrations, a
-queue) and it is a lot to meet at once. If you have not written a Sillo route
+The starter is a complete application (auth, migrations, a queue) and it is a
+lot to meet at once. If you have not written a Sillo route
 yet, [Installation](/v1.0/guides/installation/) builds a single-file application
 from nothing in about a minute, and [Routing](/v1.0/guides/routing/) →
 [Handlers](/v1.0/guides/handlers/) → [Validation](/v1.0/guides/validation/) is enough to
 build something real.
 
-Come back here when you want the wiring (sessions, the user model, the admin)
+Come back here when you want the wiring (sessions, the user model, the console)
 rather than the framework.
 :::
 
@@ -246,9 +245,8 @@ has to be upgraded before the next person who clones it gets the fix.
 | --- | --- |
 | **Auth** | Session-based over JSON, with JWT written and commented out |
 | **Users** | One `User` model with a manager, password hashing and `verify_credentials` |
-| **Admin** | Mounted at `/admin/`, authenticating against that same `User` |
 | **Database** | Record with SQLite by default, and real migrations |
-| **Pages** | One Jinja template and a stylesheet, with `/static` served in development |
+| **Pages** | One HTML page and a stylesheet, with `/static` served in development |
 | **API** | JSON routes under `/api`, documented by [Atlas](/v1.0/guides/openapi/documentation-ui/#atlas) at `/docs` |
 | **Queue** | A worker and scheduler, wired and switched off |
 | **Console** | `sillo`: migrations, users, worker, scheduler, serve |
@@ -260,8 +258,8 @@ Two things are deliberately *not* there, and both are covered later:
   should do is your application's business, and an example you have to
   delete is worse than none. See
   [Background Work](/v1.0/guides/start/background-work/).
-- **No second user model.** The admin signs people in with your `User`.
-  See [Users & Authentication](/v1.0/guides/start/authentication/).
+- **No second user model.** One `User`, and everything authenticates against
+  it. See [Users & Authentication](/v1.0/guides/start/authentication/).
 
 ##  What happens when you create a project
 
@@ -380,7 +378,7 @@ which you can fix by hand.
 
 ```bash
 sillo db:migrate                          # create the database
-sillo user:admin you@example.com you      # an account that can reach /admin/
+sillo user:admin you@example.com you      # a superuser account
 uvicorn app:app --reload                      # http://localhost:8000
 ```
 
@@ -391,8 +389,6 @@ Then:
 - [http://localhost:8000](http://localhost:8000): the welcome page
 - [http://localhost:8000/docs](http://localhost:8000/docs): the generated
   OpenAPI documentation
-- [http://localhost:8000/admin/](http://localhost:8000/admin/): the admin
-  panel, note the trailing slash
 
 `app/bootstrap.py` is the one file worth reading first. Everything the
 application is made of is assembled there, in order, with the reasoning
@@ -408,14 +404,11 @@ Collected from actually running this, not from reading the source.
    sillo` settles it under uv; under `venv`, activate the project's own
    `.venv` first.
 
-2. **Admin routes need the trailing slash.** `/admin/login/`, not
-   `/admin/login`.
-
-3. **Installing dependencies is not the same as creating the database.**
+2. **Installing dependencies is not the same as creating the database.**
    Installing gets you the `sillo` command; `sillo db:migrate` is what
    creates the schema.
 
-4. **The database file is gitignored, the migrations are not.** Commit
+3. **The database file is gitignored, the migrations are not.** Commit
    `database/migrations/`; it is the schema's source of truth.
 
 ##  Related
@@ -426,7 +419,6 @@ Collected from actually running this, not from reading the source.
 - [Database & Migrations](/v1.0/guides/start/database/): models, migrations, other
   databases
 - [Users & Authentication](/v1.0/guides/start/authentication/): the one user model
-- [The Admin Panel](/v1.0/guides/start/admin/): registering models, who may enter
 - [Background Work](/v1.0/guides/start/background-work/): jobs, workers, scheduled
   tasks
 - [Testing](/v1.0/guides/start/testing/): the suite, the smoke test, and what each

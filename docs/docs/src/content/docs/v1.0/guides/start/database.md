@@ -30,7 +30,7 @@ sillo db:rollback 0001_initial  # go back
 application, the migration commands and any script of yours all read it.
 
 ```python
-MODEL_MODULES = ["database.models", "sillo.admin.models"]
+MODEL_MODULES = ["database.models"]
 MIGRATIONS_MODULE = "database.migrations"
 
 
@@ -250,30 +250,27 @@ production.
 
 ##  What lives in the database
 
-A new project has three tables:
+A new project has two tables:
 
 | Table | |
 | --- | --- |
 | `users` | Your user model. Everyone: including administrators |
-| `admin_activity` | The admin's audit log: who changed what, and when |
 | `tortoise_migrations` | Which migrations have been applied |
 
 `MODEL_MODULES` is what decides this:
 
 ```python
-MODEL_MODULES = ["database.models", "sillo.admin.models"]
+MODEL_MODULES = ["database.models"]
 ```
 
-`sillo.admin.models` is the activity log alone. The admin's *default* user
-model lives in `sillo.admin.default_user` and is deliberately not registered.
-Registering it would add `admin_users` and `admin_roles` beside your `users`, a
-second set of accounts to keep in step or forget about. See [The Admin
-Panel](/v1.0/guides/start/admin/).
+A package that brings models of its own goes in the same list.
+[Warder](/packages/warder/), the admin panel, keeps an activity log in
+`warder.models`; installing it means one more entry here and one more
+migration.
 
-To drop the audit log, remove that entry and run
-`sillo db:make drop activity log --apply`. The admin works either way: without
-the table it records nothing, and the entry disappears from the sidebar
-rather than leading to an error.
+What a project should not add is a second user table. One `User`, and
+everything authenticates against it — two sets of accounts is two things to
+keep in step, or to forget about.
 
 ##  Migrations in a deployment
 

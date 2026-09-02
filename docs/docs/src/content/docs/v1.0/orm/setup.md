@@ -23,7 +23,7 @@ app = SilloApp()
 setup_record(
     app,
     DatabaseConfig.from_env(),
-    model_modules=["database.models", "sillo.admin.models"],
+    model_modules=["database.models"],
 )
 ```
 
@@ -43,7 +43,7 @@ no second place to configure it.
 ## Model modules
 
 ```python
-model_modules=["database.models", "sillo.admin.models"]
+model_modules=["database.models"]
 ```
 
 Dotted paths to modules containing models. Tortoise discovers models by
@@ -51,8 +51,9 @@ importing these, a model in a module not listed here has no table, and the
 error you get is a confusing one about a missing relation rather than a missing
 model.
 
-`sillo.admin.models` is required if you mount the [admin panel](/v1.0/orm/admin/):
-it holds the activity log every admin site writes to.
+A package you install can bring its own models, and they go in this list too:
+[Warder](/packages/warder/), the admin panel, keeps its activity log in
+`warder.models`, so mounting it means adding that entry.
 
 ## Installing the driver
 

@@ -73,8 +73,8 @@ have to keep in step with.
 | [Internals](/v1.0/start/internals/) | Fetching, unpacking, and using it as a library |
 
 :::tip[New to Sillo?]
-The starter is a complete application (auth, an admin panel, migrations, a
-queue) and it is a lot to meet at once. If you have not written a Sillo route
+The starter is a complete application (auth, migrations, a queue) and it is a
+lot to meet at once. If you have not written a Sillo route
 yet, [Installation](/v1.0/guides/installation/) builds a single-file application
 from nothing in about a minute.
 

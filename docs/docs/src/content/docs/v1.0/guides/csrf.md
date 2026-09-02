@@ -122,8 +122,8 @@ sillo provides flexible configuration to customize CSRF protection for your appl
     this cookie and echo it back in `header_name`, which `HttpOnly` makes
     impossible — an `HttpOnly` CSRF cookie cannot be used by any JavaScript
     client. The token is not a credential: it is only useful to someone who
-    can already read the page. Turn it on only if every form is server-rendered
-    with `{{ csrf_token }}` and nothing submits over AJAX.
+    can already read the page. Turn it on only if every form is rendered
+    server-side with the token already in it and nothing submits over AJAX.
   - Example: `CSRFConfig(cookie_httponly=True)`
 
 - **`cookie_samesite`** (string, default: `"lax"`)
@@ -150,190 +150,101 @@ sillo provides flexible configuration to customize CSRF protection for your appl
   - Path for which the cookie is valid
   - Example: `CSRFConfig(cookie_path="/api")`
 
-##  Using CSRF with Templates
+##  Getting the token to the client
 
-When working with sillo templates, you can easily include CSRF tokens in your forms. The CSRF token is automatically added to the request state and can be accessed in your templates.
+The middleware puts the token on `ctx.state.csrf_token` before your handler
+runs, and sets it as a cookie on the way out. Every way of submitting it starts
+from one of those two.
 
-###  1. Basic Form with CSRF Token
-
-First, ensure you have a template file (e.g., `templates/login.html`):
-
-```html
-<!-- templates/login.html -->
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Login</title>
-  </head>
-  <body>
-    <h1>Login</h1>
-    <form method="post" action="/login">
-      <input type="hidden" name="csrftoken" value="{{ csrf_token }}" />
-
-      <div class="form-group">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required />
-      </div>
-
-      <div class="form-group">
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required />
-      </div>
-
-      <button type="submit">Login</button>
-    </form>
-  </body>
-</html>
-```
-
-###  2. Route Handler with Template Rendering
-
-In your route handler, use the `render` function to render the template with the CSRF token:
+###  1. Read it in a handler
 
 ```python
-from sillo.templating import render
 from sillo import HttpContext
+from sillo.responses import json
 
-@app.get("/login")
-async def login_get(ctx: HttpContext):
-    # The CSRF token is automatically available in the template context
-    return await render("login.html", ctx=ctx)
 
-@app.post("/login")
-async def login_post(ctx: HttpContext):
-    form = await ctx.form
-    # CSRF validation happens automatically via the middleware
-
-    # Your login logic here
-    if form.get("username") == "admin" and form.get("password") == "password":
-        return "Login successful!"
-    return "Invalid credentials"
+@app.get("/api/csrf")
+async def csrf(ctx: HttpContext):
+    return json({"token": ctx.state.csrf_token})
 ```
 
-###  3. Using Template Context Middleware (Recommended)
+That is the shape a single-page app wants: fetch it once, keep it, send it back
+in the `X-CSRFToken` header on every mutating request.
 
-For better organization, use the `TemplateContextMiddleware` to automatically inject the CSRF token into all your templates:
+###  2. Share it with an Inertia page
+
+[Inertia](/v1.0/guides/inertia/) pages get it as a shared prop, so every page
+component has it without asking:
 
 ```python
-from sillo.templating.middleware import TemplateContextMiddleware
-
-# Add this before your route definitions
-app.use(TemplateContextMiddleware())
-
-# Now all templates will have access to the CSRF token as `{{ csrf_token }}`
+inertia.share("csrf_token", lambda ctx: ctx.state.csrf_token)
 ```
 
-###  4. AJAX Requests with CSRF
+```jsx
+router.post('/posts', data, {
+    headers: { 'X-CSRFToken': props.csrf_token },
+})
+```
 
-For AJAX requests, include the CSRF token in your JavaScript:
+###  3. Read it from the cookie
+
+The token is also in a cookie, readable from JavaScript by design — the
+protection comes from the attacker's page being unable to *read* your cookies,
+not from the token being secret from your own page:
 
 ```javascript
-// Include this in your base template
-<script>
-    // Get CSRF token from meta tag
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+const token = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('csrftoken='))
+    ?.split('=')[1];
 
-    // Example AJAX request
-    async function submitForm() {
-        const response = await fetch('/api/endpoint', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({ data: 'example' })
-        });
-        return await response.json();
-    }
-</script>
+await fetch('/posts', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+});
 ```
 
-###  5. Customizing the CSRF Field Name
+###  4. Submit it as a form field
 
-If you need to use a different field name for the CSRF token in your forms, you can customize it in your configuration:
+A plain HTML form cannot set a header, so the middleware also reads the token
+out of the body, under `form_field` (default `csrftoken`). Both
+`application/x-www-form-urlencoded` and `multipart/form-data` are read, so a
+file-upload form can submit one too:
+
+```html
+<form method="post" action="/login">
+    <input type="hidden" name="csrftoken" value="…" />
+    <input type="text" name="username" required />
+    <input type="password" name="password" required />
+    <button type="submit">Log in</button>
+</form>
+```
+
+Fill the hidden input from the cookie, or render the page from a handler that
+has `ctx.state.csrf_token` to hand.
+
+###  5. Customizing the CSRF field name
+
+If your front end already posts a differently-named field, name it rather than
+changing the front end:
 
 ```python
 csrf_config = CSRFConfig(
     # ... other config
     form_field="custom_csrf_field",  # Default is "csrftoken"
+    header_name="X-CSRF-TOKEN",      # Default is "X-CSRFToken"
 )
 app.use(CSRFMiddleware(config=csrf_config))
-```
-
-Then update your form to use the custom field name:
-
-```html
-<form method="post">
-  <input type="hidden" name="custom_csrf_field" value="{{ csrf_token }}" />
-  <!-- form fields -->
-</form>
 ```
 
 ##  Best Practices
 
 1. **Always use HTTPS** in production to protect the CSRF token in transit.
 2. **Don't expose the CSRF token** in logs or error messages.
-3. **Use the TemplateContextMiddleware** to automatically include the CSRF token in all templates.
+3. **Share the token once**, as an Inertia shared prop or a single endpoint, rather than fetching it per form.
 4. **Protect all state-changing endpoints** (POST, PUT, DELETE, PATCH) with CSRF tokens.
 5. **Use the same-site cookie attribute** to provide additional protection against CSRF attacks.
-
-##  Client-Side Implementation
-
-###  1. HTML Forms
-
-For traditional form submissions, include the CSRF token in a hidden field. The token should be included in every form that performs state-changing operations (POST, PUT, DELETE, etc.).
-
-```html
-<!-- Example: User Profile Update Form -->
-<form method="post" action="/profile/update">
-  <div class="form-group">
-    <label for="username">Username</label>
-    <input
-      type="text"
-      id="username"
-      name="username"
-      value="{{ current_user.username }}"
-      required
-    />
-  </div>
-
-  <div class="form-group">
-    <label for="email">Email</label>
-    <input
-      type="email"
-      id="email"
-      name="email"
-      value="{{ current_user.email }}"
-      required
-    />
-  </div>
-
-  <button type="submit" class="btn btn-primary">Update Profile</button>
-</form>
-```
-
-###  2. JavaScript (AJAX) Requests
-
-For AJAX requests, you'll need to:
-
-1. Extract the CSRF token from cookies
-2. Include it in the request headers
-
-```javascript
-// Example AJAX request
-async function submitForm() {
-  const csrfToken = document.cookie.match(/csrftoken=([^\s]*)/)[1];
-  const response = await fetch("/api/endpoint", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken,
-    },
-    body: JSON.stringify({ data: "example" }),
-  });
-  return await response.json();
-}
-```
 
 ##  How a request is checked
 

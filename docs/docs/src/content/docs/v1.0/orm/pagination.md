@@ -142,11 +142,6 @@ Options, in order of preference:
    "about 40,000 results".
 3. **Cache it.** A count that is a minute stale is usually fine.
 
-## In the admin
-
-The [admin panel](/v1.0/orm/admin-customising/) paginates its own lists;
-`list_per_page` on the `ModelAdmin` sets the size, defaulting to 25.
-
 ## See also
 
 - [Pagination](/v1.0/guides/pagination/): the strategies, parameters and envelope in

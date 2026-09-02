@@ -1,19 +1,18 @@
 ---
-title: ORM & Admin
-description: "sillo.record and the admin panel. What the ORM adds on top of Tortoise, how the two fit together, and a map of this section."
+title: The ORM
+description: "sillo.record: what it adds on top of Tortoise, how the two fit together, and a map of this section."
 head:
   - tag: meta
     attrs:
       property: og:title
-      content: Sillo ORM and Admin
+      content: The Sillo ORM
   - tag: meta
     attrs:
       property: og:description
-      content: The Record ORM, migrations, and the admin panel, documented end to end.
+      content: The Record ORM and its migrations, documented end to end.
 ---
 
-Two things live here: **Record**, Sillo's ORM, and the **admin panel** built on
-top of it.
+**Record** is Sillo's ORM, and this manual is all of it.
 
 ```python
 from sillo.record import Model
@@ -119,12 +118,12 @@ one:
 - [Applying them](/v1.0/orm/migrations-applying/): the deployment shape
 - [Programmatically](/v1.0/orm/migrations-programmatic/): without the CLI
 
-### The admin panel
+### An admin panel
 
-- [Overview](/v1.0/orm/admin/): mounting it
-- [Registering models](/v1.0/orm/admin-registering/): `ModelAdmin`
-- [Customising](/v1.0/orm/admin-customising/): lists, filters, search, forms
-- [Permissions and auth](/v1.0/orm/admin-permissions/): who gets in, and to what
+0.x shipped one inside the framework, under `sillo.admin`. 1.0 does not: it
+lives in [Warder](/packages/warder/), a separate package with a React interface,
+installed with `pip install warder` when you want one and absent when you do
+not.
 
 ## Honesty about maturity
 

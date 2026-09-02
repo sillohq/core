@@ -170,19 +170,3 @@ class TestHashingSchemeSelection:
 
         assert config.is_scheme_available("fake") is False
 
-
-class TestAdminActivityRepr:
-    def test_it_summarises_the_entry(self):
-        from sillo.admin.models import AdminActivity
-
-        entry = AdminActivity(
-            user_email="ada@example.com",
-            action="update",
-            model_name="User",
-        )
-
-        text = str(entry)
-
-        assert "ada@example.com" in text
-        assert "update" in text
-        assert "User" in text

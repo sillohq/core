@@ -289,7 +289,8 @@ Post._meta.m2m_fields
 Post._meta.backward_fk_fields
 ```
 
-Private, and stable enough that the framework itself uses it. The
-[admin](/v1.0/orm/admin/) builds its forms from `fields_map`, and
-[`mass_assignable_fields`](/v1.0/orm/mass-assignment/) reads `fields`. Useful for
-your own generic tooling; treat it as an internal API when upgrading.
+Private, and stable enough that the framework itself uses it.
+[`mass_assignable_fields`](/v1.0/orm/mass-assignment/) reads `fields`, and
+[Warder](/packages/warder/) builds its whole interface out of `fields_map`.
+Useful for your own generic tooling; treat it as an internal API when
+upgrading.

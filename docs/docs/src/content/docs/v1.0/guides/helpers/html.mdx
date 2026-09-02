@@ -94,7 +94,7 @@ code path, one of the two is a bug.
 
 Escaping twice produces visible garbage: `escape_html(escape_html("a & b"))` gives `a &amp;amp; b`, which renders on the page as the literal text `a &amp; b`.
 
-Most template engines, including the Jinja2 setup behind [Templating](/v1.0/guides/templating/), escape automatically. If you escape in Python and the template escapes again, users see mangled text. Pass raw values to auto-escaping templates and let the template do it. Use `escape_html` when you are building a string by hand, or writing into a context the template will not escape.
+React escapes what it interpolates, and so does every template engine worth using. If you escape in Python and the renderer escapes again, users see mangled text. Pass raw values to anything that escapes for you and let it do the job. Use `escape_html` when you are building a string by hand, or writing into a context that will not escape — a `dangerouslySetInnerHTML`, a `|safe`, an email body assembled with `+`.
 
 </Aside>
 
@@ -345,7 +345,7 @@ safe = html.escape_html(html.linkify(user_comment))
 safe = html.linkify(user_comment)
 ```
 
-In a Jinja2 template the result must be marked safe, and that is exactly the moment to be certain the escape step ran first.
+Wherever the result lands it has to be marked safe — `dangerouslySetInnerHTML`, a `|safe` filter — and that is exactly the moment to be certain the escape step ran first.
 
 </Aside>
 
@@ -389,8 +389,6 @@ All seven functions are single-pass string operations, O(n) in input length, wit
 
 ##  Related
 
-- [Templating](/v1.0/guides/templating/): Jinja2 auto-escaping, the default
-  protection for rendered pages
 - [Text](/v1.0/guides/helpers/text/): truncation and excerpts for the stripped
   output
 - [Strings](/v1.0/guides/helpers/strings/): slugs, which overlap with

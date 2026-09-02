@@ -501,74 +501,7 @@ The `default_rate` string is parsed into count and period:
 
 ---
 
-## 8. TemplateConfig
-
-### Example Structure
-
-```python
-class TemplateConfig(Config):
-    """Template engine configuration."""
-
-    # Directories
-    directories: list[str] = Field(
-        default=["templates"],
-        description="Template search directories"
-    )
-
-    # Engine
-    engine: Literal["jinja2", "mako"] = Field(
-        default="jinja2",
-        description="Template engine to use"
-    )
-
-    # Caching
-    cache_enabled: bool = Field(default=True, description="Enable template caching")
-    cache_dir: str = Field(default=".template_cache", description="Cache directory")
-    auto_reload: bool = Field(default=True, description="Auto-reload changed templates")
-
-    # Security
-    auto_escape: bool = Field(default=True, description="Auto-escape HTML entities")
-    allowed_extensions: list[str] = Field(
-        default=[".html", ".htm", ".xml", ".txt"],
-        description="Allowed template file extensions"
-    )
-
-    # Globals
-    globals: dict[str, Any] = Field(
-        default={},
-        description="Global variables available in all templates"
-    )
-
-    class Env:
-        env_prefix = "TEMPLATE_"
-```
-
-### Environment Variable Mapping
-
-```
-TEMPLATE_DIRECTORIES=templates,layouts
-TEMPLATE_ENGINE=jinja2
-TEMPLATE_CACHE_ENABLED=true
-TEMPLATE_AUTO_RELOAD=false
-TEMPLATE_AUTO_ESCAPE=true
-```
-
-### Usage
-
-```python
-from sillo.templating import Jinja2Templates
-
-template_config = TemplateConfig(
-    directories=["templates", "email_templates"],
-    auto_reload=False,
-)
-
-templates = Jinja2Templates(directory=template_config.directories)
-```
-
----
-
-## 9. InertiaConfig
+## 8. InertiaConfig
 
 ### Example Structure
 
@@ -639,7 +572,7 @@ config = InertiaConfig(
 
 ---
 
-## 10. Configuration Patterns
+## 9. Configuration Patterns
 
 ### 10.1 Composite Configuration
 
@@ -787,7 +720,6 @@ graph TD
     CFG --> CC["CorsConfig"]
     CFG --> CSRF["CSRFConfig"]
     CFG --> RLC["RateLimitConfig"]
-    CFG --> TC["TemplateConfig"]
     CFG --> IC["InertiaConfig"]
     CFG --> APP_CFG["AppConfig (user-defined)"]
 ```

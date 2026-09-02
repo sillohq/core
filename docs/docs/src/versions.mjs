@@ -47,12 +47,25 @@ export const VERSIONS = [
  */
 export const DEFAULT_VERSION = 'v0.x';
 
-/** Every manual, in section-bar order. `segment` is the second URL segment. */
+/**
+ * Every manual, in section-bar order. `segment` is the second URL segment.
+ *
+ * `labels` overrides `label` for one version. The ORM manual needs it: the
+ * built-in admin panel was part of that manual in 0.x and is not in the
+ * framework at all in 1.0 — it lives in its own package now — so the tab that
+ * reads "ORM & Admin" on a 0.x page has to read "ORM" on a 1.0 one.
+ */
 export const MANUALS = [
     { segment: 'guides', label: 'Guides', home: 'guides/introduction/', icon: 'book' },
     { segment: 'start', label: 'Sillo Start', home: 'start/', icon: 'spark' },
     { segment: 'cli', label: 'CLI', home: 'cli/', icon: 'terminal' },
-    { segment: 'orm', label: 'ORM & Admin', home: 'orm/', icon: 'database' },
+    {
+        segment: 'orm',
+        label: 'ORM & Admin',
+        labels: { 'v1.0': 'ORM' },
+        home: 'orm/',
+        icon: 'database',
+    },
     { segment: 'pydantic', label: 'Pydantic', home: 'pydantic/', icon: 'shield' },
     { segment: 'advanced', label: 'Advanced', home: 'advanced/', icon: 'layers' },
 ];

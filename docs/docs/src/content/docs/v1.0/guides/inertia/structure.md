@@ -117,9 +117,10 @@ older placement boots with a null page and throws
 
 ##  No `templates/`
 
-Server-side templating is still available and still works. It is just not how
-an Inertia project renders pages. `root.html` is the only template, and it is
-rendered once per session rather than once per request.
+There is no template directory because there is nothing to put in it.
+`root.html` is the whole server-rendered surface: one file, served as-is, whose
+only job is to carry the page object and load the bundle. Everything else is a
+component.
 
 ##  Three paths that must agree
 

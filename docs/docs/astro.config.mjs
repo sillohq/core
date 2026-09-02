@@ -115,9 +115,10 @@ const MANUAL_GROUPS = [
         ],
     },
 
-    // -- ORM & Admin -------------------------------------------
+    // -- The ORM -----------------------------------------------
     {
         label: 'ORM & Admin',
+        labels: { 'v1.0': 'The ORM' },
         items: [
             { label: 'Overview', link: '/orm/' },
             { label: 'Setup', link: '/orm/setup/' },
@@ -605,8 +606,12 @@ function packageSidebar() {
  * @param {string} version A slug from src/versions.mjs, e.g. `'v1.0'`.
  */
 function sidebarFor(version) {
-    return MANUAL_GROUPS.map((group) => ({
+    return MANUAL_GROUPS.map(({ labels, ...group }) => ({
         ...group,
+        // A group whose name changed between versions carries both, keyed by
+        // slug: the first ORM group was "ORM & Admin" in 0.x and the admin is
+        // not in the framework at all in 1.0.
+        label: labels?.[version] ?? group.label,
         items: group.items
             .filter((item) => pageExistsIn(item.link, version))
             .map((item) => ({ ...item, link: `/${version}${item.link}` })),

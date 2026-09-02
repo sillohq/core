@@ -77,7 +77,6 @@ graph TB
         DI["Depend"]
         DEP["Dependant"]
         CMD["Command"]
-        AS["AdminSite"]
     end
 
     APP --> ROUTER
@@ -1110,41 +1109,6 @@ Dataclass tracking cache performance: `hits`, `misses`, `sets`, `deletes`,
 
 ---
 
-## Admin
-
-### AdminSite
-
-**Module:** `sillo.admin`
-
-Auto-generated admin panel.
-
-**Attributes:** `title`, `prefix`, `registry` (`Registry`), `auth` (`AuthBackend`).
-
-**Methods:** `register(model_class, admin_class)`, `mount(app)`.
-
-**Setup:** `setup_admin(app, title, prefix, auth_backend, user_model) -> AdminSite`.
-
-**Differs from Django's admin:** Same concept.  Sillo's admin is simpler,
-using `ModelAdmin` with `list_display`, `search_fields`, `list_filter`,
-`ordering`, `verbose_name`.
-
-**Related:** `ModelAdmin`, `Registry`, `AuthBackend`, `AdminUser`
-
----
-
-### ModelAdmin
-
-**Module:** `sillo.admin.registry`
-
-Admin configuration for a model.
-
-**Attributes:** `list_display`, `search_fields`, `list_filter`, `ordering`,
-`verbose_name`.
-
-**Related:** `AdminSite`, `Registry`
-
----
-
 ## CLI / Console
 
 ### Console
@@ -1248,24 +1212,6 @@ Dataclass representing an email message.
 
 **Methods:** `add_attachment(filename, content, ...)`, `add_header(name, value)`,
 `to_mime_message(from_email)`.
-
----
-
-## Templating
-
-### TemplateEngine
-
-**Module:** `sillo.templating`
-
-Jinja2-based template engine.
-
-**Methods:** `setup_environment(config)`, `render(template_name, context, **kwargs)`.
-
-**Configuration:** `TemplateConfig` with `template_dir`, `cache_size`,
-`auto_reload`, `encoding`, `enable_async`, `trim_blocks`, `lstrip_blocks`,
-`custom_filters`, `custom_globals`.
-
-**Related:** `render()` function (convenience), `HTMLResponse`
 
 ---
 
@@ -1406,16 +1352,6 @@ Wires work subsystems (queue, scheduler, events) into the app.
 Wires `SchedulerManager` into the app lifecycle.
 
 **Related:** `SchedulerManager`, `ScheduledJob`
-
----
-
-### setup_admin
-
-**Module:** `sillo.admin`
-
-Builds and mounts the admin site.
-
-**Related:** `AdminSite`, `ModelAdmin`, `Registry`
 
 ---
 

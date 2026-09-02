@@ -34,7 +34,7 @@ Optional features
   • record
   • cache
   • jwt
-      templating — not installed
+      mail — not installed
       graphql — not installed
       bcrypt — not installed
       argon2 — not installed
@@ -42,7 +42,7 @@ Optional features
 
 Each feature is tested by importing the module that proves it, not by reading
 your `pyproject.toml`. `record` is present when `tortoise` imports, `cache`
-when `redis` does, `jwt` when `jwt` does. So this reports the environment you
+when `redis` does, `mail` when `jinja2` does. So this reports the environment you
 are actually running in, which is the question worth asking when something
 that should work does not.
 

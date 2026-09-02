@@ -11,7 +11,7 @@ head:
 - tag: meta
   attrs:
     property: og:description
-    content: One command puts the framework in place. Add the ORM, JWT, templating or Redis as optional extras when the product needs them.
+    content: One command puts the framework in place. Add the ORM, JWT, mail or Redis as optional extras when the product needs them.
 ---
 
 import { TabItem, Tabs } from '@astrojs/starlight/components';
@@ -20,7 +20,7 @@ import { TabItem, Tabs } from '@astrojs/starlight/components';
 
 One command puts the framework in place: routing, validation, dependency
 injection, the response builder, and the middleware stack. The heavier pieces
-(the ORM, JWT, templating, Redis) are optional extras you add when the product
+(the ORM, JWT, caching, Redis) are optional extras you add when the product
 needs them, so the dependency tree stays proportional to what you build.
 
 ## Requirements
@@ -169,7 +169,7 @@ Sillo ships optional extras for integrations that need additional dependencies. 
   <TabItem label="uv (recommended)">
 
     ```bash
-    uv add "sillo-framework[templating]"
+    uv add "sillo-framework[mail]"
     uv add "sillo-framework[jwt]"
     uv add "sillo-framework[cache]"
     uv add "sillo-framework[record]"
@@ -181,7 +181,7 @@ Sillo ships optional extras for integrations that need additional dependencies. 
   <TabItem label="Poetry">
 
     ```bash
-    poetry add "sillo-framework[templating]"
+    poetry add "sillo-framework[mail]"
     poetry add "sillo-framework[jwt]"
     poetry add "sillo-framework[cache]"
     poetry add "sillo-framework[record]"
@@ -193,7 +193,7 @@ Sillo ships optional extras for integrations that need additional dependencies. 
   <TabItem label="venv + pip">
 
     ```bash
-    pip install "sillo-framework[templating]"
+    pip install "sillo-framework[mail]"
     pip install "sillo-framework[jwt]"
     pip install "sillo-framework[cache]"
     pip install "sillo-framework[record]"

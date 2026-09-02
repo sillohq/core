@@ -170,7 +170,7 @@ both old and new signatures for at least one release cycle.
 - All middleware (routes determine which middleware applies)
 - Test client (resolves routes by path)
 - OpenAPI schema (routes → operations)
-- Admin panel (mounts its own router)
+- [Warder](/packages/warder/), the admin panel (mounts its own router)
 - Frontend app (mounted as a sub-router)
 
 ### Behaviour that could change
@@ -232,7 +232,7 @@ regression tests for all existing URL patterns before changing
 - All authenticated routes (via `AuthenticationMiddleware`)
 - All session-dependent routes (via `SessionMiddleware`)
 - CSRF protection (via session)
-- Admin panel (via session + auth)
+- Warder (via session + auth)
 
 ### Behaviour that could change
 
@@ -281,7 +281,7 @@ signature is the interface.
 - All middleware
 - All auth backends
 - Session middleware
-- Admin panel
+- Warder
 
 ### Behaviour that could change
 
@@ -393,7 +393,7 @@ extremely careful.  Always test with:
 - All routes requiring login
 - All role/permission-gated routes
 - OpenAPI `securitySchemes` and `security` fields
-- Admin panel auth
+- Warder's authentication
 
 ### Behaviour that could change
 
@@ -481,14 +481,14 @@ as optional instead.
 |-----------|-----|
 | `AuthenticationMiddleware` | Loads user via `UserProtocol.load_user()` |
 | `useAuth` | `auth.user_model` is a `UserProtocol` type |
-| Admin panel | User model for admin auth |
+| Warder | Reads the user model to authenticate |
 | Permission system | `has_perm()`, `has_perms()` |
 
 ### What indirectly depends on it
 
 - All authenticated routes (via `ctx.user`)
 - All permission checks
-- Admin panel access
+- Warder access
 - Password hashing/verification
 - User management commands
 
@@ -508,7 +508,6 @@ as optional instead.
 - User model tests
 - Auth flow tests
 - Permission tests
-- Admin panel tests
 - User creation tests
 
 ### Migration guidance
@@ -530,13 +529,13 @@ support both old and new signatures for one release.
 | Dependent | How |
 |-----------|-----|
 | `useAuth` permission checks | `auth.permissions` checked via mixin methods |
-| Admin panel access control | Permission gates |
+| Warder access control | Permission gates |
 | `UserBaseModel` | Inherits `PermissionMixin` |
 
 ### What indirectly depends on it
 
 - All permission-gated routes
-- Admin panel
+- Warder
 - Group-based access control
 
 ### Behaviour that could change
@@ -552,7 +551,6 @@ support both old and new signatures for one release.
 
 - Permission unit tests
 - Group permission tests
-- Admin access tests
 
 ---
 
@@ -569,7 +567,7 @@ support both old and new signatures for one release.
 | `UserBaseModel` | Inherits from `Model` |
 | Migrations | Schema generation |
 | Factories | Model instantiation |
-| Admin panel | Model registration |
+| Warder | Model registration |
 | Fixtures/Seeders | Model creation |
 
 ### What indirectly depends on it
@@ -577,7 +575,7 @@ support both old and new signatures for one release.
 - All database operations
 - All ORM queries
 - All test fixtures
-- Admin CRUD
+- Warder's CRUD
 - Bulk operations
 - Soft delete logic
 
@@ -608,7 +606,7 @@ support both old and new signatures for one release.
 Model changes require **coordinated database migrations**.  Always:
 1. Create a migration for schema changes
 2. Update factories/fixtures
-3. Update admin panel config
+3. Update anything that names fields by hand — Warder resources, serializers
 4. Run full test suite
 
 ---
@@ -631,7 +629,7 @@ Model changes require **coordinated database migrations**.  Always:
 - All queries across the application
 - Soft-delete filtering (if using global scope)
 - Multi-tenancy filtering (if using global scope)
-- Admin panel queries
+- Warder's queries
 
 ### Behaviour that could change
 
@@ -639,7 +637,7 @@ Model changes require **coordinated database migrations**.  Always:
 |--------|--------|
 | `get_queryset()` scope application | All queries affected |
 | `__getattr__` scope forwarding | Chainable scopes break |
-| `without_global_scopes()` | Admin queries may break |
+| `without_global_scopes()` | Anything relying on an unscoped read may break |
 | QuerySet method signatures | All query chains affected |
 
 ### Tests that could fail
@@ -647,7 +645,6 @@ Model changes require **coordinated database migrations**.  Always:
 - All query tests
 - Scope tests
 - Global scope tests
-- Admin panel query tests
 
 ### Migration guidance
 
@@ -765,7 +762,7 @@ format and support old formats during migration.
 | `ctx.session` | Accessed in handlers |
 | `SessionAuthBackend` | Reads session for auth |
 | CSRF middleware | Stores/reads CSRF token |
-| Admin panel | Session-based admin auth |
+| Warder | Session-based admin auth |
 
 ### What indirectly depends on it
 
@@ -790,7 +787,6 @@ format and support old formats during migration.
 - Session unit tests
 - Auth session tests
 - CSRF tests
-- Admin panel tests
 
 ### Migration guidance
 
@@ -882,12 +878,12 @@ quadrantChart
 | Depend / DI | 🔴 Critical | All parameterised handlers | Everything | **Yes** (wrong values) |
 | useAuth | 🟡 High | All auth routes, OpenAPI | Security surface | **Yes** (wrong access) |
 | AuthenticationBackend | 🟡 High | Auth middleware, per-route backends | All auth | No (fails fast) |
-| UserBaseModel / UserProtocol | 🟡 High | Auth middleware, admin, permissions | All auth | **Yes** (wrong user) |
-| PermissionMixin | 🟡 High | Permission checks, admin | Auth system | **Yes** (wrong access) |
+| UserBaseModel / UserProtocol | 🟡 High | Auth middleware, Warder, permissions | All auth | **Yes** (wrong user) |
+| PermissionMixin | 🟡 High | Permission checks, Warder | Auth system | **Yes** (wrong access) |
 | Model / Record | 🟡 High | All models, migrations, factories | All DB ops | **Yes** (wrong data) |
 | RecordManager / QuerySet | 🟡 High | All queries, scopes | All DB ops | **Yes** (wrong results) |
 | BaseMiddleware | 🟢 Medium | User middleware, ASGI bridge | Middleware chain | No |
-| SessionMiddleware | 🟢 Medium | Session auth, CSRF, admin | Session users | **Yes** (lost sessions) |
+| SessionMiddleware | 🟢 Medium | Session auth, CSRF, Warder | Session users | **Yes** (lost sessions) |
 | Task / Queue | 🟢 Medium | Background work, scheduler | Async ops | **Yes** (lost jobs) |
 | EventEmitter | 🟢 Medium | Event listeners, transports | Real-time | **Yes** (missed events) |
 | Cache | 🟢 Medium | Cache decorator, cached ops | Performance | **Yes** (stale data) |

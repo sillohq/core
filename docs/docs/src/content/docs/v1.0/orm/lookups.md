@@ -119,9 +119,9 @@ index is unusable, so this is a full scan on every query.
 search is cheap and a substring search is not.
 
 For real search on a large table: a trigram index (`pg_trgm`) on PostgreSQL, a
-full-text index, or a search service. The admin's
-[search box](/v1.0/orm/admin-customising/#search) is `icontains`, and is meant for
-tables you can afford to scan.
+full-text index, or a search service. A generic search box — the one an admin
+panel puts above a list, for instance — is almost always `icontains`, and is
+meant for tables you can afford to scan.
 :::
 
 `search` maps to the backend's full-text support where there is one and

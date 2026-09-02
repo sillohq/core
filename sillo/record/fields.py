@@ -21,8 +21,8 @@ class PasswordField(_fields.CharField):
         class AdminUser(Model):
             password = PasswordField()
 
-    The admin auto-detects ``PasswordField`` instances and renders a secure
-    password widget (reveal toggle, strength meter, confirmation).  Plaintext
+    An admin built on this — Warder does, and so can yours — can detect a
+    ``PasswordField`` and render a password widget for it.  Plaintext
     assigned through the ORM is hashed automatically via
     :func:`sillo.helpers.hashing.hash_password` — so ``user.password = "secret"``
     stores a hash, not the raw string.

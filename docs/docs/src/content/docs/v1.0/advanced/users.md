@@ -1151,24 +1151,12 @@ class Account(PermissionMixin, JWTUserMixin, SessionUserMixin, UserBaseModel):
     # create_session is inherited from SessionUserMixin
 ```
 
-### Admin Panel Integration
+### Staff and superuser flags
 
-The admin panel at `core/sillo/admin/` uses its own auth system:
+`is_staff` and `is_superuser` are the two flags the framework itself does
+nothing with — they exist so that *your* code, or a package you install, has a
+standard place to ask "may this account reach the back office?".
 
-```python
-# core/sillo/admin/auth.py
-class SessionAuth(AuthBackend):
-    @staticmethod
-    def may_enter(user) -> bool:
-        return user.is_staff or user.is_superuser
-
-    async def current_user(self, ctx: HttpContext):
-        # Loads from session, checks may_enter
-        ...
-
-    async def login(self, ctx: HttpContext, username, password):
-        # Uses verify_credentials, calls sillo_login
-        ...
-```
-
-The admin requires `is_staff=True` or `is_superuser=True`. The `create_admin` command and `user:create --admin` command both set `is_staff=True`.
+[Warder](/packages/warder/), the admin panel, is the usual consumer: it gates
+entry on exactly those two, and its `warder create-admin` command sets them.
+`sillo user:admin` does the same from the framework's own console.

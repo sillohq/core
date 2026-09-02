@@ -199,8 +199,10 @@ upload sizes and counts, and string lengths.
 ###  Output
 
 Escape by context. HTML escaping is not URL escaping is not JavaScript
-escaping, and a value safe in one is dangerous in another. Templates autoescape
-`.html` files. See [Templating](/v1.0/guides/templating/), and `|safe` disables it.
+escaping, and a value safe in one is dangerous in another. A React front end
+escapes what it interpolates; `dangerouslySetInnerHTML` opts out, and so does
+any template engine's `|safe`. See [`escape_html`](/v1.0/guides/helpers/html/)
+for the cases you have to do by hand.
 
 Return only declared fields. A
 [response model](/v1.0/guides/validation/response-models/) drops everything

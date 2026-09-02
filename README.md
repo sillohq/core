@@ -50,7 +50,7 @@
 > [docs.sillo.build/v1.0](https://docs.sillo.build/v1.0/guides/introduction/),
 > and every page in it says the same thing at the top.
 
-Sillo is the buildsmith framework for APIs, real-time systems, and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, admin, queues, scheduler, and WebSockets already in place. The language does not change. You write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
+Sillo is the buildsmith framework for APIs, real-time systems, and production backends: fast, async, and built with everything you need to ship, with the ORM, authentication, queues, scheduler, and WebSockets already in place. The language does not change. You write the same Python, with the same type hints and the same `async`/`await`. What changes is how much is waiting for you when you start: routing, request validation, dependency injection, middleware, sessions, authentication, records, background work, WebSockets, OpenAPI, and testing are first-party modules sharing one configuration model.
 
 Each of those is a solved problem with good packages behind it. The work that remains is the fitting, and that is what Sillo does once so you do not do it per project. One `auth=` declaration gates a route and writes its `securityScheme` into the OpenAPI spec. The queue and the scheduler start with the application lifecycle. Range requests, ETags, and content negotiation are middleware rather than something each project rewrites.
 
@@ -85,7 +85,7 @@ uv add sillo-framework
 For optional feature groups:
 
 ```bash
-uv add "sillo-framework[templating]"
+uv add "sillo-framework[mail]"
 uv add "sillo-framework[jwt]"
 uv add "sillo-framework[cache]"
 uv add "sillo-framework[record]"
@@ -218,7 +218,6 @@ app.mount_router(api)
 - Record layer for database-backed models, transactions, scopes, casting, and pagination
 - Mail service utilities
 - Sync and async test clients
-- Model admin at `/admin/` that authenticates against your own user model
 - `sillo` command, and `sillo.console` for building a project's own
 
 ## Scope And Boundaries

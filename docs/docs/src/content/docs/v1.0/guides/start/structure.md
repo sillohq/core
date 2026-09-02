@@ -1,6 +1,6 @@
 ---
 title: Project Structure
-description: "Every directory in a Sillo project, what belongs in it, and the reasoning behind the boundaries: app, database, routes, templates, static, storage, scripts, tests."
+description: "Every directory in a Sillo project, what belongs in it, and the reasoning behind the boundaries: app, database, routes, static, storage, scripts, tests."
 head:
   - tag: meta
     attrs:
@@ -20,8 +20,6 @@ myapp/
     main.py           ASGI entrypoint — `uvicorn app.main:app`
     bootstrap.py      Application assembly. Start reading here
     config.py         Typed settings, loaded from the environment
-    admin.py          Admin panel registration
-    templating.py     Jinja setup
     jobs/             Queue jobs
     tasks/            Scheduled tasks
   database/
@@ -29,10 +27,9 @@ myapp/
     models/           Your models. `user.py` is provided
     migrations/       Generated migrations — commit these
   routes/
-    web.py            Server-rendered pages
+    web.py            The welcome page
     auth.py           JSON auth endpoints
     api.py            Everything else under /api
-  templates/          Jinja templates
   static/             CSS, images, anything served as-is
   storage/            Runtime data — the SQLite file, logs, uploads
   scripts/
@@ -98,8 +95,6 @@ The single place where the application is put together. Read it first.
 def create_app() -> SilloApp:
     application = SilloApp(debug=config.debug, title=config.app_name, version="0.1.0")
 
-    _register_admin(application)
-    _register_templating()
     _register_middleware(application)
     _register_database(application)
     # _register_work(application)
@@ -117,19 +112,19 @@ order is not cosmetic, and one part of it is genuinely surprising:
 registration *outermost*, so whatever registers **last runs first** at
 request time.
 
-`AdminSite.mount()` attaches its own auth middleware through `app.use()`, and
-that middleware reads `ctx.session`. So the admin has to be registered
-**before** the middleware block, which is what leaves the session middleware
-outside, and therefore ahead of it. Register the admin after, and every admin
-page 500s with "No Session Middleware Installed" while the session middleware
-is demonstrably installed.
+That matters as soon as you mount something that brings its own middleware —
+an admin panel, an Inertia layer, anything that calls `app.use()` from inside
+its own setup. Such a thing usually reads `ctx.session`, so it has to be
+registered **before** the middleware block, which is what leaves the session
+middleware outside it and therefore ahead of it. Register it after, and every
+one of its pages 500s with "No Session Middleware Installed" while the session
+middleware is demonstrably installed.
 :::
 
 The same ordering has a second consequence, and it catches people writing
-framework code rather than application code: the admin's startup hook is
-registered before the database's, so **the admin's hook runs while the ORM
-is still uninitialised**. Anything that asks the database a question at
-that moment gets the wrong answer.
+framework code rather than application code: a startup hook registered before
+the database's **runs while the ORM is still uninitialised**. Anything that
+asks the database a question at that moment gets the wrong answer.
 
 ###  `app/config.py`
 
@@ -152,8 +147,6 @@ class Settings:
     session_cookie_name: str = "session_id"
     session_lifetime: int = 86400
 
-    admin_enabled: bool = True
-    admin_prefix: str = "/admin"
 
     cors_allow_origins: str = "http://localhost:5173"
     log_level: Literal["debug", "info", "warning", "error"] = "info"
@@ -182,36 +175,6 @@ once: an app, a worker and a scheduler sharing one SQLite file will raise
 Migrations own the schema. See
 [Database & Migrations](/v1.0/guides/start/database/).
 :::
-
-###  `app/admin.py`
-
-Where admin models are registered. One function, called from bootstrap:
-
-```python
-def register_admin(application: SilloApp) -> AdminSite:
-    admin = AdminSite(title="Myapp Admin", prefix=config.admin_prefix, user_model=User)
-
-    @admin.register(User)
-    class UserAdmin(ModelAdmin):
-        verbose_name = "Users"
-        list_display = ["id", "email", "username", "is_active", "is_staff", "last_login"]
-        search_fields = ["email", "username"]
-
-    admin.mount(application)
-    return admin
-```
-
-Register your models **before** `admin.mount()`. Mounting registers the
-user model with a default presentation if nothing has claimed it yet, so
-registering yours first is what lets your columns take effect.
-
-See [The Admin Panel](/v1.0/guides/start/admin/).
-
-###  `app/templating.py`
-
-Configures the Jinja environment. `create_app` calls it before any page
-renders, without that, `sillo.templating.render` raises `NotImplementedError`.
-Not optional for a project serving HTML.
 
 ###  `app/jobs/`
 
@@ -256,7 +219,7 @@ application, the migration commands, and any script that opens the
 database.
 
 ```python
-MODEL_MODULES = ["database.models", "sillo.admin.models"]
+MODEL_MODULES = ["database.models"]
 MIGRATIONS_MODULE = "database.migrations"
 
 
@@ -290,14 +253,13 @@ async with database():
 :::note
 **`MODEL_MODULES` is a short list on purpose.**
 
-`sillo.admin.models` is the admin's activity log: who changed what, and when.
-It is the one table the admin brings, and it is worth having from the first day
-rather than after the first incident.
+It is one entry, and the only reason to add another is a package that brings
+models of its own — [Warder](/packages/warder/), the admin panel, keeps an
+activity log in `warder.models`, so installing it adds one line here.
 
-What is deliberately absent is `sillo.admin.default_user`, which holds the
-admin's fallback `AdminUser` and its roles. Registering it would put a
-second set of accounts beside `users` to keep in step, or to forget about.
-The admin signs people in with *your* `User`.
+What a project should *not* add is a second set of accounts. One `User` table,
+and everything authenticates against it; two is two things to keep in step, or
+to forget about.
 
 Do not add `sillo.users` either. Models are keyed by class name, so the
 framework's built-in `User` would displace your own and your extra columns
@@ -346,7 +308,7 @@ JSON there" than by a package per noun.
 :::caution
 **A prefix-less router swallows everything.** Mounting a `Router` with no
 prefix claims `""` and every path beneath it, including routes registered later
-during startup, like the admin's.
+during startup by something you mounted.
 
 Root-level pages are therefore registered individually:
 
@@ -361,9 +323,9 @@ before `/api/auth` leaves every auth route unreachable.
 
 ---
 
-##  `templates/` and `static/`
+##  `static/`
 
-Jinja templates and files served as-is.
+Files served as-is.
 
 `/static` is mounted in `bootstrap.py` for development and small deployments.
 With a proxy in front it never sees traffic. See
@@ -378,7 +340,7 @@ Group(path="/static", app=StaticFiles(directory="static"))
 ```
 
 Passing a prefix to `StaticFiles` itself is silently ignored, and every
-asset 404s at a path that looks right in the template.
+asset 404s at a path that looks right in the markup.
 :::
 
 ---
@@ -432,7 +394,7 @@ See [The Console](/v1.0/guides/start/console/).
 
 `scripts/smoke.py` boots the application and calls every route. It is not a
 unit test and it is not a replacement for one. It exists because a project can
-import cleanly, render every template and still fail on the first real request.
+import cleanly and still fail on the first real request.
 
 `tests/` holds the pytest suite. `conftest.py` gives every test its own
 temporary database.

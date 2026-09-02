@@ -64,7 +64,9 @@ const icons: Record<string, string> = {
                                 aria-current={active ? 'page' : undefined}
                             >
                                 <span class="ico" aria-hidden="true" set:html={icons[section.icon]} />
-                                <span class="label">{section.label}</span>
+                                <span class="label">
+                                    {section.labels?.[versionSlug] ?? section.label}
+                                </span>
                             </a>
                         </li>
                     );

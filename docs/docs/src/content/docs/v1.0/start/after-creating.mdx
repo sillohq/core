@@ -9,7 +9,7 @@ head:
   - tag: meta
     attrs:
       property: og:description
-      content: Install, migrate, create an admin, run the server, run the tests.
+      content: Install, migrate, create an administrator, run the server, run the tests.
 ---
 
 import { TabItem, Tabs } from '@astrojs/starlight/components';
@@ -77,8 +77,10 @@ sillo db:status
 sillo user:admin you@example.com
 ```
 
-Prompts for a password, twice, without echoing. This is the account you sign
-in to `/admin/` with.
+Prompts for a password, twice, without echoing. It sets `is_staff` and
+`is_superuser`, which is what anything gating on staff access will check —
+[Warder](/packages/warder/), if you add an admin panel, and your own guards
+otherwise.
 
 ## Run it
 
@@ -86,8 +88,9 @@ in to `/admin/` with.
 uvicorn app:app --reload
 ```
 
-Then open [http://localhost:8000](http://localhost:8000), and the admin panel
-at [http://localhost:8000/admin/](http://localhost:8000/admin/).
+Then open [http://localhost:8000](http://localhost:8000), and the generated
+API documentation at
+[http://localhost:8000/docs](http://localhost:8000/docs).
 
 `--reload` restarts on source changes. It is for development only. See
 [Deployment](/v1.0/guides/start/deployment/) for the production shape.
@@ -141,5 +144,5 @@ application](/v1.0/cli/discovery/).
 **Migrations do nothing**. Check `DATABASE_URL` in `.env` points where you
 think. `sillo db:status` prints what it is working against.
 
-**The admin panel 404s**, `ADMIN_ENABLED` in `.env`, and the account needs
-admin access. `sillo user:staff you@example.com` grants it.
+**A route needs staff access and refuses**. `sillo user:staff
+you@example.com` grants the flag; `--revoke` takes it back.

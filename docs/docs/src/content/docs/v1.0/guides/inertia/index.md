@@ -42,21 +42,22 @@ second description of the same data.
 
 ##  Where it sits
 
-It is the middle path between [Templating](/v1.0/guides/templating/) and
-[Frontend (SPA)](/v1.0/guides/frontend/): you get a real component-based front end,
-but routing, authorisation and data loading stay in Python, where the rest of
-your application already is.
+It is the middle path between a server-rendered page and a
+[SPA](/v1.0/guides/frontend/): you get a real component-based front end, but
+routing, authorisation and data loading stay in Python, where the rest of your
+application already is.
 
 | | Routing | Data reaches the page by | You also maintain |
 | --- | --- | --- | --- |
-| Templating | Server | Template context | Nothing |
+| Server-rendered HTML | Server | Template context | Nothing |
 | **Inertia** | **Server** | **Props, with the page** | **Components** |
 | SPA | Client | `fetch` from an API | Components, a router, an API |
 
-Choose Templating when the page is mostly content. Choose a SPA when something
-other than your own front end consumes the API, a mobile client, a partner
-integration. Choose Inertia when you want components and there is exactly one
-consumer.
+Choose plain HTML when the page is mostly content — Sillo has no template
+engine of its own in 1.0, so that means a library of your choosing. Choose a
+SPA when something other than your own front end consumes the API: a mobile
+client, a partner integration. Choose Inertia when you want components and
+there is exactly one consumer.
 
 ##  How a page renders
 
@@ -104,7 +105,6 @@ to a running page.
 
 - [Frontend (SPA)](/v1.0/guides/frontend/): serving a built SPA with client-side
   routing
-- [Templating](/v1.0/guides/templating/): server-rendered Jinja pages
 - [Static Files](/v1.0/guides/static-files/): serving assets
 - [`sillo-inertia` on GitHub](https://github.com/sillohq/inertia): full
   reference

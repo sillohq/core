@@ -298,7 +298,7 @@ around a one-shot command and signal in a long-running process.
 The starter pins a floor:
 
 ```toml
-"sillo-framework[cache,hashing-bcrypt,jwt,record,templating]>=0.0.1a8",
+"sillo-framework[cache,hashing-bcrypt,jwt,record,mail]>=0.0.1a8",
 ```
 
 To move:

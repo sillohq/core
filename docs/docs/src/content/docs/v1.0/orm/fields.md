@@ -55,8 +55,9 @@ if verify_password(submitted, account.password):
     ...
 ```
 
-The [admin panel](/v1.0/orm/admin/) detects `PasswordField` and renders a password
-widget (reveal toggle, strength meter, confirmation) rather than a text input.
+An admin built on the model layer can detect a `PasswordField` and render a
+password widget — reveal toggle, strength meter, confirmation — rather than a
+text input. [Warder](/packages/warder/) does.
 
 ### Two things to know
 

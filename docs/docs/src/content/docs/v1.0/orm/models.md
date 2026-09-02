@@ -59,8 +59,9 @@ whose migrations are unpredictable.
 
 ## `__str__` is worth writing
 
-The [admin panel](/v1.0/orm/admin/) uses it as a row's default label, and so does
-every debugging session. A model without one shows as `Post object (4)`.
+Anything that has to name a row without knowing what it is uses it — an admin
+panel, a log line, a `repr` in a traceback — and so does every debugging
+session. A model without one shows as `Post object (4)`.
 
 ## Serialisation
 

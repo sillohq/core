@@ -14,7 +14,6 @@ examples/
 ├── websockets/           # WebSocket functionality
 ├── request_inputs/       # Handling different request types
 ├── database/             # Database integrations
-├── templating/           # Template engine usage
 ├── validation/           # Data validation patterns
 ├── exception_handling/   # Error handling
 └── file_handling/        # File uploads and downloads
@@ -32,7 +31,6 @@ examples/
 | [WebSockets](./websockets/) | Echo, chat rooms, history managers |
 | [Request Inputs](./request_inputs/) | JSON, form data, raw body, streaming |
 | [Database](./database/) | SQLite, Tortoise ORM examples |
-| [Templating](./templating/) | Jinja2 templates, inheritance, filters |
 | [Validation](./validation/) | Pydantic models, custom validation |
 | [Exception Handling](./exception_handling/) | Custom exceptions, error handlers |
 | [File Handling](./file_handling/) | Upload, download, streaming |
